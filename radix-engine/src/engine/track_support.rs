@@ -27,13 +27,13 @@ impl<'s> StateTrack<'s> {
         }
     }
 
-    pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
+    pub fn put_substate(&mut self, substate_id: SubstateId, substate: PersistedSubstate) {
         self.substates
             .insert(substate_id, Some(scrypto_encode(&substate)));
     }
 
     /// Returns a copy of the substate associated with the given address, if exists
-    pub fn get_substate(&mut self, substate_id: &SubstateId) -> Option<Substate> {
+    pub fn get_substate(&mut self, substate_id: &SubstateId) -> Option<PersistedSubstate> {
         // First, try to copy it from the base track
         self.substates
             .get(substate_id)

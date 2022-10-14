@@ -2,13 +2,12 @@ use crate::engine::{
     CallFrame, KernelError, RENodePointer, RuntimeError, SubstateProperties, Track,
 };
 use crate::fee::FeeReserve;
+use crate::model::substates::worktop::WorktopSubstate;
 use crate::model::*;
 use crate::types::*;
 
-// TODO: still lots of unwraps
-
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub enum Substate {
+pub enum PersistedSubstate {
     GlobalRENode(GlobalAddressSubstate),
     System(SystemSubstate),
     ResourceManager(ResourceManagerSubstate),
@@ -20,7 +19,100 @@ pub enum Substate {
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
 }
 
-impl Substate {
+impl Into<VaultSubstate> for PersistedSubstate {
+    fn into(self) -> VaultSubstate {
+        if let PersistedSubstate::Vault(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+}
+
+impl PersistedSubstate {
+    pub fn to_runtime(self) -> RuntimeSubstate {
+        match self {
+            PersistedSubstate::GlobalRENode(value) => RuntimeSubstate::GlobalRENode(value),
+            PersistedSubstate::System(value) => RuntimeSubstate::System(value),
+            PersistedSubstate::ResourceManager(value) => RuntimeSubstate::ResourceManager(value),
+            PersistedSubstate::ComponentInfo(value) => RuntimeSubstate::ComponentInfo(value),
+            PersistedSubstate::ComponentState(value) => RuntimeSubstate::ComponentState(value),
+            PersistedSubstate::Package(value) => RuntimeSubstate::Package(value),
+            PersistedSubstate::Vault(value) => {
+                RuntimeSubstate::Vault(VaultRuntimeSubstate::new(value.0))
+            }
+            PersistedSubstate::NonFungible(value) => RuntimeSubstate::NonFungible(value),
+            PersistedSubstate::KeyValueStoreEntry(value) => {
+                RuntimeSubstate::KeyValueStoreEntry(value)
+            }
+        }
+    }
+}
+
+pub enum PersistError {
+    VaultLocked,
+}
+
+#[derive(Debug)]
+pub enum RuntimeSubstate {
+    GlobalRENode(GlobalAddressSubstate),
+    System(SystemSubstate),
+    ResourceManager(ResourceManagerSubstate),
+    ComponentInfo(ComponentInfoSubstate),
+    ComponentState(ComponentStateSubstate),
+    Package(PackageSubstate),
+    Vault(VaultRuntimeSubstate),
+    NonFungible(NonFungibleSubstate),
+    KeyValueStoreEntry(KeyValueStoreEntrySubstate),
+}
+
+impl RuntimeSubstate {
+    pub fn clone_to_persisted(&self) -> PersistedSubstate {
+        match self {
+            RuntimeSubstate::GlobalRENode(value) => PersistedSubstate::GlobalRENode(value.clone()),
+            RuntimeSubstate::System(value) => PersistedSubstate::System(value.clone()),
+            RuntimeSubstate::ResourceManager(value) => {
+                PersistedSubstate::ResourceManager(value.clone())
+            }
+            RuntimeSubstate::ComponentInfo(value) => {
+                PersistedSubstate::ComponentInfo(value.clone())
+            }
+            RuntimeSubstate::ComponentState(value) => {
+                PersistedSubstate::ComponentState(value.clone())
+            }
+            RuntimeSubstate::Package(value) => PersistedSubstate::Package(value.clone()),
+            RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value.clone()),
+            RuntimeSubstate::KeyValueStoreEntry(value) => {
+                PersistedSubstate::KeyValueStoreEntry(value.clone())
+            }
+            RuntimeSubstate::Vault(value) => {
+                let persisted_vault = value.clone_to_persisted();
+                PersistedSubstate::Vault(persisted_vault)
+            }
+        }
+    }
+
+    pub fn to_persisted(self) -> PersistedSubstate {
+        match self {
+            RuntimeSubstate::GlobalRENode(value) => PersistedSubstate::GlobalRENode(value),
+            RuntimeSubstate::System(value) => PersistedSubstate::System(value),
+            RuntimeSubstate::ResourceManager(value) => PersistedSubstate::ResourceManager(value),
+            RuntimeSubstate::ComponentInfo(value) => PersistedSubstate::ComponentInfo(value),
+            RuntimeSubstate::ComponentState(value) => PersistedSubstate::ComponentState(value),
+            RuntimeSubstate::Package(value) => PersistedSubstate::Package(value),
+            RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value),
+            RuntimeSubstate::KeyValueStoreEntry(value) => {
+                PersistedSubstate::KeyValueStoreEntry(value)
+            }
+            RuntimeSubstate::Vault(value) => {
+                let persisted_vault = value
+                    .to_persisted()
+                    .expect("Vault should be liquid at end of successful transaction");
+                PersistedSubstate::Vault(persisted_vault)
+            }
+        }
+    }
+
     pub fn decode_from_buffer(
         offset: &SubstateOffset,
         buffer: &[u8],
@@ -28,15 +120,15 @@ impl Substate {
         let substate = match offset {
             SubstateOffset::Component(ComponentOffset::State) => {
                 let substate = scrypto_decode(buffer).map_err(|e| KernelError::DecodeError(e))?;
-                Substate::ComponentState(substate)
+                RuntimeSubstate::ComponentState(substate)
             }
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
                 let substate = scrypto_decode(buffer).map_err(|e| KernelError::DecodeError(e))?;
-                Substate::KeyValueStoreEntry(substate)
+                RuntimeSubstate::KeyValueStoreEntry(substate)
             }
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)) => {
                 let substate = scrypto_decode(buffer).map_err(|e| KernelError::DecodeError(e))?;
-                Substate::NonFungible(substate)
+                RuntimeSubstate::NonFungible(substate)
             }
             offset => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
@@ -50,49 +142,51 @@ impl Substate {
 
     pub fn to_ref_mut(&mut self) -> RawSubstateRefMut {
         match self {
-            Substate::GlobalRENode(value) => RawSubstateRefMut::Global(value),
-            Substate::System(value) => RawSubstateRefMut::System(value),
-            Substate::ResourceManager(value) => RawSubstateRefMut::ResourceManager(value),
-            Substate::ComponentInfo(value) => RawSubstateRefMut::ComponentInfo(value),
-            Substate::ComponentState(value) => RawSubstateRefMut::ComponentState(value),
-            Substate::Package(value) => RawSubstateRefMut::Package(value),
-            Substate::Vault(value) => RawSubstateRefMut::Vault(value),
-            Substate::NonFungible(value) => RawSubstateRefMut::NonFungible(value),
-            Substate::KeyValueStoreEntry(value) => RawSubstateRefMut::KeyValueStoreEntry(value),
+            RuntimeSubstate::GlobalRENode(value) => RawSubstateRefMut::Global(value),
+            RuntimeSubstate::System(value) => RawSubstateRefMut::System(value),
+            RuntimeSubstate::ResourceManager(value) => RawSubstateRefMut::ResourceManager(value),
+            RuntimeSubstate::ComponentInfo(value) => RawSubstateRefMut::ComponentInfo(value),
+            RuntimeSubstate::ComponentState(value) => RawSubstateRefMut::ComponentState(value),
+            RuntimeSubstate::Package(value) => RawSubstateRefMut::Package(value),
+            RuntimeSubstate::Vault(value) => RawSubstateRefMut::Vault(value),
+            RuntimeSubstate::NonFungible(value) => RawSubstateRefMut::NonFungible(value),
+            RuntimeSubstate::KeyValueStoreEntry(value) => {
+                RawSubstateRefMut::KeyValueStoreEntry(value)
+            }
         }
     }
 
     pub fn to_ref(&self) -> SubstateRef {
         match self {
-            Substate::GlobalRENode(value) => SubstateRef::Global(value),
-            Substate::System(value) => SubstateRef::System(value),
-            Substate::ResourceManager(value) => SubstateRef::ResourceManager(value),
-            Substate::ComponentInfo(value) => SubstateRef::ComponentInfo(value),
-            Substate::ComponentState(value) => SubstateRef::ComponentState(value),
-            Substate::Package(value) => SubstateRef::Package(value),
-            Substate::Vault(value) => SubstateRef::Vault(value),
-            Substate::NonFungible(value) => SubstateRef::NonFungible(value),
-            Substate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
+            RuntimeSubstate::GlobalRENode(value) => SubstateRef::Global(value),
+            RuntimeSubstate::System(value) => SubstateRef::System(value),
+            RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
+            RuntimeSubstate::ComponentInfo(value) => SubstateRef::ComponentInfo(value),
+            RuntimeSubstate::ComponentState(value) => SubstateRef::ComponentState(value),
+            RuntimeSubstate::Package(value) => SubstateRef::Package(value),
+            RuntimeSubstate::Vault(value) => SubstateRef::Vault(value),
+            RuntimeSubstate::NonFungible(value) => SubstateRef::NonFungible(value),
+            RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
         }
     }
 
     pub fn global_re_node(&self) -> &GlobalAddressSubstate {
-        if let Substate::GlobalRENode(global_re_node) = self {
+        if let RuntimeSubstate::GlobalRENode(global_re_node) = self {
             global_re_node
         } else {
             panic!("Not a global RENode");
         }
     }
 
-    pub fn vault(&self) -> &VaultSubstate {
-        if let Substate::Vault(vault) = self {
+    pub fn vault(&self) -> &VaultRuntimeSubstate {
+        if let RuntimeSubstate::Vault(vault) = self {
             vault
         } else {
             panic!("Not a vault");
         }
     }
-    pub fn vault_mut(&mut self) -> &mut VaultSubstate {
-        if let Substate::Vault(vault) = self {
+    pub fn vault_mut(&mut self) -> &mut VaultRuntimeSubstate {
+        if let RuntimeSubstate::Vault(vault) = self {
             vault
         } else {
             panic!("Not a vault");
@@ -100,7 +194,7 @@ impl Substate {
     }
 
     pub fn package(&self) -> &PackageSubstate {
-        if let Substate::Package(package) = self {
+        if let RuntimeSubstate::Package(package) = self {
             package
         } else {
             panic!("Not a package");
@@ -108,7 +202,7 @@ impl Substate {
     }
 
     pub fn non_fungible(&self) -> &NonFungibleSubstate {
-        if let Substate::NonFungible(non_fungible) = self {
+        if let RuntimeSubstate::NonFungible(non_fungible) = self {
             non_fungible
         } else {
             panic!("Not a NonFungible");
@@ -116,7 +210,7 @@ impl Substate {
     }
 
     pub fn kv_store_entry(&self) -> &KeyValueStoreEntrySubstate {
-        if let Substate::KeyValueStoreEntry(kv_store_entry) = self {
+        if let RuntimeSubstate::KeyValueStoreEntry(kv_store_entry) = self {
             kv_store_entry
         } else {
             panic!("Not a KVEntry");
@@ -124,57 +218,57 @@ impl Substate {
     }
 }
 
-impl Into<Substate> for SystemSubstate {
-    fn into(self) -> Substate {
-        Substate::System(self)
+impl Into<RuntimeSubstate> for SystemSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::System(self)
     }
 }
 
-impl Into<Substate> for PackageSubstate {
-    fn into(self) -> Substate {
-        Substate::Package(self)
+impl Into<RuntimeSubstate> for PackageSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::Package(self)
     }
 }
 
-impl Into<Substate> for ComponentInfoSubstate {
-    fn into(self) -> Substate {
-        Substate::ComponentInfo(self)
+impl Into<RuntimeSubstate> for ComponentInfoSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::ComponentInfo(self)
     }
 }
 
-impl Into<Substate> for ComponentStateSubstate {
-    fn into(self) -> Substate {
-        Substate::ComponentState(self)
+impl Into<RuntimeSubstate> for ComponentStateSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::ComponentState(self)
     }
 }
 
-impl Into<Substate> for ResourceManagerSubstate {
-    fn into(self) -> Substate {
-        Substate::ResourceManager(self)
+impl Into<RuntimeSubstate> for ResourceManagerSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::ResourceManager(self)
     }
 }
 
-impl Into<Substate> for VaultSubstate {
-    fn into(self) -> Substate {
-        Substate::Vault(self)
+impl Into<RuntimeSubstate> for VaultRuntimeSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::Vault(self)
     }
 }
 
-impl Into<Substate> for NonFungibleSubstate {
-    fn into(self) -> Substate {
-        Substate::NonFungible(self)
+impl Into<RuntimeSubstate> for NonFungibleSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::NonFungible(self)
     }
 }
 
-impl Into<Substate> for KeyValueStoreEntrySubstate {
-    fn into(self) -> Substate {
-        Substate::KeyValueStoreEntry(self)
+impl Into<RuntimeSubstate> for KeyValueStoreEntrySubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::KeyValueStoreEntry(self)
     }
 }
 
-impl Into<ComponentInfoSubstate> for Substate {
+impl Into<ComponentInfoSubstate> for RuntimeSubstate {
     fn into(self) -> ComponentInfoSubstate {
-        if let Substate::ComponentInfo(component) = self {
+        if let RuntimeSubstate::ComponentInfo(component) = self {
             component
         } else {
             panic!("Not a component info");
@@ -182,9 +276,9 @@ impl Into<ComponentInfoSubstate> for Substate {
     }
 }
 
-impl Into<ComponentStateSubstate> for Substate {
+impl Into<ComponentStateSubstate> for RuntimeSubstate {
     fn into(self) -> ComponentStateSubstate {
-        if let Substate::ComponentState(component_state) = self {
+        if let RuntimeSubstate::ComponentState(component_state) = self {
             component_state
         } else {
             panic!("Not a component");
@@ -192,9 +286,9 @@ impl Into<ComponentStateSubstate> for Substate {
     }
 }
 
-impl Into<ResourceManagerSubstate> for Substate {
+impl Into<ResourceManagerSubstate> for RuntimeSubstate {
     fn into(self) -> ResourceManagerSubstate {
-        if let Substate::ResourceManager(resource_manager) = self {
+        if let RuntimeSubstate::ResourceManager(resource_manager) = self {
             resource_manager
         } else {
             panic!("Not a resource manager");
@@ -202,9 +296,9 @@ impl Into<ResourceManagerSubstate> for Substate {
     }
 }
 
-impl Into<PackageSubstate> for Substate {
+impl Into<PackageSubstate> for RuntimeSubstate {
     fn into(self) -> PackageSubstate {
-        if let Substate::Package(package) = self {
+        if let RuntimeSubstate::Package(package) = self {
             package
         } else {
             panic!("Not a resource manager");
@@ -212,9 +306,9 @@ impl Into<PackageSubstate> for Substate {
     }
 }
 
-impl Into<NonFungibleSubstate> for Substate {
+impl Into<NonFungibleSubstate> for RuntimeSubstate {
     fn into(self) -> NonFungibleSubstate {
-        if let Substate::NonFungible(non_fungible) = self {
+        if let RuntimeSubstate::NonFungible(non_fungible) = self {
             non_fungible
         } else {
             panic!("Not a non-fungible wrapper");
@@ -222,9 +316,9 @@ impl Into<NonFungibleSubstate> for Substate {
     }
 }
 
-impl Into<KeyValueStoreEntrySubstate> for Substate {
+impl Into<KeyValueStoreEntrySubstate> for RuntimeSubstate {
     fn into(self) -> KeyValueStoreEntrySubstate {
-        if let Substate::KeyValueStoreEntry(kv_store_entry) = self {
+        if let RuntimeSubstate::KeyValueStoreEntry(kv_store_entry) = self {
             kv_store_entry
         } else {
             panic!("Not a key value store entry wrapper");
@@ -232,9 +326,9 @@ impl Into<KeyValueStoreEntrySubstate> for Substate {
     }
 }
 
-impl Into<VaultSubstate> for Substate {
-    fn into(self) -> VaultSubstate {
-        if let Substate::Vault(vault) = self {
+impl Into<VaultRuntimeSubstate> for RuntimeSubstate {
+    fn into(self) -> VaultRuntimeSubstate {
+        if let RuntimeSubstate::Vault(vault) = self {
             vault
         } else {
             panic!("Not a vault");
@@ -242,9 +336,9 @@ impl Into<VaultSubstate> for Substate {
     }
 }
 
-impl Into<SystemSubstate> for Substate {
+impl Into<SystemSubstate> for RuntimeSubstate {
     fn into(self) -> SystemSubstate {
-        if let Substate::System(system) = self {
+        if let RuntimeSubstate::System(system) = self {
             system
         } else {
             panic!("Not a resource manager");
@@ -252,9 +346,9 @@ impl Into<SystemSubstate> for Substate {
     }
 }
 
-impl Into<GlobalAddressSubstate> for Substate {
+impl Into<GlobalAddressSubstate> for RuntimeSubstate {
     fn into(self) -> GlobalAddressSubstate {
-        if let Substate::GlobalRENode(substate) = self {
+        if let RuntimeSubstate::GlobalRENode(substate) = self {
             substate
         } else {
             panic!("Not a global address substate");
@@ -263,12 +357,16 @@ impl Into<GlobalAddressSubstate> for Substate {
 }
 
 pub enum SubstateRef<'a> {
+    AuthZone(&'a AuthZoneSubstate),
+    Worktop(&'a WorktopSubstate),
+    Proof(&'a ProofSubstate),
+    Bucket(&'a BucketSubstate),
     ComponentInfo(&'a ComponentInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
     NonFungible(&'a NonFungibleSubstate),
     KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
     Package(&'a PackageSubstate),
-    Vault(&'a VaultSubstate),
+    Vault(&'a VaultRuntimeSubstate),
     ResourceManager(&'a ResourceManagerSubstate),
     System(&'a SystemSubstate),
     Global(&'a GlobalAddressSubstate),
@@ -283,9 +381,9 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::ComponentInfo(value) => ScryptoValue::from_typed(*value),
             SubstateRef::ComponentState(value) => ScryptoValue::from_typed(*value),
             SubstateRef::Package(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::Vault(value) => ScryptoValue::from_typed(*value),
             SubstateRef::NonFungible(value) => ScryptoValue::from_typed(*value),
             SubstateRef::KeyValueStoreEntry(value) => ScryptoValue::from_typed(*value),
+            _ => panic!("Unsupported scrypto value"),
         }
     }
 
@@ -317,6 +415,41 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn proof(&self) -> &ProofSubstate {
+        match self {
+            SubstateRef::Proof(value) => *value,
+            _ => panic!("Not a proof"),
+        }
+    }
+
+    pub fn auth_zone(&self) -> &AuthZoneSubstate {
+        match self {
+            SubstateRef::AuthZone(value) => *value,
+            _ => panic!("Not an authzone"),
+        }
+    }
+
+    pub fn worktop(&self) -> &WorktopSubstate {
+        match self {
+            SubstateRef::Worktop(value) => *value,
+            _ => panic!("Not a worktop"),
+        }
+    }
+
+    pub fn bucket(&self) -> &BucketSubstate {
+        match self {
+            SubstateRef::Bucket(value) => *value,
+            _ => panic!("Not a bucket"),
+        }
+    }
+
+    pub fn vault(&self) -> &VaultRuntimeSubstate {
+        match self {
+            SubstateRef::Vault(value) => *value,
+            _ => panic!("Not a vault"),
+        }
+    }
+
     pub fn resource_manager(&self) -> &ResourceManagerSubstate {
         match self {
             SubstateRef::ResourceManager(value) => *value,
@@ -340,6 +473,21 @@ impl<'a> SubstateRef<'a> {
 
     pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
         match self {
+            SubstateRef::Vault(vault) => {
+                let mut references = HashSet::new();
+                references.insert(GlobalAddress::Resource(vault.resource_address()));
+                (references, HashSet::new())
+            }
+            SubstateRef::Proof(proof) => {
+                let mut references = HashSet::new();
+                references.insert(GlobalAddress::Resource(proof.resource_address()));
+                (references, HashSet::new())
+            }
+            SubstateRef::Bucket(bucket) => {
+                let mut references = HashSet::new();
+                references.insert(GlobalAddress::Resource(bucket.resource_address()));
+                (references, HashSet::new())
+            }
             SubstateRef::ComponentInfo(substate) => {
                 let mut references = HashSet::new();
                 references.insert(GlobalAddress::Package(substate.package_address));
@@ -550,13 +698,45 @@ pub enum RawSubstateRefMut<'a> {
     NonFungible(&'a mut NonFungibleSubstate),
     KeyValueStoreEntry(&'a mut KeyValueStoreEntrySubstate),
     Package(&'a mut PackageSubstate),
-    Vault(&'a mut VaultSubstate),
+    Vault(&'a mut VaultRuntimeSubstate),
     ResourceManager(&'a mut ResourceManagerSubstate),
     System(&'a mut SystemSubstate),
     Global(&'a mut GlobalAddressSubstate),
+    Bucket(&'a mut BucketSubstate),
+    Proof(&'a mut ProofSubstate),
+    Worktop(&'a mut WorktopSubstate),
+    AuthZone(&'a mut AuthZoneSubstate),
 }
 
 impl<'a> RawSubstateRefMut<'a> {
+    pub fn auth_zone(&mut self) -> &mut AuthZoneSubstate {
+        match self {
+            RawSubstateRefMut::AuthZone(value) => *value,
+            _ => panic!("Not an authzone"),
+        }
+    }
+
+    pub fn worktop(&mut self) -> &mut WorktopSubstate {
+        match self {
+            RawSubstateRefMut::Worktop(value) => *value,
+            _ => panic!("Not a worktop"),
+        }
+    }
+
+    pub fn vault(&mut self) -> &mut VaultRuntimeSubstate {
+        match self {
+            RawSubstateRefMut::Vault(value) => *value,
+            _ => panic!("Not a vault"),
+        }
+    }
+
+    pub fn bucket(&mut self) -> &mut BucketSubstate {
+        match self {
+            RawSubstateRefMut::Bucket(value) => *value,
+            _ => panic!("Not a bucket"),
+        }
+    }
+
     pub fn non_fungible(&mut self) -> &mut NonFungibleSubstate {
         match self {
             RawSubstateRefMut::NonFungible(value) => *value,
@@ -601,6 +781,7 @@ impl<'a> RawSubstateRefMut<'a> {
 
     fn to_ref(&self) -> SubstateRef {
         match self {
+            RawSubstateRefMut::Bucket(value) => SubstateRef::Bucket(value),
             RawSubstateRefMut::Global(value) => SubstateRef::Global(value),
             RawSubstateRefMut::System(value) => SubstateRef::System(value),
             RawSubstateRefMut::ResourceManager(value) => SubstateRef::ResourceManager(value),
@@ -610,6 +791,9 @@ impl<'a> RawSubstateRefMut<'a> {
             RawSubstateRefMut::Vault(value) => SubstateRef::Vault(value),
             RawSubstateRefMut::NonFungible(value) => SubstateRef::NonFungible(value),
             RawSubstateRefMut::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
+            RawSubstateRefMut::Proof(value) => SubstateRef::Proof(value),
+            RawSubstateRefMut::Worktop(value) => SubstateRef::Worktop(value),
+            RawSubstateRefMut::AuthZone(value) => SubstateRef::AuthZone(value),
         }
     }
 }

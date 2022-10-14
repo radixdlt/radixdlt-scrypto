@@ -107,13 +107,19 @@ where
         for (resource_address, non_fungible_ids) in proofs_to_create {
             let bucket_id =
                 kernel.create_non_fungible_bucket_with_ids(resource_address, non_fungible_ids);
-            let mut node_ref = kernel
-                .borrow_node_mut(&RENodeId::Bucket(bucket_id))
-                .expect("Failed to borrow bucket node");
-            let bucket = node_ref.bucket_mut();
-            let proof = bucket
+
+            let node_id = RENodeId::Bucket(bucket_id);
+            let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
+            let handle = kernel
+                .lock_substate(node_id, offset, LockFlags::MUTABLE)
+                .unwrap();
+            let mut substate_mut = kernel.get_ref_mut(handle).unwrap();
+            let mut raw_mut = substate_mut.get_raw_mut();
+            let proof = raw_mut
+                .bucket()
                 .create_proof(bucket_id)
                 .expect("Failed to create proof");
+            substate_mut.flush().unwrap();
             proofs.push(proof);
         }
 
@@ -125,7 +131,7 @@ where
             virtual_proofs_buckets.insert(resource_address, bucket_id);
         }
 
-        let auth_zone = AuthZone::new_with_proofs(proofs, virtual_proofs_buckets);
+        let auth_zone = AuthZoneSubstate::new_with_proofs(proofs, virtual_proofs_buckets);
 
         kernel
             .node_create(HeapRENode::AuthZone(auth_zone))
@@ -140,10 +146,9 @@ where
         ids: BTreeSet<NonFungibleId>,
     ) -> BucketId {
         match self
-            .node_create(HeapRENode::Bucket(Bucket::new(Resource::new_non_fungible(
-                resource_address,
-                ids,
-            ))))
+            .node_create(HeapRENode::Bucket(BucketSubstate::new(
+                Resource::new_non_fungible(resource_address, ids),
+            )))
             .expect("Failed to create a bucket")
         {
             RENodeId::Bucket(bucket_id) => bucket_id,
@@ -298,6 +303,7 @@ where
 
         // Copy-over root frame's auth zone virtual_proofs_buckets
         // TODO: Clean this up at some point (possible move to auth zone?)
+        // TODO: Move to a better spot
         let root_frame = self
             .call_frames
             .first()
@@ -305,9 +311,7 @@ where
         let virtual_proofs_buckets = AuthModule::get_auth_zone(root_frame)
             .virtual_proofs_buckets
             .clone();
-
-        // TODO: Move to a better spot
-        self.node_create(HeapRENode::AuthZone(AuthZone::new_with_proofs(
+        self.node_create(HeapRENode::AuthZone(AuthZoneSubstate::new_with_proofs(
             vec![],
             virtual_proofs_buckets,
         )))?;
@@ -566,16 +570,22 @@ where
         mut next_owned_values: HashMap<RENodeId, HeapRootRENode>,
         mut next_frame_node_refs: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        let mut locked_pointers = Vec::new();
-
         // Authorization and state load
-        let re_actor = {
-            let mut node_id = method_ident.receiver.node_id();
-            let mut node_pointer =
-                Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
+        let mut node_id = method_ident.receiver.node_id();
+        let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
-            // Deref
-            if let Receiver::Ref(..) = method_ident.receiver {
+        match method_ident.receiver {
+            Receiver::Consumed(..) => {
+                let heap_node = Self::current_frame_mut(&mut self.call_frames)
+                    .owned_heap_nodes
+                    .remove(&node_id)
+                    .ok_or(RuntimeError::KernelError(
+                        KernelError::InvokeMethodInvalidReceiver(node_id),
+                    ))?;
+                next_owned_values.insert(node_id, heap_node);
+            }
+            Receiver::Ref(..) => {
+                // Deref
                 if let Some(derefed) =
                     node_pointer.node_deref(&mut self.call_frames, &mut self.track)?
                 {
@@ -586,162 +596,67 @@ where
                         method_ident: method_ident.method_ident,
                     }
                 }
+                next_frame_node_refs.insert(node_id, node_pointer);
             }
+        }
 
-            // Load actor
-            let re_actor = match &method_ident {
-                ReceiverMethodIdent {
-                    method_ident: MethodIdent::Scrypto(ident),
-                    receiver,
-                } => match node_id {
-                    RENodeId::Component(..) => {
-                        let offset = SubstateOffset::Component(ComponentOffset::Info);
-                        node_pointer
-                            .acquire_lock(offset.clone(), LockFlags::read_only(), &mut self.track)
-                            .map_err(RuntimeError::KernelError)?;
+        // Load actor
+        let re_actor = match &method_ident {
+            ReceiverMethodIdent {
+                method_ident: MethodIdent::Scrypto(ident),
+                receiver,
+            } => match node_id {
+                RENodeId::Component(..) => {
+                    let offset = SubstateOffset::Component(ComponentOffset::Info);
+                    node_pointer
+                        .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
+                        .map_err(RuntimeError::KernelError)?;
 
-                        let substate_ref = node_pointer.borrow_substate(
-                            &offset,
-                            &mut self.call_frames,
-                            &mut self.track,
-                        )?;
-                        let info = substate_ref.component_info();
-                        let actor = REActor::Method(FullyQualifiedReceiverMethod {
-                            receiver: receiver.clone(),
-                            method: FullyQualifiedMethod::Scrypto {
-                                package_address: info.package_address.clone(),
-                                blueprint_name: info.blueprint_name.clone(),
-                                ident: ident.to_string(),
-                            },
-                        });
-                        node_pointer
-                            .release_lock(offset, false, &mut self.track)
-                            .map_err(RuntimeError::KernelError)?;
+                    let substate_ref = node_pointer.borrow_substate(
+                        &offset,
+                        &mut self.call_frames,
+                        &mut self.track,
+                    )?;
+                    let info = substate_ref.component_info();
+                    let actor = REActor::Method(FullyQualifiedReceiverMethod {
+                        receiver: receiver.clone(),
+                        method: FullyQualifiedMethod::Scrypto {
+                            package_address: info.package_address.clone(),
+                            blueprint_name: info.blueprint_name.clone(),
+                            ident: ident.to_string(),
+                        },
+                    });
+                    node_pointer
+                        .release_lock(offset, false, &mut self.track)
+                        .map_err(RuntimeError::KernelError)?;
 
-                        actor
-                    }
-                    _ => panic!("Should not get here."),
-                },
-                ReceiverMethodIdent {
-                    method_ident: MethodIdent::Native(native_fn),
-                    receiver,
-                } => REActor::Method(FullyQualifiedReceiverMethod {
-                    receiver: receiver.clone(),
-                    method: FullyQualifiedMethod::Native(native_fn.clone()),
-                }),
-            };
-
-            // TODO: Check Component ABI here rather than in auth
-            match node_id {
-                RENodeId::Proof(..) => {
-                    let resource_address = {
-                        let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                        node_ref.proof().resource_address()
-                    };
-                    let global_resource_node_id =
-                        RENodeId::Global(GlobalAddress::Resource(resource_address));
-                    next_frame_node_refs.insert(
-                        global_resource_node_id,
-                        RENodePointer::Store(global_resource_node_id),
-                    );
+                    actor
                 }
-                RENodeId::Bucket(..) => {
-                    let resource_address = {
-                        let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                        node_ref.bucket().resource_address()
-                    };
-
-                    let global_resource_node_id =
-                        RENodeId::Global(GlobalAddress::Resource(resource_address));
-                    next_frame_node_refs.insert(
-                        global_resource_node_id,
-                        RENodePointer::Store(global_resource_node_id),
-                    );
-
-                    let resource_node_id = RENodeId::ResourceManager(resource_address);
-                    let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                    next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
-                }
-                RENodeId::Vault(..) => {
-                    if let MethodIdent::Native(NativeMethod::Vault(vault_method)) =
-                        method_ident.method_ident
-                    {
-                        let flags = match vault_method {
-                            VaultMethod::Take => LockFlags::MUTABLE,
-                            VaultMethod::LockFee | VaultMethod::LockContingentFee => {
-                                LockFlags::MUTABLE
-                                    | LockFlags::UNMODIFIED_BASE
-                                    | LockFlags::FORCE_WRITE
-                            }
-                            VaultMethod::Put => LockFlags::MUTABLE,
-                            VaultMethod::TakeNonFungibles => LockFlags::MUTABLE,
-                            VaultMethod::GetAmount => LockFlags::read_only(),
-                            VaultMethod::GetResourceAddress => LockFlags::read_only(),
-                            VaultMethod::GetNonFungibleIds => LockFlags::read_only(),
-                            VaultMethod::CreateProof => LockFlags::MUTABLE,
-                            VaultMethod::CreateProofByAmount => LockFlags::MUTABLE,
-                            VaultMethod::CreateProofByIds => LockFlags::MUTABLE,
-                        };
-
-                        let offset = SubstateOffset::Vault(VaultOffset::Vault);
-                        node_pointer
-                            .acquire_lock(offset.clone(), flags, &mut self.track)
-                            .map_err(RuntimeError::KernelError)?;
-                        locked_pointers.push((
-                            node_pointer,
-                            offset.clone(),
-                            flags.contains(LockFlags::FORCE_WRITE),
-                        ));
-
-                        let resource_address = {
-                            let mut node_ref =
-                                node_pointer.to_ref(&self.call_frames, &mut self.track);
-                            node_ref.vault().resource_address()
-                        };
-                        let global_resource_node_id =
-                            RENodeId::Global(GlobalAddress::Resource(resource_address));
-                        next_frame_node_refs.insert(
-                            global_resource_node_id,
-                            RENodePointer::Store(global_resource_node_id),
-                        );
-
-                        let resource_node_id = RENodeId::ResourceManager(resource_address);
-                        let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                        next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
-                    }
-                }
-                _ => {}
-            }
-
-            // Check method authorization
-            AuthModule::receiver_auth(
-                method_ident.clone(),
-                &input,
-                node_pointer.clone(),
-                &mut self.call_frames,
-                &mut self.track,
-            )
-            .map_err(|e| match e {
-                InvokeError::Error(e) => RuntimeError::ModuleError(ModuleError::AuthError(e)),
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            })?;
-
-            match &method_ident.receiver {
-                Receiver::Consumed(..) => {
-                    let heap_node = Self::current_frame_mut(&mut self.call_frames)
-                        .owned_heap_nodes
-                        .remove(&node_id)
-                        .ok_or(RuntimeError::KernelError(
-                            KernelError::InvokeMethodInvalidReceiver(node_id),
-                        ))?;
-                    next_owned_values.insert(node_id, heap_node);
-                }
-                _ => {}
-            }
-
-            next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());
-            re_actor
+                _ => panic!("Should not get here."),
+            },
+            ReceiverMethodIdent {
+                method_ident: MethodIdent::Native(native_fn),
+                receiver,
+            } => REActor::Method(FullyQualifiedReceiverMethod {
+                receiver: receiver.clone(),
+                method: FullyQualifiedMethod::Native(native_fn.clone()),
+            }),
         };
+
+        // TODO: Check Component ABI here rather than in auth
+
+        // Check method authorization
+        AuthModule::receiver_auth(
+            method_ident.clone(),
+            &input,
+            node_pointer.clone(),
+            &mut self.call_frames,
+            &mut self.track,
+        )
+        .map_err(|e| match e {
+            InvokeError::Error(e) => RuntimeError::ModuleError(ModuleError::AuthError(e)),
+            InvokeError::Downstream(runtime_error) => runtime_error,
+        })?;
 
         // start a new frame
         let frame = CallFrame::new_child(
@@ -751,14 +666,6 @@ where
             next_frame_node_refs,
         );
         let (output, received_values) = self.run(frame, input)?;
-
-        // Release locked addresses
-        for (node_pointer, offset, force_write) in locked_pointers {
-            // TODO: refactor after introducing `Lock` representation.
-            node_pointer
-                .release_lock(offset, force_write, &mut self.track)
-                .map_err(RuntimeError::KernelError)?;
-        }
 
         Ok((output, received_values))
     }
@@ -973,75 +880,6 @@ where
         Ok(output)
     }
 
-    fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's, R>, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallInput::BorrowNode { node_id: node_id },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        let current_frame = Self::current_frame(&self.call_frames);
-        let mut node_pointer = current_frame.get_node_pointer(*node_id)?;
-
-        // Deref
-        if let Some(derefed) = node_pointer.node_deref(&mut self.call_frames, &mut self.track)? {
-            node_pointer = derefed;
-        }
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallOutput::BorrowNode {
-                    // Can't return the NodeRef due to borrow checks on `call_frames`
-                    node_pointer: &node_pointer,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(node_pointer.to_ref(&self.call_frames, &mut self.track))
-    }
-
-    fn borrow_node_mut(
-        &mut self,
-        node_id: &RENodeId,
-    ) -> Result<RENodeRefMut<'_, 's, R>, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallInput::BorrowNode { node_id: node_id },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        let current_frame = Self::current_frame(&self.call_frames);
-        let mut node_pointer = current_frame.get_node_pointer(*node_id)?;
-
-        // Deref
-        if let Some(derefed) = node_pointer.node_deref(&mut self.call_frames, &mut self.track)? {
-            node_pointer = derefed;
-        }
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallOutput::BorrowNode {
-                    // Can't return the NodeRef due to borrow checks on `call_frames`
-                    node_pointer: &node_pointer,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track))
-    }
-
     fn get_owned_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
@@ -1163,15 +1001,15 @@ where
             &node.root,
         )?;
         self.track.new_global_addresses.push(global_address);
-        self.track.put_substate(
+        self.track.insert_substate(
             SubstateId(
                 RENodeId::Global(global_address),
                 SubstateOffset::Global(GlobalOffset::Global),
             ),
-            Substate::GlobalRENode(global_substate),
+            RuntimeSubstate::GlobalRENode(global_substate),
         );
         for (id, substate) in nodes_to_substates(node.to_nodes(node_id)) {
-            self.track.put_substate(id, substate);
+            self.track.insert_substate(id, substate);
         }
 
         Self::current_frame_mut(&mut self.call_frames)

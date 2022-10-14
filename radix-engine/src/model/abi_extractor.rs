@@ -10,12 +10,12 @@ pub fn export_abi<S: ReadableSubstateStore>(
     package_address: PackageAddress,
     blueprint_name: &str,
 ) -> Result<abi::BlueprintAbi, RuntimeError> {
-    let package_value: Substate = substate_store
+    let package_value: RuntimeSubstate = substate_store
         .get_substate(&SubstateId(
             RENodeId::Package(package_address),
             SubstateOffset::Package(PackageOffset::Package),
         ))
-        .map(|s| s.substate)
+        .map(|s| s.substate.to_runtime())
         .ok_or(RuntimeError::KernelError(KernelError::PackageNotFound(
             package_address,
         )))?;
@@ -42,18 +42,18 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
             node_id,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
-        .map(|s| s.substate)
+        .map(|s| s.substate.to_runtime())
         .ok_or(RuntimeError::KernelError(KernelError::RENodeNotFound(
             node_id,
         )))?;
     let component_id = global.global_re_node().node_deref();
 
-    let component_value: Substate = substate_store
+    let component_value: RuntimeSubstate = substate_store
         .get_substate(&SubstateId(
             component_id,
             SubstateOffset::Component(ComponentOffset::Info),
         ))
-        .map(|s| s.substate)
+        .map(|s| s.substate.to_runtime())
         .ok_or(RuntimeError::KernelError(KernelError::RENodeNotFound(
             component_id,
         )))?;
