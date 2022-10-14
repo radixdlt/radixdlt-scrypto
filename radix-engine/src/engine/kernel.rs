@@ -278,9 +278,17 @@ where
 
     fn run(
         &mut self,
-        frame: CallFrame,
+        actor: REActor,
         input: ScryptoValue,
+        owned_nodes: HashMap<RENodeId, HeapRootRENode>,
+        refed_nodes: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
+        let frame = CallFrame::new_child(
+            Self::current_frame(&self.call_frames).depth + 1,
+            actor,
+            owned_nodes,
+            refed_nodes,
+        );
         self.call_frames.push(frame);
 
         //  Verify Auth
@@ -672,77 +680,6 @@ where
 
         Ok(re_actor)
     }
-
-    fn invoke_function(
-        &mut self,
-        function_ident: FunctionIdent,
-        input: ScryptoValue,
-        next_owned_values: HashMap<RENodeId, HeapRootRENode>,
-        next_frame_node_refs: HashMap<RENodeId, RENodePointer>,
-    ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        let actor = self.load_actor(FnIdent::Function(function_ident), &input)?;
-
-        // start a new frame and run
-        let frame = CallFrame::new_child(
-            Self::current_frame(&self.call_frames).depth + 1,
-            actor,
-            next_owned_values,
-            next_frame_node_refs,
-        );
-
-        let (output, received_values) = self.run(frame, input)?;
-
-        Ok((output, received_values))
-    }
-
-    fn invoke_method(
-        &mut self,
-        mut method_ident: ReceiverMethodIdent,
-        input: ScryptoValue,
-        mut owned_nodes: HashMap<RENodeId, HeapRootRENode>,
-        mut refed_nodes: HashMap<RENodeId, RENodePointer>,
-    ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        // Authorization and state load
-        let mut node_id = method_ident.receiver.node_id();
-
-        match method_ident.receiver {
-            Receiver::Consumed(..) => {
-                let heap_node = Self::current_frame_mut(&mut self.call_frames)
-                    .owned_heap_nodes
-                    .remove(&node_id)
-                    .ok_or(RuntimeError::KernelError(
-                        KernelError::InvokeMethodInvalidReceiver(node_id),
-                    ))?;
-                owned_nodes.insert(node_id, heap_node);
-            }
-            Receiver::Ref(..) => {
-                // Deref
-                if let Some(derefed) = self.node_method_deref(node_id)? {
-                    node_id = derefed;
-                    method_ident = ReceiverMethodIdent {
-                        receiver: Receiver::Ref(node_id),
-                        method_ident: method_ident.method_ident,
-                    }
-                }
-                let node_pointer =
-                    Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
-                refed_nodes.insert(node_id, node_pointer);
-            }
-        }
-
-        let actor = self.load_actor(FnIdent::Method(method_ident), &input)?;
-
-        let frame = CallFrame::new_child(
-            Self::current_frame(&self.call_frames).depth + 1,
-            actor,
-            owned_nodes,
-            refed_nodes,
-        );
-
-        let (output, received_values) = self.run(frame, input)?;
-
-        Ok((output, received_values))
-    }
 }
 
 impl<'g, 's, W, I, R> SystemApi<'s, W, I, R> for Kernel<'g, 's, W, I, R>
@@ -783,7 +720,7 @@ where
 
     fn invoke(
         &mut self,
-        fn_ident: FnIdent,
+        mut fn_ident: FnIdent,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
         let depth = Self::current_frame(&self.call_frames).depth;
@@ -808,8 +745,10 @@ where
             ));
         }
 
-        // Internal state update to taken values
         let mut nodes_to_pass = HashMap::new();
+        let mut next_node_refs = HashMap::new();
+
+        // Internal state update to taken values
         for node_id in input.node_ids() {
             let mut node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
             let root_node = node.root_mut();
@@ -817,7 +756,6 @@ where
             nodes_to_pass.insert(node_id, node);
         }
 
-        let mut next_node_refs = HashMap::new();
         // Move this into higher layer, e.g. transaction processor
         if Self::current_frame(&self.call_frames).depth == 0 {
             let mut static_refs = HashSet::new();
@@ -903,15 +841,33 @@ where
             }
         }
 
-        // TODO: Slowly unify these two
-        let (output, received_values) = match fn_ident {
-            FnIdent::Method(method_ident) => {
-                self.invoke_method(method_ident, input, nodes_to_pass, next_node_refs)?
+        if let FnIdent::Method(ReceiverMethodIdent { receiver, .. }) = &mut fn_ident {
+            match receiver {
+                Receiver::Consumed(node_id) => {
+                    let heap_node = Self::current_frame_mut(&mut self.call_frames)
+                        .owned_heap_nodes
+                        .remove(node_id)
+                        .ok_or(RuntimeError::KernelError(
+                            KernelError::InvokeMethodInvalidReceiver(*node_id),
+                        ))?;
+                    nodes_to_pass.insert(*node_id, heap_node);
+                }
+                Receiver::Ref(ref mut node_id) => {
+                    // Deref
+                    if let Some(derefed) = self.node_method_deref(*node_id)? {
+                        *node_id = derefed;
+                    }
+                    let node_pointer =
+                        Self::current_frame(&self.call_frames).get_node_pointer(*node_id)?;
+                    next_node_refs.insert(*node_id, node_pointer);
+                }
             }
-            FnIdent::Function(function_ident) => {
-                self.invoke_function(function_ident, input, nodes_to_pass, next_node_refs)?
-            }
-        };
+        }
+
+        let actor = self.load_actor(fn_ident, &input)?;
+
+        let (output, received_values) =
+            self.run(actor, input, nodes_to_pass, next_node_refs)?;
 
         // move re nodes to this process.
         for (id, value) in received_values {
