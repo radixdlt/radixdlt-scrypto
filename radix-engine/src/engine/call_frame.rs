@@ -113,9 +113,9 @@ impl CallFrame {
     pub fn new_root() -> Self {
         Self {
             depth: 0,
-            actor: REActor::Function(ResolvedFunction::Native(NativeFunction::TransactionProcessor(
-                TransactionProcessorFunction::Run,
-            ))),
+            actor: REActor::Function(ResolvedFunction::Native(
+                NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
+            )),
             node_refs: HashMap::new(),
             owned_heap_nodes: HashMap::new(),
             next_lock_handle: 0u32,

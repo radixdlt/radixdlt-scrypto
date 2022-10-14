@@ -325,7 +325,7 @@ where
                     package_address,
                     blueprint_name,
                     ident,
-                    export_name
+                    export_name,
                 })
                 | REActor::Method(ResolvedReceiverMethod {
                     method:
@@ -372,7 +372,7 @@ where
                                             blueprint_name.clone(),
                                         )
                                     }
-                                    _ => panic!("Should not get here.")
+                                    _ => panic!("Should not get here."),
                                 }
                             }
                             _ => ScryptoActor::blueprint(package_address, blueprint_name.clone()),
@@ -856,8 +856,7 @@ where
 
         let actor = self.load_actor(fn_ident, &input)?;
 
-        let (output, received_values) =
-            self.run(actor, input, nodes_to_pass, next_node_refs)?;
+        let (output, received_values) = self.run(actor, input, nodes_to_pass, next_node_refs)?;
 
         // move re nodes to this process.
         for (id, value) in received_values {

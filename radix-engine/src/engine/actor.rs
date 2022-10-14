@@ -1,5 +1,5 @@
-use scrypto::core::NativeFunction;
 use crate::types::*;
+use scrypto::core::NativeFunction;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum ResolvedMethod {
