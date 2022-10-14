@@ -155,6 +155,10 @@ impl CallFrame {
             .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))
     }
 
+    pub fn insert_owned_node(&mut self, id: RENodeId, node: HeapRootRENode) {
+        self.owned_heap_nodes.insert(id, node);
+    }
+
     pub fn take_node(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
         if self.node_lock_count.contains_key(&node_id) {
             return Err(RuntimeError::KernelError(KernelError::MovingLockedRENode(
@@ -197,5 +201,9 @@ impl CallFrame {
         };
 
         Ok(node_pointer)
+    }
+
+    pub fn get_owned_nodes(&self) -> Vec<RENodeId> {
+        self.owned_heap_nodes.keys().cloned().collect()
     }
 }

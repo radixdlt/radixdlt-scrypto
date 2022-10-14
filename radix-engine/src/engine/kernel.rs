@@ -735,15 +735,13 @@ where
             ));
         }
 
-        let mut nodes_to_pass = HashMap::new();
+        let mut nodes_to_pass_downstream = HashMap::new();
         let mut next_node_refs = HashMap::new();
 
         // Internal state update to taken values
         for node_id in input.node_ids() {
-            let mut node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
-            let root_node = node.root_mut();
-            root_node.prepare_move_downstream(node_id)?;
-            nodes_to_pass.insert(node_id, node);
+            let node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
+            nodes_to_pass_downstream.insert(node_id, node);
         }
 
         // Move this into higher layer, e.g. transaction processor
@@ -834,13 +832,9 @@ where
         if let FnIdent::Method(ReceiverMethodIdent { receiver, .. }) = &mut fn_ident {
             match receiver {
                 Receiver::Consumed(node_id) => {
-                    let heap_node = Self::current_frame_mut(&mut self.call_frames)
-                        .owned_heap_nodes
-                        .remove(node_id)
-                        .ok_or(RuntimeError::KernelError(
-                            KernelError::InvokeMethodInvalidReceiver(*node_id),
-                        ))?;
-                    nodes_to_pass.insert(*node_id, heap_node);
+                    let node =
+                        Self::current_frame_mut(&mut self.call_frames).take_node(*node_id)?;
+                    nodes_to_pass_downstream.insert(*node_id, node);
                 }
                 Receiver::Ref(ref mut node_id) => {
                     // Deref
@@ -854,15 +848,20 @@ where
             }
         }
 
-        let actor = self.load_actor(fn_ident, &input)?;
+        let next_actor = self.load_actor(fn_ident, &input)?;
+        let cur_actor = &Self::current_frame(&self.call_frames).actor;
 
-        let (output, received_values) = self.run(actor, input, nodes_to_pass, next_node_refs)?;
+        for (node_id, node) in &mut nodes_to_pass_downstream {
+            let root_node = node.root_mut();
+            root_node.prepare_move_downstream(*node_id, cur_actor, &next_actor)?;
+        }
+
+        let (output, received_values) =
+            self.run(next_actor, input, nodes_to_pass_downstream, next_node_refs)?;
 
         // move re nodes to this process.
-        for (id, value) in received_values {
-            Self::current_frame_mut(&mut self.call_frames)
-                .owned_heap_nodes
-                .insert(id, value);
+        for (id, node) in received_values {
+            Self::current_frame_mut(&mut self.call_frames).insert_owned_node(id, node);
         }
 
         // Accept global references
@@ -895,11 +894,8 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let node_ids = Self::current_frame_mut(&mut self.call_frames)
-            .owned_heap_nodes
-            .keys()
-            .cloned()
-            .collect();
+        let node_ids = Self::current_frame_mut(&mut self.call_frames).get_owned_nodes();
+
         Ok(node_ids)
     }
 
@@ -915,13 +911,7 @@ where
 
         // TODO: Authorization
 
-        let node = Self::current_frame_mut(&mut self.call_frames)
-            .owned_heap_nodes
-            .remove(&node_id)
-            .expect(&format!(
-                "Attempt to drop node {:?}, which is not owned by current frame",
-                node_id
-            )); // TODO: Assumption will break if auth is optional
+        let node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -971,9 +961,7 @@ where
             root: re_node,
             child_nodes,
         };
-        Self::current_frame_mut(&mut self.call_frames)
-            .owned_heap_nodes
-            .insert(node_id, heap_root_node);
+        Self::current_frame_mut(&mut self.call_frames).insert_owned_node(node_id, heap_root_node);
 
         for m in &mut self.modules {
             m.post_sys_call(

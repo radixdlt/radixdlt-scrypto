@@ -36,6 +36,19 @@ pub enum REActor {
 }
 
 impl REActor {
+    pub fn is_scrypto_or_transaction(&self) -> bool {
+        matches!(
+            self,
+            REActor::Method(ResolvedReceiverMethod {
+                method: ResolvedMethod::Scrypto { .. },
+                ..
+            }) | REActor::Function(ResolvedFunction::Scrypto { .. })
+                | REActor::Function(ResolvedFunction::Native(
+                    NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run)
+                ))
+        )
+    }
+
     pub fn is_substate_readable(&self, node_id: RENodeId, offset: SubstateOffset) -> bool {
         match self {
             REActor::Function(ResolvedFunction::Native(..))

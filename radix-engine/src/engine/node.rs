@@ -196,11 +196,13 @@ impl HeapRENode {
         }
     }
 
-    pub fn prepare_move_downstream(&mut self, self_node_id: RENodeId) -> Result<(), RuntimeError> {
+    pub fn prepare_move_downstream(
+        &mut self,
+        self_node_id: RENodeId,
+        from: &REActor,
+        to: &REActor,
+    ) -> Result<(), RuntimeError> {
         match self {
-            HeapRENode::AuthZone(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
             HeapRENode::Bucket(bucket) => {
                 if bucket.is_locked() {
                     Err(RuntimeError::KernelError(KernelError::CantMoveDownstream(
@@ -211,38 +213,38 @@ impl HeapRENode {
                 }
             }
             HeapRENode::Proof(proof) => {
-                if proof.is_restricted() {
-                    Err(RuntimeError::KernelError(KernelError::CantMoveDownstream(
-                        self_node_id,
-                    )))
+                // TODO: Not sure if this is the right abstraction
+                if let REActor::Method(ResolvedReceiverMethod {
+                    method: ResolvedMethod::Native(NativeMethod::Proof(..)),
+                    ..
+                }) = to
+                {
+                    return Ok(());
+                }
+
+                if from.is_scrypto_or_transaction() || to.is_scrypto_or_transaction() {
+                    if proof.is_restricted() {
+                        Err(RuntimeError::KernelError(KernelError::CantMoveDownstream(
+                            self_node_id,
+                        )))
+                    } else {
+                        proof.change_to_restricted();
+                        Ok(())
+                    }
                 } else {
-                    proof.change_to_restricted();
                     Ok(())
                 }
             }
             HeapRENode::Component(..) => Ok(()),
-            HeapRENode::ResourceManager(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
-            HeapRENode::KeyValueStore(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
-            HeapRENode::NonFungibleStore(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
-            HeapRENode::Vault(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
-            HeapRENode::Package(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
-            HeapRENode::Worktop(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
-            HeapRENode::System(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
-            HeapRENode::Global(..) => Err(RuntimeError::KernelError(
+            HeapRENode::AuthZone(..)
+            | HeapRENode::ResourceManager(..)
+            | HeapRENode::KeyValueStore(..)
+            | HeapRENode::NonFungibleStore(..)
+            | HeapRENode::Vault(..)
+            | HeapRENode::Package(..)
+            | HeapRENode::Worktop(..)
+            | HeapRENode::System(..)
+            | HeapRENode::Global(..) => Err(RuntimeError::KernelError(
                 KernelError::CantMoveDownstream(self_node_id),
             )),
         }
@@ -250,9 +252,6 @@ impl HeapRENode {
 
     pub fn prepare_move_upstream(&mut self, self_node_id: RENodeId) -> Result<(), RuntimeError> {
         match self {
-            HeapRENode::AuthZone(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveUpstream(self_node_id),
-            )),
             HeapRENode::Bucket(bucket) => {
                 if bucket.is_locked() {
                     Err(RuntimeError::KernelError(KernelError::CantMoveUpstream(
@@ -265,6 +264,9 @@ impl HeapRENode {
             HeapRENode::Proof(..) => Ok(()),
             HeapRENode::Component(..) => Ok(()),
             HeapRENode::Vault(..) => Ok(()),
+            HeapRENode::AuthZone(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
             HeapRENode::ResourceManager(..) => Err(RuntimeError::KernelError(
                 KernelError::CantMoveUpstream(self_node_id),
             )),
