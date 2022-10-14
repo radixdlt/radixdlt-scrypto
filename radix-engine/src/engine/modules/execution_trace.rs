@@ -158,7 +158,7 @@ impl ExecutionTraceModule {
 
             let frame = call_frames.last().expect("Current call frame not found");
 
-            if let Ok(tree) = frame.get_heap_node(RENodeId::Bucket(bucket_id)) {
+            if let Ok(tree) = frame.get_owned_heap_node(RENodeId::Bucket(bucket_id)) {
                 if let HeapRENode::Bucket(bucket_node) = &tree.root {
                     track.vault_ops.push((
                         actor.clone(),

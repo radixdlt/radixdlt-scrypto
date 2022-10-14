@@ -14,12 +14,6 @@ pub struct AuthZoneSubstate {
 
 impl AuthZoneSubstate {
     pub fn new_frame(&mut self, actor: &REActor) {
-        /*
-let virtual_proofs_buckets = AuthModule::get_auth_zone(root_frame)
-    .virtual_proofs_buckets
-    .clone();
- */
-
         if matches!(actor, REActor::Method(ResolvedReceiverMethod {
             method: ResolvedMethod::Native(NativeMethod::AuthZone(..)),
             ..

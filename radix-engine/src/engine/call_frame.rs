@@ -182,7 +182,7 @@ impl CallFrame {
         }
     }
 
-    pub fn get_heap_node_mut(
+    pub fn get_owned_heap_node_mut(
         &mut self,
         node_id: RENodeId,
     ) -> Result<&mut HeapRootRENode, RuntimeError> {
@@ -193,7 +193,7 @@ impl CallFrame {
             )))
     }
 
-    pub fn get_heap_node(&self, node_id: RENodeId) -> Result<&HeapRootRENode, RuntimeError> {
+    pub fn get_owned_heap_node(&self, node_id: RENodeId) -> Result<&HeapRootRENode, RuntimeError> {
         self.owned_heap_nodes
             .get(&node_id)
             .ok_or(RuntimeError::KernelError(KernelError::RENodeNotFound(
@@ -224,5 +224,13 @@ impl CallFrame {
 
     pub fn get_refed_nodes(&self) -> Vec<RENodeId> {
         self.node_refs.keys().cloned().collect()
+    }
+
+    pub fn find_ref<P>(&self, predicate: P) -> Option<&RENodeId>
+        where
+            P: FnMut(&&RENodeId) -> bool + Copy,
+    {
+        self.owned_heap_nodes.keys().find(predicate)
+            .or_else(|| self.node_refs.keys().find(predicate))
     }
 }

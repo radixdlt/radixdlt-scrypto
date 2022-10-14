@@ -291,39 +291,15 @@ where
         owned_nodes: HashMap<RENodeId, HeapRootRENode>,
         mut refed_nodes: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        //  Verify Auth
-        AuthModule::verify_auth(&actor, &input, &mut self.call_frames, &mut self.track).map_err(
+
+        let new_refed_nodes = AuthModule::on_new_frame(&actor, &input, &mut self.call_frames, &mut self.track).map_err(
             |e| match e {
                 InvokeError::Error(e) => RuntimeError::ModuleError(ModuleError::AuthError(e)),
                 InvokeError::Downstream(runtime_error) => runtime_error,
             },
         )?;
 
-        // Copy-over root frame's auth zone virtual_proofs_buckets
-        // TODO: Clean this up at some point (move to AuthModule)
-        // TODO: Move to a better spot
-        let root_frame = self
-            .call_frames
-            .first_mut()
-            .expect("Failed to get a root frame");
-
-        let (node_id, node) = root_frame
-            .owned_heap_nodes.iter_mut()
-            .find(|e| {
-                matches!(
-                    e,
-                    (RENodeId::AuthZone(..), _)
-                )
-            })
-            .expect("Could not find auth zone");
-
-        node.root.auth_zone_mut().new_frame(&actor);
-
-        refed_nodes.insert(*node_id, RENodePointer::Heap {
-            frame_id: 0,
-            root: *node_id,
-            id: None,
-        });
+        refed_nodes.extend(new_refed_nodes);
 
         let frame = CallFrame::new_child(
             Self::current_frame(&self.call_frames).depth + 1,
