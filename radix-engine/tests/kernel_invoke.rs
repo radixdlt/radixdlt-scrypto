@@ -1,4 +1,4 @@
-use radix_engine::engine::{KernelError, RuntimeError};
+use radix_engine::engine::{InterpreterError, RuntimeError, ScryptoActorError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
@@ -28,12 +28,13 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidFnIdent(FnIdent::Method(
-                ReceiverMethodIdent {
+            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoActor(
+                FnIdent::Method(ReceiverMethodIdent {
                     receiver: Receiver::Ref(RENodeId::Vault(..)),
                     method_ident: MethodIdent::Scrypto(..),
-                }
-            )))
+                }),
+                ScryptoActorError::InvalidReceiver
+            ))
         )
     });
 }

@@ -20,10 +20,6 @@ macro_rules! trace {
     };
 }
 
-enum ScryptoActorError {
-    Invalid,
-}
-
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
     's, // Substate store lifetime
@@ -542,17 +538,18 @@ where
         let package = substate_ref.package();
         let abi = package
             .blueprint_abi(&blueprint_name)
-            .expect("Blueprint not found for existing component");
+            .ok_or(InvokeError::Error(ScryptoActorError::BlueprintNotFound))?;
+
         let fn_abi = abi
             .get_fn_abi(&ident)
-            .ok_or(InvokeError::Error(ScryptoActorError::Invalid))?;
-
-        if !fn_abi.input.matches(&input.dom) {
-            return Err(InvokeError::Error(ScryptoActorError::Invalid));
-        }
+            .ok_or(InvokeError::Error(ScryptoActorError::IdentNotFound))?;
 
         if fn_abi.mutability.is_some() != receiver.is_some() {
-            return Err(InvokeError::Error(ScryptoActorError::Invalid));
+            return Err(InvokeError::Error(ScryptoActorError::InvalidReceiver));
+        }
+
+        if !fn_abi.input.matches(&input.dom) {
+            return Err(InvokeError::Error(ScryptoActorError::InvalidInput));
         }
 
         package_pointer
@@ -571,9 +568,21 @@ where
         let re_actor = match &fn_ident {
             FnIdent::Method(ReceiverMethodIdent {
                 method_ident: MethodIdent::Scrypto(ident),
-                receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                receiver,
             }) => {
-                let node_id = RENodeId::Component(*component_id);
+                let node_id = match receiver {
+                    Receiver::Ref(RENodeId::Component(component_id)) => {
+                        RENodeId::Component(*component_id)
+                    }
+                    _ => {
+                        return Err(RuntimeError::InterpreterError(
+                            InterpreterError::InvalidScryptoActor(
+                                fn_ident,
+                                ScryptoActorError::InvalidReceiver,
+                            ),
+                        ))
+                    }
+                };
                 let node_pointer =
                     Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
                 let offset = SubstateOffset::Component(ComponentOffset::Info);
@@ -600,10 +609,14 @@ where
                 )
                 .map_err(|e| match e {
                     InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(..) => {
-                        RuntimeError::KernelError(KernelError::InvalidFnIdent(fn_ident.clone()))
-                    }
+                    InvokeError::Error(error) => RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoActor(fn_ident.clone(), error),
+                    ),
                 })?;
+
+                node_pointer
+                    .release_lock(offset, false, &mut self.track)
+                    .map_err(RuntimeError::KernelError)?;
 
                 let method = FullyQualifiedReceiverMethod {
                     receiver: Receiver::Ref(node_id),
@@ -613,12 +626,35 @@ where
                         ident: ident.to_string(),
                     },
                 };
-                node_pointer
-                    .release_lock(offset, false, &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
 
                 REActor::Method(method)
             }
+            FnIdent::Function(FunctionIdent::Scrypto {
+                package_address,
+                blueprint_name,
+                ident,
+            }) => {
+                self.scrypto_verify_actor(
+                    None,
+                    *package_address,
+                    blueprint_name.clone(),
+                    ident.to_string(),
+                    input,
+                )
+                .map_err(|e| match e {
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                    InvokeError::Error(error) => RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoActor(fn_ident.clone(), error),
+                    ),
+                })?;
+                REActor::Function(FunctionIdent::Scrypto {
+                    package_address: *package_address,
+                    blueprint_name: blueprint_name.clone(),
+                    ident: ident.clone(),
+                })
+            }
+
+            // Native Interpreter
             FnIdent::Method(ReceiverMethodIdent {
                 method_ident: MethodIdent::Native(native_fn),
                 receiver,
@@ -626,52 +662,8 @@ where
                 receiver: receiver.clone(),
                 method: FullyQualifiedMethod::Native(native_fn.clone()),
             }),
-            FnIdent::Function(function_ident) => match function_ident {
-                FunctionIdent::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ident,
-                } => {
-                    let node_id = RENodeId::Package(package_address.clone());
-                    let node_pointer = RENodePointer::Store(node_id);
-                    let offset = SubstateOffset::Package(PackageOffset::Package);
-                    node_pointer
-                        .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
-                        .map_err(RuntimeError::KernelError)?;
-
-                    let package = self
-                        .track
-                        .borrow_substate(node_id, offset.clone())
-                        .package();
-
-                    let abi =
-                        package
-                            .blueprint_abi(blueprint_name)
-                            .ok_or(RuntimeError::KernelError(KernelError::BlueprintNotFound(
-                                package_address.clone(),
-                                blueprint_name.clone(),
-                            )))?;
-                    let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
-                        KernelError::FunctionNotFound(function_ident.clone()),
-                    ))?;
-                    if !fn_abi.input.matches(&input.dom) {
-                        return Err(RuntimeError::KernelError(KernelError::InvalidFnInput(
-                            FnIdent::Function(function_ident.clone()),
-                        )));
-                    }
-
-                    node_pointer
-                        .release_lock(offset, false, &mut self.track)
-                        .map_err(RuntimeError::KernelError)?;
-
-                    REActor::Function(function_ident.clone())
-                }
-                FunctionIdent::Native(..) => REActor::Function(function_ident.clone()),
-            },
-            _ => {
-                return Err(RuntimeError::KernelError(KernelError::InvalidFnIdent(
-                    fn_ident,
-                )))
+            FnIdent::Function(FunctionIdent::Native(native_function)) => {
+                REActor::Function(FunctionIdent::Native(native_function.clone()))
             }
         };
 

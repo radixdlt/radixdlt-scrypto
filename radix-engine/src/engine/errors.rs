@@ -31,6 +31,9 @@ pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
 
+    /// An error occurred within an interpreter
+    InterpreterError(InterpreterError),
+
     /// An error occurred within a kernel module.
     ModuleError(ModuleError),
 
@@ -58,7 +61,6 @@ pub enum KernelError {
 
     MaxCallDepthLimitReached,
     InvalidFnIdent(FnIdent),
-    InvalidFnInput(FnIdent),
 
     FunctionNotFound(FunctionIdent),
     InvalidFnOutput { fn_identifier: FunctionIdent },
@@ -70,8 +72,6 @@ pub enum KernelError {
     DecodeError(DecodeError),
 
     // RENode
-    PackageNotFound(PackageAddress),
-    BlueprintNotFound(PackageAddress, String),
     RENodeNotFound(RENodeId),
     StoredNodeRemoved(RENodeId),
     RENodeGlobalizeTypeNotAllowed(RENodeId),
@@ -94,6 +94,19 @@ pub enum KernelError {
     SubstateNotWriteable(REActor, SubstateId),
     CantMoveDownstream(RENodeId),
     CantMoveUpstream(RENodeId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum ScryptoActorError {
+    BlueprintNotFound,
+    IdentNotFound,
+    InvalidReceiver,
+    InvalidInput,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum InterpreterError {
+    InvalidScryptoActor(FnIdent, ScryptoActorError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
