@@ -315,24 +315,26 @@ where
 
         let output = {
             let rtn = match Self::current_frame(&self.call_frames).actor.clone() {
-                REActor::Function(FunctionIdent::Native(native_fn)) => {
+                REActor::Function(ResolvedFunction::Native(native_fn)) => {
                     NativeInterpreter::run_function(native_fn, input, self)
                 }
-                REActor::Method(FullyQualifiedReceiverMethod {
+                REActor::Method(ResolvedReceiverMethod {
                     receiver,
-                    method: FullyQualifiedMethod::Native(native_method),
+                    method: ResolvedMethod::Native(native_method),
                 }) => NativeInterpreter::run_method(receiver, native_method, input, self),
-                REActor::Function(FunctionIdent::Scrypto {
+                REActor::Function(ResolvedFunction::Scrypto {
                     package_address,
                     blueprint_name,
                     ident,
+                    export_name
                 })
-                | REActor::Method(FullyQualifiedReceiverMethod {
+                | REActor::Method(ResolvedReceiverMethod {
                     method:
-                        FullyQualifiedMethod::Scrypto {
+                        ResolvedMethod::Scrypto {
                             package_address,
                             blueprint_name,
                             ident,
+                            export_name,
                         },
                     ..
                 }) => {
@@ -360,16 +362,9 @@ where
                             .wasm_instrumenter
                             .instrument(package.code(), &self.wasm_metering_params);
                         let mut instance = self.wasm_engine.instantiate(instrumented_code);
-                        let blueprint_abi = package
-                            .blueprint_abi(&blueprint_name)
-                            .expect("Blueprint not found"); // TODO: assumption will break if auth module is optional
-                        let export_name = &blueprint_abi
-                            .get_fn_abi(&ident)
-                            .expect("Function not found")
-                            .export_name
-                            .to_string();
+
                         let scrypto_actor = match &Self::current_frame(&self.call_frames).actor {
-                            REActor::Method(FullyQualifiedReceiverMethod { receiver, .. }) => {
+                            REActor::Method(ResolvedReceiverMethod { receiver, .. }) => {
                                 match receiver {
                                     Receiver::Ref(RENodeId::Component(component_id)) => {
                                         ScryptoActor::Component(
@@ -378,15 +373,7 @@ where
                                             blueprint_name.clone(),
                                         )
                                     }
-                                    _ => {
-                                        return Err(RuntimeError::KernelError(
-                                            KernelError::FunctionNotFound(FunctionIdent::Scrypto {
-                                                package_address,
-                                                blueprint_name,
-                                                ident,
-                                            }),
-                                        ))
-                                    }
+                                    _ => panic!("Should not get here.")
                                 }
                             }
                             _ => ScryptoActor::blueprint(package_address, blueprint_name.clone()),
@@ -600,24 +587,28 @@ where
             return Err(InvokeError::Error(ScryptoActorError::InvalidInput));
         }
 
+        let export_name = fn_abi.export_name.to_string();
+
         package_pointer
             .release_lock(offset, false, &mut self.track)
             .map_err(RuntimeError::KernelError)?;
 
         let actor = if let Some(node_id) = receiver {
-            REActor::Method(FullyQualifiedReceiverMethod {
+            REActor::Method(ResolvedReceiverMethod {
                 receiver: Receiver::Ref(node_id),
-                method: FullyQualifiedMethod::Scrypto {
+                method: ResolvedMethod::Scrypto {
                     package_address,
                     blueprint_name: blueprint_name.clone(),
                     ident: ident.to_string(),
+                    export_name,
                 },
             })
         } else {
-            REActor::Function(FunctionIdent::Scrypto {
+            REActor::Function(ResolvedFunction::Scrypto {
                 package_address,
                 blueprint_name: blueprint_name.clone(),
                 ident: ident.clone(),
+                export_name,
             })
         };
 
@@ -669,12 +660,12 @@ where
             FnIdent::Method(ReceiverMethodIdent {
                 method_ident: MethodIdent::Native(native_fn),
                 receiver,
-            }) => REActor::Method(FullyQualifiedReceiverMethod {
+            }) => REActor::Method(ResolvedReceiverMethod {
                 receiver: receiver.clone(),
-                method: FullyQualifiedMethod::Native(native_fn.clone()),
+                method: ResolvedMethod::Native(native_fn.clone()),
             }),
             FnIdent::Function(FunctionIdent::Native(native_function)) => {
-                REActor::Function(FunctionIdent::Native(native_function.clone()))
+                REActor::Function(ResolvedFunction::Native(native_function.clone()))
             }
         };
 

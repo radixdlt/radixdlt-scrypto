@@ -1,36 +1,49 @@
+use scrypto::core::NativeFunction;
 use crate::types::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub enum FullyQualifiedMethod {
+pub enum ResolvedMethod {
     Scrypto {
         package_address: PackageAddress,
         blueprint_name: String,
         ident: String,
+        export_name: String,
     },
     Native(NativeMethod),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub struct FullyQualifiedReceiverMethod {
+pub struct ResolvedReceiverMethod {
     pub receiver: Receiver,
-    pub method: FullyQualifiedMethod,
+    pub method: ResolvedMethod,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+pub enum ResolvedFunction {
+    Scrypto {
+        package_address: PackageAddress,
+        blueprint_name: String,
+        ident: String,
+        export_name: String,
+    },
+    Native(NativeFunction),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum REActor {
-    Function(FunctionIdent),
-    Method(FullyQualifiedReceiverMethod),
+    Function(ResolvedFunction),
+    Method(ResolvedReceiverMethod),
 }
 
 impl REActor {
     pub fn is_substate_readable(&self, node_id: RENodeId, offset: SubstateOffset) -> bool {
         match self {
-            REActor::Function(FunctionIdent::Native(..))
-            | REActor::Method(FullyQualifiedReceiverMethod {
-                method: FullyQualifiedMethod::Native(..),
+            REActor::Function(ResolvedFunction::Native(..))
+            | REActor::Method(ResolvedReceiverMethod {
+                method: ResolvedMethod::Native(..),
                 ..
             }) => true,
-            REActor::Function(FunctionIdent::Scrypto { .. }) => match (node_id, offset) {
+            REActor::Function(ResolvedFunction::Scrypto { .. }) => match (node_id, offset) {
                 (
                     RENodeId::KeyValueStore(_),
                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
@@ -39,9 +52,9 @@ impl REActor {
                 (RENodeId::Component(_), SubstateOffset::Component(ComponentOffset::Info)) => true,
                 _ => false,
             },
-            REActor::Method(FullyQualifiedReceiverMethod {
+            REActor::Method(ResolvedReceiverMethod {
                 receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                method: FullyQualifiedMethod::Scrypto { .. },
+                method: ResolvedMethod::Scrypto { .. },
             }) => match (node_id, offset) {
                 (
                     RENodeId::KeyValueStore(_),
@@ -60,21 +73,21 @@ impl REActor {
 
     pub fn is_substate_writeable(&self, node_id: RENodeId, offset: SubstateOffset) -> bool {
         match self {
-            REActor::Function(FunctionIdent::Native(..))
-            | REActor::Method(FullyQualifiedReceiverMethod {
-                method: FullyQualifiedMethod::Native(..),
+            REActor::Function(ResolvedFunction::Native(..))
+            | REActor::Method(ResolvedReceiverMethod {
+                method: ResolvedMethod::Native(..),
                 ..
             }) => true,
-            REActor::Function(FunctionIdent::Scrypto { .. }) => match (node_id, offset) {
+            REActor::Function(ResolvedFunction::Scrypto { .. }) => match (node_id, offset) {
                 (
                     RENodeId::KeyValueStore(_),
                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
                 ) => true,
                 _ => false,
             },
-            REActor::Method(FullyQualifiedReceiverMethod {
+            REActor::Method(ResolvedReceiverMethod {
                 receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                method: FullyQualifiedMethod::Scrypto { .. },
+                method: ResolvedMethod::Scrypto { .. },
             }) => match (node_id, offset) {
                 (
                     RENodeId::KeyValueStore(_),

@@ -113,7 +113,7 @@ impl CallFrame {
     pub fn new_root() -> Self {
         Self {
             depth: 0,
-            actor: REActor::Function(FunctionIdent::Native(NativeFunction::TransactionProcessor(
+            actor: REActor::Function(ResolvedFunction::Native(NativeFunction::TransactionProcessor(
                 TransactionProcessorFunction::Run,
             ))),
             node_refs: HashMap::new(),

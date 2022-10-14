@@ -88,16 +88,16 @@ impl AuthModule {
         let call_frame = call_frames.last().unwrap();
         let auth = match call_frame.actor.clone() {
             REActor::Function(function_ident) => match function_ident {
-                FunctionIdent::Native(NativeFunction::System(system_func)) => {
+                ResolvedFunction::Native(NativeFunction::System(system_func)) => {
                     System::function_auth(&system_func)
                 }
                 _ => vec![],
             },
-            REActor::Method(FullyQualifiedReceiverMethod { receiver, method }) => {
+            REActor::Method(ResolvedReceiverMethod { receiver, method }) => {
                 match (receiver, method) {
                     (
                         Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                        FullyQualifiedMethod::Native(NativeMethod::ResourceManager(ref method)),
+                        ResolvedMethod::Native(NativeMethod::ResourceManager(ref method)),
                     ) => {
                         let node_id = RENodeId::ResourceManager(resource_address);
                         let resource_pointer = RENodePointer::Store(node_id);
@@ -120,14 +120,15 @@ impl AuthModule {
                     }
                     (
                         Receiver::Ref(RENodeId::System(..)),
-                        FullyQualifiedMethod::Native(NativeMethod::System(ref method)),
+                        ResolvedMethod::Native(NativeMethod::System(ref method)),
                     ) => System::method_auth(method),
                     (
                         Receiver::Ref(RENodeId::Component(..)),
-                        FullyQualifiedMethod::Scrypto {
+                        ResolvedMethod::Scrypto {
                             package_address,
                             blueprint_name,
                             ident,
+                            ..
                         },
                     ) => {
                         let node_id = RENodeId::Package(package_address);
@@ -192,7 +193,7 @@ impl AuthModule {
                     }
                     (
                         Receiver::Ref(RENodeId::Vault(..)),
-                        FullyQualifiedMethod::Native(NativeMethod::Vault(ref vault_fn)),
+                        ResolvedMethod::Native(NativeMethod::Vault(ref vault_fn)),
                     ) => {
                         let vault_node_pointer = call_frames
                             .last()
