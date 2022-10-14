@@ -479,67 +479,6 @@ where
         call_frames.last().expect("Current frame always exists")
     }
 
-    fn invoke_function(
-        &mut self,
-        function_ident: FunctionIdent,
-        input: ScryptoValue,
-        next_owned_values: HashMap<RENodeId, HeapRootRENode>,
-        next_frame_node_refs: HashMap<RENodeId, RENodePointer>,
-    ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        match &function_ident {
-            FunctionIdent::Scrypto {
-                package_address,
-                blueprint_name,
-                ident,
-            } => {
-                let node_id = RENodeId::Package(package_address.clone());
-                let node_pointer = RENodePointer::Store(node_id);
-                let offset = SubstateOffset::Package(PackageOffset::Package);
-                node_pointer
-                    .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
-
-                let package = self
-                    .track
-                    .borrow_substate(node_id, offset.clone())
-                    .package();
-
-                let abi =
-                    package
-                        .blueprint_abi(blueprint_name)
-                        .ok_or(RuntimeError::KernelError(KernelError::BlueprintNotFound(
-                            package_address.clone(),
-                            blueprint_name.clone(),
-                        )))?;
-                let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
-                    KernelError::FunctionNotFound(function_ident.clone()),
-                ))?;
-                if !fn_abi.input.matches(&input.dom) {
-                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput2(
-                        FnIdent::Function(function_ident.clone()),
-                    )));
-                }
-
-                node_pointer
-                    .release_lock(offset, false, &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
-            }
-            _ => {}
-        };
-
-        // start a new frame and run
-        let frame = CallFrame::new_child(
-            Self::current_frame(&self.call_frames).depth + 1,
-            REActor::Function(function_ident.clone()),
-            next_owned_values,
-            next_frame_node_refs,
-        );
-
-        let (output, received_values) = self.run(frame, input)?;
-
-        Ok((output, received_values))
-    }
-
     pub fn node_method_deref(
         &mut self,
         node_id: RENodeId,
@@ -578,50 +517,20 @@ where
         }
     }
 
-    fn invoke_method(
+    fn load_actor(
         &mut self,
-        mut method_ident: ReceiverMethodIdent,
-        input: ScryptoValue,
-        mut owned_nodes: HashMap<RENodeId, HeapRootRENode>,
-        mut refed_nodes: HashMap<RENodeId, RENodePointer>,
-    ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        // Authorization and state load
-        let mut node_id = method_ident.receiver.node_id();
-
-        match method_ident.receiver {
-            Receiver::Consumed(..) => {
-                let heap_node = Self::current_frame_mut(&mut self.call_frames)
-                    .owned_heap_nodes
-                    .remove(&node_id)
-                    .ok_or(RuntimeError::KernelError(
-                        KernelError::InvokeMethodInvalidReceiver(node_id),
-                    ))?;
-                owned_nodes.insert(node_id, heap_node);
-            }
-            Receiver::Ref(..) => {
-                // Deref
-                if let Some(derefed) = self.node_method_deref(node_id)? {
-                    node_id = derefed;
-                    method_ident = ReceiverMethodIdent {
-                        receiver: Receiver::Ref(node_id),
-                        method_ident: method_ident.method_ident,
-                    }
-                }
-                let node_pointer =
-                    Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
-                refed_nodes.insert(node_id, node_pointer);
-            }
-        }
-
+        method_ident: ReceiverMethodIdent,
+        input: &ScryptoValue,
+    ) -> Result<REActor, RuntimeError> {
         // Load actor
         let re_actor = match &method_ident {
             ReceiverMethodIdent {
                 method_ident: MethodIdent::Scrypto(ident),
                 receiver,
-            } => match node_id {
+            } => match receiver.node_id() {
                 RENodeId::Component(..) => {
-                    let node_pointer =
-                        Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
+                    let node_pointer = Self::current_frame(&self.call_frames)
+                        .get_node_pointer(receiver.node_id())?;
                     let offset = SubstateOffset::Component(ComponentOffset::Info);
                     node_pointer
                         .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
@@ -697,9 +606,110 @@ where
             },
         };
 
+        Ok(REActor::Method(re_actor))
+    }
+
+    fn invoke_function(
+        &mut self,
+        function_ident: FunctionIdent,
+        input: ScryptoValue,
+        next_owned_values: HashMap<RENodeId, HeapRootRENode>,
+        next_frame_node_refs: HashMap<RENodeId, RENodePointer>,
+    ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
+        match &function_ident {
+            FunctionIdent::Scrypto {
+                package_address,
+                blueprint_name,
+                ident,
+            } => {
+                let node_id = RENodeId::Package(package_address.clone());
+                let node_pointer = RENodePointer::Store(node_id);
+                let offset = SubstateOffset::Package(PackageOffset::Package);
+                node_pointer
+                    .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
+                    .map_err(RuntimeError::KernelError)?;
+
+                let package = self
+                    .track
+                    .borrow_substate(node_id, offset.clone())
+                    .package();
+
+                let abi =
+                    package
+                        .blueprint_abi(blueprint_name)
+                        .ok_or(RuntimeError::KernelError(KernelError::BlueprintNotFound(
+                            package_address.clone(),
+                            blueprint_name.clone(),
+                        )))?;
+                let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
+                    KernelError::FunctionNotFound(function_ident.clone()),
+                ))?;
+                if !fn_abi.input.matches(&input.dom) {
+                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput2(
+                        FnIdent::Function(function_ident.clone()),
+                    )));
+                }
+
+                node_pointer
+                    .release_lock(offset, false, &mut self.track)
+                    .map_err(RuntimeError::KernelError)?;
+            }
+            _ => {}
+        };
+
+        // start a new frame and run
         let frame = CallFrame::new_child(
             Self::current_frame(&self.call_frames).depth + 1,
-            REActor::Method(re_actor.clone()),
+            REActor::Function(function_ident.clone()),
+            next_owned_values,
+            next_frame_node_refs,
+        );
+
+        let (output, received_values) = self.run(frame, input)?;
+
+        Ok((output, received_values))
+    }
+
+    fn invoke_method(
+        &mut self,
+        mut method_ident: ReceiverMethodIdent,
+        input: ScryptoValue,
+        mut owned_nodes: HashMap<RENodeId, HeapRootRENode>,
+        mut refed_nodes: HashMap<RENodeId, RENodePointer>,
+    ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
+        // Authorization and state load
+        let mut node_id = method_ident.receiver.node_id();
+
+        match method_ident.receiver {
+            Receiver::Consumed(..) => {
+                let heap_node = Self::current_frame_mut(&mut self.call_frames)
+                    .owned_heap_nodes
+                    .remove(&node_id)
+                    .ok_or(RuntimeError::KernelError(
+                        KernelError::InvokeMethodInvalidReceiver(node_id),
+                    ))?;
+                owned_nodes.insert(node_id, heap_node);
+            }
+            Receiver::Ref(..) => {
+                // Deref
+                if let Some(derefed) = self.node_method_deref(node_id)? {
+                    node_id = derefed;
+                    method_ident = ReceiverMethodIdent {
+                        receiver: Receiver::Ref(node_id),
+                        method_ident: method_ident.method_ident,
+                    }
+                }
+                let node_pointer =
+                    Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
+                refed_nodes.insert(node_id, node_pointer);
+            }
+        }
+
+        let actor = self.load_actor(method_ident, &input)?;
+
+        let frame = CallFrame::new_child(
+            Self::current_frame(&self.call_frames).depth + 1,
+            actor,
             owned_nodes,
             refed_nodes,
         );
