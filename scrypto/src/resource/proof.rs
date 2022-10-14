@@ -5,7 +5,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::core::{NativeMethod, ProofMethod, Receiver};
+use crate::core::{ProofMethod, Receiver};
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;

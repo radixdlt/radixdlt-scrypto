@@ -3,21 +3,14 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use strum::*;
 
+use crate::component::ComponentAddress;
 use crate::component::PackageAddress;
-use crate::engine::types::RENodeId;
+use crate::engine::types::{ComponentId, RENodeId};
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum FnIdent {
     Function(FunctionIdent),
-    Method(ReceiverMethodIdent),
-}
-
-impl Receiver {
-    pub fn node_id(&self) -> RENodeId {
-        match self {
-            Receiver::Consumed(node_id) | Receiver::Ref(node_id) => *node_id,
-        }
-    }
+    Method(MethodIdent),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
@@ -25,9 +18,33 @@ pub enum FunctionIdent {
     Scrypto {
         package_address: PackageAddress,
         blueprint_name: String,
-        ident: String,
+        function_name: String,
     },
-    Native(NativeFunction),
+    Native {
+        /* TODO: we may consider using NativeFunction enum here, which provider better compiler checks.
+        The only downside is we'll have to update the transaction model every time a native function is added.
+         */
+        blueprint_name: String,
+        function_name: String,
+    },
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+pub enum MethodIdent {
+    Scrypto {
+        receiver: ScryptoReceiver,
+        method_name: String,
+    },
+    Native {
+        receiver: Receiver,
+        method_name: String,
+    },
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+pub enum ScryptoReceiver {
+    Global(ComponentAddress),
+    Local(ComponentId),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Copy, TypeId, Encode, Decode)]
@@ -36,16 +53,12 @@ pub enum Receiver {
     Ref(RENodeId),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub enum MethodIdent {
-    Scrypto(String),
-    Native(NativeMethod),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub struct ReceiverMethodIdent {
-    pub receiver: Receiver,
-    pub method_ident: MethodIdent,
+impl Receiver {
+    pub fn node_id(&self) -> RENodeId {
+        match self {
+            Receiver::Consumed(node_id) | Receiver::Ref(node_id) => *node_id,
+        }
+    }
 }
 
 #[derive(
@@ -88,6 +101,8 @@ pub enum NativeFunction {
     EnumString,
     EnumVariantNames,
     IntoStaticStr,
+    AsRefStr,
+    Display,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum ComponentMethod {
@@ -110,6 +125,8 @@ pub enum ComponentMethod {
     EnumString,
     EnumVariantNames,
     IntoStaticStr,
+    AsRefStr,
+    Display,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum SystemFunction {
@@ -132,6 +149,8 @@ pub enum SystemFunction {
     EnumString,
     EnumVariantNames,
     IntoStaticStr,
+    AsRefStr,
+    Display,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum SystemMethod {
@@ -156,6 +175,8 @@ pub enum SystemMethod {
     EnumString,
     EnumVariantNames,
     IntoStaticStr,
+    AsRefStr,
+    Display,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum AuthZoneMethod {
@@ -184,6 +205,8 @@ pub enum AuthZoneMethod {
     EnumString,
     EnumVariantNames,
     IntoStaticStr,
+    AsRefStr,
+    Display,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFunction {
@@ -206,6 +229,8 @@ pub enum ResourceManagerFunction {
     EnumString,
     EnumVariantNames,
     IntoStaticStr,
+    AsRefStr,
+    Display,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerMethod {
@@ -240,6 +265,8 @@ pub enum ResourceManagerMethod {
     EnumString,
     EnumVariantNames,
     IntoStaticStr,
+    AsRefStr,
+    Display,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum BucketMethod {
@@ -269,6 +296,8 @@ pub enum BucketMethod {
     EnumString,
     EnumVariantNames,
     IntoStaticStr,
+    AsRefStr,
+    Display,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum VaultMethod {
@@ -301,6 +330,8 @@ pub enum VaultMethod {
     EnumString,
     EnumVariantNames,
     IntoStaticStr,
+    AsRefStr,
+    Display,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum ProofMethod {
@@ -327,6 +358,8 @@ pub enum ProofMethod {
     EnumString,
     EnumVariantNames,
     IntoStaticStr,
+    AsRefStr,
+    Display,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum WorktopMethod {
@@ -356,6 +389,8 @@ pub enum WorktopMethod {
     EnumString,
     EnumVariantNames,
     IntoStaticStr,
+    AsRefStr,
+    Display,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum PackageFunction {
@@ -378,6 +413,8 @@ pub enum PackageFunction {
     EnumString,
     EnumVariantNames,
     IntoStaticStr,
+    AsRefStr,
+    Display,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionProcessorFunction {

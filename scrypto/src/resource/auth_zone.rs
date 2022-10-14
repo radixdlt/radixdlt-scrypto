@@ -1,7 +1,7 @@
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::{FnIdent, MethodIdent, NativeMethod, ReceiverMethodIdent};
+use scrypto::core::{FnIdent, MethodIdent};
 
 use crate::core::{AuthZoneMethod, Receiver};
 use crate::engine::types::RENodeId;
@@ -95,9 +95,9 @@ impl ComponentAuthZone {
 
         let proof: Proof = proof.into();
         let input = RadixEngineInput::Invoke(
-            FnIdent::Method(ReceiverMethodIdent {
+            FnIdent::Method(MethodIdent::Native {
                 receiver: Receiver::Ref(node_id),
-                method_ident: MethodIdent::Native(NativeMethod::AuthZone(AuthZoneMethod::Push)),
+                method_name: AuthZoneMethod::Push.to_string(),
             }),
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
         );
