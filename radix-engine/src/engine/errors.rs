@@ -116,6 +116,12 @@ pub enum ModuleError {
     ExecutionTraceError(ExecutionTraceError),
 }
 
+impl Into<ModuleError> for AuthError {
+    fn into(self) -> ModuleError {
+        ModuleError::AuthError(self)
+    }
+}
+
 #[derive(Debug)]
 pub enum InvokeError<E> {
     Error(E),

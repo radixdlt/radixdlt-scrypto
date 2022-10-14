@@ -186,7 +186,6 @@ where
                         &component.info.blueprint_name,
                     )
                     .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-                println!("Component: {:?}", component_address.to_vec());
                 let component_id: ComponentId = node_id.into();
                 Ok((
                     GlobalAddress::Component(component_address),
@@ -198,7 +197,6 @@ where
                     .new_system_component_address(transaction_hash)
                     .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
-                println!("System: {:?}", component_address.to_vec());
                 let component_id: ComponentId = node_id.into();
                 Ok((
                     GlobalAddress::Component(component_address),
@@ -210,7 +208,6 @@ where
             HeapRENode::ResourceManager(..) => {
                 let resource_address: ResourceAddress = node_id.into();
 
-                println!("Resource: {:?}", resource_address.to_vec());
                 Ok((
                     GlobalAddress::Resource(resource_address),
                     GlobalAddressSubstate::Resource(resource_address),
@@ -219,7 +216,6 @@ where
             HeapRENode::Package(..) => {
                 let package_address: PackageAddress = node_id.into();
 
-                println!("Package: {:?}", package_address.to_vec());
                 Ok((
                     GlobalAddress::Package(package_address),
                     GlobalAddressSubstate::Package(package_address),
@@ -294,7 +290,7 @@ where
 
         let new_refed_nodes = AuthModule::on_new_frame(&actor, &input, &mut self.call_frames, &mut self.track).map_err(
             |e| match e {
-                InvokeError::Error(e) => RuntimeError::ModuleError(ModuleError::AuthError(e)),
+                InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
                 InvokeError::Downstream(runtime_error) => runtime_error,
             },
         )?;
@@ -437,23 +433,6 @@ where
         }
 
         let mut call_frame = self.call_frames.pop().unwrap();
-
-
-        let root_frame = self
-            .call_frames
-            .first_mut()
-            .expect("Failed to get a root frame");
-        let (_, node) = root_frame
-            .owned_heap_nodes.iter_mut()
-            .find(|e| {
-                matches!(
-                    e,
-                    (RENodeId::AuthZone(..), _)
-                )
-            })
-            .expect("Could not find auth zone");
-        node.root.auth_zone_mut().pop_frame(&call_frame.actor);
-
         // Auto drop locks
         for (_, lock) in call_frame.drain_locks() {
             let SubstateLock {
@@ -476,6 +455,14 @@ where
                     .map_err(RuntimeError::KernelError)?;
             }
         }
+
+
+        AuthModule::on_pop_frame(&call_frame, &mut self.call_frames).map_err(
+            |e| match e {
+                InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
+                InvokeError::Downstream(runtime_error) => runtime_error,
+            },
+        )?;
 
         // drop proofs and check resource leak
         call_frame.drop_frame()?;

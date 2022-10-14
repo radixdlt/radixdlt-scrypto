@@ -271,4 +271,31 @@ impl AuthModule {
 
         Ok(new_refs)
     }
+
+    pub fn on_pop_frame(
+        frame: &CallFrame,
+        call_frames: &mut Vec<CallFrame>,
+    ) -> Result<(), InvokeError<AuthError>> {
+        let auth_zone_id = frame.find_ref(|e| {
+            matches!(e, RENodeId::AuthZone(..))
+        }).unwrap().clone();
+        let node_pointer = frame.get_node_pointer(auth_zone_id).unwrap();
+        {
+            let mut authzone = match node_pointer {
+                RENodePointer::Heap { frame_id, root, id } => {
+                    let frame = call_frames.get_mut(frame_id).unwrap();
+                    let heap_re_node = frame
+                        .get_owned_heap_node_mut(root)
+                        .unwrap()
+                        .get_node_mut(id.as_ref());
+                    heap_re_node.borrow_substate_mut(&SubstateOffset::AuthZone(AuthZoneOffset::AuthZone)).unwrap()
+                }
+                _ => panic!("Unexpected")
+            };
+            // Copy-over root frame's auth zone virtual_proofs_buckets
+            authzone.auth_zone().pop_frame(&frame.actor);
+        }
+
+        Ok(())
+    }
 }
