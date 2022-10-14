@@ -282,21 +282,14 @@ where
         owned_nodes: HashMap<RENodeId, HeapRootRENode>,
         refed_nodes: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        let frame = CallFrame::new_child(
-            Self::current_frame(&self.call_frames).depth + 1,
-            actor,
-            owned_nodes,
-            refed_nodes,
-        );
-        self.call_frames.push(frame);
-
         //  Verify Auth
-        AuthModule::verify_auth(&input, &mut self.call_frames, &mut self.track).map_err(
+        AuthModule::verify_auth(&actor, &input, &mut self.call_frames, &mut self.track).map_err(
             |e| match e {
                 InvokeError::Error(e) => RuntimeError::ModuleError(ModuleError::AuthError(e)),
                 InvokeError::Downstream(runtime_error) => runtime_error,
             },
         )?;
+
         // Copy-over root frame's auth zone virtual_proofs_buckets
         // TODO: Clean this up at some point (move to AuthModule)
         // TODO: Move to a better spot
@@ -307,6 +300,16 @@ where
         let virtual_proofs_buckets = AuthModule::get_auth_zone(root_frame)
             .virtual_proofs_buckets
             .clone();
+
+        let frame = CallFrame::new_child(
+            Self::current_frame(&self.call_frames).depth + 1,
+            actor,
+            owned_nodes,
+            refed_nodes,
+        );
+        self.call_frames.push(frame);
+
+
         self.node_create(HeapRENode::AuthZone(AuthZoneSubstate::new_with_proofs(
             vec![],
             virtual_proofs_buckets,

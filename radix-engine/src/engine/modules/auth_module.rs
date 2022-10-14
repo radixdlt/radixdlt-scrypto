@@ -28,11 +28,8 @@ impl AuthModule {
         method_auths: Vec<MethodAuthorization>,
         call_frames: &Vec<CallFrame>, // TODO remove this once heap is implemented
     ) -> Result<(), AuthError> {
-        // This module is called with a new call frame. Get the previous one which has an authzone.
-        let second_to_last_index = call_frames.len() - 2;
-
         let prev_call_frame = call_frames
-            .get(second_to_last_index)
+            .last()
             .expect("Previous call frame does not exist");
 
         let auth_zone = Self::get_auth_zone(prev_call_frame);
@@ -41,7 +38,7 @@ impl AuthModule {
 
         // FIXME: This is wrong as it allows extern component calls to use caller's auth zone
         // Also, need to add a test for this
-        if let Some(frame) = call_frames.iter().rev().nth(2) {
+        if let Some(frame) = call_frames.iter().rev().nth(1) {
             let auth_zone = Self::get_auth_zone(frame);
             auth_zones.push(auth_zone);
         }
@@ -81,12 +78,12 @@ impl AuthModule {
     }
 
     pub fn verify_auth<'s, R: FeeReserve>(
+        actor: &REActor,
         input: &ScryptoValue, // TODO: Remove
         call_frames: &mut Vec<CallFrame>,
         track: &mut Track<'s, R>,
     ) -> Result<(), InvokeError<AuthError>> {
-        let call_frame = call_frames.last().unwrap();
-        let auth = match call_frame.actor.clone() {
+        let auth = match actor.clone() {
             REActor::Function(function_ident) => match function_ident {
                 ResolvedFunction::Native(NativeFunction::System(system_func)) => {
                     System::function_auth(&system_func)
