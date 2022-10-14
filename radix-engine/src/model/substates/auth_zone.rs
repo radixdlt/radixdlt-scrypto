@@ -225,7 +225,7 @@ impl AuthZoneSubstate {
         self.auth_zones.last_mut().unwrap()
     }
 
-    pub fn cur_auth_zone(&mut self) -> &AuthZone {
+    pub fn cur_auth_zone(&self) -> &AuthZone {
         self.auth_zones.last().unwrap()
     }
 }
@@ -258,11 +258,11 @@ impl AuthZone {
         }
     }
 
-    pub fn is_proof_virtualizable(&self, resource_address: &ResourceAddress) -> bool {
+    fn is_proof_virtualizable(&self, resource_address: &ResourceAddress) -> bool {
         self.virtual_proofs_buckets.contains_key(resource_address)
     }
 
-    pub fn virtualize_non_fungible_proof(
+    fn virtualize_non_fungible_proof(
         &self,
         resource_address: &ResourceAddress,
         ids: &BTreeSet<NonFungibleId>,
@@ -349,7 +349,17 @@ impl AuthZone {
         resource_address: ResourceAddress,
         resource_type: ResourceType,
     ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
-        ProofSubstate::compose_by_ids(&self.proofs, ids, resource_address, resource_type)
-            .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)))
+        let maybe_existing_proof = ProofSubstate::compose_by_ids(&self.proofs, ids, resource_address, resource_type)
+            .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)));
+
+        let proof = match maybe_existing_proof {
+            Ok(proof) => proof,
+            Err(_) if self.is_proof_virtualizable(&resource_address) => {
+                    self.virtualize_non_fungible_proof(&resource_address, ids)
+                }
+            Err(e) => Err(e)?,
+        };
+
+        Ok(proof)
     }
 }
