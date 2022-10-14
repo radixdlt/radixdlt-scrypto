@@ -5,7 +5,6 @@ use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::*;
 use bitflags::bitflags;
-use scrypto::core::FnIdent;
 
 bitflags! {
     pub struct LockFlags: u32 {
@@ -42,10 +41,18 @@ where
         contingent: bool,
     ) -> Result<Resource, RuntimeError>;
 
-    fn invoke(
+    // TODO: combine `fn_ident` and `args`.
+    // TODO: do we want to split into 4 methods for greater composability?
+    fn invoke_scrypto(
         &mut self,
-        fn_ident: FnIdent,
-        input: ScryptoValue,
+        fn_ident: ScryptoFnIdent,
+        args: ScryptoValue,
+    ) -> Result<ScryptoValue, RuntimeError>;
+
+    fn invoke_native(
+        &mut self,
+        fn_ident: NativeFnIdent,
+        args: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
     /// Retrieves all nodes owned by the current frame

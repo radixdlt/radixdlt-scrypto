@@ -161,7 +161,7 @@ impl FeeTable {
                             ResourceManagerFunction::Create => self.fixed_high, // TODO: more investigation about fungibility
                         }
                     }
-                    FunctionIdent::Scrypto { .. } => 0, // Costing is through instrumentation // TODO: Josh question, why only through instrumentation?
+                    ScryptoFunctionIdent { .. } => 0, // Costing is through instrumentation // TODO: Josh question, why only through instrumentation?
                 }
             }
             FnIdent::Method(ReceiverMethodIdent { method_ident, .. }) => {

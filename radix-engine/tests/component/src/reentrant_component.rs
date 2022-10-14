@@ -13,8 +13,7 @@ blueprint! {
 
         pub fn call_mut_self(&mut self) {
             if let ScryptoActor::Component(component_id, ..) = Runtime::actor() {
-                let input = RadixEngineInput::Invoke(
-                    FnIdent::Method(ReceiverMethodIdent {
+                let input = RadixEngineInput::invoke_native(NativeFnIdent::Method(NativeMethodIdent {
                         receiver: Receiver::Ref(RENodeId::Component(component_id)),
                         method_ident: MethodIdent::Scrypto("mut_func".to_string()),
                     }),
@@ -28,8 +27,7 @@ blueprint! {
 
         pub fn call_self(&self) {
             if let ScryptoActor::Component(component_id, ..) = Runtime::actor() {
-                let input = RadixEngineInput::Invoke(
-                    FnIdent::Method(ReceiverMethodIdent {
+                let input = RadixEngineInput::invoke_native(NativeFnIdent::Method(NativeMethodIdent {
                         receiver: Receiver::Ref(RENodeId::Component(component_id)),
                         method_ident: MethodIdent::Scrypto("func".to_string()),
                     }),
@@ -41,8 +39,7 @@ blueprint! {
 
         pub fn call_mut_self_2(&self) {
             if let ScryptoActor::Component(component_id, ..) = Runtime::actor() {
-                let input = RadixEngineInput::Invoke(
-                    FnIdent::Method(ReceiverMethodIdent {
+                let input = RadixEngineInput::invoke_native(NativeFnIdent::Method(NativeMethodIdent {
                         receiver: Receiver::Ref(RENodeId::Component(component_id)),
                         method_ident: MethodIdent::Scrypto("mut_func".to_string()),
                     }),

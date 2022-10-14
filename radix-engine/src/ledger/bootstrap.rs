@@ -5,7 +5,7 @@ use crate::transaction::{ExecutionConfig, TransactionExecutor};
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
-use scrypto::core::{Blob, NativeFunction, ResourceManagerFunction, SystemFunction};
+use scrypto::core::{Blob, ResourceManagerFunction, SystemFunction};
 use scrypto::resource::Bucket;
 use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};
@@ -69,10 +69,11 @@ pub fn create_genesis() -> SystemTransaction {
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
-        Instruction::CallFunction {
-            function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
-                ResourceManagerFunction::Create,
-            )),
+        Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: "ResourceManager".to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
             args: args!(
                 ResourceType::NonFungible,
                 metadata,
@@ -91,10 +92,11 @@ pub fn create_genesis() -> SystemTransaction {
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
-        Instruction::CallFunction {
-            function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
-                ResourceManagerFunction::Create,
-            )),
+        Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: "ResourceManager".to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
             args: args!(
                 ResourceType::NonFungible,
                 metadata,
@@ -118,10 +120,11 @@ pub fn create_genesis() -> SystemTransaction {
             amount: XRD_MAX_SUPPLY.into(),
         });
 
-        Instruction::CallFunction {
-            function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
-                ResourceManagerFunction::Create,
-            )),
+        Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: "ResourceManager".to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
@@ -138,18 +141,21 @@ pub fn create_genesis() -> SystemTransaction {
     let create_xrd_faucet = {
         let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
         Instruction::CallFunction {
-            function_ident: FunctionIdent::Scrypto {
+            function_ident: ScryptoFunctionIdent {
                 package_address: SYS_FAUCET_PACKAGE,
                 blueprint_name: "Faucet".to_string(),
-                ident: "new".to_string(),
+                function_name: "new".to_string(),
             },
             args: args!(bucket),
         }
     };
 
     let create_system_component = {
-        Instruction::CallFunction {
-            function_ident: FunctionIdent::Native(NativeFunction::System(SystemFunction::Create)),
+        Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: "System".to_string(),
+                function_name: SystemFunction::Create.to_string(),
+            },
             args: args!(),
         }
     };
@@ -161,10 +167,11 @@ pub fn create_genesis() -> SystemTransaction {
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
-        Instruction::CallFunction {
-            function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
-                ResourceManagerFunction::Create,
-            )),
+        Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: "ResourceManager".to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
             args: args!(
                 ResourceType::NonFungible,
                 metadata,

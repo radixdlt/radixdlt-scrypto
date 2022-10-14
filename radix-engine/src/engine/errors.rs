@@ -1,11 +1,10 @@
 use transaction::errors::*;
+use sbor::*;
 
 use crate::engine::REActor;
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
-use sbor::*;
-use scrypto::core::FnIdent;
 
 use super::AuthError;
 use super::CostingError;

@@ -7,7 +7,6 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::*;
-use scrypto::core::FnIdent;
 
 use super::KernelError;
 
@@ -54,15 +53,24 @@ where
         }
     }
 
-    // FIXME: limit access to the API
-    fn handle_invoke(
+    fn handle_invoke_scrypto(
         &mut self,
-        fn_ident: FnIdent,
-        input: Vec<u8>,
+        fn_ident: ScryptoFnIdent,
+        args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let call_data = ScryptoValue::from_slice(&input)
+        let args = ScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api.invoke(fn_ident, call_data)
+        self.system_api.invoke_scrypto(fn_ident, args)
+    }
+
+    fn handle_invoke_native(
+        &mut self,
+        fn_ident: NativeFnIdent,
+        args: Vec<u8>,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let args = ScryptoValue::from_slice(&args)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+        self.system_api.invoke_native(fn_ident, args)
     }
 
     fn handle_node_create(
@@ -191,8 +199,17 @@ where
         let input: RadixEngineInput = scrypto_decode(&input.raw)
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         let rtn = match input {
-            RadixEngineInput::Invoke(fn_ident, input_bytes) => {
-                self.handle_invoke(fn_ident, input_bytes)?
+            RadixEngineInput::InvokeScryptoFunction(fn_ident, input_bytes) => {
+                self.handle_invoke_scrypto(ScryptoFnIdent::Function(fn_ident), input_bytes)?
+            }
+            RadixEngineInput::InvokeScryptoMethod(fn_ident, input_bytes) => {
+                self.handle_invoke_scrypto(ScryptoFnIdent::Method(fn_ident), input_bytes)?
+            }
+            RadixEngineInput::InvokeNativeFunction(fn_ident, input_bytes) => {
+                self.handle_invoke_native(NativeFnIdent::Function(fn_ident), input_bytes)?
+            }
+            RadixEngineInput::InvokeNativeMethod(fn_ident, input_bytes) => {
+                self.handle_invoke_native(NativeFnIdent::Method(fn_ident), input_bytes)?
             }
             RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id)?,
             RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node)?,

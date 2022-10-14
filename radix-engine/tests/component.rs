@@ -76,7 +76,7 @@ fn invalid_blueprint_name_should_cause_error() {
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::InterpreterError(InterpreterError::InvalidScryptoActor(
-            FnIdent::Function(FunctionIdent::Scrypto {
+            FnIdent::Function(ScryptoFunctionIdent {
                 package_address,
                 blueprint_name,
                 ..

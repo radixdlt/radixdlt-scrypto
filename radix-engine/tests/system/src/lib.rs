@@ -10,8 +10,7 @@ blueprint! {
         }
 
         pub fn set_epoch(component_address: ComponentAddress, epoch: u64) {
-            let input = RadixEngineInput::Invoke(
-                FnIdent::Method(ReceiverMethodIdent {
+            let input = RadixEngineInput::invoke_native(NativeFnIdent::Method(NativeMethodIdent {
                     receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
                         component_address,
                     ))),

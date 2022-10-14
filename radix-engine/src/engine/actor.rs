@@ -1,5 +1,24 @@
 use crate::types::*;
-use scrypto::core::NativeFunction;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, PartialOrd, Ord)]
+pub enum NativeMethod {
+    Component(ComponentMethod),
+    System(SystemMethod),
+    AuthZone(AuthZoneMethod),
+    ResourceManager(ResourceManagerMethod),
+    Bucket(BucketMethod),
+    Vault(VaultMethod),
+    Proof(ProofMethod),
+    Worktop(WorktopMethod),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, PartialOrd, Ord)]
+pub enum NativeFunction {
+    System(SystemFunction),
+    ResourceManager(ResourceManagerFunction),
+    Package(PackageFunction),
+    TransactionProcessor(TransactionProcessorFunction),
+}
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum ResolvedMethod {

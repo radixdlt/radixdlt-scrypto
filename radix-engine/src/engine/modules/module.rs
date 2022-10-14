@@ -2,12 +2,16 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;
 use crate::types::*;
-use scrypto::core::FnIdent;
 
 pub enum SysCallInput<'a> {
-    Invoke {
-        fn_ident: &'a FnIdent,
-        input: &'a ScryptoValue,
+    InvokeScrypto {
+        fn_ident: &'a ScryptoFnIdent,
+        args: &'a ScryptoValue,
+        depth: usize,
+    },
+    InvokeNative {
+        fn_ident: &'a NativeFnIdent,
+        args: &'a ScryptoValue,
         depth: usize,
     },
     ReadOwnedNodes,
@@ -52,7 +56,10 @@ pub enum SysCallInput<'a> {
 }
 
 pub enum SysCallOutput<'a> {
-    Invoke {
+    InvokeScrypto {
+        output: &'a ScryptoValue,
+    },
+    InvokeNative {
         output: &'a ScryptoValue,
     },
     BorrowNode {
