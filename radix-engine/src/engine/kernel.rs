@@ -20,6 +20,11 @@ macro_rules! trace {
     };
 }
 
+pub enum ScryptoFnIdent {
+    Function(PackageAddress, String, String),
+    Method(Receiver, String),
+}
+
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
     's, // Substate store lifetime
@@ -518,14 +523,49 @@ where
     }
 
     // TODO: Move out
-    fn scrypto_verify_actor(
+    fn load_scrypto_actor(
         &mut self,
-        receiver: Option<RENodeId>,
-        package_address: PackageAddress,
-        blueprint_name: String,
-        ident: String,
+        ident: ScryptoFnIdent,
         input: &ScryptoValue,
-    ) -> Result<(), InvokeError<ScryptoActorError>> {
+    ) -> Result<REActor, InvokeError<ScryptoActorError>> {
+        let (receiver, package_address, blueprint_name, ident) = match ident {
+            ScryptoFnIdent::Method(receiver, ident) => {
+                let node_id = match receiver {
+                    Receiver::Ref(RENodeId::Component(component_id)) => {
+                        RENodeId::Component(component_id)
+                    }
+                    _ => return Err(InvokeError::Error(ScryptoActorError::InvalidReceiver)),
+                };
+                let node_pointer =
+                    Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
+                let offset = SubstateOffset::Component(ComponentOffset::Info);
+                node_pointer
+                    .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
+                    .map_err(RuntimeError::KernelError)?;
+
+                let substate_ref = node_pointer.borrow_substate(
+                    &offset,
+                    &mut self.call_frames,
+                    &mut self.track,
+                )?;
+                let info = substate_ref.component_info();
+                let info = (
+                    Some(node_id),
+                    info.package_address.clone(),
+                    info.blueprint_name.clone(),
+                    ident,
+                );
+
+                node_pointer
+                    .release_lock(offset, false, &mut self.track)
+                    .map_err(RuntimeError::KernelError)?;
+                info
+            }
+            ScryptoFnIdent::Function(package_address, blueprint_name, ident) => {
+                (None, package_address, blueprint_name, ident)
+            }
+        };
+
         let package_node_id = RENodeId::Package(package_address);
         let package_pointer = RENodePointer::Store(package_node_id);
         let offset = SubstateOffset::Package(PackageOffset::Package);
@@ -556,7 +596,24 @@ where
             .release_lock(offset, false, &mut self.track)
             .map_err(RuntimeError::KernelError)?;
 
-        Ok(())
+        let actor = if let Some(node_id) = receiver {
+            REActor::Method(FullyQualifiedReceiverMethod {
+                receiver: Receiver::Ref(node_id),
+                method: FullyQualifiedMethod::Scrypto {
+                    package_address,
+                    blueprint_name: blueprint_name.clone(),
+                    ident: ident.to_string(),
+                },
+            })
+        } else {
+            REActor::Function(FunctionIdent::Scrypto {
+                package_address,
+                blueprint_name: blueprint_name.clone(),
+                ident: ident.clone(),
+            })
+        };
+
+        Ok(actor)
     }
 
     fn load_actor(
@@ -569,42 +626,9 @@ where
             FnIdent::Method(ReceiverMethodIdent {
                 method_ident: MethodIdent::Scrypto(ident),
                 receiver,
-            }) => {
-                let node_id = match receiver {
-                    Receiver::Ref(RENodeId::Component(component_id)) => {
-                        RENodeId::Component(*component_id)
-                    }
-                    _ => {
-                        return Err(RuntimeError::InterpreterError(
-                            InterpreterError::InvalidScryptoActor(
-                                fn_ident,
-                                ScryptoActorError::InvalidReceiver,
-                            ),
-                        ))
-                    }
-                };
-                let node_pointer =
-                    Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
-                let offset = SubstateOffset::Component(ComponentOffset::Info);
-                node_pointer
-                    .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
-
-                let (package_address, blueprint_name) = {
-                    let substate_ref = node_pointer.borrow_substate(
-                        &offset,
-                        &mut self.call_frames,
-                        &mut self.track,
-                    )?;
-                    let info = substate_ref.component_info();
-                    (info.package_address.clone(), info.blueprint_name.clone())
-                };
-
-                self.scrypto_verify_actor(
-                    Some(node_id),
-                    package_address,
-                    blueprint_name.clone(),
-                    ident.to_string(),
+            }) => self
+                .load_scrypto_actor(
+                    ScryptoFnIdent::Method(receiver.clone(), ident.clone()),
                     input,
                 )
                 .map_err(|e| match e {
@@ -612,33 +636,18 @@ where
                     InvokeError::Error(error) => RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoActor(fn_ident.clone(), error),
                     ),
-                })?;
-
-                node_pointer
-                    .release_lock(offset, false, &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
-
-                let method = FullyQualifiedReceiverMethod {
-                    receiver: Receiver::Ref(node_id),
-                    method: FullyQualifiedMethod::Scrypto {
-                        package_address,
-                        blueprint_name: blueprint_name.clone(),
-                        ident: ident.to_string(),
-                    },
-                };
-
-                REActor::Method(method)
-            }
+                })?,
             FnIdent::Function(FunctionIdent::Scrypto {
                 package_address,
                 blueprint_name,
                 ident,
-            }) => {
-                self.scrypto_verify_actor(
-                    None,
-                    *package_address,
-                    blueprint_name.clone(),
-                    ident.to_string(),
+            }) => self
+                .load_scrypto_actor(
+                    ScryptoFnIdent::Function(
+                        *package_address,
+                        blueprint_name.clone(),
+                        ident.to_string(),
+                    ),
                     input,
                 )
                 .map_err(|e| match e {
@@ -646,13 +655,7 @@ where
                     InvokeError::Error(error) => RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoActor(fn_ident.clone(), error),
                     ),
-                })?;
-                REActor::Function(FunctionIdent::Scrypto {
-                    package_address: *package_address,
-                    blueprint_name: blueprint_name.clone(),
-                    ident: ident.clone(),
-                })
-            }
+                })?,
 
             // Native Interpreter
             FnIdent::Method(ReceiverMethodIdent {
