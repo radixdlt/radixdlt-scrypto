@@ -1,8 +1,174 @@
+use crate::model::MethodAuthorizationError::NotAuthorized;
 use crate::model::{
-    AuthZoneError, InvokeError, LockableResource, LockedAmountOrIds, MethodAuthorization,
-    MethodAuthorizationError, ProofSubstate, ResourceContainerId,
+    AuthZoneError, HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
+    HardResourceOrNonFungible, InvokeError, LockableResource, LockedAmountOrIds,
+    MethodAuthorization, MethodAuthorizationError, ProofSubstate, ResourceContainerId,
 };
 use crate::types::*;
+
+struct AuthVerification;
+
+impl AuthVerification {
+    pub fn proof_matches(resource_rule: &HardResourceOrNonFungible, proof: &ProofSubstate) -> bool {
+        match resource_rule {
+            HardResourceOrNonFungible::NonFungible(non_fungible_address) => {
+                let proof_resource_address = proof.resource_address();
+                proof_resource_address == non_fungible_address.resource_address()
+                    && match proof.total_ids() {
+                        Ok(ids) => ids.contains(&non_fungible_address.non_fungible_id()),
+                        Err(_) => false,
+                    }
+            }
+            HardResourceOrNonFungible::Resource(resource_address) => {
+                let proof_resource_address = proof.resource_address();
+                proof_resource_address == *resource_address
+            }
+            HardResourceOrNonFungible::SoftResourceNotFound => false,
+        }
+    }
+
+    pub fn check_has_amount(
+        resource_rule: &HardResourceOrNonFungible,
+        amount: Decimal,
+        auth_zone: &AuthZoneSubstate,
+    ) -> bool {
+        for auth_zone in &auth_zone.auth_zones {
+            // FIXME: Need to check the composite max amount rather than just each proof individually
+            if auth_zone
+                .proofs
+                .iter()
+                .any(|p| Self::proof_matches(resource_rule, p) && p.total_amount() >= amount)
+            {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    pub fn verify_resource_rule(
+        resource_rule: &HardResourceOrNonFungible,
+        auth_zone: &AuthZoneSubstate,
+    ) -> bool {
+        // Check if a proof can be virtualized
+        // TODO: consider moving this logic to AuthZone at some point
+        for auth_zone in &auth_zone.auth_zones {
+            if let HardResourceOrNonFungible::NonFungible(non_fungible_address) = resource_rule {
+                if auth_zone.is_proof_virtualizable(&non_fungible_address.resource_address()) {
+                    return true;
+                }
+            }
+        }
+
+        // If it can't be virtualized, check the actual proofs in the auth zones
+        for auth_zone in &auth_zone.auth_zones {
+            if auth_zone
+                .proofs
+                .iter()
+                .any(|p| Self::proof_matches(resource_rule, p))
+            {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    pub fn verify_proof_rule(
+        proof_rule: &HardProofRule,
+        auth_zone: &AuthZoneSubstate,
+    ) -> Result<(), MethodAuthorizationError> {
+        match proof_rule {
+            HardProofRule::Require(resource) => {
+                if Self::verify_resource_rule(resource, auth_zone) {
+                    Ok(())
+                } else {
+                    Err(NotAuthorized)
+                }
+            }
+            HardProofRule::AmountOf(HardDecimal::Amount(amount), resource) => {
+                if Self::check_has_amount(resource, *amount, auth_zone) {
+                    Ok(())
+                } else {
+                    Err(NotAuthorized)
+                }
+            }
+            HardProofRule::AllOf(HardProofRuleResourceList::List(resources)) => {
+                for resource in resources {
+                    if !Self::verify_resource_rule(resource, auth_zone) {
+                        return Err(NotAuthorized);
+                    }
+                }
+
+                Ok(())
+            }
+            HardProofRule::AnyOf(HardProofRuleResourceList::List(resources)) => {
+                for resource in resources {
+                    if Self::verify_resource_rule(resource, auth_zone) {
+                        return Ok(());
+                    }
+                }
+
+                Err(NotAuthorized)
+            }
+            HardProofRule::CountOf(
+                HardCount::Count(count),
+                HardProofRuleResourceList::List(resources),
+            ) => {
+                let mut left = count.clone();
+                for resource in resources {
+                    if Self::verify_resource_rule(resource, auth_zone) {
+                        left -= 1;
+                        if left == 0 {
+                            return Ok(());
+                        }
+                    }
+                }
+                Err(NotAuthorized)
+            }
+            _ => Err(NotAuthorized),
+        }
+    }
+
+    pub fn verify_auth_rule(
+        auth_rule: &HardAuthRule,
+        auth_zone: &AuthZoneSubstate,
+    ) -> Result<(), MethodAuthorizationError> {
+        match auth_rule {
+            HardAuthRule::ProofRule(rule) => Self::verify_proof_rule(rule, auth_zone),
+            HardAuthRule::AnyOf(rules) => {
+                if !rules
+                    .iter()
+                    .any(|r| Self::verify_auth_rule(r, auth_zone).is_ok())
+                {
+                    return Err(NotAuthorized);
+                }
+                Ok(())
+            }
+            HardAuthRule::AllOf(rules) => {
+                if rules
+                    .iter()
+                    .any(|r| Self::verify_auth_rule(r, auth_zone).is_err())
+                {
+                    return Err(NotAuthorized);
+                }
+                Ok(())
+            }
+        }
+    }
+
+    pub fn verify_method_auth(
+        method_auth: &MethodAuthorization,
+        auth_zone: &AuthZoneSubstate,
+    ) -> Result<(), MethodAuthorizationError> {
+        match method_auth {
+            MethodAuthorization::Protected(rule) => Self::verify_auth_rule(rule, auth_zone),
+            MethodAuthorization::AllowAll => Ok(()),
+            MethodAuthorization::DenyAll => Err(NotAuthorized),
+            MethodAuthorization::Unsupported => Err(MethodAuthorizationError::UnsupportedMethod),
+        }
+    }
+}
 
 /// A transient resource container.
 #[derive(Debug)]
@@ -25,8 +191,7 @@ impl AuthZoneSubstate {
         method_auths: Vec<MethodAuthorization>,
     ) -> Result<(), (MethodAuthorization, MethodAuthorizationError)> {
         for method_auth in method_auths {
-            method_auth
-                .check(&self.auth_zones)
+            AuthVerification::verify_method_auth(&method_auth, &self)
                 .map_err(|e| (method_auth, e))?;
         }
 
