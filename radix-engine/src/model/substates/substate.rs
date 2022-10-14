@@ -2,6 +2,7 @@ use crate::engine::{
     CallFrame, KernelError, RENodePointer, RuntimeError, SubstateProperties, Track,
 };
 use crate::fee::FeeReserve;
+use crate::model::substates::worktop::WorktopSubstate;
 use crate::model::*;
 use crate::types::*;
 

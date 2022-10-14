@@ -6,7 +6,7 @@ use transaction::validation::*;
 
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::InvokeError;
+use crate::model::{InvokeError, WorktopSubstate};
 use crate::model::{
     WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
     WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput,
@@ -14,8 +14,6 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::*;
-
-use super::WorktopSubstate;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInput {

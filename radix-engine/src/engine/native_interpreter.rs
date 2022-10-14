@@ -136,7 +136,7 @@ impl NativeInterpreter {
                 ProofSubstate::main(proof_id, method, input, system_api).map_err(|e| e.into())
             }
             (Receiver::Ref(RENodeId::Worktop), NativeMethod::Worktop(method)) => {
-                WorktopSubstate::main(method, input, system_api).map_err(|e| e.into())
+                Worktop::main(method, input, system_api).map_err(|e| e.into())
             }
             (Receiver::Ref(RENodeId::Vault(vault_id)), NativeMethod::Vault(method)) => {
                 Vault::main(vault_id, method, input, system_api).map_err(|e| e.into())
