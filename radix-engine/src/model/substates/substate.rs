@@ -472,6 +472,25 @@ impl<'a> SubstateRef<'a> {
 
     pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
         match self {
+            SubstateRef::Global(global) => {
+                let mut owned_nodes = HashSet::new();
+                match global {
+                    GlobalAddressSubstate::Resource(resource_address) => {
+                        owned_nodes.insert(RENodeId::ResourceManager(*resource_address))
+                    }
+                    GlobalAddressSubstate::Component(component) => {
+                        owned_nodes.insert(RENodeId::Component(component.0))
+                    }
+                    GlobalAddressSubstate::SystemComponent(component) => {
+                        owned_nodes.insert(RENodeId::System(component.0))
+                    }
+                    GlobalAddressSubstate::Package(package_address) => {
+                        owned_nodes.insert(RENodeId::Package(*package_address))
+                    }
+                };
+
+                (HashSet::new(), owned_nodes)
+            }
             SubstateRef::Vault(vault) => {
                 let mut references = HashSet::new();
                 references.insert(GlobalAddress::Resource(vault.resource_address()));

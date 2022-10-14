@@ -23,26 +23,6 @@ impl RENodePointer {
         }
     }
 
-    pub fn node_deref<'f, 's, R: FeeReserve>(
-        &self,
-        call_frames: &'f mut Vec<CallFrame>,
-        track: &'f mut Track<'s, R>,
-    ) -> Result<Option<RENodePointer>, RuntimeError> {
-        if let RENodeId::Global(..) = self.node_id() {
-            let offset = SubstateOffset::Global(GlobalOffset::Global);
-            self.acquire_lock(offset.clone(), LockFlags::empty(), track)
-                .map_err(RuntimeError::KernelError)?;
-
-            let substate_ref = self.borrow_substate(&offset, call_frames, track)?;
-            let node_id = substate_ref.global_address().node_deref();
-            self.release_lock(offset, false, track)
-                .map_err(RuntimeError::KernelError)?;
-            Ok(Some(RENodePointer::Store(node_id)))
-        } else {
-            Ok(None)
-        }
-    }
-
     pub fn acquire_lock<'s, R: FeeReserve>(
         &self,
         offset: SubstateOffset,

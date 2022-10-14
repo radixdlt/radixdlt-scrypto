@@ -35,6 +35,7 @@ impl REActor {
                     RENodeId::KeyValueStore(_),
                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
                 ) => true,
+                (RENodeId::Global(_), SubstateOffset::Global(GlobalOffset::Global)) => true,
                 (RENodeId::Component(_), SubstateOffset::Component(ComponentOffset::Info)) => true,
                 _ => false,
             },
@@ -50,6 +51,7 @@ impl REActor {
                 (RENodeId::Component(addr), SubstateOffset::Component(ComponentOffset::State)) => {
                     addr.eq(component_address)
                 }
+                (RENodeId::Global(_), SubstateOffset::Global(GlobalOffset::Global)) => true,
                 _ => false,
             },
             _ => false,

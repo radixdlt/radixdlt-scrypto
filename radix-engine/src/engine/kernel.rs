@@ -540,6 +540,44 @@ where
         Ok((output, received_values))
     }
 
+    pub fn node_method_deref(
+        &mut self,
+        node_id: RENodeId,
+    ) -> Result<Option<RENodeId>, RuntimeError> {
+        if let RENodeId::Global(..) = node_id {
+            let offset = SubstateOffset::Global(GlobalOffset::Global);
+            let handle = self.lock_substate(node_id, offset, LockFlags::empty())?;
+            let substate_ref = self.get_ref(handle)?;
+            let node_id = substate_ref.global_address().node_deref();
+            Ok(Some(node_id))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn node_offset_deref(
+        &mut self,
+        node_id: RENodeId,
+        offset: &SubstateOffset,
+    ) -> Result<Option<RENodeId>, RuntimeError> {
+        if let RENodeId::Global(..) = node_id {
+            if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) {
+                let handle = self.lock_substate(
+                    node_id,
+                    SubstateOffset::Global(GlobalOffset::Global),
+                    LockFlags::empty(),
+                )?;
+                let substate_ref = self.get_ref(handle)?;
+                let node_id = substate_ref.global_address().node_deref();
+                Ok(Some(node_id))
+            } else {
+                Ok(None)
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
     fn invoke_method(
         &mut self,
         mut method_ident: ReceiverMethodIdent,
@@ -549,7 +587,6 @@ where
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
         // Authorization and state load
         let mut node_id = method_ident.receiver.node_id();
-        let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
         match method_ident.receiver {
             Receiver::Consumed(..) => {
@@ -563,16 +600,15 @@ where
             }
             Receiver::Ref(..) => {
                 // Deref
-                if let Some(derefed) =
-                    node_pointer.node_deref(&mut self.call_frames, &mut self.track)?
-                {
-                    node_id = derefed.node_id();
-                    node_pointer = derefed;
+                if let Some(derefed) = self.node_method_deref(node_id)? {
+                    node_id = derefed;
                     method_ident = ReceiverMethodIdent {
                         receiver: Receiver::Ref(node_id),
                         method_ident: method_ident.method_ident,
                     }
                 }
+                let node_pointer =
+                    Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
                 refed_nodes.insert(node_id, node_pointer);
             }
         }
@@ -584,6 +620,8 @@ where
                 receiver,
             } => match node_id {
                 RENodeId::Component(..) => {
+                    let node_pointer =
+                        Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
                     let offset = SubstateOffset::Component(ComponentOffset::Info);
                     node_pointer
                         .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
@@ -1022,7 +1060,7 @@ where
 
     fn lock_substate(
         &mut self,
-        node_id: RENodeId,
+        mut node_id: RENodeId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
@@ -1039,12 +1077,12 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
-
         // Deref
-        if let Some(derefed) = node_pointer.node_deref(&mut self.call_frames, &mut self.track)? {
-            node_pointer = derefed;
+        if let Some(derefed) = self.node_offset_deref(node_id, &offset)? {
+            node_id = derefed;
         }
+
+        let node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
         // TODO: Check if valid offset for node_id
 
