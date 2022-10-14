@@ -7,38 +7,32 @@ use crate::component::ComponentAddress;
 use crate::component::PackageAddress;
 use crate::engine::types::{ComponentId, RENodeId};
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub enum FnIdent {
-    Function(FunctionIdent),
-    Method(MethodIdent),
+#[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
+pub struct ScryptoFunctionIdent {
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub function_name: String,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
-pub enum FunctionIdent {
-    Scrypto {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        function_name: String,
-    },
-    Native {
-        /* TODO: we may consider using NativeFunction enum here, which provider better compiler checks.
-        The only downside is we'll have to update the transaction model every time a native function is added.
-         */
-        blueprint_name: String,
-        function_name: String,
-    },
+pub struct NativeFunctionIdent {
+    /* TODO: we may consider using NativeFunction enum here, which provider better compiler checks.
+    The only downside is we'll have to update the transaction model every time a native function is added.
+     */
+    pub blueprint_name: String,
+    pub function_name: String,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub enum MethodIdent {
-    Scrypto {
-        receiver: ScryptoReceiver,
-        method_name: String,
-    },
-    Native {
-        receiver: Receiver,
-        method_name: String,
-    },
+pub struct ScryptoMethodIdent {
+    pub receiver: ScryptoReceiver,
+    pub method_name: String,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+pub struct NativeMethodIdent {
+    pub receiver: Receiver,
+    pub method_name: String,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]

@@ -1,9 +1,8 @@
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::{FnIdent, MethodIdent};
 
-use crate::core::{AuthZoneMethod, Receiver};
+use crate::core::{AuthZoneMethod, NativeMethodIdent, Receiver};
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
@@ -94,11 +93,11 @@ impl ComponentAuthZone {
             .expect("AuthZone does not exist");
 
         let proof: Proof = proof.into();
-        let input = RadixEngineInput::Invoke(
-            FnIdent::Method(MethodIdent::Native {
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethodIdent {
                 receiver: Receiver::Ref(node_id),
                 method_name: AuthZoneMethod::Push.to_string(),
-            }),
+            },
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
         );
         call_engine(input)

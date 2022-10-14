@@ -3,12 +3,11 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::MethodIdent;
 use scrypto::engine::types::GlobalAddress;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::core::{BucketMethod, FnIdent, Receiver, ResourceManagerMethod};
+use crate::core::{BucketMethod, NativeMethodIdent, Receiver, ResourceManagerMethod};
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
@@ -53,13 +52,13 @@ pub struct Bucket(pub BucketId);
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::Invoke(
-            FnIdent::Method(MethodIdent::Native {
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethodIdent {
                 receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
                     resource_address,
                 ))),
                 method_name: ResourceManagerMethod::CreateBucket.to_string(),
-            }),
+            },
             scrypto_encode(&ResourceManagerCreateBucketInput {}),
         );
         call_engine(input)
@@ -75,11 +74,11 @@ impl Bucket {
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Self {
-        let input = RadixEngineInput::Invoke(
-            FnIdent::Method(MethodIdent::Native {
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethodIdent {
                 receiver: Receiver::Ref(RENodeId::Bucket(self.0)),
                 method_name: BucketMethod::Take.to_string(),
-            }),
+            },
             scrypto_encode(&BucketTakeInput { amount }),
         );
         call_engine(input)

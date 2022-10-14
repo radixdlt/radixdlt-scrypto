@@ -61,12 +61,12 @@ impl Runtime {
         function_name: S2,
         args: Vec<u8>,
     ) -> T {
-        let input = RadixEngineInput::Invoke(
-            FnIdent::Function(FunctionIdent::Scrypto {
+        let input = RadixEngineInput::InvokeScryptoFunction(
+            ScryptoFunctionIdent {
                 package_address,
                 blueprint_name: blueprint_name.as_ref().to_owned(),
                 function_name: function_name.as_ref().to_owned(),
-            }),
+            },
             args,
         );
         call_engine(input)
@@ -78,11 +78,11 @@ impl Runtime {
         method: S,
         args: Vec<u8>,
     ) -> T {
-        let input = RadixEngineInput::Invoke(
-            FnIdent::Method(MethodIdent::Scrypto {
+        let input = RadixEngineInput::InvokeScryptoMethod(
+            ScryptoMethodIdent {
                 receiver: ScryptoReceiver::Global(component_address),
                 method_name: method.as_ref().to_string(),
-            }),
+            },
             args,
         );
         call_engine(input)
@@ -90,13 +90,13 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let input = RadixEngineInput::Invoke(
-            FnIdent::Method(MethodIdent::Native {
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethodIdent {
                 receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
                     SYS_SYSTEM_COMPONENT,
                 ))),
                 method_name: SystemMethod::GetTransactionHash.to_string(),
-            }),
+            },
             scrypto_encode(&SystemGetTransactionHashInput {}),
         );
         call_engine(input)
@@ -104,13 +104,13 @@ impl Runtime {
 
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
-        let input = RadixEngineInput::Invoke(
-            FnIdent::Method(MethodIdent::Native {
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethodIdent {
                 receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
                     SYS_SYSTEM_COMPONENT,
                 ))),
                 method_name: SystemMethod::GetCurrentEpoch.to_string(),
-            }),
+            },
             scrypto_encode(&SystemGetCurrentEpochInput {}),
         );
         call_engine(input)
