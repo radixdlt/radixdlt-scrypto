@@ -198,7 +198,7 @@ impl AuthModule {
             .clone();
         let node_pointer = frame.get_node_pointer(auth_zone_id).unwrap();
 
-        let mut authzone = match node_pointer {
+        let mut auth_zone_ref_mut = match node_pointer {
             RENodePointer::Heap { frame_id, root, id } => {
                 let frame = call_frames.get_mut(frame_id).unwrap();
                 let heap_re_node = frame
@@ -213,21 +213,19 @@ impl AuthModule {
         };
 
         // Authorization check
-        let auth_zones = &authzone.auth_zone().auth_zones;
-        if !method_auths.is_empty() {
-            for method_auth in method_auths {
-                method_auth.check(auth_zones).map_err(|error| {
-                    InvokeError::Error(AuthError::Unauthorized {
-                        actor: actor.clone(),
-                        authorization: method_auth,
-                        error,
-                    })
-                })?;
-            }
-        }
+        auth_zone_ref_mut
+            .auth_zone()
+            .check_auth(method_auths)
+            .map_err(|(authorization, error)| {
+                InvokeError::Error(AuthError::Unauthorized {
+                    actor: actor.clone(),
+                    authorization,
+                    error,
+                })
+            })?;
 
         // New auth zone frame managed by the AuthModule
-        authzone.auth_zone().new_frame(&actor);
+        auth_zone_ref_mut.auth_zone().new_frame();
         new_refs.insert(auth_zone_id, node_pointer);
 
         Ok(new_refs)
@@ -267,7 +265,7 @@ impl AuthModule {
                 _ => panic!("Unexpected"),
             };
             // Copy-over root frame's auth zone virtual_proofs_buckets
-            authzone.auth_zone().pop_frame(&frame.actor);
+            authzone.auth_zone().pop_frame();
         }
 
         Ok(())

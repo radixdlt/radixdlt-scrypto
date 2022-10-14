@@ -1,5 +1,5 @@
 use crate::model::method_authorization::MethodAuthorizationError::NotAuthorized;
-use crate::model::{AuthZone, AuthZoneSubstate, ProofSubstate};
+use crate::model::{AuthZone, ProofSubstate};
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]

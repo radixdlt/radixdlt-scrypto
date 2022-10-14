@@ -1,28 +1,39 @@
-use crate::engine::{REActor, ResolvedMethod, ResolvedReceiverMethod};
 use crate::model::{
-    AuthZoneError, InvokeError, LockableResource, LockedAmountOrIds, ProofSubstate,
-    ResourceContainerId,
+    AuthZoneError, InvokeError, LockableResource, LockedAmountOrIds, MethodAuthorization,
+    MethodAuthorizationError, ProofSubstate, ResourceContainerId,
 };
 use crate::types::*;
 
 /// A transient resource container.
 #[derive(Debug)]
 pub struct AuthZoneSubstate {
-    pub auth_zones: Vec<AuthZone>,
+    auth_zones: Vec<AuthZone>,
 }
 
 impl AuthZoneSubstate {
-    pub fn new_frame(&mut self, actor: &REActor) {
-        if matches!(
-            actor,
-            REActor::Method(ResolvedReceiverMethod {
-                method: ResolvedMethod::Native(NativeMethod::AuthZone(..)),
-                ..
-            })
-        ) {
-            return;
+    pub fn new(
+        proofs: Vec<ProofSubstate>,
+        virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,
+    ) -> Self {
+        Self {
+            auth_zones: vec![AuthZone::new_with_proofs(proofs, virtual_proofs_buckets)],
+        }
+    }
+
+    pub fn check_auth(
+        &self,
+        method_auths: Vec<MethodAuthorization>,
+    ) -> Result<(), (MethodAuthorization, MethodAuthorizationError)> {
+        for method_auth in method_auths {
+            method_auth
+                .check(&self.auth_zones)
+                .map_err(|e| (method_auth, e))?;
         }
 
+        Ok(())
+    }
+
+    pub fn new_frame(&mut self) {
         let virtual_proofs_buckets = self
             .auth_zones
             .first()
@@ -33,17 +44,7 @@ impl AuthZoneSubstate {
             .push(AuthZone::new_with_proofs(vec![], virtual_proofs_buckets));
     }
 
-    pub fn pop_frame(&mut self, actor: &REActor) {
-        if matches!(
-            actor,
-            REActor::Method(ResolvedReceiverMethod {
-                method: ResolvedMethod::Native(NativeMethod::AuthZone(..)),
-                ..
-            })
-        ) {
-            return;
-        }
-
+    pub fn pop_frame(&mut self) {
         if let Some(mut auth_zone) = self.auth_zones.pop() {
             auth_zone.clear()
         }

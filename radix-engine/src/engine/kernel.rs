@@ -136,9 +136,7 @@ where
             virtual_proofs_buckets.insert(resource_address, bucket_id);
         }
 
-        let auth_zone = AuthZoneSubstate {
-            auth_zones: vec![AuthZone::new_with_proofs(proofs, virtual_proofs_buckets)],
-        };
+        let auth_zone = AuthZoneSubstate::new(proofs, virtual_proofs_buckets);
 
         kernel
             .node_create(HeapRENode::AuthZone(auth_zone))
