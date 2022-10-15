@@ -225,7 +225,7 @@ impl AuthModule {
             })?;
 
         // New auth zone frame managed by the AuthModule
-        auth_zone_ref_mut.auth_zone().new_frame();
+        auth_zone_ref_mut.auth_zone().new_frame(actor);
         new_refs.insert(auth_zone_id, node_pointer);
 
         Ok(new_refs)

@@ -158,7 +158,7 @@ impl AuthZoneImpl {
                 let proof = {
                     let substate_ref = system_api.get_ref(auth_zone_handle)?;
                     let auth_zone = substate_ref.auth_zone();
-                    let proof = auth_zone.create_proof_by_ids(
+                    let proof = auth_zone.cur_auth_zone().create_proof_by_ids(
                         &input.ids,
                         input.resource_address,
                         resource_type,

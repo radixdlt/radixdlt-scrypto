@@ -1,3 +1,4 @@
+use crate::engine::REActor;
 use crate::model::MethodAuthorizationError::NotAuthorized;
 use crate::model::{
     AuthZoneError, HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
@@ -198,7 +199,7 @@ impl AuthZoneSubstate {
         Ok(())
     }
 
-    pub fn new_frame(&mut self) {
+    pub fn new_frame(&mut self, actor: &REActor) {
         self.auth_zones
             .push(AuthZone::new_with_proofs(vec![], BTreeMap::new()));
     }
@@ -222,22 +223,6 @@ impl AuthZoneSubstate {
     pub fn cur_auth_zone(&self) -> &AuthZone {
         self.auth_zones.last().unwrap()
     }
-
-    pub fn create_proof_by_ids(
-        &self,
-        ids: &BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-        resource_type: ResourceType,
-    ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
-        for auth_zone in self.auth_zones.iter().rev() {
-            match auth_zone.create_proof_by_ids(ids, resource_address, resource_type) {
-                Ok(proof) => return Ok(proof),
-                Err(_) => {}
-            }
-        }
-
-        Err(InvokeError::Error(AuthZoneError::CouldNotCreateProof))
-    }
 }
 
 #[derive(Debug)]
@@ -251,7 +236,7 @@ pub struct AuthZone {
 }
 
 impl AuthZone {
-    pub fn new_with_proofs(
+    fn new_with_proofs(
         proofs: Vec<ProofSubstate>,
         virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,
     ) -> Self {
@@ -353,20 +338,21 @@ impl AuthZone {
             .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)))
     }
 
-    fn create_proof_by_ids(
+    pub fn create_proof_by_ids(
         &self,
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
         resource_type: ResourceType,
     ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
-        let maybe_existing_proof = ProofSubstate::compose_by_ids(&self.proofs, ids, resource_address, resource_type)
-            .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)));
+        let maybe_existing_proof =
+            ProofSubstate::compose_by_ids(&self.proofs, ids, resource_address, resource_type)
+                .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)));
 
         let proof = match maybe_existing_proof {
             Ok(proof) => proof,
             Err(_) if self.is_proof_virtualizable(&resource_address) => {
-                    self.virtualize_non_fungible_proof(&resource_address, ids)
-                }
+                self.virtualize_non_fungible_proof(&resource_address, ids)
+            }
             Err(e) => Err(e)?,
         };
 
