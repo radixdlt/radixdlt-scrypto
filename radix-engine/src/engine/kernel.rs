@@ -276,9 +276,6 @@ where
         owned_nodes: HashMap<RENodeId, HeapRootRENode>,
         refed_nodes: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        
-
-
         let frame = CallFrame::new_child(
             Self::current_frame(&self.call_frames).depth + 1,
             actor,
@@ -514,7 +511,7 @@ where
     // TODO: Move out
     fn load_scrypto_actor_internal(
         &mut self,
-        fn_ident: ScryptoFnIdent,
+        fn_ident: &ScryptoFnIdent,
         input: &ScryptoValue,
     ) -> Result<REActor, InvokeError<ScryptoActorError>> {
         let (receiver, package_address, blueprint_name, fn_name) = match fn_ident {
@@ -523,7 +520,9 @@ where
                 method_name,
             }) => {
                 let node_id = match receiver {
-                    ScryptoReceiver::Local(component_id) => RENodeId::Component(component_id),
+                    ScryptoReceiver::Local(component_id) => {
+                        RENodeId::Component(component_id.clone())
+                    }
                     ScryptoReceiver::Global(component_address) => todo!(),
                 };
                 let node_pointer =
@@ -543,7 +542,7 @@ where
                     Some(node_id),
                     info.package_address.clone(),
                     info.blueprint_name.clone(),
-                    method_name,
+                    method_name.clone(),
                 );
 
                 node_pointer
@@ -555,7 +554,12 @@ where
                 package_address,
                 blueprint_name,
                 function_name,
-            }) => (None, package_address, blueprint_name, function_name),
+            }) => (
+                None,
+                package_address.clone(),
+                blueprint_name.clone(),
+                function_name.clone(),
+            ),
         };
 
         let package_node_id = RENodeId::Package(package_address);
@@ -614,7 +618,7 @@ where
 
     fn load_scrypto_actor(
         &mut self,
-        fn_ident: ScryptoFnIdent,
+        fn_ident: &ScryptoFnIdent,
         input: &ScryptoValue,
     ) -> Result<REActor, RuntimeError> {
         self.load_scrypto_actor_internal(fn_ident, input)
@@ -652,6 +656,7 @@ where
                     "TransactionProcessor" => NativeFunction::TransactionProcessor(
                         TransactionProcessorFunction::from_str(function_name).map_err(|_| error)?,
                     ),
+                    _ => return Err(error),
                 };
                 REActor::Function(ResolvedFunction::Native(native_function))
             }
@@ -869,7 +874,7 @@ where
                 }
                 ScryptoReceiver::Global(ref mut component_address) => {
                     // Deref
-                    let node_id =
+                    let mut node_id =
                         RENodeId::Global(GlobalAddress::Component(component_address.clone()));
                     if let Some(derefed) = self.node_method_deref(node_id)? {
                         node_id = derefed;
@@ -881,7 +886,7 @@ where
             }
         }
 
-        let actor = self.load_scrypto_actor(fn_ident, &args)?;
+        let actor = self.load_scrypto_actor(&fn_ident, &args)?;
 
         let (output, received_values) = self.run(actor, args, nodes_to_pass, next_node_refs)?;
 

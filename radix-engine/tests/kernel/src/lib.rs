@@ -58,7 +58,8 @@ blueprint! {
             let vault = Vault::with_bucket(bucket);
             let node_id = RENodeId::Vault(vault.0);
 
-            let input = RadixEngineInput::invoke_native(NativeFnIdent::Method(NativeMethodIdent {
+            let input = RadixEngineInput::invoke_native(
+                NativeFnIdent::Method(NativeMethodIdent {
                     method_ident: MethodIdent::Scrypto("test".to_string()),
                     receiver: Receiver::Ref(node_id),
                 }),
