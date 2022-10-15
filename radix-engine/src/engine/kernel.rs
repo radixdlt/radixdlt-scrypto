@@ -285,6 +285,7 @@ where
         owned_nodes: HashMap<RENodeId, HeapRootRENode>,
         mut refed_nodes: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
+        // TODO: Use execute_in_kernel mode for this
         let new_refed_nodes =
             AuthModule::on_new_frame(&actor, &input, &mut self.call_frames, &mut self.track)
                 .map_err(|e| match e {
@@ -568,31 +569,23 @@ where
                 ) {
                     return Err(InvokeError::Error(ScryptoActorError::InvalidReceiver));
                 }
-                let node_id = receiver.receiver().node_id();
-                let node_pointer =
-                    Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
-                let offset = SubstateOffset::Component(ComponentOffset::Info);
-                node_pointer
-                    .acquire_lock(offset.clone(), LockFlags::read_only(), &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
 
-                let substate_ref = node_pointer.borrow_substate(
-                    &offset,
-                    &mut self.call_frames,
-                    &mut self.track,
-                )?;
-                let info = substate_ref.component_info();
-                let info = (
-                    Some(receiver),
-                    info.package_address.clone(),
-                    info.blueprint_name.clone(),
-                    ident,
-                );
+                self.execute_in_kernel_mode(KernelActor::ScryptoLoader, |system_api| {
+                    let node_id = receiver.receiver().node_id();
+                    let offset = SubstateOffset::Component(ComponentOffset::Info);
+                    let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+                    let substate_ref = system_api.get_ref(handle)?;
+                    let info = substate_ref.component_info();
+                    let rtn = (
+                        Some(receiver),
+                        info.package_address.clone(),
+                        info.blueprint_name.clone(),
+                        ident,
+                    );
+                    system_api.drop_lock(handle)?;
 
-                node_pointer
-                    .release_lock(offset, false, &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
-                info
+                    Ok(rtn)
+                })?
             }
             ScryptoFnIdent::Function(package_address, blueprint_name, ident) => {
                 (None, package_address, blueprint_name, ident)

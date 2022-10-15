@@ -83,6 +83,7 @@ impl REActor {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum KernelActor {
     Application,
-    AuthModule,
     Deref,
+    ScryptoLoader,
+    AuthModule,
 }

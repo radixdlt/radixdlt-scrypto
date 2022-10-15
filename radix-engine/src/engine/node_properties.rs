@@ -54,6 +54,10 @@ impl SubstateProperties {
                 SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => true,
                 _ => false,
             },
+            (KernelActor::ScryptoLoader, offset) => match offset {
+                SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::empty(),
+                _ => false,
+            },
             (KernelActor::Application, offset) => {
                 if !flags.contains(LockFlags::MUTABLE) {
                     match actor {
