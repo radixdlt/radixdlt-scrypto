@@ -1,6 +1,6 @@
 use transaction::errors::*;
 
-use crate::engine::REActor;
+use crate::engine::{REActor, ResolvedReceiver};
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
@@ -106,7 +106,7 @@ pub enum ScryptoActorError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum InterpreterError {
-    InvalidScryptoMethod(Receiver, MethodIdent, ScryptoActorError),
+    InvalidScryptoMethod(ResolvedReceiver, MethodIdent, ScryptoActorError),
     InvalidScryptoFunction(FunctionIdent, ScryptoActorError),
 }
 

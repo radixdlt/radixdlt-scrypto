@@ -22,7 +22,7 @@ macro_rules! trace {
 
 pub enum ScryptoFnIdent {
     Function(PackageAddress, String, String),
-    Method(Receiver, String),
+    Method(ResolvedReceiver, String),
 }
 
 pub struct Kernel<
@@ -310,7 +310,9 @@ where
                 REActor::Method(ResolvedReceiverMethod {
                     receiver,
                     method: ResolvedMethod::Native(native_method),
-                }) => NativeInterpreter::run_method(receiver, native_method, input, self),
+                }) => {
+                    NativeInterpreter::run_method(receiver.receiver(), native_method, input, self)
+                },
                 REActor::Function(ResolvedFunction::Scrypto {
                     package_address,
                     blueprint_name,
@@ -353,7 +355,9 @@ where
                         let mut instance = self.wasm_engine.instantiate(instrumented_code);
 
                         let scrypto_actor = match &Self::current_frame(&self.call_frames).actor {
-                            REActor::Method(ResolvedReceiverMethod { receiver, .. }) => {
+                            REActor::Method(ResolvedReceiverMethod { receiver: ResolvedReceiver {
+                                receiver, ..
+                            }, .. }) => {
                                 match receiver {
                                     Receiver::Ref(RENodeId::Component(component_id)) => {
                                         ScryptoActor::Component(
@@ -518,12 +522,13 @@ where
     ) -> Result<REActor, InvokeError<ScryptoActorError>> {
         let (receiver, package_address, blueprint_name, ident) = match ident {
             ScryptoFnIdent::Method(receiver, ident) => {
-                let node_id = match receiver {
-                    Receiver::Ref(RENodeId::Component(component_id)) => {
-                        RENodeId::Component(component_id)
-                    }
-                    _ => return Err(InvokeError::Error(ScryptoActorError::InvalidReceiver)),
-                };
+                if !matches!(receiver, ResolvedReceiver {
+                        receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                        ..
+                    }) {
+                    return Err(InvokeError::Error(ScryptoActorError::InvalidReceiver));
+                }
+                let node_id = receiver.receiver().node_id();
                 let node_pointer =
                     Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
                 let offset = SubstateOffset::Component(ComponentOffset::Info);
@@ -538,7 +543,7 @@ where
                 )?;
                 let info = substate_ref.component_info();
                 let info = (
-                    Some(node_id),
+                    Some(receiver),
                     info.package_address.clone(),
                     info.blueprint_name.clone(),
                     ident,
@@ -586,9 +591,9 @@ where
             .release_lock(offset, false, &mut self.track)
             .map_err(RuntimeError::KernelError)?;
 
-        let actor = if let Some(node_id) = receiver {
+        let actor = if let Some(receiver) = receiver {
             REActor::Method(ResolvedReceiverMethod {
-                receiver: Receiver::Ref(node_id),
+                receiver,
                 method: ResolvedMethod::Scrypto {
                     package_address,
                     blueprint_name: blueprint_name.clone(),
@@ -610,7 +615,7 @@ where
 
     fn resolve_method_actor(
         &mut self,
-        receiver: Receiver,
+        receiver: ResolvedReceiver,
         method_ident: MethodIdent,
         input: &ScryptoValue,
     ) -> Result<REActor, RuntimeError> {
@@ -840,20 +845,23 @@ where
                         let node =
                             Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
                         nodes_to_pass_downstream.insert(node_id, node);
-                        Receiver::Consumed(node_id)
+                        ResolvedReceiver::new(Receiver::Consumed(node_id))
                     }
                     Receiver::Ref(node_id) => {
                         // Deref
-                        let resolved_node_id =
+                        let resolved_receiver =
                             if let Some(derefed) = self.node_method_deref(node_id)? {
-                                derefed
+                                ResolvedReceiver::derefed(Receiver::Ref(derefed), node_id)
                             } else {
-                                node_id
+                                ResolvedReceiver::new(Receiver::Ref(node_id))
                             };
+
+                        let resolved_node_id = resolved_receiver.node_id();
                         let node_pointer = Self::current_frame(&self.call_frames)
                             .get_node_pointer(resolved_node_id)?;
                         next_node_refs.insert(resolved_node_id, node_pointer);
-                        Receiver::Ref(resolved_node_id)
+
+                        resolved_receiver
                     }
                 };
                 self.resolve_method_actor(resolved_receiver, method_ident, &input)?

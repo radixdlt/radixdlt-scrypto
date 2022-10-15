@@ -1,4 +1,4 @@
-use radix_engine::engine::{InterpreterError, RuntimeError, ScryptoActorError};
+use radix_engine::engine::{InterpreterError, ResolvedReceiver, RuntimeError, ScryptoActorError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto::core::MethodIdent;
@@ -29,7 +29,10 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
         matches!(
             e,
             RuntimeError::InterpreterError(InterpreterError::InvalidScryptoMethod(
-                Receiver::Ref(RENodeId::Vault(..)),
+                ResolvedReceiver {
+                    receiver: Receiver::Ref(RENodeId::Vault(..)),
+                    ..
+                },
                 MethodIdent::Scrypto(..),
                 ScryptoActorError::InvalidReceiver
             ))

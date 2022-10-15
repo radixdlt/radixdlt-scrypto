@@ -49,7 +49,7 @@ impl AuthModule {
                 _ => vec![],
             },
             REActor::Method(ResolvedReceiverMethod { receiver, method }) => {
-                match (receiver, method) {
+                match (receiver.receiver(), method) {
                     (
                         Receiver::Ref(RENodeId::ResourceManager(resource_address)),
                         ResolvedMethod::Native(NativeMethod::ResourceManager(ref method)),
@@ -152,7 +152,7 @@ impl AuthModule {
                         let vault_node_pointer = call_frames
                             .last()
                             .unwrap()
-                            .get_node_pointer(receiver.node_id())?;
+                            .get_node_pointer(receiver.receiver().node_id())?;
 
                         let resource_address = {
                             let offset = SubstateOffset::Vault(VaultOffset::Vault);

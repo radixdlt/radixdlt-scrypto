@@ -13,8 +13,38 @@ pub enum ResolvedMethod {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub struct ResolvedReceiverMethod {
+pub struct ResolvedReceiver {
+    pub derefed_from: Option<RENodeId>,
     pub receiver: Receiver,
+}
+
+impl ResolvedReceiver {
+    pub fn derefed(receiver: Receiver, from: RENodeId) -> Self {
+        Self {
+            receiver,
+            derefed_from: Some(from),
+        }
+    }
+
+    pub fn new(receiver: Receiver) -> Self {
+        Self {
+            receiver,
+            derefed_from: None,
+        }
+    }
+
+    pub fn receiver(&self) -> Receiver {
+        self.receiver
+    }
+
+    pub fn node_id(&self) -> RENodeId {
+        self.receiver.node_id()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+pub struct ResolvedReceiverMethod {
+    pub receiver: ResolvedReceiver,
     pub method: ResolvedMethod,
 }
 
@@ -66,7 +96,10 @@ impl REActor {
                 _ => false,
             },
             REActor::Method(ResolvedReceiverMethod {
-                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                receiver: ResolvedReceiver {
+                    receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                    ..
+                },
                 method: ResolvedMethod::Scrypto { .. },
             }) => match (node_id, offset) {
                 (
@@ -99,7 +132,10 @@ impl REActor {
                 _ => false,
             },
             REActor::Method(ResolvedReceiverMethod {
-                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                receiver: ResolvedReceiver {
+                    receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                    ..
+                },
                 method: ResolvedMethod::Scrypto { .. },
             }) => match (node_id, offset) {
                 (
