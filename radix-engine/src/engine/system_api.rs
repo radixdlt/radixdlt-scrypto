@@ -8,6 +8,7 @@ use bitflags::bitflags;
 use scrypto::core::FnIdent;
 
 bitflags! {
+    #[derive(Encode, Decode, TypeId)]
     pub struct LockFlags: u32 {
         /// Allows the locked substate to be mutated
         const MUTABLE = 0b00000001;

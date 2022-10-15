@@ -1,6 +1,6 @@
 use transaction::errors::*;
 
-use crate::engine::{REActor, ResolvedReceiver};
+use crate::engine::{KernelActor, LockFlags, REActor, ResolvedReceiver};
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
@@ -63,7 +63,9 @@ pub enum KernelError {
     InvalidFnIdent(FnIdent),
 
     FunctionNotFound(FunctionIdent),
-    InvalidFnOutput { fn_identifier: FunctionIdent },
+    InvalidFnOutput {
+        fn_identifier: FunctionIdent,
+    },
 
     // ID allocation
     IdAllocationError(IdAllocationError),
@@ -90,8 +92,13 @@ pub enum KernelError {
     InvalidOverwrite,
 
     // Actor Constraints
-    SubstateNotReadable(REActor, SubstateId),
-    SubstateNotWriteable(REActor, SubstateId),
+    InvalidSubstateLock {
+        kernel_actor: KernelActor,
+        actor: REActor,
+        node_id: RENodeId,
+        offset: SubstateOffset,
+        flags: LockFlags,
+    },
     CantMoveDownstream(RENodeId),
     CantMoveUpstream(RENodeId),
 }

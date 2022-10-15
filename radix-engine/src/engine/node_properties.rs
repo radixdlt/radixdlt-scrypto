@@ -1,6 +1,6 @@
 use crate::engine::{
-    KernelActor, KernelError, REActor, ResolvedFunction, ResolvedMethod, ResolvedReceiver,
-    ResolvedReceiverMethod, RuntimeError,
+    KernelActor, KernelError, LockFlags, REActor, ResolvedFunction, ResolvedMethod,
+    ResolvedReceiver, ResolvedReceiverMethod, RuntimeError,
 };
 use crate::types::*;
 
@@ -37,96 +37,108 @@ impl SubstateProperties {
         }
     }
 
-    pub fn is_substate_readable(
+    pub fn check_lock_access(
         kernel_actor: KernelActor,
         actor: &REActor,
         node_id: RENodeId,
         offset: SubstateOffset,
+        flags: LockFlags,
     ) -> bool {
         match (kernel_actor, offset) {
             (KernelActor::Deref, offset) => match offset {
-                SubstateOffset::Global(GlobalOffset::Global) => true,
+                SubstateOffset::Global(GlobalOffset::Global) => flags == LockFlags::empty(),
                 _ => false,
             },
-            (KernelActor::Application, offset) => match actor {
-                REActor::Function(ResolvedFunction::Native(..))
-                | REActor::Method(ResolvedReceiverMethod {
-                    method: ResolvedMethod::Native(..),
-                    ..
-                }) => true,
-                REActor::Function(ResolvedFunction::Scrypto { .. }) => match (node_id, offset) {
-                    (
-                        RENodeId::KeyValueStore(_),
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                    ) => true,
-                    (RENodeId::Component(_), SubstateOffset::Component(ComponentOffset::Info)) => {
-                        true
-                    }
-                    _ => false,
-                },
-                REActor::Method(ResolvedReceiverMethod {
-                    receiver:
-                        ResolvedReceiver {
-                            receiver: Receiver::Ref(RENodeId::Component(component_address)),
+            (KernelActor::Application, offset) => {
+                // TODO: Cleanup and reduce to least privilege
+                if !flags.contains(LockFlags::MUTABLE) {
+                    match actor {
+                        // Native
+                        REActor::Function(ResolvedFunction::Native(..))
+                        | REActor::Method(ResolvedReceiverMethod {
+                            method: ResolvedMethod::Native(..),
                             ..
-                        },
-                    method: ResolvedMethod::Scrypto { .. },
-                }) => match (node_id, offset) {
-                    (
-                        RENodeId::KeyValueStore(_),
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                    ) => true,
-                    (RENodeId::Component(_), SubstateOffset::Component(ComponentOffset::Info)) => {
-                        true
-                    }
-                    (
-                        RENodeId::Component(addr),
-                        SubstateOffset::Component(ComponentOffset::State),
-                    ) => addr.eq(component_address),
-                    _ => false,
-                },
-                _ => false,
-            },
-        }
-    }
+                        }) => true,
 
-    pub fn is_substate_writeable(
-        kernel_actor: KernelActor,
-        actor: &REActor,
-        node_id: RENodeId,
-        offset: SubstateOffset,
-    ) -> bool {
-        match actor {
-            REActor::Function(ResolvedFunction::Native(..))
-            | REActor::Method(ResolvedReceiverMethod {
-                method: ResolvedMethod::Native(..),
-                ..
-            }) => true,
-            REActor::Function(ResolvedFunction::Scrypto { .. }) => match (node_id, offset) {
-                (
-                    RENodeId::KeyValueStore(_),
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                ) => true,
-                _ => false,
-            },
-            REActor::Method(ResolvedReceiverMethod {
-                receiver:
-                    ResolvedReceiver {
-                        receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                        ..
-                    },
-                method: ResolvedMethod::Scrypto { .. },
-            }) => match (node_id, offset) {
-                (
-                    RENodeId::KeyValueStore(_),
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                ) => true,
-                (RENodeId::Component(addr), SubstateOffset::Component(ComponentOffset::State)) => {
-                    addr.eq(component_address)
+                        // Scrypto
+                        REActor::Function(ResolvedFunction::Scrypto { .. }) => {
+                            match (node_id, offset) {
+                                (
+                                    RENodeId::KeyValueStore(_),
+                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                                ) => true,
+                                (
+                                    RENodeId::Component(_),
+                                    SubstateOffset::Component(ComponentOffset::Info),
+                                ) => true,
+                                _ => false,
+                            }
+                        }
+                        REActor::Method(ResolvedReceiverMethod {
+                            receiver:
+                                ResolvedReceiver {
+                                    receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                                    ..
+                                },
+                            method: ResolvedMethod::Scrypto { .. },
+                        }) => match (node_id, offset) {
+                            (
+                                RENodeId::KeyValueStore(_),
+                                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                            ) => true,
+                            (
+                                RENodeId::Component(_),
+                                SubstateOffset::Component(ComponentOffset::Info),
+                            ) => true,
+                            (
+                                RENodeId::Component(addr),
+                                SubstateOffset::Component(ComponentOffset::State),
+                            ) => addr.eq(component_address),
+                            _ => false,
+                        },
+                        _ => false,
+                    }
+                } else {
+                    match actor {
+                        // Native
+                        REActor::Function(ResolvedFunction::Native(..))
+                        | REActor::Method(ResolvedReceiverMethod {
+                            method: ResolvedMethod::Native(..),
+                            ..
+                        }) => true,
+                        REActor::Function(ResolvedFunction::Scrypto { .. }) => {
+                            match (node_id, offset) {
+                                (
+                                    RENodeId::KeyValueStore(_),
+                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                                ) => true,
+                                _ => false,
+                            }
+                        }
+
+                        // Scrypto
+                        REActor::Method(ResolvedReceiverMethod {
+                            receiver:
+                                ResolvedReceiver {
+                                    receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                                    ..
+                                },
+                            method: ResolvedMethod::Scrypto { .. },
+                        }) => match (node_id, offset) {
+                            (
+                                RENodeId::KeyValueStore(_),
+                                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                            ) => true,
+                            (
+                                RENodeId::Component(addr),
+                                SubstateOffset::Component(ComponentOffset::State),
+                            ) => addr.eq(component_address),
+                            _ => false,
+                        },
+                        _ => false,
+                    }
                 }
-                _ => false,
-            },
-            _ => false,
+            }
         }
     }
 }

@@ -28,13 +28,12 @@ fn should_not_be_able_to_read_global_substate() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::SubstateNotReadable(
-                REActor::Function(..),
-                SubstateId(
-                    RENodeId::Global(GlobalAddress::Component(..)),
-                    SubstateOffset::Global(GlobalOffset::Global)
-                )
-            ))
+            RuntimeError::KernelError(KernelError::InvalidSubstateLock {
+                actor: REActor::Function(..),
+                node_id: RENodeId::Global(GlobalAddress::Component(..)),
+                offset: SubstateOffset::Global(GlobalOffset::Global),
+                ..
+            })
         )
     });
 }
