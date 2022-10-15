@@ -47,7 +47,7 @@ impl SubstateProperties {
         // TODO: Cleanup and reduce to least privilege
         match (kernel_actor, offset) {
             (KernelActor::Deref, offset) => match offset {
-                SubstateOffset::Global(GlobalOffset::Global) => flags == LockFlags::empty(),
+                SubstateOffset::Global(GlobalOffset::Global) => flags == LockFlags::read_only(),
                 _ => false,
             },
             (KernelActor::AuthModule, offset) => match offset {
@@ -55,7 +55,8 @@ impl SubstateProperties {
                 _ => false,
             },
             (KernelActor::ScryptoLoader, offset) => match offset {
-                SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::empty(),
+                SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
+                SubstateOffset::Package(PackageOffset::Package) => flags == LockFlags::read_only(),
                 _ => false,
             },
             (KernelActor::Application, offset) => {
