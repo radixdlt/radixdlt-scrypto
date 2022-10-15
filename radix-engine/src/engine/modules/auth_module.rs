@@ -215,7 +215,7 @@ impl AuthModule {
         // Authorization check
         auth_zone_ref_mut
             .auth_zone()
-            .check_auth(method_auths)
+            .check_auth(actor, method_auths)
             .map_err(|(authorization, error)| {
                 InvokeError::Error(AuthError::Unauthorized {
                     actor: actor.clone(),

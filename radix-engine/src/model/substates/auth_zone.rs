@@ -1,4 +1,4 @@
-use crate::engine::REActor;
+use crate::engine::{REActor, ResolvedReceiver, ResolvedReceiverMethod};
 use crate::model::MethodAuthorizationError::NotAuthorized;
 use crate::model::{
     AuthZoneError, HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
@@ -6,6 +6,7 @@ use crate::model::{
     MethodAuthorization, MethodAuthorizationError, ProofSubstate, ResourceContainerId,
 };
 use crate::types::*;
+use sbor::rust::ops::Fn;
 
 struct AuthVerification;
 
@@ -28,41 +29,57 @@ impl AuthVerification {
         }
     }
 
-    pub fn check_has_amount(
-        resource_rule: &HardResourceOrNonFungible,
-        amount: Decimal,
-        auth_zone: &AuthZoneSubstate,
-    ) -> bool {
-        for auth_zone in &auth_zone.auth_zones {
-            // FIXME: Need to check the composite max amount rather than just each proof individually
-            if auth_zone
-                .proofs
-                .iter()
-                .any(|p| Self::proof_matches(resource_rule, p) && p.total_amount() >= amount)
-            {
+    pub fn check_auth_zones<P>(
+        mut barriers_allowed: u32,
+        auth_zones: &AuthZoneSubstate,
+        check: P,
+    ) -> bool
+    where
+        P: Fn(&AuthZone) -> bool,
+    {
+        for auth_zone in auth_zones.auth_zones.iter().rev() {
+            if check(auth_zone) {
                 return true;
+            }
+
+            if auth_zone.barrier {
+                if barriers_allowed == 0 {
+                    return false;
+                }
+                barriers_allowed -= 1;
             }
         }
 
         false
     }
 
+    pub fn check_has_amount(
+        barriers_allowed: u32,
+        resource_rule: &HardResourceOrNonFungible,
+        amount: Decimal,
+        auth_zone: &AuthZoneSubstate,
+    ) -> bool {
+        Self::check_auth_zones(barriers_allowed, auth_zone, |auth_zone| {
+            // FIXME: Need to check the composite max amount rather than just each proof individually
+            auth_zone
+                .proofs
+                .iter()
+                .any(|p| Self::proof_matches(resource_rule, p) && p.total_amount() >= amount)
+        })
+    }
+
     pub fn verify_resource_rule(
+        barriers_allowed: u32,
         resource_rule: &HardResourceOrNonFungible,
         auth_zone: &AuthZoneSubstate,
     ) -> bool {
-        // Check if a proof can be virtualized
-        // TODO: consider moving this logic to AuthZone at some point
-        for auth_zone in &auth_zone.auth_zones {
+        Self::check_auth_zones(barriers_allowed, auth_zone, |auth_zone| {
             if let HardResourceOrNonFungible::NonFungible(non_fungible_address) = resource_rule {
                 if auth_zone.is_proof_virtualizable(&non_fungible_address.resource_address()) {
                     return true;
                 }
             }
-        }
 
-        // If it can't be virtualized, check the actual proofs in the auth zones
-        for auth_zone in &auth_zone.auth_zones {
             if auth_zone
                 .proofs
                 .iter()
@@ -70,25 +87,26 @@ impl AuthVerification {
             {
                 return true;
             }
-        }
 
-        false
+            false
+        })
     }
 
     pub fn verify_proof_rule(
+        barriers_allowed: u32,
         proof_rule: &HardProofRule,
         auth_zone: &AuthZoneSubstate,
     ) -> Result<(), MethodAuthorizationError> {
         match proof_rule {
             HardProofRule::Require(resource) => {
-                if Self::verify_resource_rule(resource, auth_zone) {
+                if Self::verify_resource_rule(barriers_allowed, resource, auth_zone) {
                     Ok(())
                 } else {
                     Err(NotAuthorized)
                 }
             }
             HardProofRule::AmountOf(HardDecimal::Amount(amount), resource) => {
-                if Self::check_has_amount(resource, *amount, auth_zone) {
+                if Self::check_has_amount(barriers_allowed, resource, *amount, auth_zone) {
                     Ok(())
                 } else {
                     Err(NotAuthorized)
@@ -96,7 +114,7 @@ impl AuthVerification {
             }
             HardProofRule::AllOf(HardProofRuleResourceList::List(resources)) => {
                 for resource in resources {
-                    if !Self::verify_resource_rule(resource, auth_zone) {
+                    if !Self::verify_resource_rule(barriers_allowed, resource, auth_zone) {
                         return Err(NotAuthorized);
                     }
                 }
@@ -105,7 +123,7 @@ impl AuthVerification {
             }
             HardProofRule::AnyOf(HardProofRuleResourceList::List(resources)) => {
                 for resource in resources {
-                    if Self::verify_resource_rule(resource, auth_zone) {
+                    if Self::verify_resource_rule(barriers_allowed, resource, auth_zone) {
                         return Ok(());
                     }
                 }
@@ -118,7 +136,7 @@ impl AuthVerification {
             ) => {
                 let mut left = count.clone();
                 for resource in resources {
-                    if Self::verify_resource_rule(resource, auth_zone) {
+                    if Self::verify_resource_rule(barriers_allowed, resource, auth_zone) {
                         left -= 1;
                         if left == 0 {
                             return Ok(());
@@ -132,15 +150,18 @@ impl AuthVerification {
     }
 
     pub fn verify_auth_rule(
+        barriers_allowed: u32,
         auth_rule: &HardAuthRule,
         auth_zone: &AuthZoneSubstate,
     ) -> Result<(), MethodAuthorizationError> {
         match auth_rule {
-            HardAuthRule::ProofRule(rule) => Self::verify_proof_rule(rule, auth_zone),
+            HardAuthRule::ProofRule(rule) => {
+                Self::verify_proof_rule(barriers_allowed, rule, auth_zone)
+            }
             HardAuthRule::AnyOf(rules) => {
                 if !rules
                     .iter()
-                    .any(|r| Self::verify_auth_rule(r, auth_zone).is_ok())
+                    .any(|r| Self::verify_auth_rule(barriers_allowed, r, auth_zone).is_ok())
                 {
                     return Err(NotAuthorized);
                 }
@@ -149,7 +170,7 @@ impl AuthVerification {
             HardAuthRule::AllOf(rules) => {
                 if rules
                     .iter()
-                    .any(|r| Self::verify_auth_rule(r, auth_zone).is_err())
+                    .any(|r| Self::verify_auth_rule(barriers_allowed, r, auth_zone).is_err())
                 {
                     return Err(NotAuthorized);
                 }
@@ -159,11 +180,14 @@ impl AuthVerification {
     }
 
     pub fn verify_method_auth(
+        barriers_allowed: u32,
         method_auth: &MethodAuthorization,
         auth_zone: &AuthZoneSubstate,
     ) -> Result<(), MethodAuthorizationError> {
         match method_auth {
-            MethodAuthorization::Protected(rule) => Self::verify_auth_rule(rule, auth_zone),
+            MethodAuthorization::Protected(rule) => {
+                Self::verify_auth_rule(barriers_allowed, rule, auth_zone)
+            }
             MethodAuthorization::AllowAll => Ok(()),
             MethodAuthorization::DenyAll => Err(NotAuthorized),
             MethodAuthorization::Unsupported => Err(MethodAuthorizationError::UnsupportedMethod),
@@ -183,16 +207,36 @@ impl AuthZoneSubstate {
         virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,
     ) -> Self {
         Self {
-            auth_zones: vec![AuthZone::new_with_proofs(proofs, virtual_proofs_buckets)],
+            auth_zones: vec![AuthZone::new_with_virtual_proofs(
+                proofs,
+                virtual_proofs_buckets,
+                false,
+            )],
         }
+    }
+
+    fn is_barrier(actor: &REActor) -> bool {
+        matches!(
+            actor,
+            REActor::Method(ResolvedReceiverMethod {
+                receiver: ResolvedReceiver {
+                    derefed_from: Some(RENodeId::Global(GlobalAddress::Component(..))),
+                    ..
+                },
+                ..
+            })
+        )
     }
 
     pub fn check_auth(
         &self,
+        to: &REActor,
         method_auths: Vec<MethodAuthorization>,
     ) -> Result<(), (MethodAuthorization, MethodAuthorizationError)> {
+        let barriers_allowed = if Self::is_barrier(to) { 0u32 } else { 1u32 };
+
         for method_auth in method_auths {
-            AuthVerification::verify_method_auth(&method_auth, &self)
+            AuthVerification::verify_method_auth(barriers_allowed, &method_auth, &self)
                 .map_err(|e| (method_auth, e))?;
         }
 
@@ -200,8 +244,9 @@ impl AuthZoneSubstate {
     }
 
     pub fn new_frame(&mut self, actor: &REActor) {
-        self.auth_zones
-            .push(AuthZone::new_with_proofs(vec![], BTreeMap::new()));
+        let barrier = Self::is_barrier(actor);
+        let auth_zone = AuthZone::empty(barrier);
+        self.auth_zones.push(auth_zone);
     }
 
     pub fn pop_frame(&mut self) {
@@ -227,29 +272,33 @@ impl AuthZoneSubstate {
 
 #[derive(Debug)]
 pub struct AuthZone {
-    pub proofs: Vec<ProofSubstate>,
+    proofs: Vec<ProofSubstate>,
     /// IDs of buckets that act as an evidence for virtual proofs.
     /// A virtual proof for any NonFunbigleId can be created for any ResourceAddress in the map.
     /// Note: when a virtual proof is created,
     /// the resources aren't actually being added to the bucket.
-    pub virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,
+    virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,
+    barrier: bool,
 }
 
 impl AuthZone {
-    fn new_with_proofs(
+    fn empty(barrier: bool) -> Self {
+        Self {
+            proofs: vec![],
+            virtual_proofs_buckets: BTreeMap::new(),
+            barrier,
+        }
+    }
+
+    fn new_with_virtual_proofs(
         proofs: Vec<ProofSubstate>,
         virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,
+        barrier: bool,
     ) -> Self {
         Self {
             proofs,
             virtual_proofs_buckets,
-        }
-    }
-
-    pub fn new() -> Self {
-        Self {
-            proofs: Vec::new(),
-            virtual_proofs_buckets: BTreeMap::new(),
+            barrier,
         }
     }
 

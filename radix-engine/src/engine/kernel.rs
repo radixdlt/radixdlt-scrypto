@@ -312,7 +312,7 @@ where
                     method: ResolvedMethod::Native(native_method),
                 }) => {
                     NativeInterpreter::run_method(receiver.receiver(), native_method, input, self)
-                },
+                }
                 REActor::Function(ResolvedFunction::Scrypto {
                     package_address,
                     blueprint_name,
@@ -355,20 +355,19 @@ where
                         let mut instance = self.wasm_engine.instantiate(instrumented_code);
 
                         let scrypto_actor = match &Self::current_frame(&self.call_frames).actor {
-                            REActor::Method(ResolvedReceiverMethod { receiver: ResolvedReceiver {
-                                receiver, ..
-                            }, .. }) => {
-                                match receiver {
-                                    Receiver::Ref(RENodeId::Component(component_id)) => {
-                                        ScryptoActor::Component(
-                                            *component_id,
-                                            package_address.clone(),
-                                            blueprint_name.clone(),
-                                        )
-                                    }
-                                    _ => panic!("Should not get here."),
+                            REActor::Method(ResolvedReceiverMethod {
+                                receiver: ResolvedReceiver { receiver, .. },
+                                ..
+                            }) => match receiver {
+                                Receiver::Ref(RENodeId::Component(component_id)) => {
+                                    ScryptoActor::Component(
+                                        *component_id,
+                                        package_address.clone(),
+                                        blueprint_name.clone(),
+                                    )
                                 }
-                            }
+                                _ => panic!("Should not get here."),
+                            },
                             _ => ScryptoActor::blueprint(package_address, blueprint_name.clone()),
                         };
 
@@ -522,10 +521,13 @@ where
     ) -> Result<REActor, InvokeError<ScryptoActorError>> {
         let (receiver, package_address, blueprint_name, ident) = match ident {
             ScryptoFnIdent::Method(receiver, ident) => {
-                if !matches!(receiver, ResolvedReceiver {
-                        receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                if !matches!(
+                    receiver,
+                    ResolvedReceiver {
+                        receiver: Receiver::Ref(RENodeId::Component(..)),
                         ..
-                    }) {
+                    }
+                ) {
                     return Err(InvokeError::Error(ScryptoActorError::InvalidReceiver));
                 }
                 let node_id = receiver.receiver().node_id();

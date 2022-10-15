@@ -96,10 +96,11 @@ impl REActor {
                 _ => false,
             },
             REActor::Method(ResolvedReceiverMethod {
-                receiver: ResolvedReceiver {
-                    receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                    ..
-                },
+                receiver:
+                    ResolvedReceiver {
+                        receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                        ..
+                    },
                 method: ResolvedMethod::Scrypto { .. },
             }) => match (node_id, offset) {
                 (
@@ -132,10 +133,11 @@ impl REActor {
                 _ => false,
             },
             REActor::Method(ResolvedReceiverMethod {
-                receiver: ResolvedReceiver {
-                    receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                    ..
-                },
+                receiver:
+                    ResolvedReceiver {
+                        receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                        ..
+                    },
                 method: ResolvedMethod::Scrypto { .. },
             }) => match (node_id, offset) {
                 (

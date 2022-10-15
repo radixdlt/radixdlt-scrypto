@@ -4,7 +4,6 @@ use radix_engine::engine::{
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto::address::Bech32Decoder;
-use scrypto::core::FnIdent;
 use scrypto::engine::types::SubstateId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
