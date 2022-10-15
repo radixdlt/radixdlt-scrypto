@@ -1,5 +1,5 @@
-use transaction::errors::*;
 use sbor::*;
+use transaction::errors::*;
 
 use crate::engine::REActor;
 use crate::model::*;
@@ -9,6 +9,7 @@ use crate::wasm::WasmError;
 use super::AuthError;
 use super::CostingError;
 use super::ExecutionTraceError;
+use super::NativeMethod;
 use super::TrackError;
 
 /// Represents an error which causes a tranasction to be rejected.
@@ -59,10 +60,8 @@ pub enum KernelError {
     GlobalAddressNotFound(GlobalAddress),
 
     MaxCallDepthLimitReached,
-    InvalidFnIdent(FnIdent),
-
-    FunctionNotFound(FunctionIdent),
-    InvalidFnOutput { fn_identifier: FunctionIdent },
+    InvalidScryptoFnOutput(ScryptoFnIdent),
+    MethodReceiverNotMatch(NativeMethod, Receiver),
 
     // ID allocation
     IdAllocationError(IdAllocationError),
@@ -105,7 +104,8 @@ pub enum ScryptoActorError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum InterpreterError {
-    InvalidScryptoActor(FnIdent, ScryptoActorError),
+    InvalidScryptoActor(ScryptoFnIdent, ScryptoActorError),
+    InvalidNativeActor(NativeFnIdent),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]

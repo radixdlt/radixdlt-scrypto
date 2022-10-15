@@ -23,7 +23,7 @@ pub use scrypto::constants::*;
 pub use scrypto::core::{
     AuthZoneMethod, BucketMethod, ComponentMethod, Expression, Level, NetworkDefinition,
     PackageFunction, ProofMethod, Receiver, ResourceManagerFunction, ResourceManagerMethod,
-    ScryptoActor, ScryptoRENode, SystemFunction, SystemGetCurrentEpochInput,
+    ScryptoActor, ScryptoRENode, ScryptoReceiver, SystemFunction, SystemGetCurrentEpochInput,
     SystemGetTransactionHashInput, SystemMethod, SystemSetEpochInput, TransactionProcessorFunction,
     VaultMethod, WorktopMethod,
 };

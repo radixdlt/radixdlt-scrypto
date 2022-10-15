@@ -3,7 +3,6 @@ use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::*;
-use scrypto::core::{FnIdent, MethodIdent, NativeFunction, ReceiverMethodIdent};
 
 pub struct NativeInterpreter;
 
@@ -105,8 +104,8 @@ impl NativeInterpreter {
     }
 
     pub fn run_method<'s, Y, W, I, R>(
-        receiver: Receiver,
         native_method: NativeMethod,
+        receiver: Receiver,
         input: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
@@ -150,12 +149,9 @@ impl NativeInterpreter {
                 System::main(component_id, method, input, system_api).map_err(|e| e.into())
             }
             _ => {
-                return Err(RuntimeError::KernelError(KernelError::InvalidFnIdent(
-                    FnIdent::Method(ReceiverMethodIdent {
-                        receiver,
-                        method_ident: MethodIdent::Native(native_method),
-                    }),
-                )))
+                return Err(RuntimeError::KernelError(
+                    KernelError::MethodReceiverNotMatch(native_method, receiver),
+                ));
             }
         }
     }

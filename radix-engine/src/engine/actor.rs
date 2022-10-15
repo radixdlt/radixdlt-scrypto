@@ -32,12 +32,6 @@ pub enum ResolvedMethod {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub struct ResolvedReceiverMethod {
-    pub receiver: Receiver,
-    pub method: ResolvedMethod,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum ResolvedFunction {
     Scrypto {
         package_address: PackageAddress,
@@ -51,17 +45,14 @@ pub enum ResolvedFunction {
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum REActor {
     Function(ResolvedFunction),
-    Method(ResolvedReceiverMethod),
+    Method(ResolvedMethod, Receiver),
 }
 
 impl REActor {
     pub fn is_substate_readable(&self, node_id: RENodeId, offset: SubstateOffset) -> bool {
         match self {
             REActor::Function(ResolvedFunction::Native(..))
-            | REActor::Method(ResolvedReceiverMethod {
-                method: ResolvedMethod::Native(..),
-                ..
-            }) => true,
+            | REActor::Method(ResolvedMethod::Native(..), ..) => true,
             REActor::Function(ResolvedFunction::Scrypto { .. }) => match (node_id, offset) {
                 (
                     RENodeId::KeyValueStore(_),
@@ -71,10 +62,10 @@ impl REActor {
                 (RENodeId::Component(_), SubstateOffset::Component(ComponentOffset::Info)) => true,
                 _ => false,
             },
-            REActor::Method(ResolvedReceiverMethod {
-                receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                method: ResolvedMethod::Scrypto { .. },
-            }) => match (node_id, offset) {
+            REActor::Method(
+                ResolvedMethod::Scrypto { .. },
+                Receiver::Ref(RENodeId::Component(component_address)),
+            ) => match (node_id, offset) {
                 (
                     RENodeId::KeyValueStore(_),
                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
@@ -93,10 +84,7 @@ impl REActor {
     pub fn is_substate_writeable(&self, node_id: RENodeId, offset: SubstateOffset) -> bool {
         match self {
             REActor::Function(ResolvedFunction::Native(..))
-            | REActor::Method(ResolvedReceiverMethod {
-                method: ResolvedMethod::Native(..),
-                ..
-            }) => true,
+            | REActor::Method(ResolvedMethod::Native(..), ..) => true,
             REActor::Function(ResolvedFunction::Scrypto { .. }) => match (node_id, offset) {
                 (
                     RENodeId::KeyValueStore(_),
@@ -104,10 +92,10 @@ impl REActor {
                 ) => true,
                 _ => false,
             },
-            REActor::Method(ResolvedReceiverMethod {
-                receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                method: ResolvedMethod::Scrypto { .. },
-            }) => match (node_id, offset) {
+            REActor::Method(
+                ResolvedMethod::Scrypto { .. },
+                Receiver::Ref(RENodeId::Component(component_address)),
+            ) => match (node_id, offset) {
                 (
                     RENodeId::KeyValueStore(_),
                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),

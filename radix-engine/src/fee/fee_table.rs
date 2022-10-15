@@ -1,15 +1,15 @@
 use crate::types::*;
-use scrypto::core::{
-    FnIdent, MethodIdent, NativeFunction, ReceiverMethodIdent, ResourceManagerFunction,
-    SystemFunction,
-};
 
 pub enum SystemApiCostingEntry<'a> {
     /*
      * Invocation
      */
-    Invoke {
-        fn_ident: FnIdent,
+    InvokeScrypto {
+        fn_ident: ScryptoFnIdent,
+        input: &'a ScryptoValue,
+    },
+    InvokeNative {
+        fn_ident: NativeFnIdent,
         input: &'a ScryptoValue,
     },
 
@@ -135,9 +135,12 @@ impl FeeTable {
         self.wasm_instantiation_per_byte
     }
 
-    pub fn run_fn_cost(&self, fn_ident: &FnIdent, input: &ScryptoValue) -> u32 {
+    pub fn run_fn_cost(&self, fn_ident: &NativeFnIdent, input: &ScryptoValue) -> u32 {
         match fn_ident {
-            FnIdent::Function(function_ident) => {
+            NativeFnIdent::Function(NativeFunctionIdent {
+                blueprint_name,
+                function_name,
+            }) => {
                 match function_ident {
                     FunctionIdent::Native(NativeFunction::TransactionProcessor(
                         transaction_processor_fn,
@@ -164,7 +167,7 @@ impl FeeTable {
                     ScryptoFunctionIdent { .. } => 0, // Costing is through instrumentation // TODO: Josh question, why only through instrumentation?
                 }
             }
-            FnIdent::Method(ReceiverMethodIdent { method_ident, .. }) => {
+            NativeFnIdent::Method(ReceiverMethodIdent { method_ident, .. }) => {
                 match method_ident {
                     MethodIdent::Native(NativeMethod::AuthZone(auth_zone_ident)) => {
                         match auth_zone_ident {
