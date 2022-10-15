@@ -4,7 +4,6 @@ use radix_engine::engine::{
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto::address::Bech32Decoder;
-use scrypto::core::FnIdent;
 use scrypto::engine::types::SubstateId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -19,7 +18,7 @@ fn test_component() {
     // Create component
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(package, "ComponentTest", "create_component", args!())
+        .call_function(package, "ComponentTest", "create_component", args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
@@ -33,7 +32,7 @@ fn test_component() {
     // Call functions & methods
     let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package,
             "ComponentTest",
             "get_component_info",
@@ -64,7 +63,7 @@ fn invalid_blueprint_name_should_cause_error() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package_addr,
             "NonExistentBlueprint",
             "create_component",
@@ -76,7 +75,7 @@ fn invalid_blueprint_name_should_cause_error() {
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::InterpreterError(InterpreterError::InvalidScryptoActor(
-            FnIdent::Function(ScryptoFunctionIdent {
+            ScryptoFnIdent::Function(ScryptoFunctionIdent {
                 package_address,
                 blueprint_name,
                 ..
@@ -99,7 +98,7 @@ fn mut_reentrancy_should_not_be_possible() {
     let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(package_address, "ReentrantComponent", "new", args!())
+        .call_function(package_address, "ReentrantComponent", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -138,7 +137,7 @@ fn read_reentrancy_should_be_possible() {
     let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(package_address, "ReentrantComponent", "new", args!())
+        .call_function(package_address, "ReentrantComponent", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -166,7 +165,7 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
     let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(package_address, "ReentrantComponent", "new", args!())
+        .call_function(package_address, "ReentrantComponent", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();

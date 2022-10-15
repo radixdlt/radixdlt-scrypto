@@ -1,4 +1,5 @@
 use sbor::rust::collections::BTreeSet;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 

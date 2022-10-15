@@ -18,7 +18,7 @@ fn test_invalid_access_rule_methods() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "AbiComponent",
             "create_invalid_abi_component",
@@ -53,7 +53,7 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(package_address, "AbiComponent2", method_name, args)
+        .call_function(package_address, "AbiComponent2", method_name, args)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -77,7 +77,7 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::KernelError(KernelError::InvalidFnOutput { .. })
+                    RuntimeError::KernelError(KernelError::InvalidScryptoFnOutput { .. })
                 )
             });
         }

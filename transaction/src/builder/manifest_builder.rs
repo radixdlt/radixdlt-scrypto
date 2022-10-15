@@ -354,7 +354,7 @@ impl ManifestBuilder {
     }
 
     /// Calls a function where the arguments should be an array of encoded Scrypto value.
-    pub fn call_scrypto_function(
+    pub fn call_function(
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
@@ -419,7 +419,7 @@ impl ManifestBuilder {
     }
 
     /// Calls a scrypto method where the arguments should be an array of encoded Scrypto value.
-    pub fn call_scrypto_method(
+    pub fn call_method(
         &mut self,
         component_address: ComponentAddress,
         method_name: &str,

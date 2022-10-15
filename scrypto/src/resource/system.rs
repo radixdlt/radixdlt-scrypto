@@ -1,5 +1,6 @@
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 
 use crate::buffer::scrypto_encode;
 use crate::core::{NativeFunctionIdent, ResourceManagerFunction};

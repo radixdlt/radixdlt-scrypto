@@ -1,6 +1,7 @@
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
