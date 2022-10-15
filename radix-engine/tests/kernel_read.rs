@@ -1,7 +1,6 @@
-use radix_engine::engine::{InterpreterError, KernelError, REActor, ResolvedReceiver, RuntimeError, ScryptoActorError};
+use radix_engine::engine::{KernelError, REActor, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use scrypto::core::MethodIdent;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
