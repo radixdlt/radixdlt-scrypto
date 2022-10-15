@@ -276,6 +276,9 @@ where
         owned_nodes: HashMap<RENodeId, HeapRootRENode>,
         refed_nodes: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
+        
+
+
         let frame = CallFrame::new_child(
             Self::current_frame(&self.call_frames).depth + 1,
             actor,

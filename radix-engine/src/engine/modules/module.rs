@@ -111,6 +111,14 @@ pub trait Module<R: FeeReserve> {
         output: SysCallOutput,
     ) -> Result<(), ModuleError>;
 
+    fn on_run(
+        &mut self,
+        track: &mut Track<R>,
+        call_frames: &mut Vec<CallFrame>,
+        actor: &REActor,
+        input: &ScryptoValue,
+    ) -> Result<(), ModuleError>;
+
     fn on_wasm_instantiation(
         &mut self,
         track: &mut Track<R>,

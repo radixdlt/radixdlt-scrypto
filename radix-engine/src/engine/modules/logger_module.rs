@@ -30,15 +30,24 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
-            SysCallInput::Invoke {
-                fn_ident, input, ..
-            } => {
+            SysCallInput::InvokeScrypto { fn_ident, args, .. } => {
                 log!(
                     self,
-                    "Invoking: fn = {:?}, buckets = {:?}, proofs = {:?}",
+                    "Invoking scrypto: fn = {:?}, buckets = {:?}, proofs = {:?}",
                     fn_ident,
-                    input.bucket_ids,
-                    input.proof_ids
+                    args.bucket_ids,
+                    args.proof_ids
+                );
+
+                self.depth = self.depth + 1;
+            }
+            SysCallInput::InvokeNative { fn_ident, args, .. } => {
+                log!(
+                    self,
+                    "Invoking native: fn = {:?}, buckets = {:?}, proofs = {:?}",
+                    fn_ident,
+                    args.bucket_ids,
+                    args.proof_ids
                 );
 
                 self.depth = self.depth + 1;
@@ -107,7 +116,11 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
         output: SysCallOutput,
     ) -> Result<(), ModuleError> {
         match output {
-            SysCallOutput::Invoke { output, .. } => {
+            SysCallOutput::InvokeScrypto { output, .. } => {
+                self.depth = self.depth - 1;
+                log!(self, "Exiting invoke: output = {:?}", output);
+            }
+            SysCallOutput::InvokeNative { output, .. } => {
                 self.depth = self.depth - 1;
                 log!(self, "Exiting invoke: output = {:?}", output);
             }
@@ -126,6 +139,16 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallOutput::EmitLog { .. } => {}
         }
 
+        Ok(())
+    }
+
+    fn on_run(
+        &mut self,
+        track: &mut Track<R>,
+        call_frames: &mut Vec<CallFrame>,
+        actor: &REActor,
+        input: &ScryptoValue,
+    ) -> Result<(), ModuleError> {
         Ok(())
     }
 

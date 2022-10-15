@@ -9,11 +9,11 @@ pub enum SystemApiCostingEntry<'a> {
      */
     InvokeScrypto {
         fn_ident: ScryptoFnIdent,
-        input: &'a ScryptoValue,
+        args: &'a ScryptoValue,
     },
     InvokeNative {
         fn_ident: NativeFnIdent,
-        input: &'a ScryptoValue,
+        args: &'a ScryptoValue,
     },
 
     /*
@@ -166,7 +166,7 @@ impl FeeTable {
     pub fn run_native_method_cost(
         &self,
         native_method: &NativeMethod,
-        input: &ScryptoValue,
+        _input: &ScryptoValue,
     ) -> u32 {
         match native_method {
             NativeMethod::AuthZone(auth_zone_ident) => {
@@ -250,11 +250,11 @@ impl FeeTable {
 
     pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
         match entry {
-            SystemApiCostingEntry::InvokeScrypto { input, .. } => {
-                self.fixed_low + (5 * input.raw.len() + 10 * input.value_count()) as u32
+            SystemApiCostingEntry::InvokeScrypto { args, .. } => {
+                self.fixed_low + (5 * args.raw.len() + 10 * args.value_count()) as u32
             }
-            SystemApiCostingEntry::InvokeNative { input, .. } => {
-                self.fixed_low + (5 * input.raw.len() + 10 * input.value_count()) as u32
+            SystemApiCostingEntry::InvokeNative { args, .. } => {
+                self.fixed_low + (5 * args.raw.len() + 10 * args.value_count()) as u32
             }
 
             SystemApiCostingEntry::ReadOwnedNodes => self.fixed_low,

@@ -2,7 +2,6 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use scrypto::core::NativeFunction;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum AuthError {
@@ -93,11 +92,11 @@ impl AuthModule {
                 }
                 _ => vec![],
             },
-            REActor::Method(ResolvedReceiverMethod { receiver, method }) => {
-                match (receiver, method) {
+            REActor::Method(method, receiver) => {
+                match (method, receiver) {
                     (
-                        Receiver::Ref(RENodeId::ResourceManager(resource_address)),
                         ResolvedMethod::Native(NativeMethod::ResourceManager(ref method)),
+                        Receiver::Ref(RENodeId::ResourceManager(resource_address)),
                     ) => {
                         let node_id = RENodeId::ResourceManager(resource_address);
                         let resource_pointer = RENodePointer::Store(node_id);
@@ -119,17 +118,17 @@ impl AuthModule {
                         auth
                     }
                     (
-                        Receiver::Ref(RENodeId::System(..)),
                         ResolvedMethod::Native(NativeMethod::System(ref method)),
+                        Receiver::Ref(RENodeId::System(..)),
                     ) => System::method_auth(method),
                     (
-                        Receiver::Ref(RENodeId::Component(..)),
                         ResolvedMethod::Scrypto {
                             package_address,
                             blueprint_name,
                             ident,
                             ..
                         },
+                        Receiver::Ref(RENodeId::Component(..)),
                     ) => {
                         let node_id = RENodeId::Package(package_address);
                         let package_pointer = RENodePointer::Store(node_id);
@@ -191,8 +190,8 @@ impl AuthModule {
                         }
                     }
                     (
-                        Receiver::Ref(RENodeId::Vault(..)),
                         ResolvedMethod::Native(NativeMethod::Vault(ref vault_fn)),
+                        Receiver::Ref(RENodeId::Vault(..)),
                     ) => {
                         let vault_node_pointer = call_frames
                             .last()

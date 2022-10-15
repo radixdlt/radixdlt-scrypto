@@ -19,9 +19,9 @@ impl<R: FeeReserve> Module<R> for CostingModule {
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
-            SysCallInput::Invoke {
+            SysCallInput::InvokeScrypto {
                 fn_ident,
-                input,
+                args,
                 depth,
             } => {
                 if depth > 0 {
@@ -30,19 +30,32 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         .consume(
                             track
                                 .fee_table
-                                .system_api_cost(SystemApiCostingEntry::Invoke {
+                                .system_api_cost(SystemApiCostingEntry::InvokeScrypto {
                                     fn_ident: fn_ident.clone(),
-                                    input: &input,
+                                    args: &args,
                                 }),
-                            "invoke_function",
+                            "invoke",
                             false,
                         )
                         .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
+                }
+            }
+            SysCallInput::InvokeNative {
+                fn_ident,
+                args,
+                depth,
+            } => {
+                if depth > 0 {
                     track
                         .fee_reserve
                         .consume(
-                            track.fee_table.run_fn_cost(&fn_ident, &input),
-                            "run_function",
+                            track
+                                .fee_table
+                                .system_api_cost(SystemApiCostingEntry::InvokeNative {
+                                    fn_ident: fn_ident.clone(),
+                                    args: &args,
+                                }),
+                            "invoke",
                             false,
                         )
                         .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
@@ -354,5 +367,37 @@ impl<R: FeeReserve> Module<R> for CostingModule {
             .fee_reserve
             .repay(vault_id, fee, contingent)
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
+    }
+
+    fn on_run(
+        &mut self,
+        track: &mut Track<R>,
+        _call_frames: &mut Vec<CallFrame>,
+        actor: &REActor,
+        input: &ScryptoValue,
+    ) -> Result<(), ModuleError> {
+        match actor {
+            REActor::Function(ResolvedFunction::Native(native_function)) => track
+                .fee_reserve
+                .consume(
+                    track
+                        .fee_table
+                        .run_native_function_cost(&native_function, &input),
+                    "run_native",
+                    false,
+                )
+                .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
+            REActor::Method(ResolvedMethod::Native(native_method), _) => track
+                .fee_reserve
+                .consume(
+                    track
+                        .fee_table
+                        .run_native_method_cost(&native_method, &input),
+                    "run_native",
+                    false,
+                )
+                .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
+            _ => Ok(()),
+        }
     }
 }
