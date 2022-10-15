@@ -231,10 +231,10 @@ impl AuthModule {
         Ok(new_refs)
     }
 
-    pub fn on_pop_frame(
-        frame: &CallFrame,
+    pub fn on_frame_end(
         call_frames: &mut Vec<CallFrame>,
     ) -> Result<(), InvokeError<AuthError>> {
+        let frame = call_frames.last_mut().unwrap();
         if matches!(
             frame.actor,
             REActor::Method(ResolvedReceiverMethod {

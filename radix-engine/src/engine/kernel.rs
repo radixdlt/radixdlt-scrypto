@@ -432,6 +432,11 @@ where
             }
         }
 
+        AuthModule::on_frame_end(&mut self.call_frames).map_err(|e| match e {
+            InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
+            InvokeError::Downstream(runtime_error) => runtime_error,
+        })?;
+
         let mut call_frame = self.call_frames.pop().unwrap();
         // Auto drop locks
         for (_, lock) in call_frame.drain_locks() {
@@ -455,11 +460,6 @@ where
                     .map_err(RuntimeError::KernelError)?;
             }
         }
-
-        AuthModule::on_pop_frame(&call_frame, &mut self.call_frames).map_err(|e| match e {
-            InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
-            InvokeError::Downstream(runtime_error) => runtime_error,
-        })?;
 
         // drop proofs and check resource leak
         call_frame.drop_frame()?;
