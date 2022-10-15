@@ -2,6 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
+use crate::wasm::{WasmEngine, WasmInstance};
 use scrypto::core::NativeFunction;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -231,12 +232,15 @@ impl AuthModule {
         Ok(new_refs)
     }
 
-    pub fn on_frame_end(
-        call_frames: &mut Vec<CallFrame>,
-    ) -> Result<(), InvokeError<AuthError>> {
-        let frame = call_frames.last_mut().unwrap();
+    pub fn on_frame_end<'s, Y, W, I, R>(system_api: &mut Y) -> Result<(), InvokeError<AuthError>>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
         if matches!(
-            frame.actor,
+            system_api.get_actor(),
             REActor::Method(ResolvedReceiverMethod {
                 method: ResolvedMethod::Native(NativeMethod::AuthZone(..)),
                 ..
@@ -245,28 +249,23 @@ impl AuthModule {
             return Ok(());
         }
 
-        let auth_zone_id = frame
-            .find_ref(|e| matches!(e, RENodeId::AuthZone(..)))
-            .unwrap()
-            .clone();
-        let node_pointer = frame.get_node_pointer(auth_zone_id).unwrap();
+        let refed = system_api.get_refed_node_ids()?;
+        let auth_zone_id = refed
+            .into_iter()
+            .find(|e| matches!(e, RENodeId::AuthZone(..)))
+            .unwrap();
+        let handle = system_api.lock_substate(
+            auth_zone_id,
+            SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            LockFlags::MUTABLE,
+        )?;
         {
-            let mut authzone = match node_pointer {
-                RENodePointer::Heap { frame_id, root, id } => {
-                    let frame = call_frames.get_mut(frame_id).unwrap();
-                    let heap_re_node = frame
-                        .get_owned_heap_node_mut(root)
-                        .unwrap()
-                        .get_node_mut(id.as_ref());
-                    heap_re_node
-                        .borrow_substate_mut(&SubstateOffset::AuthZone(AuthZoneOffset::AuthZone))
-                        .unwrap()
-                }
-                _ => panic!("Unexpected"),
-            };
-            // Copy-over root frame's auth zone virtual_proofs_buckets
-            authzone.auth_zone().pop_frame();
+            let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+            let mut raw_mut = substate_ref_mut.get_raw_mut();
+            let auth_zone = raw_mut.auth_zone();
+            auth_zone.pop_frame();
         }
+        system_api.drop_lock(handle)?;
 
         Ok(())
     }

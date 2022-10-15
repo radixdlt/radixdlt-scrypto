@@ -43,6 +43,8 @@ where
         contingent: bool,
     ) -> Result<Resource, RuntimeError>;
 
+    fn get_actor(&self) -> &REActor;
+
     fn invoke(
         &mut self,
         fn_ident: FnIdent,

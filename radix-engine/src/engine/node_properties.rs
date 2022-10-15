@@ -44,13 +44,17 @@ impl SubstateProperties {
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> bool {
+        // TODO: Cleanup and reduce to least privilege
         match (kernel_actor, offset) {
             (KernelActor::Deref, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => flags == LockFlags::empty(),
                 _ => false,
             },
+            (KernelActor::AuthModule, offset) => match offset {
+                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => true,
+                _ => false,
+            },
             (KernelActor::Application, offset) => {
-                // TODO: Cleanup and reduce to least privilege
                 if !flags.contains(LockFlags::MUTABLE) {
                     match actor {
                         // Native

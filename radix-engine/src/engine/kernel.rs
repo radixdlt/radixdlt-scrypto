@@ -432,14 +432,9 @@ where
             }
         }
 
-        AuthModule::on_frame_end(&mut self.call_frames).map_err(|e| match e {
-            InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
-            InvokeError::Downstream(runtime_error) => runtime_error,
-        })?;
-
-        let mut call_frame = self.call_frames.pop().unwrap();
         // Auto drop locks
-        for (_, lock) in call_frame.drain_locks() {
+        let frame = Self::current_frame_mut(&mut self.call_frames);
+        for (_, lock) in frame.drain_locks() {
             let SubstateLock {
                 substate_pointer: (node_pointer, offset),
                 flags,
@@ -461,7 +456,17 @@ where
             }
         }
 
+        // TODO: Auto drop locks of module execution as well
+        self.execute_in_kernel_mode(KernelActor::AuthModule, |system_api| {
+            AuthModule::on_frame_end(system_api).map_err(|e| match e {
+                InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
+                InvokeError::Downstream(runtime_error) => runtime_error,
+            })?;
+            Ok(())
+        })?;
+
         // drop proofs and check resource leak
+        let call_frame = self.call_frames.pop().unwrap();
         call_frame.drop_frame()?;
 
         Ok((output, nodes_to_return))
@@ -475,29 +480,44 @@ where
         call_frames.last().expect("Current frame always exists")
     }
 
+    pub fn execute_in_kernel_mode<E, RTN>(
+        &mut self,
+        kernel_actor: KernelActor,
+        execute: E,
+    ) -> Result<RTN, RuntimeError>
+    where
+        E: FnOnce(&mut Self) -> Result<RTN, RuntimeError>,
+    {
+        // Save and replace kernel actor
+        let saved_kernel_actor = {
+            let current_frame = Self::current_frame_mut(&mut self.call_frames);
+            let cur = current_frame.kernel_actor;
+            current_frame.kernel_actor = kernel_actor;
+            cur
+        };
+
+        let rtn = execute(self)?;
+
+        // Restore old kernel actor
+        {
+            let current_frame = Self::current_frame_mut(&mut self.call_frames);
+            current_frame.kernel_actor = saved_kernel_actor;
+        }
+
+        Ok(rtn)
+    }
+
     pub fn node_method_deref(
         &mut self,
         node_id: RENodeId,
     ) -> Result<Option<RENodeId>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
-            // Save and replace kernel actor
-            let saved_kernel_actor = {
-                let current_frame = Self::current_frame_mut(&mut self.call_frames);
-                let cur = current_frame.kernel_actor;
-                current_frame.kernel_actor = KernelActor::Deref;
-                cur
-            };
-
-            let offset = SubstateOffset::Global(GlobalOffset::Global);
-            let handle = self.lock_substate(node_id, offset, LockFlags::empty())?;
-            let substate_ref = self.get_ref(handle)?;
-            let node_id = substate_ref.global_address().node_deref();
-
-            // Restore old kernel actor
-            {
-                let current_frame = Self::current_frame_mut(&mut self.call_frames);
-                current_frame.kernel_actor = saved_kernel_actor;
-            }
+            let node_id = self.execute_in_kernel_mode(KernelActor::Deref, |system_api| {
+                let offset = SubstateOffset::Global(GlobalOffset::Global);
+                let handle = system_api.lock_substate(node_id, offset, LockFlags::empty())?;
+                let substate_ref = system_api.get_ref(handle)?;
+                Ok(substate_ref.global_address().node_deref())
+            })?;
 
             Ok(Some(node_id))
         } else {
@@ -512,27 +532,15 @@ where
     ) -> Result<Option<RENodeId>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
             if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) {
-                // Save and replace kernel actor
-                let saved_kernel_actor = {
-                    let current_frame = Self::current_frame_mut(&mut self.call_frames);
-                    let cur = current_frame.kernel_actor;
-                    current_frame.kernel_actor = KernelActor::Deref;
-                    cur
-                };
-
-                let handle = self.lock_substate(
-                    node_id,
-                    SubstateOffset::Global(GlobalOffset::Global),
-                    LockFlags::empty(),
-                )?;
-                let substate_ref = self.get_ref(handle)?;
-                let node_id = substate_ref.global_address().node_deref();
-
-                // Restore old kernel actor
-                {
-                    let current_frame = Self::current_frame_mut(&mut self.call_frames);
-                    current_frame.kernel_actor = saved_kernel_actor;
-                }
+                let node_id = self.execute_in_kernel_mode(KernelActor::Deref, |system_api| {
+                    let handle = system_api.lock_substate(
+                        node_id,
+                        SubstateOffset::Global(GlobalOffset::Global),
+                        LockFlags::empty(),
+                    )?;
+                    let substate_ref = system_api.get_ref(handle)?;
+                    Ok(substate_ref.global_address().node_deref())
+                })?;
 
                 Ok(Some(node_id))
             } else {
@@ -941,6 +949,10 @@ where
         }
 
         Ok(output)
+    }
+
+    fn get_actor(&self) -> &REActor {
+        &Self::current_frame(&self.call_frames).actor
     }
 
     fn get_refed_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
