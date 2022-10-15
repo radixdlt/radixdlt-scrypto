@@ -191,7 +191,7 @@ impl TransactionProcessor {
 
     pub fn static_main<'s, Y, W, I, R>(
         func: TransactionProcessorFunction,
-        call_data: ScryptoValue,
+        args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
     where
@@ -203,7 +203,7 @@ impl TransactionProcessor {
         match func {
             TransactionProcessorFunction::Run => {
                 let input: TransactionProcessorRunInput =
-                    scrypto_decode(&call_data.raw).map_err(|e| {
+                    scrypto_decode(&args.raw).map_err(|e| {
                         InvokeError::Error(TransactionProcessorError::InvalidRequestData(e))
                     })?;
 
@@ -613,12 +613,12 @@ impl TransactionProcessor {
                                 ScryptoValue::from_slice(args)
                                     .expect("Invalid CALL_FUNCTION arguments"),
                             )
-                            .and_then(|call_data| Self::process_expressions(call_data, system_api))
-                            .and_then(|call_data| {
+                            .and_then(|args| Self::process_expressions(args, system_api))
+                            .and_then(|args| {
                                 system_api
                                     .invoke_scrypto(
                                         ScryptoFnIdent::Function(function_ident.clone()),
-                                        call_data,
+                                        args,
                                     )
                                     .map_err(InvokeError::Downstream)
                             })
@@ -661,12 +661,12 @@ impl TransactionProcessor {
                                 ScryptoValue::from_slice(args)
                                     .expect("Invalid CALL_METHOD arguments"),
                             )
-                            .and_then(|call_data| Self::process_expressions(call_data, system_api))
-                            .and_then(|call_data| {
+                            .and_then(|args| Self::process_expressions(args, system_api))
+                            .and_then(|args| {
                                 system_api
                                     .invoke_scrypto(
                                         ScryptoFnIdent::Method(method_ident.clone()),
-                                        call_data,
+                                        args,
                                     )
                                     .map_err(InvokeError::Downstream)
                             })
@@ -717,8 +717,116 @@ impl TransactionProcessor {
                         Instruction::CallNativeFunction {
                             function_ident,
                             args,
-                        } => todo!(),
-                        Instruction::CallNativeMethod { method_ident, args } => todo!(),
+                        } => {
+                            Self::replace_ids(
+                                &mut proof_id_mapping,
+                                &mut bucket_id_mapping,
+                                ScryptoValue::from_slice(args)
+                                    .expect("Invalid CALL_NATIVE_FUNCTION arguments"),
+                            )
+                            .and_then(|args| Self::process_expressions(args, system_api))
+                            .and_then(|args| {
+                                system_api
+                                    .invoke_native(
+                                        NativeFnIdent::Function(function_ident.clone()),
+                                        args,
+                                    )
+                                    .map_err(InvokeError::Downstream)
+                            })
+                            .and_then(|result| {
+                                // Auto move into auth_zone
+                                for (proof_id, _) in &result.proof_ids {
+                                    system_api
+                                        .invoke_native(
+                                            NativeFnIdent::Method(NativeMethodIdent {
+                                                receiver: auth_zone_ref,
+                                                method_name: AuthZoneMethod::Push.to_string(),
+                                            }),
+                                            ScryptoValue::from_typed(&AuthZonePushInput {
+                                                proof: scrypto::resource::Proof(*proof_id),
+                                            }),
+                                        )
+                                        .map_err(InvokeError::Downstream)?;
+                                }
+                                // Auto move into worktop
+                                for (bucket_id, _) in &result.bucket_ids {
+                                    system_api
+                                        .invoke_native(
+                                            NativeFnIdent::Method(NativeMethodIdent {
+                                                receiver: Receiver::Ref(RENodeId::Worktop),
+                                                method_name: WorktopMethod::Put.to_string(),
+                                            }),
+                                            ScryptoValue::from_typed(&WorktopPutInput {
+                                                bucket: scrypto::resource::Bucket(*bucket_id),
+                                            }),
+                                        )
+                                        .map_err(InvokeError::Downstream)?;
+                                }
+                                Ok(result)
+                            })
+                        }
+                        Instruction::CallNativeMethod {
+                            method_ident:
+                                NativeMethodIdent {
+                                    receiver,
+                                    method_name,
+                                },
+                            args,
+                        } => {
+                            Self::replace_ids(
+                                &mut proof_id_mapping,
+                                &mut bucket_id_mapping,
+                                ScryptoValue::from_slice(args)
+                                    .expect("Invalid CALL_NATIVE_METHOD arguments"),
+                            )
+                            .and_then(|args| Self::process_expressions(args, system_api))
+                            .and_then(|args| {
+                                system_api
+                                    .invoke_native(
+                                        NativeFnIdent::Method(NativeMethodIdent {
+                                            receiver: Self::replace_receiver(
+                                                receiver.clone(),
+                                                &mut proof_id_mapping,
+                                                &mut bucket_id_mapping,
+                                            )?,
+                                            method_name: method_name.clone(),
+                                        }),
+                                        args,
+                                    )
+                                    .map_err(InvokeError::Downstream)
+                            })
+                            .and_then(|result| {
+                                // Auto move into auth_zone
+                                for (proof_id, _) in &result.proof_ids {
+                                    system_api
+                                        .invoke_native(
+                                            NativeFnIdent::Method(NativeMethodIdent {
+                                                receiver: auth_zone_ref,
+                                                method_name: AuthZoneMethod::Push.to_string(),
+                                            }),
+                                            ScryptoValue::from_typed(&AuthZonePushInput {
+                                                proof: scrypto::resource::Proof(*proof_id),
+                                            }),
+                                        )
+                                        .map_err(InvokeError::Downstream)?;
+                                }
+                                // Auto move into worktop
+                                for (bucket_id, _) in &result.bucket_ids {
+                                    system_api
+                                        .invoke_native(
+                                            NativeFnIdent::Method(NativeMethodIdent {
+                                                receiver: Receiver::Ref(RENodeId::Worktop),
+                                                method_name: WorktopMethod::Put.to_string(),
+                                            }),
+                                            ScryptoValue::from_typed(&WorktopPutInput {
+                                                bucket: scrypto::resource::Bucket(*bucket_id),
+                                            }),
+                                        )
+                                        .map_err(InvokeError::downstream)?;
+                                }
+                                Ok(result)
+                            })
+                        }
                     }?;
                     outputs.push(result);
                 }

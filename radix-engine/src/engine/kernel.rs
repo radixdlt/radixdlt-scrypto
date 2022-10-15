@@ -523,7 +523,9 @@ where
                     ScryptoReceiver::Local(component_id) => {
                         RENodeId::Component(component_id.clone())
                     }
-                    ScryptoReceiver::Global(component_address) => todo!(),
+                    ScryptoReceiver::Global(component_address) => {
+                        RENodeId::Global(GlobalAddress::Component(component_address.clone()))
+                    }
                 };
                 let node_pointer =
                     Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
@@ -633,7 +635,7 @@ where
     fn load_native_actor(
         &mut self,
         fn_ident: NativeFnIdent,
-        input: &ScryptoValue,
+        _input: &ScryptoValue,
     ) -> Result<REActor, RuntimeError> {
         let error =
             RuntimeError::InterpreterError(InterpreterError::InvalidNativeActor(fn_ident.clone()));
