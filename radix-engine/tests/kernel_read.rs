@@ -30,8 +30,11 @@ fn should_not_be_able_to_read_global_substate() {
             e,
             RuntimeError::KernelError(KernelError::SubstateNotReadable(
                 REActor::Function(..),
-                SubstateId(RENodeId::Global(GlobalAddress::Component(..)), SubstateOffset::Global(GlobalOffset::Global)))
-            )
+                SubstateId(
+                    RENodeId::Global(GlobalAddress::Component(..)),
+                    SubstateOffset::Global(GlobalOffset::Global)
+                )
+            ))
         )
     });
 }

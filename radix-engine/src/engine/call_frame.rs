@@ -17,7 +17,10 @@ pub struct SubstateLock {
 pub struct CallFrame {
     /// The frame id
     pub depth: usize,
-    /// The running actor of this frame
+
+    pub kernel_actor: KernelActor,
+
+    /// The running application actor of this frame
     pub actor: REActor,
 
     /// All ref values accessible by this call frame. The value may be located in one of the following:
@@ -113,6 +116,7 @@ impl CallFrame {
     pub fn new_root() -> Self {
         Self {
             depth: 0,
+            kernel_actor: KernelActor::Application,
             actor: REActor::Function(ResolvedFunction::Native(
                 NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
             )),
@@ -132,6 +136,7 @@ impl CallFrame {
     ) -> Self {
         Self {
             depth,
+            kernel_actor: KernelActor::Application,
             actor,
             node_refs,
             owned_heap_nodes,

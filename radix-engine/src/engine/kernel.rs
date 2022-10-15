@@ -480,10 +480,25 @@ where
         node_id: RENodeId,
     ) -> Result<Option<RENodeId>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
+            // Save and replace kernel actor
+            let saved_kernel_actor = {
+                let current_frame = Self::current_frame_mut(&mut self.call_frames);
+                let cur = current_frame.kernel_actor;
+                current_frame.kernel_actor = KernelActor::Deref;
+                cur
+            };
+
             let offset = SubstateOffset::Global(GlobalOffset::Global);
             let handle = self.lock_substate(node_id, offset, LockFlags::empty())?;
             let substate_ref = self.get_ref(handle)?;
             let node_id = substate_ref.global_address().node_deref();
+
+            // Restore old kernel actor
+            {
+                let current_frame = Self::current_frame_mut(&mut self.call_frames);
+                current_frame.kernel_actor = saved_kernel_actor;
+            }
+
             Ok(Some(node_id))
         } else {
             Ok(None)
@@ -497,6 +512,14 @@ where
     ) -> Result<Option<RENodeId>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
             if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) {
+                // Save and replace kernel actor
+                let saved_kernel_actor = {
+                    let current_frame = Self::current_frame_mut(&mut self.call_frames);
+                    let cur = current_frame.kernel_actor;
+                    current_frame.kernel_actor = KernelActor::Deref;
+                    cur
+                };
+
                 let handle = self.lock_substate(
                     node_id,
                     SubstateOffset::Global(GlobalOffset::Global),
@@ -504,6 +527,13 @@ where
                 )?;
                 let substate_ref = self.get_ref(handle)?;
                 let node_id = substate_ref.global_address().node_deref();
+
+                // Restore old kernel actor
+                {
+                    let current_frame = Self::current_frame_mut(&mut self.call_frames);
+                    current_frame.kernel_actor = saved_kernel_actor;
+                }
+
                 Ok(Some(node_id))
             } else {
                 Ok(None)
@@ -1084,25 +1114,31 @@ where
         // TODO: Check if valid offset for node_id
 
         // Authorization
+        let kernel_actor = Self::current_frame(&self.call_frames).kernel_actor;
+        let actor = &Self::current_frame(&self.call_frames).actor;
         if flags.contains(LockFlags::MUTABLE) {
-            if !Self::current_frame(&self.call_frames)
-                .actor
-                .is_substate_writeable(node_pointer.node_id(), offset.clone())
-            {
+            if !SubstateProperties::is_substate_writeable(
+                kernel_actor,
+                actor,
+                node_pointer.node_id(),
+                offset.clone(),
+            ) {
                 return Err(RuntimeError::KernelError(
                     KernelError::SubstateNotWriteable(
-                        Self::current_frame(&self.call_frames).actor.clone(),
+                        actor.clone(),
                         SubstateId(node_pointer.node_id(), offset.clone()),
                     ),
                 ));
             }
         } else {
-            if !Self::current_frame(&self.call_frames)
-                .actor
-                .is_substate_readable(node_pointer.node_id(), offset.clone())
-            {
+            if !SubstateProperties::is_substate_readable(
+                kernel_actor,
+                actor,
+                node_pointer.node_id(),
+                offset.clone(),
+            ) {
                 return Err(RuntimeError::KernelError(KernelError::SubstateNotReadable(
-                    Self::current_frame(&self.call_frames).actor.clone(),
+                    actor.clone(),
                     SubstateId(node_pointer.node_id(), offset.clone()),
                 )));
             }
