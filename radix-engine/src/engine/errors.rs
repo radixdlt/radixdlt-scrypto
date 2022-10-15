@@ -5,7 +5,7 @@ use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
 use sbor::*;
-use scrypto::core::FnIdent;
+use scrypto::core::{FnIdent, MethodIdent};
 
 use super::AuthError;
 use super::CostingError;
@@ -106,7 +106,8 @@ pub enum ScryptoActorError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum InterpreterError {
-    InvalidScryptoActor(FnIdent, ScryptoActorError),
+    InvalidScryptoMethod(Receiver, MethodIdent, ScryptoActorError),
+    InvalidScryptoFunction(FunctionIdent, ScryptoActorError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]

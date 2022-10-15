@@ -608,32 +608,48 @@ where
         Ok(actor)
     }
 
-    fn load_actor(
+    fn resolve_method_actor(
         &mut self,
-        fn_ident: FnIdent,
+        receiver: Receiver,
+        method_ident: MethodIdent,
         input: &ScryptoValue,
     ) -> Result<REActor, RuntimeError> {
-        // Load actor
-        let re_actor = match &fn_ident {
-            FnIdent::Method(ReceiverMethodIdent {
-                method_ident: MethodIdent::Scrypto(ident),
-                receiver,
-            }) => self
+        let actor = match &method_ident {
+            MethodIdent::Scrypto(ident) => self
                 .load_scrypto_actor(
                     ScryptoFnIdent::Method(receiver.clone(), ident.clone()),
                     input,
                 )
                 .map_err(|e| match e {
                     InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(error) => RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoActor(fn_ident.clone(), error),
-                    ),
+                    InvokeError::Error(error) => {
+                        RuntimeError::InterpreterError(InterpreterError::InvalidScryptoMethod(
+                            receiver.clone(),
+                            method_ident.clone(),
+                            error,
+                        ))
+                    }
                 })?,
-            FnIdent::Function(FunctionIdent::Scrypto {
+            MethodIdent::Native(native_fn) => REActor::Method(ResolvedReceiverMethod {
+                receiver: receiver.clone(),
+                method: ResolvedMethod::Native(native_fn.clone()),
+            }),
+        };
+
+        Ok(actor)
+    }
+
+    fn resolve_function_actor(
+        &mut self,
+        function_ident: FunctionIdent,
+        input: &ScryptoValue,
+    ) -> Result<REActor, RuntimeError> {
+        let actor = match &function_ident {
+            FunctionIdent::Scrypto {
                 package_address,
                 blueprint_name,
                 ident,
-            }) => self
+            } => self
                 .load_scrypto_actor(
                     ScryptoFnIdent::Function(
                         *package_address,
@@ -645,24 +661,15 @@ where
                 .map_err(|e| match e {
                     InvokeError::Downstream(runtime_error) => runtime_error,
                     InvokeError::Error(error) => RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoActor(fn_ident.clone(), error),
+                        InterpreterError::InvalidScryptoFunction(function_ident.clone(), error),
                     ),
                 })?,
-
-            // Native Interpreter
-            FnIdent::Method(ReceiverMethodIdent {
-                method_ident: MethodIdent::Native(native_fn),
-                receiver,
-            }) => REActor::Method(ResolvedReceiverMethod {
-                receiver: receiver.clone(),
-                method: ResolvedMethod::Native(native_fn.clone()),
-            }),
-            FnIdent::Function(FunctionIdent::Native(native_function)) => {
+            FunctionIdent::Native(native_function) => {
                 REActor::Function(ResolvedFunction::Native(native_function.clone()))
             }
         };
 
-        Ok(re_actor)
+        Ok(actor)
     }
 }
 
@@ -704,7 +711,7 @@ where
 
     fn invoke(
         &mut self,
-        mut fn_ident: FnIdent,
+        fn_ident: FnIdent,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
         let depth = Self::current_frame(&self.call_frames).depth;
@@ -823,26 +830,39 @@ where
             }
         }
 
-        if let FnIdent::Method(ReceiverMethodIdent { receiver, .. }) = &mut fn_ident {
-            match receiver {
-                Receiver::Consumed(node_id) => {
-                    let node =
-                        Self::current_frame_mut(&mut self.call_frames).take_node(*node_id)?;
-                    nodes_to_pass_downstream.insert(*node_id, node);
-                }
-                Receiver::Ref(ref mut node_id) => {
-                    // Deref
-                    if let Some(derefed) = self.node_method_deref(*node_id)? {
-                        *node_id = derefed;
+        let next_actor = match fn_ident {
+            FnIdent::Method(ReceiverMethodIdent {
+                receiver,
+                method_ident,
+            }) => {
+                let resolved_receiver = match receiver {
+                    Receiver::Consumed(node_id) => {
+                        let node =
+                            Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
+                        nodes_to_pass_downstream.insert(node_id, node);
+                        Receiver::Consumed(node_id)
                     }
-                    let node_pointer =
-                        Self::current_frame(&self.call_frames).get_node_pointer(*node_id)?;
-                    next_node_refs.insert(*node_id, node_pointer);
-                }
+                    Receiver::Ref(node_id) => {
+                        // Deref
+                        let resolved_node_id =
+                            if let Some(derefed) = self.node_method_deref(node_id)? {
+                                derefed
+                            } else {
+                                node_id
+                            };
+                        let node_pointer = Self::current_frame(&self.call_frames)
+                            .get_node_pointer(resolved_node_id)?;
+                        next_node_refs.insert(resolved_node_id, node_pointer);
+                        Receiver::Ref(resolved_node_id)
+                    }
+                };
+                self.resolve_method_actor(resolved_receiver, method_ident, &input)?
             }
-        }
+            FnIdent::Function(function_ident) => {
+                self.resolve_function_actor(function_ident, &input)?
+            }
+        };
 
-        let next_actor = self.load_actor(fn_ident, &input)?;
         let cur_actor = &Self::current_frame(&self.call_frames).actor;
 
         for (node_id, node) in &mut nodes_to_pass_downstream {
