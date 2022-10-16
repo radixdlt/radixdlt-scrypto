@@ -558,98 +558,6 @@ where
         }
     }
 
-    // TODO: Move out
-    fn load_scrypto_actor(
-        &mut self,
-        ident: ScryptoFnIdent,
-        input: &ScryptoValue,
-    ) -> Result<(REActor, RENodeId), InvokeError<ScryptoActorError>> {
-        self.execute_in_kernel_mode::<_, _, InvokeError<ScryptoActorError>>(
-            KernelActor::ScryptoLoader,
-            |system_api| {
-                let (receiver, package_address, blueprint_name, ident) = match ident {
-                    ScryptoFnIdent::Method(receiver, ident) => {
-                        if !matches!(
-                            receiver,
-                            ResolvedReceiver {
-                                receiver: Receiver::Ref(RENodeId::Component(..)),
-                                ..
-                            }
-                        ) {
-                            return Err(InvokeError::Error(ScryptoActorError::InvalidReceiver));
-                        }
-
-                        let node_id = receiver.receiver().node_id();
-                        let offset = SubstateOffset::Component(ComponentOffset::Info);
-                        let handle =
-                            system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
-                        let substate_ref = system_api.get_ref(handle)?;
-                        let info = substate_ref.component_info();
-                        let rtn = (
-                            Some(receiver),
-                            info.package_address.clone(),
-                            info.blueprint_name.clone(),
-                            ident,
-                        );
-                        system_api.drop_lock(handle)?;
-
-                        rtn
-                    }
-                    ScryptoFnIdent::Function(package_address, blueprint_name, ident) => {
-                        (None, package_address, blueprint_name, ident)
-                    }
-                };
-
-                let package_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
-                let offset = SubstateOffset::Package(PackageOffset::Package);
-                let handle =
-                    system_api.lock_substate(package_node_id, offset, LockFlags::empty())?;
-                let substate_ref = system_api.get_ref(handle)?;
-                let package = substate_ref.package();
-                let abi = package
-                    .blueprint_abi(&blueprint_name)
-                    .ok_or(InvokeError::Error(ScryptoActorError::BlueprintNotFound))?;
-
-                let fn_abi = abi
-                    .get_fn_abi(&ident)
-                    .ok_or(InvokeError::Error(ScryptoActorError::IdentNotFound))?;
-
-                if fn_abi.mutability.is_some() != receiver.is_some() {
-                    return Err(InvokeError::Error(ScryptoActorError::InvalidReceiver));
-                }
-
-                if !fn_abi.input.matches(&input.dom) {
-                    return Err(InvokeError::Error(ScryptoActorError::InvalidInput));
-                }
-
-                let export_name = fn_abi.export_name.to_string();
-                system_api.drop_lock(handle)?;
-
-                let actor = if let Some(receiver) = receiver {
-                    REActor::Method(ResolvedReceiverMethod {
-                        receiver,
-                        method: ResolvedMethod::Scrypto {
-                            package_address,
-                            blueprint_name: blueprint_name.clone(),
-                            ident: ident.to_string(),
-                            export_name,
-                        },
-                    })
-                } else {
-                    REActor::Function(ResolvedFunction::Scrypto {
-                        package_address,
-                        blueprint_name: blueprint_name.clone(),
-                        ident: ident.clone(),
-                        export_name,
-                    })
-                };
-
-                // TODO: Make package node visible in a different way
-                Ok((actor, package_node_id))
-            },
-        )
-    }
-
     fn resolve_method_actor(
         &mut self,
         receiver: ResolvedReceiver,
@@ -660,21 +568,24 @@ where
 
         let actor = match &method_ident {
             MethodIdent::Scrypto(ident) => {
-                let (actor, node_id) = self
-                    .load_scrypto_actor(
-                        ScryptoFnIdent::Method(receiver.clone(), ident.clone()),
-                        input,
-                    )
-                    .map_err(|e| match e {
-                        InvokeError::Downstream(runtime_error) => runtime_error,
-                        InvokeError::Error(error) => {
-                            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoMethod(
-                                receiver.clone(),
-                                method_ident.clone(),
-                                error,
-                            ))
-                        }
-                    })?;
+                let (actor, node_id) =
+                    self.execute_in_kernel_mode(KernelActor::ScryptoLoader, |system_api| {
+                        ScryptoInterpreter::load_scrypto_actor(
+                            ScryptoFnIdent::Method(receiver.clone(), ident.clone()),
+                            input,
+                            system_api
+                        )
+                    })
+                        .map_err(|e| match e {
+                            InvokeError::Downstream(runtime_error) => runtime_error,
+                            InvokeError::Error(error) => {
+                                RuntimeError::InterpreterError(InterpreterError::InvalidScryptoMethod(
+                                    receiver.clone(),
+                                    method_ident.clone(),
+                                    error,
+                                ))
+                            }
+                        })? ;
                 let node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id).unwrap();
                 references_to_add.insert(node_id, node_pointer);
                 actor
@@ -701,21 +612,28 @@ where
                 blueprint_name,
                 ident,
             } => {
-                let (actor, node_id) = self
-                    .load_scrypto_actor(
-                        ScryptoFnIdent::Function(
-                            *package_address,
-                            blueprint_name.clone(),
-                            ident.to_string(),
-                        ),
-                        input,
-                    )
-                    .map_err(|e| match e {
-                        InvokeError::Downstream(runtime_error) => runtime_error,
-                        InvokeError::Error(error) => RuntimeError::InterpreterError(
-                            InterpreterError::InvalidScryptoFunction(function_ident.clone(), error),
-                        ),
-                    })?;
+                let (actor, node_id) =
+                    self.execute_in_kernel_mode(KernelActor::ScryptoLoader, |system_api| {
+                        ScryptoInterpreter::load_scrypto_actor(
+                            ScryptoFnIdent::Function(
+                                *package_address,
+                                blueprint_name.clone(),
+                                ident.to_string(),
+                            ),
+                            input,
+                            system_api
+                        )
+                    })
+                        .map_err(|e| match e {
+                            InvokeError::Downstream(runtime_error) => runtime_error,
+                            InvokeError::Error(error) => {
+                                RuntimeError::InterpreterError(InterpreterError::InvalidScryptoFunction(
+                                    function_ident,
+                                    error,
+                                ))
+                            }
+                        })? ;
+
                 let node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id).unwrap();
                 references_to_add.insert(node_id, node_pointer);
                 actor

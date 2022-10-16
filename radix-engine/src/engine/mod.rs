@@ -10,8 +10,10 @@ mod node_ref;
 mod system_api;
 mod track;
 mod track_support;
+mod interpreters;
 mod wasm_runtime;
 
+pub use interpreters::*;
 pub use actor::*;
 pub use call_frame::CallFrame;
 pub use errors::*;
