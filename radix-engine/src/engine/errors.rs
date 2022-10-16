@@ -50,7 +50,7 @@ impl From<KernelError> for RuntimeError {
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum KernelError {
     // invocation
-    WasmError(WasmError),
+    WasmError(REActor, WasmError),
     RENodeNotVisible(RENodeId),
     InvokeMethodInvalidReceiver(RENodeId),
 

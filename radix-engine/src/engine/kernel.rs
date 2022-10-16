@@ -310,8 +310,9 @@ where
         );
         self.call_frames.push(frame);
 
+        let actor = Self::current_frame(&self.call_frames).actor.clone();
         let output = {
-            let rtn = match Self::current_frame(&self.call_frames).actor.clone() {
+            let rtn = match actor.clone() {
                 REActor::Function(ResolvedFunction::Native(native_fn)) => {
                     NativeInterpreter::run_function(native_fn, input, self)
                 }
@@ -348,15 +349,6 @@ where
                             substate.package().clone() // TODO: Remove clone()
                         };
 
-                        for m in &mut self.modules {
-                            m.on_wasm_instantiation(
-                                &mut self.track,
-                                &mut self.call_frames,
-                                package.code(),
-                            )
-                            .map_err(RuntimeError::ModuleError)?;
-                        }
-
                         let instrumented_code = self
                             .wasm_instrumenter
                             .instrument(package.code(), &self.wasm_metering_params);
@@ -385,7 +377,7 @@ where
                             .invoke_export(&export_name, &input, &mut runtime)
                             .map_err(|e| match e {
                                 InvokeError::Error(e) => {
-                                    RuntimeError::KernelError(KernelError::WasmError(e))
+                                    RuntimeError::KernelError(KernelError::WasmError(actor.clone(), e))
                                 }
                                 InvokeError::Downstream(runtime_error) => runtime_error,
                             })?
@@ -593,6 +585,24 @@ where
                             ))
                         }
                     })?;
+
+                // TODO: Move this in a better spot when more refactors are done
+                let package = self.execute_in_kernel_mode::<_,_, RuntimeError>(KernelActor::ScryptoLoader, |system_api| {
+                    let handle = system_api.lock_substate(node_id, SubstateOffset::Package(PackageOffset::Package), LockFlags::read_only())?;
+                    let substate_ref = system_api.get_ref(handle)?;
+                    let package = substate_ref.package().clone(); // TODO: Remove clone()
+                    system_api.drop_lock(handle)?;
+                    Ok(package)
+                })?;
+                for m in &mut self.modules {
+                    m.on_wasm_instantiation(
+                        &mut self.track,
+                        &mut self.call_frames,
+                        package.code(),
+                    )
+                        .map_err(RuntimeError::ModuleError)?;
+                }
+
                 let node_pointer = Self::current_frame(&self.call_frames)
                     .get_node_pointer(node_id)
                     .unwrap();
@@ -639,6 +649,23 @@ where
                             InterpreterError::InvalidScryptoFunction(function_ident, error),
                         ),
                     })?;
+
+                // TODO: Move this in a better spot when more refactors are done
+                let package = self.execute_in_kernel_mode::<_,_, RuntimeError>(KernelActor::ScryptoLoader, |system_api| {
+                    let handle = system_api.lock_substate(node_id, SubstateOffset::Package(PackageOffset::Package), LockFlags::read_only())?;
+                    let substate_ref = system_api.get_ref(handle)?;
+                    let package = substate_ref.package().clone(); // TODO: Remove clone()
+                    system_api.drop_lock(handle)?;
+                    Ok(package)
+                })?;
+                for m in &mut self.modules {
+                    m.on_wasm_instantiation(
+                        &mut self.track,
+                        &mut self.call_frames,
+                        package.code(),
+                    )
+                        .map_err(RuntimeError::ModuleError)?;
+                }
 
                 let node_pointer = Self::current_frame(&self.call_frames)
                     .get_node_pointer(node_id)
