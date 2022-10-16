@@ -6,30 +6,32 @@ use crate::wasm::{WasmEngine, WasmInstance};
 pub struct ScryptoInterpreter;
 
 impl ScryptoInterpreter {
-    pub fn load_scrypto_actor<'s, Y, W, I, R>(ident: ScryptoFnIdent, input: &ScryptoValue, system_api: &mut Y
+    pub fn load_scrypto_actor<'s, Y, W, I, R>(
+        ident: ScryptoFnIdent,
+        input: &ScryptoValue,
+        system_api: &mut Y,
     ) -> Result<(REActor, RENodeId), InvokeError<ScryptoActorError>>
-        where
-            Y: SystemApi<'s, W, I, R>,
-            W: WasmEngine<I>,
-            I: WasmInstance,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
     {
         let (receiver, package_address, blueprint_name, ident) = match ident {
             ScryptoFnIdent::Method(receiver, ident) => {
                 if !matches!(
-                            receiver,
-                            ResolvedReceiver {
-                                receiver: Receiver::Ref(RENodeId::Component(..)),
-                                ..
-                            }
-                        ) {
+                    receiver,
+                    ResolvedReceiver {
+                        receiver: Receiver::Ref(RENodeId::Component(..)),
+                        ..
+                    }
+                ) {
                     return Err(InvokeError::Error(ScryptoActorError::InvalidReceiver));
                 }
 
                 let node_id = receiver.receiver().node_id();
                 let offset = SubstateOffset::Component(ComponentOffset::Info);
-                let handle =
-                    system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+                let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
                 let substate_ref = system_api.get_ref(handle)?;
                 let info = substate_ref.component_info();
                 let rtn = (
@@ -49,8 +51,7 @@ impl ScryptoInterpreter {
 
         let package_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
         let offset = SubstateOffset::Package(PackageOffset::Package);
-        let handle =
-            system_api.lock_substate(package_node_id, offset, LockFlags::empty())?;
+        let handle = system_api.lock_substate(package_node_id, offset, LockFlags::empty())?;
         let substate_ref = system_api.get_ref(handle)?;
         let package = substate_ref.package();
         let abi = package
@@ -95,4 +96,3 @@ impl ScryptoInterpreter {
         Ok((actor, package_node_id))
     }
 }
-

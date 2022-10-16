@@ -37,7 +37,7 @@ impl SubstateProperties {
         }
     }
 
-    pub fn check_lock_access(
+    pub fn check_substate_access(
         kernel_actor: KernelActor,
         actor: &REActor,
         node_id: RENodeId,
@@ -52,6 +52,16 @@ impl SubstateProperties {
             },
             (KernelActor::AuthModule, offset) => match offset {
                 SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => true,
+                // TODO: Remove these and use AuthRulesSubstate
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
+                    flags == LockFlags::read_only()
+                }
+                SubstateOffset::Vault(VaultOffset::Vault) => flags == LockFlags::read_only(),
+                SubstateOffset::Package(PackageOffset::Package) => flags == LockFlags::read_only(),
+                SubstateOffset::Component(ComponentOffset::State) => {
+                    flags == LockFlags::read_only()
+                }
+                SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
                 _ => false,
             },
             (KernelActor::ScryptoLoader, offset) => match offset {

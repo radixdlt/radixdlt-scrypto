@@ -51,8 +51,8 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    /// Retrieves all nodes owned by the current frame
-    fn get_refed_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
+    /// Retrieves all nodes referenceable by the current frame
+    fn get_all_referenceable_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
 
     /// Removes an RENode and all of it's children from the Heap
     fn node_drop(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError>;

@@ -285,15 +285,22 @@ where
         owned_nodes: HashMap<RENodeId, HeapRootRENode>,
         mut refed_nodes: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        // TODO: Use execute_in_kernel mode for this
-        let new_refed_nodes =
-            AuthModule::on_new_frame(&actor, &input, &mut self.call_frames, &mut self.track)
-                .map_err(|e| match e {
-                    InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                })?;
+        let new_refed_nodes = self
+            .execute_in_kernel_mode(KernelActor::AuthModule, |system_api| {
+                AuthModule::on_before_frame_start(&actor, &input, system_api)
+            })
+            .map_err(|e| match e {
+                InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
+                InvokeError::Downstream(runtime_error) => runtime_error,
+            })?;
 
-        refed_nodes.extend(new_refed_nodes);
+        // TODO: Do this in a better way by allowing module to execute in next call frame
+        for new_refed_node in new_refed_nodes {
+            let node_pointer = Self::current_frame(&self.call_frames)
+                .get_node_pointer(new_refed_node)
+                .unwrap();
+            refed_nodes.insert(new_refed_node, node_pointer);
+        }
 
         let frame = CallFrame::new_child(
             Self::current_frame(&self.call_frames).depth + 1,
@@ -568,28 +575,30 @@ where
 
         let actor = match &method_ident {
             MethodIdent::Scrypto(ident) => {
-                let (actor, node_id) =
-                    self.execute_in_kernel_mode(KernelActor::ScryptoLoader, |system_api| {
+                let (actor, node_id) = self
+                    .execute_in_kernel_mode(KernelActor::ScryptoLoader, |system_api| {
                         ScryptoInterpreter::load_scrypto_actor(
                             ScryptoFnIdent::Method(receiver.clone(), ident.clone()),
                             input,
-                            system_api
+                            system_api,
                         )
                     })
-                        .map_err(|e| match e {
-                            InvokeError::Downstream(runtime_error) => runtime_error,
-                            InvokeError::Error(error) => {
-                                RuntimeError::InterpreterError(InterpreterError::InvalidScryptoMethod(
-                                    receiver.clone(),
-                                    method_ident.clone(),
-                                    error,
-                                ))
-                            }
-                        })? ;
-                let node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id).unwrap();
+                    .map_err(|e| match e {
+                        InvokeError::Downstream(runtime_error) => runtime_error,
+                        InvokeError::Error(error) => {
+                            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoMethod(
+                                receiver.clone(),
+                                method_ident.clone(),
+                                error,
+                            ))
+                        }
+                    })?;
+                let node_pointer = Self::current_frame(&self.call_frames)
+                    .get_node_pointer(node_id)
+                    .unwrap();
                 references_to_add.insert(node_id, node_pointer);
                 actor
-            },
+            }
             MethodIdent::Native(native_fn) => REActor::Method(ResolvedReceiverMethod {
                 receiver: receiver.clone(),
                 method: ResolvedMethod::Native(native_fn.clone()),
@@ -612,8 +621,8 @@ where
                 blueprint_name,
                 ident,
             } => {
-                let (actor, node_id) =
-                    self.execute_in_kernel_mode(KernelActor::ScryptoLoader, |system_api| {
+                let (actor, node_id) = self
+                    .execute_in_kernel_mode(KernelActor::ScryptoLoader, |system_api| {
                         ScryptoInterpreter::load_scrypto_actor(
                             ScryptoFnIdent::Function(
                                 *package_address,
@@ -621,23 +630,22 @@ where
                                 ident.to_string(),
                             ),
                             input,
-                            system_api
+                            system_api,
                         )
                     })
-                        .map_err(|e| match e {
-                            InvokeError::Downstream(runtime_error) => runtime_error,
-                            InvokeError::Error(error) => {
-                                RuntimeError::InterpreterError(InterpreterError::InvalidScryptoFunction(
-                                    function_ident,
-                                    error,
-                                ))
-                            }
-                        })? ;
+                    .map_err(|e| match e {
+                        InvokeError::Downstream(runtime_error) => runtime_error,
+                        InvokeError::Error(error) => RuntimeError::InterpreterError(
+                            InterpreterError::InvalidScryptoFunction(function_ident, error),
+                        ),
+                    })?;
 
-                let node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id).unwrap();
+                let node_pointer = Self::current_frame(&self.call_frames)
+                    .get_node_pointer(node_id)
+                    .unwrap();
                 references_to_add.insert(node_id, node_pointer);
                 actor
-            },
+            }
             FunctionIdent::Native(native_function) => {
                 REActor::Function(ResolvedFunction::Native(native_function.clone()))
             }
@@ -887,7 +895,7 @@ where
         &Self::current_frame(&self.call_frames).actor
     }
 
-    fn get_refed_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
+    fn get_all_referenceable_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
@@ -897,7 +905,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let node_ids = Self::current_frame_mut(&mut self.call_frames).get_refed_nodes();
+        let node_ids = Self::current_frame_mut(&mut self.call_frames).get_all_referenceable_nodes();
 
         Ok(node_ids)
     }
@@ -1060,7 +1068,7 @@ where
         // Authorization
         let kernel_actor = Self::current_frame(&self.call_frames).kernel_actor;
         let actor = &Self::current_frame(&self.call_frames).actor;
-        if !SubstateProperties::check_lock_access(
+        if !SubstateProperties::check_substate_access(
             kernel_actor,
             actor,
             node_id,

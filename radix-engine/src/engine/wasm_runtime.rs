@@ -1,10 +1,10 @@
 use crate::engine::*;
-use crate::types::*;
 use crate::fee::*;
 use crate::model::{
     Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore,
     RuntimeSubstate,
 };
+use crate::types::*;
 use crate::wasm::*;
 use scrypto::core::FnIdent;
 
@@ -98,7 +98,7 @@ where
     }
 
     fn handle_get_owned_node_ids(&mut self) -> Result<ScryptoValue, RuntimeError> {
-        let node_ids = self.system_api.get_refed_node_ids()?;
+        let node_ids = self.system_api.get_all_referenceable_node_ids()?;
         Ok(ScryptoValue::from_typed(&node_ids))
     }
 

@@ -227,8 +227,11 @@ impl CallFrame {
         Ok(node_pointer)
     }
 
-    pub fn get_refed_nodes(&self) -> Vec<RENodeId> {
-        self.node_refs.keys().cloned().collect()
+    pub fn get_all_referenceable_nodes(&self) -> Vec<RENodeId> {
+        let mut node_ids: Vec<RENodeId> = self.node_refs.keys().cloned().collect();
+        let owned_ids: Vec<RENodeId> = self.owned_heap_nodes.keys().cloned().collect();
+        node_ids.extend(owned_ids);
+        node_ids
     }
 
     pub fn find_ref<P>(&self, predicate: P) -> Option<&RENodeId>
