@@ -82,11 +82,12 @@ impl REActor {
     }
 }
 
-/// Executing kernel level actor
+/// Execution mode
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub enum KernelActor {
-    Application,
+pub enum ExecutionMode {
+    Kernel,
     Deref,
     ScryptoInterpreter,
     AuthModule,
+    Application,
 }

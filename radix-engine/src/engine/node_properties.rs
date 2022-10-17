@@ -1,5 +1,5 @@
 use crate::engine::{
-    KernelActor, KernelError, LockFlags, REActor, ResolvedFunction, ResolvedMethod,
+    ExecutionMode, KernelError, LockFlags, REActor, ResolvedFunction, ResolvedMethod,
     ResolvedReceiver, ResolvedReceiverMethod, RuntimeError,
 };
 use crate::types::*;
@@ -38,24 +38,26 @@ impl SubstateProperties {
     }
 
     pub fn check_substate_access(
-        kernel_actor: KernelActor,
+        mode: ExecutionMode,
         actor: &REActor,
         node_id: RENodeId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> bool {
         // TODO: Cleanup and reduce to least privilege
-        match (kernel_actor, offset) {
-            (KernelActor::Deref, offset) => match offset {
+        match (mode, offset) {
+            (ExecutionMode::Kernel, ..) => false, // Protect ourselves!
+            (ExecutionMode::Deref, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => flags == LockFlags::read_only(),
                 _ => false,
             },
-            (KernelActor::AuthModule, offset) => match offset {
+            (ExecutionMode::AuthModule, offset) => match offset {
                 SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => true,
                 // TODO: Remove these and use AuthRulesSubstate
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
                     flags == LockFlags::read_only()
                 }
+                SubstateOffset::Bucket(BucketOffset::Bucket) => true, // TODO: Remove to read_only!
                 SubstateOffset::Vault(VaultOffset::Vault) => flags == LockFlags::read_only(),
                 SubstateOffset::Package(PackageOffset::Package) => flags == LockFlags::read_only(),
                 SubstateOffset::Component(ComponentOffset::State) => {
@@ -64,12 +66,12 @@ impl SubstateProperties {
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
                 _ => false,
             },
-            (KernelActor::ScryptoInterpreter, offset) => match offset {
+            (ExecutionMode::ScryptoInterpreter, offset) => match offset {
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
                 SubstateOffset::Package(PackageOffset::Package) => flags == LockFlags::read_only(),
                 _ => false,
             },
-            (KernelActor::Application, offset) => {
+            (ExecutionMode::Application, offset) => {
                 if !flags.contains(LockFlags::MUTABLE) {
                     match actor {
                         // Native

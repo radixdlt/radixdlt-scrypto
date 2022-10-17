@@ -36,6 +36,8 @@ pub struct Kernel<
     I: WasmInstance,
     R: FeeReserve,
 {
+    execution_mode: ExecutionMode,
+
     /// The transaction hash
     transaction_hash: Hash,
     /// Blobs attached to the transaction
@@ -76,6 +78,7 @@ where
     ) -> Self {
         let frame = CallFrame::new_root();
         let mut kernel = Self {
+            execution_mode: ExecutionMode::Kernel,
             transaction_hash,
             blobs,
             max_depth,
@@ -103,18 +106,22 @@ where
             let bucket_id =
                 kernel.create_non_fungible_bucket_with_ids(resource_address, non_fungible_ids);
 
-            let node_id = RENodeId::Bucket(bucket_id);
-            let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-            let handle = kernel
-                .lock_substate(node_id, offset, LockFlags::MUTABLE)
+            let proof = kernel
+                .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |system_api| {
+                    let node_id = RENodeId::Bucket(bucket_id);
+                    let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
+                    let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+                    let mut substate_mut = system_api.get_ref_mut(handle)?;
+                    let mut raw_mut = substate_mut.get_raw_mut();
+                    let proof = raw_mut
+                        .bucket()
+                        .create_proof(bucket_id)
+                        .expect("Failed to create proof");
+                    substate_mut.flush()?;
+                    Ok(proof)
+                })
                 .unwrap();
-            let mut substate_mut = kernel.get_ref_mut(handle).unwrap();
-            let mut raw_mut = substate_mut.get_raw_mut();
-            let proof = raw_mut
-                .bucket()
-                .create_proof(bucket_id)
-                .expect("Failed to create proof");
-            substate_mut.flush().unwrap();
+
             proofs.push(proof);
         }
 
@@ -275,14 +282,12 @@ where
         owned_nodes: HashMap<RENodeId, HeapRootRENode>,
         mut refed_nodes: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        let new_refed_nodes = self
-            .execute_in_kernel_mode(KernelActor::AuthModule, |system_api| {
-                AuthModule::on_before_frame_start(&actor, &input, system_api)
-            })
-            .map_err(|e| match e {
+        let new_refed_nodes = self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
+            AuthModule::on_before_frame_start(&actor, &input, system_api).map_err(|e| match e {
                 InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
                 InvokeError::Downstream(runtime_error) => runtime_error,
-            })?;
+            })
+        })?;
 
         // TODO: Do this in a better way by allowing module to execute in next call frame
         for new_refed_node in new_refed_nodes {
@@ -302,13 +307,16 @@ where
 
         let actor = Self::current_frame(&self.call_frames).actor.clone();
         let output = match actor.clone() {
-            REActor::Function(ResolvedFunction::Native(native_fn)) => {
-                NativeInterpreter::run_function(native_fn, input, self)
-            }
+            REActor::Function(ResolvedFunction::Native(native_fn)) => self
+                .execute_in_mode(ExecutionMode::Application, |system_api| {
+                    NativeInterpreter::run_function(native_fn, input, system_api)
+                }),
             REActor::Method(ResolvedReceiverMethod {
                 receiver,
                 method: ResolvedMethod::Native(native_method),
-            }) => NativeInterpreter::run_method(receiver.receiver(), native_method, input, self),
+            }) => self.execute_in_mode(ExecutionMode::Application, |system_api| {
+                NativeInterpreter::run_method(receiver.receiver(), native_method, input, system_api)
+            }),
             REActor::Function(ResolvedFunction::Scrypto {
                 package_address, ..
             })
@@ -320,8 +328,8 @@ where
                 ..
             }) => {
                 // TODO: Move into interpreter when interpreter trait implemented
-                let package = self.execute_in_kernel_mode::<_, _, RuntimeError>(
-                    KernelActor::ScryptoInterpreter,
+                let package = self.execute_in_mode::<_, _, RuntimeError>(
+                    ExecutionMode::ScryptoInterpreter,
                     |system_api| {
                         let package_id = RENodeId::Global(GlobalAddress::Package(package_address));
                         let package_offset = SubstateOffset::Package(PackageOffset::Package);
@@ -338,7 +346,7 @@ where
                 )?;
                 let mut executor = self.scrypto_interpreter.create_executor(package);
 
-                self.execute_in_kernel_mode(KernelActor::ScryptoInterpreter, |system_api| {
+                self.execute_in_mode(ExecutionMode::ScryptoInterpreter, |system_api| {
                     executor.run(input, system_api)
                 })
             }
@@ -391,12 +399,11 @@ where
         }
 
         // TODO: Auto drop locks of module execution as well
-        self.execute_in_kernel_mode(KernelActor::AuthModule, |system_api| {
-            AuthModule::on_frame_end(system_api)
-        })
-        .map_err(|e| match e {
-            InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
-            InvokeError::Downstream(runtime_error) => runtime_error,
+        self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
+            AuthModule::on_frame_end(system_api).map_err(|e| match e {
+                InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
+                InvokeError::Downstream(runtime_error) => runtime_error,
+            })
         })?;
 
         // drop proofs and check resource leak
@@ -414,47 +421,18 @@ where
         call_frames.last().expect("Current frame always exists")
     }
 
-    fn execute_in_kernel_mode<X, RTN, E>(
-        &mut self,
-        kernel_actor: KernelActor,
-        execute: X,
-    ) -> Result<RTN, E>
-    where
-        X: FnOnce(&mut Self) -> Result<RTN, E>,
-    {
-        // Save and replace kernel actor
-        let saved_kernel_actor = {
-            let current_frame = Self::current_frame_mut(&mut self.call_frames);
-            let cur = current_frame.kernel_actor;
-            current_frame.kernel_actor = kernel_actor;
-            cur
-        };
-
-        let rtn = execute(self)?;
-
-        // Restore old kernel actor
-        {
-            let current_frame = Self::current_frame_mut(&mut self.call_frames);
-            current_frame.kernel_actor = saved_kernel_actor;
-        }
-
-        Ok(rtn)
-    }
-
     pub fn node_method_deref(
         &mut self,
         node_id: RENodeId,
     ) -> Result<Option<RENodeId>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
-            let node_id = self.execute_in_kernel_mode::<_, _, RuntimeError>(
-                KernelActor::Deref,
-                |system_api| {
+            let node_id =
+                self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Deref, |system_api| {
                     let offset = SubstateOffset::Global(GlobalOffset::Global);
                     let handle = system_api.lock_substate(node_id, offset, LockFlags::empty())?;
                     let substate_ref = system_api.get_ref(handle)?;
                     Ok(substate_ref.global_address().node_deref())
-                },
-            )?;
+                })?;
 
             Ok(Some(node_id))
         } else {
@@ -469,8 +447,8 @@ where
     ) -> Result<Option<RENodeId>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
             if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) {
-                let node_id = self.execute_in_kernel_mode::<_, _, RuntimeError>(
-                    KernelActor::Deref,
+                let node_id = self.execute_in_mode::<_, _, RuntimeError>(
+                    ExecutionMode::Deref,
                     |system_api| {
                         let handle = system_api.lock_substate(
                             node_id,
@@ -501,28 +479,28 @@ where
 
         let actor = match &method_ident {
             MethodIdent::Scrypto(ident) => {
-                let (actor, node_id) = self
-                    .execute_in_kernel_mode(KernelActor::ScryptoInterpreter, |system_api| {
+                let (actor, node_id) =
+                    self.execute_in_mode(ExecutionMode::ScryptoInterpreter, |system_api| {
                         ScryptoInterpreter::<I, W>::load_scrypto_actor(
                             ScryptoFnIdent::Method(receiver.clone(), ident.clone()),
                             input,
                             system_api,
                         )
-                    })
-                    .map_err(|e| match e {
-                        InvokeError::Downstream(runtime_error) => runtime_error,
-                        InvokeError::Error(error) => {
-                            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoMethod(
-                                receiver.clone(),
-                                method_ident.clone(),
-                                error,
-                            ))
-                        }
+                        .map_err(|e| match e {
+                            InvokeError::Downstream(runtime_error) => runtime_error,
+                            InvokeError::Error(error) => RuntimeError::InterpreterError(
+                                InterpreterError::InvalidScryptoMethod(
+                                    receiver.clone(),
+                                    method_ident.clone(),
+                                    error,
+                                ),
+                            ),
+                        })
                     })?;
 
                 // TODO: Move this in a better spot when more refactors are done
-                let package = self.execute_in_kernel_mode::<_, _, RuntimeError>(
-                    KernelActor::ScryptoInterpreter,
+                let package = self.execute_in_mode::<_, _, RuntimeError>(
+                    ExecutionMode::ScryptoInterpreter,
                     |system_api| {
                         let handle = system_api.lock_substate(
                             node_id,
@@ -568,8 +546,8 @@ where
                 blueprint_name,
                 ident,
             } => {
-                let (actor, node_id) = self
-                    .execute_in_kernel_mode(KernelActor::ScryptoInterpreter, |system_api| {
+                let (actor, node_id) =
+                    self.execute_in_mode(ExecutionMode::ScryptoInterpreter, |system_api| {
                         ScryptoInterpreter::<I, W>::load_scrypto_actor(
                             ScryptoFnIdent::Function(
                                 *package_address,
@@ -579,17 +557,20 @@ where
                             input,
                             system_api,
                         )
-                    })
-                    .map_err(|e| match e {
-                        InvokeError::Downstream(runtime_error) => runtime_error,
-                        InvokeError::Error(error) => RuntimeError::InterpreterError(
-                            InterpreterError::InvalidScryptoFunction(function_ident, error),
-                        ),
+                        .map_err(|e| match e {
+                            InvokeError::Downstream(runtime_error) => runtime_error,
+                            InvokeError::Error(error) => RuntimeError::InterpreterError(
+                                InterpreterError::InvalidScryptoFunction(
+                                    function_ident.clone(),
+                                    error,
+                                ),
+                            ),
+                        })
                     })?;
 
                 // TODO: Move this in a better spot when more refactors are done
-                let package = self.execute_in_kernel_mode::<_, _, RuntimeError>(
-                    KernelActor::ScryptoInterpreter,
+                let package = self.execute_in_mode::<_, _, RuntimeError>(
+                    ExecutionMode::ScryptoInterpreter,
                     |system_api| {
                         let handle = system_api.lock_substate(
                             node_id,
@@ -620,6 +601,19 @@ where
 
         Ok((actor, references_to_add))
     }
+
+    fn verify_valid_mode_transition(
+        cur: &ExecutionMode,
+        next: &ExecutionMode,
+    ) -> Result<(), RuntimeError> {
+        match (cur, next) {
+            (ExecutionMode::Kernel, ..) => Ok(()),
+            (ExecutionMode::ScryptoInterpreter, ExecutionMode::Application) => Ok(()),
+            _ => Err(RuntimeError::KernelError(
+                KernelError::InvalidModeTransition(*cur, *next),
+            )),
+        }
+    }
 }
 
 impl<'g, 's, W, I, R> SystemApi<'s, R> for Kernel<'g, 's, W, I, R>
@@ -630,13 +624,25 @@ where
 {
     fn execute_in_mode<X, RTN, E>(
         &mut self,
-        kernel_actor: KernelActor,
+        execution_mode: ExecutionMode,
         execute: X,
-    ) -> Result<RTN, E>
+    ) -> Result<RTN, RuntimeError>
     where
+        RuntimeError: From<E>,
         X: FnOnce(&mut Self) -> Result<RTN, E>,
     {
-        self.execute_in_kernel_mode(kernel_actor, |s| execute(s))
+        Self::verify_valid_mode_transition(&self.execution_mode, &execution_mode)?;
+
+        // Save and replace kernel actor
+        let saved = self.execution_mode;
+        self.execution_mode = execution_mode;
+
+        let rtn = execute(self)?;
+
+        // Restore old kernel actor
+        self.execution_mode = saved;
+
+        Ok(rtn)
     }
 
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
@@ -796,6 +802,10 @@ where
             }
         }
 
+        // Change to kernel mode
+        let saved_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
+
         let (next_actor, references_to_add) = match fn_ident {
             FnIdent::Method(ReceiverMethodIdent {
                 receiver,
@@ -869,6 +879,9 @@ where
         if Self::current_frame(&self.call_frames).depth == 0 {
             self.call_frames.pop().unwrap().drop_frame()?;
         }
+
+        // Restore previous mode
+        self.execution_mode = saved_mode;
 
         Ok(output)
     }
@@ -1034,6 +1047,10 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
+        // Change to kernel mode
+        let current_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
+
         // Deref
         if let Some(derefed) = self.node_offset_deref(node_id, &offset)? {
             node_id = derefed;
@@ -1044,10 +1061,9 @@ where
         // TODO: Check if valid offset for node_id
 
         // Authorization
-        let kernel_actor = Self::current_frame(&self.call_frames).kernel_actor;
         let actor = &Self::current_frame(&self.call_frames).actor;
         if !SubstateProperties::check_substate_access(
-            kernel_actor,
+            current_mode,
             actor,
             node_id,
             offset.clone(),
@@ -1055,7 +1071,7 @@ where
         ) {
             return Err(RuntimeError::KernelError(
                 KernelError::InvalidSubstateLock {
-                    kernel_actor,
+                    mode: current_mode,
                     actor: actor.clone(),
                     node_id,
                     offset,
@@ -1080,6 +1096,9 @@ where
             offset.clone(),
             flags,
         );
+
+        // Restore current mode
+        self.execution_mode = current_mode;
 
         for m in &mut self.modules {
             m.post_sys_call(

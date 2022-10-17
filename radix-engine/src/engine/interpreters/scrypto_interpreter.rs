@@ -61,7 +61,7 @@ impl<I: WasmInstance> ScryptoExecutor<I> {
             };
 
         let output = {
-            system_api.execute_in_mode(KernelActor::Application, |system_api| {
+            system_api.execute_in_mode(ExecutionMode::Application, |system_api| {
                 let mut runtime: Box<dyn WasmRuntime> =
                     Box::new(RadixEngineWasmRuntime::new(scrypto_actor, system_api));
                 self.instance

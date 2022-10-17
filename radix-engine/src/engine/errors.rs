@@ -1,6 +1,6 @@
 use transaction::errors::*;
 
-use crate::engine::{KernelActor, LockFlags, REActor, ResolvedReceiver};
+use crate::engine::{ExecutionMode, LockFlags, REActor, ResolvedReceiver};
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
@@ -52,6 +52,8 @@ impl From<KernelError> for RuntimeError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum KernelError {
+    InvalidModeTransition(ExecutionMode, ExecutionMode),
+
     // invocation
     WasmError(WasmError),
     InvokeMethodInvalidReceiver(RENodeId),
@@ -76,7 +78,6 @@ pub enum KernelError {
     DecodeError(DecodeError),
 
     // RENode
-    RENodeNotFound(RENodeId),
     StoredNodeRemoved(RENodeId),
     RENodeGlobalizeTypeNotAllowed(RENodeId),
     RENodeCreateInvalidPermission,
@@ -94,7 +95,7 @@ pub enum KernelError {
 
     // Actor Constraints
     InvalidSubstateLock {
-        kernel_actor: KernelActor,
+        mode: ExecutionMode,
         actor: REActor,
         node_id: RENodeId,
         offset: SubstateOffset,

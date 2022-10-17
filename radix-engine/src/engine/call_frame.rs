@@ -18,8 +18,6 @@ pub struct CallFrame {
     /// The frame id
     pub depth: usize,
 
-    pub kernel_actor: KernelActor,
-
     /// The running application actor of this frame
     pub actor: REActor,
 
@@ -116,7 +114,6 @@ impl CallFrame {
     pub fn new_root() -> Self {
         Self {
             depth: 0,
-            kernel_actor: KernelActor::Application,
             actor: REActor::Function(ResolvedFunction::Native(
                 NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
             )),
@@ -136,7 +133,6 @@ impl CallFrame {
     ) -> Self {
         Self {
             depth,
-            kernel_actor: KernelActor::Application,
             actor,
             node_refs,
             owned_heap_nodes,
