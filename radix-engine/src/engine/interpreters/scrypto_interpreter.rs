@@ -2,7 +2,68 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::PackageSubstate;
 use crate::types::*;
-use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringParams};
+use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringParams, WasmRuntime};
+
+pub struct ScryptoExecutor<I: WasmInstance> {
+    instance: I,
+}
+
+impl<I: WasmInstance> ScryptoExecutor<I> {
+    pub fn run<'s, W, Y, R>(
+        &mut self,
+        input: ScryptoValue,
+        system_api: &mut Y,
+    ) -> Result<ScryptoValue, RuntimeError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        R: FeeReserve,
+    {
+        let (export_name, scrypto_actor) = match system_api.get_actor() {
+            REActor::Method(ResolvedReceiverMethod {
+                receiver:
+                    ResolvedReceiver {
+                        receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                        ..
+                    },
+                method:
+                    ResolvedMethod::Scrypto {
+                        package_address,
+                        blueprint_name,
+                        ident,
+                        export_name,
+                    },
+            }) => (
+                export_name.to_string(),
+                ScryptoActor::Component(
+                    *component_id,
+                    package_address.clone(),
+                    blueprint_name.clone(),
+                ),
+            ),
+            REActor::Function(ResolvedFunction::Scrypto {
+                package_address,
+                blueprint_name,
+                ident,
+                export_name,
+            }) => (
+                export_name.to_string(),
+                ScryptoActor::blueprint(*package_address, blueprint_name.clone()),
+            ),
+
+            _ => panic!("Should not get here."),
+        };
+
+        let mut runtime: Box<dyn WasmRuntime> =
+            Box::new(RadixEngineWasmRuntime::new(scrypto_actor, system_api));
+        self.instance
+            .invoke_export(&export_name, &input, &mut runtime)
+            .map_err(|e| match e {
+                InvokeError::Error(e) => RuntimeError::KernelError(KernelError::WasmError(e)),
+                InvokeError::Downstream(runtime_error) => runtime_error,
+            })
+    }
+}
 
 pub struct ScryptoInterpreter<I: WasmInstance, W: WasmEngine<I>> {
     pub wasm_engine: W,
@@ -14,11 +75,12 @@ pub struct ScryptoInterpreter<I: WasmInstance, W: WasmEngine<I>> {
 }
 
 impl<I: WasmInstance, W: WasmEngine<I>> ScryptoInterpreter<I, W> {
-    pub fn instance(&mut self, package: PackageSubstate) -> I {
+    pub fn executor(&mut self, package: PackageSubstate) -> ScryptoExecutor<I> {
         let instrumented_code = self
             .wasm_instrumenter
             .instrument(package.code(), &self.wasm_metering_params);
-        self.wasm_engine.instantiate(instrumented_code)
+        let instance = self.wasm_engine.instantiate(instrumented_code);
+        ScryptoExecutor { instance }
     }
 
     pub fn load_scrypto_actor<'s, Y, R>(

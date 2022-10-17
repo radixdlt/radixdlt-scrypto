@@ -337,35 +337,8 @@ where
                                 .borrow_substate(package_id, package_offset.clone());
                             substate.package().clone() // TODO: Remove clone()
                         };
-                        let mut instance = self.scrypto_interpreter.instance(package);
-
-                        let scrypto_actor = match &Self::current_frame(&self.call_frames).actor {
-                            REActor::Method(ResolvedReceiverMethod {
-                                receiver: ResolvedReceiver { receiver, .. },
-                                ..
-                            }) => match receiver {
-                                Receiver::Ref(RENodeId::Component(component_id)) => {
-                                    ScryptoActor::Component(
-                                        *component_id,
-                                        package_address.clone(),
-                                        blueprint_name.clone(),
-                                    )
-                                }
-                                _ => panic!("Should not get here."),
-                            },
-                            _ => ScryptoActor::blueprint(package_address, blueprint_name.clone()),
-                        };
-
-                        let mut runtime: Box<dyn WasmRuntime> =
-                            Box::new(RadixEngineWasmRuntime::new(scrypto_actor, self));
-                        instance
-                            .invoke_export(&export_name, &input, &mut runtime)
-                            .map_err(|e| match e {
-                                InvokeError::Error(e) => RuntimeError::KernelError(
-                                    KernelError::WasmError(actor.clone(), e),
-                                ),
-                                InvokeError::Downstream(runtime_error) => runtime_error,
-                            })?
+                        let mut executor = self.scrypto_interpreter.executor(package);
+                        executor.run(input, self)?
                     };
 
                     let package = self
