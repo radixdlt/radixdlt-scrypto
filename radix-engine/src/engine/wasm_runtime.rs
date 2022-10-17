@@ -89,8 +89,8 @@ where
         Ok(ScryptoValue::from_typed(&id))
     }
 
-    fn handle_get_owned_node_ids(&mut self) -> Result<ScryptoValue, RuntimeError> {
-        let node_ids = self.system_api.get_all_referenceable_node_ids()?;
+    fn handle_get_visible_node_ids(&mut self) -> Result<ScryptoValue, RuntimeError> {
+        let node_ids = self.system_api.get_visible_node_ids()?;
         Ok(ScryptoValue::from_typed(&node_ids))
     }
 
@@ -185,7 +185,7 @@ where
             }
             RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id)?,
             RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node)?,
-            RadixEngineInput::GetOwnedRENodeIds() => self.handle_get_owned_node_ids()?,
+            RadixEngineInput::GetVisibleNodeIds() => self.handle_get_visible_node_ids()?,
 
             RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
                 self.handle_lock_substate(node_id, offset, mutable)?

@@ -18,7 +18,7 @@ pub type VaultId = (Hash, u32);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode, TypeId, Ord, PartialOrd)]
 pub enum RENodeId {
-    AuthZone(AuthZoneId),
+    AuthZoneStack(AuthZoneId),
     Bucket(BucketId),
     Proof(ProofId),
 

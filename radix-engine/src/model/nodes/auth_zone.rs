@@ -15,9 +15,9 @@ pub enum AuthZoneError {
     NoMethodSpecified,
 }
 
-pub struct AuthZoneImpl;
+pub struct AuthZoneStack;
 
-impl AuthZoneImpl {
+impl AuthZoneStack {
     pub fn method_locks(method: AuthZoneMethod) -> LockFlags {
         match method {
             AuthZoneMethod::Pop => LockFlags::MUTABLE,
@@ -40,7 +40,7 @@ impl AuthZoneImpl {
         Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
-        let node_id = RENodeId::AuthZone(auth_zone_id);
+        let node_id = RENodeId::AuthZoneStack(auth_zone_id);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
         let auth_zone_handle =
             system_api.lock_substate(node_id, offset, Self::method_locks(method))?;

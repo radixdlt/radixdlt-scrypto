@@ -164,11 +164,9 @@ impl CallFrame {
         self.owned_heap_nodes.insert(id, node);
     }
 
-    pub fn take_node(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
+    pub fn take_node(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, CallFrameError> {
         if self.node_lock_count.contains_key(&node_id) {
-            return Err(RuntimeError::KernelError(KernelError::MovingLockedRENode(
-                node_id,
-            )));
+            return Err(CallFrameError::MovingLockedRENode(node_id));
         }
 
         let maybe = self.owned_heap_nodes.remove(&node_id);
@@ -181,32 +179,29 @@ impl CallFrame {
 
             Ok(root_node)
         } else {
-            Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
-                node_id,
-            )))
+            Err(CallFrameError::RENodeNotOwned(node_id))
         }
     }
 
     pub fn get_owned_heap_node_mut(
         &mut self,
         node_id: RENodeId,
-    ) -> Result<&mut HeapRootRENode, RuntimeError> {
+    ) -> Result<&mut HeapRootRENode, CallFrameError> {
         self.owned_heap_nodes
             .get_mut(&node_id)
-            .ok_or(RuntimeError::KernelError(KernelError::RENodeNotFound(
-                node_id,
-            )))
+            .ok_or(CallFrameError::RENodeNotOwned(node_id))
     }
 
-    pub fn get_owned_heap_node(&self, node_id: RENodeId) -> Result<&HeapRootRENode, RuntimeError> {
+    pub fn get_owned_heap_node(
+        &self,
+        node_id: RENodeId,
+    ) -> Result<&HeapRootRENode, CallFrameError> {
         self.owned_heap_nodes
             .get(&node_id)
-            .ok_or(RuntimeError::KernelError(KernelError::RENodeNotFound(
-                node_id,
-            )))
+            .ok_or(CallFrameError::RENodeNotOwned(node_id))
     }
 
-    pub fn get_node_pointer(&self, node_id: RENodeId) -> Result<RENodePointer, RuntimeError> {
+    pub fn get_node_pointer(&self, node_id: RENodeId) -> Result<RENodePointer, CallFrameError> {
         // Find node
         let node_pointer = {
             if self.owned_heap_nodes.contains_key(&node_id) {
@@ -218,29 +213,17 @@ impl CallFrame {
             } else if let Some(pointer) = self.node_refs.get(&node_id) {
                 pointer.clone()
             } else {
-                return Err(RuntimeError::KernelError(KernelError::RENodeNotVisible(
-                    node_id,
-                )));
+                return Err(CallFrameError::RENodeNotVisible(node_id));
             }
         };
 
         Ok(node_pointer)
     }
 
-    pub fn get_all_referenceable_nodes(&self) -> Vec<RENodeId> {
+    pub fn get_visible_nodes(&self) -> Vec<RENodeId> {
         let mut node_ids: Vec<RENodeId> = self.node_refs.keys().cloned().collect();
         let owned_ids: Vec<RENodeId> = self.owned_heap_nodes.keys().cloned().collect();
         node_ids.extend(owned_ids);
         node_ids
-    }
-
-    pub fn find_ref<P>(&self, predicate: P) -> Option<&RENodeId>
-    where
-        P: FnMut(&&RENodeId) -> bool + Copy,
-    {
-        self.owned_heap_nodes
-            .keys()
-            .find(predicate)
-            .or_else(|| self.node_refs.keys().find(predicate))
     }
 }

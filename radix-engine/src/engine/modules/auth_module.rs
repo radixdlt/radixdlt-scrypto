@@ -159,10 +159,10 @@ impl AuthModule {
             }
         };
 
-        let refed = system_api.get_all_referenceable_node_ids()?;
+        let refed = system_api.get_visible_node_ids()?;
         let auth_zone_id = refed
             .into_iter()
-            .find(|e| matches!(e, RENodeId::AuthZone(..)))
+            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
             .unwrap();
 
         let handle = system_api.lock_substate(
@@ -210,10 +210,10 @@ impl AuthModule {
             return Ok(());
         }
 
-        let refed = system_api.get_all_referenceable_node_ids()?;
+        let refed = system_api.get_visible_node_ids()?;
         let auth_zone_id = refed
             .into_iter()
-            .find(|e| matches!(e, RENodeId::AuthZone(..)))
+            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
             .unwrap();
         let handle = system_api.lock_substate(
             auth_zone_id,

@@ -126,7 +126,7 @@ where
             virtual_proofs_buckets.insert(resource_address, bucket_id);
         }
 
-        let auth_zone = AuthZoneSubstate::new(proofs, virtual_proofs_buckets);
+        let auth_zone = AuthZoneStackSubstate::new(proofs, virtual_proofs_buckets);
 
         kernel
             .node_create(HeapRENode::AuthZone(auth_zone))
@@ -224,7 +224,7 @@ where
             HeapRENode::Global(..) => panic!("Should not get here"),
             HeapRENode::AuthZone(..) => {
                 let auth_zone_id = id_allocator.new_auth_zone_id()?;
-                Ok(RENodeId::AuthZone(auth_zone_id))
+                Ok(RENodeId::AuthZoneStack(auth_zone_id))
             }
             HeapRENode::Bucket(..) => {
                 let bucket_id = id_allocator.new_bucket_id()?;
@@ -873,7 +873,7 @@ where
         Ok(output)
     }
 
-    fn get_all_referenceable_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
+    fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
@@ -883,7 +883,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let node_ids = Self::current_frame_mut(&mut self.call_frames).get_all_referenceable_nodes();
+        let node_ids = Self::current_frame_mut(&mut self.call_frames).get_visible_nodes();
 
         Ok(node_ids)
     }

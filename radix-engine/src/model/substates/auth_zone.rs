@@ -30,8 +30,8 @@ impl AuthVerification {
     }
 
     pub fn check_auth_zones<P>(
-        mut barriers_allowed: u32,
-        auth_zones: &AuthZoneSubstate,
+        mut barriers_crossings_allowed: u32,
+        auth_zones: &AuthZoneStackSubstate,
         check: P,
     ) -> bool
     where
@@ -43,10 +43,10 @@ impl AuthVerification {
             }
 
             if auth_zone.barrier {
-                if barriers_allowed == 0 {
+                if barriers_crossings_allowed == 0 {
                     return false;
                 }
-                barriers_allowed -= 1;
+                barriers_crossings_allowed -= 1;
             }
         }
 
@@ -54,12 +54,12 @@ impl AuthVerification {
     }
 
     pub fn check_has_amount(
-        barriers_allowed: u32,
+        barrier_crossings_allowed: u32,
         resource_rule: &HardResourceOrNonFungible,
         amount: Decimal,
-        auth_zone: &AuthZoneSubstate,
+        auth_zone: &AuthZoneStackSubstate,
     ) -> bool {
-        Self::check_auth_zones(barriers_allowed, auth_zone, |auth_zone| {
+        Self::check_auth_zones(barrier_crossings_allowed, auth_zone, |auth_zone| {
             // FIXME: Need to check the composite max amount rather than just each proof individually
             auth_zone
                 .proofs
@@ -69,11 +69,11 @@ impl AuthVerification {
     }
 
     pub fn verify_resource_rule(
-        barriers_allowed: u32,
+        barrier_crossings_allowed: u32,
         resource_rule: &HardResourceOrNonFungible,
-        auth_zone: &AuthZoneSubstate,
+        auth_zone: &AuthZoneStackSubstate,
     ) -> bool {
-        Self::check_auth_zones(barriers_allowed, auth_zone, |auth_zone| {
+        Self::check_auth_zones(barrier_crossings_allowed, auth_zone, |auth_zone| {
             if let HardResourceOrNonFungible::NonFungible(non_fungible_address) = resource_rule {
                 if auth_zone.is_proof_virtualizable(&non_fungible_address.resource_address()) {
                     return true;
@@ -93,20 +93,20 @@ impl AuthVerification {
     }
 
     pub fn verify_proof_rule(
-        barriers_allowed: u32,
+        barrier_crossings_allowed: u32,
         proof_rule: &HardProofRule,
-        auth_zone: &AuthZoneSubstate,
+        auth_zone: &AuthZoneStackSubstate,
     ) -> Result<(), MethodAuthorizationError> {
         match proof_rule {
             HardProofRule::Require(resource) => {
-                if Self::verify_resource_rule(barriers_allowed, resource, auth_zone) {
+                if Self::verify_resource_rule(barrier_crossings_allowed, resource, auth_zone) {
                     Ok(())
                 } else {
                     Err(NotAuthorized)
                 }
             }
             HardProofRule::AmountOf(HardDecimal::Amount(amount), resource) => {
-                if Self::check_has_amount(barriers_allowed, resource, *amount, auth_zone) {
+                if Self::check_has_amount(barrier_crossings_allowed, resource, *amount, auth_zone) {
                     Ok(())
                 } else {
                     Err(NotAuthorized)
@@ -114,7 +114,7 @@ impl AuthVerification {
             }
             HardProofRule::AllOf(HardProofRuleResourceList::List(resources)) => {
                 for resource in resources {
-                    if !Self::verify_resource_rule(barriers_allowed, resource, auth_zone) {
+                    if !Self::verify_resource_rule(barrier_crossings_allowed, resource, auth_zone) {
                         return Err(NotAuthorized);
                     }
                 }
@@ -123,7 +123,7 @@ impl AuthVerification {
             }
             HardProofRule::AnyOf(HardProofRuleResourceList::List(resources)) => {
                 for resource in resources {
-                    if Self::verify_resource_rule(barriers_allowed, resource, auth_zone) {
+                    if Self::verify_resource_rule(barrier_crossings_allowed, resource, auth_zone) {
                         return Ok(());
                     }
                 }
@@ -136,7 +136,7 @@ impl AuthVerification {
             ) => {
                 let mut left = count.clone();
                 for resource in resources {
-                    if Self::verify_resource_rule(barriers_allowed, resource, auth_zone) {
+                    if Self::verify_resource_rule(barrier_crossings_allowed, resource, auth_zone) {
                         left -= 1;
                         if left == 0 {
                             return Ok(());
@@ -150,28 +150,26 @@ impl AuthVerification {
     }
 
     pub fn verify_auth_rule(
-        barriers_allowed: u32,
+        barrier_crossings_allowed: u32,
         auth_rule: &HardAuthRule,
-        auth_zone: &AuthZoneSubstate,
+        auth_zone: &AuthZoneStackSubstate,
     ) -> Result<(), MethodAuthorizationError> {
         match auth_rule {
             HardAuthRule::ProofRule(rule) => {
-                Self::verify_proof_rule(barriers_allowed, rule, auth_zone)
+                Self::verify_proof_rule(barrier_crossings_allowed, rule, auth_zone)
             }
             HardAuthRule::AnyOf(rules) => {
-                if !rules
-                    .iter()
-                    .any(|r| Self::verify_auth_rule(barriers_allowed, r, auth_zone).is_ok())
-                {
+                if !rules.iter().any(|r| {
+                    Self::verify_auth_rule(barrier_crossings_allowed, r, auth_zone).is_ok()
+                }) {
                     return Err(NotAuthorized);
                 }
                 Ok(())
             }
             HardAuthRule::AllOf(rules) => {
-                if rules
-                    .iter()
-                    .any(|r| Self::verify_auth_rule(barriers_allowed, r, auth_zone).is_err())
-                {
+                if rules.iter().any(|r| {
+                    Self::verify_auth_rule(barrier_crossings_allowed, r, auth_zone).is_err()
+                }) {
                     return Err(NotAuthorized);
                 }
                 Ok(())
@@ -180,13 +178,13 @@ impl AuthVerification {
     }
 
     pub fn verify_method_auth(
-        barriers_allowed: u32,
+        barrier_crossings_allowed: u32,
         method_auth: &MethodAuthorization,
-        auth_zone: &AuthZoneSubstate,
+        auth_zone: &AuthZoneStackSubstate,
     ) -> Result<(), MethodAuthorizationError> {
         match method_auth {
             MethodAuthorization::Protected(rule) => {
-                Self::verify_auth_rule(barriers_allowed, rule, auth_zone)
+                Self::verify_auth_rule(barrier_crossings_allowed, rule, auth_zone)
             }
             MethodAuthorization::AllowAll => Ok(()),
             MethodAuthorization::DenyAll => Err(NotAuthorized),
@@ -197,11 +195,11 @@ impl AuthVerification {
 
 /// A transient resource container.
 #[derive(Debug)]
-pub struct AuthZoneSubstate {
+pub struct AuthZoneStackSubstate {
     auth_zones: Vec<AuthZone>,
 }
 
-impl AuthZoneSubstate {
+impl AuthZoneStackSubstate {
     pub fn new(
         proofs: Vec<ProofSubstate>,
         virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,
@@ -233,10 +231,13 @@ impl AuthZoneSubstate {
         to: &REActor,
         method_auths: Vec<MethodAuthorization>,
     ) -> Result<(), (MethodAuthorization, MethodAuthorizationError)> {
-        let barriers_allowed = if Self::is_barrier(to) { 0u32 } else { 1u32 };
+        let mut barrier_crossings_allowed = 1u32;
+        if Self::is_barrier(to) {
+            barrier_crossings_allowed -= 1;
+        }
 
         for method_auth in method_auths {
-            AuthVerification::verify_method_auth(barriers_allowed, &method_auth, &self)
+            AuthVerification::verify_method_auth(barrier_crossings_allowed, &method_auth, &self)
                 .map_err(|e| (method_auth, e))?;
         }
 

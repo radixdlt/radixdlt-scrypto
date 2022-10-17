@@ -357,7 +357,7 @@ impl Into<GlobalAddressSubstate> for RuntimeSubstate {
 }
 
 pub enum SubstateRef<'a> {
-    AuthZone(&'a AuthZoneSubstate),
+    AuthZone(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
     Proof(&'a ProofSubstate),
     Bucket(&'a BucketSubstate),
@@ -422,7 +422,7 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn auth_zone(&self) -> &AuthZoneSubstate {
+    pub fn auth_zone(&self) -> &AuthZoneStackSubstate {
         match self {
             SubstateRef::AuthZone(value) => *value,
             _ => panic!("Not an authzone"),
@@ -699,11 +699,11 @@ pub enum RawSubstateRefMut<'a> {
     Bucket(&'a mut BucketSubstate),
     Proof(&'a mut ProofSubstate),
     Worktop(&'a mut WorktopSubstate),
-    AuthZone(&'a mut AuthZoneSubstate),
+    AuthZone(&'a mut AuthZoneStackSubstate),
 }
 
 impl<'a> RawSubstateRefMut<'a> {
-    pub fn auth_zone(&mut self) -> &mut AuthZoneSubstate {
+    pub fn auth_zone(&mut self) -> &mut AuthZoneStackSubstate {
         match self {
             RawSubstateRefMut::AuthZone(value) => *value,
             _ => panic!("Not an authzone"),

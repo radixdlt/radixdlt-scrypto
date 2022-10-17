@@ -133,11 +133,11 @@ impl TransactionProcessor {
                 }
                 "ENTIRE_AUTH_ZONE" => {
                     let node_ids = system_api
-                        .get_all_referenceable_node_ids()
+                        .get_visible_node_ids()
                         .map_err(InvokeError::Downstream)?;
                     let auth_zone_node_id = node_ids
                         .into_iter()
-                        .find(|n| matches!(n, RENodeId::AuthZone(..)))
+                        .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
                         .expect("AuthZone does not exist");
 
                     let proofs = system_api
@@ -217,11 +217,11 @@ impl TransactionProcessor {
                     .map_err(InvokeError::Downstream)?;
 
                 let owned_node_ids = system_api
-                    .get_all_referenceable_node_ids()
+                    .get_visible_node_ids()
                     .map_err(InvokeError::Downstream)?;
                 let auth_zone_node_id = owned_node_ids
                     .into_iter()
-                    .find(|n| matches!(n, RENodeId::AuthZone(..)))
+                    .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
                     .expect("AuthZone does not exist");
                 let auth_zone_ref = Receiver::Ref(auth_zone_node_id);
 

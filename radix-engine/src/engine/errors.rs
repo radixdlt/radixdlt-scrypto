@@ -31,6 +31,9 @@ pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
 
+    /// An error occurred within call frame.
+    CallFrameError(CallFrameError),
+
     /// An error occurred within an interpreter
     InterpreterError(InterpreterError),
 
@@ -51,7 +54,6 @@ impl From<KernelError> for RuntimeError {
 pub enum KernelError {
     // invocation
     WasmError(WasmError),
-    RENodeNotVisible(RENodeId),
     InvokeMethodInvalidReceiver(RENodeId),
 
     InvalidReferencePass(GlobalAddress),
@@ -80,7 +82,6 @@ pub enum KernelError {
     RENodeCreateInvalidPermission,
 
     TrackError(TrackError),
-    MovingLockedRENode(RENodeId),
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
     DropFailure(DropFailure),
@@ -101,6 +102,19 @@ pub enum KernelError {
     },
     CantMoveDownstream(RENodeId),
     CantMoveUpstream(RENodeId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum CallFrameError {
+    RENodeNotVisible(RENodeId),
+    RENodeNotOwned(RENodeId),
+    MovingLockedRENode(RENodeId),
+}
+
+impl From<CallFrameError> for RuntimeError {
+    fn from(error: CallFrameError) -> Self {
+        RuntimeError::CallFrameError(error)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]

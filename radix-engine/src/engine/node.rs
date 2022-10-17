@@ -7,7 +7,7 @@ pub enum HeapRENode {
     Global(GlobalRENode), // TODO: Remove
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
-    AuthZone(AuthZoneSubstate),
+    AuthZone(AuthZoneStackSubstate),
     Vault(VaultRuntimeSubstate),
     Component(Component),
     Worktop(WorktopSubstate),
