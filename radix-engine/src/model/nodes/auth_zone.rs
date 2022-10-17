@@ -2,7 +2,6 @@ use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{InvokeError, ProofError, ProofSubstate};
 use crate::types::*;
-use crate::wasm::*;
 use scrypto::resource::AuthZoneDrainInput;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -31,16 +30,14 @@ impl AuthZoneImpl {
         }
     }
 
-    pub fn main<'s, Y, W, I, R>(
+    pub fn main<'s, Y, R>(
         auth_zone_id: AuthZoneId,
         method: AuthZoneMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<AuthZoneError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         let node_id = RENodeId::AuthZone(auth_zone_id);

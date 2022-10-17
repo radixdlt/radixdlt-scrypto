@@ -2,7 +2,6 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use crate::wasm::{WasmEngine, WasmInstance};
 use scrypto::core::NativeFunction;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -25,15 +24,13 @@ impl AuthModule {
         NonFungibleId::from_u32(1)
     }
 
-    pub fn on_before_frame_start<'s, Y, W, I, R>(
+    pub fn on_before_frame_start<'s, Y, R>(
         actor: &REActor,
         input: &ScryptoValue, // TODO: Remove
         system_api: &mut Y,
     ) -> Result<HashSet<RENodeId>, InvokeError<AuthError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         let mut new_refs = HashSet::new();
@@ -198,11 +195,9 @@ impl AuthModule {
         Ok(new_refs)
     }
 
-    pub fn on_frame_end<'s, Y, W, I, R>(system_api: &mut Y) -> Result<(), InvokeError<AuthError>>
+    pub fn on_frame_end<'s, Y, R>(system_api: &mut Y) -> Result<(), InvokeError<AuthError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         if matches!(

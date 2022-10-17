@@ -3,7 +3,6 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
-use crate::wasm::*;
 use bitflags::bitflags;
 use scrypto::core::FnIdent;
 
@@ -28,10 +27,8 @@ impl LockFlags {
     }
 }
 
-pub trait SystemApi<'s, W, I, R>
+pub trait SystemApi<'s, R>
 where
-    W: WasmEngine<I>,
-    I: WasmInstance,
     R: FeeReserve,
 {
     fn execute_in_mode<X, RTN, E>(

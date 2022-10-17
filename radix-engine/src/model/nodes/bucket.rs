@@ -5,7 +5,6 @@ use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{BucketSubstate, InvokeError, ProofError, ResourceOperationError};
 use crate::types::*;
-use crate::wasm::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum BucketError {
@@ -35,16 +34,14 @@ impl Bucket {
         }
     }
 
-    pub fn main<'s, Y, W, I, R>(
+    pub fn main<'s, Y, R>(
         bucket_id: BucketId,
         method: BucketMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<BucketError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         let node_id = RENodeId::Bucket(bucket_id);
@@ -149,16 +146,14 @@ impl Bucket {
         Ok(rtn)
     }
 
-    pub fn consuming_main<'s, Y, W, I, R>(
+    pub fn consuming_main<'s, Y, R>(
         node_id: RENodeId,
         method: BucketMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<BucketError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);

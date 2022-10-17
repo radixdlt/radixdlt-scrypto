@@ -13,7 +13,6 @@ use crate::model::{
     WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput,
 };
 use crate::types::*;
-use crate::wasm::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInput {
@@ -95,14 +94,12 @@ impl TransactionProcessor {
         Ok(value)
     }
 
-    fn process_expressions<'s, Y, W, I, R>(
+    fn process_expressions<'s, Y, R>(
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         let mut value = args.dom;
@@ -194,15 +191,13 @@ impl TransactionProcessor {
             .0
     }
 
-    pub fn static_main<'s, Y, W, I, R>(
+    pub fn static_main<'s, Y, R>(
         func: TransactionProcessorFunction,
         call_data: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         match func {

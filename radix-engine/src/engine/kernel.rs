@@ -502,7 +502,7 @@ where
             MethodIdent::Scrypto(ident) => {
                 let (actor, node_id) = self
                     .execute_in_kernel_mode(KernelActor::ScryptoInterpreter, |system_api| {
-                        ScryptoInterpreter::load_scrypto_actor(
+                        ScryptoInterpreter::<I, W>::load_scrypto_actor(
                             ScryptoFnIdent::Method(receiver.clone(), ident.clone()),
                             input,
                             system_api,
@@ -569,7 +569,7 @@ where
             } => {
                 let (actor, node_id) = self
                     .execute_in_kernel_mode(KernelActor::ScryptoInterpreter, |system_api| {
-                        ScryptoInterpreter::load_scrypto_actor(
+                        ScryptoInterpreter::<I, W>::load_scrypto_actor(
                             ScryptoFnIdent::Function(
                                 *package_address,
                                 blueprint_name.clone(),
@@ -621,7 +621,7 @@ where
     }
 }
 
-impl<'g, 's, W, I, R> SystemApi<'s, W, I, R> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, I, R> SystemApi<'s, R> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -666,6 +666,10 @@ where
         }
 
         Ok(fee)
+    }
+
+    fn get_actor(&self) -> &REActor {
+        &Self::current_frame(&self.call_frames).actor
     }
 
     fn invoke(
@@ -866,10 +870,6 @@ where
         }
 
         Ok(output)
-    }
-
-    fn get_actor(&self) -> &REActor {
-        &Self::current_frame(&self.call_frames).actor
     }
 
     fn get_all_referenceable_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {

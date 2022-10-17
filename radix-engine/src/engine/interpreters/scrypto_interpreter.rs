@@ -9,14 +9,13 @@ pub struct ScryptoExecutor<I: WasmInstance> {
 }
 
 impl<I: WasmInstance> ScryptoExecutor<I> {
-    pub fn run<'s, W, Y, R>(
+    pub fn run<'s, Y, R>(
         &mut self,
         input: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         let (ident, package_address, blueprint_name, export_name, scrypto_actor) =
@@ -131,7 +130,7 @@ impl<I: WasmInstance, W: WasmEngine<I>> ScryptoInterpreter<I, W> {
         system_api: &mut Y,
     ) -> Result<(REActor, RENodeId), InvokeError<ScryptoActorError>>
     where
-        Y: SystemApi<'s, W, I, R>,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         let (receiver, package_address, blueprint_name, ident) = match ident {
