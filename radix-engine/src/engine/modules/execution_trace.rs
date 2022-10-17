@@ -102,12 +102,12 @@ impl ExecutionTraceModule {
         actor: &REActor,
         input: &ScryptoValue,
     ) {
-        let caller = &call_frames
-            .get(call_frames.len() - 2)
-            .expect("Caller frame is missing")
-            .actor;
-
         if let REActor::Method(ResolvedMethod::Native(native_method), receiver) = actor {
+            let caller = &call_frames
+                .get(call_frames.len() - 2)
+                .expect("Caller frame is missing")
+                .actor;
+
             match (native_method, receiver) {
                 (
                     NativeMethod::Vault(VaultMethod::Put),

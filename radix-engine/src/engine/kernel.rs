@@ -278,11 +278,16 @@ where
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
         let frame = CallFrame::new_child(
             Self::current_frame(&self.call_frames).depth + 1,
-            actor,
+            actor.clone(),
             owned_nodes,
             refed_nodes,
         );
         self.call_frames.push(frame);
+
+        for m in &mut self.modules {
+            m.on_run(&mut self.track, &mut self.call_frames, &actor, &input)
+                .map_err(RuntimeError::ModuleError)?;
+        }
 
         //  Verify Auth
         AuthModule::verify_auth(&input, &mut self.call_frames, &mut self.track).map_err(
@@ -523,8 +528,8 @@ where
                     ScryptoReceiver::Local(component_id) => {
                         RENodeId::Component(component_id.clone())
                     }
-                    ScryptoReceiver::Global(component_address) => {
-                        RENodeId::Global(GlobalAddress::Component(component_address.clone()))
+                    ScryptoReceiver::Global(_) => {
+                        panic!("Global component address should've been de-refed")
                     }
                 };
                 let node_pointer =
@@ -861,8 +866,11 @@ where
             }
         }
 
-        if let ScryptoFnIdent::Method(ScryptoMethodIdent { receiver, .. }) = &mut fn_ident {
-            match receiver {
+        if let ScryptoFnIdent::Method(ScryptoMethodIdent {
+            ref mut receiver, ..
+        }) = &mut fn_ident
+        {
+            *receiver = match receiver {
                 ScryptoReceiver::Local(component_id) => {
                     let node_id = RENodeId::Component(component_id.clone());
                     if !Self::current_frame_mut(&mut self.call_frames)
@@ -873,6 +881,10 @@ where
                             KernelError::InvokeMethodInvalidReceiver(node_id),
                         ));
                     }
+                    let node_pointer =
+                        Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
+                    next_node_refs.insert(node_id, node_pointer);
+                    ScryptoReceiver::Local(component_id.clone())
                 }
                 ScryptoReceiver::Global(ref mut component_address) => {
                     // Deref
@@ -884,8 +896,9 @@ where
                     let node_pointer =
                         Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
                     next_node_refs.insert(node_id, node_pointer);
+                    ScryptoReceiver::Local(node_id.into())
                 }
-            }
+            };
         }
 
         let actor = self.load_scrypto_actor(&fn_ident, &args)?;
