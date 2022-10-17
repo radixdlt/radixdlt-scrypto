@@ -12,6 +12,8 @@ pub enum ResolvedMethod {
     Native(NativeMethod),
 }
 
+/// Resolved receiver including info whether receiver was derefed
+/// or not
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub struct ResolvedReceiver {
     pub derefed_from: Option<RENodeId>,
@@ -80,6 +82,7 @@ impl REActor {
     }
 }
 
+/// Executing kernel level actor
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum KernelActor {
     Application,

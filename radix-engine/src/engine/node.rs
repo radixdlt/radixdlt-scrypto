@@ -189,20 +189,6 @@ impl HeapRENode {
         Ok(substate_ref)
     }
 
-    pub fn auth_zone_mut(&mut self) -> &mut AuthZoneSubstate {
-        match self {
-            HeapRENode::AuthZone(auth_zone, ..) => auth_zone,
-            _ => panic!("Expected to be a resource manager"),
-        }
-    }
-
-    pub fn auth_zone(&self) -> &AuthZoneSubstate {
-        match self {
-            HeapRENode::AuthZone(auth_zone, ..) => auth_zone,
-            _ => panic!("Expected to be a resource manager"),
-        }
-    }
-
     pub fn prepare_move_downstream(
         &mut self,
         self_node_id: RENodeId,

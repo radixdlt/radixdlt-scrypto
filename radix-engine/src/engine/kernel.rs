@@ -46,6 +46,7 @@ pub struct Kernel<
     /// State track
     track: &'g mut Track<'s, R>,
 
+    /// Interpreter capable of running scrypto programs
     scrypto_interpreter: &'g mut ScryptoInterpreter<I, W>,
 
     /// ID allocator
