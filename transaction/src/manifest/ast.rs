@@ -128,7 +128,7 @@ pub enum Instruction {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoReceiver {
     Global(Value),
-    Local(Value),
+    Component(Value),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -56,7 +56,7 @@ impl Component {
     pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
         let input = RadixEngineInput::InvokeScryptoMethod(
             ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Local(self.0),
+                receiver: ScryptoReceiver::Component(self.0),
                 method_name: method.to_string(),
             },
             args,

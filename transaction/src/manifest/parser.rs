@@ -210,7 +210,7 @@ impl Parser {
         let token = self.advance()?;
         match token.kind {
             TokenKind::ComponentAddress => Ok(ScryptoReceiver::Global(self.parse_values_one()?)),
-            TokenKind::Component => Ok(ScryptoReceiver::Local(self.parse_values_one()?)),
+            TokenKind::Component => Ok(ScryptoReceiver::Component(self.parse_values_one()?)),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }

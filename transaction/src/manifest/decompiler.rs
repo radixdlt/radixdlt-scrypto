@@ -405,7 +405,7 @@ pub fn decompile_call_scrypto_method<F: fmt::Write>(
             "ComponentAddress(\"{}\")",
             address.display(context.bech32_encoder)
         ),
-        ScryptoReceiver::Local(id) => {
+        ScryptoReceiver::Component(id) => {
             format!("Component(\"{}\")", format_id(&id))
         }
     };

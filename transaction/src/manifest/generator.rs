@@ -607,7 +607,7 @@ fn generate_scrypto_receiver(
             )),
             v => invalid_type!(v, ast::Type::String),
         },
-        ast::ScryptoReceiver::Local(v) => Ok(ScryptoReceiver::Local(generate_node_id(v)?)),
+        ast::ScryptoReceiver::Component(v) => Ok(ScryptoReceiver::Component(generate_node_id(v)?)),
     }
 }
 

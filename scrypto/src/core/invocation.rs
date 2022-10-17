@@ -35,7 +35,7 @@ pub struct NativeMethodIdent {
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum ScryptoReceiver {
     Global(ComponentAddress),
-    Local(ComponentId),
+    Component(ComponentId),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Copy, TypeId, Encode, Decode)]

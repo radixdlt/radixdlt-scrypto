@@ -525,7 +525,7 @@ where
                 method_name,
             }) => {
                 let node_id = match receiver {
-                    ScryptoReceiver::Local(component_id) => {
+                    ScryptoReceiver::Component(component_id) => {
                         RENodeId::Component(component_id.clone())
                     }
                     ScryptoReceiver::Global(_) => {
@@ -871,7 +871,7 @@ where
         }) = &mut fn_ident
         {
             *receiver = match receiver {
-                ScryptoReceiver::Local(component_id) => {
+                ScryptoReceiver::Component(component_id) => {
                     let node_id = RENodeId::Component(component_id.clone());
                     if !Self::current_frame_mut(&mut self.call_frames)
                         .owned_heap_nodes
@@ -884,7 +884,7 @@ where
                     let node_pointer =
                         Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
                     next_node_refs.insert(node_id, node_pointer);
-                    ScryptoReceiver::Local(component_id.clone())
+                    ScryptoReceiver::Component(component_id.clone())
                 }
                 ScryptoReceiver::Global(ref mut component_address) => {
                     // Deref
@@ -896,7 +896,7 @@ where
                     let node_pointer =
                         Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
                     next_node_refs.insert(node_id, node_pointer);
-                    ScryptoReceiver::Local(node_id.into())
+                    ScryptoReceiver::Component(node_id.into())
                 }
             };
         }
