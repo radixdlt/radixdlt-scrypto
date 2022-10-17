@@ -23,7 +23,7 @@ pub enum RENodeId {
     AuthZone(AuthZoneId),
     Worktop,
 
-    Global(GlobalAddress), // TODO: remove
+    Global(GlobalAddress),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
     Component(ComponentId),

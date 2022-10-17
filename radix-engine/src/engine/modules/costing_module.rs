@@ -34,7 +34,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                     fn_ident: fn_ident.clone(),
                                     args: &args,
                                 }),
-                            "invoke",
+                            "invoke_scrypto",
                             false,
                         )
                         .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
@@ -55,7 +55,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                     fn_ident: fn_ident.clone(),
                                     args: &args,
                                 }),
-                            "invoke",
+                            "invoke_native",
                             false,
                         )
                         .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
@@ -383,7 +383,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     track
                         .fee_table
                         .run_native_function_cost(&native_function, &input),
-                    "run_native",
+                    "run_native_function",
                     false,
                 )
                 .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
@@ -393,7 +393,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     track
                         .fee_table
                         .run_native_method_cost(&native_method, &input),
-                    "run_native",
+                    "run_native_method",
                     false,
                 )
                 .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),

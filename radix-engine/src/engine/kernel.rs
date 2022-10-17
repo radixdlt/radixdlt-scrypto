@@ -800,7 +800,9 @@ where
                 for instruction in &input.instructions {
                     match instruction {
                         Instruction::CallFunction { args, .. }
-                        | Instruction::CallMethod { args, .. } => {
+                        | Instruction::CallMethod { args, .. }
+                        | Instruction::CallNativeFunction { args, .. }
+                        | Instruction::CallNativeMethod { args, .. } => {
                             let scrypto_value =
                                 ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                             global_references.extend(scrypto_value.global_references());
@@ -989,7 +991,9 @@ where
                 for instruction in &input.instructions {
                     match instruction {
                         Instruction::CallFunction { args, .. }
-                        | Instruction::CallMethod { args, .. } => {
+                        | Instruction::CallMethod { args, .. }
+                        | Instruction::CallNativeFunction { args, .. }
+                        | Instruction::CallNativeMethod { args, .. } => {
                             let scrypto_value =
                                 ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                             global_references.extend(scrypto_value.global_references());
