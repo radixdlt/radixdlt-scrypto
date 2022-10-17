@@ -281,7 +281,7 @@ where
         input: ScryptoValue,
         owned_nodes: HashMap<RENodeId, HeapRootRENode>,
         mut refed_nodes: HashMap<RENodeId, RENodePointer>,
-    ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
+    ) -> Result<ScryptoValue, RuntimeError> {
         let new_refed_nodes = self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
             AuthModule::on_before_frame_start(&actor, &input, system_api).map_err(|e| match e {
                 InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
@@ -352,26 +352,26 @@ where
             }
         }?;
 
+        let (cur, prev) = Self::current_and_prev_frame_mut(&mut self.call_frames);
+
         // Process return data
-        let mut nodes_to_return = HashMap::new();
         for node_id in output.node_ids() {
-            let mut node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
+            // move re nodes to upstream call frame.
+            let mut node = cur.take_node(node_id)?;
             let root_node = node.root_mut();
             root_node.prepare_move_upstream(node_id)?;
-            nodes_to_return.insert(node_id, node);
+            prev.insert_owned_node(node_id, node);
         }
 
-        // Check references returned
+        // Copy references upstream
         for global_address in output.global_references() {
             let node_id = RENodeId::Global(global_address);
-            if !Self::current_frame_mut(&mut self.call_frames)
-                .node_refs
-                .contains_key(&node_id)
-            {
+            if !cur.node_refs.contains_key(&node_id) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidReferenceReturn(global_address),
                 ));
             }
+            prev.node_refs.insert(node_id, RENodePointer::Store(node_id));
         }
 
         // Auto drop locks
@@ -410,7 +410,14 @@ where
         let call_frame = self.call_frames.pop().unwrap();
         call_frame.drop_frame()?;
 
-        Ok((output, nodes_to_return))
+        Ok(output)
+    }
+
+    fn current_and_prev_frame_mut(call_frames: &mut Vec<CallFrame>) -> (&mut CallFrame, &mut CallFrame) {
+        let call_frames_len = call_frames.len();
+        let (frames, last) = call_frames.split_at_mut(call_frames_len - 1);
+
+        (&mut last[0], &mut frames[call_frames_len - 2])
     }
 
     fn current_frame_mut(call_frames: &mut Vec<CallFrame>) -> &mut CallFrame {
@@ -850,21 +857,10 @@ where
             root_node.prepare_move_downstream(*node_id, cur_actor, &next_actor)?;
         }
 
-        let (output, received_values) =
+        let output =
             self.run(next_actor, input, nodes_to_pass_downstream, next_node_refs)?;
 
-        // move re nodes to this process.
-        for (id, node) in received_values {
-            Self::current_frame_mut(&mut self.call_frames).insert_owned_node(id, node);
-        }
 
-        // Accept global references
-        for global_address in output.global_references() {
-            let node_id = RENodeId::Global(global_address);
-            Self::current_frame_mut(&mut self.call_frames)
-                .node_refs
-                .insert(node_id, RENodePointer::Store(node_id));
-        }
 
         for m in &mut self.modules {
             m.post_sys_call(
