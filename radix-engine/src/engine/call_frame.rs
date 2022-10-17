@@ -156,6 +156,32 @@ impl CallFrame {
             .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))
     }
 
+    pub fn move_nodes(from: &mut CallFrame, to: &mut CallFrame, node_ids: HashSet<RENodeId>) -> Result<(), RuntimeError> {
+        for node_id in node_ids {
+            // move re nodes to upstream call frame.
+            let mut node = from.take_node(node_id)?;
+            let root_node = node.root_mut();
+            root_node.prepare_move_upstream(node_id)?;
+            to.insert_owned_node(node_id, node);
+        }
+
+        Ok(())
+    }
+
+    pub fn copy_refs(from: &mut CallFrame, to: &mut CallFrame, global_addresses: HashSet<GlobalAddress>) -> Result<(), RuntimeError> {
+        for global_address in global_addresses {
+            let node_id = RENodeId::Global(global_address);
+            if !from.node_refs.contains_key(&node_id) {
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvalidReferenceReturn(global_address),
+                ));
+            }
+            to.node_refs.insert(node_id, RENodePointer::Store(node_id));
+        }
+
+        Ok(())
+    }
+
     pub fn insert_owned_node(&mut self, id: RENodeId, node: HeapRootRENode) {
         self.owned_heap_nodes.insert(id, node);
     }

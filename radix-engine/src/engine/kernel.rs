@@ -352,27 +352,10 @@ where
             }
         }?;
 
-        let (cur, prev) = Self::current_and_prev_frame_mut(&mut self.call_frames);
-
         // Process return data
-        for node_id in output.node_ids() {
-            // move re nodes to upstream call frame.
-            let mut node = cur.take_node(node_id)?;
-            let root_node = node.root_mut();
-            root_node.prepare_move_upstream(node_id)?;
-            prev.insert_owned_node(node_id, node);
-        }
-
-        // Copy references upstream
-        for global_address in output.global_references() {
-            let node_id = RENodeId::Global(global_address);
-            if !cur.node_refs.contains_key(&node_id) {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidReferenceReturn(global_address),
-                ));
-            }
-            prev.node_refs.insert(node_id, RENodePointer::Store(node_id));
-        }
+        let (cur, prev) = Self::current_and_prev_frame_mut(&mut self.call_frames);
+        CallFrame::move_nodes(cur, prev, output.node_ids())?;
+        CallFrame::copy_refs(cur, prev, output.global_references())?;
 
         // Auto drop locks
         let frame = Self::current_frame_mut(&mut self.call_frames);
