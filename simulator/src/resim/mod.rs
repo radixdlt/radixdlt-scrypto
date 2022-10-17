@@ -50,6 +50,7 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
 use radix_engine::constants::*;
+use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::model::*;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::transaction::TransactionOutcome;
@@ -168,13 +169,19 @@ pub fn handle_manifest<O: std::io::Write>(
         }
         None => {
             let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
-            let mut wasm_engine = DefaultWasmEngine::new();
-            let mut wasm_instrumenter = WasmInstrumenter::new();
-            let mut executor = TransactionExecutor::new(
-                &mut substate_store,
-                &mut wasm_engine,
-                &mut wasm_instrumenter,
-            );
+
+            let mut scrypto_interpreter = ScryptoInterpreter {
+                wasm_engine: DefaultWasmEngine::new(),
+                wasm_instrumenter: WasmInstrumenter::new(),
+                wasm_metering_params: WasmMeteringParams::new(
+                    InstructionCostRules::tiered(1, 5, 10, 5000),
+                    512,
+                ),
+                phantom: PhantomData,
+            };
+
+            let mut executor =
+                TransactionExecutor::new(&mut substate_store, &mut scrypto_interpreter);
 
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks

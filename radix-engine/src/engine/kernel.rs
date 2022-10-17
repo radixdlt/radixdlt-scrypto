@@ -45,12 +45,8 @@ pub struct Kernel<
 
     /// State track
     track: &'g mut Track<'s, R>,
-    /// WASM engine
-    wasm_engine: &'g mut W,
-    /// WASM Instrumenter
-    wasm_instrumenter: &'g mut WasmInstrumenter,
-    /// WASM metering params
-    wasm_metering_params: WasmMeteringParams,
+
+    scrypto_interpreter: &'g mut ScryptoInterpreter<I, W>,
 
     /// ID allocator
     id_allocator: IdAllocator,
@@ -60,8 +56,6 @@ pub struct Kernel<
 
     /// Kernel modules
     modules: Vec<Box<dyn Module<R>>>,
-
-    phantom: PhantomData<I>,
 }
 
 impl<'g, 's, W, I, R> Kernel<'g, 's, W, I, R>
@@ -76,9 +70,7 @@ where
         blobs: &'g HashMap<Hash, Vec<u8>>,
         max_depth: usize,
         track: &'g mut Track<'s, R>,
-        wasm_engine: &'g mut W,
-        wasm_instrumenter: &'g mut WasmInstrumenter,
-        wasm_metering_params: WasmMeteringParams,
+        scrypto_interpreter: &'g mut ScryptoInterpreter<I, W>,
         modules: Vec<Box<dyn Module<R>>>,
     ) -> Self {
         let frame = CallFrame::new_root();
@@ -87,13 +79,10 @@ where
             blobs,
             max_depth,
             track,
-            wasm_engine,
-            wasm_instrumenter,
-            wasm_metering_params,
+            scrypto_interpreter,
             id_allocator: IdAllocator::new(IdSpace::Application),
             call_frames: vec![frame],
             modules,
-            phantom: PhantomData,
         };
 
         // Initial authzone
@@ -348,11 +337,7 @@ where
                                 .borrow_substate(package_id, package_offset.clone());
                             substate.package().clone() // TODO: Remove clone()
                         };
-
-                        let instrumented_code = self
-                            .wasm_instrumenter
-                            .instrument(package.code(), &self.wasm_metering_params);
-                        let mut instance = self.wasm_engine.instantiate(instrumented_code);
+                        let mut instance = self.scrypto_interpreter.instance(package);
 
                         let scrypto_actor = match &Self::current_frame(&self.call_frames).actor {
                             REActor::Method(ResolvedReceiverMethod {
@@ -376,9 +361,9 @@ where
                         instance
                             .invoke_export(&export_name, &input, &mut runtime)
                             .map_err(|e| match e {
-                                InvokeError::Error(e) => {
-                                    RuntimeError::KernelError(KernelError::WasmError(actor.clone(), e))
-                                }
+                                InvokeError::Error(e) => RuntimeError::KernelError(
+                                    KernelError::WasmError(actor.clone(), e),
+                                ),
                                 InvokeError::Downstream(runtime_error) => runtime_error,
                             })?
                     };
@@ -587,19 +572,22 @@ where
                     })?;
 
                 // TODO: Move this in a better spot when more refactors are done
-                let package = self.execute_in_kernel_mode::<_,_, RuntimeError>(KernelActor::ScryptoLoader, |system_api| {
-                    let handle = system_api.lock_substate(node_id, SubstateOffset::Package(PackageOffset::Package), LockFlags::read_only())?;
-                    let substate_ref = system_api.get_ref(handle)?;
-                    let package = substate_ref.package().clone(); // TODO: Remove clone()
-                    system_api.drop_lock(handle)?;
-                    Ok(package)
-                })?;
+                let package = self.execute_in_kernel_mode::<_, _, RuntimeError>(
+                    KernelActor::ScryptoLoader,
+                    |system_api| {
+                        let handle = system_api.lock_substate(
+                            node_id,
+                            SubstateOffset::Package(PackageOffset::Package),
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = system_api.get_ref(handle)?;
+                        let package = substate_ref.package().clone(); // TODO: Remove clone()
+                        system_api.drop_lock(handle)?;
+                        Ok(package)
+                    },
+                )?;
                 for m in &mut self.modules {
-                    m.on_wasm_instantiation(
-                        &mut self.track,
-                        &mut self.call_frames,
-                        package.code(),
-                    )
+                    m.on_wasm_instantiation(&mut self.track, &mut self.call_frames, package.code())
                         .map_err(RuntimeError::ModuleError)?;
                 }
 
@@ -651,19 +639,22 @@ where
                     })?;
 
                 // TODO: Move this in a better spot when more refactors are done
-                let package = self.execute_in_kernel_mode::<_,_, RuntimeError>(KernelActor::ScryptoLoader, |system_api| {
-                    let handle = system_api.lock_substate(node_id, SubstateOffset::Package(PackageOffset::Package), LockFlags::read_only())?;
-                    let substate_ref = system_api.get_ref(handle)?;
-                    let package = substate_ref.package().clone(); // TODO: Remove clone()
-                    system_api.drop_lock(handle)?;
-                    Ok(package)
-                })?;
+                let package = self.execute_in_kernel_mode::<_, _, RuntimeError>(
+                    KernelActor::ScryptoLoader,
+                    |system_api| {
+                        let handle = system_api.lock_substate(
+                            node_id,
+                            SubstateOffset::Package(PackageOffset::Package),
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = system_api.get_ref(handle)?;
+                        let package = substate_ref.package().clone(); // TODO: Remove clone()
+                        system_api.drop_lock(handle)?;
+                        Ok(package)
+                    },
+                )?;
                 for m in &mut self.modules {
-                    m.on_wasm_instantiation(
-                        &mut self.track,
-                        &mut self.call_frames,
-                        package.code(),
-                    )
+                    m.on_wasm_instantiation(&mut self.track, &mut self.call_frames, package.code())
                         .map_err(RuntimeError::ModuleError)?;
                 }
 

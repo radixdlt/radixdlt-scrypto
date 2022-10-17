@@ -1,20 +1,33 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
+use crate::model::PackageSubstate;
 use crate::types::*;
-use crate::wasm::{WasmEngine, WasmInstance};
+use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringParams};
 
-pub struct ScryptoInterpreter;
+pub struct ScryptoInterpreter<I: WasmInstance, W: WasmEngine<I>> {
+    pub wasm_engine: W,
+    /// WASM Instrumenter
+    pub wasm_instrumenter: WasmInstrumenter,
+    /// WASM metering params
+    pub wasm_metering_params: WasmMeteringParams,
+    pub phantom: PhantomData<I>,
+}
 
-impl ScryptoInterpreter {
-    pub fn load_scrypto_actor<'s, Y, W, I, R>(
+impl<I: WasmInstance, W: WasmEngine<I>> ScryptoInterpreter<I, W> {
+    pub fn instance(&mut self, package: PackageSubstate) -> I {
+        let instrumented_code = self
+            .wasm_instrumenter
+            .instrument(package.code(), &self.wasm_metering_params);
+        self.wasm_engine.instantiate(instrumented_code)
+    }
+
+    pub fn load_scrypto_actor<'s, Y, R>(
         ident: ScryptoFnIdent,
         input: &ScryptoValue,
         system_api: &mut Y,
     ) -> Result<(REActor, RENodeId), InvokeError<ScryptoActorError>>
     where
         Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
         R: FeeReserve,
     {
         let (receiver, package_address, blueprint_name, ident) = match ident {

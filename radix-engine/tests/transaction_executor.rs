@@ -1,12 +1,12 @@
 use radix_engine::constants::*;
-use radix_engine::engine::RuntimeError;
 use radix_engine::engine::{ModuleError, RejectionError};
+use radix_engine::engine::{RuntimeError, ScryptoInterpreter};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
-use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
+use radix_engine::wasm::{DefaultWasmEngine, InstructionCostRules, WasmMeteringParams};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
@@ -46,8 +46,17 @@ fn pre_execution_rejection_should_return_rejected_receipt() {
 fn test_normal_transaction_flow() {
     // Arrange
     let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = DefaultWasmEngine::new();
-    let mut wasm_instrumenter = WasmInstrumenter::new();
+
+    let mut scrypto_interpreter = ScryptoInterpreter {
+        wasm_engine: DefaultWasmEngine::new(),
+        wasm_instrumenter: WasmInstrumenter::new(),
+        wasm_metering_params: WasmMeteringParams::new(
+            InstructionCostRules::tiered(1, 5, 10, 5000),
+            512,
+        ),
+        phantom: PhantomData,
+    };
+
     let intent_hash_manager = TestIntentHashManager::new();
     let fee_reserve_config = FeeReserveConfig::standard();
     let execution_config = ExecutionConfig::debug();
@@ -63,11 +72,7 @@ fn test_normal_transaction_flow() {
     let validated_transaction: Executable = validator
         .validate_from_slice(&raw_transaction, &intent_hash_manager)
         .expect("Invalid transaction");
-    let mut executor = TransactionExecutor::new(
-        &mut substate_store,
-        &mut wasm_engine,
-        &mut wasm_instrumenter,
-    );
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut scrypto_interpreter);
 
     // Act
     let receipt = executor.execute_and_commit(
