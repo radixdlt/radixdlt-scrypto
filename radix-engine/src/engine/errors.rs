@@ -52,7 +52,6 @@ pub enum KernelError {
     // invocation
     WasmError(WasmError),
     RENodeNotVisible(RENodeId),
-    InvokeMethodInvalidReceiver(RENodeId),
 
     InvalidReferencePass(GlobalAddress),
     InvalidReferenceReturn(GlobalAddress),
@@ -104,8 +103,8 @@ pub enum ScryptoActorError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum InterpreterError {
-    InvalidScryptoActor(ScryptoFnIdent, ScryptoActorError),
-    InvalidNativeActor(NativeFnIdent),
+    InvalidScryptoFnIdent(ScryptoFnIdent, ScryptoActorError),
+    InvalidNativeFnIdent(NativeFnIdent),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]

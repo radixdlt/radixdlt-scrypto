@@ -1,4 +1,4 @@
-use scrypto::engine::{api::*, call_engine, types::*};
+use scrypto::engine::{api::*, call_engine};
 use scrypto::prelude::*;
 
 blueprint! {
@@ -13,9 +13,9 @@ blueprint! {
 
         pub fn call_mut_self(&mut self) {
             if let ScryptoActor::Component(component_id, ..) = Runtime::actor() {
-                let input = RadixEngineInput::InvokeNativeMethod(
-                    NativeMethodIdent {
-                        receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                let input = RadixEngineInput::InvokeScryptoMethod(
+                    ScryptoMethodIdent {
+                        receiver: ScryptoReceiver::Component(component_id),
                         method_name: "mut_func".to_string(),
                     },
                     args!(),
@@ -28,9 +28,9 @@ blueprint! {
 
         pub fn call_self(&self) {
             if let ScryptoActor::Component(component_id, ..) = Runtime::actor() {
-                let input = RadixEngineInput::InvokeNativeMethod(
-                    NativeMethodIdent {
-                        receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                let input = RadixEngineInput::InvokeScryptoMethod(
+                    ScryptoMethodIdent {
+                        receiver: ScryptoReceiver::Component(component_id),
                         method_name: "func".to_string(),
                     },
                     args!(),
@@ -41,9 +41,9 @@ blueprint! {
 
         pub fn call_mut_self_2(&self) {
             if let ScryptoActor::Component(component_id, ..) = Runtime::actor() {
-                let input = RadixEngineInput::InvokeNativeMethod(
-                    NativeMethodIdent {
-                        receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                let input = RadixEngineInput::InvokeScryptoMethod(
+                    ScryptoMethodIdent {
+                        receiver: ScryptoReceiver::Component(component_id),
                         method_name: "mut_func".to_string(),
                     },
                     args!(),

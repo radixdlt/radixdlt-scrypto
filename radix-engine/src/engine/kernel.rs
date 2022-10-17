@@ -632,7 +632,7 @@ where
             .map_err(|e| match e {
                 InvokeError::Downstream(runtime_error) => runtime_error,
                 InvokeError::Error(error) => RuntimeError::InterpreterError(
-                    InterpreterError::InvalidScryptoActor(fn_ident.clone(), error),
+                    InterpreterError::InvalidScryptoFnIdent(fn_ident.clone(), error),
                 ),
             })
     }
@@ -642,8 +642,9 @@ where
         fn_ident: NativeFnIdent,
         _input: &ScryptoValue,
     ) -> Result<REActor, RuntimeError> {
-        let error =
-            RuntimeError::InterpreterError(InterpreterError::InvalidNativeActor(fn_ident.clone()));
+        let error = RuntimeError::InterpreterError(InterpreterError::InvalidNativeFnIdent(
+            fn_ident.clone(),
+        ));
         Ok(match &fn_ident {
             NativeFnIdent::Function(NativeFunctionIdent {
                 blueprint_name,
@@ -875,14 +876,6 @@ where
             *receiver = match receiver {
                 ScryptoReceiver::Component(component_id) => {
                     let node_id = RENodeId::Component(component_id.clone());
-                    if !Self::current_frame_mut(&mut self.call_frames)
-                        .owned_heap_nodes
-                        .contains_key(&node_id)
-                    {
-                        return Err(RuntimeError::KernelError(
-                            KernelError::InvokeMethodInvalidReceiver(node_id),
-                        ));
-                    }
                     let node_pointer =
                         Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
                     next_node_refs.insert(node_id, node_pointer);
@@ -1065,9 +1058,9 @@ where
                     let heap_node = Self::current_frame_mut(&mut self.call_frames)
                         .owned_heap_nodes
                         .remove(node_id)
-                        .ok_or(RuntimeError::KernelError(
-                            KernelError::InvokeMethodInvalidReceiver(*node_id),
-                        ))?;
+                        .ok_or(RuntimeError::KernelError(KernelError::RENodeNotVisible(
+                            *node_id,
+                        )))?;
                     nodes_to_pass.insert(*node_id, heap_node);
                 }
                 Receiver::Ref(ref mut node_id) => {
