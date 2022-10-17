@@ -300,73 +300,48 @@ where
         self.call_frames.push(frame);
 
         let actor = Self::current_frame(&self.call_frames).actor.clone();
-        let output = {
-            let rtn = match actor.clone() {
-                REActor::Function(ResolvedFunction::Native(native_fn)) => {
-                    NativeInterpreter::run_function(native_fn, input, self)
-                }
-                REActor::Method(ResolvedReceiverMethod {
-                    receiver,
-                    method: ResolvedMethod::Native(native_method),
-                }) => {
-                    NativeInterpreter::run_method(receiver.receiver(), native_method, input, self)
-                }
-                REActor::Function(ResolvedFunction::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ident,
-                    export_name,
+        let output = match actor.clone() {
+            REActor::Function(ResolvedFunction::Native(native_fn)) => {
+                NativeInterpreter::run_function(native_fn, input, self)
+            }
+            REActor::Method(ResolvedReceiverMethod {
+                receiver,
+                method: ResolvedMethod::Native(native_method),
+            }) => NativeInterpreter::run_method(receiver.receiver(), native_method, input, self),
+            REActor::Function(ResolvedFunction::Scrypto {
+                package_address, ..
+            })
+            | REActor::Method(ResolvedReceiverMethod {
+                method:
+                    ResolvedMethod::Scrypto {
+                        package_address, ..
+                    },
+                ..
+            }) => {
+                // TODO: Move into interpreter when interpreter trait implemented
+                let package = self.execute_in_kernel_mode::<_, _, RuntimeError>(
+                    KernelActor::ScryptoInterpreter,
+                    |system_api| {
+                        let package_id = RENodeId::Global(GlobalAddress::Package(package_address));
+                        let package_offset = SubstateOffset::Package(PackageOffset::Package);
+                        let handle = system_api.lock_substate(
+                            package_id,
+                            package_offset,
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = system_api.get_ref(handle)?;
+                        let package = substate_ref.package().clone();
+                        system_api.drop_lock(handle)?;
+                        Ok(package)
+                    },
+                )?;
+                let mut executor = self.scrypto_interpreter.create_executor(package);
+
+                self.execute_in_kernel_mode(KernelActor::ScryptoInterpreter, |system_api| {
+                    executor.run(input, system_api)
                 })
-                | REActor::Method(ResolvedReceiverMethod {
-                    method:
-                        ResolvedMethod::Scrypto {
-                            package_address,
-                            blueprint_name,
-                            ident,
-                            export_name,
-                        },
-                    ..
-                }) => {
-                    let package_id = RENodeId::Package(package_address);
-                    let package_offset = SubstateOffset::Package(PackageOffset::Package);
-
-                    let output = {
-                        let package = {
-                            let substate = self
-                                .track
-                                .borrow_substate(package_id, package_offset.clone());
-                            substate.package().clone() // TODO: Remove clone()
-                        };
-                        let mut executor = self.scrypto_interpreter.executor(package);
-                        executor.run(input, self)?
-                    };
-
-                    let package = self
-                        .track
-                        .borrow_substate(package_id, package_offset)
-                        .package();
-                    let blueprint_abi = package
-                        .blueprint_abi(&blueprint_name)
-                        .expect("Blueprint not found"); // TODO: assumption will break if auth module is optional
-                    let fn_abi = blueprint_abi
-                        .get_fn_abi(&ident)
-                        .expect("Function not found");
-                    if !fn_abi.output.matches(&output.dom) {
-                        Err(RuntimeError::KernelError(KernelError::InvalidFnOutput {
-                            fn_identifier: FunctionIdent::Scrypto {
-                                package_address,
-                                blueprint_name,
-                                ident,
-                            },
-                        }))
-                    } else {
-                        Ok(output)
-                    }
-                }
-            }?;
-
-            rtn
-        };
+            }
+        }?;
 
         // Process return data
         let mut nodes_to_return = HashMap::new();
@@ -438,7 +413,7 @@ where
         call_frames.last().expect("Current frame always exists")
     }
 
-    pub fn execute_in_kernel_mode<X, RTN, E>(
+    fn execute_in_kernel_mode<X, RTN, E>(
         &mut self,
         kernel_actor: KernelActor,
         execute: X,
@@ -526,7 +501,7 @@ where
         let actor = match &method_ident {
             MethodIdent::Scrypto(ident) => {
                 let (actor, node_id) = self
-                    .execute_in_kernel_mode(KernelActor::ScryptoLoader, |system_api| {
+                    .execute_in_kernel_mode(KernelActor::ScryptoInterpreter, |system_api| {
                         ScryptoInterpreter::load_scrypto_actor(
                             ScryptoFnIdent::Method(receiver.clone(), ident.clone()),
                             input,
@@ -546,7 +521,7 @@ where
 
                 // TODO: Move this in a better spot when more refactors are done
                 let package = self.execute_in_kernel_mode::<_, _, RuntimeError>(
-                    KernelActor::ScryptoLoader,
+                    KernelActor::ScryptoInterpreter,
                     |system_api| {
                         let handle = system_api.lock_substate(
                             node_id,
@@ -593,7 +568,7 @@ where
                 ident,
             } => {
                 let (actor, node_id) = self
-                    .execute_in_kernel_mode(KernelActor::ScryptoLoader, |system_api| {
+                    .execute_in_kernel_mode(KernelActor::ScryptoInterpreter, |system_api| {
                         ScryptoInterpreter::load_scrypto_actor(
                             ScryptoFnIdent::Function(
                                 *package_address,
@@ -613,7 +588,7 @@ where
 
                 // TODO: Move this in a better spot when more refactors are done
                 let package = self.execute_in_kernel_mode::<_, _, RuntimeError>(
-                    KernelActor::ScryptoLoader,
+                    KernelActor::ScryptoInterpreter,
                     |system_api| {
                         let handle = system_api.lock_substate(
                             node_id,
@@ -652,6 +627,17 @@ where
     I: WasmInstance,
     R: FeeReserve,
 {
+    fn execute_in_mode<X, RTN, E>(
+        &mut self,
+        kernel_actor: KernelActor,
+        execute: X,
+    ) -> Result<RTN, E>
+    where
+        X: FnOnce(&mut Self) -> Result<RTN, E>,
+    {
+        self.execute_in_kernel_mode(kernel_actor, |s| execute(s))
+    }
+
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.on_wasm_costing(&mut self.track, &mut self.call_frames, units)

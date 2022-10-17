@@ -84,6 +84,6 @@ impl REActor {
 pub enum KernelActor {
     Application,
     Deref,
-    ScryptoLoader,
+    ScryptoInterpreter,
     AuthModule,
 }

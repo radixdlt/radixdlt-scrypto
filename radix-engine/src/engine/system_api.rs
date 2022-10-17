@@ -34,6 +34,14 @@ where
     I: WasmInstance,
     R: FeeReserve,
 {
+    fn execute_in_mode<X, RTN, E>(
+        &mut self,
+        kernel_actor: KernelActor,
+        execute: X,
+    ) -> Result<RTN, E>
+    where
+        X: FnOnce(&mut Self) -> Result<RTN, E>;
+
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
 
     fn lock_fee(

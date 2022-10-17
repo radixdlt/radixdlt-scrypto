@@ -64,7 +64,7 @@ impl SubstateProperties {
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
                 _ => false,
             },
-            (KernelActor::ScryptoLoader, offset) => match offset {
+            (KernelActor::ScryptoInterpreter, offset) => match offset {
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
                 SubstateOffset::Package(PackageOffset::Package) => flags == LockFlags::read_only(),
                 _ => false,
