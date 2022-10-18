@@ -21,12 +21,10 @@ pub struct CallFrame {
     /// The running application actor of this frame
     pub actor: REActor,
 
-    /// All ref values accessible by this call frame. The value may be located in one of the following:
-    /// 1. borrowed values
-    /// 2. track
+    /// All ref values accessible by this call frame.
     pub node_refs: HashMap<RENodeId, RENodePointer>,
 
-    /// Owned Values
+    /// Owned Values which by definition must live on heap
     owned_heap_nodes: HashSet<RENodeId>,
 
     next_lock_handle: LockHandle,
@@ -197,7 +195,7 @@ impl CallFrame {
         self.locks.drain().collect()
     }
 
-    pub fn drop_frame(mut self, heap: &mut Heap) -> Result<(), RuntimeError> {
+    pub fn drop_frame(&mut self, heap: &mut Heap) -> Result<(), RuntimeError> {
         let values = self
             .owned_heap_nodes
             .drain()

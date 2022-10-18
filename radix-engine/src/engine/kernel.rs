@@ -1,3 +1,4 @@
+use std::mem;
 use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 use transaction::errors::IdAllocationError;
 use transaction::model::{AuthZoneParams, Instruction};
@@ -15,7 +16,7 @@ macro_rules! trace {
     ( $self: expr, $level: expr, $msg: expr $( , $arg:expr )* ) => {
         #[cfg(not(feature = "alloc"))]
         if $self.trace {
-            println!("{}[{:5}] {}", "  ".repeat(Self::current_frame(&$self.call_frames).depth) , $level, sbor::rust::format!($msg, $( $arg ),*));
+            println!("{}[{:5}] {}", "  ".repeat($self.current_frame.depth) , $level, sbor::rust::format!($msg, $( $arg ),*));
         }
     };
 }
@@ -36,30 +37,34 @@ pub struct Kernel<
     I: WasmInstance,
     R: FeeReserve,
 {
+    /// Current execution mode, specifies permissions into state/invocations
     execution_mode: ExecutionMode,
 
     /// The transaction hash
     transaction_hash: Hash,
     /// Blobs attached to the transaction
     blobs: &'g HashMap<Hash, Vec<u8>>,
-    /// The max call depth
-    max_depth: usize,
 
-    /// State track
+    /// State
     heap: &'g mut Heap,
     track: &'g mut Track<'s, R>,
+    /// ID allocator
+    id_allocator: IdAllocator,
 
     /// Interpreter capable of running scrypto programs
     scrypto_interpreter: &'g mut ScryptoInterpreter<I, W>,
 
-    /// ID allocator
-    id_allocator: IdAllocator,
-
     /// Call frames
-    call_frames: Vec<CallFrame>,
+    current_frame: CallFrame,
+    // This stack could potentially be removed and just use the native stack
+    // but keeping this call_frames stack may potentially prove useful if implementing
+    // execution pause and/or better debuggability
+    prev_frame_stack: Vec<CallFrame>,
 
     /// Kernel modules
     modules: Vec<Box<dyn Module<R>>>,
+    /// The max call depth, TODO: Move into costing module
+    max_depth: usize,
 }
 
 impl<'g, 's, W, I, R> Kernel<'g, 's, W, I, R>
@@ -88,7 +93,8 @@ where
             track,
             scrypto_interpreter,
             id_allocator: IdAllocator::new(IdSpace::Application),
-            call_frames: vec![frame],
+            current_frame: frame,
+            prev_frame_stack: vec![],
             modules,
         };
 
@@ -294,22 +300,26 @@ where
 
         // TODO: Do this in a better way by allowing module to execute in next call frame
         for new_refed_node in new_refed_nodes {
-            let node_pointer = Self::current_frame(&self.call_frames)
+            let node_pointer = self.current_frame
                 .get_node_pointer(new_refed_node)
                 .unwrap();
             refed_nodes.insert(new_refed_node, node_pointer);
         }
 
+        // Call Frame Push
         let frame = CallFrame::new_child_from_parent(
             &mut self.heap,
-            Self::current_frame_mut(&mut self.call_frames),
+            &mut self.current_frame,
             actor,
             nodes_to_pass,
             refed_nodes,
         )?;
-        self.call_frames.push(frame);
 
-        let actor = Self::current_frame(&self.call_frames).actor.clone();
+        let parent = mem::replace(&mut self.current_frame, frame);
+        self.prev_frame_stack.push(parent);
+
+        // Execute
+        let actor = self.current_frame.actor.clone();
         let output = match actor.clone() {
             REActor::Function(ResolvedFunction::Native(native_fn)) => self
                 .execute_in_mode(ExecutionMode::Application, |system_api| {
@@ -357,13 +367,12 @@ where
         }?;
 
         // Process return data
-        let (cur, prev) = Self::current_and_prev_frame_mut(&mut self.call_frames);
-        CallFrame::move_nodes_upstream(&mut self.heap, cur, prev, output.node_ids())?;
-        CallFrame::copy_refs(cur, prev, output.global_references())?;
+        let mut parent = self.prev_frame_stack.pop().unwrap();
+        CallFrame::move_nodes_upstream(&mut self.heap, &mut self.current_frame, &mut parent, output.node_ids())?;
+        CallFrame::copy_refs(&mut self.current_frame, &mut parent, output.global_references())?;
 
         // Auto drop locks
-        let frame = Self::current_frame_mut(&mut self.call_frames);
-        for (_, lock) in frame.drain_locks() {
+        for (_, lock) in self.current_frame.drain_locks() {
             let SubstateLock {
                 substate_pointer: (node_pointer, offset),
                 flags,
@@ -394,27 +403,12 @@ where
         })?;
 
         // drop proofs and check resource leak
-        let call_frame = self.call_frames.pop().unwrap();
-        call_frame.drop_frame(&mut self.heap)?;
+        {
+            let mut child = mem::replace(&mut self.current_frame, parent);
+            child.drop_frame(&mut self.heap)?;
+        }
 
         Ok(output)
-    }
-
-    fn current_and_prev_frame_mut(
-        call_frames: &mut Vec<CallFrame>,
-    ) -> (&mut CallFrame, &mut CallFrame) {
-        let call_frames_len = call_frames.len();
-        let (frames, last) = call_frames.split_at_mut(call_frames_len - 1);
-
-        (&mut last[0], &mut frames[call_frames_len - 2])
-    }
-
-    fn current_frame_mut(call_frames: &mut Vec<CallFrame>) -> &mut CallFrame {
-        call_frames.last_mut().expect("Current frame always exists")
-    }
-
-    fn current_frame(call_frames: &Vec<CallFrame>) -> &CallFrame {
-        call_frames.last().expect("Current frame always exists")
     }
 
     pub fn node_method_deref(
@@ -511,7 +505,7 @@ where
                 )?;
                 for m in &mut self.modules {
                     m.on_wasm_instantiation(
-                        Self::current_frame(&self.call_frames),
+                        &self.current_frame,
                         &mut self.heap,
                         &mut self.track,
                         package.code(),
@@ -519,7 +513,7 @@ where
                     .map_err(RuntimeError::ModuleError)?;
                 }
 
-                let node_pointer = Self::current_frame(&self.call_frames)
+                let node_pointer = self.current_frame
                     .get_node_pointer(node_id)
                     .unwrap();
                 references_to_add.insert(node_id, node_pointer);
@@ -586,7 +580,7 @@ where
                 )?;
                 for m in &mut self.modules {
                     m.on_wasm_instantiation(
-                        Self::current_frame(&self.call_frames),
+                        &self.current_frame,
                         &mut self.heap,
                         &mut self.track,
                         package.code(),
@@ -594,7 +588,7 @@ where
                     .map_err(RuntimeError::ModuleError)?;
                 }
 
-                let node_pointer = Self::current_frame(&self.call_frames)
+                let node_pointer = self.current_frame
                     .get_node_pointer(node_id)
                     .unwrap();
                 references_to_add.insert(node_id, node_pointer);
@@ -654,7 +648,7 @@ where
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.on_wasm_costing(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 units,
@@ -674,7 +668,7 @@ where
         for m in &mut self.modules {
             fee = m
                 .on_lock_fee(
-                    Self::current_frame(&self.call_frames),
+                    &self.current_frame,
                     &mut self.heap,
                     &mut self.track,
                     vault_id,
@@ -688,7 +682,7 @@ where
     }
 
     fn get_actor(&self) -> &REActor {
-        &Self::current_frame(&self.call_frames).actor
+        &self.current_frame.actor
     }
 
     fn invoke(
@@ -696,11 +690,11 @@ where
         fn_ident: FnIdent,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let depth = Self::current_frame(&self.call_frames).depth;
+        let depth = self.current_frame.depth;
 
         for m in &mut self.modules {
             m.pre_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
@@ -726,7 +720,7 @@ where
         // Internal state update to taken values
 
         // Move this into higher layer, e.g. transaction processor
-        if Self::current_frame(&self.call_frames).depth == 0 {
+        if self.current_frame.depth == 0 {
             let mut static_refs = HashSet::new();
             static_refs.insert(GlobalAddress::Resource(RADIX_TOKEN));
             static_refs.insert(GlobalAddress::Resource(SYSTEM_TOKEN));
@@ -781,7 +775,7 @@ where
                         .map_err(RuntimeError::KernelError)?;
                 }
 
-                Self::current_frame_mut(&mut self.call_frames)
+                self.current_frame
                     .node_refs
                     .insert(node_id, node_pointer);
                 next_node_refs.insert(node_id, node_pointer);
@@ -799,7 +793,7 @@ where
                 // We use the following temporary solution to work around this.
                 // A better solution is to create node representation before issuing any reference.
                 // TODO: remove
-                if let Some(pointer) = Self::current_frame_mut(&mut self.call_frames)
+                if let Some(pointer) = self.current_frame
                     .node_refs
                     .get(&node_id)
                 {
@@ -823,8 +817,6 @@ where
             }) => {
                 let resolved_receiver = match receiver {
                     Receiver::Consumed(node_id) => {
-                        //let node =
-                        //Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
                         nodes_to_pass_downstream.push(node_id);
                         ResolvedReceiver::new(Receiver::Consumed(node_id))
                     }
@@ -838,8 +830,7 @@ where
                             };
 
                         let resolved_node_id = resolved_receiver.node_id();
-                        let node_pointer = Self::current_frame(&self.call_frames)
-                            .get_node_pointer(resolved_node_id)?;
+                        let node_pointer = self.current_frame.get_node_pointer(resolved_node_id)?;
                         next_node_refs.insert(resolved_node_id, node_pointer);
 
                         resolved_receiver
@@ -857,7 +848,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::Invoke { output: &output },
@@ -866,8 +857,8 @@ where
         }
 
         // TODO: Move this into higher layer, e.g. transaction processor
-        if Self::current_frame(&self.call_frames).depth == 0 {
-            self.call_frames.pop().unwrap().drop_frame(&mut self.heap)?;
+        if self.current_frame.depth == 0 {
+            self.current_frame.drop_frame(&mut self.heap)?;
         }
 
         // Restore previous mode
@@ -879,7 +870,7 @@ where
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::ReadOwnedNodes,
@@ -887,7 +878,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let node_ids = Self::current_frame_mut(&mut self.call_frames).get_visible_nodes();
+        let node_ids = self.current_frame.get_visible_nodes();
 
         Ok(node_ids)
     }
@@ -895,7 +886,7 @@ where
     fn node_drop(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::DropNode { node_id: &node_id },
@@ -905,11 +896,11 @@ where
 
         // TODO: Authorization
 
-        let node = Self::current_frame_mut(&mut self.call_frames).take_node(self.heap, node_id)?;
+        let node = self.current_frame.take_node(self.heap, node_id)?;
 
         for m in &mut self.modules {
             m.post_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::DropNode { node: &node },
@@ -923,7 +914,7 @@ where
     fn create_node(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::CreateNode { node: &re_node },
@@ -935,7 +926,7 @@ where
 
         let node_id = Self::new_node_id(&mut self.id_allocator, self.transaction_hash, &re_node)
             .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-        Self::current_frame_mut(&mut self.call_frames).create_node(
+        self.current_frame.create_node(
             &mut self.heap,
             node_id,
             re_node,
@@ -943,7 +934,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::CreateNode { node_id: &node_id },
@@ -957,7 +948,7 @@ where
     fn node_globalize(&mut self, node_id: RENodeId) -> Result<GlobalAddress, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::GlobalizeNode { node_id: &node_id },
@@ -967,8 +958,7 @@ where
 
         // TODO: Authorization
 
-        let node =
-            Self::current_frame_mut(&mut self.call_frames).take_node(&mut self.heap, node_id)?;
+        let node = self.current_frame.take_node(&mut self.heap, node_id)?;
 
         let (global_address, global_substate) = Self::globalize(
             &mut self.id_allocator,
@@ -988,7 +978,7 @@ where
             self.track.insert_substate(id, substate);
         }
 
-        Self::current_frame_mut(&mut self.call_frames)
+        self.current_frame
             .node_refs
             .insert(
                 RENodeId::Global(global_address),
@@ -997,7 +987,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::GlobalizeNode,
@@ -1016,7 +1006,7 @@ where
     ) -> Result<LockHandle, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::LockSubstate {
@@ -1037,12 +1027,12 @@ where
             node_id = derefed;
         }
 
-        let node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
+        let node_pointer = self.current_frame.get_node_pointer(node_id)?;
 
         // TODO: Check if valid offset for node_id
 
         // Authorization
-        let actor = &Self::current_frame(&self.call_frames).actor;
+        let actor = &self.current_frame.actor;
         if !SubstateProperties::check_substate_access(
             current_mode,
             actor,
@@ -1072,7 +1062,7 @@ where
                 .map_err(RuntimeError::KernelError)?;
         }
 
-        let lock_handle = Self::current_frame_mut(&mut self.call_frames).create_lock(
+        let lock_handle = self.current_frame.create_lock(
             node_pointer,
             offset.clone(),
             flags,
@@ -1083,7 +1073,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::LockSubstate { lock_handle },
@@ -1097,7 +1087,7 @@ where
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::DropLock {
@@ -1107,7 +1097,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let (node_pointer, offset, flags) = Self::current_frame_mut(&mut self.call_frames)
+        let (node_pointer, offset, flags) = self.current_frame
             .drop_lock(lock_handle)
             .map_err(RuntimeError::KernelError)?;
 
@@ -1128,7 +1118,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::DropLock,
@@ -1142,7 +1132,7 @@ where
     fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::GetRef {
@@ -1155,7 +1145,7 @@ where
         let SubstateLock {
             substate_pointer: (node_pointer, offset),
             ..
-        } = Self::current_frame_mut(&mut self.call_frames)
+        } = self.current_frame
             .get_lock(lock_handle)
             .map_err(RuntimeError::KernelError)?
             .clone();
@@ -1168,18 +1158,17 @@ where
 
         // Expand references
         {
-            let cur_frame = Self::current_frame_mut(&mut self.call_frames);
             // TODO: Figure out how to drop these references as well on reference drop
             for global_address in global_references {
                 let node_id = RENodeId::Global(global_address);
-                cur_frame
+                self.current_frame
                     .node_refs
                     .insert(node_id, RENodePointer::Store(node_id));
             }
             for child_id in children {
                 let child_pointer = node_pointer.child(child_id);
-                cur_frame.node_refs.insert(child_id, child_pointer);
-                cur_frame
+                self.current_frame.node_refs.insert(child_id, child_pointer);
+                self.current_frame
                     .add_lock_visible_node(lock_handle, child_id)
                     .map_err(RuntimeError::KernelError)?;
             }
@@ -1187,7 +1176,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::GetRef {
@@ -1207,7 +1196,7 @@ where
     ) -> Result<SubstateRefMut<'f, 's, R>, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::GetRefMut {
@@ -1221,7 +1210,7 @@ where
             substate_pointer: (node_pointer, offset),
             flags,
             ..
-        } = Self::current_frame_mut(&mut self.call_frames)
+        } = self.current_frame
             .get_lock(lock_handle)
             .map_err(RuntimeError::KernelError)?
             .clone();
@@ -1240,18 +1229,17 @@ where
 
         // Expand references
         {
-            let cur_frame = Self::current_frame_mut(&mut self.call_frames);
             // TODO: Figure out how to drop these references as well on reference drop
             for global_address in global_references {
                 let node_id = RENodeId::Global(global_address);
-                cur_frame
+                self.current_frame
                     .node_refs
                     .insert(node_id, RENodePointer::Store(node_id));
             }
             for child_id in &children {
                 let child_pointer = node_pointer.child(*child_id);
-                cur_frame.node_refs.insert(*child_id, child_pointer);
-                cur_frame
+                self.current_frame.node_refs.insert(*child_id, child_pointer);
+                self.current_frame
                     .add_lock_visible_node(lock_handle, *child_id)
                     .map_err(RuntimeError::KernelError)?;
             }
@@ -1259,7 +1247,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::GetRefMut,
@@ -1272,7 +1260,7 @@ where
             node_pointer,
             offset,
             children,
-            &mut self.call_frames,
+            &mut self.current_frame,
             &mut self.heap,
             &mut self.track,
         )
@@ -1281,7 +1269,7 @@ where
     fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::ReadTransactionHash,
@@ -1291,7 +1279,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::ReadTransactionHash {
@@ -1307,7 +1295,7 @@ where
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::ReadBlob { blob_hash },
@@ -1323,7 +1311,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::ReadBlob { blob: &blob },
@@ -1337,7 +1325,7 @@ where
     fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::GenerateUuid,
@@ -1350,7 +1338,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::GenerateUuid { uuid },
@@ -1364,7 +1352,7 @@ where
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::EmitLog {
@@ -1379,7 +1367,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
-                Self::current_frame(&self.call_frames),
+                &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::EmitLog,

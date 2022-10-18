@@ -556,7 +556,7 @@ pub struct SubstateRefMut<'f, 's, R: FeeReserve> {
     prev_children: HashSet<RENodeId>,
     node_pointer: RENodePointer,
     offset: SubstateOffset,
-    call_frames: &'f mut Vec<CallFrame>,
+    current_frame: &'f mut CallFrame,
     heap: &'f mut Heap,
     track: &'f mut Track<'s, R>,
 }
@@ -576,7 +576,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         node_pointer: RENodePointer,
         offset: SubstateOffset,
         prev_children: HashSet<RENodeId>,
-        call_frames: &'f mut Vec<CallFrame>,
+        current_frame: &'f mut CallFrame,
         heap: &'f mut Heap,
         track: &'f mut Track<'s, R>,
     ) -> Result<Self, RuntimeError> {
@@ -586,7 +586,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             prev_children,
             node_pointer,
             offset,
-            call_frames,
+            current_frame,
             heap,
             track,
         };
@@ -604,11 +604,10 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             substate_ref_mut.to_ref().references_and_owned_nodes()
         };
 
-        let current_frame = self.call_frames.last_mut().unwrap();
 
         for global_address in new_global_references {
             let node_id = RENodeId::Global(global_address);
-            if !current_frame.node_refs.contains_key(&node_id) {
+            if !self.current_frame.node_refs.contains_key(&node_id) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidReferenceWrite(global_address),
                 ));
@@ -627,9 +626,8 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             SubstateProperties::verify_can_own(&self.offset, child_id)?;
 
             // Move child from call frame owned to call frame reference
-            let current_frame = self.call_frames.last_mut().unwrap();
-            let node = current_frame.take_node(self.heap, child_id)?;
-            current_frame.add_lock_visible_node(self.lock_handle, child_id)?;
+            let node = self.current_frame.take_node(self.heap, child_id)?;
+            self.current_frame.add_lock_visible_node(self.lock_handle, child_id)?;
 
             self.node_pointer
                 .add_child(child_id, node, &mut self.heap, &mut self.track);
