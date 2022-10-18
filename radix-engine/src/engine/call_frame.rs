@@ -27,7 +27,8 @@ pub struct CallFrame {
     pub node_refs: HashMap<RENodeId, RENodePointer>,
 
     /// Owned Values
-    pub owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
+    heap: Heap,
+    owned_heap_nodes: HashSet<RENodeId>,
 
     next_lock_handle: LockHandle,
     locks: HashMap<LockHandle, SubstateLock>,
@@ -118,7 +119,8 @@ impl CallFrame {
                 NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
             )),
             node_refs: HashMap::new(),
-            owned_heap_nodes: HashMap::new(),
+            heap: Heap::new(),
+            owned_heap_nodes: HashSet::new(),
             next_lock_handle: 0u32,
             locks: HashMap::new(),
             node_lock_count: HashMap::new(),
@@ -131,19 +133,22 @@ impl CallFrame {
         nodes_to_move: Vec<RENodeId>,
         node_refs: HashMap<RENodeId, RENodePointer>,
     ) -> Result<Self, RuntimeError> {
-        let mut owned_heap_nodes = HashMap::new();
+        let mut heap = Heap::new();
+        let mut owned_heap_nodes = HashSet::new();
 
         for node_id in nodes_to_move {
             let mut node = parent.take_node(node_id)?;
             let root_node = node.root_mut();
             root_node.prepare_move_downstream(node_id, &parent.actor, &actor)?;
-            owned_heap_nodes.insert(node_id, node);
+            heap.create_node(node_id, node);
+            owned_heap_nodes.insert(node_id);
         }
 
         let frame = Self {
             depth: parent.depth + 1,
             actor,
             node_refs,
+            heap,
             owned_heap_nodes,
             next_lock_handle: 0u32,
             locks: HashMap::new(),
@@ -163,7 +168,8 @@ impl CallFrame {
             let mut node = from.take_node(node_id)?;
             let root_node = node.root_mut();
             root_node.prepare_move_upstream(node_id)?;
-            to.owned_heap_nodes.insert(node_id, node);
+            to.heap.create_node(node_id, node);
+            to.owned_heap_nodes.insert(node_id);
         }
 
         Ok(())
@@ -195,7 +201,7 @@ impl CallFrame {
         let values = self
             .owned_heap_nodes
             .drain()
-            .map(|(_id, value)| value)
+            .map(|id| self.heap.remove_node(id).unwrap())
             .collect();
         HeapRENode::drop_nodes(values)
             .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))
@@ -224,7 +230,8 @@ impl CallFrame {
             root: re_node,
             child_nodes,
         };
-        self.owned_heap_nodes.insert(node_id, heap_root_node);
+        self.heap.create_node(node_id, heap_root_node);
+        self.owned_heap_nodes.insert(node_id);
 
         Ok(())
     }
@@ -234,8 +241,10 @@ impl CallFrame {
             return Err(CallFrameError::MovingLockedRENode(node_id));
         }
 
-        let maybe = self.owned_heap_nodes.remove(&node_id);
-        if let Some(root_node) = maybe {
+        let exists = self.owned_heap_nodes.remove(&node_id);
+        if exists {
+            let root_node = self.heap.remove_node(node_id).unwrap();
+
             // Moved nodes must have their child node references removed
             self.node_refs.remove(&node_id);
             for (id, ..) in &root_node.child_nodes {
@@ -252,24 +261,28 @@ impl CallFrame {
         &mut self,
         node_id: RENodeId,
     ) -> Result<&mut HeapRootRENode, CallFrameError> {
-        self.owned_heap_nodes
-            .get_mut(&node_id)
-            .ok_or(CallFrameError::RENodeNotOwned(node_id))
+        if !self.owned_heap_nodes.contains(&node_id) {
+            return Err(CallFrameError::RENodeNotOwned(node_id));
+        }
+
+        self.heap.get_node_mut(node_id)
     }
 
     pub fn get_owned_heap_node(
         &self,
         node_id: RENodeId,
     ) -> Result<&HeapRootRENode, CallFrameError> {
-        self.owned_heap_nodes
-            .get(&node_id)
-            .ok_or(CallFrameError::RENodeNotOwned(node_id))
+        if !self.owned_heap_nodes.contains(&node_id) {
+            return Err(CallFrameError::RENodeNotOwned(node_id));
+        }
+
+        self.heap.get_node(node_id)
     }
 
     pub fn get_node_pointer(&self, node_id: RENodeId) -> Result<RENodePointer, CallFrameError> {
         // Find node
         let node_pointer = {
-            if self.owned_heap_nodes.contains_key(&node_id) {
+            if self.owned_heap_nodes.contains(&node_id) {
                 RENodePointer::Heap {
                     frame_id: self.depth,
                     root: node_id.clone(),
@@ -287,7 +300,7 @@ impl CallFrame {
 
     pub fn get_visible_nodes(&self) -> Vec<RENodeId> {
         let mut node_ids: Vec<RENodeId> = self.node_refs.keys().cloned().collect();
-        let owned_ids: Vec<RENodeId> = self.owned_heap_nodes.keys().cloned().collect();
+        let owned_ids: Vec<RENodeId> = self.owned_heap_nodes.iter().cloned().collect();
         node_ids.extend(owned_ids);
         node_ids
     }

@@ -12,6 +12,7 @@ mod system_api;
 mod track;
 mod track_support;
 mod wasm_runtime;
+mod heap;
 
 pub use actor::*;
 pub use call_frame::CallFrame;
@@ -27,3 +28,4 @@ pub use system_api::{LockFlags, SystemApi};
 pub use track::*;
 pub use track_support::*;
 pub use wasm_runtime::*;
+pub use heap::*;
