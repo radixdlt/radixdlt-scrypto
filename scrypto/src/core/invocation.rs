@@ -9,7 +9,7 @@ use crate::engine::types::{ComponentId, RENodeId};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
 pub struct ScryptoFunctionIdent {
-    pub package_address: PackageAddress,
+    pub package_ident: ScryptoPackageIdent,
     pub blueprint_name: String,
     pub function_name: String,
 }
@@ -30,6 +30,13 @@ pub struct ScryptoMethodIdent {
 pub struct NativeMethodIdent {
     pub receiver: Receiver,
     pub method_name: String,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
+pub enum ScryptoPackageIdent {
+    Global(PackageAddress),
+    // The following variant is disabled because packages are always globalized ATM.
+    // Package(PackageId),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]

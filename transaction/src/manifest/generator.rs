@@ -11,7 +11,7 @@ use scrypto::component::PackageAddress;
 use scrypto::core::{
     Blob, BucketMethod, Expression, NativeFunctionIdent, NativeMethodIdent, Receiver,
     ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
-    ScryptoReceiver,
+    ScryptoPackageIdent, ScryptoReceiver,
 };
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
@@ -339,7 +339,7 @@ pub fn generate_instruction(
 
             Instruction::CallFunction {
                 function_ident: ScryptoFunctionIdent {
-                    package_address,
+                    package_ident: ScryptoPackageIdent::Global(package_address),
                     blueprint_name,
                     function_name,
                 },
@@ -1400,11 +1400,14 @@ mod tests {
             r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8)  PreciseDecimal("120");"#,
             Instruction::CallFunction {
                 function_ident: ScryptoFunctionIdent {
-                    package_address: Bech32Decoder::for_simulator()
-                        .validate_and_decode_package_address(
-                            "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
-                        )
-                        .unwrap(),
+                    package_ident: ScryptoPackageIdent::Global(
+                        Bech32Decoder::for_simulator()
+                            .validate_and_decode_package_address(
+                                "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7"
+                                    .into()
+                            )
+                            .unwrap()
+                    ),
                     blueprint_name: "Airdrop".into(),
                     function_name: "new".to_string(),
                 },

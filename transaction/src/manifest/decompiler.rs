@@ -7,6 +7,7 @@ use scrypto::core::NativeFunctionIdent;
 use scrypto::core::NativeMethodIdent;
 use scrypto::core::ScryptoFunctionIdent;
 use scrypto::core::ScryptoMethodIdent;
+use scrypto::core::ScryptoPackageIdent;
 use scrypto::core::ScryptoReceiver;
 use scrypto::core::{NetworkDefinition, Receiver};
 use scrypto::crypto::Hash;
@@ -344,9 +345,10 @@ pub fn decompile_call_scrypto_function<F: fmt::Write>(
     write!(
         f,
         "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-        function_ident
-            .package_address
-            .display(context.bech32_encoder),
+        match &function_ident.package_ident {
+            ScryptoPackageIdent::Global(package_address) =>
+                package_address.display(context.bech32_encoder),
+        },
         function_ident.blueprint_name,
         function_ident.function_name,
     )?;
