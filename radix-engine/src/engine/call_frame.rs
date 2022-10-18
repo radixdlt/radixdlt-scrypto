@@ -235,8 +235,6 @@ impl CallFrame {
             let substate = re_node.borrow_substate(&offset)?;
             let (_, owned) = substate.references_and_owned_nodes();
             for child_id in owned {
-                self.take_node_internal(heap, child_id)?;
-
                 SubstateProperties::verify_can_own(&offset, child_id)?;
                 children.insert(child_id);
             }
@@ -248,8 +246,17 @@ impl CallFrame {
             child_nodes: HashMap::new(),
         };
         heap.create_node(node_id, heap_root_node);
-        heap.move_nodes_to_node(children, node_id)?;
         self.owned_heap_nodes.insert(node_id);
+        self.move_owned_nodes_to_heap_node(heap, children, node_id)?;
+
+        Ok(())
+    }
+
+    pub fn move_owned_nodes_to_heap_node(&mut self, heap: &mut Heap, children: HashSet<RENodeId>, to: RENodeId) -> Result<(), RuntimeError> {
+        for child_id in &children {
+            self.take_node_internal(heap, *child_id)?;
+        }
+        heap.move_nodes_to_node(children, to)?;
 
         Ok(())
     }

@@ -625,16 +625,19 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         for child_id in &new_children {
             SubstateProperties::verify_can_own(&self.offset, *child_id)?;
             // Make child visible
-            self.current_frame.add_lock_visible_node(self.lock_handle, *child_id)?;
+            //self.current_frame.add_lock_visible_node(self.lock_handle, *child_id)?;
         }
 
         match self.node_pointer {
             RENodePointer::Heap { root, .. } => {
+                self.current_frame.move_owned_nodes_to_heap_node(self.heap, new_children, root)?;
+                /*
                 for child_id in new_children {
                     let child_node = self.current_frame.take_node(self.heap, child_id)?;
                     let root_node = self.heap.get_node_mut(root).unwrap();
                     root_node.insert_non_root_nodes(child_node.to_nodes(child_id));
                 }
+                 */
             }
             RENodePointer::Store(..) => {
                 for child_id in new_children {
