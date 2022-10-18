@@ -115,29 +115,6 @@ impl RENodePointer {
         Ok(substate_ref)
     }
 
-    pub fn add_child<'f, 's, R: FeeReserve>(
-        &self,
-        node_id: RENodeId,
-        node: HeapRootRENode,
-        heap: &'f mut Heap,
-        track: &'f mut Track<'s, R>,
-    ) {
-        match self {
-            RENodePointer::Heap { root, .. } => {
-                let root_node = heap.get_node_mut(*root).unwrap();
-                root_node.insert_non_root_nodes(node.to_nodes(node_id));
-            }
-            RENodePointer::Store(..) => {
-                for (id, node) in node.to_nodes(node_id) {
-                    let substates = node_to_substates(node);
-                    for (offset, substate) in substates {
-                        track.insert_substate(SubstateId(id, offset), substate);
-                    }
-                }
-            }
-        }
-    }
-
     // TODO: ref drop mechanism
     // TODO: concurrent refs and mut refs
 }
