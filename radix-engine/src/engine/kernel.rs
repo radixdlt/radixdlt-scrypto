@@ -136,7 +136,7 @@ where
         let auth_zone = AuthZoneStackSubstate::new(proofs, virtual_proofs_buckets);
 
         kernel
-            .node_create(HeapRENode::AuthZone(auth_zone))
+            .create_node(HeapRENode::AuthZone(auth_zone))
             .expect("Failed to create AuthZone");
 
         kernel
@@ -148,7 +148,7 @@ where
         ids: BTreeSet<NonFungibleId>,
     ) -> BucketId {
         match self
-            .node_create(HeapRENode::Bucket(BucketSubstate::new(
+            .create_node(HeapRENode::Bucket(BucketSubstate::new(
                 Resource::new_non_fungible(resource_address, ids),
             )))
             .expect("Failed to create a bucket")
@@ -909,7 +909,7 @@ where
         Ok(node)
     }
 
-    fn node_create(&mut self, mut re_node: HeapRENode) -> Result<RENodeId, RuntimeError> {
+    fn create_node(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
@@ -921,31 +921,9 @@ where
 
         // TODO: Authorization
 
-        // Take any required child nodes
-        let mut taken_root_nodes = HashMap::new();
-        for offset in re_node.get_substates() {
-            let substate = re_node.borrow_substate(&offset)?;
-            let (_, owned) = substate.references_and_owned_nodes();
-            for child_id in owned {
-                SubstateProperties::verify_can_own(&offset, child_id)?;
-                let node = Self::current_frame_mut(&mut self.call_frames).take_node(child_id)?;
-                taken_root_nodes.insert(child_id, node);
-            }
-        }
-
-        let mut child_nodes = HashMap::new();
-        for (id, taken_root_node) in taken_root_nodes {
-            child_nodes.extend(taken_root_node.to_nodes(id));
-        }
-
-        // Insert node into heap
         let node_id = Self::new_node_id(&mut self.id_allocator, self.transaction_hash, &re_node)
             .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-        let heap_root_node = HeapRootRENode {
-            root: re_node,
-            child_nodes,
-        };
-        Self::current_frame_mut(&mut self.call_frames).create_node(node_id, heap_root_node);
+        Self::current_frame_mut(&mut self.call_frames).create_node(node_id, re_node)?;
 
         for m in &mut self.modules {
             m.post_sys_call(

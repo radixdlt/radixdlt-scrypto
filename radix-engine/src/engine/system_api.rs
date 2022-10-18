@@ -64,7 +64,7 @@ where
     fn node_drop(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError>;
 
     /// Creates a new RENode and places it in the Heap
-    fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError>;
+    fn create_node(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError>;
 
     /// Moves an RENode from Heap to Store
     fn node_globalize(&mut self, node_id: RENodeId) -> Result<GlobalAddress, RuntimeError>;

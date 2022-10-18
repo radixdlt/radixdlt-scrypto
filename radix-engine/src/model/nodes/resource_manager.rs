@@ -143,7 +143,7 @@ impl ResourceManager {
 
                 let resource_node_id = if matches!(input.resource_type, ResourceType::NonFungible) {
                     let non_fungible_store_node_id = system_api
-                        .node_create(HeapRENode::NonFungibleStore(NonFungibleStore::new()))?;
+                        .create_node(HeapRENode::NonFungibleStore(NonFungibleStore::new()))?;
                     let non_fungible_store_id: NonFungibleStoreId =
                         non_fungible_store_node_id.into();
 
@@ -182,7 +182,7 @@ impl ResourceManager {
                             ));
                         }
                     }
-                    system_api.node_create(HeapRENode::ResourceManager(resource_manager))?
+                    system_api.create_node(HeapRENode::ResourceManager(resource_manager))?
                 } else {
                     let mut resource_manager = ResourceManager::new(
                         input.resource_type,
@@ -207,7 +207,7 @@ impl ResourceManager {
                             ));
                         }
                     }
-                    system_api.node_create(HeapRENode::ResourceManager(resource_manager))?
+                    system_api.create_node(HeapRENode::ResourceManager(resource_manager))?
                 };
                 let resource_address = resource_node_id.clone().into();
 
@@ -224,7 +224,7 @@ impl ResourceManager {
                         ),
                     };
                     let bucket_id = system_api
-                        .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
+                        .create_node(HeapRENode::Bucket(BucketSubstate::new(container)))?
                         .into();
                     Some(scrypto::resource::Bucket(bucket_id))
                 } else {
@@ -370,7 +370,7 @@ impl ResourceManager {
                 let resource_type = substate_ref.resource_manager().resource_type;
                 let resource = Resource::new_empty(resource_address, resource_type);
                 let vault_id = system_api
-                    .node_create(HeapRENode::Vault(VaultRuntimeSubstate::new(resource)))?
+                    .create_node(HeapRENode::Vault(VaultRuntimeSubstate::new(resource)))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Vault(vault_id))
             }
@@ -382,7 +382,7 @@ impl ResourceManager {
 
                 let container = Resource::new_empty(resource_address, resource_type);
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
+                    .create_node(HeapRENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
             }
@@ -400,7 +400,7 @@ impl ResourceManager {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(resource)))?
+                    .create_node(HeapRENode::Bucket(BucketSubstate::new(resource)))?
                     .into();
 
                 let non_fungible_store_id = {

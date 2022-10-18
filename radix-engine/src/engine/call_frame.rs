@@ -201,8 +201,32 @@ impl CallFrame {
             .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))
     }
 
-    pub fn create_node(&mut self, id: RENodeId, node: HeapRootRENode) {
-        self.owned_heap_nodes.insert(id, node);
+    pub fn create_node(&mut self, node_id: RENodeId, mut re_node: HeapRENode) -> Result<(), RuntimeError> {
+        let mut taken_root_nodes = HashMap::new();
+        for offset in re_node.get_substates() {
+            let substate = re_node.borrow_substate(&offset)?;
+            let (_, owned) = substate.references_and_owned_nodes();
+            for child_id in owned {
+                SubstateProperties::verify_can_own(&offset, child_id)?;
+                let node = self.take_node(child_id)?;
+                taken_root_nodes.insert(child_id, node);
+            }
+        }
+
+        let mut child_nodes = HashMap::new();
+        for (id, taken_root_node) in taken_root_nodes {
+            child_nodes.extend(taken_root_node.to_nodes(id));
+        }
+
+        // Insert node into heap
+
+        let heap_root_node = HeapRootRENode {
+            root: re_node,
+            child_nodes,
+        };
+        self.owned_heap_nodes.insert(node_id, heap_root_node);
+
+        Ok(())
     }
 
     pub fn take_node(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, CallFrameError> {

@@ -81,7 +81,7 @@ impl Vault {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
+                    .create_node(HeapRENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
             }
@@ -137,7 +137,7 @@ impl Vault {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
+                    .create_node(HeapRENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
             }
@@ -179,7 +179,7 @@ impl Vault {
                         .create_proof(ResourceContainerId::Vault(vault_id))
                         .map_err(|e| InvokeError::Error(VaultError::ProofError(e)))?
                 };
-                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(HeapRENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             VaultMethod::CreateProofByAmount => {
@@ -195,7 +195,7 @@ impl Vault {
                         .map_err(|e| InvokeError::Error(VaultError::ProofError(e)))?
                 };
 
-                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(HeapRENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             VaultMethod::CreateProofByIds => {
@@ -211,7 +211,7 @@ impl Vault {
                         .map_err(|e| InvokeError::Error(VaultError::ProofError(e)))?
                 };
 
-                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(HeapRENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
         };

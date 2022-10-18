@@ -213,7 +213,7 @@ impl TransactionProcessor {
                 let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
 
                 let _worktop_id = system_api
-                    .node_create(HeapRENode::Worktop(WorktopSubstate::new()))
+                    .create_node(HeapRENode::Worktop(WorktopSubstate::new()))
                     .map_err(InvokeError::Downstream)?;
 
                 let owned_node_ids = system_api

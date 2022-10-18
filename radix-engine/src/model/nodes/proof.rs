@@ -61,7 +61,7 @@ impl Proof {
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 let cloned_proof = proof.clone();
                 let proof_id = system_api
-                    .node_create(HeapRENode::Proof(cloned_proof))?
+                    .create_node(HeapRENode::Proof(cloned_proof))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }

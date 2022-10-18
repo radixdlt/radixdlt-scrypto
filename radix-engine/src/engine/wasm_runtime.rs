@@ -85,7 +85,7 @@ where
             ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(KeyValueStore::new()),
         };
 
-        let id = self.system_api.node_create(node)?;
+        let id = self.system_api.create_node(node)?;
         Ok(ScryptoValue::from_typed(&id))
     }
 
