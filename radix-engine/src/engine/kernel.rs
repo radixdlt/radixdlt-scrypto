@@ -279,7 +279,7 @@ where
         &mut self,
         actor: REActor,
         input: ScryptoValue,
-        owned_nodes: HashMap<RENodeId, HeapRootRENode>,
+        nodes_to_pass: Vec<RENodeId>,
         mut refed_nodes: HashMap<RENodeId, RENodePointer>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let new_refed_nodes = self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
@@ -297,12 +297,12 @@ where
             refed_nodes.insert(new_refed_node, node_pointer);
         }
 
-        let frame = CallFrame::new_child(
-            Self::current_frame(&self.call_frames).depth + 1,
+        let frame = CallFrame::new_child_from_parent(
+            Self::current_frame_mut(&mut self.call_frames),
             actor,
-            owned_nodes,
+            nodes_to_pass,
             refed_nodes,
-        );
+        )?;
         self.call_frames.push(frame);
 
         let actor = Self::current_frame(&self.call_frames).actor.clone();
@@ -396,7 +396,9 @@ where
         Ok(output)
     }
 
-    fn current_and_prev_frame_mut(call_frames: &mut Vec<CallFrame>) -> (&mut CallFrame, &mut CallFrame) {
+    fn current_and_prev_frame_mut(
+        call_frames: &mut Vec<CallFrame>,
+    ) -> (&mut CallFrame, &mut CallFrame) {
         let call_frames_len = call_frames.len();
         let (frames, last) = call_frames.split_at_mut(call_frames_len - 1);
 
@@ -696,14 +698,17 @@ where
             ));
         }
 
-        let mut nodes_to_pass_downstream = HashMap::new();
+        let mut nodes_to_pass_downstream = Vec::new();
         let mut next_node_refs = HashMap::new();
 
+        nodes_to_pass_downstream.extend(input.node_ids());
         // Internal state update to taken values
+        /*
         for node_id in input.node_ids() {
             let node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
             nodes_to_pass_downstream.insert(node_id, node);
         }
+         */
 
         // Move this into higher layer, e.g. transaction processor
         if Self::current_frame(&self.call_frames).depth == 0 {
@@ -803,9 +808,9 @@ where
             }) => {
                 let resolved_receiver = match receiver {
                     Receiver::Consumed(node_id) => {
-                        let node =
-                            Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
-                        nodes_to_pass_downstream.insert(node_id, node);
+                        //let node =
+                        //Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
+                        nodes_to_pass_downstream.push(node_id);
                         ResolvedReceiver::new(Receiver::Consumed(node_id))
                     }
                     Receiver::Ref(node_id) => {
@@ -833,17 +838,15 @@ where
         };
         next_node_refs.extend(references_to_add);
 
+        /*
         let cur_actor = &Self::current_frame(&self.call_frames).actor;
-
         for (node_id, node) in &mut nodes_to_pass_downstream {
             let root_node = node.root_mut();
             root_node.prepare_move_downstream(*node_id, cur_actor, &next_actor)?;
         }
+         */
 
-        let output =
-            self.run(next_actor, input, nodes_to_pass_downstream, next_node_refs)?;
-
-
+        let output = self.run(next_actor, input, nodes_to_pass_downstream, next_node_refs)?;
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -942,7 +945,7 @@ where
             root: re_node,
             child_nodes,
         };
-        Self::current_frame_mut(&mut self.call_frames).insert_owned_node(node_id, heap_root_node);
+        Self::current_frame_mut(&mut self.call_frames).create_node(node_id, heap_root_node);
 
         for m in &mut self.modules {
             m.post_sys_call(

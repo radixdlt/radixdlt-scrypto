@@ -125,21 +125,66 @@ impl CallFrame {
         }
     }
 
-    pub fn new_child(
-        depth: usize,
+    pub fn new_child_from_parent(
+        parent: &mut CallFrame,
         actor: REActor,
-        owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
+        nodes_to_move: Vec<RENodeId>,
         node_refs: HashMap<RENodeId, RENodePointer>,
-    ) -> Self {
-        Self {
-            depth,
+    ) -> Result<Self, RuntimeError> {
+        let mut owned_heap_nodes = HashMap::new();
+
+        for node_id in nodes_to_move {
+            let mut node = parent.take_node(node_id)?;
+            let root_node = node.root_mut();
+            root_node.prepare_move_downstream(node_id, &parent.actor, &actor)?;
+            owned_heap_nodes.insert(node_id, node);
+        }
+
+        let frame = Self {
+            depth: parent.depth + 1,
             actor,
             node_refs,
             owned_heap_nodes,
             next_lock_handle: 0u32,
             locks: HashMap::new(),
             node_lock_count: HashMap::new(),
+        };
+
+        Ok(frame)
+    }
+
+    pub fn move_nodes(
+        from: &mut CallFrame,
+        to: &mut CallFrame,
+        node_ids: HashSet<RENodeId>,
+    ) -> Result<(), RuntimeError> {
+        for node_id in node_ids {
+            // move re nodes to upstream call frame.
+            let mut node = from.take_node(node_id)?;
+            let root_node = node.root_mut();
+            root_node.prepare_move_upstream(node_id)?;
+            to.owned_heap_nodes.insert(node_id, node);
         }
+
+        Ok(())
+    }
+
+    pub fn copy_refs(
+        from: &mut CallFrame,
+        to: &mut CallFrame,
+        global_addresses: HashSet<GlobalAddress>,
+    ) -> Result<(), RuntimeError> {
+        for global_address in global_addresses {
+            let node_id = RENodeId::Global(global_address);
+            if !from.node_refs.contains_key(&node_id) {
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvalidReferenceReturn(global_address),
+                ));
+            }
+            to.node_refs.insert(node_id, RENodePointer::Store(node_id));
+        }
+
+        Ok(())
     }
 
     pub fn drain_locks(&mut self) -> HashMap<LockHandle, SubstateLock> {
@@ -156,33 +201,7 @@ impl CallFrame {
             .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))
     }
 
-    pub fn move_nodes(from: &mut CallFrame, to: &mut CallFrame, node_ids: HashSet<RENodeId>) -> Result<(), RuntimeError> {
-        for node_id in node_ids {
-            // move re nodes to upstream call frame.
-            let mut node = from.take_node(node_id)?;
-            let root_node = node.root_mut();
-            root_node.prepare_move_upstream(node_id)?;
-            to.insert_owned_node(node_id, node);
-        }
-
-        Ok(())
-    }
-
-    pub fn copy_refs(from: &mut CallFrame, to: &mut CallFrame, global_addresses: HashSet<GlobalAddress>) -> Result<(), RuntimeError> {
-        for global_address in global_addresses {
-            let node_id = RENodeId::Global(global_address);
-            if !from.node_refs.contains_key(&node_id) {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidReferenceReturn(global_address),
-                ));
-            }
-            to.node_refs.insert(node_id, RENodePointer::Store(node_id));
-        }
-
-        Ok(())
-    }
-
-    pub fn insert_owned_node(&mut self, id: RENodeId, node: HeapRootRENode) {
+    pub fn create_node(&mut self, id: RENodeId, node: HeapRootRENode) {
         self.owned_heap_nodes.insert(id, node);
     }
 
