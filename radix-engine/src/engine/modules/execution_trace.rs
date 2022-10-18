@@ -35,20 +35,20 @@ pub struct ExecutionTraceModule {}
 impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     fn pre_sys_call(
         &mut self,
+        call_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track<R>,
-        call_frames: &mut Vec<CallFrame>,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
-        Self::trace_invoke_method(heap, track, call_frames, input);
+        Self::trace_invoke_method(call_frame, heap, track, input);
         Ok(())
     }
 
     fn post_sys_call(
         &mut self,
+        _call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         _output: SysCallOutput,
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -56,9 +56,9 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
     fn on_wasm_instantiation(
         &mut self,
+        _call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         _code: &[u8],
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -66,9 +66,9 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
     fn on_wasm_costing(
         &mut self,
+        _call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         _units: u32,
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -76,9 +76,9 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
     fn on_lock_fee(
         &mut self,
+        _call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         _vault_id: VaultId,
         fee: Resource,
         _contingent: bool,
@@ -93,15 +93,12 @@ impl ExecutionTraceModule {
     }
 
     fn trace_invoke_method<'s, R: FeeReserve>(
+        call_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track<'s, R>,
-        call_frames: &Vec<CallFrame>,
         sys_input: SysCallInput,
     ) {
-        let actor = &call_frames
-            .last()
-            .expect("Current call frame not found")
-            .actor;
+        let actor = &call_frame.actor;
 
         if let SysCallInput::Invoke {
             fn_ident, input, ..

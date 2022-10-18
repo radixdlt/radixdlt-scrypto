@@ -14,9 +14,9 @@ pub struct CostingModule;
 impl<R: FeeReserve> Module<R> for CostingModule {
     fn pre_sys_call(
         &mut self,
+        _call_frame: &CallFrame,
         _heap: &mut Heap,
         track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
@@ -308,9 +308,9 @@ impl<R: FeeReserve> Module<R> for CostingModule {
 
     fn post_sys_call(
         &mut self,
+        _call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         _output: SysCallOutput,
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -318,9 +318,9 @@ impl<R: FeeReserve> Module<R> for CostingModule {
 
     fn on_wasm_instantiation(
         &mut self,
+        _call_frame: &CallFrame,
         _heap: &mut Heap,
         track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         code: &[u8],
     ) -> Result<(), ModuleError> {
         track
@@ -335,9 +335,9 @@ impl<R: FeeReserve> Module<R> for CostingModule {
 
     fn on_wasm_costing(
         &mut self,
+        _call_frame: &CallFrame,
         _heap: &mut Heap,
         track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         units: u32,
     ) -> Result<(), ModuleError> {
         track
@@ -348,9 +348,9 @@ impl<R: FeeReserve> Module<R> for CostingModule {
 
     fn on_lock_fee(
         &mut self,
+        _call_frame: &CallFrame,
         _heap: &mut Heap,
         track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         vault_id: VaultId,
         fee: Resource,
         contingent: bool,
