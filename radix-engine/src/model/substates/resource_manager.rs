@@ -12,7 +12,8 @@ pub struct ResourceManagerSubstate {
     pub bucket_method_table: HashMap<BucketMethod, ResourceMethodRule>,
     pub authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule>,
     pub total_supply: Decimal,
-    pub non_fungible_store_id: Option<NonFungibleStoreId>,
+    pub nf_store_id: Option<NonFungibleStoreId>,
+    pub resource_address: Option<ResourceAddress>, // always set after instantiation
 }
 
 impl ResourceManagerSubstate {

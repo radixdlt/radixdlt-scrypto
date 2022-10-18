@@ -68,7 +68,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             SubstateOffset::Global(GlobalOffset::Global),
         ))
         .map(|s| s.substate)
-        .map(|s| s.to_runtime().global_re_node().node_deref())
+        .map(|s| s.to_runtime().global().node_deref())
         .ok_or(DisplayError::ComponentNotFound)?;
 
     let component_info: Option<ComponentInfoSubstate> = substate_store
@@ -228,7 +228,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungibleSubstate = substate_store
                     .get_substate(&SubstateId(
-                        RENodeId::NonFungibleStore(resource_manager.non_fungible_store_id.unwrap()),
+                        RENodeId::NonFungibleStore(resource_manager.nf_store_id.unwrap()),
                         SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone())),
                     ))
                     .map(|s| s.substate.to_runtime())

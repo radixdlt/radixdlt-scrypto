@@ -24,25 +24,25 @@ impl RadixEngineDB {
 
     pub fn list_packages(&self) -> Vec<PackageAddress> {
         let start = &scrypto_encode(&SubstateId(
-            RENodeId::Package(PackageAddress::Normal([0; 26])),
-            SubstateOffset::Package(PackageOffset::Package),
+            RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal([0; 26]))),
+            SubstateOffset::Global(GlobalOffset::Global),
         ));
         let end = &scrypto_encode(&SubstateId(
-            RENodeId::Package(PackageAddress::Normal([255; 26])),
-            SubstateOffset::Package(PackageOffset::Package),
+            RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal([255; 26]))),
+            SubstateOffset::Global(GlobalOffset::Global),
         ));
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
             .into_iter()
             .map(|id| {
                 if let SubstateId(
-                    RENodeId::Package(package_address),
-                    SubstateOffset::Package(PackageOffset::Package),
+                    RENodeId::Global(GlobalAddress::Package(package_address)),
+                    SubstateOffset::Global(GlobalOffset::Global),
                 ) = id
                 {
                     package_address
                 } else {
-                    panic!("Expected a package substate id.")
+                    panic!("Expected a package global substate id.")
                 }
             })
             .collect()
@@ -72,7 +72,7 @@ impl RadixEngineDB {
                 {
                     component_address
                 } else {
-                    panic!("Expected a component substate id.")
+                    panic!("Expected a component global substate id.")
                 }
             })
             .collect()
@@ -97,25 +97,25 @@ impl RadixEngineDB {
 
     pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
         let start = &scrypto_encode(&SubstateId(
-            RENodeId::ResourceManager(ResourceAddress::Normal([0; 26])),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal([0; 26]))),
+            SubstateOffset::Global(GlobalOffset::Global),
         ));
         let end = &scrypto_encode(&SubstateId(
-            RENodeId::ResourceManager(ResourceAddress::Normal([255; 26])),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal([255; 26]))),
+            SubstateOffset::Global(GlobalOffset::Global),
         ));
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
             .into_iter()
             .map(|id| {
                 if let SubstateId(
-                    RENodeId::ResourceManager(resource_address),
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                    RENodeId::Global(GlobalAddress::Resource(resource_manager_address)),
+                    SubstateOffset::Global(GlobalOffset::Global),
                 ) = id
                 {
-                    resource_address
+                    resource_manager_address
                 } else {
-                    panic!("Expected a resource substate id.")
+                    panic!("Expected a resource manager global substate id.")
                 }
             })
             .collect()

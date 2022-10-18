@@ -45,7 +45,7 @@ impl ResourceManager {
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
         mut auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
-        non_fungible_store_id: Option<NonFungibleStoreId>,
+        nf_store_id: Option<NonFungibleStoreId>,
     ) -> Result<Self, InvokeError<ResourceManagerError>> {
         let mut vault_method_table: HashMap<VaultMethod, ResourceMethodRule> = HashMap::new();
         vault_method_table.insert(VaultMethod::LockFee, Protected(Withdraw));
@@ -106,7 +106,8 @@ impl ResourceManager {
                 bucket_method_table,
                 authorization,
                 total_supply: 0.into(),
-                non_fungible_store_id,
+                nf_store_id,
+                resource_address: None,
             },
         };
 
@@ -144,17 +145,16 @@ impl ResourceManager {
                 let input: ResourceManagerCreateInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
 
-                let resource_node_id = if matches!(input.resource_type, ResourceType::NonFungible) {
-                    let non_fungible_store_node_id = system_api
+                let global_address = if matches!(input.resource_type, ResourceType::NonFungible) {
+                    let nf_store_node_id = system_api
                         .node_create(HeapRENode::NonFungibleStore(NonFungibleStore::new()))?;
-                    let non_fungible_store_id: NonFungibleStoreId =
-                        non_fungible_store_node_id.into();
+                    let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
 
                     let mut resource_manager = ResourceManager::new(
                         input.resource_type,
                         input.metadata,
                         input.access_rules,
-                        Some(non_fungible_store_id),
+                        Some(nf_store_id),
                     )?;
 
                     if let Some(mint_params) = &input.mint_params {
@@ -164,7 +164,7 @@ impl ResourceManager {
                                     NonFungibleStoreOffset::Entry(non_fungible_id.clone()),
                                 );
                                 let non_fungible_handle = system_api.lock_substate(
-                                    non_fungible_store_node_id,
+                                    nf_store_node_id,
                                     offset,
                                     LockFlags::MUTABLE,
                                 )?;
@@ -185,7 +185,9 @@ impl ResourceManager {
                             ));
                         }
                     }
-                    system_api.node_create(HeapRENode::ResourceManager(resource_manager))?
+                    let resource_node_id =
+                        system_api.node_create(HeapRENode::ResourceManager(resource_manager))?;
+                    system_api.node_globalize(resource_node_id)?
                 } else {
                     let mut resource_manager = ResourceManager::new(
                         input.resource_type,
@@ -210,9 +212,16 @@ impl ResourceManager {
                             ));
                         }
                     }
-                    system_api.node_create(HeapRENode::ResourceManager(resource_manager))?
+                    let resource_node_id =
+                        system_api.node_create(HeapRENode::ResourceManager(resource_manager))?;
+                    system_api.node_globalize(resource_node_id)?
                 };
-                let resource_address = resource_node_id.clone().into();
+                let resource_address: ResourceAddress = global_address.into();
+
+                // Set the resource address
+                {
+                    // TODO invoke `ResourceManager::set_resource_address()`
+                }
 
                 let bucket_id = if let Some(mint_params) = input.mint_params {
                     let container = match mint_params {
@@ -233,9 +242,6 @@ impl ResourceManager {
                 } else {
                     None
                 };
-
-                let global_address = system_api.node_globalize(resource_node_id)?;
-                let resource_address: ResourceAddress = global_address.into();
 
                 Ok(ScryptoValue::from_typed(&(resource_address, bucket_id)))
             }
@@ -261,7 +267,7 @@ impl ResourceManager {
     }
 
     pub fn main<'s, Y, W, I, R>(
-        resource_address: ResourceAddress,
+        resource_manager_id: ResourceManagerId,
         method: ResourceManagerMethod,
         args: ScryptoValue,
         system_api: &mut Y,
@@ -272,7 +278,7 @@ impl ResourceManager {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let node_id = RENodeId::ResourceManager(resource_address);
+        let node_id = RENodeId::ResourceManager(resource_manager_id);
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle =
             system_api.lock_substate(node_id, offset, Self::method_lock_flags(method))?;
@@ -288,10 +294,14 @@ impl ResourceManager {
 
                 // Check if resource matches
                 // TODO: Move this check into actor check
-                if bucket.resource_address() != resource_address {
-                    return Err(InvokeError::Error(
-                        ResourceManagerError::MismatchingBucketResource,
-                    ));
+                {
+                    let substate_ref = system_api.get_ref(resman_handle)?;
+                    let resource_manager = substate_ref.resource_manager();
+                    if bucket.resource_address() != resource_manager.resource_address.unwrap() {
+                        return Err(InvokeError::Error(
+                            ResourceManagerError::MismatchingBucketResource,
+                        ));
+                    }
                 }
                 // Update total supply
                 // TODO: there might be better for maintaining total supply, especially for non-fungibles
@@ -309,8 +319,8 @@ impl ResourceManager {
                 // Burn non-fungible
                 let substate_ref = system_api.get_ref(resman_handle)?;
                 let resource_manager = substate_ref.resource_manager();
-                if let Some(non_fungible_store_id) = resource_manager.non_fungible_store_id {
-                    let node_id = RENodeId::NonFungibleStore(non_fungible_store_id);
+                if let Some(nf_store_id) = resource_manager.nf_store_id {
+                    let node_id = RENodeId::NonFungibleStore(nf_store_id);
 
                     for id in bucket
                         .total_ids()
@@ -372,8 +382,11 @@ impl ResourceManager {
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
 
                 let substate_ref = system_api.get_ref(resman_handle)?;
-                let resource_type = substate_ref.resource_manager().resource_type;
-                let resource = Resource::new_empty(resource_address, resource_type);
+                let resource_manager = substate_ref.resource_manager();
+                let resource = Resource::new_empty(
+                    resource_manager.resource_address.unwrap(),
+                    resource_manager.resource_type,
+                );
                 let vault_id = system_api
                     .node_create(HeapRENode::Vault(VaultRuntimeSubstate::new(resource)))?
                     .into();
@@ -383,9 +396,11 @@ impl ResourceManager {
                 let _: ResourceManagerCreateBucketInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let substate_ref = system_api.get_ref(resman_handle)?;
-                let resource_type = substate_ref.resource_manager().resource_type;
-
-                let container = Resource::new_empty(resource_address, resource_type);
+                let resource_manager = substate_ref.resource_manager();
+                let container = Resource::new_empty(
+                    resource_manager.resource_address.unwrap(),
+                    resource_manager.resource_type,
+                );
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
                     .into();
@@ -399,7 +414,10 @@ impl ResourceManager {
                     let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let resource_manager = raw_mut.resource_manager();
-                    let result = resource_manager.mint(input.mint_params, resource_address)?;
+                    let result = resource_manager.mint(
+                        input.mint_params,
+                        resource_manager.resource_address.unwrap(),
+                    )?;
                     substate_mut.flush()?;
                     result
                 };
@@ -408,14 +426,17 @@ impl ResourceManager {
                     .node_create(HeapRENode::Bucket(BucketSubstate::new(resource)))?
                     .into();
 
-                let non_fungible_store_id = {
+                let (nf_store_id, resource_address) = {
                     let substate_ref = system_api.get_ref(resman_handle)?;
                     let resource_manager = substate_ref.resource_manager();
-                    resource_manager.non_fungible_store_id.clone()
+                    (
+                        resource_manager.nf_store_id.clone(),
+                        resource_manager.resource_address.unwrap(),
+                    )
                 };
 
                 for (id, non_fungible) in non_fungibles {
-                    let node_id = RENodeId::NonFungibleStore(non_fungible_store_id.unwrap());
+                    let node_id = RENodeId::NonFungibleStore(nf_store_id.unwrap());
                     let offset =
                         SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone()));
                     let non_fungible_handle =
@@ -481,11 +502,12 @@ impl ResourceManager {
 
                 let substate_ref = system_api.get_ref(resman_handle)?;
                 let resource_manager = substate_ref.resource_manager();
-                let non_fungible_store_id = resource_manager
-                    .non_fungible_store_id
+                let nf_store_id = resource_manager
+                    .nf_store_id
                     .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?;
+                let resource_address = resource_manager.resource_address.unwrap();
 
-                let node_id = RENodeId::NonFungibleStore(non_fungible_store_id);
+                let node_id = RENodeId::NonFungibleStore(nf_store_id);
                 let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
                     input.id.clone(),
                 ));
@@ -498,8 +520,7 @@ impl ResourceManager {
                 if let Some(ref mut non_fungible) = non_fungible_mut.0 {
                     non_fungible.set_mutable_data(input.data);
                 } else {
-                    let non_fungible_address =
-                        NonFungibleAddress::new(resource_address.clone(), input.id);
+                    let non_fungible_address = NonFungibleAddress::new(resource_address, input.id);
                     return Err(InvokeError::Error(
                         ResourceManagerError::NonFungibleNotFound(non_fungible_address.clone()),
                     ));
@@ -515,11 +536,11 @@ impl ResourceManager {
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let substate_ref = system_api.get_ref(resman_handle)?;
                 let resource_manager = substate_ref.resource_manager();
-                let non_fungible_store_id = resource_manager
-                    .non_fungible_store_id
+                let nf_store_id = resource_manager
+                    .nf_store_id
                     .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?;
 
-                let node_id = RENodeId::NonFungibleStore(non_fungible_store_id);
+                let node_id = RENodeId::NonFungibleStore(nf_store_id);
                 let offset =
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
                 let non_fungible_handle =
@@ -534,14 +555,16 @@ impl ResourceManager {
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let substate_ref = system_api.get_ref(resman_handle)?;
                 let resource_manager = substate_ref.resource_manager();
-                let non_fungible_store_id = resource_manager
-                    .non_fungible_store_id
+                let nf_store_id = resource_manager
+                    .nf_store_id
                     .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?;
 
-                let non_fungible_address =
-                    NonFungibleAddress::new(resource_address.clone(), input.id.clone());
+                let non_fungible_address = NonFungibleAddress::new(
+                    resource_manager.resource_address.unwrap(),
+                    input.id.clone(),
+                );
 
-                let node_id = RENodeId::NonFungibleStore(non_fungible_store_id);
+                let node_id = RENodeId::NonFungibleStore(nf_store_id);
                 let offset =
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
                 let non_fungible_handle =

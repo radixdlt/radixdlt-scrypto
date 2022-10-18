@@ -1,3 +1,4 @@
+use scrypto::core::ScryptoPackageIdent;
 use transaction::errors::IdAllocationError;
 use transaction::model::{AuthZoneParams, Instruction};
 use transaction::validation::*;
@@ -197,17 +198,21 @@ where
                 ))
             }
             HeapRENode::ResourceManager(..) => {
-                let resource_address: ResourceAddress = node_id.into();
+                let resource_address = id_allocator
+                    .new_resource_address(transaction_hash)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
                 Ok((
                     GlobalAddress::Resource(resource_address),
-                    GlobalAddressSubstate::Resource(resource_address),
+                    GlobalAddressSubstate::Resource(node_id.into()),
                 ))
             }
             HeapRENode::Package(..) => {
-                let package_address: PackageAddress = node_id.into();
+                let package_address = id_allocator
+                    .new_package_address(transaction_hash)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
                 Ok((
                     GlobalAddress::Package(package_address),
-                    GlobalAddressSubstate::Package(package_address),
+                    GlobalAddressSubstate::Package(node_id.into()),
                 ))
             }
             _ => Err(RuntimeError::KernelError(
@@ -245,18 +250,16 @@ where
                 Ok(RENodeId::KeyValueStore(kv_store_id))
             }
             HeapRENode::NonFungibleStore(..) => {
-                let non_fungible_store_id =
-                    id_allocator.new_non_fungible_store_id(transaction_hash)?;
-                Ok(RENodeId::NonFungibleStore(non_fungible_store_id))
+                let nf_store_id = id_allocator.new_nf_store_id(transaction_hash)?;
+                Ok(RENodeId::NonFungibleStore(nf_store_id))
             }
             HeapRENode::Package(..) => {
-                // Security Alert: ensure ID allocating will practically never fail
-                let package_address = id_allocator.new_package_address(transaction_hash)?;
-                Ok(RENodeId::Package(package_address))
+                let package_id = id_allocator.new_package_id(transaction_hash)?;
+                Ok(RENodeId::Package(package_id))
             }
             HeapRENode::ResourceManager(..) => {
-                let resource_address = id_allocator.new_resource_address(transaction_hash)?;
-                Ok(RENodeId::ResourceManager(resource_address))
+                let resource_manager_id = id_allocator.new_resource_manager_id(transaction_hash)?;
+                Ok(RENodeId::ResourceManager(resource_manager_id))
             }
             HeapRENode::Component(..) => {
                 let component_id = id_allocator.new_component_id(transaction_hash)?;
@@ -321,6 +324,7 @@ where
                 }
                 REActor::Function(ResolvedFunction::Scrypto {
                     package_address,
+                    package_id,
                     blueprint_name,
                     ident,
                     export_name,
@@ -328,13 +332,14 @@ where
                 | REActor::Method(
                     ResolvedMethod::Scrypto {
                         package_address,
+                        package_id,
                         blueprint_name,
                         ident,
                         export_name,
                     },
                     ..,
                 ) => {
-                    let package_id = RENodeId::Package(package_address);
+                    let package_id = RENodeId::Package(package_id);
                     let package_offset = SubstateOffset::Package(PackageOffset::Package);
 
                     let output = {
@@ -399,7 +404,7 @@ where
                         Err(RuntimeError::KernelError(
                             KernelError::InvalidScryptoFnOutput(ScryptoFnIdent::Function(
                                 ScryptoFunctionIdent {
-                                    package_address,
+                                    package_ident: ScryptoPackageIdent::Global(package_address),
                                     blueprint_name,
                                     function_name: ident,
                                 },
@@ -481,7 +486,7 @@ where
     ) -> Result<Option<RENodeId>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
             let offset = SubstateOffset::Global(GlobalOffset::Global);
-            let handle = self.lock_substate(node_id, offset, LockFlags::empty())?;
+            let handle = self.lock_substate(node_id, offset, LockFlags::read_only())?;
             let substate_ref = self.get_ref(handle)?;
             let node_id = substate_ref.global_address().node_deref();
             Ok(Some(node_id))
@@ -500,7 +505,7 @@ where
                 let handle = self.lock_substate(
                     node_id,
                     SubstateOffset::Global(GlobalOffset::Global),
-                    LockFlags::empty(),
+                    LockFlags::read_only(),
                 )?;
                 let substate_ref = self.get_ref(handle)?;
                 let node_id = substate_ref.global_address().node_deref();
@@ -558,7 +563,7 @@ where
                 info
             }
             ScryptoFnIdent::Function(ScryptoFunctionIdent {
-                package_address,
+                package_ident: ScryptoPackageIdent::Global(package_address),
                 blueprint_name,
                 function_name,
             }) => (
@@ -569,13 +574,27 @@ where
             ),
         };
 
-        let package_node_id = RENodeId::Package(package_address);
+        // Find the package node id from package address
+        let node_id = RENodeId::Global(GlobalAddress::Package(package_address));
+        let offset = SubstateOffset::Global(GlobalOffset::Global);
+        let resource_pointer = RENodePointer::Store(node_id);
+        resource_pointer
+            .acquire_lock(offset.clone(), LockFlags::read_only(), &mut self.track)
+            .map_err(RuntimeError::KernelError)?;
+        let substate_ref =
+            resource_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)?;
+        let package_node_id = substate_ref.global_address().node_deref();
+        resource_pointer
+            .release_lock(offset, false, &mut self.track)
+            .map_err(RuntimeError::KernelError)?;
+
         let package_pointer = RENodePointer::Store(package_node_id);
         let offset = SubstateOffset::Package(PackageOffset::Package);
         package_pointer
-            .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
+            .acquire_lock(offset.clone(), LockFlags::read_only(), &mut self.track)
             .map_err(RuntimeError::KernelError)?;
 
+        // Read the ABI
         let substate_ref =
             package_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)?;
         let package = substate_ref.package();
@@ -605,6 +624,7 @@ where
             REActor::Method(
                 ResolvedMethod::Scrypto {
                     package_address,
+                    package_id: package_node_id.into(),
                     blueprint_name: blueprint_name.clone(),
                     ident: fn_name.to_string(),
                     export_name,
@@ -614,6 +634,7 @@ where
         } else {
             REActor::Function(ResolvedFunction::Scrypto {
                 package_address,
+                package_id: package_node_id.into(),
                 blueprint_name: blueprint_name.clone(),
                 ident: fn_name.clone(),
                 export_name,
@@ -1234,7 +1255,7 @@ where
                 RENodeId::Global(global_address),
                 SubstateOffset::Global(GlobalOffset::Global),
             ),
-            RuntimeSubstate::GlobalRENode(global_substate),
+            RuntimeSubstate::Global(global_substate),
         );
         for (id, substate) in nodes_to_substates(node.to_nodes(node_id)) {
             self.track.insert_substate(id, substate);

@@ -87,7 +87,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|s| s.substate.to_runtime())?;
-        Some(global.global_re_node().node_deref())
+        Some(global.global().node_deref())
     }
 
     pub fn inspect_component(

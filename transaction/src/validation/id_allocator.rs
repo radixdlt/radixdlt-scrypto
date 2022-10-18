@@ -151,4 +151,18 @@ impl IdAllocator {
     ) -> Result<NonFungibleStoreId, IdAllocationError> {
         Ok((transaction_hash, self.next()?))
     }
+
+    pub fn new_resource_manager_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<ResourceManagerId, IdAllocationError> {
+        Ok((transaction_hash, self.next()?))
+    }
+
+    pub fn new_package_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<PackageId, IdAllocationError> {
+        Ok((transaction_hash, self.next()?))
+    }
 }

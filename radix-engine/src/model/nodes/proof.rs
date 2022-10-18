@@ -39,7 +39,7 @@ impl Proof {
     {
         let node_id = RENodeId::Proof(proof_id);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::empty())?;
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
         let proof = substate_ref.proof();
 

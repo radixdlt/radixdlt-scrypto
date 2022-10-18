@@ -4,6 +4,7 @@ use radix_engine::engine::{
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto::address::Bech32Decoder;
+use scrypto::core::ScryptoPackageIdent;
 use scrypto::engine::types::SubstateId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -76,7 +77,7 @@ fn invalid_blueprint_name_should_cause_error() {
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::InterpreterError(InterpreterError::InvalidScryptoFnIdent(
             ScryptoFnIdent::Function(ScryptoFunctionIdent {
-                package_address,
+                package_ident: ScryptoPackageIdent::Global(package_address),
                 blueprint_name,
                 ..
             }),

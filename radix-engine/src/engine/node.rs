@@ -67,10 +67,10 @@ impl HeapRENode {
                 SubstateOffset::Component(ComponentOffset::Info),
             ) => SubstateRef::ComponentInfo(&component.info),
             (
-                HeapRENode::NonFungibleStore(non_fungible_store),
+                HeapRENode::NonFungibleStore(nf_store),
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
             ) => {
-                let entry = non_fungible_store
+                let entry = nf_store
                     .loaded_non_fungibles
                     .entry(id.clone())
                     .or_insert(NonFungibleSubstate(None));
@@ -135,10 +135,10 @@ impl HeapRENode {
                 SubstateOffset::Component(ComponentOffset::Info),
             ) => RawSubstateRefMut::ComponentInfo(&mut component.info),
             (
-                HeapRENode::NonFungibleStore(non_fungible_store),
+                HeapRENode::NonFungibleStore(nf_store),
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
             ) => {
-                let entry = non_fungible_store
+                let entry = nf_store
                     .loaded_non_fungibles
                     .entry(id.clone())
                     .or_insert(NonFungibleSubstate(None));
