@@ -46,6 +46,7 @@ pub struct Kernel<
     max_depth: usize,
 
     /// State track
+    heap: &'g mut Heap,
     track: &'g mut Track<'s, R>,
 
     /// Interpreter capable of running scrypto programs
@@ -72,6 +73,7 @@ where
         auth_zone_params: AuthZoneParams,
         blobs: &'g HashMap<Hash, Vec<u8>>,
         max_depth: usize,
+        heap: &'g mut Heap,
         track: &'g mut Track<'s, R>,
         scrypto_interpreter: &'g mut ScryptoInterpreter<I, W>,
         modules: Vec<Box<dyn Module<R>>>,
@@ -82,6 +84,7 @@ where
             transaction_hash,
             blobs,
             max_depth,
+            heap,
             track,
             scrypto_interpreter,
             id_allocator: IdAllocator::new(IdSpace::Application),
@@ -298,6 +301,7 @@ where
         }
 
         let frame = CallFrame::new_child_from_parent(
+            &mut self.heap,
             Self::current_frame_mut(&mut self.call_frames),
             actor,
             nodes_to_pass,
@@ -354,7 +358,7 @@ where
 
         // Process return data
         let (cur, prev) = Self::current_and_prev_frame_mut(&mut self.call_frames);
-        CallFrame::move_nodes(cur, prev, output.node_ids())?;
+        CallFrame::move_nodes_upstream(&mut self.heap, cur, prev, output.node_ids())?;
         CallFrame::copy_refs(cur, prev, output.global_references())?;
 
         // Auto drop locks
@@ -391,7 +395,7 @@ where
 
         // drop proofs and check resource leak
         let call_frame = self.call_frames.pop().unwrap();
-        call_frame.drop_frame()?;
+        call_frame.drop_frame(&mut self.heap)?;
 
         Ok(output)
     }
@@ -506,7 +510,7 @@ where
                     },
                 )?;
                 for m in &mut self.modules {
-                    m.on_wasm_instantiation(&mut self.track, &mut self.call_frames, package.code())
+                    m.on_wasm_instantiation(&mut self.heap, &mut self.track, &mut self.call_frames, package.code())
                         .map_err(RuntimeError::ModuleError)?;
                 }
 
@@ -576,7 +580,7 @@ where
                     },
                 )?;
                 for m in &mut self.modules {
-                    m.on_wasm_instantiation(&mut self.track, &mut self.call_frames, package.code())
+                    m.on_wasm_instantiation(&mut self.heap, &mut self.track, &mut self.call_frames, package.code())
                         .map_err(RuntimeError::ModuleError)?;
                 }
 
@@ -639,7 +643,7 @@ where
 
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
-            m.on_wasm_costing(&mut self.track, &mut self.call_frames, units)
+            m.on_wasm_costing(&mut self.heap, &mut self.track, &mut self.call_frames, units)
                 .map_err(RuntimeError::ModuleError)?;
         }
 
@@ -655,6 +659,7 @@ where
         for m in &mut self.modules {
             fee = m
                 .on_lock_fee(
+                    &mut self.heap,
                     &mut self.track,
                     &mut self.call_frames,
                     vault_id,
@@ -680,6 +685,7 @@ where
 
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::Invoke {
@@ -850,6 +856,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::Invoke { output: &output },
@@ -859,7 +866,7 @@ where
 
         // TODO: Move this into higher layer, e.g. transaction processor
         if Self::current_frame(&self.call_frames).depth == 0 {
-            self.call_frames.pop().unwrap().drop_frame()?;
+            self.call_frames.pop().unwrap().drop_frame(&mut self.heap)?;
         }
 
         // Restore previous mode
@@ -871,6 +878,7 @@ where
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::ReadOwnedNodes,
@@ -886,6 +894,7 @@ where
     fn node_drop(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::DropNode { node_id: &node_id },
@@ -895,10 +904,11 @@ where
 
         // TODO: Authorization
 
-        let node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
+        let node = Self::current_frame_mut(&mut self.call_frames).take_node(self.heap, node_id)?;
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::DropNode { node: &node },
@@ -912,6 +922,7 @@ where
     fn create_node(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::CreateNode { node: &re_node },
@@ -923,10 +934,11 @@ where
 
         let node_id = Self::new_node_id(&mut self.id_allocator, self.transaction_hash, &re_node)
             .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-        Self::current_frame_mut(&mut self.call_frames).create_node(node_id, re_node)?;
+        Self::current_frame_mut(&mut self.call_frames).create_node(&mut self.heap, node_id, re_node)?;
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::CreateNode { node_id: &node_id },
@@ -940,6 +952,7 @@ where
     fn node_globalize(&mut self, node_id: RENodeId) -> Result<GlobalAddress, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::GlobalizeNode { node_id: &node_id },
@@ -949,7 +962,7 @@ where
 
         // TODO: Authorization
 
-        let node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
+        let node = Self::current_frame_mut(&mut self.call_frames).take_node(&mut self.heap, node_id)?;
 
         let (global_address, global_substate) = Self::globalize(
             &mut self.id_allocator,
@@ -978,6 +991,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::GlobalizeNode,
@@ -996,6 +1010,7 @@ where
     ) -> Result<LockHandle, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::LockSubstate {
@@ -1062,6 +1077,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::LockSubstate { lock_handle },
@@ -1075,6 +1091,7 @@ where
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::DropLock {
@@ -1105,6 +1122,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::DropLock,
@@ -1118,6 +1136,7 @@ where
     fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::GetRef {
@@ -1137,7 +1156,7 @@ where
 
         let (global_references, children) = {
             let substate_ref =
-                node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)?;
+                node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.heap, &mut self.track)?;
             substate_ref.references_and_owned_nodes()
         };
 
@@ -1162,6 +1181,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::GetRef {
@@ -1172,7 +1192,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)
+        node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.heap, &mut self.track)
     }
 
     fn get_ref_mut<'f>(
@@ -1181,6 +1201,7 @@ where
     ) -> Result<SubstateRefMut<'f, 's, R>, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::GetRefMut {
@@ -1207,7 +1228,7 @@ where
 
         let (global_references, children) = {
             let substate_ref =
-                node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)?;
+                node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.heap, &mut self.track)?;
             substate_ref.references_and_owned_nodes()
         };
 
@@ -1232,6 +1253,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::GetRefMut,
@@ -1245,6 +1267,7 @@ where
             offset,
             children,
             &mut self.call_frames,
+            &mut self.heap,
             &mut self.track,
         )
     }
@@ -1252,6 +1275,7 @@ where
     fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::ReadTransactionHash,
@@ -1261,6 +1285,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::ReadTransactionHash {
@@ -1276,6 +1301,7 @@ where
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::ReadBlob { blob_hash },
@@ -1291,6 +1317,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::ReadBlob { blob: &blob },
@@ -1304,6 +1331,7 @@ where
     fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::GenerateUuid,
@@ -1316,6 +1344,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::GenerateUuid { uuid },
@@ -1329,6 +1358,7 @@ where
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::EmitLog {
@@ -1343,6 +1373,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.heap,
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::EmitLog,

@@ -35,16 +35,18 @@ pub struct ExecutionTraceModule {}
 impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     fn pre_sys_call(
         &mut self,
+        heap: &mut Heap,
         track: &mut Track<R>,
         call_frames: &mut Vec<CallFrame>,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
-        Self::trace_invoke_method(track, call_frames, input);
+        Self::trace_invoke_method(heap, track, call_frames, input);
         Ok(())
     }
 
     fn post_sys_call(
         &mut self,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
         _call_frames: &mut Vec<CallFrame>,
         _output: SysCallOutput,
@@ -54,6 +56,7 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
     fn on_wasm_instantiation(
         &mut self,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
         _call_frames: &mut Vec<CallFrame>,
         _code: &[u8],
@@ -63,6 +66,7 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
     fn on_wasm_costing(
         &mut self,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
         _call_frames: &mut Vec<CallFrame>,
         _units: u32,
@@ -72,6 +76,7 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
     fn on_lock_fee(
         &mut self,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
         _call_frames: &mut Vec<CallFrame>,
         _vault_id: VaultId,
@@ -88,6 +93,7 @@ impl ExecutionTraceModule {
     }
 
     fn trace_invoke_method<'s, R: FeeReserve>(
+        heap: &mut Heap,
         track: &mut Track<'s, R>,
         call_frames: &Vec<CallFrame>,
         sys_input: SysCallInput,
@@ -120,7 +126,7 @@ impl ExecutionTraceModule {
                         Receiver::Ref(RENodeId::Vault(vault_id)),
                         MethodIdent::Native(NativeMethod::Vault(VaultMethod::Put)),
                     ) => {
-                        Self::handle_vault_put(track, actor, vault_id, input, call_frames);
+                        Self::handle_vault_put(heap, track, actor, vault_id, input, call_frames);
                     }
                     (
                         Receiver::Ref(RENodeId::Vault(vault_id)),
@@ -147,6 +153,7 @@ impl ExecutionTraceModule {
     }
 
     fn handle_vault_put<'s, R: FeeReserve>(
+        heap: &mut Heap,
         track: &mut Track<'s, R>,
         actor: &REActor,
         vault_id: &VaultId,
@@ -158,7 +165,7 @@ impl ExecutionTraceModule {
 
             let frame = call_frames.last().expect("Current call frame not found");
 
-            if let Ok(tree) = frame.get_owned_heap_node(RENodeId::Bucket(bucket_id)) {
+            if let Ok(tree) = frame.get_owned_heap_node(heap, RENodeId::Bucket(bucket_id)) {
                 if let HeapRENode::Bucket(bucket_node) = &tree.root {
                     track.vault_ops.push((
                         actor.clone(),

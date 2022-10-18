@@ -25,6 +25,7 @@ macro_rules! log {
 impl<R: FeeReserve> Module<R> for LoggerModule {
     fn pre_sys_call(
         &mut self,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
         _call_frames: &mut Vec<CallFrame>,
         input: SysCallInput,
@@ -102,6 +103,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
 
     fn post_sys_call(
         &mut self,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
         _call_frames: &mut Vec<CallFrame>,
         output: SysCallOutput,
@@ -131,6 +133,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
 
     fn on_wasm_instantiation(
         &mut self,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
         _call_frames: &mut Vec<CallFrame>,
         _code: &[u8],
@@ -140,6 +143,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
 
     fn on_wasm_costing(
         &mut self,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
         _call_frames: &mut Vec<CallFrame>,
         _units: u32,
@@ -149,6 +153,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
 
     fn on_lock_fee(
         &mut self,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
         _call_frames: &mut Vec<CallFrame>,
         _vault_id: VaultId,

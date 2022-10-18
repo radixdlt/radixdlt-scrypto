@@ -92,6 +92,7 @@ pub enum SysCallOutput<'a> {
 pub trait Module<R: FeeReserve> {
     fn pre_sys_call(
         &mut self,
+        heap: &mut Heap,
         track: &mut Track<R>,
         call_frames: &mut Vec<CallFrame>,
         input: SysCallInput,
@@ -99,6 +100,7 @@ pub trait Module<R: FeeReserve> {
 
     fn post_sys_call(
         &mut self,
+        heap: &mut Heap,
         track: &mut Track<R>,
         call_frames: &mut Vec<CallFrame>,
         output: SysCallOutput,
@@ -106,6 +108,7 @@ pub trait Module<R: FeeReserve> {
 
     fn on_wasm_instantiation(
         &mut self,
+        heap: &mut Heap,
         track: &mut Track<R>,
         call_frames: &mut Vec<CallFrame>,
         code: &[u8],
@@ -113,6 +116,7 @@ pub trait Module<R: FeeReserve> {
 
     fn on_wasm_costing(
         &mut self,
+        heap: &mut Heap,
         track: &mut Track<R>,
         call_frames: &mut Vec<CallFrame>,
         units: u32,
@@ -120,6 +124,7 @@ pub trait Module<R: FeeReserve> {
 
     fn on_lock_fee(
         &mut self,
+        heap: &mut Heap,
         track: &mut Track<R>,
         call_frames: &mut Vec<CallFrame>,
         vault_id: VaultId,

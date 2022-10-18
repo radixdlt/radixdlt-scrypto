@@ -26,6 +26,7 @@ impl RENodePointer {
     pub fn node_deref<'f, 's, R: FeeReserve>(
         &self,
         call_frames: &'f mut Vec<CallFrame>,
+        heap: &'f mut Heap,
         track: &'f mut Track<'s, R>,
     ) -> Result<Option<RENodePointer>, RuntimeError> {
         if let RENodeId::Global(..) = self.node_id() {
@@ -33,7 +34,7 @@ impl RENodePointer {
             self.acquire_lock(offset.clone(), LockFlags::read_only(), track)
                 .map_err(RuntimeError::KernelError)?;
 
-            let substate_ref = self.borrow_substate(&offset, call_frames, track)?;
+            let substate_ref = self.borrow_substate(&offset, call_frames, heap, track)?;
             let node_id = substate_ref.global_address().node_deref();
             self.release_lock(offset, false, track)
                 .map_err(RuntimeError::KernelError)?;
@@ -96,13 +97,14 @@ impl RENodePointer {
         &self,
         offset: &SubstateOffset,
         call_frames: &'f mut Vec<CallFrame>,
+        heap: &'f mut Heap,
         track: &'f mut Track<'s, R>,
     ) -> Result<SubstateRef<'f>, RuntimeError> {
         let substate_ref = match self {
             RENodePointer::Heap { frame_id, root, id } => {
                 let frame = call_frames.get_mut(*frame_id).unwrap();
                 let heap_re_node = frame
-                    .get_owned_heap_node_mut(*root)?
+                    .get_owned_heap_node_mut(heap, *root)?
                     .get_node_mut(id.as_ref());
                 heap_re_node.borrow_substate(offset)?
             }
@@ -145,12 +147,13 @@ impl RENodePointer {
         node_id: RENodeId,
         node: HeapRootRENode,
         call_frames: &'f mut Vec<CallFrame>,
+        heap: &'f mut Heap,
         track: &'f mut Track<'s, R>,
     ) {
         match self {
             RENodePointer::Heap { frame_id, root, .. } => {
                 let frame = call_frames.get_mut(*frame_id).unwrap();
-                let root_node = frame.get_owned_heap_node_mut(*root).unwrap();
+                let root_node = frame.get_owned_heap_node_mut(heap, *root).unwrap();
 
                 root_node.insert_non_root_nodes(node.to_nodes(node_id));
             }

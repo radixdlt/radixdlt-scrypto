@@ -1,6 +1,4 @@
-use crate::engine::{
-    CallFrame, KernelError, RENodePointer, RuntimeError, SubstateProperties, Track,
-};
+use crate::engine::{CallFrame, Heap, KernelError, RENodePointer, RuntimeError, SubstateProperties, Track};
 use crate::fee::FeeReserve;
 use crate::model::substates::worktop::WorktopSubstate;
 use crate::model::*;
@@ -557,6 +555,7 @@ pub struct SubstateRefMut<'f, 's, R: FeeReserve> {
     node_pointer: RENodePointer,
     offset: SubstateOffset,
     call_frames: &'f mut Vec<CallFrame>,
+    heap: &'f mut Heap,
     track: &'f mut Track<'s, R>,
 }
 
@@ -576,6 +575,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         offset: SubstateOffset,
         prev_children: HashSet<RENodeId>,
         call_frames: &'f mut Vec<CallFrame>,
+        heap: &'f mut Heap,
         track: &'f mut Track<'s, R>,
     ) -> Result<Self, RuntimeError> {
         let substate_ref_mut = Self {
@@ -585,6 +585,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             node_pointer,
             offset,
             call_frames,
+            heap,
             track,
         };
         Ok(substate_ref_mut)
@@ -625,11 +626,11 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
 
             // Move child from call frame owned to call frame reference
             let current_frame = self.call_frames.last_mut().unwrap();
-            let node = current_frame.take_node(child_id)?;
+            let node = current_frame.take_node(self.heap, child_id)?;
             current_frame.add_lock_visible_node(self.lock_handle, child_id)?;
 
             self.node_pointer
-                .add_child(child_id, node, &mut self.call_frames, &mut self.track);
+                .add_child(child_id, node, &mut self.call_frames, &mut self.heap, &mut self.track);
         }
 
         Ok(())
@@ -645,7 +646,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             RENodePointer::Heap { frame_id, root, id } => {
                 let frame = self.call_frames.get_mut(frame_id).unwrap();
                 let heap_re_node = frame
-                    .get_owned_heap_node_mut(root)
+                    .get_owned_heap_node_mut(self.heap, root)
                     .unwrap()
                     .get_node_mut(id.as_ref());
                 heap_re_node.borrow_substate_mut(&self.offset).unwrap()

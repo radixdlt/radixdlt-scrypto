@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use radix_engine::constants::*;
-use radix_engine::engine::{Kernel, KernelError, ModuleError, ScryptoInterpreter};
+use radix_engine::engine::{Heap, Kernel, KernelError, ModuleError, ScryptoInterpreter};
 use radix_engine::engine::{RuntimeError, SystemApi, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
@@ -727,6 +727,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             SystemLoanFeeReserve::default(),
             FeeTable::new(),
         );
+        let mut heap = Heap::new();
 
         let auth_zone_params = AuthZoneParams {
             initial_proofs,
@@ -738,6 +739,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             auth_zone_params,
             &blobs,
             DEFAULT_MAX_CALL_DEPTH,
+            &mut heap,
             &mut track,
             &mut self.scrypto_interpreter,
             Vec::new(),
