@@ -2,7 +2,6 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use crate::wasm::*;
 use scrypto::core::{FnIdent, MethodIdent, NativeFunction, ReceiverMethodIdent};
 
 pub struct NativeInterpreter;
@@ -77,15 +76,13 @@ impl Into<ApplicationError> for SystemError {
 }
 
 impl NativeInterpreter {
-    pub fn run_function<'s, Y, W, I, R>(
+    pub fn run_function<'s, Y, R>(
         fn_identifier: NativeFunction,
         input: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         match fn_identifier {
@@ -104,16 +101,14 @@ impl NativeInterpreter {
         }
     }
 
-    pub fn run_method<'s, Y, W, I, R>(
+    pub fn run_method<'s, Y, R>(
         receiver: Receiver,
         native_method: NativeMethod,
         input: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         match (receiver.clone(), native_method.clone()) {
@@ -123,9 +118,10 @@ impl NativeInterpreter {
             (Receiver::Consumed(node_id), NativeMethod::Proof(method)) => {
                 Proof::main_consume(node_id, method, input, system_api).map_err(|e| e.into())
             }
-            (Receiver::Ref(RENodeId::AuthZone(auth_zone_id)), NativeMethod::AuthZone(method)) => {
-                AuthZone::main(auth_zone_id, method, input, system_api).map_err(|e| e.into())
-            }
+            (
+                Receiver::Ref(RENodeId::AuthZoneStack(auth_zone_id)),
+                NativeMethod::AuthZone(method),
+            ) => AuthZoneStack::main(auth_zone_id, method, input, system_api).map_err(|e| e.into()),
             (Receiver::Ref(RENodeId::Bucket(bucket_id)), NativeMethod::Bucket(method)) => {
                 Bucket::main(bucket_id, method, input, system_api).map_err(|e| e.into())
             }

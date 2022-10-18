@@ -4,7 +4,6 @@ use crate::model::{
     BucketSubstate, InvokeError, ProofError, ResourceContainerId, ResourceOperationError,
 };
 use crate::types::*;
-use crate::wasm::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum VaultError {
@@ -40,16 +39,14 @@ impl Vault {
         }
     }
 
-    pub fn main<'s, Y, W, I, R>(
+    pub fn main<'s, Y, R>(
         vault_id: VaultId,
         method: VaultMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<VaultError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         let node_id = RENodeId::Vault(vault_id);

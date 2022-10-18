@@ -33,15 +33,13 @@ impl Package {
         })
     }
 
-    pub fn static_main<'s, Y, W, I, R>(
+    pub fn static_main<'s, Y, R>(
         func: PackageFunction,
         call_data: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<PackageError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         match func {

@@ -1,4 +1,4 @@
-use radix_engine::engine::{KernelError, RuntimeError};
+use radix_engine::engine::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -54,7 +54,7 @@ fn cyclic_map_fails_execution() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "CyclicMap", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -63,7 +63,7 @@ fn cyclic_map_fails_execution() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::RENodeNotVisible(_))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(_))
         )
     });
 }
@@ -77,7 +77,7 @@ fn self_cyclic_map_fails_execution() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "CyclicMap", "new_self_cyclic", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -86,7 +86,7 @@ fn self_cyclic_map_fails_execution() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::MovingLockedRENode(..))
+            RuntimeError::CallFrameError(CallFrameError::MovingLockedRENode(..))
         )
     });
 }
@@ -303,7 +303,7 @@ fn cannot_directly_reference_inserted_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::RENodeNotVisible(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(RENodeId::Vault(_)))
         )
     });
 }
@@ -317,7 +317,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(
             package_address,
             "RefCheck",
@@ -331,7 +331,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::RENodeNotVisible(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(RENodeId::Vault(_)))
         )
     });
 }
@@ -345,7 +345,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(
             package_address,
             "RefCheck",
@@ -359,7 +359,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::RENodeNotVisible(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(RENodeId::Vault(_)))
         )
     });
 }

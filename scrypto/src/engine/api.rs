@@ -35,7 +35,7 @@ pub enum RadixEngineInput {
 
     RENodeCreate(ScryptoRENode),
     RENodeGlobalize(RENodeId),
-    GetOwnedRENodeIds(),
+    GetVisibleNodeIds(),
 
     LockSubstate(RENodeId, SubstateOffset, bool),
     DropLock(LockHandle),

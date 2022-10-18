@@ -13,7 +13,6 @@ use crate::model::{
     WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput,
 };
 use crate::types::*;
-use crate::wasm::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInput {
@@ -95,14 +94,12 @@ impl TransactionProcessor {
         Ok(value)
     }
 
-    fn process_expressions<'s, Y, W, I, R>(
+    fn process_expressions<'s, Y, R>(
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         let mut value = args.dom;
@@ -136,11 +133,11 @@ impl TransactionProcessor {
                 }
                 "ENTIRE_AUTH_ZONE" => {
                     let node_ids = system_api
-                        .get_owned_node_ids()
+                        .get_visible_node_ids()
                         .map_err(InvokeError::Downstream)?;
                     let auth_zone_node_id = node_ids
                         .into_iter()
-                        .find(|n| matches!(n, RENodeId::AuthZone(..)))
+                        .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
                         .expect("AuthZone does not exist");
 
                     let proofs = system_api
@@ -194,15 +191,13 @@ impl TransactionProcessor {
             .0
     }
 
-    pub fn static_main<'s, Y, W, I, R>(
+    pub fn static_main<'s, Y, R>(
         func: TransactionProcessorFunction,
         call_data: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         match func {
@@ -222,11 +217,11 @@ impl TransactionProcessor {
                     .map_err(InvokeError::Downstream)?;
 
                 let owned_node_ids = system_api
-                    .get_owned_node_ids()
+                    .get_visible_node_ids()
                     .map_err(InvokeError::Downstream)?;
                 let auth_zone_node_id = owned_node_ids
                     .into_iter()
-                    .find(|n| matches!(n, RENodeId::AuthZone(..)))
+                    .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
                     .expect("AuthZone does not exist");
                 let auth_zone_ref = Receiver::Ref(auth_zone_node_id);
 

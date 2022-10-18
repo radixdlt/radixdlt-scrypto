@@ -22,7 +22,7 @@ macro_rules! trace {
 
 pub enum ScryptoFnIdent {
     Function(PackageAddress, String, String),
-    Method(Receiver, String),
+    Method(ResolvedReceiver, String),
 }
 
 pub struct Kernel<
@@ -36,6 +36,8 @@ pub struct Kernel<
     I: WasmInstance,
     R: FeeReserve,
 {
+    execution_mode: ExecutionMode,
+
     /// The transaction hash
     transaction_hash: Hash,
     /// Blobs attached to the transaction
@@ -45,12 +47,9 @@ pub struct Kernel<
 
     /// State track
     track: &'g mut Track<'s, R>,
-    /// WASM engine
-    wasm_engine: &'g mut W,
-    /// WASM Instrumenter
-    wasm_instrumenter: &'g mut WasmInstrumenter,
-    /// WASM metering params
-    wasm_metering_params: WasmMeteringParams,
+
+    /// Interpreter capable of running scrypto programs
+    scrypto_interpreter: &'g mut ScryptoInterpreter<I, W>,
 
     /// ID allocator
     id_allocator: IdAllocator,
@@ -60,8 +59,6 @@ pub struct Kernel<
 
     /// Kernel modules
     modules: Vec<Box<dyn Module<R>>>,
-
-    phantom: PhantomData<I>,
 }
 
 impl<'g, 's, W, I, R> Kernel<'g, 's, W, I, R>
@@ -76,24 +73,20 @@ where
         blobs: &'g HashMap<Hash, Vec<u8>>,
         max_depth: usize,
         track: &'g mut Track<'s, R>,
-        wasm_engine: &'g mut W,
-        wasm_instrumenter: &'g mut WasmInstrumenter,
-        wasm_metering_params: WasmMeteringParams,
+        scrypto_interpreter: &'g mut ScryptoInterpreter<I, W>,
         modules: Vec<Box<dyn Module<R>>>,
     ) -> Self {
         let frame = CallFrame::new_root();
         let mut kernel = Self {
+            execution_mode: ExecutionMode::Kernel,
             transaction_hash,
             blobs,
             max_depth,
             track,
-            wasm_engine,
-            wasm_instrumenter,
-            wasm_metering_params,
+            scrypto_interpreter,
             id_allocator: IdAllocator::new(IdSpace::Application),
             call_frames: vec![frame],
             modules,
-            phantom: PhantomData,
         };
 
         // Initial authzone
@@ -113,18 +106,22 @@ where
             let bucket_id =
                 kernel.create_non_fungible_bucket_with_ids(resource_address, non_fungible_ids);
 
-            let node_id = RENodeId::Bucket(bucket_id);
-            let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-            let handle = kernel
-                .lock_substate(node_id, offset, LockFlags::MUTABLE)
+            let proof = kernel
+                .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |system_api| {
+                    let node_id = RENodeId::Bucket(bucket_id);
+                    let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
+                    let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+                    let mut substate_mut = system_api.get_ref_mut(handle)?;
+                    let mut raw_mut = substate_mut.get_raw_mut();
+                    let proof = raw_mut
+                        .bucket()
+                        .create_proof(bucket_id)
+                        .expect("Failed to create proof");
+                    substate_mut.flush()?;
+                    Ok(proof)
+                })
                 .unwrap();
-            let mut substate_mut = kernel.get_ref_mut(handle).unwrap();
-            let mut raw_mut = substate_mut.get_raw_mut();
-            let proof = raw_mut
-                .bucket()
-                .create_proof(bucket_id)
-                .expect("Failed to create proof");
-            substate_mut.flush().unwrap();
+
             proofs.push(proof);
         }
 
@@ -136,7 +133,7 @@ where
             virtual_proofs_buckets.insert(resource_address, bucket_id);
         }
 
-        let auth_zone = AuthZoneSubstate::new_with_proofs(proofs, virtual_proofs_buckets);
+        let auth_zone = AuthZoneStackSubstate::new(proofs, virtual_proofs_buckets);
 
         kernel
             .node_create(HeapRENode::AuthZone(auth_zone))
@@ -194,6 +191,7 @@ where
                 let component_address = id_allocator
                     .new_system_component_address(transaction_hash)
                     .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+
                 let component_id: ComponentId = node_id.into();
                 Ok((
                     GlobalAddress::Component(component_address),
@@ -204,6 +202,7 @@ where
             }
             HeapRENode::ResourceManager(..) => {
                 let resource_address: ResourceAddress = node_id.into();
+
                 Ok((
                     GlobalAddress::Resource(resource_address),
                     GlobalAddressSubstate::Resource(resource_address),
@@ -211,6 +210,7 @@ where
             }
             HeapRENode::Package(..) => {
                 let package_address: PackageAddress = node_id.into();
+
                 Ok((
                     GlobalAddress::Package(package_address),
                     GlobalAddressSubstate::Package(package_address),
@@ -231,7 +231,7 @@ where
             HeapRENode::Global(..) => panic!("Should not get here"),
             HeapRENode::AuthZone(..) => {
                 let auth_zone_id = id_allocator.new_auth_zone_id()?;
-                Ok(RENodeId::AuthZone(auth_zone_id))
+                Ok(RENodeId::AuthZoneStack(auth_zone_id))
             }
             HeapRENode::Bucket(..) => {
                 let bucket_id = id_allocator.new_bucket_id()?;
@@ -280,8 +280,23 @@ where
         actor: REActor,
         input: ScryptoValue,
         owned_nodes: HashMap<RENodeId, HeapRootRENode>,
-        refed_nodes: HashMap<RENodeId, RENodePointer>,
+        mut refed_nodes: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
+        let new_refed_nodes = self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
+            AuthModule::on_before_frame_start(&actor, &input, system_api).map_err(|e| match e {
+                InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
+                InvokeError::Downstream(runtime_error) => runtime_error,
+            })
+        })?;
+
+        // TODO: Do this in a better way by allowing module to execute in next call frame
+        for new_refed_node in new_refed_nodes {
+            let node_pointer = Self::current_frame(&self.call_frames)
+                .get_node_pointer(new_refed_node)
+                .unwrap();
+            refed_nodes.insert(new_refed_node, node_pointer);
+        }
+
         let frame = CallFrame::new_child(
             Self::current_frame(&self.call_frames).depth + 1,
             actor,
@@ -290,132 +305,52 @@ where
         );
         self.call_frames.push(frame);
 
-        //  Verify Auth
-        AuthModule::verify_auth(&input, &mut self.call_frames, &mut self.track).map_err(
-            |e| match e {
-                InvokeError::Error(e) => RuntimeError::ModuleError(ModuleError::AuthError(e)),
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            },
-        )?;
-        // Copy-over root frame's auth zone virtual_proofs_buckets
-        // TODO: Clean this up at some point (move to AuthModule)
-        // TODO: Move to a better spot
-        let root_frame = self
-            .call_frames
-            .first()
-            .expect("Failed to get a root frame");
-        let virtual_proofs_buckets = AuthModule::get_auth_zone(root_frame)
-            .virtual_proofs_buckets
-            .clone();
-        self.node_create(HeapRENode::AuthZone(AuthZoneSubstate::new_with_proofs(
-            vec![],
-            virtual_proofs_buckets,
-        )))?;
+        let actor = Self::current_frame(&self.call_frames).actor.clone();
+        let output = match actor.clone() {
+            REActor::Function(ResolvedFunction::Native(native_fn)) => self
+                .execute_in_mode(ExecutionMode::Application, |system_api| {
+                    NativeInterpreter::run_function(native_fn, input, system_api)
+                }),
+            REActor::Method(ResolvedReceiverMethod {
+                receiver,
+                method: ResolvedMethod::Native(native_method),
+            }) => self.execute_in_mode(ExecutionMode::Application, |system_api| {
+                NativeInterpreter::run_method(receiver.receiver(), native_method, input, system_api)
+            }),
+            REActor::Function(ResolvedFunction::Scrypto {
+                package_address, ..
+            })
+            | REActor::Method(ResolvedReceiverMethod {
+                method:
+                    ResolvedMethod::Scrypto {
+                        package_address, ..
+                    },
+                ..
+            }) => {
+                // TODO: Move into interpreter when interpreter trait implemented
+                let package = self.execute_in_mode::<_, _, RuntimeError>(
+                    ExecutionMode::ScryptoInterpreter,
+                    |system_api| {
+                        let package_id = RENodeId::Global(GlobalAddress::Package(package_address));
+                        let package_offset = SubstateOffset::Package(PackageOffset::Package);
+                        let handle = system_api.lock_substate(
+                            package_id,
+                            package_offset,
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = system_api.get_ref(handle)?;
+                        let package = substate_ref.package().clone();
+                        system_api.drop_lock(handle)?;
+                        Ok(package)
+                    },
+                )?;
+                let mut executor = self.scrypto_interpreter.create_executor(package);
 
-        let output = {
-            let rtn = match Self::current_frame(&self.call_frames).actor.clone() {
-                REActor::Function(ResolvedFunction::Native(native_fn)) => {
-                    NativeInterpreter::run_function(native_fn, input, self)
-                }
-                REActor::Method(ResolvedReceiverMethod {
-                    receiver,
-                    method: ResolvedMethod::Native(native_method),
-                }) => NativeInterpreter::run_method(receiver, native_method, input, self),
-                REActor::Function(ResolvedFunction::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ident,
-                    export_name,
+                self.execute_in_mode(ExecutionMode::ScryptoInterpreter, |system_api| {
+                    executor.run(input, system_api)
                 })
-                | REActor::Method(ResolvedReceiverMethod {
-                    method:
-                        ResolvedMethod::Scrypto {
-                            package_address,
-                            blueprint_name,
-                            ident,
-                            export_name,
-                        },
-                    ..
-                }) => {
-                    let package_id = RENodeId::Package(package_address);
-                    let package_offset = SubstateOffset::Package(PackageOffset::Package);
-
-                    let output = {
-                        let package = {
-                            let substate = self
-                                .track
-                                .borrow_substate(package_id, package_offset.clone());
-                            substate.package().clone() // TODO: Remove clone()
-                        };
-
-                        for m in &mut self.modules {
-                            m.on_wasm_instantiation(
-                                &mut self.track,
-                                &mut self.call_frames,
-                                package.code(),
-                            )
-                            .map_err(RuntimeError::ModuleError)?;
-                        }
-
-                        let instrumented_code = self
-                            .wasm_instrumenter
-                            .instrument(package.code(), &self.wasm_metering_params);
-                        let mut instance = self.wasm_engine.instantiate(instrumented_code);
-
-                        let scrypto_actor = match &Self::current_frame(&self.call_frames).actor {
-                            REActor::Method(ResolvedReceiverMethod { receiver, .. }) => {
-                                match receiver {
-                                    Receiver::Ref(RENodeId::Component(component_id)) => {
-                                        ScryptoActor::Component(
-                                            *component_id,
-                                            package_address.clone(),
-                                            blueprint_name.clone(),
-                                        )
-                                    }
-                                    _ => panic!("Should not get here."),
-                                }
-                            }
-                            _ => ScryptoActor::blueprint(package_address, blueprint_name.clone()),
-                        };
-
-                        let mut runtime: Box<dyn WasmRuntime> =
-                            Box::new(RadixEngineWasmRuntime::new(scrypto_actor, self));
-                        instance
-                            .invoke_export(&export_name, &input, &mut runtime)
-                            .map_err(|e| match e {
-                                InvokeError::Error(e) => {
-                                    RuntimeError::KernelError(KernelError::WasmError(e))
-                                }
-                                InvokeError::Downstream(runtime_error) => runtime_error,
-                            })?
-                    };
-
-                    let package = self
-                        .track
-                        .borrow_substate(package_id, package_offset)
-                        .package();
-                    let blueprint_abi = package
-                        .blueprint_abi(&blueprint_name)
-                        .expect("Blueprint not found"); // TODO: assumption will break if auth module is optional
-                    let fn_abi = blueprint_abi
-                        .get_fn_abi(&ident)
-                        .expect("Function not found");
-                    if !fn_abi.output.matches(&output.dom) {
-                        Err(RuntimeError::KernelError(KernelError::InvalidFnOutput {
-                            fn_identifier: FunctionIdent::Scrypto {
-                                package_address,
-                                blueprint_name,
-                                ident,
-                            },
-                        }))
-                    } else {
-                        Ok(output)
-                    }
-                }
-            }?;
-
-            rtn
-        };
+            }
+        }?;
 
         // Process return data
         let mut nodes_to_return = HashMap::new();
@@ -439,10 +374,9 @@ where
             }
         }
 
-        let mut call_frame = self.call_frames.pop().unwrap();
-
         // Auto drop locks
-        for (_, lock) in call_frame.drain_locks() {
+        let frame = Self::current_frame_mut(&mut self.call_frames);
+        for (_, lock) in frame.drain_locks() {
             let SubstateLock {
                 substate_pointer: (node_pointer, offset),
                 flags,
@@ -464,7 +398,16 @@ where
             }
         }
 
+        // TODO: Auto drop locks of module execution as well
+        self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
+            AuthModule::on_frame_end(system_api).map_err(|e| match e {
+                InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
+                InvokeError::Downstream(runtime_error) => runtime_error,
+            })
+        })?;
+
         // drop proofs and check resource leak
+        let call_frame = self.call_frames.pop().unwrap();
         call_frame.drop_frame()?;
 
         Ok((output, nodes_to_return))
@@ -483,10 +426,14 @@ where
         node_id: RENodeId,
     ) -> Result<Option<RENodeId>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
-            let offset = SubstateOffset::Global(GlobalOffset::Global);
-            let handle = self.lock_substate(node_id, offset, LockFlags::empty())?;
-            let substate_ref = self.get_ref(handle)?;
-            let node_id = substate_ref.global_address().node_deref();
+            let node_id =
+                self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Deref, |system_api| {
+                    let offset = SubstateOffset::Global(GlobalOffset::Global);
+                    let handle = system_api.lock_substate(node_id, offset, LockFlags::empty())?;
+                    let substate_ref = system_api.get_ref(handle)?;
+                    Ok(substate_ref.global_address().node_deref())
+                })?;
+
             Ok(Some(node_id))
         } else {
             Ok(None)
@@ -500,13 +447,19 @@ where
     ) -> Result<Option<RENodeId>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
             if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) {
-                let handle = self.lock_substate(
-                    node_id,
-                    SubstateOffset::Global(GlobalOffset::Global),
-                    LockFlags::empty(),
+                let node_id = self.execute_in_mode::<_, _, RuntimeError>(
+                    ExecutionMode::Deref,
+                    |system_api| {
+                        let handle = system_api.lock_substate(
+                            node_id,
+                            SubstateOffset::Global(GlobalOffset::Global),
+                            LockFlags::empty(),
+                        )?;
+                        let substate_ref = system_api.get_ref(handle)?;
+                        Ok(substate_ref.global_address().node_deref())
+                    },
                 )?;
-                let substate_ref = self.get_ref(handle)?;
-                let node_id = substate_ref.global_address().node_deref();
+
                 Ok(Some(node_id))
             } else {
                 Ok(None)
@@ -516,168 +469,182 @@ where
         }
     }
 
-    // TODO: Move out
-    fn load_scrypto_actor(
+    fn resolve_method_actor(
         &mut self,
-        ident: ScryptoFnIdent,
+        receiver: ResolvedReceiver,
+        method_ident: MethodIdent,
         input: &ScryptoValue,
-    ) -> Result<REActor, InvokeError<ScryptoActorError>> {
-        let (receiver, package_address, blueprint_name, ident) = match ident {
-            ScryptoFnIdent::Method(receiver, ident) => {
-                let node_id = match receiver {
-                    Receiver::Ref(RENodeId::Component(component_id)) => {
-                        RENodeId::Component(component_id)
-                    }
-                    _ => return Err(InvokeError::Error(ScryptoActorError::InvalidReceiver)),
-                };
-                let node_pointer =
-                    Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
-                let offset = SubstateOffset::Component(ComponentOffset::Info);
-                node_pointer
-                    .acquire_lock(offset.clone(), LockFlags::read_only(), &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
+    ) -> Result<(REActor, HashMap<RENodeId, RENodePointer>), RuntimeError> {
+        let mut references_to_add = HashMap::new();
 
-                let substate_ref = node_pointer.borrow_substate(
-                    &offset,
-                    &mut self.call_frames,
-                    &mut self.track,
+        let actor = match &method_ident {
+            MethodIdent::Scrypto(ident) => {
+                let (actor, node_id) =
+                    self.execute_in_mode(ExecutionMode::ScryptoInterpreter, |system_api| {
+                        ScryptoInterpreter::<I, W>::load_scrypto_actor(
+                            ScryptoFnIdent::Method(receiver.clone(), ident.clone()),
+                            input,
+                            system_api,
+                        )
+                        .map_err(|e| match e {
+                            InvokeError::Downstream(runtime_error) => runtime_error,
+                            InvokeError::Error(error) => RuntimeError::InterpreterError(
+                                InterpreterError::InvalidScryptoMethod(
+                                    receiver.clone(),
+                                    method_ident.clone(),
+                                    error,
+                                ),
+                            ),
+                        })
+                    })?;
+
+                // TODO: Move this in a better spot when more refactors are done
+                let package = self.execute_in_mode::<_, _, RuntimeError>(
+                    ExecutionMode::ScryptoInterpreter,
+                    |system_api| {
+                        let handle = system_api.lock_substate(
+                            node_id,
+                            SubstateOffset::Package(PackageOffset::Package),
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = system_api.get_ref(handle)?;
+                        let package = substate_ref.package().clone(); // TODO: Remove clone()
+                        system_api.drop_lock(handle)?;
+                        Ok(package)
+                    },
                 )?;
-                let info = substate_ref.component_info();
-                let info = (
-                    Some(node_id),
-                    info.package_address.clone(),
-                    info.blueprint_name.clone(),
-                    ident,
-                );
+                for m in &mut self.modules {
+                    m.on_wasm_instantiation(&mut self.track, &mut self.call_frames, package.code())
+                        .map_err(RuntimeError::ModuleError)?;
+                }
 
-                node_pointer
-                    .release_lock(offset, false, &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
-                info
+                let node_pointer = Self::current_frame(&self.call_frames)
+                    .get_node_pointer(node_id)
+                    .unwrap();
+                references_to_add.insert(node_id, node_pointer);
+                actor
             }
-            ScryptoFnIdent::Function(package_address, blueprint_name, ident) => {
-                (None, package_address, blueprint_name, ident)
-            }
-        };
-
-        let package_node_id = RENodeId::Package(package_address);
-        let package_pointer = RENodePointer::Store(package_node_id);
-        let offset = SubstateOffset::Package(PackageOffset::Package);
-        package_pointer
-            .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
-            .map_err(RuntimeError::KernelError)?;
-
-        let substate_ref =
-            package_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)?;
-        let package = substate_ref.package();
-        let abi = package
-            .blueprint_abi(&blueprint_name)
-            .ok_or(InvokeError::Error(ScryptoActorError::BlueprintNotFound))?;
-
-        let fn_abi = abi
-            .get_fn_abi(&ident)
-            .ok_or(InvokeError::Error(ScryptoActorError::IdentNotFound))?;
-
-        if fn_abi.mutability.is_some() != receiver.is_some() {
-            return Err(InvokeError::Error(ScryptoActorError::InvalidReceiver));
-        }
-
-        if !fn_abi.input.matches(&input.dom) {
-            return Err(InvokeError::Error(ScryptoActorError::InvalidInput));
-        }
-
-        let export_name = fn_abi.export_name.to_string();
-
-        package_pointer
-            .release_lock(offset, false, &mut self.track)
-            .map_err(RuntimeError::KernelError)?;
-
-        let actor = if let Some(node_id) = receiver {
-            REActor::Method(ResolvedReceiverMethod {
-                receiver: Receiver::Ref(node_id),
-                method: ResolvedMethod::Scrypto {
-                    package_address,
-                    blueprint_name: blueprint_name.clone(),
-                    ident: ident.to_string(),
-                    export_name,
-                },
-            })
-        } else {
-            REActor::Function(ResolvedFunction::Scrypto {
-                package_address,
-                blueprint_name: blueprint_name.clone(),
-                ident: ident.clone(),
-                export_name,
-            })
-        };
-
-        Ok(actor)
-    }
-
-    fn load_actor(
-        &mut self,
-        fn_ident: FnIdent,
-        input: &ScryptoValue,
-    ) -> Result<REActor, RuntimeError> {
-        // Load actor
-        let re_actor = match &fn_ident {
-            FnIdent::Method(ReceiverMethodIdent {
-                method_ident: MethodIdent::Scrypto(ident),
-                receiver,
-            }) => self
-                .load_scrypto_actor(
-                    ScryptoFnIdent::Method(receiver.clone(), ident.clone()),
-                    input,
-                )
-                .map_err(|e| match e {
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(error) => RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoActor(fn_ident.clone(), error),
-                    ),
-                })?,
-            FnIdent::Function(FunctionIdent::Scrypto {
-                package_address,
-                blueprint_name,
-                ident,
-            }) => self
-                .load_scrypto_actor(
-                    ScryptoFnIdent::Function(
-                        *package_address,
-                        blueprint_name.clone(),
-                        ident.to_string(),
-                    ),
-                    input,
-                )
-                .map_err(|e| match e {
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(error) => RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoActor(fn_ident.clone(), error),
-                    ),
-                })?,
-
-            // Native Interpreter
-            FnIdent::Method(ReceiverMethodIdent {
-                method_ident: MethodIdent::Native(native_fn),
-                receiver,
-            }) => REActor::Method(ResolvedReceiverMethod {
+            MethodIdent::Native(native_fn) => REActor::Method(ResolvedReceiverMethod {
                 receiver: receiver.clone(),
                 method: ResolvedMethod::Native(native_fn.clone()),
             }),
-            FnIdent::Function(FunctionIdent::Native(native_function)) => {
+        };
+
+        Ok((actor, references_to_add))
+    }
+
+    fn resolve_function_actor(
+        &mut self,
+        function_ident: FunctionIdent,
+        input: &ScryptoValue,
+    ) -> Result<(REActor, HashMap<RENodeId, RENodePointer>), RuntimeError> {
+        let mut references_to_add = HashMap::new();
+
+        let actor = match &function_ident {
+            FunctionIdent::Scrypto {
+                package_address,
+                blueprint_name,
+                ident,
+            } => {
+                let (actor, node_id) =
+                    self.execute_in_mode(ExecutionMode::ScryptoInterpreter, |system_api| {
+                        ScryptoInterpreter::<I, W>::load_scrypto_actor(
+                            ScryptoFnIdent::Function(
+                                *package_address,
+                                blueprint_name.clone(),
+                                ident.to_string(),
+                            ),
+                            input,
+                            system_api,
+                        )
+                        .map_err(|e| match e {
+                            InvokeError::Downstream(runtime_error) => runtime_error,
+                            InvokeError::Error(error) => RuntimeError::InterpreterError(
+                                InterpreterError::InvalidScryptoFunction(
+                                    function_ident.clone(),
+                                    error,
+                                ),
+                            ),
+                        })
+                    })?;
+
+                // TODO: Move this in a better spot when more refactors are done
+                let package = self.execute_in_mode::<_, _, RuntimeError>(
+                    ExecutionMode::ScryptoInterpreter,
+                    |system_api| {
+                        let handle = system_api.lock_substate(
+                            node_id,
+                            SubstateOffset::Package(PackageOffset::Package),
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = system_api.get_ref(handle)?;
+                        let package = substate_ref.package().clone(); // TODO: Remove clone()
+                        system_api.drop_lock(handle)?;
+                        Ok(package)
+                    },
+                )?;
+                for m in &mut self.modules {
+                    m.on_wasm_instantiation(&mut self.track, &mut self.call_frames, package.code())
+                        .map_err(RuntimeError::ModuleError)?;
+                }
+
+                let node_pointer = Self::current_frame(&self.call_frames)
+                    .get_node_pointer(node_id)
+                    .unwrap();
+                references_to_add.insert(node_id, node_pointer);
+                actor
+            }
+            FunctionIdent::Native(native_function) => {
                 REActor::Function(ResolvedFunction::Native(native_function.clone()))
             }
         };
 
-        Ok(re_actor)
+        Ok((actor, references_to_add))
+    }
+
+    fn verify_valid_mode_transition(
+        cur: &ExecutionMode,
+        next: &ExecutionMode,
+    ) -> Result<(), RuntimeError> {
+        match (cur, next) {
+            (ExecutionMode::Kernel, ..) => Ok(()),
+            (ExecutionMode::ScryptoInterpreter, ExecutionMode::Application) => Ok(()),
+            _ => Err(RuntimeError::KernelError(
+                KernelError::InvalidModeTransition(*cur, *next),
+            )),
+        }
     }
 }
 
-impl<'g, 's, W, I, R> SystemApi<'s, W, I, R> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, I, R> SystemApi<'s, R> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
     R: FeeReserve,
 {
+    fn execute_in_mode<X, RTN, E>(
+        &mut self,
+        execution_mode: ExecutionMode,
+        execute: X,
+    ) -> Result<RTN, RuntimeError>
+    where
+        RuntimeError: From<E>,
+        X: FnOnce(&mut Self) -> Result<RTN, E>,
+    {
+        Self::verify_valid_mode_transition(&self.execution_mode, &execution_mode)?;
+
+        // Save and replace kernel actor
+        let saved = self.execution_mode;
+        self.execution_mode = execution_mode;
+
+        let rtn = execute(self)?;
+
+        // Restore old kernel actor
+        self.execution_mode = saved;
+
+        Ok(rtn)
+    }
+
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.on_wasm_costing(&mut self.track, &mut self.call_frames, units)
@@ -708,9 +675,13 @@ where
         Ok(fee)
     }
 
+    fn get_actor(&self) -> &REActor {
+        &Self::current_frame(&self.call_frames).actor
+    }
+
     fn invoke(
         &mut self,
-        mut fn_ident: FnIdent,
+        fn_ident: FnIdent,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
         let depth = Self::current_frame(&self.call_frames).depth;
@@ -735,15 +706,13 @@ where
             ));
         }
 
-        let mut nodes_to_pass = HashMap::new();
+        let mut nodes_to_pass_downstream = HashMap::new();
         let mut next_node_refs = HashMap::new();
 
         // Internal state update to taken values
         for node_id in input.node_ids() {
-            let mut node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
-            let root_node = node.root_mut();
-            root_node.prepare_move_downstream(node_id)?;
-            nodes_to_pass.insert(node_id, node);
+            let node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
+            nodes_to_pass_downstream.insert(node_id, node);
         }
 
         // Move this into higher layer, e.g. transaction processor
@@ -753,6 +722,8 @@ where
             static_refs.insert(GlobalAddress::Resource(SYSTEM_TOKEN));
             static_refs.insert(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN));
             static_refs.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
+            static_refs.insert(GlobalAddress::Package(ACCOUNT_PACKAGE));
+            static_refs.insert(GlobalAddress::Package(SYS_FAUCET_PACKAGE));
 
             // Make refs visible
             let mut global_references = input.global_references();
@@ -831,38 +802,60 @@ where
             }
         }
 
-        if let FnIdent::Method(ReceiverMethodIdent { receiver, .. }) = &mut fn_ident {
-            match receiver {
-                Receiver::Consumed(node_id) => {
-                    let heap_node = Self::current_frame_mut(&mut self.call_frames)
-                        .owned_heap_nodes
-                        .remove(node_id)
-                        .ok_or(RuntimeError::KernelError(
-                            KernelError::InvokeMethodInvalidReceiver(*node_id),
-                        ))?;
-                    nodes_to_pass.insert(*node_id, heap_node);
-                }
-                Receiver::Ref(ref mut node_id) => {
-                    // Deref
-                    if let Some(derefed) = self.node_method_deref(*node_id)? {
-                        *node_id = derefed;
+        // Change to kernel mode
+        let saved_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
+
+        let (next_actor, references_to_add) = match fn_ident {
+            FnIdent::Method(ReceiverMethodIdent {
+                receiver,
+                method_ident,
+            }) => {
+                let resolved_receiver = match receiver {
+                    Receiver::Consumed(node_id) => {
+                        let node =
+                            Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
+                        nodes_to_pass_downstream.insert(node_id, node);
+                        ResolvedReceiver::new(Receiver::Consumed(node_id))
                     }
-                    let node_pointer =
-                        Self::current_frame(&self.call_frames).get_node_pointer(*node_id)?;
-                    next_node_refs.insert(*node_id, node_pointer);
-                }
+                    Receiver::Ref(node_id) => {
+                        // Deref
+                        let resolved_receiver =
+                            if let Some(derefed) = self.node_method_deref(node_id)? {
+                                ResolvedReceiver::derefed(Receiver::Ref(derefed), node_id)
+                            } else {
+                                ResolvedReceiver::new(Receiver::Ref(node_id))
+                            };
+
+                        let resolved_node_id = resolved_receiver.node_id();
+                        let node_pointer = Self::current_frame(&self.call_frames)
+                            .get_node_pointer(resolved_node_id)?;
+                        next_node_refs.insert(resolved_node_id, node_pointer);
+
+                        resolved_receiver
+                    }
+                };
+                self.resolve_method_actor(resolved_receiver, method_ident, &input)?
             }
+            FnIdent::Function(function_ident) => {
+                self.resolve_function_actor(function_ident, &input)?
+            }
+        };
+        next_node_refs.extend(references_to_add);
+
+        let cur_actor = &Self::current_frame(&self.call_frames).actor;
+
+        for (node_id, node) in &mut nodes_to_pass_downstream {
+            let root_node = node.root_mut();
+            root_node.prepare_move_downstream(*node_id, cur_actor, &next_actor)?;
         }
 
-        let actor = self.load_actor(fn_ident, &input)?;
-
-        let (output, received_values) = self.run(actor, input, nodes_to_pass, next_node_refs)?;
+        let (output, received_values) =
+            self.run(next_actor, input, nodes_to_pass_downstream, next_node_refs)?;
 
         // move re nodes to this process.
-        for (id, value) in received_values {
-            Self::current_frame_mut(&mut self.call_frames)
-                .owned_heap_nodes
-                .insert(id, value);
+        for (id, node) in received_values {
+            Self::current_frame_mut(&mut self.call_frames).insert_owned_node(id, node);
         }
 
         // Accept global references
@@ -882,10 +875,18 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
+        // TODO: Move this into higher layer, e.g. transaction processor
+        if Self::current_frame(&self.call_frames).depth == 0 {
+            self.call_frames.pop().unwrap().drop_frame()?;
+        }
+
+        // Restore previous mode
+        self.execution_mode = saved_mode;
+
         Ok(output)
     }
 
-    fn get_owned_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
+    fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
@@ -895,11 +896,8 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let node_ids = Self::current_frame_mut(&mut self.call_frames)
-            .owned_heap_nodes
-            .keys()
-            .cloned()
-            .collect();
+        let node_ids = Self::current_frame_mut(&mut self.call_frames).get_visible_nodes();
+
         Ok(node_ids)
     }
 
@@ -915,13 +913,7 @@ where
 
         // TODO: Authorization
 
-        let node = Self::current_frame_mut(&mut self.call_frames)
-            .owned_heap_nodes
-            .remove(&node_id)
-            .expect(&format!(
-                "Attempt to drop node {:?}, which is not owned by current frame",
-                node_id
-            )); // TODO: Assumption will break if auth is optional
+        let node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -971,9 +963,7 @@ where
             root: re_node,
             child_nodes,
         };
-        Self::current_frame_mut(&mut self.call_frames)
-            .owned_heap_nodes
-            .insert(node_id, heap_root_node);
+        Self::current_frame_mut(&mut self.call_frames).insert_owned_node(node_id, heap_root_node);
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -1057,6 +1047,10 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
+        // Change to kernel mode
+        let current_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
+
         // Deref
         if let Some(derefed) = self.node_offset_deref(node_id, &offset)? {
             node_id = derefed;
@@ -1067,28 +1061,23 @@ where
         // TODO: Check if valid offset for node_id
 
         // Authorization
-        if flags.contains(LockFlags::MUTABLE) {
-            if !Self::current_frame(&self.call_frames)
-                .actor
-                .is_substate_writeable(node_pointer.node_id(), offset.clone())
-            {
-                return Err(RuntimeError::KernelError(
-                    KernelError::SubstateNotWriteable(
-                        Self::current_frame(&self.call_frames).actor.clone(),
-                        SubstateId(node_pointer.node_id(), offset.clone()),
-                    ),
-                ));
-            }
-        } else {
-            if !Self::current_frame(&self.call_frames)
-                .actor
-                .is_substate_readable(node_pointer.node_id(), offset.clone())
-            {
-                return Err(RuntimeError::KernelError(KernelError::SubstateNotReadable(
-                    Self::current_frame(&self.call_frames).actor.clone(),
-                    SubstateId(node_pointer.node_id(), offset.clone()),
-                )));
-            }
+        let actor = &Self::current_frame(&self.call_frames).actor;
+        if !SubstateProperties::check_substate_access(
+            current_mode,
+            actor,
+            node_id,
+            offset.clone(),
+            flags,
+        ) {
+            return Err(RuntimeError::KernelError(
+                KernelError::InvalidSubstateLock {
+                    mode: current_mode,
+                    actor: actor.clone(),
+                    node_id,
+                    offset,
+                    flags,
+                },
+            ));
         }
 
         if !(matches!(offset, SubstateOffset::KeyValueStore(..))
@@ -1107,6 +1096,9 @@ where
             offset.clone(),
             flags,
         );
+
+        // Restore current mode
+        self.execution_mode = current_mode;
 
         for m in &mut self.modules {
             m.post_sys_call(

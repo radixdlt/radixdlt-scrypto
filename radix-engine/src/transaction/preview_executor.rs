@@ -7,12 +7,13 @@ use transaction::validation::ValidationConfig;
 
 use crate::constants::DEFAULT_MAX_COST_UNIT_LIMIT;
 use crate::constants::PREVIEW_CREDIT;
+use crate::engine::ScryptoInterpreter;
 use crate::fee::SystemLoanFeeReserve;
 use crate::ledger::*;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
 use crate::types::*;
-use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter};
+use crate::wasm::{WasmEngine, WasmInstance};
 
 #[derive(Debug)]
 pub struct PreviewResult {
@@ -33,8 +34,7 @@ where
     IHM: IntentHashManager,
 {
     substate_store: &'s mut S,
-    wasm_engine: &'w mut W,
-    wasm_instrumenter: &'w mut WasmInstrumenter,
+    scrypto_interpreter: &'w mut ScryptoInterpreter<I, W>,
     intent_hash_manager: &'w IHM,
     network: &'n NetworkDefinition,
     phantom1: PhantomData<I>,
@@ -49,15 +49,13 @@ where
 {
     pub fn new(
         substate_store: &'s mut S,
-        wasm_engine: &'w mut W,
-        wasm_instrumenter: &'w mut WasmInstrumenter,
+        scrypto_interpreter: &'w mut ScryptoInterpreter<I, W>,
         intent_hash_manager: &'w IHM,
         network: &'n NetworkDefinition,
     ) -> Self {
         PreviewExecutor {
             substate_store,
-            wasm_engine,
-            wasm_instrumenter,
+            scrypto_interpreter,
             intent_hash_manager,
             network,
             phantom1: PhantomData,
@@ -82,11 +80,8 @@ where
             .validate_preview_intent(preview_intent.clone(), self.intent_hash_manager)
             .map_err(PreviewError::TransactionValidationError)?;
 
-        let mut transaction_executor = TransactionExecutor::new(
-            self.substate_store,
-            self.wasm_engine,
-            self.wasm_instrumenter,
-        );
+        let mut transaction_executor =
+            TransactionExecutor::new(self.substate_store, self.scrypto_interpreter);
 
         let mut fee_reserve = SystemLoanFeeReserve::default();
         if preview_intent.flags.unlimited_loan {

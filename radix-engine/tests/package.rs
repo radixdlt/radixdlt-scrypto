@@ -122,7 +122,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::KernelError(KernelError::WasmError(_)))
+        matches!(e, RuntimeError::KernelError(KernelError::WasmError(..)))
     });
 }
 

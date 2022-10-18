@@ -7,7 +7,7 @@ pub enum HeapRENode {
     Global(GlobalRENode), // TODO: Remove
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
-    AuthZone(AuthZoneSubstate),
+    AuthZone(AuthZoneStackSubstate),
     Vault(VaultRuntimeSubstate),
     Component(Component),
     Worktop(WorktopSubstate),
@@ -189,18 +189,13 @@ impl HeapRENode {
         Ok(substate_ref)
     }
 
-    pub fn auth_zone(&self) -> &AuthZoneSubstate {
+    pub fn prepare_move_downstream(
+        &mut self,
+        self_node_id: RENodeId,
+        from: &REActor,
+        to: &REActor,
+    ) -> Result<(), RuntimeError> {
         match self {
-            HeapRENode::AuthZone(auth_zone, ..) => auth_zone,
-            _ => panic!("Expected to be a resource manager"),
-        }
-    }
-
-    pub fn prepare_move_downstream(&mut self, self_node_id: RENodeId) -> Result<(), RuntimeError> {
-        match self {
-            HeapRENode::AuthZone(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
             HeapRENode::Bucket(bucket) => {
                 if bucket.is_locked() {
                     Err(RuntimeError::KernelError(KernelError::CantMoveDownstream(
@@ -211,38 +206,38 @@ impl HeapRENode {
                 }
             }
             HeapRENode::Proof(proof) => {
-                if proof.is_restricted() {
-                    Err(RuntimeError::KernelError(KernelError::CantMoveDownstream(
-                        self_node_id,
-                    )))
+                // TODO: Not sure if this is the right abstraction
+                if let REActor::Method(ResolvedReceiverMethod {
+                    method: ResolvedMethod::Native(NativeMethod::Proof(..)),
+                    ..
+                }) = to
+                {
+                    return Ok(());
+                }
+
+                if from.is_scrypto_or_transaction() || to.is_scrypto_or_transaction() {
+                    if proof.is_restricted() {
+                        Err(RuntimeError::KernelError(KernelError::CantMoveDownstream(
+                            self_node_id,
+                        )))
+                    } else {
+                        proof.change_to_restricted();
+                        Ok(())
+                    }
                 } else {
-                    proof.change_to_restricted();
                     Ok(())
                 }
             }
             HeapRENode::Component(..) => Ok(()),
-            HeapRENode::ResourceManager(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
-            HeapRENode::KeyValueStore(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
-            HeapRENode::NonFungibleStore(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
-            HeapRENode::Vault(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
-            HeapRENode::Package(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
-            HeapRENode::Worktop(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
-            HeapRENode::System(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(self_node_id),
-            )),
-            HeapRENode::Global(..) => Err(RuntimeError::KernelError(
+            HeapRENode::AuthZone(..)
+            | HeapRENode::ResourceManager(..)
+            | HeapRENode::KeyValueStore(..)
+            | HeapRENode::NonFungibleStore(..)
+            | HeapRENode::Vault(..)
+            | HeapRENode::Package(..)
+            | HeapRENode::Worktop(..)
+            | HeapRENode::System(..)
+            | HeapRENode::Global(..) => Err(RuntimeError::KernelError(
                 KernelError::CantMoveDownstream(self_node_id),
             )),
         }
@@ -250,9 +245,6 @@ impl HeapRENode {
 
     pub fn prepare_move_upstream(&mut self, self_node_id: RENodeId) -> Result<(), RuntimeError> {
         match self {
-            HeapRENode::AuthZone(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveUpstream(self_node_id),
-            )),
             HeapRENode::Bucket(bucket) => {
                 if bucket.is_locked() {
                     Err(RuntimeError::KernelError(KernelError::CantMoveUpstream(
@@ -265,6 +257,9 @@ impl HeapRENode {
             HeapRENode::Proof(..) => Ok(()),
             HeapRENode::Component(..) => Ok(()),
             HeapRENode::Vault(..) => Ok(()),
+            HeapRENode::AuthZone(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
             HeapRENode::ResourceManager(..) => Err(RuntimeError::KernelError(
                 KernelError::CantMoveUpstream(self_node_id),
             )),
@@ -293,7 +288,7 @@ impl HeapRENode {
         match self {
             HeapRENode::Global(..) => panic!("Should never get here"),
             HeapRENode::AuthZone(mut auth_zone) => {
-                auth_zone.clear();
+                auth_zone.clear_all();
                 Ok(())
             }
             HeapRENode::Package(..) => Err(DropFailure::Package),
@@ -301,7 +296,19 @@ impl HeapRENode {
             HeapRENode::KeyValueStore(..) => Err(DropFailure::KeyValueStore),
             HeapRENode::NonFungibleStore(..) => Err(DropFailure::NonFungibleStore),
             HeapRENode::Component(..) => Err(DropFailure::Component),
-            HeapRENode::Bucket(..) => Err(DropFailure::Bucket),
+            HeapRENode::Bucket(bucket) => {
+                // FIXME: Hack to allow virtual buckets to be cleaned up, better would
+                // FIXME: be to let auth module burn these buckets
+                if bucket.resource_address().eq(&ECDSA_SECP256K1_TOKEN) {
+                    Ok(())
+                } else if bucket.resource_address().eq(&EDDSA_ED25519_TOKEN) {
+                    Ok(())
+                } else if bucket.resource_address().eq(&SYSTEM_TOKEN) {
+                    Ok(())
+                } else {
+                    Err(DropFailure::Bucket)
+                }
+            }
             HeapRENode::ResourceManager(..) => Err(DropFailure::Resource),
             HeapRENode::System(..) => Err(DropFailure::System),
             HeapRENode::Proof(proof) => {

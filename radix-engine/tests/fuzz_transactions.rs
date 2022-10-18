@@ -1,11 +1,14 @@
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
+use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig, TransactionExecutor};
 use radix_engine::types::*;
-use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
+use radix_engine::wasm::{
+    DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams,
+};
 use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
@@ -31,8 +34,15 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
         .unwrap();
 
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = DefaultWasmEngine::new();
-    let mut wasm_instrumenter = WasmInstrumenter::new();
+    let mut scrypto_interpreter = ScryptoInterpreter {
+        wasm_engine: DefaultWasmEngine::new(),
+        wasm_instrumenter: WasmInstrumenter::new(),
+        wasm_metering_params: WasmMeteringParams::new(
+            InstructionCostRules::tiered(1, 5, 10, 5000),
+            512,
+        ),
+        phantom: PhantomData,
+    };
     let execution_config = ExecutionConfig {
         max_call_depth: DEFAULT_MAX_CALL_DEPTH,
         trace: false,
@@ -47,7 +57,7 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
 
     let mut staged_store = staged_store_manager.get_output_store(staged_node);
     let mut transaction_executor =
-        TransactionExecutor::new(&mut staged_store, &mut wasm_engine, &mut wasm_instrumenter);
+        TransactionExecutor::new(&mut staged_store, &mut scrypto_interpreter);
     transaction_executor.execute_and_commit(&transaction, &fee_reserve_config, &execution_config);
 }
 

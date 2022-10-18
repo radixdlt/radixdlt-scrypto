@@ -3,11 +3,11 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
-use crate::wasm::*;
 use bitflags::bitflags;
 use scrypto::core::FnIdent;
 
 bitflags! {
+    #[derive(Encode, Decode, TypeId)]
     pub struct LockFlags: u32 {
         /// Allows the locked substate to be mutated
         const MUTABLE = 0b00000001;
@@ -27,12 +27,19 @@ impl LockFlags {
     }
 }
 
-pub trait SystemApi<'s, W, I, R>
+pub trait SystemApi<'s, R>
 where
-    W: WasmEngine<I>,
-    I: WasmInstance,
     R: FeeReserve,
 {
+    fn execute_in_mode<X, RTN, E>(
+        &mut self,
+        execution_mode: ExecutionMode,
+        execute: X,
+    ) -> Result<RTN, RuntimeError>
+    where
+        RuntimeError: From<E>,
+        X: FnOnce(&mut Self) -> Result<RTN, E>;
+
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
 
     fn lock_fee(
@@ -42,14 +49,16 @@ where
         contingent: bool,
     ) -> Result<Resource, RuntimeError>;
 
+    fn get_actor(&self) -> &REActor;
+
     fn invoke(
         &mut self,
         fn_ident: FnIdent,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    /// Retrieves all nodes owned by the current frame
-    fn get_owned_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
+    /// Retrieves all nodes referenceable by the current frame
+    fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
 
     /// Removes an RENode and all of it's children from the Heap
     fn node_drop(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError>;

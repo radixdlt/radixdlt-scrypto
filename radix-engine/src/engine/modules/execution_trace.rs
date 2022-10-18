@@ -158,7 +158,7 @@ impl ExecutionTraceModule {
 
             let frame = call_frames.last().expect("Current call frame not found");
 
-            if let Some(tree) = frame.owned_heap_nodes.get(&RENodeId::Bucket(bucket_id)) {
+            if let Ok(tree) = frame.get_owned_heap_node(RENodeId::Bucket(bucket_id)) {
                 if let HeapRENode::Bucket(bucket_node) = &tree.root {
                     track.vault_ops.push((
                         actor.clone(),
@@ -220,7 +220,7 @@ impl ExecutionTraceReceipt {
         let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
         for (actor, vault_id, vault_op) in ops {
             if let REActor::Method(ResolvedReceiverMethod { receiver, .. }) = actor {
-                if let Receiver::Ref(RENodeId::Component(component_id)) = receiver {
+                if let Receiver::Ref(RENodeId::Component(component_id)) = receiver.receiver() {
                     match vault_op {
                         VaultOp::Create(_) => todo!("Not supported yet!"),
                         VaultOp::Put(amount) => {

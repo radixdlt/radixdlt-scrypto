@@ -1,6 +1,7 @@
 mod actor;
 mod call_frame;
 mod errors;
+mod interpreters;
 mod kernel;
 mod modules;
 mod native_interpreter;
@@ -15,6 +16,7 @@ mod wasm_runtime;
 pub use actor::*;
 pub use call_frame::CallFrame;
 pub use errors::*;
+pub use interpreters::*;
 pub use kernel::*;
 pub use modules::*;
 pub use native_interpreter::NativeInterpreter;

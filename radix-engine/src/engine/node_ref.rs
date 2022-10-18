@@ -102,9 +102,7 @@ impl RENodePointer {
             RENodePointer::Heap { frame_id, root, id } => {
                 let frame = call_frames.get_mut(*frame_id).unwrap();
                 let heap_re_node = frame
-                    .owned_heap_nodes
-                    .get_mut(&root)
-                    .unwrap()
+                    .get_owned_heap_node_mut(*root)?
                     .get_node_mut(id.as_ref());
                 heap_re_node.borrow_substate(offset)?
             }
@@ -152,7 +150,7 @@ impl RENodePointer {
         match self {
             RENodePointer::Heap { frame_id, root, .. } => {
                 let frame = call_frames.get_mut(*frame_id).unwrap();
-                let root_node = frame.owned_heap_nodes.get_mut(&root).unwrap();
+                let root_node = frame.get_owned_heap_node_mut(*root).unwrap();
 
                 root_node.insert_non_root_nodes(node.to_nodes(node_id));
             }

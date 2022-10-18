@@ -46,53 +46,6 @@ fn test_transaction_preview_cost_estimate() {
 }
 
 #[test]
-fn test_assume_all_signature_proofs_flag_create_proof_instruction() {
-    // Arrange
-    // Create an account component that requires a key auth for withdrawal
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut substate_store);
-    let network = NetworkDefinition::simulator();
-
-    let public_key = EcdsaSecp256k1PrivateKey::from_u64(99).unwrap().public_key();
-    let withdraw_auth = rule!(require(NonFungibleAddress::from_public_key(&public_key)));
-    let account = test_runner.new_account_with_auth_rule(&withdraw_auth);
-    let (_, _, other_account) = test_runner.new_account();
-
-    let preview_flags = PreviewFlags {
-        unlimited_loan: true,
-        assume_all_signature_proofs: true,
-    };
-
-    // Manually create a proof via a manifest instruction and push it to the auth zone
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .create_proof_from_auth_zone_by_ids(
-            &BTreeSet::from([NonFungibleAddress::from_public_key(&public_key).non_fungible_id()]),
-            ECDSA_SECP256K1_TOKEN,
-            |builder, proof_id| {
-                builder
-                    .push_to_auth_zone(proof_id)
-                    .lock_fee(10.into(), account)
-                    .withdraw_from_account(RADIX_TOKEN, account)
-                    .call_method(
-                        other_account,
-                        "deposit_batch",
-                        args!(Expression::entire_worktop()),
-                    )
-            },
-        )
-        .build();
-
-    let (_, preview_intent) =
-        prepare_test_tx_and_preview_intent(&test_runner, &network, manifest, &preview_flags);
-
-    // Act
-    let result = test_runner.execute_preview(preview_intent, &network);
-
-    // Assert
-    result.unwrap().receipt.expect_commit_success();
-}
-
-#[test]
 fn test_assume_all_signature_proofs_flag_method_authorization() {
     // Arrange
     // Create an account component that requires a key auth for withdrawal
