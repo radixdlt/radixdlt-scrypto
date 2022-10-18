@@ -49,12 +49,20 @@ impl Publish {
             .map_err(Error::DataError)?;
 
         if let Some(package_address) = self.package_address.clone() {
+            let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+
+            let global: GlobalAddressSubstate = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::Global(GlobalAddress::Package(package_address.0)),
+                    SubstateOffset::Global(GlobalOffset::Global),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().into())
+                .ok_or(Error::PackageAddressNotFound)?;
             let substate_id = SubstateId(
-                RENodeId::Package(package_address.0),
+                global.node_deref(),
                 SubstateOffset::Package(PackageOffset::Package),
             );
-
-            let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
             let previous_version = substate_store
                 .get_substate(&substate_id)
@@ -73,7 +81,7 @@ impl Publish {
             // TODO: implement real package overwrite
             substate_store.put_substate(
                 SubstateId(
-                    RENodeId::Package(package_address.0),
+                    global.node_deref(),
                     SubstateOffset::Package(PackageOffset::Package),
                 ),
                 output_value,
