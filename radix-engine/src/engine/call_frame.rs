@@ -207,54 +207,57 @@ impl CallFrame {
             .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))
     }
 
-    pub fn create_node(&mut self, node_id: RENodeId, mut re_node: HeapRENode) -> Result<(), RuntimeError> {
-        let mut taken_root_nodes = HashMap::new();
+    fn take_node_internal(&mut self, node_id: RENodeId) -> Result<(), CallFrameError> {
+        if self.node_lock_count.contains_key(&node_id) {
+            return Err(CallFrameError::MovingLockedRENode(node_id));
+        }
+
+        if !self.owned_heap_nodes.remove(&node_id) {
+            return Err(CallFrameError::RENodeNotOwned(node_id));
+        }
+
+        // Moved nodes must have their child node references removed
+        self.node_refs.remove(&node_id);
+        let node = self.heap.get_node(node_id)?;
+        for (id, ..) in &node.child_nodes {
+            self.node_refs.remove(id);
+        }
+
+        Ok(())
+    }
+
+    pub fn create_node(
+        &mut self,
+        node_id: RENodeId,
+        mut re_node: HeapRENode,
+    ) -> Result<(), RuntimeError> {
+        let mut children = HashSet::new();
         for offset in re_node.get_substates() {
             let substate = re_node.borrow_substate(&offset)?;
             let (_, owned) = substate.references_and_owned_nodes();
             for child_id in owned {
+                self.take_node_internal(child_id)?;
+
                 SubstateProperties::verify_can_own(&offset, child_id)?;
-                let node = self.take_node(child_id)?;
-                taken_root_nodes.insert(child_id, node);
+                children.insert(child_id);
             }
         }
 
-        let mut child_nodes = HashMap::new();
-        for (id, taken_root_node) in taken_root_nodes {
-            child_nodes.extend(taken_root_node.to_nodes(id));
-        }
-
         // Insert node into heap
-
         let heap_root_node = HeapRootRENode {
             root: re_node,
-            child_nodes,
+            child_nodes: HashMap::new(),
         };
         self.heap.create_node(node_id, heap_root_node);
+        self.heap.move_nodes_to_node(children, node_id)?;
         self.owned_heap_nodes.insert(node_id);
 
         Ok(())
     }
 
     pub fn take_node(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, CallFrameError> {
-        if self.node_lock_count.contains_key(&node_id) {
-            return Err(CallFrameError::MovingLockedRENode(node_id));
-        }
-
-        let exists = self.owned_heap_nodes.remove(&node_id);
-        if exists {
-            let root_node = self.heap.remove_node(node_id).unwrap();
-
-            // Moved nodes must have their child node references removed
-            self.node_refs.remove(&node_id);
-            for (id, ..) in &root_node.child_nodes {
-                self.node_refs.remove(id);
-            }
-
-            Ok(root_node)
-        } else {
-            Err(CallFrameError::RENodeNotOwned(node_id))
-        }
+        self.take_node_internal(node_id)?;
+        self.heap.remove_node(node_id)
     }
 
     pub fn get_owned_heap_node_mut(

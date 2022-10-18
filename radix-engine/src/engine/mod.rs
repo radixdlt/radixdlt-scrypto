@@ -1,6 +1,7 @@
 mod actor;
 mod call_frame;
 mod errors;
+mod heap;
 mod interpreters;
 mod kernel;
 mod modules;
@@ -12,11 +13,11 @@ mod system_api;
 mod track;
 mod track_support;
 mod wasm_runtime;
-mod heap;
 
 pub use actor::*;
 pub use call_frame::CallFrame;
 pub use errors::*;
+pub use heap::*;
 pub use interpreters::*;
 pub use kernel::*;
 pub use modules::*;
@@ -28,4 +29,3 @@ pub use system_api::{LockFlags, SystemApi};
 pub use track::*;
 pub use track_support::*;
 pub use wasm_runtime::*;
-pub use heap::*;
