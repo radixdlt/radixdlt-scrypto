@@ -510,8 +510,13 @@ where
                     },
                 )?;
                 for m in &mut self.modules {
-                    m.on_wasm_instantiation(&mut self.heap, &mut self.track, &mut self.call_frames, package.code())
-                        .map_err(RuntimeError::ModuleError)?;
+                    m.on_wasm_instantiation(
+                        &mut self.heap,
+                        &mut self.track,
+                        &mut self.call_frames,
+                        package.code(),
+                    )
+                    .map_err(RuntimeError::ModuleError)?;
                 }
 
                 let node_pointer = Self::current_frame(&self.call_frames)
@@ -580,8 +585,13 @@ where
                     },
                 )?;
                 for m in &mut self.modules {
-                    m.on_wasm_instantiation(&mut self.heap, &mut self.track, &mut self.call_frames, package.code())
-                        .map_err(RuntimeError::ModuleError)?;
+                    m.on_wasm_instantiation(
+                        &mut self.heap,
+                        &mut self.track,
+                        &mut self.call_frames,
+                        package.code(),
+                    )
+                    .map_err(RuntimeError::ModuleError)?;
                 }
 
                 let node_pointer = Self::current_frame(&self.call_frames)
@@ -643,8 +653,13 @@ where
 
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
-            m.on_wasm_costing(&mut self.heap, &mut self.track, &mut self.call_frames, units)
-                .map_err(RuntimeError::ModuleError)?;
+            m.on_wasm_costing(
+                &mut self.heap,
+                &mut self.track,
+                &mut self.call_frames,
+                units,
+            )
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         Ok(())
@@ -934,7 +949,11 @@ where
 
         let node_id = Self::new_node_id(&mut self.id_allocator, self.transaction_hash, &re_node)
             .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-        Self::current_frame_mut(&mut self.call_frames).create_node(&mut self.heap, node_id, re_node)?;
+        Self::current_frame_mut(&mut self.call_frames).create_node(
+            &mut self.heap,
+            node_id,
+            re_node,
+        )?;
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -962,7 +981,8 @@ where
 
         // TODO: Authorization
 
-        let node = Self::current_frame_mut(&mut self.call_frames).take_node(&mut self.heap, node_id)?;
+        let node =
+            Self::current_frame_mut(&mut self.call_frames).take_node(&mut self.heap, node_id)?;
 
         let (global_address, global_substate) = Self::globalize(
             &mut self.id_allocator,
@@ -1156,7 +1176,7 @@ where
 
         let (global_references, children) = {
             let substate_ref =
-                node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.heap, &mut self.track)?;
+                node_pointer.borrow_substate(&offset, &mut self.heap, &mut self.track)?;
             substate_ref.references_and_owned_nodes()
         };
 
@@ -1192,7 +1212,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.heap, &mut self.track)
+        node_pointer.borrow_substate(&offset, &mut self.heap, &mut self.track)
     }
 
     fn get_ref_mut<'f>(
@@ -1228,7 +1248,7 @@ where
 
         let (global_references, children) = {
             let substate_ref =
-                node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.heap, &mut self.track)?;
+                node_pointer.borrow_substate(&offset, &mut self.heap, &mut self.track)?;
             substate_ref.references_and_owned_nodes()
         };
 

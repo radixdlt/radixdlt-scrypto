@@ -126,7 +126,7 @@ impl ExecutionTraceModule {
                         Receiver::Ref(RENodeId::Vault(vault_id)),
                         MethodIdent::Native(NativeMethod::Vault(VaultMethod::Put)),
                     ) => {
-                        Self::handle_vault_put(heap, track, actor, vault_id, input, call_frames);
+                        Self::handle_vault_put(heap, track, actor, vault_id, input);
                     }
                     (
                         Receiver::Ref(RENodeId::Vault(vault_id)),
@@ -158,14 +158,10 @@ impl ExecutionTraceModule {
         actor: &REActor,
         vault_id: &VaultId,
         input: &ScryptoValue,
-        call_frames: &Vec<CallFrame>,
     ) {
         if let Ok(call_data) = scrypto_decode::<VaultPutInput>(&input.raw) {
             let bucket_id = call_data.bucket.0;
-
-            let frame = call_frames.last().expect("Current call frame not found");
-
-            if let Ok(tree) = frame.get_owned_heap_node(heap, RENodeId::Bucket(bucket_id)) {
+            if let Ok(tree) = heap.get_node(RENodeId::Bucket(bucket_id)) {
                 if let HeapRENode::Bucket(bucket_node) = &tree.root {
                     track.vault_ops.push((
                         actor.clone(),

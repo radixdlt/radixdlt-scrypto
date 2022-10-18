@@ -1,4 +1,6 @@
-use crate::engine::{CallFrame, Heap, KernelError, RENodePointer, RuntimeError, SubstateProperties, Track};
+use crate::engine::{
+    CallFrame, Heap, KernelError, RENodePointer, RuntimeError, SubstateProperties, Track,
+};
 use crate::fee::FeeReserve;
 use crate::model::substates::worktop::WorktopSubstate;
 use crate::model::*;
@@ -630,7 +632,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             current_frame.add_lock_visible_node(self.lock_handle, child_id)?;
 
             self.node_pointer
-                .add_child(child_id, node, &mut self.call_frames, &mut self.heap, &mut self.track);
+                .add_child(child_id, node, &mut self.heap, &mut self.track);
         }
 
         Ok(())
@@ -643,10 +645,10 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
 
     pub fn get_raw_mut(&mut self) -> RawSubstateRefMut {
         match self.node_pointer {
-            RENodePointer::Heap { frame_id, root, id } => {
-                let frame = self.call_frames.get_mut(frame_id).unwrap();
-                let heap_re_node = frame
-                    .get_owned_heap_node_mut(self.heap, root)
+            RENodePointer::Heap { root, id } => {
+                let heap_re_node = self
+                    .heap
+                    .get_node_mut(root)
                     .unwrap()
                     .get_node_mut(id.as_ref());
                 heap_re_node.borrow_substate_mut(&self.offset).unwrap()
