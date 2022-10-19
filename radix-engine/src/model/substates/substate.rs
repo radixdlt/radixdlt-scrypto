@@ -648,12 +648,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
     pub fn get_raw_mut(&mut self) -> RawSubstateRefMut {
         match self.node_pointer {
             RENodePointer::Heap(node_id) => {
-                let heap_re_node = self
-                    .heap
-                    .get_node_mut(node_id)
-                    .unwrap()
-                    .get_mut();
-                heap_re_node.borrow_substate_mut(&self.offset).unwrap()
+                self.heap.get_substate_mut(node_id, &self.offset).unwrap()
             }
             RENodePointer::Store(node_id) => match (node_id, &self.offset) {
                 (

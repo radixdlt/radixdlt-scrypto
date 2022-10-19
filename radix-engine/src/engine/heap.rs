@@ -1,8 +1,8 @@
 use crate::engine::{CallFrameError, HeapRENode, Track};
 use crate::types::{HashMap, HashSet};
-use scrypto::engine::types::{RENodeId, SubstateId};
+use scrypto::engine::types::{RENodeId, SubstateId, SubstateOffset};
 use crate::fee::FeeReserve;
-use crate::model::node_to_substates;
+use crate::model::{node_to_substates, RawSubstateRefMut, SubstateRef};
 
 pub struct Heap {
     pub nodes: HashMap<RENodeId, HeapRENode>,
@@ -13,6 +13,22 @@ impl Heap {
         Self {
             nodes: HashMap::new(),
         }
+    }
+
+    pub fn get_substate(&mut self, node_id: RENodeId, offset: &SubstateOffset) -> Result<SubstateRef, CallFrameError> {
+        let node = self.nodes
+            .get_mut(&node_id)
+            .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
+        node.root.borrow_substate(offset)
+            .map_err(|_| CallFrameError::OffsetDoesNotExist(node_id, offset.clone()))
+    }
+
+    pub fn get_substate_mut(&mut self, node_id: RENodeId, offset: &SubstateOffset) -> Result<RawSubstateRefMut, CallFrameError> {
+        let node = self.nodes
+            .get_mut(&node_id)
+            .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
+        node.root.borrow_substate_mut(offset)
+            .map_err(|_| CallFrameError::OffsetDoesNotExist(node_id, offset.clone()))
     }
 
     pub fn get_node_mut(
@@ -47,19 +63,6 @@ impl Heap {
         }
 
         self.get_node_mut(to)?.child_nodes.extend(node_ids);
-
-        /*
-        for node_id in node_ids {
-            if !self.nodes.contains_key(&node_id) {
-                return Err(CallFrameError::RENodeNotOwned(node_id));
-            }
-
-            //let node = self.remove_node(node_id)?;
-            nodes.extend(node.to_nodes(node_id));
-        }
-             */
-
-        //self.get_node_mut(to)?.child_nodes.extend(nodes);
 
         Ok(())
     }

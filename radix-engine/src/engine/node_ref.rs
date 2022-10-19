@@ -72,8 +72,7 @@ impl RENodePointer {
     ) -> Result<SubstateRef<'f>, RuntimeError> {
         let substate_ref = match self {
             RENodePointer::Heap(node_id) => {
-                let heap_re_node = heap.get_node_mut(*node_id)?.get_mut();
-                heap_re_node.borrow_substate(offset)?
+                heap.get_substate(*node_id, offset)?
             }
             RENodePointer::Store(node_id) => match (node_id, offset) {
                 (
