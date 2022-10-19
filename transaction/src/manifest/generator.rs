@@ -654,12 +654,12 @@ fn generate_re_node_id(
 
             Ok(RENodeId::Bucket(bucket_id))
         }
-        ast::RENode::AuthZone(value) => {
+        ast::RENode::AuthZoneStack(value) => {
             let auth_zone_id = match value {
                 ast::Value::U32(v) => Ok(*v),
                 v => invalid_type!(v, ast::Type::U32),
             }?;
-            Ok(RENodeId::AuthZone(auth_zone_id))
+            Ok(RENodeId::AuthZoneStack(auth_zone_id))
         }
         ast::RENode::Worktop => Ok(RENodeId::Worktop),
         ast::RENode::KeyValueStore(node_id) => {

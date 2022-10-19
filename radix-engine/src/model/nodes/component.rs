@@ -2,7 +2,6 @@ use crate::engine::{LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{ComponentInfoSubstate, ComponentStateSubstate, InvokeError};
 use crate::types::*;
-use crate::wasm::{WasmEngine, WasmInstance};
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum ComponentError {
@@ -47,16 +46,14 @@ impl Component {
         }
     }
 
-    pub fn main<'s, Y, W, I, R>(
+    pub fn main<'s, Y, R>(
         component_id: ComponentId,
         method: ComponentMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ComponentError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         let node_id = RENodeId::Component(component_id);

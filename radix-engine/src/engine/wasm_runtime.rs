@@ -1,5 +1,4 @@
-use crate::engine::{HeapRENode, SystemApi};
-use crate::engine::{LockFlags, RuntimeError};
+use crate::engine::*;
 use crate::fee::*;
 use crate::model::{
     Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore,
@@ -14,26 +13,20 @@ use super::KernelError;
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, 's, Y, W, I, R>
+pub struct RadixEngineWasmRuntime<'y, 's, Y, R>
 where
-    Y: SystemApi<'s, W, I, R>,
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    Y: SystemApi<'s, R>,
     R: FeeReserve,
 {
     actor: ScryptoActor,
     system_api: &'y mut Y,
-    phantom1: PhantomData<W>,
-    phantom2: PhantomData<I>,
-    phantom3: PhantomData<R>,
-    phantom4: PhantomData<&'s ()>,
+    phantom1: PhantomData<R>,
+    phantom2: PhantomData<&'s ()>,
 }
 
-impl<'y, 's, Y, W, I, R> RadixEngineWasmRuntime<'y, 's, Y, W, I, R>
+impl<'y, 's, Y, R> RadixEngineWasmRuntime<'y, 's, Y, R>
 where
-    Y: SystemApi<'s, W, I, R>,
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    Y: SystemApi<'s, R>,
     R: FeeReserve,
 {
     // TODO: expose API for reading blobs
@@ -48,8 +41,6 @@ where
             system_api,
             phantom1: PhantomData,
             phantom2: PhantomData,
-            phantom3: PhantomData,
-            phantom4: PhantomData,
         }
     }
 
@@ -106,8 +97,8 @@ where
         Ok(ScryptoValue::from_typed(&id))
     }
 
-    fn handle_get_owned_node_ids(&mut self) -> Result<ScryptoValue, RuntimeError> {
-        let node_ids = self.system_api.get_owned_node_ids()?;
+    fn handle_get_visible_node_ids(&mut self) -> Result<ScryptoValue, RuntimeError> {
+        let node_ids = self.system_api.get_visible_node_ids()?;
         Ok(ScryptoValue::from_typed(&node_ids))
     }
 
@@ -188,11 +179,9 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'y, 's, Y, W, I, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, Y, W, I, R>
+impl<'y, 's, Y, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, Y, R>
 where
-    Y: SystemApi<'s, W, I, R>,
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    Y: SystemApi<'s, R>,
     R: FeeReserve,
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {
@@ -213,7 +202,7 @@ where
             }
             RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id)?,
             RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node)?,
-            RadixEngineInput::GetOwnedRENodeIds() => self.handle_get_owned_node_ids()?,
+            RadixEngineInput::GetVisibleNodeIds() => self.handle_get_visible_node_ids()?,
 
             RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
                 self.handle_lock_substate(node_id, offset, mutable)?

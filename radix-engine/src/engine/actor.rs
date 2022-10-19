@@ -20,15 +20,36 @@ pub enum NativeFunction {
     TransactionProcessor(TransactionProcessorFunction),
 }
 
+/// Resolved receiver including info whether receiver was derefed
+/// or not
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub enum ResolvedMethod {
-    Scrypto {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        ident: String,
-        export_name: String,
-    },
-    Native(NativeMethod),
+pub struct ResolvedReceiver {
+    pub derefed_from: Option<RENodeId>,
+    pub receiver: Receiver,
+}
+
+impl ResolvedReceiver {
+    pub fn derefed(receiver: Receiver, from: RENodeId) -> Self {
+        Self {
+            receiver,
+            derefed_from: Some(from),
+        }
+    }
+
+    pub fn new(receiver: Receiver) -> Self {
+        Self {
+            receiver,
+            derefed_from: None,
+        }
+    }
+
+    pub fn receiver(&self) -> Receiver {
+        self.receiver
+    }
+
+    pub fn node_id(&self) -> RENodeId {
+        self.receiver.node_id()
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
@@ -38,74 +59,48 @@ pub enum ResolvedFunction {
         blueprint_name: String,
         ident: String,
         export_name: String,
+        return_type: Type,
     },
     Native(NativeFunction),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+pub enum ResolvedMethod {
+    Scrypto {
+        package_address: PackageAddress,
+        blueprint_name: String,
+        ident: String,
+        export_name: String,
+        return_type: Type,
+    },
+    Native(NativeMethod),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum REActor {
     Function(ResolvedFunction),
-    Method(ResolvedMethod, Receiver),
+    Method(ResolvedMethod, ResolvedReceiver),
 }
 
 impl REActor {
-    pub fn is_substate_readable(&self, node_id: RENodeId, offset: SubstateOffset) -> bool {
-        match self {
-            REActor::Function(ResolvedFunction::Native(..))
-            | REActor::Method(ResolvedMethod::Native(..), ..) => true,
-            REActor::Function(ResolvedFunction::Scrypto { .. }) => match (node_id, offset) {
-                (
-                    RENodeId::KeyValueStore(_),
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                ) => true,
-                (RENodeId::Global(_), SubstateOffset::Global(GlobalOffset::Global)) => true,
-                (RENodeId::Component(_), SubstateOffset::Component(ComponentOffset::Info)) => true,
-                _ => false,
-            },
-            REActor::Method(
-                ResolvedMethod::Scrypto { .. },
-                Receiver::Ref(RENodeId::Component(component_address)),
-            ) => match (node_id, offset) {
-                (
-                    RENodeId::KeyValueStore(_),
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                ) => true,
-                (RENodeId::Component(_), SubstateOffset::Component(ComponentOffset::Info)) => true,
-                (RENodeId::Component(addr), SubstateOffset::Component(ComponentOffset::State)) => {
-                    addr.eq(component_address)
-                }
-                (RENodeId::Global(_), SubstateOffset::Global(GlobalOffset::Global)) => true,
-                _ => false,
-            },
-            _ => false,
-        }
+    pub fn is_scrypto_or_transaction(&self) -> bool {
+        matches!(
+            self,
+            REActor::Method(ResolvedMethod::Scrypto { .. }, ..)
+                | REActor::Function(ResolvedFunction::Scrypto { .. })
+                | REActor::Function(ResolvedFunction::Native(
+                    NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run)
+                ))
+        )
     }
+}
 
-    pub fn is_substate_writeable(&self, node_id: RENodeId, offset: SubstateOffset) -> bool {
-        match self {
-            REActor::Function(ResolvedFunction::Native(..))
-            | REActor::Method(ResolvedMethod::Native(..), ..) => true,
-            REActor::Function(ResolvedFunction::Scrypto { .. }) => match (node_id, offset) {
-                (
-                    RENodeId::KeyValueStore(_),
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                ) => true,
-                _ => false,
-            },
-            REActor::Method(
-                ResolvedMethod::Scrypto { .. },
-                Receiver::Ref(RENodeId::Component(component_address)),
-            ) => match (node_id, offset) {
-                (
-                    RENodeId::KeyValueStore(_),
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                ) => true,
-                (RENodeId::Component(addr), SubstateOffset::Component(ComponentOffset::State)) => {
-                    addr.eq(component_address)
-                }
-                _ => false,
-            },
-            _ => false,
-        }
-    }
+/// Execution mode
+#[derive(Debug, Copy, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+pub enum ExecutionMode {
+    Kernel,
+    Deref,
+    ScryptoInterpreter,
+    AuthModule,
+    Application,
 }

@@ -23,103 +23,57 @@ impl AuthModule {
         NonFungibleId::from_u32(1)
     }
 
-    fn check_auth(
-        method_auths: Vec<MethodAuthorization>,
-        call_frames: &Vec<CallFrame>, // TODO remove this once heap is implemented
-    ) -> Result<(), AuthError> {
-        // This module is called with a new call frame. Get the previous one which has an authzone.
-        let second_to_last_index = call_frames.len() - 2;
-
-        let prev_call_frame = call_frames
-            .get(second_to_last_index)
-            .expect("Previous call frame does not exist");
-
-        let auth_zone = Self::get_auth_zone(prev_call_frame);
-
-        let mut auth_zones = vec![auth_zone];
-
-        // FIXME: This is wrong as it allows extern component calls to use caller's auth zone
-        // Also, need to add a test for this
-        if let Some(frame) = call_frames.iter().rev().nth(2) {
-            let auth_zone = Self::get_auth_zone(frame);
-            auth_zones.push(auth_zone);
-        }
-
-        // Authorization check
-        if !method_auths.is_empty() {
-            for method_auth in method_auths {
-                method_auth
-                    .check(&auth_zones)
-                    .map_err(|error| AuthError::Unauthorized {
-                        actor: call_frames.last().unwrap().actor.clone(),
-                        authorization: method_auth,
-                        error,
-                    })?;
-            }
-        }
-
-        Ok(())
-    }
-
-    pub fn get_auth_zone(call_frame: &CallFrame) -> &AuthZoneSubstate {
-        call_frame
-            .owned_heap_nodes
-            .values()
-            .find(|e| {
-                matches!(
-                    e,
-                    HeapRootRENode {
-                        root: HeapRENode::AuthZone(..),
-                        ..
-                    }
-                )
-            })
-            .expect("Could not find auth zone")
-            .root
-            .auth_zone()
-    }
-
-    pub fn verify_auth<'s, R: FeeReserve>(
+    pub fn on_before_frame_start<'s, Y, R>(
+        actor: &REActor,
         input: &ScryptoValue, // TODO: Remove
-        call_frames: &mut Vec<CallFrame>,
-        track: &mut Track<'s, R>,
-    ) -> Result<(), InvokeError<AuthError>> {
-        let call_frame = call_frames.last().unwrap();
-        let auth = match call_frame.actor.clone() {
+        system_api: &mut Y,
+    ) -> Result<HashSet<RENodeId>, InvokeError<AuthError>>
+    where
+        Y: SystemApi<'s, R>,
+        R: FeeReserve,
+    {
+        let mut new_refs = HashSet::new();
+        if matches!(
+            actor,
+            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..)
+        ) {
+            return Ok(new_refs);
+        }
+
+        let method_auths = match actor.clone() {
             REActor::Function(function_ident) => match function_ident {
                 ResolvedFunction::Native(NativeFunction::System(system_func)) => {
                     System::function_auth(&system_func)
                 }
                 _ => vec![],
             },
-            REActor::Method(method, receiver) => {
-                match (method, receiver) {
+            REActor::Method(method, resolved_receiver) => {
+                match (method, resolved_receiver) {
                     (
                         ResolvedMethod::Native(NativeMethod::ResourceManager(ref method)),
-                        Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                        ResolvedReceiver {
+                            receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                            ..
+                        },
                     ) => {
                         let node_id = RENodeId::ResourceManager(resource_address);
-                        let resource_pointer = RENodePointer::Store(node_id);
                         let offset =
                             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                        resource_pointer
-                            .acquire_lock(offset.clone(), LockFlags::empty(), track)
-                            .map_err(RuntimeError::KernelError)?;
-
-                        let substate_ref =
-                            resource_pointer.borrow_substate(&offset, call_frames, track)?;
+                        let handle =
+                            system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+                        let substate_ref = system_api.get_ref(handle)?;
                         let resource_manager = substate_ref.resource_manager();
                         let method_auth = resource_manager.get_auth(*method, &input).clone();
-                        resource_pointer
-                            .release_lock(offset, false, track)
-                            .map_err(RuntimeError::KernelError)?;
-
+                        system_api.drop_lock(handle)?;
                         let auth = vec![method_auth];
                         auth
                     }
                     (
                         ResolvedMethod::Native(NativeMethod::System(ref method)),
-                        Receiver::Ref(RENodeId::System(..)),
+                        ResolvedReceiver {
+                            receiver: Receiver::Ref(RENodeId::System(..)),
+                            ..
+                        },
                     ) => System::method_auth(method),
                     (
                         ResolvedMethod::Scrypto {
@@ -128,105 +82,83 @@ impl AuthModule {
                             ident,
                             ..
                         },
-                        Receiver::Ref(RENodeId::Component(..)),
+                        ResolvedReceiver {
+                            receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                            ..
+                        },
                     ) => {
                         let node_id = RENodeId::Package(package_address);
-                        let package_pointer = RENodePointer::Store(node_id);
                         let offset = SubstateOffset::Package(PackageOffset::Package);
-                        package_pointer
-                            .acquire_lock(offset.clone(), LockFlags::empty(), track)
-                            .map_err(RuntimeError::KernelError)?;
+                        let handle =
+                            system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
 
                         // Assume that package_address/blueprint is the original impl of Component for now
                         // TODO: Remove this assumption
-                        let package = track.borrow_substate(node_id, offset.clone()).package();
+                        let substate_ref = system_api.get_ref(handle)?;
+                        let package = substate_ref.package();
                         let schema = package
                             .blueprint_abi(&blueprint_name)
                             .expect("Blueprint not found for existing component")
                             .structure
                             .clone();
+                        system_api.drop_lock(handle)?;
 
-                        package_pointer
-                            .release_lock(offset, false, track)
-                            .map_err(RuntimeError::KernelError)?;
-
-                        let component_node_pointer = call_frames
-                            .last()
-                            .unwrap()
-                            .get_node_pointer(receiver.node_id())?;
-
+                        let component_node_id = RENodeId::Component(component_id);
                         let state = {
                             let offset = SubstateOffset::Component(ComponentOffset::State);
-                            component_node_pointer
-                                .acquire_lock(offset.clone(), LockFlags::empty(), track)
-                                .map_err(RuntimeError::KernelError)?;
-                            let substate_ref = component_node_pointer.borrow_substate(
-                                &offset,
-                                call_frames,
-                                track,
+                            let handle = system_api.lock_substate(
+                                component_node_id,
+                                offset,
+                                LockFlags::read_only(),
                             )?;
-                            let state = substate_ref.component_state().clone();
-                            component_node_pointer
-                                .release_lock(offset, false, track)
-                                .map_err(RuntimeError::KernelError)?;
+                            let substate_ref = system_api.get_ref(handle)?;
+                            let state = substate_ref.component_state().clone(); // TODO: Remove clone
+                            system_api.drop_lock(handle)?;
                             state
                         };
                         {
                             let offset = SubstateOffset::Component(ComponentOffset::Info);
-                            component_node_pointer
-                                .acquire_lock(offset.clone(), LockFlags::empty(), track)
-                                .map_err(RuntimeError::KernelError)?;
-                            let substate_ref = component_node_pointer.borrow_substate(
-                                &offset,
-                                call_frames,
-                                track,
+                            let handle = system_api.lock_substate(
+                                component_node_id,
+                                offset,
+                                LockFlags::read_only(),
                             )?;
+                            let substate_ref = system_api.get_ref(handle)?;
                             let info = substate_ref.component_info();
                             let auth = info.method_authorization(&state, &schema, &ident);
-                            component_node_pointer
-                                .release_lock(offset, false, track)
-                                .map_err(RuntimeError::KernelError)?;
+                            system_api.drop_lock(handle)?;
                             auth
                         }
                     }
                     (
                         ResolvedMethod::Native(NativeMethod::Vault(ref vault_fn)),
-                        Receiver::Ref(RENodeId::Vault(..)),
+                        ResolvedReceiver {
+                            receiver: Receiver::Ref(RENodeId::Vault(vault_id)),
+                            ..
+                        },
                     ) => {
-                        let vault_node_pointer = call_frames
-                            .last()
-                            .unwrap()
-                            .get_node_pointer(receiver.node_id())?;
-
+                        let vault_node_id = RENodeId::Vault(vault_id);
                         let resource_address = {
                             let offset = SubstateOffset::Vault(VaultOffset::Vault);
-                            vault_node_pointer
-                                .acquire_lock(offset.clone(), LockFlags::empty(), track)
-                                .map_err(RuntimeError::KernelError)?;
-                            let substate_ref =
-                                vault_node_pointer.borrow_substate(&offset, call_frames, track)?;
+                            let handle = system_api.lock_substate(
+                                vault_node_id,
+                                offset,
+                                LockFlags::read_only(),
+                            )?;
+                            let substate_ref = system_api.get_ref(handle)?;
                             let resource_address = substate_ref.vault().resource_address();
-                            vault_node_pointer
-                                .release_lock(offset, false, track)
-                                .map_err(RuntimeError::KernelError)?;
+                            system_api.drop_lock(handle)?;
                             resource_address
                         };
-                        let node_id = RENodeId::ResourceManager(resource_address);
-                        let resource_pointer = RENodePointer::Store(node_id);
+                        let node_id = RENodeId::Global(GlobalAddress::Resource(resource_address));
                         let offset =
                             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                        resource_pointer
-                            .acquire_lock(offset.clone(), LockFlags::empty(), track)
-                            .map_err(RuntimeError::KernelError)?;
-
-                        let substate_ref =
-                            resource_pointer.borrow_substate(&offset, call_frames, track)?;
+                        let handle =
+                            system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+                        let substate_ref = system_api.get_ref(handle)?;
                         let resource_manager = substate_ref.resource_manager();
                         let auth = vec![resource_manager.get_vault_auth(*vault_fn).clone()];
-
-                        resource_pointer
-                            .release_lock(offset, false, track)
-                            .map_err(RuntimeError::KernelError)?;
+                        system_api.drop_lock(handle)?;
 
                         auth
                     }
@@ -235,6 +167,73 @@ impl AuthModule {
             }
         };
 
-        Self::check_auth(auth, call_frames).map_err(InvokeError::Error)
+        let refed = system_api.get_visible_node_ids()?;
+        let auth_zone_id = refed
+            .into_iter()
+            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
+            .unwrap();
+
+        let handle = system_api.lock_substate(
+            auth_zone_id,
+            SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            LockFlags::MUTABLE,
+        )?;
+        let mut substate_mut_ref = system_api.get_ref_mut(handle)?;
+        let mut raw_mut = substate_mut_ref.get_raw_mut();
+        let auth_zone_ref_mut = raw_mut.auth_zone();
+
+        // Authorization check
+        auth_zone_ref_mut
+            .check_auth(actor, method_auths)
+            .map_err(|(authorization, error)| {
+                InvokeError::Error(AuthError::Unauthorized {
+                    actor: actor.clone(),
+                    authorization,
+                    error,
+                })
+            })?;
+
+        // New auth zone frame managed by the AuthModule
+        auth_zone_ref_mut.new_frame(actor);
+        new_refs.insert(auth_zone_id);
+
+        substate_mut_ref.flush()?;
+        system_api.drop_lock(handle)?;
+
+        Ok(new_refs)
+    }
+
+    pub fn on_frame_end<'s, Y, R>(system_api: &mut Y) -> Result<(), InvokeError<AuthError>>
+    where
+        Y: SystemApi<'s, R>,
+        R: FeeReserve,
+    {
+        if matches!(
+            system_api.get_actor(),
+            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..)
+        ) {
+            return Ok(());
+        }
+
+        let refed = system_api.get_visible_node_ids()?;
+        let auth_zone_id = refed
+            .into_iter()
+            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
+            .unwrap();
+        let handle = system_api.lock_substate(
+            auth_zone_id,
+            SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            LockFlags::MUTABLE,
+        )?;
+        {
+            let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+            let mut raw_mut = substate_ref_mut.get_raw_mut();
+            let auth_zone = raw_mut.auth_zone();
+            auth_zone.pop_frame();
+            substate_ref_mut.flush()?;
+        }
+        system_api.drop_lock(handle)?;
+
+        Ok(())
     }
 }

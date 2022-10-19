@@ -11,7 +11,7 @@ pub enum ScryptoRENode {
 pub enum RENodeId {
     Bucket(BucketId),
     Proof(ProofId),
-    AuthZone(AuthZoneId),
+    AuthZoneStack(AuthZoneId),
     Worktop,
 
     Global(GlobalAddress),

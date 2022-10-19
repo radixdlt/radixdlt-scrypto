@@ -220,7 +220,7 @@ impl Parser {
         match token.kind {
             TokenKind::Bucket
             | TokenKind::Proof
-            | TokenKind::AuthZone
+            | TokenKind::AuthZoneStack
             | TokenKind::Worktop
             | TokenKind::Global
             | TokenKind::KeyValueStore
@@ -243,7 +243,7 @@ impl Parser {
         match token.kind {
             TokenKind::Bucket => Ok(RENode::Bucket(self.parse_values_one()?)),
             TokenKind::Proof => Ok(RENode::Proof(self.parse_values_one()?)),
-            TokenKind::AuthZone => Ok(RENode::AuthZone(self.parse_values_one()?)),
+            TokenKind::AuthZoneStack => Ok(RENode::AuthZoneStack(self.parse_values_one()?)),
             TokenKind::Worktop => Ok(RENode::Worktop),
             TokenKind::Global => Ok(RENode::Global(self.parse_values_one()?)),
             TokenKind::KeyValueStore => Ok(RENode::KeyValueStore(self.parse_values_one()?)),

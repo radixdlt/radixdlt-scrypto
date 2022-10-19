@@ -49,9 +49,9 @@ pub struct ComponentAuthZone {}
 impl ComponentAuthZone {
     native_functions! {
         {
-            let input = RadixEngineInput::GetOwnedRENodeIds();
+            let input = RadixEngineInput::GetVisibleNodeIds();
             let owned_node_ids: Vec<RENodeId> = call_engine(input);
-            let node_id = owned_node_ids.into_iter().find(|n| matches!(n, RENodeId::AuthZone(..))).expect("AuthZone does not exist");
+            let node_id = owned_node_ids.into_iter().find(|n| matches!(n, RENodeId::AuthZoneStack(..))).expect("AuthZone does not exist");
             Receiver::Ref(node_id)
         }, NativeMethod::AuthZone => {
             pub fn pop() -> Proof {
@@ -84,11 +84,11 @@ impl ComponentAuthZone {
     }
 
     pub fn push<P: Into<Proof>>(proof: P) {
-        let input = RadixEngineInput::GetOwnedRENodeIds();
+        let input = RadixEngineInput::GetVisibleNodeIds();
         let owned_node_ids: Vec<RENodeId> = call_engine(input);
         let node_id = owned_node_ids
             .into_iter()
-            .find(|n| matches!(n, RENodeId::AuthZone(..)))
+            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
 
         let proof: Proof = proof.into();

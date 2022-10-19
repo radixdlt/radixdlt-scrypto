@@ -2,7 +2,6 @@ use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{InvokeError, ProofError, ProofSubstate};
 use crate::types::*;
-use crate::wasm::*;
 use scrypto::resource::AuthZoneDrainInput;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -16,9 +15,9 @@ pub enum AuthZoneError {
     NoMethodSpecified,
 }
 
-pub struct AuthZone;
+pub struct AuthZoneStack;
 
-impl AuthZone {
+impl AuthZoneStack {
     pub fn method_locks(method: AuthZoneMethod) -> LockFlags {
         match method {
             AuthZoneMethod::Pop => LockFlags::MUTABLE,
@@ -31,19 +30,17 @@ impl AuthZone {
         }
     }
 
-    pub fn main<'s, Y, W, I, R>(
+    pub fn main<'s, Y, R>(
         auth_zone_id: AuthZoneId,
         method: AuthZoneMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<AuthZoneError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
-        let node_id = RENodeId::AuthZone(auth_zone_id);
+        let node_id = RENodeId::AuthZoneStack(auth_zone_id);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
         let auth_zone_handle =
             system_api.lock_substate(node_id, offset, Self::method_locks(method))?;
@@ -57,7 +54,7 @@ impl AuthZone {
                     let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let auth_zone = raw_mut.auth_zone();
-                    let proof = auth_zone.pop()?;
+                    let proof = auth_zone.cur_auth_zone_mut().pop()?;
                     substate_mut.flush()?;
                     proof
                 };
@@ -75,7 +72,7 @@ impl AuthZone {
                 let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
                 let auth_zone = raw_mut.auth_zone();
-                auth_zone.push(proof);
+                auth_zone.cur_auth_zone_mut().push(proof);
                 substate_mut.flush()?;
 
                 ScryptoValue::from_typed(&())
@@ -99,7 +96,9 @@ impl AuthZone {
                     let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let auth_zone = raw_mut.auth_zone();
-                    let proof = auth_zone.create_proof(input.resource_address, resource_type)?;
+                    let proof = auth_zone
+                        .cur_auth_zone()
+                        .create_proof(input.resource_address, resource_type)?;
                     substate_mut.flush()?;
                     proof
                 };
@@ -126,7 +125,7 @@ impl AuthZone {
                     let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let auth_zone = raw_mut.auth_zone();
-                    let proof = auth_zone.create_proof_by_amount(
+                    let proof = auth_zone.cur_auth_zone().create_proof_by_amount(
                         input.amount,
                         input.resource_address,
                         resource_type,
@@ -154,23 +153,13 @@ impl AuthZone {
                 };
 
                 let proof = {
-                    let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let auth_zone = raw_mut.auth_zone();
-                    let maybe_existing_proof = auth_zone.create_proof_by_ids(
+                    let substate_ref = system_api.get_ref(auth_zone_handle)?;
+                    let auth_zone = substate_ref.auth_zone();
+                    let proof = auth_zone.cur_auth_zone().create_proof_by_ids(
                         &input.ids,
                         input.resource_address,
                         resource_type,
-                    );
-                    let proof = match maybe_existing_proof {
-                        Ok(proof) => proof,
-                        Err(_) if auth_zone.is_proof_virtualizable(&input.resource_address) => {
-                            auth_zone
-                                .virtualize_non_fungible_proof(&input.resource_address, &input.ids)
-                        }
-                        Err(e) => Err(e)?,
-                    };
-                    substate_mut.flush()?;
+                    )?;
                     proof
                 };
 
@@ -183,7 +172,7 @@ impl AuthZone {
                 let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
                 let auth_zone = raw_mut.auth_zone();
-                auth_zone.clear();
+                auth_zone.cur_auth_zone_mut().clear();
                 substate_mut.flush()?;
                 ScryptoValue::from_typed(&())
             }
@@ -195,7 +184,7 @@ impl AuthZone {
                     let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let auth_zone = raw_mut.auth_zone();
-                    let proofs = auth_zone.drain();
+                    let proofs = auth_zone.cur_auth_zone_mut().drain();
                     substate_mut.flush()?;
                     proofs
                 };

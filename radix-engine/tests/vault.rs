@@ -1,4 +1,4 @@
-use radix_engine::engine::{KernelError, RuntimeError};
+use radix_engine::engine::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto::engine::types::RENodeId;
@@ -28,7 +28,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Vault(_)))
         )
     });
 }
@@ -60,7 +60,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Vault(_)))
         )
     });
 }
@@ -88,7 +88,7 @@ fn non_existent_vault_in_kv_store_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Vault(_)))
         )
     });
 }
@@ -124,7 +124,7 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Vault(_)))
         )
     });
 }
@@ -170,7 +170,7 @@ fn invalid_double_ownership_of_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Vault(_)))
         )
     });
 }

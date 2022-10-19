@@ -84,7 +84,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                     loaded: true,
                                     size: 0,
                                 },
-                                RENodeId::AuthZone(_) => SystemApiCostingEntry::BorrowNode {
+                                RENodeId::AuthZoneStack(_) => SystemApiCostingEntry::BorrowNode {
                                     // TODO: figure out loaded state and size
                                     loaded: true,
                                     size: 0,

@@ -39,6 +39,7 @@ pub struct ScryptoValue {
     pub refed_component_addresses: HashSet<ComponentAddress>,
     pub resource_addresses: HashSet<ResourceAddress>,
     pub non_fungible_addresses: HashSet<NonFungibleAddress>,
+    pub package_addresses: HashSet<PackageAddress>,
 }
 
 impl ScryptoValue {
@@ -81,6 +82,7 @@ impl ScryptoValue {
             refed_component_addresses: checker.ref_components,
             resource_addresses: checker.resource_addresses,
             non_fungible_addresses: checker.non_fungible_addresses,
+            package_addresses: checker.package_addresses,
         })
     }
 
@@ -101,6 +103,7 @@ impl ScryptoValue {
             refed_component_addresses: HashSet::new(),
             resource_addresses: HashSet::new(),
             non_fungible_addresses: HashSet::new(),
+            package_addresses: HashSet::new(),
         })
     }
 
@@ -136,6 +139,9 @@ impl ScryptoValue {
             node_ids.insert(GlobalAddress::Resource(
                 non_fungible_address.resource_address(),
             ));
+        }
+        for package_address in &self.package_addresses {
+            node_ids.insert(GlobalAddress::Package(*package_address));
         }
         node_ids
     }
@@ -243,6 +249,7 @@ pub struct ScryptoCustomValueChecker {
     pub ref_components: HashSet<ComponentAddress>,
     pub resource_addresses: HashSet<ResourceAddress>,
     pub non_fungible_addresses: HashSet<NonFungibleAddress>,
+    pub package_addresses: HashSet<PackageAddress>,
 }
 
 /// Represents an error when validating a Scrypto-specific value.
@@ -283,6 +290,7 @@ impl ScryptoCustomValueChecker {
             ref_components: HashSet::new(),
             resource_addresses: HashSet::new(),
             non_fungible_addresses: HashSet::new(),
+            package_addresses: HashSet::new(),
         }
     }
 }
@@ -298,8 +306,9 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
     ) -> Result<(), Self::Err> {
         match ScryptoType::from_id(type_id).ok_or(Self::Err::UnknownTypeId(type_id))? {
             ScryptoType::PackageAddress => {
-                PackageAddress::try_from(data)
+                let package_address = PackageAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?;
+                self.package_addresses.insert(package_address);
             }
             ScryptoType::ComponentAddress => {
                 let component_address = ComponentAddress::try_from(data)

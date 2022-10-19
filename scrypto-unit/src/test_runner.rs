@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use radix_engine::constants::*;
-use radix_engine::engine::{Kernel, KernelError, ModuleError};
+use radix_engine::engine::{Kernel, KernelError, ModuleError, ScryptoInterpreter};
 use radix_engine::engine::{RuntimeError, SystemApi, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
@@ -29,8 +29,7 @@ use transaction::validation::TestIntentHashManager;
 
 pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
     execution_stores: StagedSubstateStoreManager<'s, S>,
-    wasm_engine: DefaultWasmEngine,
-    wasm_instrumenter: WasmInstrumenter,
+    scrypto_interpreter: ScryptoInterpreter<DefaultWasmInstance, DefaultWasmEngine>,
     intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
     next_transaction_nonce: u64,
@@ -39,10 +38,18 @@ pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
 
 impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn new(trace: bool, substate_store: &'s mut S) -> Self {
-        Self {
-            execution_stores: StagedSubstateStoreManager::new(substate_store),
+        let scrypto_interpreter = ScryptoInterpreter {
+            wasm_metering_params: WasmMeteringParams::new(
+                InstructionCostRules::tiered(1, 5, 10, 5000),
+                512,
+            ),
             wasm_engine: DefaultWasmEngine::new(),
             wasm_instrumenter: WasmInstrumenter::new(),
+            phantom: PhantomData,
+        };
+        Self {
+            execution_stores: StagedSubstateStoreManager::new(substate_store),
+            scrypto_interpreter,
             intent_hash_manager: TestIntentHashManager::new(),
             next_private_key: 1, // 0 is invalid
             next_transaction_nonce: 0,
@@ -284,12 +291,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let node_id = self.create_child_node(0);
         let substate_store = &mut self.execution_stores.get_output_store(node_id);
 
-        TransactionExecutor::new(
-            substate_store,
-            &mut self.wasm_engine,
-            &mut self.wasm_instrumenter,
+        TransactionExecutor::new(substate_store, &mut self.scrypto_interpreter).execute(
+            transaction,
+            fee_reserve_config,
+            execution_config,
         )
-        .execute(transaction, fee_reserve_config, execution_config)
     }
 
     pub fn execute_preview(
@@ -302,8 +308,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
         PreviewExecutor::new(
             substate_store,
-            &mut self.wasm_engine,
-            &mut self.wasm_instrumenter,
+            &mut self.scrypto_interpreter,
             &self.intent_hash_manager,
             network,
         )
@@ -335,22 +340,18 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             let transaction =
                 TestTransaction::new(manifest, self.next_transaction_nonce, initial_proofs);
             self.next_transaction_nonce += 1;
-            let receipt = TransactionExecutor::new(
-                &mut store,
-                &mut self.wasm_engine,
-                &mut self.wasm_instrumenter,
-            )
-            .execute_and_commit(
-                &transaction,
-                &FeeReserveConfig {
-                    cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
-                    system_loan: DEFAULT_SYSTEM_LOAN,
-                },
-                &ExecutionConfig {
-                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                    trace: self.trace,
-                },
-            );
+            let receipt = TransactionExecutor::new(&mut store, &mut self.scrypto_interpreter)
+                .execute_and_commit(
+                    &transaction,
+                    &FeeReserveConfig {
+                        cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+                        system_loan: DEFAULT_SYSTEM_LOAN,
+                    },
+                    &ExecutionConfig {
+                        max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+                        trace: self.trace,
+                    },
+                );
             receipts.push(receipt);
         }
 
@@ -731,9 +732,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             &blobs,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,
-            &mut self.wasm_engine,
-            &mut self.wasm_instrumenter,
-            WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512), // TODO: add to ExecutionConfig
+            &mut self.scrypto_interpreter,
             Vec::new(),
         );
 
@@ -760,7 +759,7 @@ pub fn is_costing_error(e: &RuntimeError) -> bool {
 }
 
 pub fn is_wasm_error(e: &RuntimeError) -> bool {
-    matches!(e, RuntimeError::KernelError(KernelError::WasmError(_)))
+    matches!(e, RuntimeError::KernelError(KernelError::WasmError(..)))
 }
 
 pub fn wat2wasm(wat: &str) -> Vec<u8> {

@@ -102,29 +102,29 @@ impl ExecutionTraceModule {
         actor: &REActor,
         input: &ScryptoValue,
     ) {
-        if let REActor::Method(ResolvedMethod::Native(native_method), receiver) = actor {
+        if let REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) = actor {
             let caller = &call_frames
                 .get(call_frames.len() - 2)
                 .expect("Caller frame is missing")
                 .actor;
 
-            match (native_method, receiver) {
+            match (native_method, resolved_receiver.receiver) {
                 (
                     NativeMethod::Vault(VaultMethod::Put),
                     Receiver::Ref(RENodeId::Vault(vault_id)),
-                ) => Self::handle_vault_put(track, caller, vault_id, input, call_frames),
+                ) => Self::handle_vault_put(track, caller, &vault_id, input, call_frames),
                 (
                     NativeMethod::Vault(VaultMethod::Take),
                     Receiver::Ref(RENodeId::Vault(vault_id)),
-                ) => Self::handle_vault_take(track, caller, vault_id, input),
+                ) => Self::handle_vault_take(track, caller, &vault_id, input),
                 (
                     NativeMethod::Vault(VaultMethod::LockFee),
                     Receiver::Ref(RENodeId::Vault(vault_id)),
-                ) => Self::handle_vault_lock_fee(track, caller, vault_id),
+                ) => Self::handle_vault_lock_fee(track, caller, &vault_id),
                 (
                     NativeMethod::Vault(VaultMethod::LockContingentFee),
                     Receiver::Ref(RENodeId::Vault(vault_id)),
-                ) => Self::handle_vault_lock_contingent_fee(track, caller, vault_id),
+                ) => Self::handle_vault_lock_contingent_fee(track, caller, &vault_id),
                 _ => {}
             }
         }
@@ -142,7 +142,7 @@ impl ExecutionTraceModule {
 
             let frame = call_frames.last().expect("Current call frame not found");
 
-            if let Some(tree) = frame.owned_heap_nodes.get(&RENodeId::Bucket(bucket_id)) {
+            if let Ok(tree) = frame.get_owned_heap_node(RENodeId::Bucket(bucket_id)) {
                 if let HeapRENode::Bucket(bucket_node) = &tree.root {
                     track.vault_ops.push((
                         actor.clone(),
@@ -203,8 +203,9 @@ impl ExecutionTraceReceipt {
         let mut vault_changes = HashMap::<ComponentId, HashMap<VaultId, Decimal>>::new();
         let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
         for (actor, vault_id, vault_op) in ops {
-            if let REActor::Method(_, receiver) = actor {
-                if let Receiver::Ref(RENodeId::Component(component_id)) = receiver {
+            if let REActor::Method(_, resolved_receiver) = actor {
+                if let Receiver::Ref(RENodeId::Component(component_id)) = resolved_receiver.receiver
+                {
                     match vault_op {
                         VaultOp::Create(_) => todo!("Not supported yet!"),
                         VaultOp::Put(amount) => {

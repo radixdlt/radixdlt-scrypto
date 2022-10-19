@@ -5,7 +5,6 @@ use crate::model::{
     SystemSubstate,
 };
 use crate::types::*;
-use crate::wasm::*; 
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum SystemError {
@@ -43,15 +42,13 @@ impl System {
         }
     }
 
-    pub fn static_main<'s, Y, W, I, R>(
+    pub fn static_main<'s, Y, R>(
         func: SystemFunction,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<SystemError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         match func {
@@ -80,16 +77,14 @@ impl System {
         }
     }
 
-    pub fn main<'s, Y, W, I, R>(
+    pub fn main<'s, Y, R>(
         component_id: ComponentId,
         method: SystemMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<SystemError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         let node_id = RENodeId::System(component_id);

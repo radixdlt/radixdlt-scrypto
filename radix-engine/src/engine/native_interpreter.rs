@@ -2,7 +2,6 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use crate::wasm::*;
 
 pub struct NativeInterpreter;
 
@@ -76,15 +75,13 @@ impl Into<ApplicationError> for SystemError {
 }
 
 impl NativeInterpreter {
-    pub fn run_function<'s, Y, W, I, R>(
+    pub fn run_function<'s, Y, R>(
         fn_identifier: NativeFunction,
         input: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         match fn_identifier {
@@ -103,28 +100,27 @@ impl NativeInterpreter {
         }
     }
 
-    pub fn run_method<'s, Y, W, I, R>(
+    pub fn run_method<'s, Y, R>(
         native_method: NativeMethod,
-        receiver: Receiver,
+        resolved_receiver: ResolvedReceiver,
         input: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
-        match (receiver.clone(), native_method.clone()) {
+        match (resolved_receiver.receiver(), native_method.clone()) {
             (Receiver::Consumed(node_id), NativeMethod::Bucket(method)) => {
                 Bucket::consuming_main(node_id, method, input, system_api).map_err(|e| e.into())
             }
             (Receiver::Consumed(node_id), NativeMethod::Proof(method)) => {
                 Proof::main_consume(node_id, method, input, system_api).map_err(|e| e.into())
             }
-            (Receiver::Ref(RENodeId::AuthZone(auth_zone_id)), NativeMethod::AuthZone(method)) => {
-                AuthZone::main(auth_zone_id, method, input, system_api).map_err(|e| e.into())
-            }
+            (
+                Receiver::Ref(RENodeId::AuthZoneStack(auth_zone_id)),
+                NativeMethod::AuthZone(method),
+            ) => AuthZoneStack::main(auth_zone_id, method, input, system_api).map_err(|e| e.into()),
             (Receiver::Ref(RENodeId::Bucket(bucket_id)), NativeMethod::Bucket(method)) => {
                 Bucket::main(bucket_id, method, input, system_api).map_err(|e| e.into())
             }
@@ -148,7 +144,7 @@ impl NativeInterpreter {
             (Receiver::Ref(RENodeId::System(component_id)), NativeMethod::System(method)) => {
                 System::main(component_id, method, input, system_api).map_err(|e| e.into())
             }
-            _ => {
+            (receiver, _) => {
                 return Err(RuntimeError::KernelError(
                     KernelError::MethodReceiverNotMatch(native_method, receiver),
                 ));

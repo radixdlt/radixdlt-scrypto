@@ -312,7 +312,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         Instruction::CallFunction {
             function_ident,
             args,
-        } => decompile_call_scrypto_function(f, context, function_ident, args)?,
+        } => decompile_call_function(f, context, function_ident, args)?,
         Instruction::CallMethod { method_ident, args } => {
             decompile_call_scrypto_method(f, context, method_ident, args)?
         }
@@ -330,7 +330,7 @@ pub fn decompile_instruction<F: fmt::Write>(
     Ok(())
 }
 
-pub fn decompile_call_scrypto_function<F: fmt::Write>(
+pub fn decompile_call_function<F: fmt::Write>(
     f: &mut F,
     context: &mut DecompilationContext,
     function_ident: &ScryptoFunctionIdent,
@@ -507,7 +507,7 @@ fn format_node_id(node_id: &RENodeId, context: &mut DecompilationContext) -> Str
             Some(name) => format!("Proof(\"{}\")", name),
             None => format!("Proof({}u32)", id),
         },
-        RENodeId::AuthZone(id) => format!("AuthZone({}u32)", id),
+        RENodeId::AuthZoneStack(id) => format!("AuthZoneStack({}u32)", id),
         RENodeId::Worktop => "Worktop".to_owned(),
         RENodeId::KeyValueStore(id) => format!("KeyValueStore(\"{}\")", format_id(id)),
         RENodeId::NonFungibleStore(id) => format!("NonFungibleStore(\"{}\")", format_id(id)),

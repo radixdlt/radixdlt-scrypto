@@ -166,7 +166,7 @@ fn test_basic_transfer() {
         + 335118 /* run_wasm */
         + 428 /* verify_manifest */
         + 3750 /* verify_signatures */
-        + 6500, /* write_substate */
+        + 16500, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed
     );
 }

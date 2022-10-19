@@ -357,7 +357,7 @@ impl Into<GlobalAddressSubstate> for RuntimeSubstate {
 }
 
 pub enum SubstateRef<'a> {
-    AuthZone(&'a AuthZoneSubstate),
+    AuthZone(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
     Proof(&'a ProofSubstate),
     Bucket(&'a BucketSubstate),
@@ -422,7 +422,7 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn auth_zone(&self) -> &AuthZoneSubstate {
+    pub fn auth_zone(&self) -> &AuthZoneStackSubstate {
         match self {
             SubstateRef::AuthZone(value) => *value,
             _ => panic!("Not an authzone"),
@@ -645,8 +645,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             RENodePointer::Heap { frame_id, root, id } => {
                 let frame = self.call_frames.get_mut(frame_id).unwrap();
                 let heap_re_node = frame
-                    .owned_heap_nodes
-                    .get_mut(&root)
+                    .get_owned_heap_node_mut(root)
                     .unwrap()
                     .get_node_mut(id.as_ref());
                 heap_re_node.borrow_substate_mut(&self.offset).unwrap()
@@ -700,11 +699,11 @@ pub enum RawSubstateRefMut<'a> {
     Bucket(&'a mut BucketSubstate),
     Proof(&'a mut ProofSubstate),
     Worktop(&'a mut WorktopSubstate),
-    AuthZone(&'a mut AuthZoneSubstate),
+    AuthZone(&'a mut AuthZoneStackSubstate),
 }
 
 impl<'a> RawSubstateRefMut<'a> {
-    pub fn auth_zone(&mut self) -> &mut AuthZoneSubstate {
+    pub fn auth_zone(&mut self) -> &mut AuthZoneStackSubstate {
         match self {
             RawSubstateRefMut::AuthZone(value) => *value,
             _ => panic!("Not an authzone"),

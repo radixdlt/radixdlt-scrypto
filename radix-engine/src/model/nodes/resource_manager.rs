@@ -12,7 +12,6 @@ use crate::model::{
 use crate::types::AccessRule::*;
 use crate::types::ResourceMethodAuthKey::*;
 use crate::types::*;
-use crate::wasm::*; 
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -126,15 +125,13 @@ impl ResourceManager {
         }
     }
 
-    pub fn static_main<'s, Y, W, I, R>(
+    pub fn static_main<'s, Y, R>(
         func: ResourceManagerFunction,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ResourceManagerError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         match func {
@@ -258,16 +255,14 @@ impl ResourceManager {
         }
     }
 
-    pub fn main<'s, Y, W, I, R>(
+    pub fn main<'s, Y, R>(
         resource_address: ResourceAddress,
         method: ResourceManagerMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ResourceManagerError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         let node_id = RENodeId::ResourceManager(resource_address);
