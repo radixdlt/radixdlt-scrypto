@@ -192,6 +192,7 @@ pub enum ApplicationError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum DropFailure {
+    DroppingNodeWithChildren,
     System,
     Resource,
     Component,

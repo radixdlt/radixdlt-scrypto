@@ -552,7 +552,7 @@ impl<'a> SubstateRef<'a> {
 
 pub struct SubstateRefMut<'f, 's, R: FeeReserve> {
     flushed: bool,
-    lock_handle: LockHandle,
+    _lock_handle: LockHandle,
     prev_children: HashSet<RENodeId>,
     node_pointer: RENodePointer,
     offset: SubstateOffset,
@@ -582,7 +582,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
     ) -> Result<Self, RuntimeError> {
         let substate_ref_mut = Self {
             flushed: false,
-            lock_handle,
+            _lock_handle: lock_handle,
             prev_children,
             node_pointer,
             offset,
@@ -629,15 +629,8 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         }
 
         match self.node_pointer {
-            RENodePointer::Heap { root, .. } => {
-                self.current_frame.move_owned_nodes_to_heap_node(self.heap, new_children, root)?;
-                /*
-                for child_id in new_children {
-                    let child_node = self.current_frame.take_node(self.heap, child_id)?;
-                    let root_node = self.heap.get_node_mut(root).unwrap();
-                    root_node.insert_non_root_nodes(child_node.to_nodes(child_id));
-                }
-                 */
+            RENodePointer::Heap(node_id) => {
+                self.current_frame.move_owned_nodes_to_heap_node(self.heap, new_children, node_id)?;
             }
             RENodePointer::Store(..) => {
                 self.current_frame.move_owned_nodes_to_store(self.heap, self.track, new_children)?;
@@ -654,12 +647,12 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
 
     pub fn get_raw_mut(&mut self) -> RawSubstateRefMut {
         match self.node_pointer {
-            RENodePointer::Heap { root, id } => {
+            RENodePointer::Heap(node_id) => {
                 let heap_re_node = self
                     .heap
-                    .get_node_mut(root)
+                    .get_node_mut(node_id)
                     .unwrap()
-                    .get_node_mut(id.as_ref());
+                    .get_mut();
                 heap_re_node.borrow_substate_mut(&self.offset).unwrap()
             }
             RENodePointer::Store(node_id) => match (node_id, &self.offset) {

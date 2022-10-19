@@ -1,25 +1,25 @@
-use crate::engine::HeapRENode;
+use crate::engine::RENode;
 use crate::model::*;
 use crate::types::*;
 
-pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, RuntimeSubstate> {
+pub fn node_to_substates(node: RENode) -> HashMap<SubstateOffset, RuntimeSubstate> {
     let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
 
     match node {
-        HeapRENode::Bucket(_) => panic!("Unexpected"),
-        HeapRENode::Proof(_) => panic!("Unexpected"),
-        HeapRENode::AuthZone(_) => panic!("Unexpected"),
-        HeapRENode::Global(global_node) => {
+        RENode::Bucket(_) => panic!("Unexpected"),
+        RENode::Proof(_) => panic!("Unexpected"),
+        RENode::AuthZone(_) => panic!("Unexpected"),
+        RENode::Global(global_node) => {
             let substate = global_node.address;
             substates.insert(
                 SubstateOffset::Global(GlobalOffset::Global),
                 RuntimeSubstate::GlobalRENode(substate),
             );
         }
-        HeapRENode::Vault(vault) => {
+        RENode::Vault(vault) => {
             substates.insert(SubstateOffset::Vault(VaultOffset::Vault), vault.into());
         }
-        HeapRENode::KeyValueStore(store) => {
+        RENode::KeyValueStore(store) => {
             for (k, v) in store.loaded_entries {
                 substates.insert(
                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(k)),
@@ -27,7 +27,7 @@ pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, RuntimeSub
                 );
             }
         }
-        HeapRENode::Component(component) => {
+        RENode::Component(component) => {
             substates.insert(
                 SubstateOffset::Component(ComponentOffset::Info),
                 component.info.into(),
@@ -39,22 +39,22 @@ pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, RuntimeSub
                 );
             }
         }
-        HeapRENode::Worktop(_) => panic!("Unexpected"),
-        HeapRENode::Package(package) => {
+        RENode::Worktop(_) => panic!("Unexpected"),
+        RENode::Package(package) => {
             let substate = package.info;
             substates.insert(
                 SubstateOffset::Package(PackageOffset::Package),
                 substate.into(),
             );
         }
-        HeapRENode::ResourceManager(resource_manager) => {
+        RENode::ResourceManager(resource_manager) => {
             let substate = resource_manager.info;
             substates.insert(
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                 substate.into(),
             );
         }
-        HeapRENode::NonFungibleStore(non_fungible_store) => {
+        RENode::NonFungibleStore(non_fungible_store) => {
             for (id, non_fungible) in non_fungible_store.loaded_non_fungibles {
                 substates.insert(
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
@@ -62,7 +62,7 @@ pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, RuntimeSub
                 );
             }
         }
-        HeapRENode::System(system) => {
+        RENode::System(system) => {
             substates.insert(
                 SubstateOffset::System(SystemOffset::System),
                 system.info.into(),
@@ -73,7 +73,7 @@ pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, RuntimeSub
 }
 
 pub fn nodes_to_substates(
-    nodes: HashMap<RENodeId, HeapRENode>,
+    nodes: HashMap<RENodeId, RENode>,
 ) -> HashMap<SubstateId, RuntimeSubstate> {
     let mut substates = HashMap::new();
     for (id, node) in nodes {

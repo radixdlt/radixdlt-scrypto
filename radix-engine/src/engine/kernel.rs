@@ -145,7 +145,7 @@ where
         let auth_zone = AuthZoneStackSubstate::new(proofs, virtual_proofs_buckets);
 
         kernel
-            .create_node(HeapRENode::AuthZone(auth_zone))
+            .create_node(RENode::AuthZone(auth_zone))
             .expect("Failed to create AuthZone");
 
         kernel
@@ -157,7 +157,7 @@ where
         ids: BTreeSet<NonFungibleId>,
     ) -> BucketId {
         match self
-            .create_node(HeapRENode::Bucket(BucketSubstate::new(
+            .create_node(RENode::Bucket(BucketSubstate::new(
                 Resource::new_non_fungible(resource_address, ids),
             )))
             .expect("Failed to create a bucket")
@@ -237,50 +237,50 @@ where
     fn new_node_id(
         id_allocator: &mut IdAllocator,
         transaction_hash: Hash,
-        re_node: &HeapRENode,
+        re_node: &RENode,
     ) -> Result<RENodeId, IdAllocationError> {
         match re_node {
-            HeapRENode::Global(..) => panic!("Should not get here"),
-            HeapRENode::AuthZone(..) => {
+            RENode::Global(..) => panic!("Should not get here"),
+            RENode::AuthZone(..) => {
                 let auth_zone_id = id_allocator.new_auth_zone_id()?;
                 Ok(RENodeId::AuthZoneStack(auth_zone_id))
             }
-            HeapRENode::Bucket(..) => {
+            RENode::Bucket(..) => {
                 let bucket_id = id_allocator.new_bucket_id()?;
                 Ok(RENodeId::Bucket(bucket_id))
             }
-            HeapRENode::Proof(..) => {
+            RENode::Proof(..) => {
                 let proof_id = id_allocator.new_proof_id()?;
                 Ok(RENodeId::Proof(proof_id))
             }
-            HeapRENode::Worktop(..) => Ok(RENodeId::Worktop),
-            HeapRENode::Vault(..) => {
+            RENode::Worktop(..) => Ok(RENodeId::Worktop),
+            RENode::Vault(..) => {
                 let vault_id = id_allocator.new_vault_id(transaction_hash)?;
                 Ok(RENodeId::Vault(vault_id))
             }
-            HeapRENode::KeyValueStore(..) => {
+            RENode::KeyValueStore(..) => {
                 let kv_store_id = id_allocator.new_kv_store_id(transaction_hash)?;
                 Ok(RENodeId::KeyValueStore(kv_store_id))
             }
-            HeapRENode::NonFungibleStore(..) => {
+            RENode::NonFungibleStore(..) => {
                 let non_fungible_store_id =
                     id_allocator.new_non_fungible_store_id(transaction_hash)?;
                 Ok(RENodeId::NonFungibleStore(non_fungible_store_id))
             }
-            HeapRENode::Package(..) => {
+            RENode::Package(..) => {
                 // Security Alert: ensure ID allocating will practically never fail
                 let package_address = id_allocator.new_package_address(transaction_hash)?;
                 Ok(RENodeId::Package(package_address))
             }
-            HeapRENode::ResourceManager(..) => {
+            RENode::ResourceManager(..) => {
                 let resource_address = id_allocator.new_resource_address(transaction_hash)?;
                 Ok(RENodeId::ResourceManager(resource_address))
             }
-            HeapRENode::Component(..) => {
+            RENode::Component(..) => {
                 let component_id = id_allocator.new_component_id(transaction_hash)?;
                 Ok(RENodeId::Component(component_id))
             }
-            HeapRENode::System(..) => {
+            RENode::System(..) => {
                 let component_id = id_allocator.new_component_id(transaction_hash)?;
                 Ok(RENodeId::System(component_id))
             }
@@ -886,7 +886,7 @@ where
         Ok(node_ids)
     }
 
-    fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
+    fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,
@@ -914,7 +914,7 @@ where
         Ok(node)
     }
 
-    fn create_node(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError> {
+    fn create_node(&mut self, re_node: RENode) -> Result<RENodeId, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,

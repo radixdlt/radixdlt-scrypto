@@ -52,7 +52,7 @@ impl Package {
                     .map_err(|e| InvokeError::Error(PackageError::InvalidAbi(e)))?;
                 let package = Package::new(code, abi)
                     .map_err(|e| InvokeError::Error(PackageError::InvalidWasm(e)))?;
-                let node_id = system_api.create_node(HeapRENode::Package(package))?;
+                let node_id = system_api.create_node(RENode::Package(package))?;
                 let global_address = system_api.node_globalize(node_id)?;
                 let package_address: PackageAddress = global_address.into();
                 Ok(ScryptoValue::from_typed(&package_address))

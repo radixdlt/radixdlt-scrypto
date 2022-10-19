@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, LockFlags, SystemApi};
+use crate::engine::{RENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{InvokeError, ProofError, ProofSubstate};
 use crate::types::*;
@@ -59,7 +59,7 @@ impl AuthZoneStack {
                     proof
                 };
 
-                let proof_id = system_api.create_node(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             AuthZoneMethod::Push => {
@@ -103,7 +103,7 @@ impl AuthZoneStack {
                     proof
                 };
 
-                let proof_id = system_api.create_node(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             AuthZoneMethod::CreateProofByAmount => {
@@ -134,7 +134,7 @@ impl AuthZoneStack {
                     proof
                 };
 
-                let proof_id = system_api.create_node(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             AuthZoneMethod::CreateProofByIds => {
@@ -163,7 +163,7 @@ impl AuthZoneStack {
                     proof
                 };
 
-                let proof_id = system_api.create_node(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             AuthZoneMethod::Clear => {
@@ -192,7 +192,7 @@ impl AuthZoneStack {
                 let mut proof_ids: Vec<scrypto::resource::Proof> = Vec::new();
                 for proof in proofs {
                     let proof_id: ProofId =
-                        system_api.create_node(HeapRENode::Proof(proof))?.into();
+                        system_api.create_node(RENode::Proof(proof))?.into();
                     proof_ids.push(scrypto::resource::Proof(proof_id));
                 }
 

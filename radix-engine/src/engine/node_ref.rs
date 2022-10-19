@@ -7,17 +7,14 @@ use crate::types::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RENodePointer {
-    Heap {
-        root: RENodeId,
-        id: Option<RENodeId>,
-    },
+    Heap(RENodeId),
     Store(RENodeId),
 }
 
 impl RENodePointer {
     pub fn node_id(&self) -> RENodeId {
         match self {
-            RENodePointer::Heap { root, id, .. } => id.unwrap_or(*root),
+            RENodePointer::Heap(node_id) => *node_id,
             RENodePointer::Store(node_id) => *node_id,
         }
     }
@@ -34,7 +31,7 @@ impl RENodePointer {
             RENodePointer::Store(..) => track
                 .acquire_lock(substate_id, flags)
                 .map_err(KernelError::TrackError),
-            RENodePointer::Heap { .. } => {
+            RENodePointer::Heap(..) => {
                 if flags.contains(LockFlags::UNMODIFIED_BASE) {
                     Err(KernelError::TrackError(
                         TrackError::LockUnmodifiedBaseOnNewSubstate(substate_id),
@@ -56,16 +53,13 @@ impl RENodePointer {
             RENodePointer::Store(..) => track
                 .release_lock(SubstateId(self.node_id(), offset), force_write)
                 .map_err(KernelError::TrackError),
-            RENodePointer::Heap { .. } => Ok(()),
+            RENodePointer::Heap(..) => Ok(()),
         }
     }
 
     pub fn child(&self, child_id: RENodeId) -> RENodePointer {
         match self {
-            RENodePointer::Heap { root, .. } => RENodePointer::Heap {
-                root: root.clone(),
-                id: Option::Some(child_id),
-            },
+            RENodePointer::Heap(..) => RENodePointer::Heap(child_id),
             RENodePointer::Store(..) => RENodePointer::Store(child_id),
         }
     }
@@ -77,8 +71,8 @@ impl RENodePointer {
         track: &'f mut Track<'s, R>,
     ) -> Result<SubstateRef<'f>, RuntimeError> {
         let substate_ref = match self {
-            RENodePointer::Heap { root, id } => {
-                let heap_re_node = heap.get_node_mut(*root)?.get_node_mut(id.as_ref());
+            RENodePointer::Heap(node_id) => {
+                let heap_re_node = heap.get_node_mut(*node_id)?.get_mut();
                 heap_re_node.borrow_substate(offset)?
             }
             RENodePointer::Store(node_id) => match (node_id, offset) {

@@ -159,7 +159,7 @@ impl ExecutionTraceModule {
         if let Ok(call_data) = scrypto_decode::<VaultPutInput>(&input.raw) {
             let bucket_id = call_data.bucket.0;
             if let Ok(tree) = heap.get_node(RENodeId::Bucket(bucket_id)) {
-                if let HeapRENode::Bucket(bucket_node) = &tree.root {
+                if let RENode::Bucket(bucket_node) = &tree.root {
                     track.vault_ops.push((
                         actor.clone(),
                         vault_id.clone(),

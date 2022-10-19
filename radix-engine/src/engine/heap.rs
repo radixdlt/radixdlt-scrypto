@@ -1,11 +1,11 @@
-use crate::engine::{CallFrameError, HeapRootRENode, Track};
+use crate::engine::{CallFrameError, HeapRENode, Track};
 use crate::types::{HashMap, HashSet};
 use scrypto::engine::types::{RENodeId, SubstateId};
 use crate::fee::FeeReserve;
 use crate::model::node_to_substates;
 
 pub struct Heap {
-    pub nodes: HashMap<RENodeId, HeapRootRENode>,
+    pub nodes: HashMap<RENodeId, HeapRENode>,
 }
 
 impl Heap {
@@ -18,35 +18,48 @@ impl Heap {
     pub fn get_node_mut(
         &mut self,
         node_id: RENodeId,
-    ) -> Result<&mut HeapRootRENode, CallFrameError> {
+    ) -> Result<&mut HeapRENode, CallFrameError> {
         self.nodes
             .get_mut(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))
     }
 
-    pub fn get_node(&self, node_id: RENodeId) -> Result<&HeapRootRENode, CallFrameError> {
+    pub fn get_node(&self, node_id: RENodeId) -> Result<&HeapRENode, CallFrameError> {
         self.nodes
             .get(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))
     }
 
-    pub fn create_node(&mut self, node_id: RENodeId, node: HeapRootRENode) {
+    pub fn create_node(&mut self, node_id: RENodeId, node: HeapRENode) {
         self.nodes.insert(node_id, node);
     }
 
-    pub fn move_nodes_to_node(
+    pub fn add_child_nodes(
         &mut self,
-        nodes: HashSet<RENodeId>,
+        node_ids: HashSet<RENodeId>,
         to: RENodeId,
     ) -> Result<(), CallFrameError> {
-        let mut child_nodes = HashMap::new();
-
-        for child_id in nodes {
-            let node = self.remove_node(child_id)?;
-            child_nodes.extend(node.to_nodes(child_id));
+        for node_id in &node_ids {
+            // Sanity check
+            if !self.nodes.contains_key(&node_id) {
+                return Err(CallFrameError::RENodeNotOwned(*node_id));
+            }
         }
 
-        self.get_node_mut(to)?.child_nodes.extend(child_nodes);
+        self.get_node_mut(to)?.child_nodes.extend(node_ids);
+
+        /*
+        for node_id in node_ids {
+            if !self.nodes.contains_key(&node_id) {
+                return Err(CallFrameError::RENodeNotOwned(node_id));
+            }
+
+            //let node = self.remove_node(node_id)?;
+            nodes.extend(node.to_nodes(node_id));
+        }
+             */
+
+        //self.get_node_mut(to)?.child_nodes.extend(nodes);
 
         Ok(())
     }
@@ -61,17 +74,17 @@ impl Heap {
 
     pub fn move_node_to_store<R: FeeReserve>(&mut self, track: &mut Track<R>, node_id: RENodeId) -> Result<(), CallFrameError> {
         let node = self.nodes.remove(&node_id).ok_or(CallFrameError::RENodeNotOwned(node_id))?;
-        for (id, node) in node.to_nodes(node_id) {
-            let substates = node_to_substates(node);
-            for (offset, substate) in substates {
-                track.insert_substate(SubstateId(id, offset), substate);
-            }
+        let substates = node_to_substates(node.root);
+        for (offset, substate) in substates {
+            track.insert_substate(SubstateId(node_id, offset), substate);
         }
+
+        self.move_nodes_to_store(track, node.child_nodes)?;
 
         Ok(())
     }
 
-    pub fn remove_node(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, CallFrameError> {
+    pub fn remove_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, CallFrameError> {
         self.nodes
             .remove(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))

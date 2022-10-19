@@ -18,7 +18,7 @@ pub enum SysCallInput<'a> {
         node_id: &'a RENodeId,
     },
     CreateNode {
-        node: &'a HeapRENode,
+        node: &'a RENode,
     },
     GlobalizeNode {
         node_id: &'a RENodeId,
@@ -59,7 +59,7 @@ pub enum SysCallOutput<'a> {
         node_pointer: &'a RENodePointer,
     },
     DropNode {
-        node: &'a HeapRootRENode,
+        node: &'a HeapRENode,
     },
     CreateNode {
         node_id: &'a RENodeId,

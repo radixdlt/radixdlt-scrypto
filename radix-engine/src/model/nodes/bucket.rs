@@ -1,7 +1,7 @@
 use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 use scrypto::resource::ResourceManagerBurnInput;
 
-use crate::engine::{HeapRENode, LockFlags, SystemApi};
+use crate::engine::{RENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{BucketSubstate, InvokeError, ProofError, ResourceOperationError};
 use crate::types::*;
@@ -61,7 +61,7 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 substate_mut.flush()?;
                 let bucket_id = system_api
-                    .create_node(HeapRENode::Bucket(BucketSubstate::new(container)))?
+                    .create_node(RENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -78,7 +78,7 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 substate_mut.flush()?;
                 let bucket_id = system_api
-                    .create_node(HeapRENode::Bucket(BucketSubstate::new(container)))?
+                    .create_node(RENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -135,7 +135,7 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::ProofError(e)))?;
                 substate_mut.flush()?;
 
-                let proof_id = system_api.create_node(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
