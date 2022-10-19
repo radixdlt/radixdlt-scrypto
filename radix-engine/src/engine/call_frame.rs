@@ -135,10 +135,6 @@ impl CallFrame {
         let mut owned_heap_nodes = HashSet::new();
 
         for node_id in nodes_to_move {
-            let node = heap.get_node_mut(node_id)?;
-            let root_node = node.get_mut();
-            root_node.prepare_move_downstream(node_id, &parent.actor, &actor)?;
-
             parent.take_node_internal(heap, node_id)?;
             owned_heap_nodes.insert(node_id);
         }

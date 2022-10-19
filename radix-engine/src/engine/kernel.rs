@@ -309,6 +309,12 @@ where
             refed_nodes.insert(new_refed_node, node_pointer);
         }
 
+        for node_id in &nodes_to_pass {
+            let node = self.heap.get_node_mut(*node_id)?;
+            let root_node = node.get_mut();
+            root_node.prepare_move_downstream(*node_id, &self.current_frame.actor, &actor)?;
+        }
+
         // Call Frame Push
         let frame = CallFrame::new_child_from_parent(
             &mut self.heap,
@@ -371,7 +377,15 @@ where
 
         // Process return data
         let mut parent = self.prev_frame_stack.pop().unwrap();
-        CallFrame::move_nodes_upstream(&mut self.heap, &mut self.current_frame, &mut parent, output.node_ids())?;
+
+        let nodes_to_return = output.node_ids();
+        for node_id in &nodes_to_return {
+            let node = self.heap.get_node_mut(*node_id)?;
+            let root_node = node.get_mut();
+            root_node.prepare_move_upstream(*node_id)?;
+        }
+
+        CallFrame::move_nodes_upstream(&mut self.heap, &mut self.current_frame, &mut parent, nodes_to_return)?;
         CallFrame::copy_refs(&mut self.current_frame, &mut parent, output.global_references())?;
 
         // Auto drop locks
