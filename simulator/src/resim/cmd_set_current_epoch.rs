@@ -1,6 +1,6 @@
 use clap::Parser;
 use radix_engine::constants::*;
-use radix_engine::engine::{Heap, Track};
+use radix_engine::engine::Track;
 use radix_engine::engine::{Kernel, SystemApi};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::types::*;
@@ -34,7 +34,6 @@ impl SetCurrentEpoch {
             ),
             phantom: PhantomData,
         };
-        let mut heap = Heap::new();
         let mut track = Track::new(
             &substate_store,
             SystemLoanFeeReserve::default(),
@@ -49,7 +48,6 @@ impl SetCurrentEpoch {
             },
             &blobs,
             DEFAULT_MAX_CALL_DEPTH,
-            &mut heap,
             &mut track,
             &mut scrypto_interpreter,
             Vec::new(),

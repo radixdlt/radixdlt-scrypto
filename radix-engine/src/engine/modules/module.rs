@@ -52,39 +52,19 @@ pub enum SysCallInput<'a> {
 }
 
 pub enum SysCallOutput<'a> {
-    Invoke {
-        output: &'a ScryptoValue,
-    },
-    BorrowNode {
-        node_pointer: &'a RENodePointer,
-    },
-    DropNode {
-        node: &'a HeapRENode,
-    },
-    CreateNode {
-        node_id: &'a RENodeId,
-    },
+    Invoke { output: &'a ScryptoValue },
+    BorrowNode { node_pointer: &'a RENodePointer },
+    DropNode { node: &'a HeapRENode },
+    CreateNode { node_id: &'a RENodeId },
     GlobalizeNode,
-    LockSubstate {
-        lock_handle: LockHandle,
-    },
-    GetRef {
-        lock_handle: LockHandle,
-    },
+    LockSubstate { lock_handle: LockHandle },
+    GetRef { lock_handle: LockHandle },
     GetRefMut,
     DropLock,
-    TakeSubstate {
-        value: &'a ScryptoValue,
-    },
-    ReadTransactionHash {
-        hash: &'a Hash,
-    },
-    ReadBlob {
-        blob: &'a [u8],
-    },
-    GenerateUuid {
-        uuid: u128,
-    },
+    TakeSubstate { value: &'a ScryptoValue },
+    ReadTransactionHash { hash: &'a Hash },
+    ReadBlob { blob: &'a [u8] },
+    GenerateUuid { uuid: u128 },
     EmitLog,
 }
 

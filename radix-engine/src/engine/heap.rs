@@ -1,8 +1,8 @@
 use crate::engine::{CallFrameError, HeapRENode, Track};
-use crate::types::{HashMap, HashSet};
-use scrypto::engine::types::{RENodeId, SubstateId, SubstateOffset};
 use crate::fee::FeeReserve;
 use crate::model::{node_to_substates, RawSubstateRefMut, SubstateRef};
+use crate::types::{HashMap, HashSet};
+use scrypto::engine::types::{RENodeId, SubstateId, SubstateOffset};
 
 pub struct Heap {
     pub nodes: HashMap<RENodeId, HeapRENode>,
@@ -15,19 +15,31 @@ impl Heap {
         }
     }
 
-    pub fn get_substate(&mut self, node_id: RENodeId, offset: &SubstateOffset) -> Result<SubstateRef, CallFrameError> {
-        let node = self.nodes
+    pub fn get_substate(
+        &mut self,
+        node_id: RENodeId,
+        offset: &SubstateOffset,
+    ) -> Result<SubstateRef, CallFrameError> {
+        let node = self
+            .nodes
             .get_mut(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
-        node.root.borrow_substate(offset)
+        node.root
+            .borrow_substate(offset)
             .map_err(|_| CallFrameError::OffsetDoesNotExist(node_id, offset.clone()))
     }
 
-    pub fn get_substate_mut(&mut self, node_id: RENodeId, offset: &SubstateOffset) -> Result<RawSubstateRefMut, CallFrameError> {
-        let node = self.nodes
+    pub fn get_substate_mut(
+        &mut self,
+        node_id: RENodeId,
+        offset: &SubstateOffset,
+    ) -> Result<RawSubstateRefMut, CallFrameError> {
+        let node = self
+            .nodes
             .get_mut(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
-        node.root.borrow_substate_mut(offset)
+        node.root
+            .borrow_substate_mut(offset)
             .map_err(|_| CallFrameError::OffsetDoesNotExist(node_id, offset.clone()))
     }
 
@@ -54,7 +66,8 @@ impl Heap {
             }
         }
 
-        let heap_node = self.nodes
+        let heap_node = self
+            .nodes
             .get_mut(&to)
             .ok_or(CallFrameError::RENodeNotOwned(to))?;
         heap_node.child_nodes.extend(node_ids);
@@ -62,7 +75,11 @@ impl Heap {
         Ok(())
     }
 
-    pub fn move_nodes_to_store<R: FeeReserve>(&mut self, track: &mut Track<R>, nodes: HashSet<RENodeId>) -> Result<(), CallFrameError> {
+    pub fn move_nodes_to_store<R: FeeReserve>(
+        &mut self,
+        track: &mut Track<R>,
+        nodes: HashSet<RENodeId>,
+    ) -> Result<(), CallFrameError> {
         for node_id in nodes {
             self.move_node_to_store(track, node_id)?;
         }
@@ -70,8 +87,15 @@ impl Heap {
         Ok(())
     }
 
-    pub fn move_node_to_store<R: FeeReserve>(&mut self, track: &mut Track<R>, node_id: RENodeId) -> Result<(), CallFrameError> {
-        let node = self.nodes.remove(&node_id).ok_or(CallFrameError::RENodeNotOwned(node_id))?;
+    pub fn move_node_to_store<R: FeeReserve>(
+        &mut self,
+        track: &mut Track<R>,
+        node_id: RENodeId,
+    ) -> Result<(), CallFrameError> {
+        let node = self
+            .nodes
+            .remove(&node_id)
+            .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
         let substates = node_to_substates(node.root);
         for (offset, substate) in substates {
             track.insert_substate(SubstateId(node_id, offset), substate);

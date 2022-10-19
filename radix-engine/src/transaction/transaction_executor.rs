@@ -128,7 +128,6 @@ where
 
         // Apply pre execution costing
         let pre_execution_result = track.apply_pre_execution_costs(transaction);
-        let mut heap = Heap::new();
         let mut track = match pre_execution_result {
             Ok(track) => track,
             Err(err) => {
@@ -161,7 +160,6 @@ where
                 auth_zone_params,
                 &blobs,
                 execution_config.max_call_depth,
-                &mut heap,
                 &mut track,
                 self.scrypto_interpreter,
                 modules,

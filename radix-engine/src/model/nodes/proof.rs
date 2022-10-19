@@ -1,4 +1,4 @@
-use crate::engine::{RENode, LockFlags, SystemApi};
+use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::ProofError::UnknownMethod;
 use crate::model::{InvokeError, ProofSubstate, ResourceOperationError};
@@ -60,9 +60,7 @@ impl Proof {
                 let _: ProofCloneInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 let cloned_proof = proof.clone();
-                let proof_id = system_api
-                    .create_node(RENode::Proof(cloned_proof))?
-                    .into();
+                let proof_id = system_api.create_node(RENode::Proof(cloned_proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             _ => return Err(InvokeError::Error(ProofError::UnknownMethod)),

@@ -1,8 +1,8 @@
 use crate::engine::*;
-use crate::types::*;
-use scrypto::core::NativeFunction;
 use crate::fee::FeeReserve;
 use crate::model::{SubstateRef, SubstateRefMut};
+use crate::types::*;
+use scrypto::core::NativeFunction;
 
 /// A lock on a substate controlled by a call frame
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -35,12 +35,25 @@ pub struct CallFrame {
 }
 
 impl CallFrame {
-    pub fn create_lock(
+    pub fn acquire_lock<'s, R: FeeReserve>(
         &mut self,
-        node_pointer: RENodePointer,
+        track: &mut Track<'s, R>,
+        node_id: RENodeId,
         offset: SubstateOffset,
         flags: LockFlags,
-    ) -> LockHandle {
+    ) -> Result<LockHandle, RuntimeError> {
+        let node_pointer = self.get_node_pointer(node_id)?;
+        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
+            || matches!(
+                offset,
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
+            ))
+        {
+            node_pointer
+                .acquire_lock(offset.clone(), flags, track)
+                .map_err(RuntimeError::KernelError)?;
+        }
+
         let lock_handle = self.next_lock_handle;
         self.locks.insert(
             lock_handle,
@@ -58,13 +71,14 @@ impl CallFrame {
             .or_insert(0u32);
         *counter += 1;
 
-        lock_handle
+        Ok(lock_handle)
     }
 
-    pub fn drop_lock(
+    pub fn drop_lock<'s, R: FeeReserve>(
         &mut self,
+        track: &mut Track<'s, R>,
         lock_handle: LockHandle,
-    ) -> Result<(RENodePointer, SubstateOffset, LockFlags), KernelError> {
+    ) -> Result<(), KernelError> {
         let substate_lock = self
             .locks
             .remove(&lock_handle)
@@ -84,11 +98,24 @@ impl CallFrame {
                 .remove(&substate_lock.substate_pointer.0.node_id());
         }
 
-        Ok((
-            substate_lock.substate_pointer.0,
-            substate_lock.substate_pointer.1,
-            substate_lock.flags,
-        ))
+        let node_pointer = substate_lock.substate_pointer.0;
+        let offset = substate_lock.substate_pointer.1;
+        let flags = substate_lock.flags;
+
+        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
+            || matches!(
+                offset,
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
+            ))
+        {
+            node_pointer.release_lock(
+                offset.clone(),
+                flags.contains(LockFlags::UNMODIFIED_BASE),
+                track,
+            )?;
+        }
+
+        Ok(())
     }
 
     pub fn get_lock(&self, lock_handle: LockHandle) -> Result<&SubstateLock, KernelError> {
@@ -251,7 +278,12 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn move_owned_nodes_to_heap_node(&mut self, heap: &mut Heap, children: HashSet<RENodeId>, to: RENodeId) -> Result<(), RuntimeError> {
+    pub fn move_owned_nodes_to_heap_node(
+        &mut self,
+        heap: &mut Heap,
+        children: HashSet<RENodeId>,
+        to: RENodeId,
+    ) -> Result<(), RuntimeError> {
         for child_id in &children {
             self.take_node_internal(heap, *child_id)?;
         }
@@ -260,7 +292,12 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn move_owned_nodes_to_store<'f, 's, R: FeeReserve>(&mut self, heap: &mut Heap, track: &'f mut Track<'s, R>, node_ids: HashSet<RENodeId>) -> Result<(), RuntimeError> {
+    pub fn move_owned_nodes_to_store<'f, 's, R: FeeReserve>(
+        &mut self,
+        heap: &mut Heap,
+        track: &'f mut Track<'s, R>,
+        node_ids: HashSet<RENodeId>,
+    ) -> Result<(), RuntimeError> {
         for node_id in &node_ids {
             self.take_node_internal(heap, *node_id)?;
         }
@@ -270,13 +307,17 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn move_owned_node_to_store<'f, 's, R: FeeReserve>(&mut self, heap: &mut Heap, track: &'f mut Track<'s, R>, node_id: RENodeId) -> Result<(), RuntimeError> {
+    pub fn move_owned_node_to_store<'f, 's, R: FeeReserve>(
+        &mut self,
+        heap: &mut Heap,
+        track: &'f mut Track<'s, R>,
+        node_id: RENodeId,
+    ) -> Result<(), RuntimeError> {
         self.take_node_internal(heap, node_id)?;
         heap.move_node_to_store(track, node_id)?;
 
         Ok(())
     }
-
 
     pub fn drop_node(
         &mut self,
@@ -287,12 +328,17 @@ impl CallFrame {
         heap.remove_node(node_id)
     }
 
-
-    pub fn get_ref<'f, 's, R: FeeReserve>(&mut self, lock_handle: LockHandle, heap: &'f mut Heap, track: &'f mut Track<'s, R>) -> Result<SubstateRef<'f>, RuntimeError> {
+    pub fn get_ref<'f, 's, R: FeeReserve>(
+        &mut self,
+        lock_handle: LockHandle,
+        heap: &'f mut Heap,
+        track: &'f mut Track<'s, R>,
+    ) -> Result<SubstateRef<'f>, RuntimeError> {
         let SubstateLock {
             substate_pointer: (node_pointer, offset),
             ..
-        } = self.get_lock(lock_handle)
+        } = self
+            .get_lock(lock_handle)
             .map_err(RuntimeError::KernelError)?
             .clone();
 
@@ -318,8 +364,12 @@ impl CallFrame {
         Ok(substate_ref)
     }
 
-
-    pub fn get_ref_mut<'f, 's, R: FeeReserve>(&'f mut self, lock_handle: LockHandle, heap: &'f mut Heap, track: &'f mut Track<'s, R>) -> Result<SubstateRefMut<'f, 's, R>, RuntimeError> {
+    pub fn get_ref_mut<'f, 's, R: FeeReserve>(
+        &'f mut self,
+        lock_handle: LockHandle,
+        heap: &'f mut Heap,
+        track: &'f mut Track<'s, R>,
+    ) -> Result<SubstateRefMut<'f, 's, R>, RuntimeError> {
         let SubstateLock {
             substate_pointer: (node_pointer, offset),
             flags,
@@ -366,7 +416,6 @@ impl CallFrame {
             track,
         )
     }
-
 
     pub fn get_node_pointer(&self, node_id: RENodeId) -> Result<RENodePointer, CallFrameError> {
         // Find node

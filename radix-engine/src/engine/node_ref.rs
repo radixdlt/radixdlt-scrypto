@@ -71,9 +71,7 @@ impl RENodePointer {
         track: &'f mut Track<'s, R>,
     ) -> Result<SubstateRef<'f>, RuntimeError> {
         let substate_ref = match self {
-            RENodePointer::Heap(node_id) => {
-                heap.get_substate(*node_id, offset)?
-            }
+            RENodePointer::Heap(node_id) => heap.get_substate(*node_id, offset)?,
             RENodePointer::Store(node_id) => match (node_id, offset) {
                 (
                     RENodeId::KeyValueStore(..),

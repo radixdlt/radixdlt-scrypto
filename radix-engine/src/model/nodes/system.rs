@@ -1,4 +1,4 @@
-use crate::engine::{AuthModule, RENode, LockFlags, SystemApi};
+use crate::engine::{AuthModule, LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     HardAuthRule, HardProofRule, HardResourceOrNonFungible, InvokeError, MethodAuthorization,

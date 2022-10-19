@@ -58,14 +58,12 @@ impl RENode {
         offset: &SubstateOffset,
     ) -> Result<SubstateRef, RuntimeError> {
         let substate_ref = match (self, offset) {
-            (
-                RENode::Component(component),
-                SubstateOffset::Component(ComponentOffset::State),
-            ) => SubstateRef::ComponentState(component.state.as_ref().unwrap()),
-            (
-                RENode::Component(component),
-                SubstateOffset::Component(ComponentOffset::Info),
-            ) => SubstateRef::ComponentInfo(&component.info),
+            (RENode::Component(component), SubstateOffset::Component(ComponentOffset::State)) => {
+                SubstateRef::ComponentState(component.state.as_ref().unwrap())
+            }
+            (RENode::Component(component), SubstateOffset::Component(ComponentOffset::Info)) => {
+                SubstateRef::ComponentInfo(&component.info)
+            }
             (
                 RENode::NonFungibleStore(non_fungible_store),
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
@@ -99,10 +97,9 @@ impl RENode {
             (RENode::Worktop(worktop), SubstateOffset::Worktop(WorktopOffset::Worktop)) => {
                 SubstateRef::Worktop(worktop)
             }
-            (
-                RENode::AuthZone(auth_zone),
-                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
-            ) => SubstateRef::AuthZone(auth_zone),
+            (RENode::AuthZone(auth_zone), SubstateOffset::AuthZone(AuthZoneOffset::AuthZone)) => {
+                SubstateRef::AuthZone(auth_zone)
+            }
             (RENode::Vault(vault), SubstateOffset::Vault(VaultOffset::Vault)) => {
                 SubstateRef::Vault(vault)
             }
@@ -126,14 +123,12 @@ impl RENode {
         offset: &SubstateOffset,
     ) -> Result<RawSubstateRefMut, RuntimeError> {
         let substate_ref = match (self, offset) {
-            (
-                RENode::Component(component),
-                SubstateOffset::Component(ComponentOffset::State),
-            ) => RawSubstateRefMut::ComponentState(component.state.as_mut().unwrap()),
-            (
-                RENode::Component(component),
-                SubstateOffset::Component(ComponentOffset::Info),
-            ) => RawSubstateRefMut::ComponentInfo(&mut component.info),
+            (RENode::Component(component), SubstateOffset::Component(ComponentOffset::State)) => {
+                RawSubstateRefMut::ComponentState(component.state.as_mut().unwrap())
+            }
+            (RENode::Component(component), SubstateOffset::Component(ComponentOffset::Info)) => {
+                RawSubstateRefMut::ComponentInfo(&mut component.info)
+            }
             (
                 RENode::NonFungibleStore(non_fungible_store),
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
@@ -167,10 +162,9 @@ impl RENode {
             (RENode::Worktop(worktop), SubstateOffset::Worktop(WorktopOffset::Worktop)) => {
                 RawSubstateRefMut::Worktop(worktop)
             }
-            (
-                RENode::AuthZone(auth_zone),
-                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
-            ) => RawSubstateRefMut::AuthZone(auth_zone),
+            (RENode::AuthZone(auth_zone), SubstateOffset::AuthZone(AuthZoneOffset::AuthZone)) => {
+                RawSubstateRefMut::AuthZone(auth_zone)
+            }
             (RENode::Vault(vault), SubstateOffset::Vault(VaultOffset::Vault)) => {
                 RawSubstateRefMut::Vault(vault)
             }
@@ -199,9 +193,7 @@ impl RENode {
             RENode::Package(..) => Err(DropFailure::Package),
             RENode::Vault(..) => Err(DropFailure::Vault),
             RENode::KeyValueStore(..) => Err(DropFailure::KeyValueStore),
-            RENode::NonFungibleStore(..) => {
-                Err(DropFailure::NonFungibleStore)
-            },
+            RENode::NonFungibleStore(..) => Err(DropFailure::NonFungibleStore),
             RENode::Component(..) => Err(DropFailure::Component),
             RENode::Bucket(bucket) => {
                 // FIXME: Hack to allow virtual buckets to be cleaned up, better would

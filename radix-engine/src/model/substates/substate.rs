@@ -604,7 +604,6 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             substate_ref_mut.to_ref().references_and_owned_nodes()
         };
 
-
         for global_address in new_global_references {
             let node_id = RENodeId::Global(global_address);
             if !self.current_frame.node_refs.contains_key(&node_id) {
@@ -630,10 +629,18 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
 
         match self.node_pointer {
             RENodePointer::Heap(node_id) => {
-                self.current_frame.move_owned_nodes_to_heap_node(self.heap, new_children, node_id)?;
+                self.current_frame.move_owned_nodes_to_heap_node(
+                    self.heap,
+                    new_children,
+                    node_id,
+                )?;
             }
             RENodePointer::Store(..) => {
-                self.current_frame.move_owned_nodes_to_store(self.heap, self.track, new_children)?;
+                self.current_frame.move_owned_nodes_to_store(
+                    self.heap,
+                    self.track,
+                    new_children,
+                )?;
             }
         }
 

@@ -1,4 +1,4 @@
-use crate::engine::{RENode, LockFlags, SystemApi};
+use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::{FeeReserve, FeeReserveError};
 use crate::model::{
     BucketSubstate, InvokeError, ProofError, ResourceContainerId, ResourceOperationError,

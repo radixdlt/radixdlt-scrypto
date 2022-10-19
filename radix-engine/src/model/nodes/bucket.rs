@@ -1,7 +1,7 @@
 use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 use scrypto::resource::ResourceManagerBurnInput;
 
-use crate::engine::{RENode, LockFlags, SystemApi};
+use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{BucketSubstate, InvokeError, ProofError, ResourceOperationError};
 use crate::types::*;

@@ -1,4 +1,4 @@
-use crate::engine::{RENode, LockFlags, SystemApi};
+use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{InvokeError, ProofError, ProofSubstate};
 use crate::types::*;
@@ -191,8 +191,7 @@ impl AuthZoneStack {
 
                 let mut proof_ids: Vec<scrypto::resource::Proof> = Vec::new();
                 for proof in proofs {
-                    let proof_id: ProofId =
-                        system_api.create_node(RENode::Proof(proof))?.into();
+                    let proof_id: ProofId = system_api.create_node(RENode::Proof(proof))?.into();
                     proof_ids.push(scrypto::resource::Proof(proof_id));
                 }
 
