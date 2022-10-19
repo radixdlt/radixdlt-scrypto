@@ -4,7 +4,6 @@ use transaction::errors::IdAllocationError;
 use transaction::model::{AuthZoneParams, Instruction};
 use transaction::validation::*;
 
-use crate::engine::call_frame::SubstateLock;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
@@ -504,29 +503,8 @@ where
         )?;
 
         // Auto drop locks
-        for (_, lock) in self.current_frame.drain_locks() {
-            let SubstateLock {
-                substate_pointer: (node_pointer, offset),
-                flags,
-                ..
-            } = lock;
-            if !(matches!(offset, SubstateOffset::KeyValueStore(..))
-                || matches!(
-                    offset,
-                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
-                ))
-            {
-                node_pointer
-                    .release_lock(
-                        offset,
-                        flags.contains(LockFlags::UNMODIFIED_BASE),
-                        self.track,
-                    )
-                    .map_err(RuntimeError::KernelError)?;
-            }
-        }
+        self.current_frame.drop_all_locks(&mut self.track)?;
 
-        // TODO: Auto drop locks of module execution as well
         self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
             AuthModule::on_frame_end(system_api).map_err(|e| match e {
                 InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
@@ -534,11 +512,12 @@ where
             })
         })?;
 
+        // Auto-drop locks again in case module forgot to drop
+        self.current_frame.drop_all_locks(&mut self.track)?;
+
         // drop proofs and check resource leak
-        {
-            let mut child = mem::replace(&mut self.current_frame, parent);
-            child.drop_frame(&mut self.heap)?;
-        }
+        let mut child = mem::replace(&mut self.current_frame, parent);
+        child.drop_frame(&mut self.heap)?;
 
         Ok(output)
     }

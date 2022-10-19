@@ -212,8 +212,30 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn drain_locks(&mut self) -> HashMap<LockHandle, SubstateLock> {
-        self.locks.drain().collect()
+    pub fn drop_all_locks<'s, R: FeeReserve>(&mut self, track: &mut Track<'s, R>) -> Result<(), RuntimeError> {
+        for (_, lock) in self.locks.drain() {
+            let SubstateLock {
+                substate_pointer: (node_pointer, offset),
+                flags,
+                ..
+            } = lock;
+            if !(matches!(offset, SubstateOffset::KeyValueStore(..))
+                || matches!(
+                    offset,
+                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
+                ))
+            {
+                node_pointer
+                    .release_lock(
+                        offset,
+                        flags.contains(LockFlags::UNMODIFIED_BASE),
+                        track,
+                    )
+                    .map_err(RuntimeError::KernelError)?;
+            }
+        }
+
+        Ok(())
     }
 
     pub fn drop_frame(&mut self, heap: &mut Heap) -> Result<(), RuntimeError> {

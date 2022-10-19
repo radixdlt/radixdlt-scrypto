@@ -5,7 +5,7 @@ use crate::types::{HashMap, HashSet};
 use scrypto::engine::types::{RENodeId, SubstateId, SubstateOffset};
 
 pub struct Heap {
-    pub nodes: HashMap<RENodeId, HeapRENode>,
+    nodes: HashMap<RENodeId, HeapRENode>,
 }
 
 impl Heap {
