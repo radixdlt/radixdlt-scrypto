@@ -10,10 +10,8 @@ use scrypto::engine::types::GlobalAddress;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::core::{NativeMethodIdent, Receiver, ResourceManagerMethod, VaultMethod};
 use crate::crypto::*;
-use crate::engine::types::RENodeId;
-use crate::engine::{api::*, call_engine, types::VaultId};
+use crate::engine::{api::*, types::*, utils::*};
 use crate::math::*;
 use crate::misc::*;
 use crate::native_functions;

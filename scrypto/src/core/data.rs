@@ -1,15 +1,11 @@
-use crate::buffer::*;
-use crate::component::{ComponentStateSubstate, KeyValueStoreEntrySubstate};
-use crate::engine::api::RadixEngineInput;
-use crate::engine::api::RadixEngineInput::Write;
-use crate::engine::call_engine;
-use crate::engine::types::{
-    ComponentOffset, KeyValueStoreOffset, LockHandle, RENodeId, SubstateOffset,
-};
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
 use sbor::{Decode, Encode};
+
+use crate::buffer::*;
+use crate::component::{ComponentStateSubstate, KeyValueStoreEntrySubstate};
+use crate::engine::{api::*, types::*, utils::*};
 
 pub struct DataRef<V: Encode> {
     lock_handle: LockHandle,
@@ -77,7 +73,7 @@ impl<V: Encode> Drop for DataRefMut<V> {
             }
             s @ _ => panic!("Unsupported substate: {:?}", s),
         };
-        let input = Write(self.lock_handle, substate);
+        let input = RadixEngineInput::Write(self.lock_handle, substate);
         let _: () = call_engine(input);
 
         let input = RadixEngineInput::DropLock(self.lock_handle);

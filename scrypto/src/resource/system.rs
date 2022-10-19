@@ -3,8 +3,7 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 
 use crate::buffer::scrypto_encode;
-use crate::core::{NativeFunctionIdent, ResourceManagerFunction};
-use crate::engine::{api::*, call_engine};
+use crate::engine::{api::*, types::*, utils::*};
 use crate::resource::*;
 
 /// Represents the Radix Engine resource subsystem.

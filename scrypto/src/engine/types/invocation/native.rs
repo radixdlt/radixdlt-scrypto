@@ -1,18 +1,4 @@
-use sbor::rust::string::*;
-use sbor::rust::vec::Vec;
-use sbor::*;
-use strum::*;
-
-use crate::component::ComponentAddress;
-use crate::component::PackageAddress;
-use crate::engine::types::{ComponentId, RENodeId};
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
-pub struct ScryptoFunctionIdent {
-    pub package_address: PackageAddress,
-    pub blueprint_name: String,
-    pub function_name: String,
-}
+use crate::engine::types::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
 pub struct NativeFunctionIdent {
@@ -21,21 +7,9 @@ pub struct NativeFunctionIdent {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub struct ScryptoMethodIdent {
-    pub receiver: ScryptoReceiver,
-    pub method_name: String,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub struct NativeMethodIdent {
     pub receiver: Receiver,
     pub method_name: String,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub enum ScryptoReceiver {
-    Global(ComponentAddress),
-    Component(ComponentId),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Copy, TypeId, Encode, Decode)]
@@ -386,26 +360,4 @@ pub enum PackageFunction {
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionProcessorFunction {
     Run,
-}
-
-// TODO: Remove and replace with real HeapRENodes
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub enum ScryptoRENode {
-    Component(PackageAddress, String, Vec<u8>),
-    KeyValueStore,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use sbor::rust::str::FromStr;
-
-    #[test]
-    fn from_into_string() {
-        let method = WorktopMethod::TakeAll;
-        let name: &str = method.into();
-        assert_eq!(name, "take_all");
-        let method2 = WorktopMethod::from_str("take_all").unwrap();
-        assert_eq!(method2, method);
-    }
 }
