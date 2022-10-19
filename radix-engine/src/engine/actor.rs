@@ -52,7 +52,7 @@ impl ResolvedReceiver {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[derive(Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum ResolvedFunction {
     Scrypto {
         package_address: PackageAddress,
@@ -60,11 +60,12 @@ pub enum ResolvedFunction {
         ident: String,
         export_name: String,
         return_type: Type,
+        code: Vec<u8>,
     },
     Native(NativeFunction),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[derive(Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum ResolvedMethod {
     Scrypto {
         package_address: PackageAddress,
@@ -72,6 +73,7 @@ pub enum ResolvedMethod {
         ident: String,
         export_name: String,
         return_type: Type,
+        code: Vec<u8>,
     },
     Native(NativeMethod),
 }
@@ -92,6 +94,44 @@ impl REActor {
                     NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run)
                 ))
         )
+    }
+}
+
+impl fmt::Debug for ResolvedFunction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Scrypto {
+                package_address,
+                blueprint_name,
+                ident,
+                ..
+            } => f
+                .debug_struct("Scrypto")
+                .field("package_address", package_address)
+                .field("blueprint_name", blueprint_name)
+                .field("ident", ident)
+                .finish(),
+            Self::Native(arg0) => f.debug_tuple("Native").field(arg0).finish(),
+        }
+    }
+}
+
+impl fmt::Debug for ResolvedMethod {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Scrypto {
+                package_address,
+                blueprint_name,
+                ident,
+                ..
+            } => f
+                .debug_struct("Scrypto")
+                .field("package_address", package_address)
+                .field("blueprint_name", blueprint_name)
+                .field("ident", ident)
+                .finish(),
+            Self::Native(arg0) => f.debug_tuple("Native").field(arg0).finish(),
+        }
     }
 }
 

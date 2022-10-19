@@ -1,6 +1,5 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::PackageSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringParams, WasmRuntime};
 
@@ -27,6 +26,7 @@ impl<I: WasmInstance> ScryptoExecutor<I> {
                         ident,
                         export_name,
                         return_type,
+                        ..
                     },
                     ResolvedReceiver {
                         receiver: Receiver::Ref(RENodeId::Component(component_id)),
@@ -50,6 +50,7 @@ impl<I: WasmInstance> ScryptoExecutor<I> {
                     ident,
                     export_name,
                     return_type,
+                    ..
                 }) => (
                     ident.to_string(),
                     *package_address,
@@ -105,10 +106,10 @@ pub struct ScryptoInterpreter<I: WasmInstance, W: WasmEngine<I>> {
 }
 
 impl<I: WasmInstance, W: WasmEngine<I>> ScryptoInterpreter<I, W> {
-    pub fn create_executor(&mut self, package: PackageSubstate) -> ScryptoExecutor<I> {
+    pub fn create_executor(&mut self, code: &[u8]) -> ScryptoExecutor<I> {
         let instrumented_code = self
             .wasm_instrumenter
-            .instrument(package.code(), &self.wasm_metering_params);
+            .instrument(code, &self.wasm_metering_params);
         let instance = self.wasm_engine.instantiate(instrumented_code);
         ScryptoExecutor { instance }
     }

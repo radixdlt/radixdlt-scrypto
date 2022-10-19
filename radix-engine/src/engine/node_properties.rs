@@ -67,6 +67,7 @@ impl SubstateProperties {
                 _ => false,
             },
             (ExecutionMode::ScryptoInterpreter, offset) => match offset {
+                SubstateOffset::Global(GlobalOffset::Global) => flags == LockFlags::read_only(),
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
                 SubstateOffset::Package(PackageOffset::Package) => flags == LockFlags::read_only(),
                 _ => false,

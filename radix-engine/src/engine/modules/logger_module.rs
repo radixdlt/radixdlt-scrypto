@@ -74,7 +74,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             } => {
                 log!(
                     self,
-                    "Lock substate: node_id {:?} offset {:?} flags {:?}",
+                    "Lock substate: node_id = {:?} offset = {:?} flags = {:?}",
                     node_id,
                     offset,
                     flags
@@ -96,7 +96,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
                 log!(self, "Reading transaction hash");
             }
             SysCallInput::ReadBlob { blob_hash } => {
-                log!(self, "Reading blob: {}", blob_hash);
+                log!(self, "Reading blob: hash = {}", blob_hash);
             }
             SysCallInput::GenerateUuid => {
                 log!(self, "Generating UUID");
