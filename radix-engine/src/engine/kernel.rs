@@ -462,9 +462,8 @@ where
             }) => {
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
-                let package_node_id = self
-                    .node_method_deref(RENodeId::Global(GlobalAddress::Package(package_address)))?
-                    .unwrap();
+                let global_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
+                let package_node_id = self.node_method_deref(global_node_id)?.unwrap();
                 let package = self.execute_in_mode::<_, _, RuntimeError>(
                     ExecutionMode::ScryptoInterpreter,
                     |system_api| {
@@ -482,10 +481,19 @@ where
                 )?;
 
                 // Pass the package ref
-                let node_pointer = Self::current_frame(&self.call_frames)
-                    .get_node_pointer(package_node_id)
-                    .unwrap();
-                references_to_add.insert(package_node_id, node_pointer);
+                // TODO: remove? currently needed for `Runtime::package_address()` API.
+                references_to_add.insert(
+                    global_node_id,
+                    Self::current_frame(&self.call_frames)
+                        .get_node_pointer(global_node_id)
+                        .unwrap(),
+                );
+                references_to_add.insert(
+                    package_node_id,
+                    Self::current_frame(&self.call_frames)
+                        .get_node_pointer(package_node_id)
+                        .unwrap(),
+                );
 
                 // Find the abi
                 let abi = package.blueprint_abi(&blueprint_name).ok_or(
@@ -554,14 +562,9 @@ where
                         ResolvedReceiver::new(Receiver::Ref(original_node_id))
                     };
 
-                // Add the resolved receiver ref
-                let component_node_id = resolved_receiver.node_id();
-                let node_pointer =
-                    Self::current_frame(&self.call_frames).get_node_pointer(component_node_id)?;
-                references_to_add.insert(component_node_id, node_pointer);
-
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
+                let component_node_id = resolved_receiver.node_id();
                 let component_info = self.execute_in_mode::<_, _, RuntimeError>(
                     ExecutionMode::ScryptoInterpreter,
                     |system_api| {
@@ -599,10 +602,21 @@ where
                 )?;
 
                 // Pass the component ref
-                let node_pointer = Self::current_frame(&self.call_frames)
-                    .get_node_pointer(component_node_id)
-                    .unwrap();
-                references_to_add.insert(component_node_id, node_pointer);
+                // TODO: remove? currently needed for `Runtime::package_address()` API.
+                let global_node_id =
+                    RENodeId::Global(GlobalAddress::Package(component_info.package_address));
+                references_to_add.insert(
+                    global_node_id,
+                    Self::current_frame(&self.call_frames)
+                        .get_node_pointer(global_node_id)
+                        .unwrap(),
+                );
+                references_to_add.insert(
+                    component_node_id,
+                    Self::current_frame(&self.call_frames)
+                        .get_node_pointer(component_node_id)
+                        .unwrap(),
+                );
 
                 // Find the abi
                 let abi = package
