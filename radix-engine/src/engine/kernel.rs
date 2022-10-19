@@ -4,6 +4,7 @@ use transaction::errors::IdAllocationError;
 use transaction::model::{AuthZoneParams, Instruction};
 use transaction::validation::*;
 
+use crate::engine::call_frame::RENodeLocation;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
@@ -352,7 +353,7 @@ where
         actor: REActor,
         input: ScryptoValue,
         nodes_to_pass: Vec<RENodeId>,
-        mut refed_nodes: HashMap<RENodeId, RENodePointer>,
+        mut refed_nodes: HashMap<RENodeId, RENodeLocation>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let new_refed_nodes = self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
             AuthModule::on_before_frame_start(&actor, &input, system_api).map_err(|e| match e {
@@ -363,7 +364,10 @@ where
 
         // TODO: Do this in a better way by allowing module to execute in next call frame
         for new_refed_node in new_refed_nodes {
-            let node_pointer = self.current_frame.get_node_pointer(new_refed_node).unwrap();
+            let node_pointer = self
+                .current_frame
+                .get_node_location(new_refed_node)
+                .unwrap();
             refed_nodes.insert(new_refed_node, node_pointer);
         }
 
@@ -524,7 +528,7 @@ where
         receiver: ResolvedReceiver,
         method_ident: MethodIdent,
         input: &ScryptoValue,
-    ) -> Result<(REActor, HashMap<RENodeId, RENodePointer>), RuntimeError> {
+    ) -> Result<(REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError> {
         let mut references_to_add = HashMap::new();
 
         let actor = match &method_ident {
@@ -573,7 +577,7 @@ where
                     .map_err(RuntimeError::ModuleError)?;
                 }
 
-                let node_pointer = self.current_frame.get_node_pointer(node_id).unwrap();
+                let node_pointer = self.current_frame.get_node_location(node_id).unwrap();
                 references_to_add.insert(node_id, node_pointer);
                 actor
             }
@@ -590,7 +594,7 @@ where
         &mut self,
         function_ident: FunctionIdent,
         input: &ScryptoValue,
-    ) -> Result<(REActor, HashMap<RENodeId, RENodePointer>), RuntimeError> {
+    ) -> Result<(REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError> {
         let mut references_to_add = HashMap::new();
 
         let actor = match &function_ident {
@@ -646,7 +650,7 @@ where
                     .map_err(RuntimeError::ModuleError)?;
                 }
 
-                let node_pointer = self.current_frame.get_node_pointer(node_id).unwrap();
+                let node_pointer = self.current_frame.get_node_location(node_id).unwrap();
                 references_to_add.insert(node_id, node_pointer);
                 actor
             }
@@ -805,29 +809,23 @@ where
             for global_address in global_references {
                 let node_id = RENodeId::Global(global_address);
                 let offset = SubstateOffset::Global(GlobalOffset::Global);
-                let node_pointer = RENodePointer::Store(node_id);
 
                 // TODO: static check here is to support the current genesis transaction which
                 // TODO: requires references to dynamically created resources. Can remove
                 // TODO: when this is resolved.
                 if !static_refs.contains(&global_address) {
-                    node_pointer
-                        .acquire_lock(offset.clone(), LockFlags::read_only(), &mut self.track)
-                        .map_err(|e| match e {
-                            KernelError::TrackError(TrackError::NotFound(..)) => {
-                                RuntimeError::KernelError(KernelError::GlobalAddressNotFound(
-                                    global_address,
-                                ))
-                            }
-                            _ => RuntimeError::KernelError(e),
-                        })?;
-                    node_pointer
-                        .release_lock(offset, false, &mut self.track)
-                        .map_err(RuntimeError::KernelError)?;
+                    self.track
+                        .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
+                        .map_err(|_| KernelError::GlobalAddressNotFound(global_address))?;
+                    self.track
+                        .release_lock(SubstateId(node_id, offset), false)
+                        .map_err(|_| KernelError::GlobalAddressNotFound(global_address))?;
                 }
 
-                self.current_frame.node_refs.insert(node_id, node_pointer);
-                next_node_refs.insert(node_id, node_pointer);
+                self.current_frame
+                    .node_refs
+                    .insert(node_id, RENodeLocation::Store);
+                next_node_refs.insert(node_id, RENodeLocation::Store);
             }
         } else {
             // Check that global references are owned by this call frame
@@ -876,7 +874,8 @@ where
                             };
 
                         let resolved_node_id = resolved_receiver.node_id();
-                        let node_pointer = self.current_frame.get_node_pointer(resolved_node_id)?;
+                        let node_pointer =
+                            self.current_frame.get_node_location(resolved_node_id)?;
                         next_node_refs.insert(resolved_node_id, node_pointer);
 
                         resolved_receiver
@@ -1014,10 +1013,9 @@ where
             ),
             RuntimeSubstate::GlobalRENode(global_substate),
         );
-        self.current_frame.node_refs.insert(
-            RENodeId::Global(global_address),
-            RENodePointer::Store(RENodeId::Global(global_address)),
-        );
+        self.current_frame
+            .node_refs
+            .insert(RENodeId::Global(global_address), RENodeLocation::Store);
         self.current_frame
             .move_owned_node_to_store(&mut self.heap, &mut self.track, node_id)?;
 

@@ -1,5 +1,5 @@
 use crate::engine::{
-    CallFrame, Heap, KernelError, RENodePointer, RuntimeError, SubstateProperties, Track,
+    CallFrame, Heap, KernelError, RENodeLocation, RuntimeError, SubstateProperties, Track,
 };
 use crate::fee::FeeReserve;
 use crate::model::substates::worktop::WorktopSubstate;
@@ -554,7 +554,8 @@ pub struct SubstateRefMut<'f, 's, R: FeeReserve> {
     flushed: bool,
     _lock_handle: LockHandle,
     prev_children: HashSet<RENodeId>,
-    node_pointer: RENodePointer,
+    location: RENodeLocation,
+    node_id: RENodeId,
     offset: SubstateOffset,
     current_frame: &'f mut CallFrame,
     heap: &'f mut Heap,
@@ -573,7 +574,8 @@ impl<'f, 's, R: FeeReserve> Drop for SubstateRefMut<'f, 's, R> {
 impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
     pub fn new(
         lock_handle: LockHandle,
-        node_pointer: RENodePointer,
+        node_pointer: RENodeLocation,
+        node_id: RENodeId,
         offset: SubstateOffset,
         prev_children: HashSet<RENodeId>,
         current_frame: &'f mut CallFrame,
@@ -584,7 +586,8 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             flushed: false,
             _lock_handle: lock_handle,
             prev_children,
-            node_pointer,
+            location: node_pointer,
+            node_id,
             offset,
             current_frame,
             heap,
@@ -627,15 +630,15 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             //self.current_frame.add_lock_visible_node(self.lock_handle, *child_id)?;
         }
 
-        match self.node_pointer {
-            RENodePointer::Heap(node_id) => {
+        match self.location {
+            RENodeLocation::Heap => {
                 self.current_frame.move_owned_nodes_to_heap_node(
                     self.heap,
                     new_children,
-                    node_id,
+                    self.node_id,
                 )?;
             }
-            RENodePointer::Store(..) => {
+            RENodeLocation::Store => {
                 self.current_frame.move_owned_nodes_to_store(
                     self.heap,
                     self.track,
@@ -653,17 +656,18 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
     }
 
     pub fn get_raw_mut(&mut self) -> RawSubstateRefMut {
-        match self.node_pointer {
-            RENodePointer::Heap(node_id) => {
-                self.heap.get_substate_mut(node_id, &self.offset).unwrap()
-            }
-            RENodePointer::Store(node_id) => match (node_id, &self.offset) {
+        match self.location {
+            RENodeLocation::Heap => self
+                .heap
+                .get_substate_mut(self.node_id, &self.offset)
+                .unwrap(),
+            RENodeLocation::Store => match (self.node_id, &self.offset) {
                 (
                     RENodeId::KeyValueStore(..),
                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
                 ) => {
                     let parent_substate_id = SubstateId(
-                        node_id,
+                        self.node_id,
                         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
                     );
                     self.track
@@ -677,7 +681,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
                     )),
                 ) => {
                     let parent_substate_id = SubstateId(
-                        node_id,
+                        self.node_id,
                         SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
                     );
                     self.track
@@ -686,7 +690,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
                 }
                 _ => self
                     .track
-                    .borrow_substate_mut(node_id, self.offset.clone())
+                    .borrow_substate_mut(self.node_id, self.offset.clone())
                     .to_ref_mut(),
             },
         }

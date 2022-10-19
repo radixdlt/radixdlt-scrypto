@@ -1,3 +1,4 @@
+use crate::engine::call_frame::RENodeLocation;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;
@@ -53,7 +54,7 @@ pub enum SysCallInput<'a> {
 
 pub enum SysCallOutput<'a> {
     Invoke { output: &'a ScryptoValue },
-    BorrowNode { node_pointer: &'a RENodePointer },
+    BorrowNode { node_pointer: &'a RENodeLocation },
     DropNode { node: &'a HeapRENode },
     CreateNode { node_id: &'a RENodeId },
     GlobalizeNode,

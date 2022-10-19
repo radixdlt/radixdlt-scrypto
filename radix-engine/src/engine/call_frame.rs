@@ -4,10 +4,16 @@ use crate::model::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use scrypto::core::NativeFunction;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RENodeLocation {
+    Heap,
+    Store,
+}
+
 /// A lock on a substate controlled by a call frame
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock {
-    pub substate_pointer: (RENodePointer, SubstateOffset),
+    pub substate_pointer: (RENodeLocation, RENodeId, SubstateOffset),
     pub owned_nodes: HashSet<RENodeId>,
     pub flags: LockFlags,
 }
@@ -23,10 +29,10 @@ pub struct CallFrame {
     /// The running application actor of this frame
     pub actor: REActor,
 
-    /// All ref values accessible by this call frame.
-    pub node_refs: HashMap<RENodeId, RENodePointer>,
+    /// All ref nodes accessible by this call frame (does not include owned nodes).
+    pub node_refs: HashMap<RENodeId, RENodeLocation>,
 
-    /// Owned Values which by definition must live on heap
+    /// Owned nodes which by definition must live on heap
     owned_heap_nodes: HashSet<RENodeId>,
 
     next_lock_handle: LockHandle,
@@ -42,36 +48,60 @@ impl CallFrame {
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        let node_pointer = self.get_node_pointer(node_id)?;
+        let location = self.get_node_location(node_id)?;
         if !(matches!(offset, SubstateOffset::KeyValueStore(..))
             || matches!(
                 offset,
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
             ))
         {
-            node_pointer
-                .acquire_lock(offset.clone(), flags, track)
-                .map_err(RuntimeError::KernelError)?;
+            let substate_id = SubstateId(node_id, offset.clone());
+            match location {
+                RENodeLocation::Store => track
+                    .acquire_lock(substate_id, flags)
+                    .map_err(KernelError::TrackError),
+                RENodeLocation::Heap => {
+                    if flags.contains(LockFlags::UNMODIFIED_BASE) {
+                        Err(KernelError::TrackError(
+                            TrackError::LockUnmodifiedBaseOnNewSubstate(substate_id),
+                        ))
+                    } else {
+                        Ok(())
+                    }
+                }
+            }?;
         }
 
         let lock_handle = self.next_lock_handle;
         self.locks.insert(
             lock_handle,
             SubstateLock {
-                substate_pointer: (node_pointer, offset),
+                substate_pointer: (location, node_id, offset),
                 owned_nodes: HashSet::new(),
                 flags,
             },
         );
         self.next_lock_handle = self.next_lock_handle + 1;
 
-        let counter = self
-            .node_lock_count
-            .entry(node_pointer.node_id())
-            .or_insert(0u32);
+        let counter = self.node_lock_count.entry(node_id).or_insert(0u32);
         *counter += 1;
 
         Ok(lock_handle)
+    }
+
+    fn release_lock<R: FeeReserve>(
+        track: &mut Track<R>,
+        pointer: RENodeLocation,
+        node_id: RENodeId,
+        offset: SubstateOffset,
+        force_write: bool,
+    ) -> Result<(), KernelError> {
+        match pointer {
+            RENodeLocation::Store => track
+                .release_lock(SubstateId(node_id, offset), force_write)
+                .map_err(KernelError::TrackError),
+            RENodeLocation::Heap => Ok(()),
+        }
     }
 
     pub fn drop_lock<'s, R: FeeReserve>(
@@ -90,16 +120,17 @@ impl CallFrame {
 
         let counter = self
             .node_lock_count
-            .entry(substate_lock.substate_pointer.0.node_id())
+            .entry(substate_lock.substate_pointer.1)
             .or_insert(0u32);
         *counter -= 1;
         if *counter == 0 {
             self.node_lock_count
-                .remove(&substate_lock.substate_pointer.0.node_id());
+                .remove(&substate_lock.substate_pointer.1);
         }
 
         let node_pointer = substate_lock.substate_pointer.0;
-        let offset = substate_lock.substate_pointer.1;
+        let node_id = substate_lock.substate_pointer.1;
+        let offset = substate_lock.substate_pointer.2;
         let flags = substate_lock.flags;
 
         if !(matches!(offset, SubstateOffset::KeyValueStore(..))
@@ -108,10 +139,12 @@ impl CallFrame {
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
             ))
         {
-            node_pointer.release_lock(
+            Self::release_lock(
+                track,
+                node_pointer,
+                node_id,
                 offset.clone(),
                 flags.contains(LockFlags::UNMODIFIED_BASE),
-                track,
             )?;
         }
 
@@ -157,7 +190,7 @@ impl CallFrame {
         parent: &mut CallFrame,
         actor: REActor,
         nodes_to_move: Vec<RENodeId>,
-        node_refs: HashMap<RENodeId, RENodePointer>,
+        node_refs: HashMap<RENodeId, RENodeLocation>,
     ) -> Result<Self, RuntimeError> {
         let mut owned_heap_nodes = HashSet::new();
 
@@ -206,7 +239,7 @@ impl CallFrame {
                     KernelError::InvalidReferenceReturn(global_address),
                 ));
             }
-            to.node_refs.insert(node_id, RENodePointer::Store(node_id));
+            to.node_refs.insert(node_id, RENodeLocation::Store);
         }
 
         Ok(())
@@ -218,7 +251,7 @@ impl CallFrame {
     ) -> Result<(), RuntimeError> {
         for (_, lock) in self.locks.drain() {
             let SubstateLock {
-                substate_pointer: (node_pointer, offset),
+                substate_pointer: (node_pointer, node_id, offset),
                 flags,
                 ..
             } = lock;
@@ -228,9 +261,13 @@ impl CallFrame {
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
                 ))
             {
-                node_pointer
-                    .release_lock(offset, flags.contains(LockFlags::UNMODIFIED_BASE), track)
-                    .map_err(RuntimeError::KernelError)?;
+                Self::release_lock(
+                    track,
+                    node_pointer,
+                    node_id,
+                    offset.clone(),
+                    flags.contains(LockFlags::UNMODIFIED_BASE),
+                )?;
             }
         }
 
@@ -349,6 +386,50 @@ impl CallFrame {
         heap.remove_node(node_id)
     }
 
+    fn borrow_substate<'f, 'p, 's, R: FeeReserve>(
+        &self,
+        heap: &'f mut Heap,
+        track: &'f mut Track<'s, R>,
+        location: RENodeLocation,
+        node_id: RENodeId,
+        offset: &SubstateOffset,
+    ) -> Result<SubstateRef<'f>, RuntimeError> {
+        let substate_ref = match location {
+            RENodeLocation::Heap => heap.get_substate(node_id, offset)?,
+            RENodeLocation::Store => match (node_id, offset) {
+                (
+                    RENodeId::KeyValueStore(..),
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+                ) => {
+                    let parent_substate_id = SubstateId(
+                        node_id,
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+                    );
+                    track
+                        .read_key_value(parent_substate_id, key.to_vec())
+                        .to_ref()
+                }
+                (
+                    RENodeId::NonFungibleStore(..),
+                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
+                        non_fungible_id,
+                    )),
+                ) => {
+                    let parent_substate_id = SubstateId(
+                        node_id,
+                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
+                    );
+                    track
+                        .read_key_value(parent_substate_id, non_fungible_id.to_vec())
+                        .to_ref()
+                }
+                _ => track.borrow_substate(node_id, offset.clone()).to_ref(),
+            },
+        };
+
+        Ok(substate_ref)
+    }
+
     pub fn get_ref<'f, 's, R: FeeReserve>(
         &mut self,
         lock_handle: LockHandle,
@@ -356,14 +437,14 @@ impl CallFrame {
         track: &'f mut Track<'s, R>,
     ) -> Result<SubstateRef<'f>, RuntimeError> {
         let SubstateLock {
-            substate_pointer: (node_pointer, offset),
+            substate_pointer: (node_location, node_id, offset),
             ..
         } = self
             .get_lock(lock_handle)
             .map_err(RuntimeError::KernelError)?
             .clone();
 
-        let substate_ref = node_pointer.borrow_substate(&offset, heap, track)?;
+        let substate_ref = self.borrow_substate(heap, track, node_location, node_id, &offset)?;
         let (global_references, children) = substate_ref.references_and_owned_nodes();
 
         // Expand references
@@ -371,12 +452,10 @@ impl CallFrame {
             // TODO: Figure out how to drop these references as well on reference drop
             for global_address in global_references {
                 let node_id = RENodeId::Global(global_address);
-                self.node_refs
-                    .insert(node_id, RENodePointer::Store(node_id));
+                self.node_refs.insert(node_id, RENodeLocation::Store);
             }
             for child_id in children {
-                let child_pointer = node_pointer.child(child_id);
-                self.node_refs.insert(child_id, child_pointer);
+                self.node_refs.insert(child_id, node_location);
                 self.add_lock_visible_node(lock_handle, child_id)
                     .map_err(RuntimeError::KernelError)?;
             }
@@ -392,7 +471,7 @@ impl CallFrame {
         track: &'f mut Track<'s, R>,
     ) -> Result<SubstateRefMut<'f, 's, R>, RuntimeError> {
         let SubstateLock {
-            substate_pointer: (node_pointer, offset),
+            substate_pointer: (node_location, node_id, offset),
             flags,
             ..
         } = self
@@ -407,7 +486,8 @@ impl CallFrame {
         }
 
         let (global_references, children) = {
-            let substate_ref = node_pointer.borrow_substate(&offset, heap, track)?;
+            let substate_ref =
+                self.borrow_substate(heap, track, node_location, node_id, &offset)?;
             substate_ref.references_and_owned_nodes()
         };
 
@@ -416,12 +496,10 @@ impl CallFrame {
             // TODO: Figure out how to drop these references as well on reference drop
             for global_address in global_references {
                 let node_id = RENodeId::Global(global_address);
-                self.node_refs
-                    .insert(node_id, RENodePointer::Store(node_id));
+                self.node_refs.insert(node_id, RENodeLocation::Store);
             }
             for child_id in &children {
-                let child_pointer = node_pointer.child(*child_id);
-                self.node_refs.insert(*child_id, child_pointer);
+                self.node_refs.insert(*child_id, node_location);
                 self.add_lock_visible_node(lock_handle, *child_id)
                     .map_err(RuntimeError::KernelError)?;
             }
@@ -429,7 +507,8 @@ impl CallFrame {
 
         SubstateRefMut::new(
             lock_handle,
-            node_pointer,
+            node_location,
+            node_id,
             offset,
             children,
             self,
@@ -438,11 +517,11 @@ impl CallFrame {
         )
     }
 
-    pub fn get_node_pointer(&self, node_id: RENodeId) -> Result<RENodePointer, CallFrameError> {
+    pub fn get_node_location(&self, node_id: RENodeId) -> Result<RENodeLocation, CallFrameError> {
         // Find node
         let node_pointer = {
             if self.owned_heap_nodes.contains(&node_id) {
-                RENodePointer::Heap(node_id)
+                RENodeLocation::Heap
             } else if let Some(pointer) = self.node_refs.get(&node_id) {
                 pointer.clone()
             } else {
