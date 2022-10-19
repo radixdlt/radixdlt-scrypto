@@ -69,8 +69,7 @@ pub enum SysCallOutput<'a> {
         lock_handle: LockHandle,
     },
     GetRef {
-        node_pointer: &'a RENodePointer,
-        offset: &'a SubstateOffset,
+        lock_handle: LockHandle,
     },
     GetRefMut,
     DropLock,

@@ -1142,52 +1142,25 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let SubstateLock {
-            substate_pointer: (node_pointer, offset),
-            ..
-        } = self.current_frame
-            .get_lock(lock_handle)
-            .map_err(RuntimeError::KernelError)?
-            .clone();
+        let substate_ref = self.current_frame.get_ref(lock_handle, &mut self.heap, &mut self.track)?;
 
-        let (global_references, children) = {
-            let substate_ref =
-                node_pointer.borrow_substate(&offset, &mut self.heap, &mut self.track)?;
-            substate_ref.references_and_owned_nodes()
-        };
 
-        // Expand references
-        {
-            // TODO: Figure out how to drop these references as well on reference drop
-            for global_address in global_references {
-                let node_id = RENodeId::Global(global_address);
-                self.current_frame
-                    .node_refs
-                    .insert(node_id, RENodePointer::Store(node_id));
-            }
-            for child_id in children {
-                let child_pointer = node_pointer.child(child_id);
-                self.current_frame.node_refs.insert(child_id, child_pointer);
-                self.current_frame
-                    .add_lock_visible_node(lock_handle, child_id)
-                    .map_err(RuntimeError::KernelError)?;
-            }
-        }
-
+        // TODO: Move post sys call to substate_ref drop()
+        /*
         for m in &mut self.modules {
             m.post_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::GetRef {
-                    node_pointer: &node_pointer,
-                    offset: &offset,
+                    lock_handle,
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
+         */
 
-        node_pointer.borrow_substate(&offset, &mut self.heap, &mut self.track)
+        Ok(substate_ref)
     }
 
     fn get_ref_mut<'f>(
@@ -1206,45 +1179,11 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let SubstateLock {
-            substate_pointer: (node_pointer, offset),
-            flags,
-            ..
-        } = self.current_frame
-            .get_lock(lock_handle)
-            .map_err(RuntimeError::KernelError)?
-            .clone();
 
-        if !flags.contains(LockFlags::MUTABLE) {
-            return Err(RuntimeError::KernelError(KernelError::LockNotMutable(
-                lock_handle,
-            )));
-        }
+        let substate_ref_mut = self.current_frame.get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
 
-        let (global_references, children) = {
-            let substate_ref =
-                node_pointer.borrow_substate(&offset, &mut self.heap, &mut self.track)?;
-            substate_ref.references_and_owned_nodes()
-        };
-
-        // Expand references
-        {
-            // TODO: Figure out how to drop these references as well on reference drop
-            for global_address in global_references {
-                let node_id = RENodeId::Global(global_address);
-                self.current_frame
-                    .node_refs
-                    .insert(node_id, RENodePointer::Store(node_id));
-            }
-            for child_id in &children {
-                let child_pointer = node_pointer.child(*child_id);
-                self.current_frame.node_refs.insert(*child_id, child_pointer);
-                self.current_frame
-                    .add_lock_visible_node(lock_handle, *child_id)
-                    .map_err(RuntimeError::KernelError)?;
-            }
-        }
-
+        // TODO: Move post sys call to substate_ref drop()
+        /*
         for m in &mut self.modules {
             m.post_sys_call(
                 &self.current_frame,
@@ -1254,16 +1193,10 @@ where
             )
             .map_err(RuntimeError::ModuleError)?;
         }
+         */
 
-        SubstateRefMut::new(
-            lock_handle,
-            node_pointer,
-            offset,
-            children,
-            &mut self.current_frame,
-            &mut self.heap,
-            &mut self.track,
-        )
+        Ok(substate_ref_mut)
+
     }
 
     fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {

@@ -31,18 +31,19 @@ impl Heap {
             .map_err(|_| CallFrameError::OffsetDoesNotExist(node_id, offset.clone()))
     }
 
+    pub fn get_children(&self, node_id: RENodeId) -> Result<&HashSet<RENodeId>, CallFrameError> {
+        self.nodes
+            .get(&node_id)
+            .map(|n| &n.child_nodes)
+            .ok_or(CallFrameError::RENodeNotOwned(node_id))
+    }
+
     pub fn get_node_mut(
         &mut self,
         node_id: RENodeId,
     ) -> Result<&mut HeapRENode, CallFrameError> {
         self.nodes
             .get_mut(&node_id)
-            .ok_or(CallFrameError::RENodeNotOwned(node_id))
-    }
-
-    pub fn get_node(&self, node_id: RENodeId) -> Result<&HeapRENode, CallFrameError> {
-        self.nodes
-            .get(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))
     }
 
@@ -62,7 +63,10 @@ impl Heap {
             }
         }
 
-        self.get_node_mut(to)?.child_nodes.extend(node_ids);
+        let heap_node = self.nodes
+            .get_mut(&to)
+            .ok_or(CallFrameError::RENodeNotOwned(to))?;
+        heap_node.child_nodes.extend(node_ids);
 
         Ok(())
     }
