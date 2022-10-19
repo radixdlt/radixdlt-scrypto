@@ -51,6 +51,10 @@ impl SubstateProperties {
                 SubstateOffset::Global(GlobalOffset::Global) => flags == LockFlags::read_only(),
                 _ => false,
             },
+            (ExecutionMode::Globalize, offset) => match offset {
+                SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
+                _ => false,
+            },
             (ExecutionMode::AuthModule, offset) => match offset {
                 SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => true,
                 // TODO: Remove these and use AuthRulesSubstate

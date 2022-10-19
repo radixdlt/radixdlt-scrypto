@@ -86,6 +86,7 @@ impl REActor {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum ExecutionMode {
     Kernel,
+    Globalize,
     Deref,
     ScryptoInterpreter,
     AuthModule,
