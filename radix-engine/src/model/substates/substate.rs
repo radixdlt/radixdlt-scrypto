@@ -640,15 +640,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
                  */
             }
             RENodePointer::Store(..) => {
-                for child_id in new_children {
-                    let child_node = self.current_frame.take_node(self.heap, child_id)?;
-                    for (id, node) in child_node.to_nodes(child_id) {
-                        let substates = node_to_substates(node);
-                        for (offset, substate) in substates {
-                            self.track.insert_substate(SubstateId(id, offset), substate);
-                        }
-                    }
-                }
+                self.current_frame.move_owned_nodes_to_store(self.heap, self.track, new_children)?;
             }
         }
 

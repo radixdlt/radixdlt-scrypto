@@ -1,6 +1,7 @@
 use crate::engine::*;
 use crate::types::*;
 use scrypto::core::NativeFunction;
+use crate::fee::FeeReserve;
 
 /// A lock on a substate controlled by a call frame
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -257,6 +258,16 @@ impl CallFrame {
             self.take_node_internal(heap, *child_id)?;
         }
         heap.move_nodes_to_node(children, to)?;
+
+        Ok(())
+    }
+
+    pub fn move_owned_nodes_to_store<'f, 's, R: FeeReserve>(&mut self, heap: &mut Heap, track: &'f mut Track<'s, R>, children: HashSet<RENodeId>) -> Result<(), RuntimeError> {
+        for child_id in &children {
+            self.take_node_internal(heap, *child_id)?;
+        }
+
+        heap.move_nodes_to_store(track, children)?;
 
         Ok(())
     }
