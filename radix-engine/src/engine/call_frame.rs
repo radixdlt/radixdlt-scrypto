@@ -160,10 +160,6 @@ impl CallFrame {
     ) -> Result<(), RuntimeError> {
         for node_id in node_ids {
             // move re nodes to upstream call frame.
-            let node = heap.get_node_mut(node_id)?;
-            let root_node = node.get_mut();
-            root_node.prepare_move_upstream(node_id)?;
-
             from.take_node_internal(heap, node_id)?;
             to.owned_heap_nodes.insert(node_id);
         }

@@ -724,6 +724,13 @@ impl<'a> RawSubstateRefMut<'a> {
         }
     }
 
+    pub fn proof(&mut self) -> &mut ProofSubstate {
+        match self {
+            RawSubstateRefMut::Proof(value) => *value,
+            _ => panic!("Not a proof"),
+        }
+    }
+
     pub fn bucket(&mut self) -> &mut BucketSubstate {
         match self {
             RawSubstateRefMut::Bucket(value) => *value,

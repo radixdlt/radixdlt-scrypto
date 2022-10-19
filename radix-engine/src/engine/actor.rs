@@ -87,6 +87,8 @@ impl REActor {
 pub enum ExecutionMode {
     Kernel,
     Globalize,
+    MoveDownstream,
+    MoveUpstream,
     Deref,
     ScryptoInterpreter,
     AuthModule,

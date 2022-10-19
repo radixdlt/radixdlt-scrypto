@@ -153,13 +153,13 @@ fn test_basic_transfer() {
         + 0 /* blobs */
         + 2500 /* create_node */
         + 1698 /* decode_manifest */
-        + 5700 /* drop_lock */
+        + 6300 /* drop_lock */
         + 1000 /* drop_node */
         + 0 /* instantiate_wasm */
         + 2215 /* invoke_function */
-        + 8800 /* lock_substate */
+        + 9400 /* lock_substate */
         + 2100 /* read_owned_nodes */
-        + 31000 /* read_substate */
+        + 34000 /* read_substate */
         + 5200 /* run_function */
         + 338152 /* run_wasm */
         + 566 /* verify_manifest */
