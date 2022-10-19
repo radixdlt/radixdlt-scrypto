@@ -1,9 +1,7 @@
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::{
-    Blob, NativeFunctionIdent, NativeMethodIdent, ScryptoFunctionIdent, ScryptoMethodIdent,
-};
+use scrypto::core::Blob;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{NonFungibleId, ResourceAddress};

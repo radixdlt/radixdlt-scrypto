@@ -12,14 +12,7 @@ use scrypto::address::Bech32Decoder;
 use scrypto::buffer::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::constants::*;
-use scrypto::core::NativeFunctionIdent;
-use scrypto::core::NativeMethodIdent;
-use scrypto::core::ScryptoFunctionIdent;
-use scrypto::core::ScryptoMethodIdent;
-use scrypto::core::ScryptoReceiver;
-use scrypto::core::{
-    Blob, BucketMethod, NetworkDefinition, Receiver, ResourceManagerFunction, ResourceManagerMethod,
-};
+use scrypto::core::{Blob, NetworkDefinition};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;

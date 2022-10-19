@@ -8,11 +8,7 @@ use scrypto::address::Bech32Decoder;
 use scrypto::buffer::scrypto_decode;
 use scrypto::component::ComponentAddress;
 use scrypto::component::PackageAddress;
-use scrypto::core::{
-    Blob, BucketMethod, Expression, NativeFunctionIdent, NativeMethodIdent, Receiver,
-    ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
-    ScryptoReceiver,
-};
+use scrypto::core::{Blob, Expression};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;

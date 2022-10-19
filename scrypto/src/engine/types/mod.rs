@@ -8,4 +8,6 @@ pub use ids::*;
 pub use invocation::*;
 pub use level::*;
 pub use re_node::*;
-pub use third_party::*;
+
+// For this module only
+use third_party::*;

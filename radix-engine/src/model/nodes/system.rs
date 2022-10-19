@@ -5,8 +5,7 @@ use crate::model::{
     SystemSubstate,
 };
 use crate::types::*;
-use crate::wasm::*;
-use scrypto::core::{SystemCreateInput, SystemFunction};
+use crate::wasm::*; 
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum SystemError {

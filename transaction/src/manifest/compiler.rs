@@ -40,8 +40,9 @@ mod tests {
     use sbor::rust::str::FromStr;
     use scrypto::address::Bech32Decoder;
     use scrypto::args;
-    use scrypto::core::{Blob, NativeFunctionIdent, ScryptoMethodIdent, ScryptoReceiver};
-    use scrypto::core::{NetworkDefinition, ResourceManagerFunction};
+    use scrypto::core::Blob;
+    use scrypto::core::NetworkDefinition;
+    use scrypto::engine::types::*;
     use scrypto::math::*;
     use scrypto::resource::{
         AccessRule, MintParams, Mutability, ResourceMethodAuthKey, ResourceType,

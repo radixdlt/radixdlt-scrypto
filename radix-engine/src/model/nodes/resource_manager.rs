@@ -12,9 +12,7 @@ use crate::model::{
 use crate::types::AccessRule::*;
 use crate::types::ResourceMethodAuthKey::*;
 use crate::types::*;
-use crate::wasm::*;
-use scrypto::core::ResourceManagerFunction;
-use scrypto::resource::ResourceManagerBurnInput;
+use crate::wasm::*; 
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
