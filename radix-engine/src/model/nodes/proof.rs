@@ -81,7 +81,7 @@ impl Proof {
         Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
-        let proof: ProofSubstate = system_api.node_drop(node_id)?.into();
+        let proof: ProofSubstate = system_api.drop_node(node_id)?.into();
         match method {
             ProofMethod::Drop => {
                 let _: ConsumingProofDropInput = scrypto_decode(&args.raw)

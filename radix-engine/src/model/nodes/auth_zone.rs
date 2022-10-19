@@ -66,7 +66,7 @@ impl AuthZoneStack {
                 let input: AuthZonePushInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let mut proof: ProofSubstate =
-                    system_api.node_drop(RENodeId::Proof(input.proof.0))?.into();
+                    system_api.drop_node(RENodeId::Proof(input.proof.0))?.into();
                 proof.change_to_unrestricted();
 
                 let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;

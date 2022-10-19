@@ -262,17 +262,25 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn move_owned_nodes_to_store<'f, 's, R: FeeReserve>(&mut self, heap: &mut Heap, track: &'f mut Track<'s, R>, children: HashSet<RENodeId>) -> Result<(), RuntimeError> {
-        for child_id in &children {
-            self.take_node_internal(heap, *child_id)?;
+    pub fn move_owned_nodes_to_store<'f, 's, R: FeeReserve>(&mut self, heap: &mut Heap, track: &'f mut Track<'s, R>, node_ids: HashSet<RENodeId>) -> Result<(), RuntimeError> {
+        for node_id in &node_ids {
+            self.take_node_internal(heap, *node_id)?;
         }
 
-        heap.move_nodes_to_store(track, children)?;
+        heap.move_nodes_to_store(track, node_ids)?;
 
         Ok(())
     }
 
-    pub fn take_node(
+    pub fn move_owned_node_to_store<'f, 's, R: FeeReserve>(&mut self, heap: &mut Heap, track: &'f mut Track<'s, R>, node_id: RENodeId) -> Result<(), RuntimeError> {
+        self.take_node_internal(heap, node_id)?;
+        heap.move_node_to_store(track, node_id)?;
+
+        Ok(())
+    }
+
+
+    pub fn drop_node(
         &mut self,
         heap: &mut Heap,
         node_id: RENodeId,

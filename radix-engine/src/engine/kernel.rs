@@ -886,7 +886,7 @@ where
         Ok(node_ids)
     }
 
-    fn node_drop(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
+    fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,
@@ -899,7 +899,7 @@ where
 
         // TODO: Authorization
 
-        let node = self.current_frame.take_node(self.heap, node_id)?;
+        let node = self.current_frame.drop_node(self.heap, node_id)?;
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -974,17 +974,13 @@ where
             ),
             RuntimeSubstate::GlobalRENode(global_substate),
         );
-        let node = self.current_frame.take_node(&mut self.heap, node_id)?;
-        for (id, substate) in nodes_to_substates(node.to_nodes(node_id)) {
-            self.track.insert_substate(id, substate);
-        }
-
         self.current_frame
             .node_refs
             .insert(
                 RENodeId::Global(global_address),
                 RENodePointer::Store(RENodeId::Global(global_address)),
             );
+        self.current_frame.move_owned_node_to_store(&mut self.heap, &mut self.track, node_id)?;
 
         // Restore current mode
         self.execution_mode = current_mode;

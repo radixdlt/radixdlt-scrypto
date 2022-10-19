@@ -53,12 +53,18 @@ impl Heap {
 
     pub fn move_nodes_to_store<R: FeeReserve>(&mut self, track: &mut Track<R>, nodes: HashSet<RENodeId>) -> Result<(), CallFrameError> {
         for node_id in nodes {
-            let node = self.nodes.remove(&node_id).ok_or(CallFrameError::RENodeNotOwned(node_id))?;
-            for (id, node) in node.to_nodes(node_id) {
-                let substates = node_to_substates(node);
-                for (offset, substate) in substates {
-                    track.insert_substate(SubstateId(id, offset), substate);
-                }
+            self.move_node_to_store(track, node_id)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn move_node_to_store<R: FeeReserve>(&mut self, track: &mut Track<R>, node_id: RENodeId) -> Result<(), CallFrameError> {
+        let node = self.nodes.remove(&node_id).ok_or(CallFrameError::RENodeNotOwned(node_id))?;
+        for (id, node) in node.to_nodes(node_id) {
+            let substates = node_to_substates(node);
+            for (offset, substate) in substates {
+                track.insert_substate(SubstateId(id, offset), substate);
             }
         }
 
