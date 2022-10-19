@@ -674,15 +674,13 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             )],
             |kernel| {
                 kernel
-                    .invoke_native(
-                        NativeFnIdent::Method(NativeMethodIdent {
-                            receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                                SYS_SYSTEM_COMPONENT,
-                            ))),
-                            method_name: SystemMethod::SetEpoch.to_string(),
-                        }),
+                    .invoke_native(NativeInvocation::Method(
+                        NativeMethod::System(SystemMethod::SetEpoch),
+                        Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                            SYS_SYSTEM_COMPONENT,
+                        ))),
                         ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
-                    )
+                    ))
                     .unwrap()
             },
         );
@@ -691,15 +689,13 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn get_current_epoch(&mut self) -> u64 {
         let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
             kernel
-                .invoke_native(
-                    NativeFnIdent::Method(NativeMethodIdent {
-                        receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                            SYS_SYSTEM_COMPONENT,
-                        ))),
-                        method_name: SystemMethod::GetCurrentEpoch.to_string(),
-                    }),
+                .invoke_native(NativeInvocation::Method(
+                    NativeMethod::System(SystemMethod::GetCurrentEpoch),
+                    Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                        SYS_SYSTEM_COMPONENT,
+                    ))),
                     ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),
-                )
+                ))
                 .unwrap()
         });
         scrypto_decode(&current_epoch.raw).unwrap()

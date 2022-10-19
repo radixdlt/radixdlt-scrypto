@@ -171,17 +171,13 @@ impl Bucket {
                 system_api.drop_lock(bucket_handle)?;
 
                 system_api
-                    .invoke_native(
-                        NativeFnIdent::Method(NativeMethodIdent {
-                            receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
-                                resource_address,
-                            ))),
-                            method_name: ResourceManagerMethod::Burn.to_string(),
-                        }),
+                    .invoke_native(NativeInvocation::Method(
+                        NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
+                        Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))),
                         ScryptoValue::from_typed(&ResourceManagerBurnInput {
                             bucket: scrypto::resource::Bucket(bucket_id),
                         }),
-                    )
+                    ))
                     .map_err(InvokeError::Downstream)
             }
             _ => Err(InvokeError::Error(BucketError::MethodNotFound(method))),

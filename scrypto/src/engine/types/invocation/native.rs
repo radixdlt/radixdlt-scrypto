@@ -1,15 +1,39 @@
 use crate::engine::types::*;
 
+// Native function identifier used by transaction model
 #[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
 pub struct NativeFunctionIdent {
     pub blueprint_name: String,
     pub function_name: String,
 }
 
+// Native method identifier used by transaction model
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub struct NativeMethodIdent {
     pub receiver: Receiver,
     pub method_name: String,
+}
+
+// Native function enum used by Kernel SystemAPI and WASM
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, PartialOrd, Ord)]
+pub enum NativeMethod {
+    Component(ComponentMethod),
+    System(SystemMethod),
+    AuthZone(AuthZoneMethod),
+    ResourceManager(ResourceManagerMethod),
+    Bucket(BucketMethod),
+    Vault(VaultMethod),
+    Proof(ProofMethod),
+    Worktop(WorktopMethod),
+}
+
+// Native method enum used by Kernel SystemAPI and WASM
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, PartialOrd, Ord)]
+pub enum NativeFunction {
+    System(SystemFunction),
+    ResourceManager(ResourceManagerFunction),
+    Package(PackageFunction),
+    TransactionProcessor(TransactionProcessorFunction),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Copy, TypeId, Encode, Decode)]

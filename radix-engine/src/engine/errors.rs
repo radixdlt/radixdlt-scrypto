@@ -9,7 +9,6 @@ use crate::wasm::WasmError;
 use super::AuthError;
 use super::CostingError;
 use super::ExecutionTraceError;
-use super::NativeMethod;
 use super::TrackError;
 
 /// Represents an error which causes a tranasction to be rejected.
@@ -64,7 +63,7 @@ pub enum KernelError {
     GlobalAddressNotFound(GlobalAddress),
 
     MaxCallDepthLimitReached,
-    InvalidScryptoFnOutput(ScryptoFnIdent),
+    InvalidScryptoFnOutput,
     MethodReceiverNotMatch(NativeMethod, Receiver),
 
     // ID allocation
@@ -115,7 +114,7 @@ impl From<CallFrameError> for RuntimeError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum ScryptoActorError {
+pub enum ScryptoFnResolvingError {
     BlueprintNotFound,
     FunctionNotFound,
     MethodNotFound,
@@ -124,8 +123,10 @@ pub enum ScryptoActorError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum InterpreterError {
-    InvalidScryptoFnIdent(ScryptoFnIdent, ScryptoActorError),
-    InvalidNativeFnIdent(NativeFnIdent),
+    InvalidScryptoFunctionInvocation(ScryptoFunctionIdent, ScryptoFnResolvingError),
+    InvalidScryptoMethodInvocation(ScryptoMethodIdent, ScryptoFnResolvingError),
+    InvalidNativeFunctionIdent(NativeFunctionIdent),
+    InvalidNativeMethodIdent(NativeMethodIdent),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]

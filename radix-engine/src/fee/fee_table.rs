@@ -1,19 +1,14 @@
-use crate::{
-    engine::{NativeFunction, NativeMethod},
-    types::*,
-};
+use crate::types::*;
 
 pub enum SystemApiCostingEntry<'a> {
     /*
      * Invocation
      */
     InvokeScrypto {
-        fn_ident: ScryptoFnIdent,
-        args: &'a ScryptoValue,
+        invocation: &'a ScryptoInvocation,
     },
     InvokeNative {
-        fn_ident: NativeFnIdent,
-        args: &'a ScryptoValue,
+        invocation: &'a NativeInvocation,
     },
 
     /*
@@ -250,11 +245,15 @@ impl FeeTable {
 
     pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
         match entry {
-            SystemApiCostingEntry::InvokeScrypto { args, .. } => {
-                self.fixed_low + (5 * args.raw.len() + 10 * args.value_count()) as u32
+            SystemApiCostingEntry::InvokeScrypto { invocation, .. } => {
+                self.fixed_low
+                    + (5 * invocation.args().raw.len() + 10 * invocation.args().value_count())
+                        as u32
             }
-            SystemApiCostingEntry::InvokeNative { args, .. } => {
-                self.fixed_low + (5 * args.raw.len() + 10 * args.value_count()) as u32
+            SystemApiCostingEntry::InvokeNative { invocation, .. } => {
+                self.fixed_low
+                    + (5 * invocation.args().raw.len() + 10 * invocation.args().value_count())
+                        as u32
             }
 
             SystemApiCostingEntry::ReadOwnedNodes => self.fixed_low,

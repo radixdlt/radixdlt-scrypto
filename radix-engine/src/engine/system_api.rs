@@ -52,15 +52,11 @@ where
 
     fn invoke_scrypto(
         &mut self,
-        fn_ident: ScryptoFnIdent,
-        args: ScryptoValue,
+        invocation: ScryptoInvocation,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn invoke_native(
-        &mut self,
-        fn_ident: NativeFnIdent,
-        args: ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError>;
+    fn invoke_native(&mut self, invocation: NativeInvocation)
+        -> Result<ScryptoValue, RuntimeError>;
 
     /// Retrieves all nodes referenceable by the current frame
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;

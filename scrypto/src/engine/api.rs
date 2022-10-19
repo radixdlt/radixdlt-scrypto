@@ -13,8 +13,8 @@ extern "C" {
 pub enum RadixEngineInput {
     InvokeScryptoFunction(ScryptoFunctionIdent, Vec<u8>),
     InvokeScryptoMethod(ScryptoMethodIdent, Vec<u8>),
-    InvokeNativeFunction(NativeFunctionIdent, Vec<u8>),
-    InvokeNativeMethod(NativeMethodIdent, Vec<u8>),
+    InvokeNativeFunction(NativeFunction, Vec<u8>),
+    InvokeNativeMethod(NativeMethod, Receiver, Vec<u8>),
 
     RENodeCreate(ScryptoRENode),
     RENodeGlobalize(RENodeId),

@@ -22,15 +22,13 @@ pub fn call_engine<V: Decode>(_input: RadixEngineInput) -> V {
 }
 
 #[macro_export]
-macro_rules! native_functions {
+macro_rules! native_methods {
     ($receiver:expr, $type_ident:expr => { $($vis:vis $fn:ident $method_name:ident $s:tt -> $rtn:ty { $fn_ident:expr, $arg:expr })* } ) => {
         $(
             $vis $fn $method_name $s -> $rtn {
                 let input = RadixEngineInput::InvokeNativeMethod(
-                    scrypto::engine::types::NativeMethodIdent {
-                        receiver: $receiver,
-                        method_name: $fn_ident.to_string(),
-                    },
+                    $type_ident($fn_ident),
+                    $receiver,
                     scrypto::buffer::scrypto_encode(&$arg)
                 );
                 call_engine(input)

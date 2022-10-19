@@ -54,15 +54,13 @@ impl SetCurrentEpoch {
 
         // Invoke the system
         kernel
-            .invoke_native(
-                NativeFnIdent::Method(NativeMethodIdent {
-                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                        SYS_SYSTEM_COMPONENT,
-                    ))),
-                    method_name: SystemMethod::SetEpoch.to_string(),
-                }),
+            .invoke_native(NativeInvocation::Method(
+                NativeMethod::System(SystemMethod::SetEpoch),
+                Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                    SYS_SYSTEM_COMPONENT,
+                ))),
                 ScryptoValue::from_typed(&SystemSetEpochInput { epoch: self.epoch }),
-            )
+            ))
             .map(|_| ())
             .map_err(Error::TransactionExecutionError)?;
 

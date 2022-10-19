@@ -1,11 +1,10 @@
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::engine::{api::*, types::*, utils::*};
 use crate::math::Decimal;
-use crate::native_functions;
+use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -47,7 +46,7 @@ pub struct AuthZoneDrainInput {}
 pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
-    native_functions! {
+    native_methods! {
         {
             let input = RadixEngineInput::GetVisibleNodeIds();
             let owned_node_ids: Vec<RENodeId> = call_engine(input);
@@ -93,10 +92,8 @@ impl ComponentAuthZone {
 
         let proof: Proof = proof.into();
         let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethodIdent {
-                receiver: Receiver::Ref(node_id),
-                method_name: AuthZoneMethod::Push.to_string(),
-            },
+            NativeMethod::AuthZone(AuthZoneMethod::Push),
+            Receiver::Ref(node_id),
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
         );
         call_engine(input)

@@ -30,24 +30,30 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
-            SysCallInput::InvokeScrypto { fn_ident, args, .. } => {
+            SysCallInput::InvokeScrypto { invocation, .. } => {
                 log!(
                     self,
                     "Invoking scrypto: fn = {:?}, buckets = {:?}, proofs = {:?}",
-                    fn_ident,
-                    args.bucket_ids,
-                    args.proof_ids
+                    match invocation {
+                        ScryptoInvocation::Function(id, _) => format!("{:?}", id),
+                        ScryptoInvocation::Method(id, _) => format!("{:?}", id),
+                    },
+                    invocation.args().bucket_ids,
+                    invocation.args().proof_ids
                 );
 
                 self.depth = self.depth + 1;
             }
-            SysCallInput::InvokeNative { fn_ident, args, .. } => {
+            SysCallInput::InvokeNative { invocation, .. } => {
                 log!(
                     self,
                     "Invoking native: fn = {:?}, buckets = {:?}, proofs = {:?}",
-                    fn_ident,
-                    args.bucket_ids,
-                    args.proof_ids
+                    match invocation {
+                        NativeInvocation::Function(id, _) => format!("{:?}", id),
+                        NativeInvocation::Method(id, _, _) => format!("{:?}", id),
+                    },
+                    invocation.args().bucket_ids,
+                    invocation.args().proof_ids
                 );
 
                 self.depth = self.depth + 1;

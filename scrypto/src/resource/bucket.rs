@@ -1,7 +1,6 @@
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::types::GlobalAddress;
@@ -11,7 +10,7 @@ use crate::buffer::scrypto_encode;
 use crate::engine::{api::*, types::*, utils::*};
 use crate::math::*;
 use crate::misc::*;
-use crate::native_functions;
+use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -52,18 +51,14 @@ impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
-                    resource_address,
-                ))),
-                method_name: ResourceManagerMethod::CreateBucket.to_string(),
-            },
+            NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
+            Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))),
             scrypto_encode(&ResourceManagerCreateBucketInput {}),
         );
         call_engine(input)
     }
 
-    native_functions! {
+    native_methods! {
         Receiver::Consumed(RENodeId::Bucket(self.0)), NativeMethod::Bucket => {
            pub fn burn(self) -> () {
                 BucketMethod::Burn,
@@ -74,16 +69,14 @@ impl Bucket {
 
     fn take_internal(&mut self, amount: Decimal) -> Self {
         let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Bucket(self.0)),
-                method_name: BucketMethod::Take.to_string(),
-            },
+            NativeMethod::Bucket(BucketMethod::Take),
+            Receiver::Ref(RENodeId::Bucket(self.0)),
             scrypto_encode(&BucketTakeInput { amount }),
         );
         call_engine(input)
     }
 
-    native_functions! {
+    native_methods! {
         Receiver::Ref(RENodeId::Bucket(self.0)), NativeMethod::Bucket => {
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
                 BucketMethod::TakeNonFungibles,

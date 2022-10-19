@@ -17,51 +17,42 @@ impl<I: WasmInstance> ScryptoExecutor<I> {
         Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
-        let (ident, package_address, blueprint_name, export_name, return_type, scrypto_actor) =
-            match system_api.get_actor() {
-                REActor::Method(
-                    ResolvedMethod::Scrypto {
-                        package_address,
-                        blueprint_name,
-                        ident,
-                        export_name,
-                        return_type,
-                        ..
-                    },
-                    ResolvedReceiver {
-                        receiver: Receiver::Ref(RENodeId::Component(component_id)),
-                        ..
-                    },
-                ) => (
-                    ident.to_string(),
-                    *package_address,
-                    blueprint_name.to_string(),
-                    export_name.to_string(),
-                    return_type.clone(),
-                    ScryptoActor::Component(
-                        *component_id,
-                        package_address.clone(),
-                        blueprint_name.clone(),
-                    ),
-                ),
-                REActor::Function(ResolvedFunction::Scrypto {
+        let (export_name, return_type, scrypto_actor) = match system_api.get_actor() {
+            REActor::Method(
+                ResolvedMethod::Scrypto {
                     package_address,
                     blueprint_name,
-                    ident,
                     export_name,
                     return_type,
                     ..
-                }) => (
-                    ident.to_string(),
-                    *package_address,
-                    blueprint_name.to_string(),
-                    export_name.to_string(),
-                    return_type.clone(),
-                    ScryptoActor::blueprint(*package_address, blueprint_name.clone()),
+                },
+                ResolvedReceiver {
+                    receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                    ..
+                },
+            ) => (
+                export_name.to_string(),
+                return_type.clone(),
+                ScryptoActor::Component(
+                    *component_id,
+                    package_address.clone(),
+                    blueprint_name.clone(),
                 ),
+            ),
+            REActor::Function(ResolvedFunction::Scrypto {
+                package_address,
+                blueprint_name,
+                export_name,
+                return_type,
+                ..
+            }) => (
+                export_name.to_string(),
+                return_type.clone(),
+                ScryptoActor::blueprint(*package_address, blueprint_name.clone()),
+            ),
 
-                _ => panic!("Should not get here."),
-            };
+            _ => panic!("Should not get here."),
+        };
 
         let output = {
             system_api.execute_in_mode(ExecutionMode::Application, |system_api| {
@@ -80,13 +71,7 @@ impl<I: WasmInstance> ScryptoExecutor<I> {
 
         let rtn = if !return_type.matches(&output.dom) {
             Err(RuntimeError::KernelError(
-                KernelError::InvalidScryptoFnOutput(ScryptoFnIdent::Function(
-                    ScryptoFunctionIdent {
-                        package_address,
-                        blueprint_name,
-                        function_name: ident,
-                    },
-                )),
+                KernelError::InvalidScryptoFnOutput,
             ))
         } else {
             Ok(output)

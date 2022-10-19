@@ -164,15 +164,12 @@ where
                 modules,
             );
             kernel
-                .invoke_native(
-                    NativeFnIdent::Function(NativeFunctionIdent {
-                        blueprint_name: "TransactionProcessor".to_owned(),
-                        function_name: TransactionProcessorFunction::Run.to_string(),
-                    }),
+                .invoke_native(NativeInvocation::Function(
+                    NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
                     ScryptoValue::from_typed(&TransactionProcessorRunInput {
                         instructions: instructions.clone(),
                     }),
-                )
+                ))
                 .map(|o| {
                     scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
                         .expect("TransactionProcessor returned data of unexpected type")

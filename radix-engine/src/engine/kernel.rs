@@ -449,20 +449,16 @@ where
     // TODO: remove redundant code and move this method to the interpreter
     fn resolve_scrypto_actor(
         &mut self,
-        fn_ident: &ScryptoFnIdent,
-        args: &ScryptoValue,
+        invocation: &ScryptoInvocation,
     ) -> Result<(REActor, HashMap<RENodeId, RENodePointer>), RuntimeError> {
         let mut references_to_add = HashMap::new();
 
-        let actor = match fn_ident.clone() {
-            ScryptoFnIdent::Function(ScryptoFunctionIdent {
-                package_address,
-                blueprint_name,
-                function_name,
-            }) => {
+        let actor = match invocation {
+            ScryptoInvocation::Function(function_ident, args) => {
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
-                let global_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
+                let global_node_id =
+                    RENodeId::Global(GlobalAddress::Package(function_ident.package_address));
                 let package_node_id = self.node_method_deref(global_node_id)?.unwrap();
                 let package = self.execute_in_mode::<_, _, RuntimeError>(
                     ExecutionMode::ScryptoInterpreter,
@@ -496,34 +492,36 @@ where
                 );
 
                 // Find the abi
-                let abi = package.blueprint_abi(&blueprint_name).ok_or(
-                    RuntimeError::InterpreterError(InterpreterError::InvalidScryptoFnIdent(
-                        fn_ident.clone(),
-                        ScryptoActorError::BlueprintNotFound,
-                    )),
+                let abi = package
+                    .blueprint_abi(&function_ident.blueprint_name)
+                    .ok_or(RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoFunctionInvocation(
+                            function_ident.clone(),
+                            ScryptoFnResolvingError::BlueprintNotFound,
+                        ),
+                    ))?;
+                let fn_abi = abi.get_fn_abi(&function_ident.function_name).ok_or(
+                    RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoFunctionInvocation(
+                            function_ident.clone(),
+                            ScryptoFnResolvingError::FunctionNotFound,
+                        ),
+                    ),
                 )?;
-                let fn_abi =
-                    abi.get_fn_abi(&function_name)
-                        .ok_or(RuntimeError::InterpreterError(
-                            InterpreterError::InvalidScryptoFnIdent(
-                                fn_ident.clone(),
-                                ScryptoActorError::FunctionNotFound,
-                            ),
-                        ))?;
                 if fn_abi.mutability.is_some() {
                     return Err(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoFnIdent(
-                            fn_ident.clone(),
-                            ScryptoActorError::FunctionNotFound,
+                        InterpreterError::InvalidScryptoFunctionInvocation(
+                            function_ident.clone(),
+                            ScryptoFnResolvingError::FunctionNotFound,
                         ),
                     ));
                 }
                 // Check input against the ABI
                 if !fn_abi.input.matches(&args.dom) {
                     return Err(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoFnIdent(
-                            fn_ident.clone(),
-                            ScryptoActorError::InvalidInput,
+                        InterpreterError::InvalidScryptoFunctionInvocation(
+                            function_ident.clone(),
+                            ScryptoFnResolvingError::InvalidInput,
                         ),
                     ));
                 }
@@ -535,19 +533,16 @@ where
                 }
 
                 REActor::Function(ResolvedFunction::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ident: function_name,
+                    package_address: function_ident.package_address,
+                    blueprint_name: function_ident.blueprint_name.clone(),
+                    ident: function_ident.function_name.clone(),
                     export_name: fn_abi.export_name.clone(),
                     return_type: fn_abi.output.clone(),
                     code: package.code,
                 })
             }
-            ScryptoFnIdent::Method(ScryptoMethodIdent {
-                receiver,
-                method_name,
-            }) => {
-                let original_node_id = match receiver {
+            ScryptoInvocation::Method(method_ident, args) => {
+                let original_node_id = match method_ident.receiver {
                     ScryptoReceiver::Global(address) => {
                         RENodeId::Global(GlobalAddress::Component(address))
                     }
@@ -622,24 +617,24 @@ where
                 let abi = package
                     .blueprint_abi(&component_info.blueprint_name)
                     .ok_or(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoFnIdent(
-                            fn_ident.clone(),
-                            ScryptoActorError::BlueprintNotFound,
+                        InterpreterError::InvalidScryptoMethodInvocation(
+                            method_ident.clone(),
+                            ScryptoFnResolvingError::BlueprintNotFound,
                         ),
                     ))?;
-                let fn_abi = abi
-                    .get_fn_abi(&method_name)
-                    .ok_or(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoFnIdent(
-                            fn_ident.clone(),
-                            ScryptoActorError::MethodNotFound,
+                let fn_abi = abi.get_fn_abi(&method_ident.method_name).ok_or(
+                    RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoMethodInvocation(
+                            method_ident.clone(),
+                            ScryptoFnResolvingError::MethodNotFound,
                         ),
-                    ))?;
+                    ),
+                )?;
                 if fn_abi.mutability.is_none() {
                     return Err(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoFnIdent(
-                            fn_ident.clone(),
-                            ScryptoActorError::MethodNotFound,
+                        InterpreterError::InvalidScryptoMethodInvocation(
+                            method_ident.clone(),
+                            ScryptoFnResolvingError::MethodNotFound,
                         ),
                     ));
                 }
@@ -647,9 +642,9 @@ where
                 // Check input against the ABI
                 if !fn_abi.input.matches(&args.dom) {
                     return Err(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoFnIdent(
-                            fn_ident.clone(),
-                            ScryptoActorError::InvalidInput,
+                        InterpreterError::InvalidScryptoMethodInvocation(
+                            method_ident.clone(),
+                            ScryptoFnResolvingError::InvalidInput,
                         ),
                     ));
                 }
@@ -664,7 +659,7 @@ where
                     ResolvedMethod::Scrypto {
                         package_address: component_info.package_address,
                         blueprint_name: component_info.blueprint_name,
-                        ident: method_name,
+                        ident: method_ident.method_name.clone(),
                         export_name: fn_abi.export_name.clone(),
                         return_type: fn_abi.output.clone(),
                         code: package.code,
@@ -679,8 +674,7 @@ where
 
     fn resolve_native_actor(
         &mut self,
-        fn_ident: &NativeFnIdent,
-        _args: &ScryptoValue,
+        invocation: &NativeInvocation,
     ) -> Result<
         (
             REActor,
@@ -692,38 +686,11 @@ where
         let mut references_to_add = HashMap::new();
         let mut nodes_to_move = HashMap::new();
 
-        let not_found = RuntimeError::InterpreterError(InterpreterError::InvalidNativeFnIdent(
-            fn_ident.clone(),
-        ));
-
-        let actor = match fn_ident {
-            NativeFnIdent::Function(NativeFunctionIdent {
-                blueprint_name,
-                function_name,
-            }) => {
-                // TODO: use strum derive?
-                let native_function = match blueprint_name.as_str() {
-                    "System" => NativeFunction::System(
-                        SystemFunction::from_str(function_name).map_err(|_| not_found)?,
-                    ),
-                    "ResourceManager" => NativeFunction::ResourceManager(
-                        ResourceManagerFunction::from_str(function_name).map_err(|_| not_found)?,
-                    ),
-                    "Package" => NativeFunction::Package(
-                        PackageFunction::from_str(function_name).map_err(|_| not_found)?,
-                    ),
-                    "TransactionProcessor" => NativeFunction::TransactionProcessor(
-                        TransactionProcessorFunction::from_str(function_name)
-                            .map_err(|_| not_found)?,
-                    ),
-                    _ => return Err(not_found),
-                };
-                REActor::Function(ResolvedFunction::Native(native_function))
+        let actor = match invocation {
+            NativeInvocation::Function(native_function, _) => {
+                REActor::Function(ResolvedFunction::Native(*native_function))
             }
-            NativeFnIdent::Method(NativeMethodIdent {
-                receiver,
-                method_name,
-            }) => {
+            NativeInvocation::Method(native_method, receiver, _) => {
                 let resolved_receiver = match receiver {
                     Receiver::Consumed(node_id) => {
                         let node =
@@ -749,37 +716,7 @@ where
                     }
                 };
 
-                let native_method = match resolved_receiver.node_id() {
-                    RENodeId::Bucket(_) => NativeMethod::Bucket(
-                        BucketMethod::from_str(method_name).map_err(|_| not_found)?,
-                    ),
-                    RENodeId::Proof(_) => NativeMethod::Proof(
-                        ProofMethod::from_str(method_name).map_err(|_| not_found)?,
-                    ),
-                    RENodeId::AuthZoneStack(_) => NativeMethod::AuthZone(
-                        AuthZoneMethod::from_str(method_name).map_err(|_| not_found)?,
-                    ),
-                    RENodeId::Worktop => NativeMethod::Worktop(
-                        WorktopMethod::from_str(method_name).map_err(|_| not_found)?,
-                    ),
-                    RENodeId::Component(_) => NativeMethod::Component(
-                        ComponentMethod::from_str(method_name).map_err(|_| not_found)?,
-                    ),
-                    RENodeId::System(_) => NativeMethod::System(
-                        SystemMethod::from_str(method_name).map_err(|_| not_found)?,
-                    ),
-                    RENodeId::Vault(_) => NativeMethod::Vault(
-                        VaultMethod::from_str(method_name).map_err(|_| not_found)?,
-                    ),
-                    RENodeId::ResourceManager(_) => NativeMethod::ResourceManager(
-                        ResourceManagerMethod::from_str(method_name).map_err(|_| not_found)?,
-                    ),
-                    RENodeId::Global(_)
-                    | RENodeId::KeyValueStore(_)
-                    | RENodeId::NonFungibleStore(_)
-                    | RENodeId::Package(_) => return Err(not_found),
-                };
-                REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver)
+                REActor::Method(ResolvedMethod::Native(*native_method), resolved_receiver)
             }
         };
 
@@ -865,8 +802,7 @@ where
 
     fn invoke_scrypto(
         &mut self,
-        fn_ident: ScryptoFnIdent,
-        args: ScryptoValue,
+        invocation: ScryptoInvocation,
     ) -> Result<ScryptoValue, RuntimeError> {
         let depth = Self::current_frame(&self.call_frames).depth;
 
@@ -875,8 +811,7 @@ where
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::InvokeScrypto {
-                    fn_ident: &fn_ident,
-                    args: &args,
+                    invocation: &invocation,
                     depth,
                 },
             )
@@ -894,7 +829,7 @@ where
         let mut next_node_refs = HashMap::new();
 
         // Internal state update to taken values
-        for node_id in args.node_ids() {
+        for node_id in invocation.args().node_ids() {
             let node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
             nodes_to_pass_downstream.insert(node_id, node);
         }
@@ -910,12 +845,12 @@ where
             static_refs.insert(GlobalAddress::Package(SYS_FAUCET_PACKAGE));
 
             // Make refs visible
-            let mut global_references = args.global_references();
+            let mut global_references = invocation.args().global_references();
             global_references.extend(static_refs.clone());
 
             // TODO: This can be refactored out once any type in sbor is implemented
             let maybe_txn: Result<TransactionProcessorRunInput, DecodeError> =
-                scrypto_decode(&args.raw);
+                scrypto_decode(&invocation.args().raw);
             if let Ok(input) = maybe_txn {
                 for instruction in &input.instructions {
                     match instruction {
@@ -964,7 +899,7 @@ where
             }
         } else {
             // Check that global references are owned by this call frame
-            let mut global_references = args.global_references();
+            let mut global_references = invocation.args().global_references();
             global_references.insert(GlobalAddress::Resource(RADIX_TOKEN));
             global_references.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
             for global_address in global_references {
@@ -992,7 +927,7 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (next_actor, references_to_add) = self.resolve_scrypto_actor(&fn_ident, &args)?;
+        let (next_actor, references_to_add) = self.resolve_scrypto_actor(&invocation)?;
         next_node_refs.extend(references_to_add);
 
         let cur_actor = &Self::current_frame(&self.call_frames).actor;
@@ -1002,8 +937,12 @@ where
             root_node.prepare_move_downstream(*node_id, cur_actor, &next_actor)?;
         }
 
-        let (output, received_values) =
-            self.run(next_actor, args, nodes_to_pass_downstream, next_node_refs)?;
+        let (output, received_values) = self.run(
+            next_actor,
+            invocation.args().clone(),
+            nodes_to_pass_downstream,
+            next_node_refs,
+        )?;
 
         // move re nodes to this process.
         for (id, node) in received_values {
@@ -1040,8 +979,7 @@ where
 
     fn invoke_native(
         &mut self,
-        fn_ident: NativeFnIdent,
-        args: ScryptoValue,
+        invocation: NativeInvocation,
     ) -> Result<ScryptoValue, RuntimeError> {
         let depth = Self::current_frame(&self.call_frames).depth;
 
@@ -1050,8 +988,7 @@ where
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::InvokeNative {
-                    fn_ident: &fn_ident,
-                    args: &args,
+                    invocation: &invocation,
                     depth,
                 },
             )
@@ -1069,7 +1006,7 @@ where
         let mut next_node_refs = HashMap::new();
 
         // Internal state update to taken values
-        for node_id in args.node_ids() {
+        for node_id in invocation.args().node_ids() {
             let node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
             nodes_to_pass_downstream.insert(node_id, node);
         }
@@ -1085,12 +1022,12 @@ where
             static_refs.insert(GlobalAddress::Package(SYS_FAUCET_PACKAGE));
 
             // Make refs visible
-            let mut global_references = args.global_references();
+            let mut global_references = invocation.args().global_references();
             global_references.extend(static_refs.clone());
 
             // TODO: This can be refactored out once any type in sbor is implemented
             let maybe_txn: Result<TransactionProcessorRunInput, DecodeError> =
-                scrypto_decode(&args.raw);
+                scrypto_decode(&invocation.args().raw);
             if let Ok(input) = maybe_txn {
                 for instruction in &input.instructions {
                     match instruction {
@@ -1139,7 +1076,7 @@ where
             }
         } else {
             // Check that global references are owned by this call frame
-            let mut global_references = args.global_references();
+            let mut global_references = invocation.args().global_references();
             global_references.insert(GlobalAddress::Resource(RADIX_TOKEN));
             global_references.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
             for global_address in global_references {
@@ -1168,7 +1105,7 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         let (next_actor, references_to_add, nodes_to_move) =
-            self.resolve_native_actor(&fn_ident, &args)?;
+            self.resolve_native_actor(&&invocation)?;
         next_node_refs.extend(references_to_add);
         nodes_to_pass_downstream.extend(nodes_to_move);
 
@@ -1179,8 +1116,12 @@ where
             root_node.prepare_move_downstream(*node_id, cur_actor, &next_actor)?;
         }
 
-        let (output, received_values) =
-            self.run(next_actor, args, nodes_to_pass_downstream, next_node_refs)?;
+        let (output, received_values) = self.run(
+            next_actor,
+            invocation.args().clone(),
+            nodes_to_pass_downstream,
+            next_node_refs,
+        )?;
 
         // move re nodes to this process.
         for (id, node) in received_values {

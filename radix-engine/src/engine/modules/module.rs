@@ -5,13 +5,11 @@ use crate::types::*;
 
 pub enum SysCallInput<'a> {
     InvokeScrypto {
-        fn_ident: &'a ScryptoFnIdent,
-        args: &'a ScryptoValue,
+        invocation: &'a ScryptoInvocation,
         depth: usize,
     },
     InvokeNative {
-        fn_ident: &'a NativeFnIdent,
-        args: &'a ScryptoValue,
+        invocation: &'a NativeInvocation,
         depth: usize,
     },
     ReadOwnedNodes,

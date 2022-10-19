@@ -85,10 +85,8 @@ impl Component {
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
         let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Component(self.0)),
-                method_name: ComponentMethod::AddAccessCheck.to_string(),
-            },
+            NativeMethod::Component(ComponentMethod::AddAccessCheck),
+            Receiver::Ref(RENodeId::Component(self.0)),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
         );
         let _: () = call_engine(input);
@@ -141,10 +139,8 @@ impl BorrowedGlobalComponent {
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
         let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(self.0))),
-                method_name: ComponentMethod::AddAccessCheck.to_string(),
-            },
+            NativeMethod::Component(ComponentMethod::AddAccessCheck),
+            Receiver::Ref(RENodeId::Global(GlobalAddress::Component(self.0))),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
         );
         let _: () = call_engine(input);

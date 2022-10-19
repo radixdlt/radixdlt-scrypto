@@ -1,6 +1,5 @@
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 
 use crate::buffer::scrypto_encode;
 use crate::engine::{api::*, types::*, utils::*};
@@ -48,10 +47,7 @@ impl ResourceSystem {
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
         let input = RadixEngineInput::InvokeNativeFunction(
-            NativeFunctionIdent {
-                blueprint_name: "ResourceManager".to_string(),
-                function_name: ResourceManagerFunction::Create.to_string(),
-            },
+            NativeFunction::ResourceManager(ResourceManagerFunction::Create),
             scrypto_encode(&ResourceManagerCreateInput {
                 resource_type,
                 metadata,

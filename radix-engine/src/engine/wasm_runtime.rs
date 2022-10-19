@@ -44,24 +44,51 @@ where
         }
     }
 
-    fn handle_invoke_scrypto(
+    fn handle_invoke_scrypto_function(
         &mut self,
-        fn_ident: ScryptoFnIdent,
+        fn_ident: ScryptoFunctionIdent,
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api.invoke_scrypto(fn_ident, args)
+        self.system_api
+            .invoke_scrypto(ScryptoInvocation::Function(fn_ident, args))
     }
 
-    fn handle_invoke_native(
+    fn handle_invoke_scrypto_method(
         &mut self,
-        fn_ident: NativeFnIdent,
+        fn_ident: ScryptoMethodIdent,
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api.invoke_native(fn_ident, args)
+        self.system_api
+            .invoke_scrypto(ScryptoInvocation::Method(fn_ident, args))
+    }
+
+    fn handle_invoke_native_function(
+        &mut self,
+        native_function: NativeFunction,
+        args: Vec<u8>,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let args = ScryptoValue::from_slice(&args)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+
+        self.system_api
+            .invoke_native(NativeInvocation::Function(native_function, args))
+    }
+
+    fn handle_invoke_native_method(
+        &mut self,
+        native_method: NativeMethod,
+        receiver: Receiver,
+        args: Vec<u8>,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let args = ScryptoValue::from_slice(&args)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+
+        self.system_api
+            .invoke_native(NativeInvocation::Method(native_method, receiver, args))
     }
 
     fn handle_node_create(
@@ -188,17 +215,17 @@ where
         let input: RadixEngineInput = scrypto_decode(&input.raw)
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         let rtn = match input {
-            RadixEngineInput::InvokeScryptoFunction(fn_ident, input_bytes) => {
-                self.handle_invoke_scrypto(ScryptoFnIdent::Function(fn_ident), input_bytes)?
+            RadixEngineInput::InvokeScryptoFunction(function_ident, args) => {
+                self.handle_invoke_scrypto_function(function_ident, args)?
             }
-            RadixEngineInput::InvokeScryptoMethod(fn_ident, input_bytes) => {
-                self.handle_invoke_scrypto(ScryptoFnIdent::Method(fn_ident), input_bytes)?
+            RadixEngineInput::InvokeScryptoMethod(method_ident, args) => {
+                self.handle_invoke_scrypto_method(method_ident, args)?
             }
-            RadixEngineInput::InvokeNativeFunction(fn_ident, input_bytes) => {
-                self.handle_invoke_native(NativeFnIdent::Function(fn_ident), input_bytes)?
+            RadixEngineInput::InvokeNativeFunction(native_function, args) => {
+                self.handle_invoke_native_function(native_function, args)?
             }
-            RadixEngineInput::InvokeNativeMethod(fn_ident, input_bytes) => {
-                self.handle_invoke_native(NativeFnIdent::Method(fn_ident), input_bytes)?
+            RadixEngineInput::InvokeNativeMethod(native_method, receiver, args) => {
+                self.handle_invoke_native_method(native_method, receiver, args)?
             }
             RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id)?,
             RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node)?,
