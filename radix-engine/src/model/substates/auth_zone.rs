@@ -2,8 +2,8 @@ use crate::engine::{REActor, ResolvedReceiver, ResolvedReceiverMethod};
 use crate::model::MethodAuthorizationError::NotAuthorized;
 use crate::model::{
     AuthZoneError, HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
-    HardResourceOrNonFungible, InvokeError, LockableResource, LockedAmountOrIds,
-    MethodAuthorization, MethodAuthorizationError, ProofSubstate, ResourceContainerId,
+    HardResourceOrNonFungible, InvokeError,
+    MethodAuthorization, MethodAuthorizationError, ProofSubstate,
 };
 use crate::types::*;
 use sbor::rust::ops::Fn;
@@ -75,7 +75,7 @@ impl AuthVerification {
     ) -> bool {
         Self::check_auth_zones(barrier_crossings_allowed, auth_zone, |auth_zone| {
             if let HardResourceOrNonFungible::NonFungible(non_fungible_address) = resource_rule {
-                if auth_zone.is_proof_virtualizable(&non_fungible_address.resource_address()) {
+                if auth_zone.virtual_resources.contains(&non_fungible_address.resource_address()) {
                     return true;
                 }
             }
@@ -202,12 +202,12 @@ pub struct AuthZoneStackSubstate {
 impl AuthZoneStackSubstate {
     pub fn new(
         proofs: Vec<ProofSubstate>,
-        virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,
+        virtual_resources: BTreeSet<ResourceAddress>,
     ) -> Self {
         Self {
             auth_zones: vec![AuthZone::new_with_virtual_proofs(
                 proofs,
-                virtual_proofs_buckets,
+                virtual_resources,
                 false,
             )],
         }
@@ -274,11 +274,8 @@ impl AuthZoneStackSubstate {
 #[derive(Debug)]
 pub struct AuthZone {
     proofs: Vec<ProofSubstate>,
-    /// IDs of buckets that act as an evidence for virtual proofs.
-    /// A virtual proof for any NonFunbigleId can be created for any ResourceAddress in the map.
-    /// Note: when a virtual proof is created,
-    /// the resources aren't actually being added to the bucket.
-    virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,
+    // Virtualized resources, note that one cannot create proofs with virtual resources but only be used for AuthZone checks
+    virtual_resources: BTreeSet<ResourceAddress>,
     barrier: bool,
 }
 
@@ -286,61 +283,21 @@ impl AuthZone {
     fn empty(barrier: bool) -> Self {
         Self {
             proofs: vec![],
-            virtual_proofs_buckets: BTreeMap::new(),
+            virtual_resources: BTreeSet::new(),
             barrier,
         }
     }
 
     fn new_with_virtual_proofs(
         proofs: Vec<ProofSubstate>,
-        virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,
+        virtual_resources: BTreeSet<ResourceAddress>,
         barrier: bool,
     ) -> Self {
         Self {
             proofs,
-            virtual_proofs_buckets,
+            virtual_resources,
             barrier,
         }
-    }
-
-    fn is_proof_virtualizable(&self, resource_address: &ResourceAddress) -> bool {
-        self.virtual_proofs_buckets.contains_key(resource_address)
-    }
-
-    fn virtualize_non_fungible_proof(
-        &self,
-        resource_address: &ResourceAddress,
-        ids: &BTreeSet<NonFungibleId>,
-    ) -> ProofSubstate {
-        let bucket_id = self
-            .virtual_proofs_buckets
-            .get(resource_address)
-            .expect("Failed to create a virtual proof (bucket does not exist)")
-            .clone();
-
-        let mut locked_ids = BTreeMap::new();
-        for id in ids.clone() {
-            locked_ids.insert(id, 0);
-        }
-        let mut evidence = HashMap::new();
-        evidence.insert(
-            ResourceContainerId::Bucket(bucket_id),
-            (
-                Rc::new(RefCell::new(LockableResource::NonFungible {
-                    resource_address: resource_address.clone(),
-                    locked_ids: locked_ids,
-                    liquid_ids: BTreeSet::new(),
-                })),
-                LockedAmountOrIds::Ids(ids.clone()),
-            ),
-        );
-        ProofSubstate::new(
-            resource_address.clone(),
-            ResourceType::NonFungible,
-            LockedAmountOrIds::Ids(ids.clone()),
-            evidence,
-        )
-        .expect("Failed to create a virtual proof")
     }
 
     pub fn pop(&mut self) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
@@ -400,9 +357,6 @@ impl AuthZone {
 
         let proof = match maybe_existing_proof {
             Ok(proof) => proof,
-            Err(_) if self.is_proof_virtualizable(&resource_address) => {
-                self.virtualize_non_fungible_proof(&resource_address, ids)
-            }
             Err(e) => Err(e)?,
         };
 

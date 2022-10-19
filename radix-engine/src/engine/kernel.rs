@@ -132,15 +132,7 @@ where
             proofs.push(proof);
         }
 
-        // Create empty buckets for virtual proofs
-        let mut virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId> = BTreeMap::new();
-        for resource_address in virtualizable_proofs_resource_addresses {
-            let bucket_id = kernel
-                .create_non_fungible_bucket_with_ids(resource_address.clone(), BTreeSet::new());
-            virtual_proofs_buckets.insert(resource_address, bucket_id);
-        }
-
-        let auth_zone = AuthZoneStackSubstate::new(proofs, virtual_proofs_buckets);
+        let auth_zone = AuthZoneStackSubstate::new(proofs, virtualizable_proofs_resource_addresses);
 
         kernel
             .create_node(RENode::AuthZone(auth_zone))
