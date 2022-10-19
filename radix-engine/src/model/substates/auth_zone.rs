@@ -2,8 +2,8 @@ use crate::engine::{REActor, ResolvedReceiver, ResolvedReceiverMethod};
 use crate::model::MethodAuthorizationError::NotAuthorized;
 use crate::model::{
     AuthZoneError, HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
-    HardResourceOrNonFungible, InvokeError,
-    MethodAuthorization, MethodAuthorizationError, ProofSubstate,
+    HardResourceOrNonFungible, InvokeError, MethodAuthorization, MethodAuthorizationError,
+    ProofSubstate,
 };
 use crate::types::*;
 use sbor::rust::ops::Fn;
@@ -75,7 +75,16 @@ impl AuthVerification {
     ) -> bool {
         Self::check_auth_zones(barrier_crossings_allowed, auth_zone, |auth_zone| {
             if let HardResourceOrNonFungible::NonFungible(non_fungible_address) = resource_rule {
-                if auth_zone.virtual_resources.contains(&non_fungible_address.resource_address()) {
+                if auth_zone
+                    .virtual_non_fungibles
+                    .contains(&non_fungible_address)
+                {
+                    return true;
+                }
+                if auth_zone
+                    .virtual_resources
+                    .contains(&non_fungible_address.resource_address())
+                {
                     return true;
                 }
             }
@@ -203,11 +212,13 @@ impl AuthZoneStackSubstate {
     pub fn new(
         proofs: Vec<ProofSubstate>,
         virtual_resources: BTreeSet<ResourceAddress>,
+        virtual_non_fungibles: BTreeSet<NonFungibleAddress>,
     ) -> Self {
         Self {
             auth_zones: vec![AuthZone::new_with_virtual_proofs(
                 proofs,
                 virtual_resources,
+                virtual_non_fungibles,
                 false,
             )],
         }
@@ -276,6 +287,7 @@ pub struct AuthZone {
     proofs: Vec<ProofSubstate>,
     // Virtualized resources, note that one cannot create proofs with virtual resources but only be used for AuthZone checks
     virtual_resources: BTreeSet<ResourceAddress>,
+    virtual_non_fungibles: BTreeSet<NonFungibleAddress>,
     barrier: bool,
 }
 
@@ -284,6 +296,7 @@ impl AuthZone {
         Self {
             proofs: vec![],
             virtual_resources: BTreeSet::new(),
+            virtual_non_fungibles: BTreeSet::new(),
             barrier,
         }
     }
@@ -291,11 +304,13 @@ impl AuthZone {
     fn new_with_virtual_proofs(
         proofs: Vec<ProofSubstate>,
         virtual_resources: BTreeSet<ResourceAddress>,
+        virtual_non_fungibles: BTreeSet<NonFungibleAddress>,
         barrier: bool,
     ) -> Self {
         Self {
             proofs,
             virtual_resources,
+            virtual_non_fungibles,
             barrier,
         }
     }

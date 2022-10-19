@@ -151,20 +151,20 @@ fn test_basic_transfer() {
     assert_eq!(
         10000 /* base_fee */
         + 0 /* blobs */
-        + 2500 /* create_node */
+        + 2000 /* create_node */
         + 1698 /* decode_manifest */
         + 6300 /* drop_lock */
         + 1000 /* drop_node */
         + 0 /* instantiate_wasm */
         + 2215 /* invoke_function */
-        + 9400 /* lock_substate */
+        + 9300 /* lock_substate */
         + 2100 /* read_owned_nodes */
         + 34000 /* read_substate */
         + 5200 /* run_function */
         + 338152 /* run_wasm */
         + 566 /* verify_manifest */
         + 3750 /* verify_signatures */
-        + 16500, /* write_substate */
+        + 16000, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed
     );
 }

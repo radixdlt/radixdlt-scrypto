@@ -195,19 +195,7 @@ impl RENode {
             RENode::KeyValueStore(..) => Err(DropFailure::KeyValueStore),
             RENode::NonFungibleStore(..) => Err(DropFailure::NonFungibleStore),
             RENode::Component(..) => Err(DropFailure::Component),
-            RENode::Bucket(bucket) => {
-                // FIXME: Hack to allow virtual buckets to be cleaned up, better would
-                // FIXME: be to let auth module burn these buckets
-                if bucket.resource_address().eq(&ECDSA_SECP256K1_TOKEN) {
-                    Ok(())
-                } else if bucket.resource_address().eq(&EDDSA_ED25519_TOKEN) {
-                    Ok(())
-                } else if bucket.resource_address().eq(&SYSTEM_TOKEN) {
-                    Ok(())
-                } else {
-                    Err(DropFailure::Bucket)
-                }
-            }
+            RENode::Bucket(..) => Err(DropFailure::Bucket),
             RENode::ResourceManager(..) => Err(DropFailure::Resource),
             RENode::System(..) => Err(DropFailure::System),
             RENode::Proof(proof) => {

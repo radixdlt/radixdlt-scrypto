@@ -212,7 +212,10 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn drop_all_locks<'s, R: FeeReserve>(&mut self, track: &mut Track<'s, R>) -> Result<(), RuntimeError> {
+    pub fn drop_all_locks<'s, R: FeeReserve>(
+        &mut self,
+        track: &mut Track<'s, R>,
+    ) -> Result<(), RuntimeError> {
         for (_, lock) in self.locks.drain() {
             let SubstateLock {
                 substate_pointer: (node_pointer, offset),
@@ -226,11 +229,7 @@ impl CallFrame {
                 ))
             {
                 node_pointer
-                    .release_lock(
-                        offset,
-                        flags.contains(LockFlags::UNMODIFIED_BASE),
-                        track,
-                    )
+                    .release_lock(offset, flags.contains(LockFlags::UNMODIFIED_BASE), track)
                     .map_err(RuntimeError::KernelError)?;
             }
         }

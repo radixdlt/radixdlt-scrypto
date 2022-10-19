@@ -50,7 +50,7 @@ pub struct Kernel<
     current_frame: CallFrame,
     // This stack could potentially be removed and just use the native stack
     // but keeping this call_frames stack may potentially prove useful if implementing
-    // execution pause and/or better debuggability
+    // execution pause and/or for better debuggability
     prev_frame_stack: Vec<CallFrame>,
     /// Heap
     heap: Heap,
@@ -81,7 +81,6 @@ where
         scrypto_interpreter: &'g mut ScryptoInterpreter<I, W>,
         modules: Vec<Box<dyn Module<R>>>,
     ) -> Self {
-        let frame = CallFrame::new_root();
         let mut kernel = Self {
             execution_mode: ExecutionMode::Kernel,
             transaction_hash,
@@ -91,70 +90,28 @@ where
             track,
             scrypto_interpreter,
             id_allocator: IdAllocator::new(IdSpace::Application),
-            current_frame: frame,
+            current_frame: CallFrame::new_root(),
             prev_frame_stack: vec![],
             modules,
         };
 
         // Initial authzone
         // TODO: Move into module initialization
-        let virtualizable_proofs_resource_addresses =
-            auth_zone_params.virtualizable_proofs_resource_addresses;
-        let mut proofs_to_create = BTreeMap::<ResourceAddress, BTreeSet<NonFungibleId>>::new();
-        for non_fungible in auth_zone_params.initial_proofs {
-            proofs_to_create
-                .entry(non_fungible.resource_address())
-                .or_insert(BTreeSet::new())
-                .insert(non_fungible.non_fungible_id());
-        }
-        let mut proofs = Vec::new();
+        kernel
+            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |system_api| {
+                let auth_zone = AuthZoneStackSubstate::new(
+                    vec![],
+                    auth_zone_params.virtualizable_proofs_resource_addresses,
+                    auth_zone_params.initial_proofs.into_iter().collect(),
+                );
 
-        for (resource_address, non_fungible_ids) in proofs_to_create {
-            let bucket_id =
-                kernel.create_non_fungible_bucket_with_ids(resource_address, non_fungible_ids);
+                system_api.create_node(RENode::AuthZone(auth_zone))?;
 
-            let proof = kernel
-                .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |system_api| {
-                    let node_id = RENodeId::Bucket(bucket_id);
-                    let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-                    let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-                    let mut substate_mut = system_api.get_ref_mut(handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let proof = raw_mut
-                        .bucket()
-                        .create_proof(bucket_id)
-                        .expect("Failed to create proof");
-                    substate_mut.flush()?;
-                    Ok(proof)
-                })
-                .unwrap();
-
-            proofs.push(proof);
-        }
-
-        let auth_zone = AuthZoneStackSubstate::new(proofs, virtualizable_proofs_resource_addresses);
+                Ok(())
+            })
+            .expect("AuthModule failed to initialize");
 
         kernel
-            .create_node(RENode::AuthZone(auth_zone))
-            .expect("Failed to create AuthZone");
-
-        kernel
-    }
-
-    fn create_non_fungible_bucket_with_ids(
-        &mut self,
-        resource_address: ResourceAddress,
-        ids: BTreeSet<NonFungibleId>,
-    ) -> BucketId {
-        match self
-            .create_node(RENode::Bucket(BucketSubstate::new(
-                Resource::new_non_fungible(resource_address, ids),
-            )))
-            .expect("Failed to create a bucket")
-        {
-            RENodeId::Bucket(bucket_id) => bucket_id,
-            _ => panic!("Expected Bucket RENodeId but received something else"),
-        }
     }
 
     fn new_uuid(
