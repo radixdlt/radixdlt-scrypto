@@ -19,7 +19,6 @@ use radix_engine::wasm::{
     WasmMeteringParams,
 };
 use sbor::describe::*;
-use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
@@ -273,11 +272,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         manifest.instructions.insert(
             0,
             transaction::model::Instruction::CallMethod {
-                method_ident: ReceiverMethodIdent {
-                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                        SYS_FAUCET_COMPONENT,
-                    ))),
-                    method_ident: MethodIdent::Scrypto("lock_fee".to_string()),
+                method_ident: ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Global(SYS_FAUCET_COMPONENT),
+                    method_name: "lock_fee".to_string(),
                 },
                 args: args!(dec!("100")),
             },
@@ -392,7 +389,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
             .create_proof_from_account(auth, account)
-            .call_scrypto_function(package, "ResourceCreator", function, args!(token, set_auth))
+            .call_function(package, "ResourceCreator", function, args!(token, set_auth))
             .call_method(
                 account,
                 "deposit_batch",
@@ -677,17 +674,13 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             )],
             |kernel| {
                 kernel
-                    .invoke(
-                        FnIdent::Method(ReceiverMethodIdent {
-                            receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                                SYS_SYSTEM_COMPONENT,
-                            ))),
-                            method_ident: MethodIdent::Native(NativeMethod::System(
-                                SystemMethod::SetEpoch,
-                            )),
-                        }),
+                    .invoke_native(NativeInvocation::Method(
+                        NativeMethod::System(SystemMethod::SetEpoch),
+                        Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                            SYS_SYSTEM_COMPONENT,
+                        ))),
                         ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
-                    )
+                    ))
                     .unwrap()
             },
         );
@@ -696,17 +689,13 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn get_current_epoch(&mut self) -> u64 {
         let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
             kernel
-                .invoke(
-                    FnIdent::Method(ReceiverMethodIdent {
-                        receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                            SYS_SYSTEM_COMPONENT,
-                        ))),
-                        method_ident: MethodIdent::Native(NativeMethod::System(
-                            SystemMethod::GetCurrentEpoch,
-                        )),
-                    }),
+                .invoke_native(NativeInvocation::Method(
+                    NativeMethod::System(SystemMethod::GetCurrentEpoch),
+                    Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                        SYS_SYSTEM_COMPONENT,
+                    ))),
                     ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),
-                )
+                ))
                 .unwrap()
         });
         scrypto_decode(&current_epoch.raw).unwrap()

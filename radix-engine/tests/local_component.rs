@@ -14,7 +14,7 @@ fn local_component_should_return_correct_info() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "Secret",
             "check_info_of_local_component",
@@ -37,7 +37,7 @@ fn local_component_should_be_callable_read_only() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(package_address, "Secret", "read_local_component", args!())
+        .call_function(package_address, "Secret", "read_local_component", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -55,7 +55,7 @@ fn local_component_should_be_callable_with_write() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(package_address, "Secret", "write_local_component", args!())
+        .call_function(package_address, "Secret", "write_local_component", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -77,7 +77,7 @@ fn local_component_with_access_rules_should_not_be_callable() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "Secret",
             "try_to_read_local_component_with_auth",
@@ -112,9 +112,9 @@ fn local_component_with_access_rules_should_be_callable() {
         .call_method(
             account,
             "create_proof_by_ids",
-            args!(BTreeSet::from([auth_id.clone()]), auth_resource_address),
+            args!(BTreeSet::from([auth_id]), auth_resource_address),
         )
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "Secret",
             "try_to_read_local_component_with_auth",
@@ -144,7 +144,7 @@ fn recursion_bomb() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account_by_amount(Decimal::from(5), RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.call_scrypto_function(
+            builder.call_function(
                 package_address,
                 "LocalRecursionBomb",
                 "recursion_bomb",
@@ -179,7 +179,7 @@ fn recursion_bomb_to_failure() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account_by_amount(Decimal::from(100), RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.call_scrypto_function(
+            builder.call_function(
                 package_address,
                 "LocalRecursionBomb",
                 "recursion_bomb",
@@ -220,7 +220,7 @@ fn recursion_bomb_2() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account_by_amount(Decimal::from(5), RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.call_scrypto_function(
+            builder.call_function(
                 package_address,
                 "LocalRecursionBomb2",
                 "recursion_bomb",
@@ -255,7 +255,7 @@ fn recursion_bomb_2_to_failure() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account_by_amount(Decimal::from(100), RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.call_scrypto_function(
+            builder.call_function(
                 package_address,
                 "LocalRecursionBomb2",
                 "recursion_bomb",

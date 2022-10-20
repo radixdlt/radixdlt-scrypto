@@ -1,6 +1,6 @@
 use crate::engine::{
     ExecutionMode, KernelError, LockFlags, REActor, ResolvedFunction, ResolvedMethod,
-    ResolvedReceiver, ResolvedReceiverMethod, RuntimeError,
+    ResolvedReceiver, RuntimeError,
 };
 use crate::types::*;
 
@@ -80,6 +80,7 @@ impl SubstateProperties {
                 _ => false,
             },
             (ExecutionMode::ScryptoInterpreter, offset) => match offset {
+                SubstateOffset::Global(GlobalOffset::Global) => flags == LockFlags::read_only(),
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
                 SubstateOffset::Package(PackageOffset::Package) => flags == LockFlags::read_only(),
                 _ => false,
@@ -89,10 +90,7 @@ impl SubstateProperties {
                     match actor {
                         // Native
                         REActor::Function(ResolvedFunction::Native(..))
-                        | REActor::Method(ResolvedReceiverMethod {
-                            method: ResolvedMethod::Native(..),
-                            ..
-                        }) => true,
+                        | REActor::Method(ResolvedMethod::Native(..), ..) => true,
 
                         // Scrypto
                         REActor::Function(ResolvedFunction::Scrypto { .. }) => {
@@ -108,14 +106,13 @@ impl SubstateProperties {
                                 _ => false,
                             }
                         }
-                        REActor::Method(ResolvedReceiverMethod {
-                            receiver:
-                                ResolvedReceiver {
-                                    receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                                    ..
-                                },
-                            method: ResolvedMethod::Scrypto { .. },
-                        }) => match (node_id, offset) {
+                        REActor::Method(
+                            ResolvedMethod::Scrypto { .. },
+                            ResolvedReceiver {
+                                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                                ..
+                            },
+                        ) => match (node_id, offset) {
                             (
                                 RENodeId::KeyValueStore(_),
                                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
@@ -136,10 +133,7 @@ impl SubstateProperties {
                     match actor {
                         // Native
                         REActor::Function(ResolvedFunction::Native(..))
-                        | REActor::Method(ResolvedReceiverMethod {
-                            method: ResolvedMethod::Native(..),
-                            ..
-                        }) => true,
+                        | REActor::Method(ResolvedMethod::Native(..), ..) => true,
                         REActor::Function(ResolvedFunction::Scrypto { .. }) => {
                             match (node_id, offset) {
                                 (
@@ -151,14 +145,13 @@ impl SubstateProperties {
                         }
 
                         // Scrypto
-                        REActor::Method(ResolvedReceiverMethod {
-                            receiver:
-                                ResolvedReceiver {
-                                    receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                                    ..
-                                },
-                            method: ResolvedMethod::Scrypto { .. },
-                        }) => match (node_id, offset) {
+                        REActor::Method(
+                            ResolvedMethod::Scrypto { .. },
+                            ResolvedReceiver {
+                                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                                ..
+                            },
+                        ) => match (node_id, offset) {
                             (
                                 RENodeId::KeyValueStore(_),
                                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),

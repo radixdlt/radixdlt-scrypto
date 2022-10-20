@@ -152,7 +152,7 @@ fn test_entire_auth_zone() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(dec!("10"), account)
         .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "Receiver",
             "assert_first_proof",

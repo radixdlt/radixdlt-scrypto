@@ -2,7 +2,6 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 
 #[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
 pub struct ResourceChange {
@@ -35,12 +34,11 @@ pub struct ExecutionTraceModule {}
 impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     fn pre_sys_call(
         &mut self,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-        input: SysCallInput,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        _input: SysCallInput,
     ) -> Result<(), ModuleError> {
-        Self::trace_invoke_method(call_frame, heap, track, input);
         Ok(())
     }
 
@@ -51,6 +49,18 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
         _track: &mut Track<R>,
         _output: SysCallOutput,
     ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn on_run(
+        &mut self,
+        actor: &REActor,
+        input: &ScryptoValue,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
+        track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        Self::trace_run(call_frame, heap, track, actor, input);
         Ok(())
     }
 
@@ -92,59 +102,34 @@ impl ExecutionTraceModule {
         Self {}
     }
 
-    fn trace_invoke_method<'s, R: FeeReserve>(
+    fn trace_run<'s, R: FeeReserve>(
         call_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track<'s, R>,
-        sys_input: SysCallInput,
+        actor: &REActor,
+        input: &ScryptoValue,
     ) {
-        let actor = &call_frame.actor;
+        if let REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) = actor {
+            let caller = &call_frame.actor;
 
-        if let SysCallInput::Invoke {
-            fn_ident, input, ..
-        } = sys_input
-        {
-            /* TODO: Warning: depends on call frame's actor being the vault's parent component!
-            This isn't always the case! For example, when vault is instantiated in a blueprint
-            before the component is globalized (see: test_restricted_transfer in bucket.rs).
-            For now, such vault calls are NOT traced.
-            Possible solution:
-            1. Separately record vault calls that have a blueprint parent
-            2. Hook up to when the component is globalized and convert
-               blueprint-parented vaults (if any) to regular
-               trace entries with component parents. */
-            if let FnIdent::Method(ReceiverMethodIdent {
-                receiver,
-                method_ident,
-            }) = fn_ident
-            {
-                match (receiver, method_ident) {
-                    (
-                        Receiver::Ref(RENodeId::Vault(vault_id)),
-                        MethodIdent::Native(NativeMethod::Vault(VaultMethod::Put)),
-                    ) => {
-                        Self::handle_vault_put(heap, track, actor, vault_id, input);
-                    }
-                    (
-                        Receiver::Ref(RENodeId::Vault(vault_id)),
-                        MethodIdent::Native(NativeMethod::Vault(VaultMethod::Take)),
-                    ) => {
-                        Self::handle_vault_take(track, actor, vault_id, input);
-                    }
-                    (
-                        Receiver::Ref(RENodeId::Vault(vault_id)),
-                        MethodIdent::Native(NativeMethod::Vault(VaultMethod::LockFee)),
-                    ) => {
-                        Self::handle_vault_lock_fee(track, actor, vault_id);
-                    }
-                    (
-                        Receiver::Ref(RENodeId::Vault(vault_id)),
-                        MethodIdent::Native(NativeMethod::Vault(VaultMethod::LockContingentFee)),
-                    ) => {
-                        Self::handle_vault_lock_contingent_fee(track, actor, vault_id);
-                    }
-                    _ => {}
-                };
+            match (native_method, resolved_receiver.receiver) {
+                (
+                    NativeMethod::Vault(VaultMethod::Put),
+                    Receiver::Ref(RENodeId::Vault(vault_id)),
+                ) => Self::handle_vault_put(heap, track, caller, &vault_id, input),
+                (
+                    NativeMethod::Vault(VaultMethod::Take),
+                    Receiver::Ref(RENodeId::Vault(vault_id)),
+                ) => Self::handle_vault_take(track, caller, &vault_id, input),
+                (
+                    NativeMethod::Vault(VaultMethod::LockFee),
+                    Receiver::Ref(RENodeId::Vault(vault_id)),
+                ) => Self::handle_vault_lock_fee(track, caller, &vault_id),
+                (
+                    NativeMethod::Vault(VaultMethod::LockContingentFee),
+                    Receiver::Ref(RENodeId::Vault(vault_id)),
+                ) => Self::handle_vault_lock_contingent_fee(track, caller, &vault_id),
+                _ => {}
             }
         }
     }
@@ -220,8 +205,9 @@ impl ExecutionTraceReceipt {
         let mut vault_changes = HashMap::<ComponentId, HashMap<VaultId, Decimal>>::new();
         let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
         for (actor, vault_id, vault_op) in ops {
-            if let REActor::Method(ResolvedReceiverMethod { receiver, .. }) = actor {
-                if let Receiver::Ref(RENodeId::Component(component_id)) = receiver.receiver() {
+            if let REActor::Method(_, resolved_receiver) = actor {
+                if let Receiver::Ref(RENodeId::Component(component_id)) = resolved_receiver.receiver
+                {
                     match vault_op {
                         VaultOp::Create(_) => todo!("Not supported yet!"),
                         VaultOp::Put(amount) => {

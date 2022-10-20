@@ -1,4 +1,4 @@
-use core::str::FromStr;
+use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::{Decode, Encode, TypeId};
 

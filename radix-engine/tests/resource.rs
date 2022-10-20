@@ -16,7 +16,7 @@ fn test_set_mintable_with_self_resource_address() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "ResourceTest",
             "set_mintable_with_self_resource_address",
@@ -43,10 +43,10 @@ fn test_resource_manager() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(package_address, "ResourceTest", "create_fungible", args!())
-        .call_scrypto_function(package_address, "ResourceTest", "query", args!())
-        .call_scrypto_function(package_address, "ResourceTest", "burn", args!())
-        .call_scrypto_function(
+        .call_function(package_address, "ResourceTest", "create_fungible", args!())
+        .call_function(package_address, "ResourceTest", "query", args!())
+        .call_function(package_address, "ResourceTest", "burn", args!())
+        .call_function(
             package_address,
             "ResourceTest",
             "update_resource_metadata",
@@ -78,7 +78,7 @@ fn mint_with_bad_granularity_should_fail() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "ResourceTest",
             "create_fungible_and_mint",
@@ -119,7 +119,7 @@ fn mint_too_much_should_fail() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "ResourceTest",
             "create_fungible_and_mint",

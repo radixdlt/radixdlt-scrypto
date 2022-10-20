@@ -15,7 +15,7 @@ fn create_non_fungible_mutable() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package,
             "NonFungibleTest",
             "create_non_fungible_mutable",
@@ -45,7 +45,7 @@ fn can_burn_non_fungible() {
     let package = test_runner.compile_and_publish("./tests/non_fungible");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package,
             "NonFungibleTest",
             "create_burnable_non_fungible",
@@ -73,7 +73,7 @@ fn can_burn_non_fungible() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account(resource_address, account)
         .burn_non_fungible(non_fungible_address.clone())
-        .call_scrypto_function(
+        .call_function(
             package,
             "NonFungibleTest",
             "verify_does_not_exist",
@@ -103,43 +103,43 @@ fn test_non_fungible() {
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "NonFungibleTest",
             "create_non_fungible_fixed",
             args!(),
         )
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "NonFungibleTest",
             "update_and_get_non_fungible",
             args!(),
         )
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "NonFungibleTest",
             "non_fungible_exists",
             args!(),
         )
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "NonFungibleTest",
             "take_and_put_bucket",
             args!(),
         )
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "NonFungibleTest",
             "take_and_put_vault",
             args!(),
         )
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "NonFungibleTest",
             "get_non_fungible_ids_bucket",
             args!(),
         )
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "NonFungibleTest",
             "get_non_fungible_ids_vault",
@@ -167,7 +167,7 @@ fn test_singleton_non_fungible() {
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "NonFungibleTest",
             "singleton_non_fungible",
@@ -200,7 +200,7 @@ fn test_mint_update_and_withdraw() {
     // create non-fungible
     let manifest = ManifestBuilder::new(&network)
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "NonFungibleTest",
             "create_non_fungible_mutable",

@@ -1,4 +1,3 @@
-use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 use scrypto::resource::ResourceManagerBurnInput;
 
 use crate::engine::{LockFlags, RENode, SystemApi};
@@ -174,19 +173,13 @@ impl Bucket {
                 system_api.drop_lock(bucket_handle)?;
 
                 system_api
-                    .invoke(
-                        FnIdent::Method(ReceiverMethodIdent {
-                            receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
-                                resource_address,
-                            ))),
-                            method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
-                                ResourceManagerMethod::Burn,
-                            )),
-                        }),
+                    .invoke_native(NativeInvocation::Method(
+                        NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
+                        Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))),
                         ScryptoValue::from_typed(&ResourceManagerBurnInput {
                             bucket: scrypto::resource::Bucket(bucket_id),
                         }),
-                    )
+                    ))
                     .map_err(InvokeError::Downstream)
             }
             _ => Err(InvokeError::Error(BucketError::MethodNotFound(method))),

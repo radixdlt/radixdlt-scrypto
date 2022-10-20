@@ -21,10 +21,8 @@ pub use scrypto::component::{
 };
 pub use scrypto::constants::*;
 pub use scrypto::core::{
-    AuthZoneMethod, BucketMethod, ComponentMethod, Expression, FunctionIdent, Level, NativeMethod,
-    NetworkDefinition, PackageFunction, ProofMethod, Receiver, ResourceManagerMethod, ScryptoActor,
-    ScryptoRENode, SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemMethod,
-    SystemSetEpochInput, TransactionProcessorFunction, VaultMethod, WorktopMethod,
+    Blob, Expression, NetworkDefinition, ScryptoActor, SystemCreateInput,
+    SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput,
 };
 pub use scrypto::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
@@ -39,17 +37,17 @@ pub use scrypto::resource::{
     BucketGetResourceAddressInput, BucketPutInput, BucketTakeInput, BucketTakeNonFungiblesInput,
     ConsumingBucketBurnInput, ConsumingProofDropInput, MintParams, Mutability, NonFungibleAddress,
     NonFungibleId, ProofCloneInput, ProofGetAmountInput, ProofGetNonFungibleIdsInput,
-    ProofGetResourceAddressInput, ProofRule, ResourceAddress, ResourceManagerCreateBucketInput,
-    ResourceManagerCreateInput, ResourceManagerCreateVaultInput, ResourceManagerGetMetadataInput,
-    ResourceManagerGetNonFungibleInput, ResourceManagerGetResourceTypeInput,
-    ResourceManagerGetTotalSupplyInput, ResourceManagerLockAuthInput, ResourceManagerMintInput,
-    ResourceManagerNonFungibleExistsInput, ResourceManagerUpdateAuthInput,
-    ResourceManagerUpdateMetadataInput, ResourceManagerUpdateNonFungibleDataInput,
-    ResourceMethodAuthKey, ResourceType, SoftCount, SoftDecimal, SoftResource,
-    SoftResourceOrNonFungible, SoftResourceOrNonFungibleList, VaultCreateProofByAmountInput,
-    VaultCreateProofByIdsInput, VaultCreateProofInput, VaultGetAmountInput,
-    VaultGetNonFungibleIdsInput, VaultGetResourceAddressInput, VaultLockFeeInput, VaultPutInput,
-    VaultTakeInput, VaultTakeNonFungiblesInput, LOCKED, MUTABLE,
+    ProofGetResourceAddressInput, ProofRule, ResourceAddress, ResourceManagerBurnInput,
+    ResourceManagerCreateBucketInput, ResourceManagerCreateInput, ResourceManagerCreateVaultInput,
+    ResourceManagerGetMetadataInput, ResourceManagerGetNonFungibleInput,
+    ResourceManagerGetResourceTypeInput, ResourceManagerGetTotalSupplyInput,
+    ResourceManagerLockAuthInput, ResourceManagerMintInput, ResourceManagerNonFungibleExistsInput,
+    ResourceManagerUpdateAuthInput, ResourceManagerUpdateMetadataInput,
+    ResourceManagerUpdateNonFungibleDataInput, ResourceMethodAuthKey, ResourceType, SoftCount,
+    SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+    VaultCreateProofByAmountInput, VaultCreateProofByIdsInput, VaultCreateProofInput,
+    VaultGetAmountInput, VaultGetNonFungibleIdsInput, VaultGetResourceAddressInput,
+    VaultLockFeeInput, VaultPutInput, VaultTakeInput, VaultTakeNonFungiblesInput, LOCKED, MUTABLE,
 };
 pub use scrypto::values::{ScryptoValue, ScryptoValueReplaceError};
 
@@ -61,3 +59,47 @@ pub use scrypto::resource::{
     require, require_all_of, require_amount, require_any_of, require_n_of,
 };
 pub use scrypto::{access_and_or, access_rule_node, args, dec, pdec, rule};
+
+pub enum Invocation {
+    Scrypto(ScryptoInvocation),
+    Native(NativeInvocation),
+}
+
+/// Scrypto function/method invocation.
+pub enum ScryptoInvocation {
+    Function(ScryptoFunctionIdent, ScryptoValue),
+    Method(ScryptoMethodIdent, ScryptoValue),
+}
+
+/// Native function/method invocation.
+pub enum NativeInvocation {
+    Function(NativeFunction, ScryptoValue),
+    Method(NativeMethod, Receiver, ScryptoValue),
+}
+
+impl Invocation {
+    pub fn args(&self) -> &ScryptoValue {
+        match self {
+            Invocation::Scrypto(i) => i.args(),
+            Invocation::Native(i) => i.args(),
+        }
+    }
+}
+
+impl ScryptoInvocation {
+    pub fn args(&self) -> &ScryptoValue {
+        match self {
+            ScryptoInvocation::Function(_, args) => &args,
+            ScryptoInvocation::Method(_, args) => &args,
+        }
+    }
+}
+
+impl NativeInvocation {
+    pub fn args(&self) -> &ScryptoValue {
+        match self {
+            NativeInvocation::Function(_, args) => &args,
+            NativeInvocation::Method(_, _, args) => &args,
+        }
+    }
+}

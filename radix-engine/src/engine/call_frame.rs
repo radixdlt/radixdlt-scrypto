@@ -2,7 +2,6 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::{SubstateRef, SubstateRefMut};
 use crate::types::*;
-use scrypto::core::NativeFunction;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RENodeLocation {

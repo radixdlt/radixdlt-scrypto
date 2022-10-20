@@ -1,6 +1,5 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::PackageSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringParams, WasmRuntime};
 
@@ -18,47 +17,42 @@ impl<I: WasmInstance> ScryptoExecutor<I> {
         Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
-        let (ident, package_address, blueprint_name, export_name, scrypto_actor) =
-            match system_api.get_actor() {
-                REActor::Method(ResolvedReceiverMethod {
-                    receiver:
-                        ResolvedReceiver {
-                            receiver: Receiver::Ref(RENodeId::Component(component_id)),
-                            ..
-                        },
-                    method:
-                        ResolvedMethod::Scrypto {
-                            package_address,
-                            blueprint_name,
-                            ident,
-                            export_name,
-                        },
-                }) => (
-                    ident.to_string(),
-                    *package_address,
-                    blueprint_name.to_string(),
-                    export_name.to_string(),
-                    ScryptoActor::Component(
-                        *component_id,
-                        package_address.clone(),
-                        blueprint_name.clone(),
-                    ),
-                ),
-                REActor::Function(ResolvedFunction::Scrypto {
+        let (export_name, return_type, scrypto_actor) = match system_api.get_actor() {
+            REActor::Method(
+                ResolvedMethod::Scrypto {
                     package_address,
                     blueprint_name,
-                    ident,
                     export_name,
-                }) => (
-                    ident.to_string(),
-                    *package_address,
-                    blueprint_name.to_string(),
-                    export_name.to_string(),
-                    ScryptoActor::blueprint(*package_address, blueprint_name.clone()),
+                    return_type,
+                    ..
+                },
+                ResolvedReceiver {
+                    receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                    ..
+                },
+            ) => (
+                export_name.to_string(),
+                return_type.clone(),
+                ScryptoActor::Component(
+                    *component_id,
+                    package_address.clone(),
+                    blueprint_name.clone(),
                 ),
+            ),
+            REActor::Function(ResolvedFunction::Scrypto {
+                package_address,
+                blueprint_name,
+                export_name,
+                return_type,
+                ..
+            }) => (
+                export_name.to_string(),
+                return_type.clone(),
+                ScryptoActor::blueprint(*package_address, blueprint_name.clone()),
+            ),
 
-                _ => panic!("Should not get here."),
-            };
+            _ => panic!("Should not get here."),
+        };
 
         let output = {
             system_api.execute_in_mode(ExecutionMode::Application, |system_api| {
@@ -75,32 +69,13 @@ impl<I: WasmInstance> ScryptoExecutor<I> {
             })?
         };
 
-        // TODO: Remove reloading of package rules
-        let package_id = RENodeId::Global(GlobalAddress::Package(package_address));
-        let package_offset = SubstateOffset::Package(PackageOffset::Package);
-        let package_handle =
-            system_api.lock_substate(package_id, package_offset, LockFlags::read_only())?;
-        let substate_ref = system_api.get_ref(package_handle)?;
-        let package = substate_ref.package();
-        let blueprint_abi = package
-            .blueprint_abi(&blueprint_name)
-            .expect("Blueprint not found"); // TODO: assumption will break if auth module is optional
-        let fn_abi = blueprint_abi
-            .get_fn_abi(&ident)
-            .expect("Function not found");
-        let rtn = if !fn_abi.output.matches(&output.dom) {
-            Err(RuntimeError::KernelError(KernelError::InvalidFnOutput {
-                fn_identifier: FunctionIdent::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ident,
-                },
-            }))
+        let rtn = if !return_type.matches(&output.dom) {
+            Err(RuntimeError::KernelError(
+                KernelError::InvalidScryptoFnOutput,
+            ))
         } else {
             Ok(output)
         };
-
-        system_api.drop_lock(package_handle)?;
 
         rtn
     }
@@ -116,99 +91,11 @@ pub struct ScryptoInterpreter<I: WasmInstance, W: WasmEngine<I>> {
 }
 
 impl<I: WasmInstance, W: WasmEngine<I>> ScryptoInterpreter<I, W> {
-    pub fn create_executor(&mut self, package: PackageSubstate) -> ScryptoExecutor<I> {
+    pub fn create_executor(&mut self, code: &[u8]) -> ScryptoExecutor<I> {
         let instrumented_code = self
             .wasm_instrumenter
-            .instrument(package.code(), &self.wasm_metering_params);
+            .instrument(code, &self.wasm_metering_params);
         let instance = self.wasm_engine.instantiate(instrumented_code);
         ScryptoExecutor { instance }
-    }
-
-    pub fn load_scrypto_actor<'s, Y, R>(
-        ident: ScryptoFnIdent,
-        input: &ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<(REActor, RENodeId), InvokeError<ScryptoActorError>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve,
-    {
-        let (receiver, package_address, blueprint_name, ident) = match ident {
-            ScryptoFnIdent::Method(receiver, ident) => {
-                if !matches!(
-                    receiver,
-                    ResolvedReceiver {
-                        receiver: Receiver::Ref(RENodeId::Component(..)),
-                        ..
-                    }
-                ) {
-                    return Err(InvokeError::Error(ScryptoActorError::InvalidReceiver));
-                }
-
-                let node_id = receiver.receiver().node_id();
-                let offset = SubstateOffset::Component(ComponentOffset::Info);
-                let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
-                let substate_ref = system_api.get_ref(handle)?;
-                let info = substate_ref.component_info();
-                let rtn = (
-                    Some(receiver),
-                    info.package_address.clone(),
-                    info.blueprint_name.clone(),
-                    ident,
-                );
-                system_api.drop_lock(handle)?;
-
-                rtn
-            }
-            ScryptoFnIdent::Function(package_address, blueprint_name, ident) => {
-                (None, package_address, blueprint_name, ident)
-            }
-        };
-
-        let package_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
-        let offset = SubstateOffset::Package(PackageOffset::Package);
-        let handle = system_api.lock_substate(package_node_id, offset, LockFlags::empty())?;
-        let substate_ref = system_api.get_ref(handle)?;
-        let package = substate_ref.package();
-        let abi = package
-            .blueprint_abi(&blueprint_name)
-            .ok_or(InvokeError::Error(ScryptoActorError::BlueprintNotFound))?;
-
-        let fn_abi = abi
-            .get_fn_abi(&ident)
-            .ok_or(InvokeError::Error(ScryptoActorError::IdentNotFound))?;
-
-        if fn_abi.mutability.is_some() != receiver.is_some() {
-            return Err(InvokeError::Error(ScryptoActorError::InvalidReceiver));
-        }
-
-        if !fn_abi.input.matches(&input.dom) {
-            return Err(InvokeError::Error(ScryptoActorError::InvalidInput));
-        }
-
-        let export_name = fn_abi.export_name.to_string();
-        system_api.drop_lock(handle)?;
-
-        let actor = if let Some(receiver) = receiver {
-            REActor::Method(ResolvedReceiverMethod {
-                receiver,
-                method: ResolvedMethod::Scrypto {
-                    package_address,
-                    blueprint_name: blueprint_name.clone(),
-                    ident: ident.to_string(),
-                    export_name,
-                },
-            })
-        } else {
-            REActor::Function(ResolvedFunction::Scrypto {
-                package_address,
-                blueprint_name: blueprint_name.clone(),
-                ident: ident.clone(),
-                export_name,
-            })
-        };
-
-        // TODO: Make package node visible in a different way
-        Ok((actor, package_node_id))
     }
 }

@@ -2,7 +2,6 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use scrypto::core::NativeFunction;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum AuthError {
@@ -36,10 +35,7 @@ impl AuthModule {
         let mut new_refs = HashSet::new();
         if matches!(
             actor,
-            REActor::Method(ResolvedReceiverMethod {
-                method: ResolvedMethod::Native(NativeMethod::AuthZone(..)),
-                ..
-            })
+            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..)
         ) {
             return Ok(new_refs);
         }
@@ -51,11 +47,14 @@ impl AuthModule {
                 }
                 _ => vec![],
             },
-            REActor::Method(ResolvedReceiverMethod { receiver, method }) => {
-                match (receiver.receiver(), method) {
+            REActor::Method(method, resolved_receiver) => {
+                match (method, resolved_receiver) {
                     (
-                        Receiver::Ref(RENodeId::ResourceManager(resource_address)),
                         ResolvedMethod::Native(NativeMethod::ResourceManager(ref method)),
+                        ResolvedReceiver {
+                            receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                            ..
+                        },
                     ) => {
                         let node_id = RENodeId::ResourceManager(resource_address);
                         let offset =
@@ -70,15 +69,21 @@ impl AuthModule {
                         auth
                     }
                     (
-                        Receiver::Ref(RENodeId::System(..)),
                         ResolvedMethod::Native(NativeMethod::System(ref method)),
+                        ResolvedReceiver {
+                            receiver: Receiver::Ref(RENodeId::System(..)),
+                            ..
+                        },
                     ) => System::method_auth(method),
                     (
-                        Receiver::Ref(RENodeId::Component(..)),
                         ResolvedMethod::Scrypto {
                             package_address,
                             blueprint_name,
                             ident,
+                            ..
+                        },
+                        ResolvedReceiver {
+                            receiver: Receiver::Ref(RENodeId::Component(component_id)),
                             ..
                         },
                     ) => {
@@ -98,7 +103,7 @@ impl AuthModule {
                             .clone();
                         system_api.drop_lock(handle)?;
 
-                        let component_node_id = receiver.derefed_from.unwrap_or(receiver.node_id());
+                        let component_node_id = RENodeId::Component(component_id);
                         let state = {
                             let offset = SubstateOffset::Component(ComponentOffset::State);
                             let handle = system_api.lock_substate(
@@ -126,10 +131,13 @@ impl AuthModule {
                         }
                     }
                     (
-                        Receiver::Ref(RENodeId::Vault(..)),
                         ResolvedMethod::Native(NativeMethod::Vault(ref vault_fn)),
+                        ResolvedReceiver {
+                            receiver: Receiver::Ref(RENodeId::Vault(vault_id)),
+                            ..
+                        },
                     ) => {
-                        let vault_node_id = receiver.derefed_from.unwrap_or(receiver.node_id());
+                        let vault_node_id = RENodeId::Vault(vault_id);
                         let resource_address = {
                             let offset = SubstateOffset::Vault(VaultOffset::Vault);
                             let handle = system_api.lock_substate(
@@ -202,10 +210,7 @@ impl AuthModule {
     {
         if matches!(
             system_api.get_actor(),
-            REActor::Method(ResolvedReceiverMethod {
-                method: ResolvedMethod::Native(NativeMethod::AuthZone(..)),
-                ..
-            })
+            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..)
         ) {
             return Ok(());
         }

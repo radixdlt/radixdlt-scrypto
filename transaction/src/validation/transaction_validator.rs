@@ -67,7 +67,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
 
         let cost_unit_limit = transaction.signed_intent.intent.header.cost_unit_limit;
         let tip_percentage = transaction.signed_intent.intent.header.tip_percentage;
-        let blobs = transaction.signed_intent.intent.manifest.blobs.clone();
+        let blobs = transaction.signed_intent.intent.manifest.blobs;
 
         let auth_zone_params = AuthZoneParams {
             initial_proofs: AuthModule::pk_non_fungibles(&keys),
@@ -214,12 +214,10 @@ impl NotarizedTransactionValidator {
                         .drop_all_proofs()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CallFunction { args, .. } => {
-                    // TODO: decode into Value
-                    Self::validate_call_data(&args, &mut id_validator)
-                        .map_err(TransactionValidationError::CallDataValidationError)?;
-                }
-                Instruction::CallMethod { args, .. } => {
+                Instruction::CallFunction { args, .. }
+                | Instruction::CallMethod { args, .. }
+                | Instruction::CallNativeFunction { args, .. }
+                | Instruction::CallNativeMethod { args, .. } => {
                     // TODO: decode into Value
                     Self::validate_call_data(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;

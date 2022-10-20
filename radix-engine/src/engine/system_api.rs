@@ -4,7 +4,6 @@ use crate::fee::FeeReserve;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use bitflags::bitflags;
-use scrypto::core::FnIdent;
 
 bitflags! {
     #[derive(Encode, Decode, TypeId)]
@@ -51,11 +50,13 @@ where
 
     fn get_actor(&self) -> &REActor;
 
-    fn invoke(
+    fn invoke_scrypto(
         &mut self,
-        fn_ident: FnIdent,
-        input: ScryptoValue,
+        invocation: ScryptoInvocation,
     ) -> Result<ScryptoValue, RuntimeError>;
+
+    fn invoke_native(&mut self, invocation: NativeInvocation)
+        -> Result<ScryptoValue, RuntimeError>;
 
     /// Retrieves all nodes referenceable by the current frame
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;

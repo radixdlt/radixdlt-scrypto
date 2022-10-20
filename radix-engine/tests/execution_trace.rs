@@ -16,7 +16,7 @@ fn test_trace_resource_transfers() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account)
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "ExecutionTraceTest",
             "transfer_resource_between_two_components",
@@ -95,7 +95,7 @@ fn test_trace_fee_payments() {
     let manifest_prepare = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(SYS_FAUCET_COMPONENT, "free", args!())
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "ExecutionTraceTest",
             "create_and_fund_a_component",

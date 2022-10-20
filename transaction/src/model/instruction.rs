@@ -1,7 +1,7 @@
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::{Blob, FunctionIdent, ReceiverMethodIdent};
+use scrypto::core::Blob;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{NonFungibleId, ResourceAddress};
@@ -78,19 +78,35 @@ pub enum Instruction {
     /// Drops all of the proofs in the transaction.
     DropAllProofs,
 
-    /// Calls a blueprint function.
+    /// Calls a scrypto function.
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
-        function_ident: FunctionIdent,
+        function_ident: ScryptoFunctionIdent,
         args: Vec<u8>,
     },
 
-    /// Calls a component method.
+    /// Calls a scrypto method.
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
-        method_ident: ReceiverMethodIdent,
+        method_ident: ScryptoMethodIdent,
+        args: Vec<u8>,
+    },
+
+    /// Calls a native function.
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallNativeFunction {
+        function_ident: NativeFunctionIdent,
+        args: Vec<u8>,
+    },
+
+    /// Calls a native method.
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallNativeMethod {
+        method_ident: NativeMethodIdent,
         args: Vec<u8>,
     },
 

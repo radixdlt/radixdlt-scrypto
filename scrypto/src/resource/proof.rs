@@ -5,12 +5,10 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::core::{NativeMethod, ProofMethod, Receiver};
-use crate::engine::types::RENodeId;
-use crate::engine::{api::*, call_engine, types::ProofId};
+use crate::engine::{api::*, types::*, utils::*};
 use crate::math::*;
 use crate::misc::*;
-use crate::native_functions;
+use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -66,7 +64,7 @@ impl From<NonFungibleAddress> for ProofValidationMode {
 }
 
 impl Clone for Proof {
-    native_functions! {
+    native_methods! {
         Receiver::Ref(RENodeId::Proof(self.0)), NativeMethod::Proof => {
             fn clone(&self) -> Self {
                 ProofMethod::Clone,
@@ -219,7 +217,7 @@ impl Proof {
         }
     }
 
-    native_functions! {
+    native_methods! {
         Receiver::Ref(RENodeId::Proof(self.0)), NativeMethod::Proof => {
             fn amount(&self) -> Decimal {
                 ProofMethod::GetAmount,
@@ -236,7 +234,7 @@ impl Proof {
         }
     }
 
-    native_functions! {
+    native_methods! {
         Receiver::Consumed(RENodeId::Proof(self.0)), NativeMethod::Proof => {
             pub fn drop(self) -> () {
                 ProofMethod::Drop,
@@ -257,7 +255,7 @@ impl Clone for ValidatedProof {
 }
 
 impl ValidatedProof {
-    native_functions! {
+    native_methods! {
         Receiver::Ref(RENodeId::Proof(self.proof_id())), NativeMethod::Proof => {
             pub fn amount(&self) -> Decimal {
                 ProofMethod::GetAmount,

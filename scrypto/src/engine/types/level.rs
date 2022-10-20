@@ -1,5 +1,4 @@
-use sbor::rust::fmt;
-use sbor::*;
+use super::*;
 
 /// Represents the level of a log message.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, TypeId, Encode, Decode, Describe)]

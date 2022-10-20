@@ -81,12 +81,24 @@ pub enum Instruction {
     CallFunction {
         package_address: Value,
         blueprint_name: Value,
-        function: Value,
+        function_name: Value,
         args: Vec<Value>,
     },
 
     CallMethod {
-        component_address: Value,
+        receiver: ScryptoReceiver,
+        method: Value,
+        args: Vec<Value>,
+    },
+
+    CallNativeFunction {
+        blueprint_name: Value,
+        function_name: Value,
+        args: Vec<Value>,
+    },
+
+    CallNativeMethod {
+        receiver: Receiver,
         method: Value,
         args: Vec<Value>,
     },
@@ -111,6 +123,34 @@ pub enum Instruction {
         resource_address: Value,
         amount: Value,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ScryptoReceiver {
+    Global(Value),
+    Component(Value),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Receiver {
+    Owned(RENode),
+    Ref(RENode),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RENode {
+    Bucket(Value),
+    Proof(Value),
+    AuthZoneStack(Value),
+    Worktop,
+    Global(Value),
+    KeyValueStore(Value),
+    NonFungibleStore(Value),
+    Component(Value),
+    System(Value),
+    Vault(Value),
+    ResourceManager(Value),
+    Package(Value),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

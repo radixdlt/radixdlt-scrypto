@@ -6,14 +6,12 @@ use sbor::rust::string::*;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::ScryptoRENode;
 
 use crate::abi::*;
 use crate::buffer::*;
 use crate::core::{DataRef, DataRefMut};
 use crate::crypto::*;
-use crate::engine::types::{KeyValueStoreOffset, LockHandle, RENodeId, SubstateOffset};
-use crate::engine::{api::*, call_engine, types::KeyValueStoreId};
+use crate::engine::{api::*, types::*, utils::*};
 use crate::misc::*;
 
 /// A scalable key-value map which loads entries on demand.

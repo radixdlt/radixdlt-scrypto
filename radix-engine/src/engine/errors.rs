@@ -1,11 +1,10 @@
+use sbor::*;
 use transaction::errors::*;
 
-use crate::engine::{ExecutionMode, LockFlags, REActor, ResolvedReceiver};
+use crate::engine::{ExecutionMode, LockFlags, REActor};
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
-use sbor::*;
-use scrypto::core::{FnIdent, MethodIdent};
 
 use super::AuthError;
 use super::CostingError;
@@ -56,7 +55,7 @@ pub enum KernelError {
 
     // invocation
     WasmError(WasmError),
-    InvokeMethodInvalidReceiver(RENodeId),
+    RENodeNotVisible(RENodeId),
 
     InvalidReferencePass(GlobalAddress),
     InvalidReferenceReturn(GlobalAddress),
@@ -64,12 +63,8 @@ pub enum KernelError {
     GlobalAddressNotFound(GlobalAddress),
 
     MaxCallDepthLimitReached,
-    InvalidFnIdent(FnIdent),
-
-    FunctionNotFound(FunctionIdent),
-    InvalidFnOutput {
-        fn_identifier: FunctionIdent,
-    },
+    InvalidScryptoFnOutput,
+    MethodReceiverNotMatch(NativeMethod, Receiver),
 
     // ID allocation
     IdAllocationError(IdAllocationError),
@@ -120,17 +115,19 @@ impl From<CallFrameError> for RuntimeError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum ScryptoActorError {
+pub enum ScryptoFnResolvingError {
     BlueprintNotFound,
-    IdentNotFound,
-    InvalidReceiver,
+    FunctionNotFound,
+    MethodNotFound,
     InvalidInput,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum InterpreterError {
-    InvalidScryptoMethod(ResolvedReceiver, MethodIdent, ScryptoActorError),
-    InvalidScryptoFunction(FunctionIdent, ScryptoActorError),
+    InvalidScryptoFunctionInvocation(ScryptoFunctionIdent, ScryptoFnResolvingError),
+    InvalidScryptoMethodInvocation(ScryptoMethodIdent, ScryptoFnResolvingError),
+    InvalidNativeFunctionIdent(NativeFunctionIdent),
+    InvalidNativeMethodIdent(NativeMethodIdent),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]

@@ -56,7 +56,7 @@ fn bench_transfer(c: &mut Criterion) {
     let account2 = executor
         .execute_and_commit(
             &TestTransaction::new(
-                manifest.clone(),
+                manifest,
                 2,
                 vec![NonFungibleAddress::from_public_key(&public_key)],
             ),

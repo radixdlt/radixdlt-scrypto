@@ -1,31 +1,22 @@
-use sbor::rust::vec::Vec;
-use sbor::*;
+use super::*;
 
-use crate::component::{ComponentAddress, PackageAddress};
-use crate::crypto::*;
-use crate::resource::NonFungibleId;
-use crate::resource::ResourceAddress;
-
-pub type LockHandle = u32;
-pub type AuthZoneId = u32;
-pub type BucketId = u32;
-pub type ProofId = u32;
-
-pub type ComponentId = (Hash, u32);
-pub type KeyValueStoreId = (Hash, u32);
-pub type NonFungibleStoreId = (Hash, u32);
-pub type VaultId = (Hash, u32);
+// TODO: Remove and replace with real HeapRENodes
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub enum ScryptoRENode {
+    Component(PackageAddress, String, Vec<u8>),
+    KeyValueStore,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode, TypeId, Ord, PartialOrd)]
 pub enum RENodeId {
-    AuthZoneStack(AuthZoneId),
     Bucket(BucketId),
     Proof(ProofId),
+    AuthZoneStack(AuthZoneId),
+    Worktop,
 
     Global(GlobalAddress),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
-    Worktop,
     Component(ComponentId),
     System(ComponentId),
     Vault(VaultId),
