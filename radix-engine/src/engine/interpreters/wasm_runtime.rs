@@ -1,3 +1,4 @@
+use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::{
@@ -6,8 +7,6 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::*;
-
-use super::KernelError;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
 ///
