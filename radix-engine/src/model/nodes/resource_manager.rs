@@ -1,8 +1,7 @@
 use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible,
-    NonFungibleSubstate, Resource,
+    BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
     ResourceMethodRule::{Protected, Public},
     VaultRuntimeSubstate,
 };
@@ -33,10 +32,7 @@ pub enum ResourceManagerError {
     MismatchingBucketResource,
 }
 
-#[derive(Debug)]
-pub struct ResourceManager {
-    pub info: ResourceManagerSubstate,
-}
+pub struct ResourceManager;
 
 impl ResourceManager {
     pub fn new(
@@ -44,7 +40,7 @@ impl ResourceManager {
         metadata: HashMap<String, String>,
         mut auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         non_fungible_store_id: Option<NonFungibleStoreId>,
-    ) -> Result<Self, InvokeError<ResourceManagerError>> {
+    ) -> Result<ResourceManagerSubstate, InvokeError<ResourceManagerError>> {
         let mut vault_method_table: HashMap<VaultMethod, ResourceMethodRule> = HashMap::new();
         vault_method_table.insert(VaultMethod::LockFee, Protected(Withdraw));
         vault_method_table.insert(VaultMethod::LockContingentFee, Protected(Withdraw));
@@ -95,35 +91,18 @@ impl ResourceManager {
             authorization.insert(auth_entry_key, MethodAccessRule::new(entry));
         }
 
-        let resource_manager = Self {
-            info: ResourceManagerSubstate {
-                resource_type,
-                metadata,
-                method_table,
-                vault_method_table,
-                bucket_method_table,
-                authorization,
-                total_supply: 0.into(),
-                non_fungible_store_id,
-            },
+        let resource_manager = ResourceManagerSubstate {
+            resource_type,
+            metadata,
+            method_table,
+            vault_method_table,
+            bucket_method_table,
+            authorization,
+            total_supply: 0.into(),
+            non_fungible_store_id,
         };
 
         Ok(resource_manager)
-    }
-
-    fn check_amount(&self, amount: Decimal) -> Result<(), InvokeError<ResourceManagerError>> {
-        let divisibility = self.info.resource_type.divisibility();
-
-        if amount.is_negative()
-            || amount.0 % I256::from(10i128.pow((18 - divisibility).into())) != I256::from(0)
-        {
-            Err(InvokeError::Error(ResourceManagerError::InvalidAmount(
-                amount,
-                divisibility,
-            )))
-        } else {
-            Ok(())
-        }
     }
 
     pub fn static_main<'s, Y, R>(
@@ -174,7 +153,7 @@ impl ResourceManager {
                                 substate_mut.flush()?;
                                 system_api.drop_lock(non_fungible_handle)?;
                             }
-                            resource_manager.info.total_supply = entries.len().into();
+                            resource_manager.total_supply = entries.len().into();
                         } else {
                             return Err(InvokeError::Error(
                                 ResourceManagerError::ResourceTypeDoesNotMatch,
@@ -199,7 +178,7 @@ impl ResourceManager {
                                     ResourceManagerError::MaxMintAmountExceeded,
                                 ));
                             }
-                            resource_manager.info.total_supply = amount.clone();
+                            resource_manager.total_supply = amount.clone();
                         } else {
                             return Err(InvokeError::Error(
                                 ResourceManagerError::ResourceTypeDoesNotMatch,

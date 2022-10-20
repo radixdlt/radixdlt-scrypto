@@ -2,7 +2,7 @@ use crate::engine::{
     ExecutionMode, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
     ResolvedReceiver, RuntimeError,
 };
-use crate::model::{GlobalAddressSubstate};
+use crate::model::GlobalAddressSubstate;
 use crate::types::*;
 
 pub struct VisibilityProperties;

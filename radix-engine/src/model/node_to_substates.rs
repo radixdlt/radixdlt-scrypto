@@ -38,17 +38,15 @@ pub fn node_to_substates(node: RENode) -> HashMap<SubstateOffset, RuntimeSubstat
         }
         RENode::Worktop(_) => panic!("Unexpected"),
         RENode::Package(package) => {
-            let substate = package.info;
             substates.insert(
                 SubstateOffset::Package(PackageOffset::Package),
-                substate.into(),
+                package.into(),
             );
         }
         RENode::ResourceManager(resource_manager) => {
-            let substate = resource_manager.info;
             substates.insert(
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-                substate.into(),
+                resource_manager.into(),
             );
         }
         RENode::NonFungibleStore(non_fungible_store) => {
@@ -60,10 +58,7 @@ pub fn node_to_substates(node: RENode) -> HashMap<SubstateOffset, RuntimeSubstat
             }
         }
         RENode::System(system) => {
-            substates.insert(
-                SubstateOffset::System(SystemOffset::System),
-                system.info.into(),
-            );
+            substates.insert(SubstateOffset::System(SystemOffset::System), system.into());
         }
     }
     substates

@@ -11,11 +11,11 @@ pub enum RENode {
     Vault(VaultRuntimeSubstate),
     Component(ComponentInfoSubstate, ComponentStateSubstate),
     Worktop(WorktopSubstate),
-    Package(Package),
+    Package(PackageSubstate),
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
-    ResourceManager(ResourceManager),
-    System(System),
+    ResourceManager(ResourceManagerSubstate),
+    System(SystemSubstate),
 }
 
 impl RENode {
@@ -58,9 +58,10 @@ impl RENode {
         offset: &SubstateOffset,
     ) -> Result<SubstateRef, RuntimeError> {
         let substate_ref = match (self, offset) {
-            (RENode::Component(_info, state), SubstateOffset::Component(ComponentOffset::State)) => {
-                SubstateRef::ComponentState(state)
-            }
+            (
+                RENode::Component(_info, state),
+                SubstateOffset::Component(ComponentOffset::State),
+            ) => SubstateRef::ComponentState(state),
             (RENode::Component(info, ..), SubstateOffset::Component(ComponentOffset::Info)) => {
                 SubstateRef::ComponentInfo(info)
             }
@@ -87,7 +88,7 @@ impl RENode {
             (
                 RENode::ResourceManager(resource_manager),
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-            ) => SubstateRef::ResourceManager(&resource_manager.info),
+            ) => SubstateRef::ResourceManager(resource_manager),
             (RENode::Bucket(bucket), SubstateOffset::Bucket(BucketOffset::Bucket)) => {
                 SubstateRef::Bucket(bucket)
             }
@@ -104,10 +105,10 @@ impl RENode {
                 SubstateRef::Vault(vault)
             }
             (RENode::Package(package), SubstateOffset::Package(PackageOffset::Package)) => {
-                SubstateRef::Package(&package.info)
+                SubstateRef::Package(package)
             }
             (RENode::System(system), SubstateOffset::System(SystemOffset::System)) => {
-                SubstateRef::System(&system.info)
+                SubstateRef::System(system)
             }
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::InvalidOffset(
@@ -123,9 +124,10 @@ impl RENode {
         offset: &SubstateOffset,
     ) -> Result<RawSubstateRefMut, RuntimeError> {
         let substate_ref = match (self, offset) {
-            (RENode::Component(_info, state), SubstateOffset::Component(ComponentOffset::State)) => {
-                RawSubstateRefMut::ComponentState(state)
-            }
+            (
+                RENode::Component(_info, state),
+                SubstateOffset::Component(ComponentOffset::State),
+            ) => RawSubstateRefMut::ComponentState(state),
             (RENode::Component(info, ..), SubstateOffset::Component(ComponentOffset::Info)) => {
                 RawSubstateRefMut::ComponentInfo(info)
             }
@@ -152,7 +154,7 @@ impl RENode {
             (
                 RENode::ResourceManager(resource_manager),
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-            ) => RawSubstateRefMut::ResourceManager(&mut resource_manager.info),
+            ) => RawSubstateRefMut::ResourceManager(resource_manager),
             (RENode::Bucket(bucket), SubstateOffset::Bucket(BucketOffset::Bucket)) => {
                 RawSubstateRefMut::Bucket(bucket)
             }
@@ -169,10 +171,10 @@ impl RENode {
                 RawSubstateRefMut::Vault(vault)
             }
             (RENode::Package(package), SubstateOffset::Package(PackageOffset::Package)) => {
-                RawSubstateRefMut::Package(&mut package.info)
+                RawSubstateRefMut::Package(package)
             }
             (RENode::System(system), SubstateOffset::System(SystemOffset::System)) => {
-                RawSubstateRefMut::System(&mut system.info)
+                RawSubstateRefMut::System(system)
             }
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::InvalidOffset(

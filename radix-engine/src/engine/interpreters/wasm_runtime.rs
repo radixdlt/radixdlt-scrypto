@@ -2,8 +2,8 @@ use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::{
-    ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate,
-    InvokeError, KeyValueStore, RuntimeSubstate,
+    ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, InvokeError,
+    KeyValueStore, RuntimeSubstate,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -96,9 +96,7 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         let node = match scrypto_node {
             ScryptoRENode::GlobalComponent(component_id) => RENode::Global(
-                GlobalAddressSubstate::Component(scrypto::component::Component(
-                    component_id,
-                )),
+                GlobalAddressSubstate::Component(scrypto::component::Component(component_id)),
             ),
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
                 // Create component
