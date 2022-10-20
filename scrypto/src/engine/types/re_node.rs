@@ -3,7 +3,7 @@ use super::*;
 // TODO: Remove and replace with real HeapRENodes
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum ScryptoRENode {
-    Global(ComponentId),
+    GlobalComponent(ComponentId),
     Component(PackageAddress, String, Vec<u8>),
     KeyValueStore,
 }
@@ -47,6 +47,16 @@ impl Into<u32> for RENodeId {
         }
     }
 }
+
+impl Into<ComponentAddress> for RENodeId {
+    fn into(self) -> ComponentAddress {
+        match self {
+            RENodeId::Global(GlobalAddress::Component(address)) => address,
+            _ => panic!("Not a component address"),
+        }
+    }
+}
+
 
 impl Into<PackageAddress> for RENodeId {
     fn into(self) -> PackageAddress {

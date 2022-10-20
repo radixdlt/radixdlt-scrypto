@@ -95,9 +95,9 @@ impl Component {
     }
 
     pub fn globalize(self) -> ComponentAddress {
-        let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(self.0));
-        let global_address: GlobalAddress = call_engine(input);
-        global_address.into()
+        let input = RadixEngineInput::CreateNode(ScryptoRENode::GlobalComponent(self.0));
+        let node_id: RENodeId = call_engine(input);
+        node_id.into()
     }
 }
 

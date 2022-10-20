@@ -1,10 +1,7 @@
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::fee::*;
-use crate::model::{
-    Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore,
-    RuntimeSubstate,
-};
+use crate::model::{Component, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, GlobalRENode, InvokeError, KeyValueStore, RuntimeSubstate};
 use crate::types::*;
 use crate::wasm::*;
 
@@ -95,8 +92,10 @@ where
         scrypto_node: ScryptoRENode,
     ) -> Result<ScryptoValue, RuntimeError> {
         let node = match scrypto_node {
-            ScryptoRENode::Global(..) => {
-                panic!()
+            ScryptoRENode::GlobalComponent(component_id) => {
+                RENode::Global(GlobalRENode {
+                    address: GlobalAddressSubstate::Component(scrypto::component::Component(component_id))
+                })
             }
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
                 // Create component
@@ -115,11 +114,6 @@ where
     fn handle_get_visible_node_ids(&mut self) -> Result<ScryptoValue, RuntimeError> {
         let node_ids = self.system_api.get_visible_node_ids()?;
         Ok(ScryptoValue::from_typed(&node_ids))
-    }
-
-    fn handle_node_globalize(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
-        let global_address = self.system_api.node_globalize(node_id)?;
-        Ok(ScryptoValue::from_typed(&global_address))
     }
 
     fn handle_lock_substate(
@@ -215,8 +209,7 @@ where
             RadixEngineInput::InvokeNativeMethod(native_method, receiver, args) => {
                 self.handle_invoke_native_method(native_method, receiver, args)?
             }
-            RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id)?,
-            RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node)?,
+            RadixEngineInput::CreateNode(node) => self.handle_node_create(node)?,
             RadixEngineInput::GetVisibleNodeIds() => self.handle_get_visible_node_ids()?,
 
             RadixEngineInput::LockSubstate(node_id, offset, mutable) => {

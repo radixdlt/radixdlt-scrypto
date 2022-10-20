@@ -62,7 +62,7 @@ impl ComponentSystem {
         blueprint_name: &str,
         state: T,
     ) -> Component {
-        let input = RadixEngineInput::RENodeCreate(ScryptoRENode::Component(
+        let input = RadixEngineInput::CreateNode(ScryptoRENode::Component(
             Runtime::package_address(),
             blueprint_name.to_string(),
             scrypto_encode(&state),
