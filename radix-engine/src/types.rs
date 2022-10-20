@@ -21,14 +21,8 @@ pub use scrypto::component::{
 };
 pub use scrypto::constants::*;
 pub use scrypto::core::{
-    AuthZoneMethod, BucketMethod, ComponentMethod, Expression, Level, NetworkDefinition,
-    PackageFunction, ProofMethod, Receiver, ResourceManagerFunction, ResourceManagerMethod,
-    ScryptoActor, ScryptoRENode, ScryptoReceiver, SystemFunction, SystemGetCurrentEpochInput,
-    SystemGetTransactionHashInput, SystemMethod, SystemSetEpochInput, TransactionProcessorFunction,
-    VaultMethod, WorktopMethod,
-};
-pub use scrypto::core::{
-    NativeFunctionIdent, NativeMethodIdent, ScryptoFunctionIdent, ScryptoMethodIdent,
+    Blob, Expression, NetworkDefinition, ScryptoActor, SystemCreateInput,
+    SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput,
 };
 pub use scrypto::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
@@ -66,20 +60,46 @@ pub use scrypto::resource::{
 };
 pub use scrypto::{access_and_or, access_rule_node, args, dec, pdec, rule};
 
-// Note, below are temporary structures to reduce the size of this PR.
-// Plan is to have `SystemApi<T>` with method `invoke<T>(call_data: T::Input)`, where T is the interpreter type.
-// Further, we will split `SystemApi` into multiple traits for composition.
-
-/// Information passed to native interpreter for resolving the RE node
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub enum NativeFnIdent {
-    Function(NativeFunctionIdent),
-    Method(NativeMethodIdent),
+pub enum Invocation {
+    Scrypto(ScryptoInvocation),
+    Native(NativeInvocation),
 }
 
-/// Information passed to Scrypto interpreter for resolving the RE node
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub enum ScryptoFnIdent {
-    Function(ScryptoFunctionIdent),
-    Method(ScryptoMethodIdent),
+/// Scrypto function/method invocation.
+pub enum ScryptoInvocation {
+    Function(ScryptoFunctionIdent, ScryptoValue),
+    Method(ScryptoMethodIdent, ScryptoValue),
+}
+
+/// Native function/method invocation.
+pub enum NativeInvocation {
+    Function(NativeFunction, ScryptoValue),
+    Method(NativeMethod, Receiver, ScryptoValue),
+}
+
+impl Invocation {
+    pub fn args(&self) -> &ScryptoValue {
+        match self {
+            Invocation::Scrypto(i) => i.args(),
+            Invocation::Native(i) => i.args(),
+        }
+    }
+}
+
+impl ScryptoInvocation {
+    pub fn args(&self) -> &ScryptoValue {
+        match self {
+            ScryptoInvocation::Function(_, args) => &args,
+            ScryptoInvocation::Method(_, args) => &args,
+        }
+    }
+}
+
+impl NativeInvocation {
+    pub fn args(&self) -> &ScryptoValue {
+        match self {
+            NativeInvocation::Function(_, args) => &args,
+            NativeInvocation::Method(_, _, args) => &args,
+        }
+    }
 }

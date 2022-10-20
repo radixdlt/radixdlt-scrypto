@@ -1,13 +1,10 @@
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::core::{AuthZoneMethod, NativeMethodIdent, Receiver};
-use crate::engine::types::RENodeId;
-use crate::engine::{api::*, call_engine};
+use crate::engine::{api::*, types::*, utils::*};
 use crate::math::Decimal;
-use crate::native_functions;
+use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -49,11 +46,11 @@ pub struct AuthZoneDrainInput {}
 pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
-    native_functions! {
+    native_methods! {
         {
-            let input = RadixEngineInput::GetOwnedRENodeIds();
+            let input = RadixEngineInput::GetVisibleNodeIds();
             let owned_node_ids: Vec<RENodeId> = call_engine(input);
-            let node_id = owned_node_ids.into_iter().find(|n| matches!(n, RENodeId::AuthZone(..))).expect("AuthZone does not exist");
+            let node_id = owned_node_ids.into_iter().find(|n| matches!(n, RENodeId::AuthZoneStack(..))).expect("AuthZone does not exist");
             Receiver::Ref(node_id)
         }, NativeMethod::AuthZone => {
             pub fn pop() -> Proof {
@@ -86,19 +83,17 @@ impl ComponentAuthZone {
     }
 
     pub fn push<P: Into<Proof>>(proof: P) {
-        let input = RadixEngineInput::GetOwnedRENodeIds();
+        let input = RadixEngineInput::GetVisibleNodeIds();
         let owned_node_ids: Vec<RENodeId> = call_engine(input);
         let node_id = owned_node_ids
             .into_iter()
-            .find(|n| matches!(n, RENodeId::AuthZone(..)))
+            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
 
         let proof: Proof = proof.into();
         let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethodIdent {
-                receiver: Receiver::Ref(node_id),
-                method_name: AuthZoneMethod::Push.to_string(),
-            },
+            NativeMethod::AuthZone(AuthZoneMethod::Push),
+            Receiver::Ref(node_id),
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
         );
         call_engine(input)

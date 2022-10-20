@@ -1,48 +1,39 @@
-use sbor::rust::string::*;
-use sbor::rust::vec::Vec;
-use sbor::*;
-use strum::*;
+use crate::engine::types::*;
 
-use crate::component::ComponentAddress;
-use crate::component::PackageAddress;
-use crate::engine::types::{ComponentId, RENodeId};
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
-pub struct ScryptoFunctionIdent {
-    pub package_ident: ScryptoPackageIdent,
-    pub blueprint_name: String,
-    pub function_name: String,
-}
-
+// Native function identifier used by transaction model
 #[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
 pub struct NativeFunctionIdent {
     pub blueprint_name: String,
     pub function_name: String,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub struct ScryptoMethodIdent {
-    pub receiver: ScryptoReceiver,
-    pub method_name: String,
-}
-
+// Native method identifier used by transaction model
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub struct NativeMethodIdent {
     pub receiver: Receiver,
     pub method_name: String,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
-pub enum ScryptoPackageIdent {
-    Global(PackageAddress),
-    // The following variant is disabled because packages are always globalized ATM.
-    // Package(PackageId),
+// Native function enum used by Kernel SystemAPI and WASM
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, PartialOrd, Ord)]
+pub enum NativeMethod {
+    Component(ComponentMethod),
+    System(SystemMethod),
+    AuthZone(AuthZoneMethod),
+    ResourceManager(ResourceManagerMethod),
+    Bucket(BucketMethod),
+    Vault(VaultMethod),
+    Proof(ProofMethod),
+    Worktop(WorktopMethod),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub enum ScryptoReceiver {
-    Global(ComponentAddress),
-    Component(ComponentId),
+// Native method enum used by Kernel SystemAPI and WASM
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, PartialOrd, Ord)]
+pub enum NativeFunction {
+    System(SystemFunction),
+    ResourceManager(ResourceManagerFunction),
+    Package(PackageFunction),
+    TransactionProcessor(TransactionProcessorFunction),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Copy, TypeId, Encode, Decode)]
@@ -393,26 +384,4 @@ pub enum PackageFunction {
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionProcessorFunction {
     Run,
-}
-
-// TODO: Remove and replace with real HeapRENodes
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub enum ScryptoRENode {
-    Component(PackageAddress, String, Vec<u8>),
-    KeyValueStore,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use sbor::rust::str::FromStr;
-
-    #[test]
-    fn from_into_string() {
-        let method = WorktopMethod::TakeAll;
-        let name: &str = method.into();
-        assert_eq!(name, "take_all");
-        let method2 = WorktopMethod::from_str("take_all").unwrap();
-        assert_eq!(method2, method);
-    }
 }

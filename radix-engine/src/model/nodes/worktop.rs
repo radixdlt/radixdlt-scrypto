@@ -2,7 +2,6 @@ use crate::engine::{HeapRENode, InvokeError, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
-use crate::wasm::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopPutInput {
@@ -73,15 +72,13 @@ impl Worktop {
         }
     }
 
-    pub fn main<'s, Y, W, I, R>(
+    pub fn main<'s, Y, R>(
         method: WorktopMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<WorktopError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         let node_id = RENodeId::Worktop;

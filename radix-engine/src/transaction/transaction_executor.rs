@@ -60,8 +60,7 @@ where
     I: WasmInstance,
 {
     substate_store: &'s mut S,
-    wasm_engine: &'w mut W,
-    wasm_instrumenter: &'w mut WasmInstrumenter,
+    scrypto_interpreter: &'w mut ScryptoInterpreter<I, W>,
     phantom: PhantomData<I>,
 }
 
@@ -73,13 +72,11 @@ where
 {
     pub fn new(
         substate_store: &'s mut S,
-        wasm_engine: &'w mut W,
-        wasm_instrumenter: &'w mut WasmInstrumenter,
+        scrypto_interpreter: &'w mut ScryptoInterpreter<I, W>,
     ) -> Self {
         Self {
             substate_store,
-            wasm_engine,
-            wasm_instrumenter,
+            scrypto_interpreter,
             phantom: PhantomData,
         }
     }
@@ -156,27 +153,23 @@ where
             }
             modules.push(Box::new(CostingModule::default()));
             modules.push(Box::new(ExecutionTraceModule::new()));
+
             let mut kernel = Kernel::new(
                 transaction_hash,
                 auth_zone_params,
                 &blobs,
                 execution_config.max_call_depth,
                 &mut track,
-                self.wasm_engine,
-                self.wasm_instrumenter,
-                WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512), // TODO: add to ExecutionConfig
+                self.scrypto_interpreter,
                 modules,
             );
             kernel
-                .invoke_native(
-                    NativeFnIdent::Function(NativeFunctionIdent {
-                        blueprint_name: "TransactionProcessor".to_owned(),
-                        function_name: TransactionProcessorFunction::Run.to_string(),
-                    }),
+                .invoke_native(NativeInvocation::Function(
+                    NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
                     ScryptoValue::from_typed(&TransactionProcessorRunInput {
                         instructions: instructions.clone(),
                     }),
-                )
+                ))
                 .map(|o| {
                     scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
                         .expect("TransactionProcessor returned data of unexpected type")

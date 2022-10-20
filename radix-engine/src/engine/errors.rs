@@ -1,7 +1,7 @@
 use sbor::*;
 use transaction::errors::*;
 
-use crate::engine::REActor;
+use crate::engine::{ExecutionMode, LockFlags, REActor};
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
@@ -9,7 +9,6 @@ use crate::wasm::WasmError;
 use super::AuthError;
 use super::CostingError;
 use super::ExecutionTraceError;
-use super::NativeMethod;
 use super::TrackError;
 
 /// Represents an error which causes a tranasction to be rejected.
@@ -31,6 +30,9 @@ pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
 
+    /// An error occurred within call frame.
+    CallFrameError(CallFrameError),
+
     /// An error occurred within an interpreter
     InterpreterError(InterpreterError),
 
@@ -49,6 +51,8 @@ impl From<KernelError> for RuntimeError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum KernelError {
+    InvalidModeTransition(ExecutionMode, ExecutionMode),
+
     // invocation
     WasmError(WasmError),
     RENodeNotVisible(RENodeId),
@@ -59,7 +63,7 @@ pub enum KernelError {
     GlobalAddressNotFound(GlobalAddress),
 
     MaxCallDepthLimitReached,
-    InvalidScryptoFnOutput(ScryptoFnIdent),
+    InvalidScryptoFnOutput,
     MethodReceiverNotMatch(NativeMethod, Receiver),
 
     // ID allocation
@@ -69,13 +73,11 @@ pub enum KernelError {
     DecodeError(DecodeError),
 
     // RENode
-    RENodeNotFound(RENodeId),
     StoredNodeRemoved(RENodeId),
     RENodeGlobalizeTypeNotAllowed(RENodeId),
     RENodeCreateInvalidPermission,
 
     TrackError(TrackError),
-    MovingLockedRENode(RENodeId),
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
     DropFailure(DropFailure),
@@ -87,24 +89,44 @@ pub enum KernelError {
     InvalidOverwrite,
 
     // Actor Constraints
-    SubstateNotReadable(REActor, SubstateId),
-    SubstateNotWriteable(REActor, SubstateId),
+    InvalidSubstateLock {
+        mode: ExecutionMode,
+        actor: REActor,
+        node_id: RENodeId,
+        offset: SubstateOffset,
+        flags: LockFlags,
+    },
     CantMoveDownstream(RENodeId),
     CantMoveUpstream(RENodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum ScryptoActorError {
+pub enum CallFrameError {
+    RENodeNotVisible(RENodeId),
+    RENodeNotOwned(RENodeId),
+    MovingLockedRENode(RENodeId),
+}
+
+impl From<CallFrameError> for RuntimeError {
+    fn from(error: CallFrameError) -> Self {
+        RuntimeError::CallFrameError(error)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum ScryptoFnResolvingError {
     BlueprintNotFound,
-    IdentNotFound,
-    InvalidReceiver,
+    FunctionNotFound,
+    MethodNotFound,
     InvalidInput,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum InterpreterError {
-    InvalidScryptoFnIdent(ScryptoFnIdent, ScryptoActorError),
-    InvalidNativeFnIdent(NativeFnIdent),
+    InvalidScryptoFunctionInvocation(ScryptoFunctionIdent, ScryptoFnResolvingError),
+    InvalidScryptoMethodInvocation(ScryptoMethodIdent, ScryptoFnResolvingError),
+    InvalidNativeFunctionIdent(NativeFunctionIdent),
+    InvalidNativeMethodIdent(NativeMethodIdent),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -112,6 +134,12 @@ pub enum ModuleError {
     AuthError(AuthError),
     CostingError(CostingError),
     ExecutionTraceError(ExecutionTraceError),
+}
+
+impl Into<ModuleError> for AuthError {
+    fn into(self) -> ModuleError {
+        ModuleError::AuthError(self)
+    }
 }
 
 #[derive(Debug)]

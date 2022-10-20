@@ -141,7 +141,7 @@ pub enum Receiver {
 pub enum RENode {
     Bucket(Value),
     Proof(Value),
-    AuthZone(Value),
+    AuthZoneStack(Value),
     Worktop,
     Global(Value),
     KeyValueStore(Value),

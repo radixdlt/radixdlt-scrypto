@@ -1,10 +1,11 @@
 use criterion::{criterion_group, criterion_main, Criterion};
+use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::ledger::*;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
-use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
+use radix_engine::wasm::{DefaultWasmEngine, InstructionCostRules, WasmMeteringParams};
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
@@ -12,13 +13,17 @@ use transaction::signing::EcdsaSecp256k1PrivateKey;
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.
     let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = DefaultWasmEngine::new();
-    let mut wasm_instrumenter = WasmInstrumenter::new();
-    let mut executor = TransactionExecutor::new(
-        &mut substate_store,
-        &mut wasm_engine,
-        &mut wasm_instrumenter,
-    );
+
+    let mut scrypto_interpreter = ScryptoInterpreter {
+        wasm_engine: DefaultWasmEngine::new(),
+        wasm_instrumenter: WasmInstrumenter::new(),
+        wasm_metering_params: WasmMeteringParams::new(
+            InstructionCostRules::tiered(1, 5, 10, 5000),
+            512,
+        ),
+        phantom: PhantomData,
+    };
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut scrypto_interpreter);
 
     // Create a key pair
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();

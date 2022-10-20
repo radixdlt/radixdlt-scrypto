@@ -3,7 +3,6 @@ use crate::fee::FeeReserve;
 use crate::model::ProofError::UnknownMethod;
 use crate::model::{InvokeError, ProofSubstate, ResourceOperationError};
 use crate::types::*;
-use crate::wasm::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ProofError {
@@ -25,16 +24,14 @@ pub enum ProofError {
 pub struct Proof;
 
 impl Proof {
-    pub fn main<'s, Y, W, I, R>(
+    pub fn main<'s, Y, R>(
         proof_id: ProofId,
         method: ProofMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ProofError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         let node_id = RENodeId::Proof(proof_id);
@@ -74,16 +71,14 @@ impl Proof {
         Ok(rtn)
     }
 
-    pub fn main_consume<'s, Y, W, I, R>(
+    pub fn main_consume<'s, Y, R>(
         node_id: RENodeId,
         method: ProofMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ProofError>>
     where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
+        Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
         let proof: ProofSubstate = system_api.node_drop(node_id)?.into();

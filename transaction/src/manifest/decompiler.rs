@@ -3,13 +3,7 @@ use sbor::rust::fmt;
 use sbor::{encode_any, Value};
 use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::NativeFunctionIdent;
-use scrypto::core::NativeMethodIdent;
-use scrypto::core::ScryptoFunctionIdent;
-use scrypto::core::ScryptoMethodIdent;
-use scrypto::core::ScryptoPackageIdent;
-use scrypto::core::ScryptoReceiver;
-use scrypto::core::{NetworkDefinition, Receiver};
+use scrypto::core::NetworkDefinition;
 use scrypto::crypto::Hash;
 use scrypto::engine::types::*;
 use scrypto::misc::ContextualDisplay;
@@ -318,7 +312,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         Instruction::CallFunction {
             function_ident,
             args,
-        } => decompile_call_scrypto_function(f, context, function_ident, args)?,
+        } => decompile_call_function(f, context, function_ident, args)?,
         Instruction::CallMethod { method_ident, args } => {
             decompile_call_scrypto_method(f, context, method_ident, args)?
         }
@@ -336,7 +330,7 @@ pub fn decompile_instruction<F: fmt::Write>(
     Ok(())
 }
 
-pub fn decompile_call_scrypto_function<F: fmt::Write>(
+pub fn decompile_call_function<F: fmt::Write>(
     f: &mut F,
     context: &mut DecompilationContext,
     function_ident: &ScryptoFunctionIdent,
@@ -345,8 +339,8 @@ pub fn decompile_call_scrypto_function<F: fmt::Write>(
     write!(
         f,
         "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-        match &function_ident.package_ident {
-            ScryptoPackageIdent::Global(package_address) =>
+        match &function_ident.package  {
+            ScryptoPackage::Global(package_address) =>
                 package_address.display(context.bech32_encoder),
         },
         function_ident.blueprint_name,
@@ -514,7 +508,7 @@ fn format_node_id(node_id: &RENodeId, context: &mut DecompilationContext) -> Str
             Some(name) => format!("Proof(\"{}\")", name),
             None => format!("Proof({}u32)", id),
         },
-        RENodeId::AuthZone(id) => format!("AuthZone({}u32)", id),
+        RENodeId::AuthZoneStack(id) => format!("AuthZoneStack({}u32)", id),
         RENodeId::Worktop => "Worktop".to_owned(),
         RENodeId::KeyValueStore(id) => format!("KeyValueStore(\"{}\")", format_id(id)),
         RENodeId::NonFungibleStore(id) => format!("NonFungibleStore(\"{}\")", format_id(id)),
@@ -538,9 +532,7 @@ mod tests {
     use crate::manifest::*;
     use sbor::*;
     use scrypto::buffer::scrypto_encode;
-    use scrypto::core::NativeFunctionIdent;
     use scrypto::core::NetworkDefinition;
-    use scrypto::core::ResourceManagerFunction;
     use scrypto::resource::AccessRule;
     use scrypto::resource::Mutability;
     use scrypto::resource::ResourceMethodAuthKey;
@@ -654,7 +646,7 @@ CALL_NATIVE_METHOD &Bucket("bucket1") "get_resource_address";
 CALL_NATIVE_METHOD &Bucket(1u32) "get_resource_address";
 CALL_NATIVE_METHOD &Bucket(513u32) "get_resource_address";
 CALL_NATIVE_METHOD &Bucket(1u32) "get_resource_address";
-CALL_NATIVE_METHOD &AuthZone(1u32) "drain";
+CALL_NATIVE_METHOD &AuthZoneStack(1u32) "drain";
 CALL_NATIVE_METHOD &Worktop "drain";
 CALL_NATIVE_METHOD &KeyValueStore("000000000000000000000000000000000000000000000000000000000000000000000005") "method";
 CALL_NATIVE_METHOD &NonFungibleStore("000000000000000000000000000000000000000000000000000000000000000000000005") "method";
@@ -668,7 +660,7 @@ CALL_NATIVE_METHOD Bucket("bucket1") "get_resource_address";
 CALL_NATIVE_METHOD Bucket(1u32) "get_resource_address";
 CALL_NATIVE_METHOD Bucket(513u32) "get_resource_address";
 CALL_NATIVE_METHOD Bucket(1u32) "get_resource_address";
-CALL_NATIVE_METHOD AuthZone(1u32) "drain";
+CALL_NATIVE_METHOD AuthZoneStack(1u32) "drain";
 CALL_NATIVE_METHOD Worktop "drain";
 CALL_NATIVE_METHOD KeyValueStore("000000000000000000000000000000000000000000000000000000000000000000000005") "method";
 CALL_NATIVE_METHOD NonFungibleStore("000000000000000000000000000000000000000000000000000000000000000000000005") "method";

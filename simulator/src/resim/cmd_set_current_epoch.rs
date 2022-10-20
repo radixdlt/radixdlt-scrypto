@@ -23,8 +23,16 @@ impl SetCurrentEpoch {
         let tx_hash = hash(get_nonce()?.to_string());
         let blobs = HashMap::new();
         let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        let mut wasm_engine = DefaultWasmEngine::new();
-        let mut wasm_instrumenter = WasmInstrumenter::new();
+
+        let mut scrypto_interpreter = ScryptoInterpreter {
+            wasm_engine: DefaultWasmEngine::new(),
+            wasm_instrumenter: WasmInstrumenter::new(),
+            wasm_metering_params: WasmMeteringParams::new(
+                InstructionCostRules::tiered(1, 5, 10, 5000),
+                512,
+            ),
+            phantom: PhantomData,
+        };
         let mut track = Track::new(
             &substate_store,
             SystemLoanFeeReserve::default(),
@@ -40,23 +48,19 @@ impl SetCurrentEpoch {
             &blobs,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,
-            &mut wasm_engine,
-            &mut wasm_instrumenter,
-            WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512), // TODO: add to ExecutionConfig
+            &mut scrypto_interpreter,
             Vec::new(),
         );
 
         // Invoke the system
         kernel
-            .invoke_native(
-                NativeFnIdent::Method(NativeMethodIdent {
-                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                        SYS_SYSTEM_COMPONENT,
-                    ))),
-                    method_name: SystemMethod::SetEpoch.to_string(),
-                }),
+            .invoke_native(NativeInvocation::Method(
+                NativeMethod::System(SystemMethod::SetEpoch),
+                Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                    SYS_SYSTEM_COMPONENT,
+                ))),
                 ScryptoValue::from_typed(&SystemSetEpochInput { epoch: self.epoch }),
-            )
+            ))
             .map(|_| ())
             .map_err(Error::TransactionExecutionError)?;
 

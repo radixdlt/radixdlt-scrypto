@@ -8,11 +8,7 @@ use scrypto::address::Bech32Decoder;
 use scrypto::buffer::scrypto_decode;
 use scrypto::component::ComponentAddress;
 use scrypto::component::PackageAddress;
-use scrypto::core::{
-    Blob, BucketMethod, Expression, NativeFunctionIdent, NativeMethodIdent, Receiver,
-    ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
-    ScryptoPackageIdent, ScryptoReceiver,
-};
+use scrypto::core::{Blob, Expression};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
@@ -339,7 +335,7 @@ pub fn generate_instruction(
 
             Instruction::CallFunction {
                 function_ident: ScryptoFunctionIdent {
-                    package_ident: ScryptoPackageIdent::Global(package_address),
+                    package: ScryptoPackage::Global(package_address),
                     blueprint_name,
                     function_name,
                 },
@@ -660,12 +656,12 @@ fn generate_re_node_id(
 
             Ok(RENodeId::Bucket(bucket_id))
         }
-        ast::RENode::AuthZone(value) => {
+        ast::RENode::AuthZoneStack(value) => {
             let auth_zone_id = match value {
                 ast::Value::U32(v) => Ok(*v),
                 v => invalid_type!(v, ast::Type::U32),
             }?;
-            Ok(RENodeId::AuthZone(auth_zone_id))
+            Ok(RENodeId::AuthZoneStack(auth_zone_id))
         }
         ast::RENode::Worktop => Ok(RENodeId::Worktop),
         ast::RENode::KeyValueStore(node_id) => {
@@ -1400,7 +1396,7 @@ mod tests {
             r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8)  PreciseDecimal("120");"#,
             Instruction::CallFunction {
                 function_ident: ScryptoFunctionIdent {
-                    package_ident: ScryptoPackageIdent::Global(
+                    package: ScryptoPackage::Global(
                         Bech32Decoder::for_simulator()
                             .validate_and_decode_package_address(
                                 "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7"

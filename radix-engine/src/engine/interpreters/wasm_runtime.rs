@@ -1,5 +1,5 @@
-use crate::engine::{HeapRENode, SystemApi};
-use crate::engine::{LockFlags, RuntimeError};
+use crate::engine::errors::KernelError;
+use crate::engine::*;
 use crate::fee::*;
 use crate::model::{
     Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore,
@@ -8,32 +8,24 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::*;
 
-use super::KernelError;
-
 /// A glue between system api (call frame and track abstraction) and WASM.
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, 's, Y, W, I, R>
+pub struct RadixEngineWasmRuntime<'y, 's, Y, R>
 where
-    Y: SystemApi<'s, W, I, R>,
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    Y: SystemApi<'s, R>,
     R: FeeReserve,
 {
     actor: ScryptoActor,
     system_api: &'y mut Y,
-    phantom1: PhantomData<W>,
-    phantom2: PhantomData<I>,
-    phantom3: PhantomData<R>,
-    phantom4: PhantomData<&'s ()>,
+    phantom1: PhantomData<R>,
+    phantom2: PhantomData<&'s ()>,
 }
 
-impl<'y, 's, Y, W, I, R> RadixEngineWasmRuntime<'y, 's, Y, W, I, R>
+impl<'y, 's, Y, R> RadixEngineWasmRuntime<'y, 's, Y, R>
 where
-    Y: SystemApi<'s, W, I, R>,
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    Y: SystemApi<'s, R>,
     R: FeeReserve,
 {
     // TODO: expose API for reading blobs
@@ -48,29 +40,54 @@ where
             system_api,
             phantom1: PhantomData,
             phantom2: PhantomData,
-            phantom3: PhantomData,
-            phantom4: PhantomData,
         }
     }
 
-    fn handle_invoke_scrypto(
+    fn handle_invoke_scrypto_function(
         &mut self,
-        fn_ident: ScryptoFnIdent,
+        fn_ident: ScryptoFunctionIdent,
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api.invoke_scrypto(fn_ident, args)
+        self.system_api
+            .invoke_scrypto(ScryptoInvocation::Function(fn_ident, args))
     }
 
-    fn handle_invoke_native(
+    fn handle_invoke_scrypto_method(
         &mut self,
-        fn_ident: NativeFnIdent,
+        fn_ident: ScryptoMethodIdent,
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api.invoke_native(fn_ident, args)
+        self.system_api
+            .invoke_scrypto(ScryptoInvocation::Method(fn_ident, args))
+    }
+
+    fn handle_invoke_native_function(
+        &mut self,
+        native_function: NativeFunction,
+        args: Vec<u8>,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let args = ScryptoValue::from_slice(&args)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+
+        self.system_api
+            .invoke_native(NativeInvocation::Function(native_function, args))
+    }
+
+    fn handle_invoke_native_method(
+        &mut self,
+        native_method: NativeMethod,
+        receiver: Receiver,
+        args: Vec<u8>,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let args = ScryptoValue::from_slice(&args)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+
+        self.system_api
+            .invoke_native(NativeInvocation::Method(native_method, receiver, args))
     }
 
     fn handle_node_create(
@@ -106,8 +123,8 @@ where
         Ok(ScryptoValue::from_typed(&id))
     }
 
-    fn handle_get_owned_node_ids(&mut self) -> Result<ScryptoValue, RuntimeError> {
-        let node_ids = self.system_api.get_owned_node_ids()?;
+    fn handle_get_visible_node_ids(&mut self) -> Result<ScryptoValue, RuntimeError> {
+        let node_ids = self.system_api.get_visible_node_ids()?;
         Ok(ScryptoValue::from_typed(&node_ids))
     }
 
@@ -188,32 +205,30 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'y, 's, Y, W, I, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, Y, W, I, R>
+impl<'y, 's, Y, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, Y, R>
 where
-    Y: SystemApi<'s, W, I, R>,
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    Y: SystemApi<'s, R>,
     R: FeeReserve,
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {
         let input: RadixEngineInput = scrypto_decode(&input.raw)
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         let rtn = match input {
-            RadixEngineInput::InvokeScryptoFunction(fn_ident, input_bytes) => {
-                self.handle_invoke_scrypto(ScryptoFnIdent::Function(fn_ident), input_bytes)?
+            RadixEngineInput::InvokeScryptoFunction(function_ident, args) => {
+                self.handle_invoke_scrypto_function(function_ident, args)?
             }
-            RadixEngineInput::InvokeScryptoMethod(fn_ident, input_bytes) => {
-                self.handle_invoke_scrypto(ScryptoFnIdent::Method(fn_ident), input_bytes)?
+            RadixEngineInput::InvokeScryptoMethod(method_ident, args) => {
+                self.handle_invoke_scrypto_method(method_ident, args)?
             }
-            RadixEngineInput::InvokeNativeFunction(fn_ident, input_bytes) => {
-                self.handle_invoke_native(NativeFnIdent::Function(fn_ident), input_bytes)?
+            RadixEngineInput::InvokeNativeFunction(native_function, args) => {
+                self.handle_invoke_native_function(native_function, args)?
             }
-            RadixEngineInput::InvokeNativeMethod(fn_ident, input_bytes) => {
-                self.handle_invoke_native(NativeFnIdent::Method(fn_ident), input_bytes)?
+            RadixEngineInput::InvokeNativeMethod(native_method, receiver, args) => {
+                self.handle_invoke_native_method(native_method, receiver, args)?
             }
             RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id)?,
             RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node)?,
-            RadixEngineInput::GetOwnedRENodeIds() => self.handle_get_owned_node_ids()?,
+            RadixEngineInput::GetVisibleNodeIds() => self.handle_get_visible_node_ids()?,
 
             RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
                 self.handle_lock_substate(node_id, offset, mutable)?

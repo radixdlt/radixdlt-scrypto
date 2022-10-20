@@ -1,11 +1,12 @@
 use crate::constants::GENESIS_CREATION_CREDIT;
+use crate::engine::ScryptoInterpreter;
 use crate::fee::SystemLoanFeeReserve;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::transaction::{ExecutionConfig, TransactionExecutor};
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
-use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
-use scrypto::core::{Blob, ResourceManagerFunction, ScryptoPackageIdent, SystemFunction};
+use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams};
+
 use scrypto::resource::Bucket;
 use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};
@@ -142,7 +143,7 @@ pub fn create_genesis() -> SystemTransaction {
         let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
         Instruction::CallFunction {
             function_ident: ScryptoFunctionIdent {
-                package_ident: ScryptoPackageIdent::Global(SYS_FAUCET_PACKAGE),
+                package: ScryptoPackage::Global(SYS_FAUCET_PACKAGE),
                 blueprint_name: "Faucet".to_string(),
                 function_name: "new".to_string(),
             },
@@ -236,10 +237,17 @@ where
         ))
         .is_none()
     {
-        let mut wasm_engine = DefaultWasmEngine::new();
-        let mut wasm_instrumenter = WasmInstrumenter::new();
-        let mut executor =
-            TransactionExecutor::new(substate_store, &mut wasm_engine, &mut wasm_instrumenter);
+        let mut scrypto_interpreter = ScryptoInterpreter {
+            wasm_engine: DefaultWasmEngine::new(),
+            wasm_instrumenter: WasmInstrumenter::new(),
+            wasm_metering_params: WasmMeteringParams::new(
+                InstructionCostRules::tiered(1, 5, 10, 5000),
+                512,
+            ),
+            phantom: PhantomData,
+        };
+
+        let mut executor = TransactionExecutor::new(substate_store, &mut scrypto_interpreter);
         let genesis_transaction = create_genesis();
         let executable: Executable = genesis_transaction.into();
         let mut fee_reserve = SystemLoanFeeReserve::default();
@@ -258,25 +266,33 @@ where
 #[cfg(test)]
 mod tests {
     use crate::constants::GENESIS_CREATION_CREDIT;
+    use crate::engine::ScryptoInterpreter;
     use crate::fee::SystemLoanFeeReserve;
     use crate::ledger::bootstrap::{create_genesis, genesis_result};
     use crate::ledger::TypedInMemorySubstateStore;
     use crate::transaction::{ExecutionConfig, TransactionExecutor};
-    use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
+    use crate::wasm::{
+        DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams,
+    };
     use scrypto::constants::*;
+    use std::marker::PhantomData;
     use transaction::model::Executable;
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {
-        let mut wasm_engine = DefaultWasmEngine::new();
-        let mut wasm_instrumenter = WasmInstrumenter::new();
+        let wasm_engine = DefaultWasmEngine::new();
+        let wasm_instrumenter = WasmInstrumenter::new();
+        let wasm_metering_params =
+            WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512);
+        let mut scrypto_interpreter = ScryptoInterpreter {
+            wasm_engine,
+            wasm_instrumenter,
+            wasm_metering_params,
+            phantom: PhantomData,
+        };
         let mut substate_store = TypedInMemorySubstateStore::new();
         let genesis_transaction = create_genesis();
-        let mut executor = TransactionExecutor::new(
-            &mut substate_store,
-            &mut wasm_engine,
-            &mut wasm_instrumenter,
-        );
+        let mut executor = TransactionExecutor::new(&mut substate_store, &mut scrypto_interpreter);
         let executable: Executable = genesis_transaction.into();
         let mut fee_reserve = SystemLoanFeeReserve::default();
         fee_reserve.credit(GENESIS_CREATION_CREDIT);
@@ -294,10 +310,10 @@ mod tests {
         assert_eq!(genesis_receipt.sys_faucet_package, SYS_FAUCET_PACKAGE);
         assert_eq!(genesis_receipt.account_package, ACCOUNT_PACKAGE);
         assert_eq!(genesis_receipt.ecdsa_secp256k1_token, ECDSA_SECP256K1_TOKEN);
-        assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
         assert_eq!(genesis_receipt.system_token, SYSTEM_TOKEN);
         assert_eq!(genesis_receipt.xrd_token, RADIX_TOKEN);
         assert_eq!(genesis_receipt.faucet_component, SYS_FAUCET_COMPONENT);
         assert_eq!(genesis_receipt.system_component, SYS_SYSTEM_COMPONENT);
+        assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
     }
 }
