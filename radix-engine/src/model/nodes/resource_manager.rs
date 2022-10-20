@@ -1,8 +1,7 @@
 use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible,
-    NonFungibleSubstate, Resource,
+    BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
     ResourceMethodRule::{Protected, Public},
     VaultRuntimeSubstate,
 };

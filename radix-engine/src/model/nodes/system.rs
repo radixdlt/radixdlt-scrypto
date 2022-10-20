@@ -1,8 +1,8 @@
 use crate::engine::{AuthModule, LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    GlobalAddressSubstate, HardAuthRule, HardProofRule, HardResourceOrNonFungible,
-    InvokeError, MethodAuthorization, SystemSubstate,
+    GlobalAddressSubstate, HardAuthRule, HardProofRule, HardResourceOrNonFungible, InvokeError,
+    MethodAuthorization, SystemSubstate,
 };
 use crate::types::*;
 
