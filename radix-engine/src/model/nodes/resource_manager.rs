@@ -30,6 +30,7 @@ pub enum ResourceManagerError {
     CouldNotCreateVault,
     NotNonFungible,
     MismatchingBucketResource,
+    ResourceAddressAlreadySet,
 }
 
 #[derive(Debug)]
@@ -72,6 +73,7 @@ impl ResourceManager {
         method_table.insert(ResourceManagerMethod::GetTotalSupply, Public);
         method_table.insert(ResourceManagerMethod::CreateVault, Public);
         method_table.insert(ResourceManagerMethod::Burn, Public);
+        method_table.insert(ResourceManagerMethod::SetResourceAddress, Public);
 
         // Non Fungible methods
         method_table.insert(
@@ -140,7 +142,7 @@ impl ResourceManager {
                 let input: ResourceManagerCreateInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
 
-                let global_address = if matches!(input.resource_type, ResourceType::NonFungible) {
+                let node_id = if matches!(input.resource_type, ResourceType::NonFungible) {
                     let nf_store_node_id = system_api
                         .node_create(HeapRENode::NonFungibleStore(NonFungibleStore::new()))?;
                     let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
@@ -180,9 +182,7 @@ impl ResourceManager {
                             ));
                         }
                     }
-                    let resource_node_id =
-                        system_api.node_create(HeapRENode::ResourceManager(resource_manager))?;
-                    system_api.node_globalize(resource_node_id)?
+                    system_api.node_create(HeapRENode::ResourceManager(resource_manager))?
                 } else {
                     let mut resource_manager = ResourceManager::new(
                         input.resource_type,
@@ -207,17 +207,23 @@ impl ResourceManager {
                             ));
                         }
                     }
-                    let resource_node_id =
-                        system_api.node_create(HeapRENode::ResourceManager(resource_manager))?;
-                    system_api.node_globalize(resource_node_id)?
+                    system_api.node_create(HeapRENode::ResourceManager(resource_manager))?
                 };
+                let global_address = system_api.node_globalize(node_id)?;
                 let resource_address: ResourceAddress = global_address.into();
 
-                // Set the resource address
-                {
-                    // TODO invoke `ResourceManager::set_resource_address()`
-                }
+                // Store the resource address in the resource manager state
+                system_api
+                    .invoke_native(NativeInvocation::Method(
+                        NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
+                        Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))),
+                        ScryptoValue::from_typed(&ResourceManagerSetResourceAddressInput {
+                            address: resource_address,
+                        }),
+                    ))
+                    .map_err(InvokeError::Downstream)?;
 
+                // Mint
                 let bucket_id = if let Some(mint_params) = input.mint_params {
                     let container = match mint_params {
                         MintParams::NonFungible { entries } => {
@@ -258,6 +264,7 @@ impl ResourceManager {
             ResourceManagerMethod::NonFungibleExists => LockFlags::read_only(),
             ResourceManagerMethod::CreateBucket => LockFlags::MUTABLE,
             ResourceManagerMethod::CreateVault => LockFlags::MUTABLE,
+            ResourceManagerMethod::SetResourceAddress => LockFlags::MUTABLE,
         }
     }
 
@@ -574,6 +581,19 @@ impl ResourceManager {
                         ResourceManagerError::NonFungibleNotFound(non_fungible_address),
                     ));
                 }
+            }
+            ResourceManagerMethod::SetResourceAddress => {
+                let input: ResourceManagerSetResourceAddressInput = scrypto_decode(&args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
+
+                let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
+                let mut raw_mut = substate_mut.get_raw_mut();
+                raw_mut
+                    .resource_manager()
+                    .set_resource_address(input.address)?;
+                substate_mut.flush()?;
+
+                ScryptoValue::from_typed(&())
             }
         };
 

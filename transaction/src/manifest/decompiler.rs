@@ -339,7 +339,7 @@ pub fn decompile_call_function<F: fmt::Write>(
     write!(
         f,
         "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-        match &function_ident.package  {
+        match &function_ident.package {
             ScryptoPackage::Global(package_address) =>
                 package_address.display(context.bech32_encoder),
         },

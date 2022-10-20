@@ -115,6 +115,21 @@ impl ResourceManagerSubstate {
         Ok(())
     }
 
+    pub fn set_resource_address(
+        &mut self,
+        resource_address: ResourceAddress,
+    ) -> Result<(), InvokeError<ResourceManagerError>> {
+        if self.resource_address.is_some() {
+            return Err(InvokeError::Error(
+                ResourceManagerError::ResourceAddressAlreadySet,
+            ));
+        }
+
+        self.resource_address = Some(resource_address);
+
+        Ok(())
+    }
+
     pub fn mint(
         &mut self,
         mint_params: MintParams,

@@ -60,7 +60,8 @@ impl Runtime {
         args: Vec<u8>,
     ) -> T {
         let input = RadixEngineInput::InvokeScryptoFunction(
-            ScryptoFunctionIdent { package: ScryptoPackage::Global(package_address),
+            ScryptoFunctionIdent {
+                package: ScryptoPackage::Global(package_address),
                 blueprint_name: blueprint_name.as_ref().to_owned(),
                 function_name: function_name.as_ref().to_owned(),
             },
