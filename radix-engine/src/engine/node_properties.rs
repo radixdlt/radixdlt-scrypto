@@ -34,9 +34,9 @@ impl VisibilityProperties {
                     ..,
                 ),
             ) => match node {
-                RENode::Component(component) => {
-                    blueprint_name.eq(&component.info.blueprint_name)
-                        && package_address.eq(&component.info.package_address)
+                RENode::Component(info, ..) => {
+                    blueprint_name.eq(&info.blueprint_name)
+                        && package_address.eq(&info.package_address)
                 }
                 RENode::KeyValueStore(..) => true,
                 RENode::Global(GlobalAddressSubstate::Component(..)) => true,

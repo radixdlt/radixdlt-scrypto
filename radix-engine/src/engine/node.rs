@@ -9,7 +9,7 @@ pub enum RENode {
     Proof(ProofSubstate),
     AuthZone(AuthZoneStackSubstate),
     Vault(VaultRuntimeSubstate),
-    Component(Component),
+    Component(ComponentInfoSubstate, ComponentStateSubstate),
     Worktop(WorktopSubstate),
     Package(Package),
     KeyValueStore(KeyValueStore),
@@ -58,11 +58,11 @@ impl RENode {
         offset: &SubstateOffset,
     ) -> Result<SubstateRef, RuntimeError> {
         let substate_ref = match (self, offset) {
-            (RENode::Component(component), SubstateOffset::Component(ComponentOffset::State)) => {
-                SubstateRef::ComponentState(component.state.as_ref().unwrap())
+            (RENode::Component(_info, state), SubstateOffset::Component(ComponentOffset::State)) => {
+                SubstateRef::ComponentState(state)
             }
-            (RENode::Component(component), SubstateOffset::Component(ComponentOffset::Info)) => {
-                SubstateRef::ComponentInfo(&component.info)
+            (RENode::Component(info, ..), SubstateOffset::Component(ComponentOffset::Info)) => {
+                SubstateRef::ComponentInfo(info)
             }
             (
                 RENode::NonFungibleStore(non_fungible_store),
@@ -123,11 +123,11 @@ impl RENode {
         offset: &SubstateOffset,
     ) -> Result<RawSubstateRefMut, RuntimeError> {
         let substate_ref = match (self, offset) {
-            (RENode::Component(component), SubstateOffset::Component(ComponentOffset::State)) => {
-                RawSubstateRefMut::ComponentState(component.state.as_mut().unwrap())
+            (RENode::Component(_info, state), SubstateOffset::Component(ComponentOffset::State)) => {
+                RawSubstateRefMut::ComponentState(state)
             }
-            (RENode::Component(component), SubstateOffset::Component(ComponentOffset::Info)) => {
-                RawSubstateRefMut::ComponentInfo(&mut component.info)
+            (RENode::Component(info, ..), SubstateOffset::Component(ComponentOffset::Info)) => {
+                RawSubstateRefMut::ComponentInfo(info)
             }
             (
                 RENode::NonFungibleStore(non_fungible_store),

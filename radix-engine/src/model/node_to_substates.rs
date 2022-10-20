@@ -26,17 +26,15 @@ pub fn node_to_substates(node: RENode) -> HashMap<SubstateOffset, RuntimeSubstat
                 );
             }
         }
-        RENode::Component(component) => {
+        RENode::Component(info, state) => {
             substates.insert(
                 SubstateOffset::Component(ComponentOffset::Info),
-                component.info.into(),
+                info.into(),
             );
-            if let Some(state) = component.state {
-                substates.insert(
-                    SubstateOffset::Component(ComponentOffset::State),
-                    state.into(),
-                );
-            }
+            substates.insert(
+                SubstateOffset::Component(ComponentOffset::State),
+                state.into(),
+            );
         }
         RENode::Worktop(_) => panic!("Unexpected"),
         RENode::Package(package) => {
