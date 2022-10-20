@@ -109,11 +109,11 @@ impl RadixEngineDB {
             .into_iter()
             .map(|id| {
                 if let SubstateId(
-                    RENodeId::Global(GlobalAddress::Resource(resource_manager_address)),
+                    RENodeId::Global(GlobalAddress::Resource(resource_address)),
                     SubstateOffset::Global(GlobalOffset::Global),
                 ) = id
                 {
-                    resource_manager_address
+                    resource_address
                 } else {
                     panic!("Expected a resource manager global substate id.")
                 }

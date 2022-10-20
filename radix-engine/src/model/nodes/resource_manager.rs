@@ -297,7 +297,7 @@ impl ResourceManager {
                 {
                     let substate_ref = system_api.get_ref(resman_handle)?;
                     let resource_manager = substate_ref.resource_manager();
-                    if bucket.resource_address() != resource_manager.resource_address.unwrap() {
+                    if Some(bucket.resource_address()) != resource_manager.resource_address {
                         return Err(InvokeError::Error(
                             ResourceManagerError::MismatchingBucketResource,
                         ));
