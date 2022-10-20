@@ -153,7 +153,7 @@ impl Resource {
                     .to_string()
                     .parse()
                     .expect("Failed to convert amount to usize");
-                let ids: BTreeSet<NonFungibleId> = ids.iter().cloned().take(n).collect();
+                let ids: BTreeSet<NonFungibleId> = ids.iter().take(n).cloned().collect();
                 self.take_by_ids(&ids)
             }
         }
@@ -321,7 +321,7 @@ impl LockableResource {
                     .to_string()
                     .parse()
                     .expect("Failed to convert amount to usize");
-                let ids: BTreeSet<NonFungibleId> = liquid_ids.iter().cloned().take(n).collect();
+                let ids: BTreeSet<NonFungibleId> = liquid_ids.iter().take(n).cloned().collect();
                 self.take_by_ids(&ids)
             }
         }
@@ -395,9 +395,9 @@ impl LockableResource {
                     .to_string()
                     .parse()
                     .expect("Failed to convert amount to usize");
-                let mut ids: BTreeSet<NonFungibleId> = locked_ids.keys().cloned().take(n).collect();
+                let mut ids: BTreeSet<NonFungibleId> = locked_ids.keys().take(n).cloned().collect();
                 if ids.len() < n {
-                    ids.extend(liquid_ids.iter().cloned().take(n - ids.len()));
+                    ids.extend(liquid_ids.iter().take(n - ids.len()).cloned());
                 }
 
                 self.lock_by_ids(&ids)

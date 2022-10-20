@@ -176,7 +176,7 @@ impl ProofSubstate {
                         .to_string()
                         .parse()
                         .expect("Failed to convert non-fungible amount to usize");
-                    let ids: BTreeSet<NonFungibleId> = locked_ids.iter().cloned().take(n).collect();
+                    let ids: BTreeSet<NonFungibleId> = locked_ids.iter().take(n).cloned().collect();
                     Self::compose_by_ids(proofs, &ids, resource_address, resource_type)
                 }
             }
