@@ -67,7 +67,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
 
         let cost_unit_limit = transaction.signed_intent.intent.header.cost_unit_limit;
         let tip_percentage = transaction.signed_intent.intent.header.tip_percentage;
-        let blobs = transaction.signed_intent.intent.manifest.blobs.clone();
+        let blobs = transaction.signed_intent.intent.manifest.blobs;
 
         let auth_zone_params = AuthZoneParams {
             initial_proofs: AuthModule::pk_non_fungibles(&keys),

@@ -13,7 +13,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let auth_id = NonFungibleId::from_u32(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id);
     let authorization =
-        AccessRules::new().method("get_component_state", rule!(require(auth_address.clone())));
+        AccessRules::new().method("get_component_state", rule!(require(auth_address)));
 
     let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -73,7 +73,7 @@ fn can_make_cross_component_call_with_authorization() {
     let auth_id = NonFungibleId::from_u32(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id.clone());
     let authorization =
-        AccessRules::new().method("get_component_state", rule!(require(auth_address.clone())));
+        AccessRules::new().method("get_component_state", rule!(require(auth_address)));
 
     let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -110,7 +110,7 @@ fn can_make_cross_component_call_with_authorization() {
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .withdraw_from_account_by_ids(&BTreeSet::from([auth_id.clone()]), auth, account)
+        .withdraw_from_account_by_ids(&BTreeSet::from([auth_id]), auth, account)
         .call_method(
             my_component,
             "put_auth",
@@ -146,9 +146,9 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     let (public_key, _, account) = test_runner.new_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from_u32(1);
-    let auth_address = NonFungibleAddress::new(auth, auth_id.clone());
+    let auth_address = NonFungibleAddress::new(auth, auth_id);
     let authorization =
-        AccessRules::new().method("get_component_state", rule!(require(auth_address.clone())));
+        AccessRules::new().method("get_component_state", rule!(require(auth_address)));
 
     let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

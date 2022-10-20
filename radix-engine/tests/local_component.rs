@@ -112,7 +112,7 @@ fn local_component_with_access_rules_should_be_callable() {
         .call_method(
             account,
             "create_proof_by_ids",
-            args!(BTreeSet::from([auth_id.clone()]), auth_resource_address),
+            args!(BTreeSet::from([auth_id]), auth_resource_address),
         )
         .call_scrypto_function(
             package_address,

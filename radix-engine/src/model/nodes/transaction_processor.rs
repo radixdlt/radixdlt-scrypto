@@ -225,7 +225,7 @@ impl TransactionProcessor {
                     .expect("AuthZone does not exist");
                 let auth_zone_ref = Receiver::Ref(auth_zone_node_id);
 
-                for inst in &input.instructions.clone() {
+                for inst in &input.instructions {
                     let result = match inst {
                         Instruction::TakeFromWorktop { resource_address } => id_allocator
                             .new_bucket_id()

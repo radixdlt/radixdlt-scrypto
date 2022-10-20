@@ -424,7 +424,7 @@ impl ResourceManager {
                         if non_fungible_mut.0.is_some() {
                             return Err(InvokeError::Error(
                                 ResourceManagerError::NonFungibleAlreadyExists(
-                                    NonFungibleAddress::new(resource_address, id.clone()),
+                                    NonFungibleAddress::new(resource_address, id),
                                 ),
                             ));
                         }
@@ -496,7 +496,7 @@ impl ResourceManager {
                     let non_fungible_address =
                         NonFungibleAddress::new(resource_address.clone(), input.id);
                     return Err(InvokeError::Error(
-                        ResourceManagerError::NonFungibleNotFound(non_fungible_address.clone()),
+                        ResourceManagerError::NonFungibleNotFound(non_fungible_address),
                     ));
                 }
                 substate_mut.flush()?;
