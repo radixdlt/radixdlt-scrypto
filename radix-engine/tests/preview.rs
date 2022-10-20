@@ -122,7 +122,7 @@ fn prepare_test_tx_and_preview_intent(
         .unwrap();
 
     let preview_intent = PreviewIntent {
-        intent: notarized_transaction.signed_intent.intent.clone(),
+        intent: notarized_transaction.signed_intent.intent,
         signer_public_keys: vec![tx_signer_priv_key.public_key().into()],
         flags: flags.clone(),
     };

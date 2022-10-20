@@ -73,7 +73,7 @@ fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
         ])),
         rule!(require(auth0.clone()) || require(auth1.clone()) || require(auth2.clone())),
         rule!((require(auth0.clone()) || require(auth1.clone())) || require(auth2.clone())),
-        rule!(require(auth0.clone()) || (require(auth1.clone()) || require(auth2.clone()))),
+        rule!(require(auth0) || (require(auth1) || require(auth2))),
     ];
 
     for auth in auths {
@@ -135,7 +135,7 @@ fn can_withdraw_from_my_complex_account() {
         rule!((require(auth0.clone()) && require(auth1.clone())) || require(auth2.clone())),
         rule!((require(auth0.clone()) && (require(auth1.clone()))) || require(auth2.clone())),
         rule!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
-        rule!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
+        rule!(require(auth2) || (require(auth0) && require(auth1))),
     ];
     let signer_public_keys_list = [
         vec![pk2.into()],
@@ -162,7 +162,7 @@ fn cannot_withdraw_from_my_complex_account() {
         rule!((require(auth0.clone()) && require(auth1.clone())) || require(auth2.clone())),
         rule!((require(auth0.clone()) && (require(auth1.clone()))) || require(auth2.clone())),
         rule!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
-        rule!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
+        rule!(require(auth2) || (require(auth0) && require(auth1))),
     ];
     let signer_public_keys_list = [vec![pk0.into()], vec![pk1.into()]];
 
@@ -186,10 +186,7 @@ fn can_withdraw_from_my_complex_account_2() {
             require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone())
                 || require(auth3.clone())
         ),
-        rule!(
-            (require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone()))
-                || require(auth3.clone())
-        ),
+        rule!((require(auth0) && require(auth1) && require(auth2)) || require(auth3)),
     ];
     let signer_public_keys_list = [vec![pk0.into(), pk1.into(), pk2.into()], vec![pk3.into()]];
 
@@ -213,10 +210,7 @@ fn cannot_withdraw_from_my_complex_account_2() {
             require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone())
                 || require(auth3.clone())
         ),
-        rule!(
-            (require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone()))
-                || require(auth3.clone())
-        ),
+        rule!((require(auth0) && require(auth1) && require(auth2)) || require(auth3)),
     ];
     let signer_public_keys_list = [
         vec![pk0.into()],

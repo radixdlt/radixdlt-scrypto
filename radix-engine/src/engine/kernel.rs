@@ -305,7 +305,7 @@ where
                 .map_err(RuntimeError::ModuleError)?;
         }
 
-        let output = match actor.clone() {
+        let output = match actor {
             REActor::Function(ResolvedFunction::Native(native_fn)) => self
                 .execute_in_mode(ExecutionMode::Application, |system_api| {
                     NativeInterpreter::run_function(native_fn, input, system_api)
@@ -1256,7 +1256,7 @@ where
         {
             node_pointer
                 .release_lock(
-                    offset.clone(),
+                    offset,
                     flags.contains(LockFlags::UNMODIFIED_BASE),
                     self.track,
                 )
