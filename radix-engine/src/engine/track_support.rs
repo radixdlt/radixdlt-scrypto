@@ -45,7 +45,8 @@ impl<'s> StateTrack<'s> {
                     .map(|s| scrypto_encode(&s.substate))
             })
             .map(|x| {
-                scrypto_decode(&x).expect(&format!("Failed to decode substate {:?}", substate_id))
+                scrypto_decode(&x)
+                    .unwrap_or_else(|_| panic!("Failed to decode substate {:?}", substate_id))
             })
     }
 
@@ -132,8 +133,9 @@ impl<'s> StateTrack<'s> {
                             0
                         };
                         let output_value = OutputValue {
-                            substate: scrypto_decode(&substate)
-                                .expect(&format!("Failed to decode substate {:?}", substate_id)),
+                            substate: scrypto_decode(&substate).unwrap_or_else(|_| {
+                                panic!("Failed to decode substate {:?}", substate_id)
+                            }),
                             version: next_version,
                         };
                         diff.up_substates.insert(substate_id.clone(), output_value);
