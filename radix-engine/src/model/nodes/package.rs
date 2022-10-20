@@ -2,7 +2,7 @@ use core::fmt::Debug;
 
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::PackageSubstate;
+use crate::model::{GlobalAddressSubstate, GlobalRENode, PackageSubstate};
 use crate::types::*;
 use crate::wasm::*;
 
@@ -53,8 +53,13 @@ impl Package {
                 let package = Package::new(code, abi)
                     .map_err(|e| InvokeError::Error(PackageError::InvalidWasm(e)))?;
                 let node_id = system_api.create_node(RENode::Package(package))?;
-                let global_address = system_api.node_globalize(node_id)?;
-                let package_address: PackageAddress = global_address.into();
+                let package_address: PackageAddress = node_id.into();
+
+                let global_node_id = system_api.create_node(RENode::Global(GlobalRENode {
+                    address: GlobalAddressSubstate::Package(package_address)
+                }))?;
+
+                let package_address: PackageAddress = global_node_id.into();
                 Ok(ScryptoValue::from_typed(&package_address))
             }
         }

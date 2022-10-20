@@ -1,10 +1,6 @@
 use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::{
-    BucketSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
-    ResourceMethodRule::{Protected, Public},
-    VaultRuntimeSubstate,
-};
+use crate::model::{BucketSubstate, GlobalAddressSubstate, GlobalRENode, InvokeError, NonFungible, NonFungibleSubstate, Resource, ResourceMethodRule::{Protected, Public}, VaultRuntimeSubstate};
 use crate::model::{
     MethodAccessRule, MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate,
     ResourceMethodRule,
@@ -229,8 +225,11 @@ impl ResourceManager {
                     None
                 };
 
-                let global_address = system_api.node_globalize(resource_node_id)?;
-                let resource_address: ResourceAddress = global_address.into();
+                let global_node_id = system_api.create_node(RENode::Global(GlobalRENode {
+                    address: GlobalAddressSubstate::Resource(resource_address)
+                }))?;
+
+                let resource_address: ResourceAddress = global_node_id.into();
 
                 Ok(ScryptoValue::from_typed(&(resource_address, bucket_id)))
             }

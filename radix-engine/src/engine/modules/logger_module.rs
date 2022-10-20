@@ -71,9 +71,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::CreateNode { node } => {
                 log!(self, "Creating node: node = {:?}", node);
             }
-            SysCallInput::GlobalizeNode { node_id } => {
-                log!(self, "Globalizing node: node_id = {:?}", node_id);
-            }
             SysCallInput::LockSubstate {
                 node_id,
                 offset,
@@ -135,12 +132,10 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallOutput::BorrowNode { .. } => {}
             SysCallOutput::DropNode { .. } => {}
             SysCallOutput::CreateNode { .. } => {}
-            SysCallOutput::GlobalizeNode { .. } => {}
             SysCallOutput::LockSubstate { .. } => {}
             SysCallOutput::GetRef { .. } => {}
             SysCallOutput::GetRefMut { .. } => {}
             SysCallOutput::DropLock { .. } => {}
-            SysCallOutput::TakeSubstate { .. } => {}
             SysCallOutput::ReadTransactionHash { .. } => {}
             SysCallOutput::ReadBlob { .. } => {}
             SysCallOutput::GenerateUuid { .. } => {}

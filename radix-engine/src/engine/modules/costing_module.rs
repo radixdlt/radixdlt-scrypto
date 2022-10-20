@@ -166,21 +166,6 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
-            SysCallInput::GlobalizeNode { .. } => {
-                // Costing
-                track
-                    .fee_reserve
-                    .consume(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::GlobalizeNode {
-                                size: 0, // TODO: get size of the value
-                            }),
-                        "globalize_node",
-                        false,
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
-            }
             SysCallInput::LockSubstate { .. } => {
                 // Costing
                 track

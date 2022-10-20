@@ -1,9 +1,6 @@
 use crate::engine::{AuthModule, LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::{
-    HardAuthRule, HardProofRule, HardResourceOrNonFungible, InvokeError, MethodAuthorization,
-    SystemSubstate,
-};
+use crate::model::{GlobalAddressSubstate, GlobalRENode, HardAuthRule, HardProofRule, HardResourceOrNonFungible, InvokeError, MethodAuthorization, SystemSubstate};
 use crate::types::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
@@ -60,9 +57,11 @@ impl System {
                     info: SystemSubstate { epoch: 0 },
                 }))?;
 
-                let global_address = system_api.node_globalize(node_id)?;
+                let global_node_id = system_api.create_node(RENode::Global(GlobalRENode {
+                    address: GlobalAddressSubstate::SystemComponent(scrypto::component::Component(node_id.into()))
+                }))?;
 
-                let component_address: ComponentAddress = global_address.into();
+                let component_address: ComponentAddress = global_node_id.into();
 
                 Ok(ScryptoValue::from_typed(&component_address))
             }

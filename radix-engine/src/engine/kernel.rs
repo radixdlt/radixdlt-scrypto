@@ -1155,53 +1155,6 @@ where
         Ok(node_id)
     }
 
-    fn node_globalize(&mut self, node_id: RENodeId) -> Result<GlobalAddress, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::GlobalizeNode { node_id: &node_id },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // Change to kernel mode
-        let current_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
-        // TODO: Authorization
-
-        let (global_address, global_substate) = self.create_global_node(node_id)?;
-        self.track.insert_substate(
-            SubstateId(
-                RENodeId::Global(global_address),
-                SubstateOffset::Global(GlobalOffset::Global),
-            ),
-            RuntimeSubstate::GlobalRENode(global_substate),
-        );
-        self.current_frame
-            .node_refs
-            .insert(RENodeId::Global(global_address), RENodeLocation::Store);
-        self.current_frame
-            .move_owned_node_to_store(&mut self.heap, &mut self.track, node_id)?;
-
-        // Restore current mode
-        self.execution_mode = current_mode;
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::GlobalizeNode,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(global_address)
-    }
-
     fn lock_substate(
         &mut self,
         mut node_id: RENodeId,

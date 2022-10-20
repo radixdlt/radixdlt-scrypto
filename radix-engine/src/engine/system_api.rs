@@ -67,9 +67,6 @@ where
     /// Creates a new RENode
     fn create_node(&mut self, re_node: RENode) -> Result<RENodeId, RuntimeError>;
 
-    /// Moves an RENode from Heap to Store
-    fn node_globalize(&mut self, node_id: RENodeId) -> Result<GlobalAddress, RuntimeError>;
-
     /// Locks a visible substate
     fn lock_substate(
         &mut self,

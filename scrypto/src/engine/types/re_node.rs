@@ -62,6 +62,7 @@ impl Into<PackageAddress> for RENodeId {
     fn into(self) -> PackageAddress {
         match self {
             RENodeId::Package(package_address) => package_address,
+            RENodeId::Global(GlobalAddress::Package(package_address)) => package_address,
             _ => panic!("Not a package address"),
         }
     }
@@ -71,6 +72,7 @@ impl Into<ResourceAddress> for RENodeId {
     fn into(self) -> ResourceAddress {
         match self {
             RENodeId::ResourceManager(resource_address) => resource_address,
+            RENodeId::Global(GlobalAddress::Resource(resource_address)) => resource_address,
             _ => panic!("Not a resource address"),
         }
     }
