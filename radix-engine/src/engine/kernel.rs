@@ -450,8 +450,16 @@ where
     fn resolve_scrypto_actor(
         &mut self,
         invocation: &ScryptoInvocation,
-    ) -> Result<(REActor, HashMap<RENodeId, RENodePointer>), RuntimeError> {
-        let mut references_to_add = HashMap::new();
+    ) -> Result<
+        (
+            REActor,
+            HashMap<RENodeId, RENodePointer>,
+            HashMap<RENodeId, HeapRootRENode>,
+        ),
+        RuntimeError,
+    > {
+        let mut additional_ref_copy = HashMap::new();
+        let additional_node_move = HashMap::new();
 
         let actor = match invocation {
             ScryptoInvocation::Function(function_ident, args) => {
@@ -478,13 +486,13 @@ where
 
                 // Pass the package ref
                 // TODO: remove? currently needed for `Runtime::package_address()` API.
-                references_to_add.insert(
+                additional_ref_copy.insert(
                     global_node_id,
                     Self::current_frame(&self.call_frames)
                         .get_node_pointer(global_node_id)
                         .unwrap(),
                 );
-                references_to_add.insert(
+                additional_ref_copy.insert(
                     package_node_id,
                     Self::current_frame(&self.call_frames)
                         .get_node_pointer(package_node_id)
@@ -600,13 +608,13 @@ where
                 // TODO: remove? currently needed for `Runtime::package_address()` API.
                 let global_node_id =
                     RENodeId::Global(GlobalAddress::Package(component_info.package_address));
-                references_to_add.insert(
+                additional_ref_copy.insert(
                     global_node_id,
                     Self::current_frame(&self.call_frames)
                         .get_node_pointer(global_node_id)
                         .unwrap(),
                 );
-                references_to_add.insert(
+                additional_ref_copy.insert(
                     component_node_id,
                     Self::current_frame(&self.call_frames)
                         .get_node_pointer(component_node_id)
@@ -669,7 +677,7 @@ where
             }
         };
 
-        Ok((actor, references_to_add))
+        Ok((actor, additional_ref_copy, additional_node_move))
     }
 
     fn resolve_native_actor(
@@ -683,8 +691,8 @@ where
         ),
         RuntimeError,
     > {
-        let mut references_to_add = HashMap::new();
-        let mut nodes_to_move = HashMap::new();
+        let mut additional_ref_copy = HashMap::new();
+        let mut additional_node_move = HashMap::new();
 
         let actor = match invocation {
             NativeInvocation::Function(native_function, _) => {
@@ -695,7 +703,7 @@ where
                     Receiver::Consumed(node_id) => {
                         let node =
                             Self::current_frame_mut(&mut self.call_frames).take_node(*node_id)?;
-                        nodes_to_move.insert(*node_id, node);
+                        additional_node_move.insert(*node_id, node);
                         ResolvedReceiver::new(Receiver::Consumed(*node_id))
                     }
                     Receiver::Ref(node_id) => {
@@ -710,7 +718,7 @@ where
                         let resolved_node_id = resolved_receiver.node_id();
                         let node_pointer = Self::current_frame(&self.call_frames)
                             .get_node_pointer(resolved_node_id)?;
-                        references_to_add.insert(resolved_node_id, node_pointer);
+                        additional_ref_copy.insert(resolved_node_id, node_pointer);
 
                         resolved_receiver
                     }
@@ -720,7 +728,7 @@ where
             }
         };
 
-        Ok((actor, references_to_add, nodes_to_move))
+        Ok((actor, additional_ref_copy, additional_node_move))
     }
 
     fn verify_valid_mode_transition(
@@ -734,6 +742,190 @@ where
                 KernelError::InvalidModeTransition(*cur, *next),
             )),
         }
+    }
+
+    fn invoke(&mut self, invocation: Invocation) -> Result<ScryptoValue, RuntimeError> {
+        let depth = Self::current_frame(&self.call_frames).depth;
+
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                match &invocation {
+                    Invocation::Scrypto(i) => SysCallInput::InvokeScrypto {
+                        invocation: i,
+                        depth,
+                    },
+                    Invocation::Native(i) => SysCallInput::InvokeNative {
+                        invocation: i,
+                        depth,
+                    },
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        // check call depth
+        if depth == self.max_depth {
+            return Err(RuntimeError::KernelError(
+                KernelError::MaxCallDepthLimitReached,
+            ));
+        }
+
+        let mut nodes_to_pass_downstream = HashMap::new();
+        let mut next_node_refs = HashMap::new();
+
+        // Internal state update to taken values
+        for node_id in invocation.args().node_ids() {
+            let node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
+            nodes_to_pass_downstream.insert(node_id, node);
+        }
+
+        // Move this into higher layer, e.g. transaction processor
+        if Self::current_frame(&self.call_frames).depth == 0 {
+            let mut static_refs = HashSet::new();
+            static_refs.insert(GlobalAddress::Resource(RADIX_TOKEN));
+            static_refs.insert(GlobalAddress::Resource(SYSTEM_TOKEN));
+            static_refs.insert(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN));
+            static_refs.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
+            static_refs.insert(GlobalAddress::Package(ACCOUNT_PACKAGE));
+            static_refs.insert(GlobalAddress::Package(SYS_FAUCET_PACKAGE));
+
+            // Make refs visible
+            let mut global_references = invocation.args().global_references();
+            global_references.extend(static_refs.clone());
+
+            // TODO: This can be refactored out once any type in sbor is implemented
+            let maybe_txn: Result<TransactionProcessorRunInput, DecodeError> =
+                scrypto_decode(&invocation.args().raw);
+            if let Ok(input) = maybe_txn {
+                for instruction in &input.instructions {
+                    match instruction {
+                        Instruction::CallFunction { args, .. }
+                        | Instruction::CallMethod { args, .. }
+                        | Instruction::CallNativeFunction { args, .. }
+                        | Instruction::CallNativeMethod { args, .. } => {
+                            let scrypto_value =
+                                ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
+                            global_references.extend(scrypto_value.global_references());
+                        }
+                        _ => {}
+                    }
+                }
+            }
+
+            // Check for existence
+            for global_address in global_references {
+                let node_id = RENodeId::Global(global_address);
+                let offset = SubstateOffset::Global(GlobalOffset::Global);
+                let node_pointer = RENodePointer::Store(node_id);
+
+                // TODO: static check here is to support the current genesis transaction which
+                // TODO: requires references to dynamically created resources. Can remove
+                // TODO: when this is resolved.
+                if !static_refs.contains(&global_address) {
+                    node_pointer
+                        .acquire_lock(offset.clone(), LockFlags::read_only(), &mut self.track)
+                        .map_err(|e| match e {
+                            KernelError::TrackError(TrackError::NotFound(..)) => {
+                                RuntimeError::KernelError(KernelError::GlobalAddressNotFound(
+                                    global_address,
+                                ))
+                            }
+                            _ => RuntimeError::KernelError(e),
+                        })?;
+                    node_pointer
+                        .release_lock(offset, false, &mut self.track)
+                        .map_err(RuntimeError::KernelError)?;
+                }
+
+                Self::current_frame_mut(&mut self.call_frames)
+                    .node_refs
+                    .insert(node_id, node_pointer);
+                next_node_refs.insert(node_id, node_pointer);
+            }
+        } else {
+            // Check that global references are owned by this call frame
+            let mut global_references = invocation.args().global_references();
+            global_references.insert(GlobalAddress::Resource(RADIX_TOKEN));
+            global_references.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
+            for global_address in global_references {
+                let node_id = RENodeId::Global(global_address);
+
+                // As of now, once a component is made visible to the frame, client can directly
+                // read the substates of the component. This will cause "Substate was never locked" issue.
+                // We use the following temporary solution to work around this.
+                // A better solution is to create node representation before issuing any reference.
+                // TODO: remove
+                if let Some(pointer) = Self::current_frame_mut(&mut self.call_frames)
+                    .node_refs
+                    .get(&node_id)
+                {
+                    next_node_refs.insert(node_id.clone(), pointer.clone());
+                } else {
+                    return Err(RuntimeError::KernelError(
+                        KernelError::InvalidReferencePass(global_address),
+                    ));
+                }
+            }
+        }
+
+        // Change to kernel mode
+        let saved_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
+
+        let (next_actor, additional_ref_copy, additional_node_move) = match &invocation {
+            Invocation::Scrypto(i) => self.resolve_scrypto_actor(&i)?,
+            Invocation::Native(i) => self.resolve_native_actor(&i)?,
+        };
+        next_node_refs.extend(additional_ref_copy);
+        nodes_to_pass_downstream.extend(additional_node_move);
+
+        let cur_actor = &Self::current_frame(&self.call_frames).actor;
+
+        for (node_id, node) in &mut nodes_to_pass_downstream {
+            let root_node = node.root_mut();
+            root_node.prepare_move_downstream(*node_id, cur_actor, &next_actor)?;
+        }
+
+        let (output, received_values) = self.run(
+            next_actor,
+            invocation.args().clone(),
+            nodes_to_pass_downstream,
+            next_node_refs,
+        )?;
+
+        // move re nodes to this process.
+        for (id, node) in received_values {
+            Self::current_frame_mut(&mut self.call_frames).insert_owned_node(id, node);
+        }
+
+        // Accept global references
+        for global_address in output.global_references() {
+            let node_id = RENodeId::Global(global_address);
+            Self::current_frame_mut(&mut self.call_frames)
+                .node_refs
+                .insert(node_id, RENodePointer::Store(node_id));
+        }
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallOutput::InvokeScrypto { output: &output },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        // TODO: Move this into higher layer, e.g. transaction processor
+        if Self::current_frame(&self.call_frames).depth == 0 {
+            self.call_frames.pop().unwrap().drop_frame()?;
+        }
+
+        // Restore previous mode
+        self.execution_mode = saved_mode;
+
+        Ok(output)
     }
 }
 
@@ -804,356 +996,14 @@ where
         &mut self,
         invocation: ScryptoInvocation,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let depth = Self::current_frame(&self.call_frames).depth;
-
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallInput::InvokeScrypto {
-                    invocation: &invocation,
-                    depth,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // check call depth
-        if depth == self.max_depth {
-            return Err(RuntimeError::KernelError(
-                KernelError::MaxCallDepthLimitReached,
-            ));
-        }
-
-        let mut nodes_to_pass_downstream = HashMap::new();
-        let mut next_node_refs = HashMap::new();
-
-        // Internal state update to taken values
-        for node_id in invocation.args().node_ids() {
-            let node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
-            nodes_to_pass_downstream.insert(node_id, node);
-        }
-
-        // Move this into higher layer, e.g. transaction processor
-        if Self::current_frame(&self.call_frames).depth == 0 {
-            let mut static_refs = HashSet::new();
-            static_refs.insert(GlobalAddress::Resource(RADIX_TOKEN));
-            static_refs.insert(GlobalAddress::Resource(SYSTEM_TOKEN));
-            static_refs.insert(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN));
-            static_refs.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
-            static_refs.insert(GlobalAddress::Package(ACCOUNT_PACKAGE));
-            static_refs.insert(GlobalAddress::Package(SYS_FAUCET_PACKAGE));
-
-            // Make refs visible
-            let mut global_references = invocation.args().global_references();
-            global_references.extend(static_refs.clone());
-
-            // TODO: This can be refactored out once any type in sbor is implemented
-            let maybe_txn: Result<TransactionProcessorRunInput, DecodeError> =
-                scrypto_decode(&invocation.args().raw);
-            if let Ok(input) = maybe_txn {
-                for instruction in &input.instructions {
-                    match instruction {
-                        Instruction::CallFunction { args, .. }
-                        | Instruction::CallMethod { args, .. }
-                        | Instruction::CallNativeFunction { args, .. }
-                        | Instruction::CallNativeMethod { args, .. } => {
-                            let scrypto_value =
-                                ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
-                            global_references.extend(scrypto_value.global_references());
-                        }
-                        _ => {}
-                    }
-                }
-            }
-
-            // Check for existence
-            for global_address in global_references {
-                let node_id = RENodeId::Global(global_address);
-                let offset = SubstateOffset::Global(GlobalOffset::Global);
-                let node_pointer = RENodePointer::Store(node_id);
-
-                // TODO: static check here is to support the current genesis transaction which
-                // TODO: requires references to dynamically created resources. Can remove
-                // TODO: when this is resolved.
-                if !static_refs.contains(&global_address) {
-                    node_pointer
-                        .acquire_lock(offset.clone(), LockFlags::read_only(), &mut self.track)
-                        .map_err(|e| match e {
-                            KernelError::TrackError(TrackError::NotFound(..)) => {
-                                RuntimeError::KernelError(KernelError::GlobalAddressNotFound(
-                                    global_address,
-                                ))
-                            }
-                            _ => RuntimeError::KernelError(e),
-                        })?;
-                    node_pointer
-                        .release_lock(offset, false, &mut self.track)
-                        .map_err(RuntimeError::KernelError)?;
-                }
-
-                Self::current_frame_mut(&mut self.call_frames)
-                    .node_refs
-                    .insert(node_id, node_pointer);
-                next_node_refs.insert(node_id, node_pointer);
-            }
-        } else {
-            // Check that global references are owned by this call frame
-            let mut global_references = invocation.args().global_references();
-            global_references.insert(GlobalAddress::Resource(RADIX_TOKEN));
-            global_references.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
-            for global_address in global_references {
-                let node_id = RENodeId::Global(global_address);
-
-                // As of now, once a component is made visible to the frame, client can directly
-                // read the substates of the component. This will cause "Substate was never locked" issue.
-                // We use the following temporary solution to work around this.
-                // A better solution is to create node representation before issuing any reference.
-                // TODO: remove
-                if let Some(pointer) = Self::current_frame_mut(&mut self.call_frames)
-                    .node_refs
-                    .get(&node_id)
-                {
-                    next_node_refs.insert(node_id.clone(), pointer.clone());
-                } else {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::InvalidReferencePass(global_address),
-                    ));
-                }
-            }
-        }
-
-        // Change to kernel mode
-        let saved_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
-        let (next_actor, references_to_add) = self.resolve_scrypto_actor(&invocation)?;
-        next_node_refs.extend(references_to_add);
-
-        let cur_actor = &Self::current_frame(&self.call_frames).actor;
-
-        for (node_id, node) in &mut nodes_to_pass_downstream {
-            let root_node = node.root_mut();
-            root_node.prepare_move_downstream(*node_id, cur_actor, &next_actor)?;
-        }
-
-        let (output, received_values) = self.run(
-            next_actor,
-            invocation.args().clone(),
-            nodes_to_pass_downstream,
-            next_node_refs,
-        )?;
-
-        // move re nodes to this process.
-        for (id, node) in received_values {
-            Self::current_frame_mut(&mut self.call_frames).insert_owned_node(id, node);
-        }
-
-        // Accept global references
-        for global_address in output.global_references() {
-            let node_id = RENodeId::Global(global_address);
-            Self::current_frame_mut(&mut self.call_frames)
-                .node_refs
-                .insert(node_id, RENodePointer::Store(node_id));
-        }
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallOutput::InvokeScrypto { output: &output },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // TODO: Move this into higher layer, e.g. transaction processor
-        if Self::current_frame(&self.call_frames).depth == 0 {
-            self.call_frames.pop().unwrap().drop_frame()?;
-        }
-
-        // Restore previous mode
-        self.execution_mode = saved_mode;
-
-        Ok(output)
+        self.invoke(Invocation::Scrypto(invocation))
     }
 
     fn invoke_native(
         &mut self,
         invocation: NativeInvocation,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let depth = Self::current_frame(&self.call_frames).depth;
-
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallInput::InvokeNative {
-                    invocation: &invocation,
-                    depth,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // check call depth
-        if depth == self.max_depth {
-            return Err(RuntimeError::KernelError(
-                KernelError::MaxCallDepthLimitReached,
-            ));
-        }
-
-        let mut nodes_to_pass_downstream = HashMap::new();
-        let mut next_node_refs = HashMap::new();
-
-        // Internal state update to taken values
-        for node_id in invocation.args().node_ids() {
-            let node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
-            nodes_to_pass_downstream.insert(node_id, node);
-        }
-
-        // Move this into higher layer, e.g. transaction processor
-        if Self::current_frame(&self.call_frames).depth == 0 {
-            let mut static_refs = HashSet::new();
-            static_refs.insert(GlobalAddress::Resource(RADIX_TOKEN));
-            static_refs.insert(GlobalAddress::Resource(SYSTEM_TOKEN));
-            static_refs.insert(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN));
-            static_refs.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
-            static_refs.insert(GlobalAddress::Package(ACCOUNT_PACKAGE));
-            static_refs.insert(GlobalAddress::Package(SYS_FAUCET_PACKAGE));
-
-            // Make refs visible
-            let mut global_references = invocation.args().global_references();
-            global_references.extend(static_refs.clone());
-
-            // TODO: This can be refactored out once any type in sbor is implemented
-            let maybe_txn: Result<TransactionProcessorRunInput, DecodeError> =
-                scrypto_decode(&invocation.args().raw);
-            if let Ok(input) = maybe_txn {
-                for instruction in &input.instructions {
-                    match instruction {
-                        Instruction::CallFunction { args, .. }
-                        | Instruction::CallMethod { args, .. }
-                        | Instruction::CallNativeFunction { args, .. }
-                        | Instruction::CallNativeMethod { args, .. } => {
-                            let scrypto_value =
-                                ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
-                            global_references.extend(scrypto_value.global_references());
-                        }
-                        _ => {}
-                    }
-                }
-            }
-
-            // Check for existence
-            for global_address in global_references {
-                let node_id = RENodeId::Global(global_address);
-                let offset = SubstateOffset::Global(GlobalOffset::Global);
-                let node_pointer = RENodePointer::Store(node_id);
-
-                // TODO: static check here is to support the current genesis transaction which
-                // TODO: requires references to dynamically created resources. Can remove
-                // TODO: when this is resolved.
-                if !static_refs.contains(&global_address) {
-                    node_pointer
-                        .acquire_lock(offset.clone(), LockFlags::read_only(), &mut self.track)
-                        .map_err(|e| match e {
-                            KernelError::TrackError(TrackError::NotFound(..)) => {
-                                RuntimeError::KernelError(KernelError::GlobalAddressNotFound(
-                                    global_address,
-                                ))
-                            }
-                            _ => RuntimeError::KernelError(e),
-                        })?;
-                    node_pointer
-                        .release_lock(offset, false, &mut self.track)
-                        .map_err(RuntimeError::KernelError)?;
-                }
-
-                Self::current_frame_mut(&mut self.call_frames)
-                    .node_refs
-                    .insert(node_id, node_pointer);
-                next_node_refs.insert(node_id, node_pointer);
-            }
-        } else {
-            // Check that global references are owned by this call frame
-            let mut global_references = invocation.args().global_references();
-            global_references.insert(GlobalAddress::Resource(RADIX_TOKEN));
-            global_references.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
-            for global_address in global_references {
-                let node_id = RENodeId::Global(global_address);
-
-                // As of now, once a component is made visible to the frame, client can directly
-                // read the substates of the component. This will cause "Substate was never locked" issue.
-                // We use the following temporary solution to work around this.
-                // A better solution is to create node representation before issuing any reference.
-                // TODO: remove
-                if let Some(pointer) = Self::current_frame_mut(&mut self.call_frames)
-                    .node_refs
-                    .get(&node_id)
-                {
-                    next_node_refs.insert(node_id.clone(), pointer.clone());
-                } else {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::InvalidReferencePass(global_address),
-                    ));
-                }
-            }
-        }
-
-        // Change to kernel mode
-        let saved_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
-        let (next_actor, references_to_add, nodes_to_move) =
-            self.resolve_native_actor(&&invocation)?;
-        next_node_refs.extend(references_to_add);
-        nodes_to_pass_downstream.extend(nodes_to_move);
-
-        let cur_actor = &Self::current_frame(&self.call_frames).actor;
-
-        for (node_id, node) in &mut nodes_to_pass_downstream {
-            let root_node = node.root_mut();
-            root_node.prepare_move_downstream(*node_id, cur_actor, &next_actor)?;
-        }
-
-        let (output, received_values) = self.run(
-            next_actor,
-            invocation.args().clone(),
-            nodes_to_pass_downstream,
-            next_node_refs,
-        )?;
-
-        // move re nodes to this process.
-        for (id, node) in received_values {
-            Self::current_frame_mut(&mut self.call_frames).insert_owned_node(id, node);
-        }
-
-        // Accept global references
-        for global_address in output.global_references() {
-            let node_id = RENodeId::Global(global_address);
-            Self::current_frame_mut(&mut self.call_frames)
-                .node_refs
-                .insert(node_id, RENodePointer::Store(node_id));
-        }
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallOutput::InvokeNative { output: &output },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // TODO: Move this into higher layer, e.g. transaction processor
-        if Self::current_frame(&self.call_frames).depth == 0 {
-            self.call_frames.pop().unwrap().drop_frame()?;
-        }
-
-        // Restore previous mode
-        self.execution_mode = saved_mode;
-
-        Ok(output)
+        self.invoke(Invocation::Native(invocation))
     }
 
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {

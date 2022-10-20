@@ -60,14 +60,30 @@ pub use scrypto::resource::{
 };
 pub use scrypto::{access_and_or, access_rule_node, args, dec, pdec, rule};
 
+pub enum Invocation {
+    Scrypto(ScryptoInvocation),
+    Native(NativeInvocation),
+}
+
+/// Scrypto function/method invocation.
 pub enum ScryptoInvocation {
     Function(ScryptoFunctionIdent, ScryptoValue),
     Method(ScryptoMethodIdent, ScryptoValue),
 }
 
+/// Native function/method invocation.
 pub enum NativeInvocation {
     Function(NativeFunction, ScryptoValue),
     Method(NativeMethod, Receiver, ScryptoValue),
+}
+
+impl Invocation {
+    pub fn args(&self) -> &ScryptoValue {
+        match self {
+            Invocation::Scrypto(i) => i.args(),
+            Invocation::Native(i) => i.args(),
+        }
+    }
 }
 
 impl ScryptoInvocation {
