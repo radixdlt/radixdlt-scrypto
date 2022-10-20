@@ -55,7 +55,6 @@ pub enum KernelError {
 
     // invocation
     WasmError(WasmError),
-    RENodeNotVisible(RENodeId),
 
     InvalidReferencePass(GlobalAddress),
     InvalidReferenceReturn(GlobalAddress),
@@ -75,7 +74,6 @@ pub enum KernelError {
     // RENode
     StoredNodeRemoved(RENodeId),
     RENodeGlobalizeTypeNotAllowed(RENodeId),
-    RENodeCreateInvalidPermission,
 
     TrackError(TrackError),
     LockDoesNotExist(LockHandle),
@@ -89,7 +87,11 @@ pub enum KernelError {
     InvalidOverwrite,
 
     // Actor Constraints
-    InvalidSubstateLock {
+    InvalidCreateNodeVisibility {
+        mode: ExecutionMode,
+        actor: REActor,
+    },
+    InvalidSubstateVisibility {
         mode: ExecutionMode,
         actor: REActor,
         node_id: RENodeId,

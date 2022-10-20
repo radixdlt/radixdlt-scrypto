@@ -1,4 +1,4 @@
-use radix_engine::engine::{KernelError, RuntimeError};
+use radix_engine::engine::{KernelError, REActor, ResolvedFunction, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -27,7 +27,14 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::RENodeCreateInvalidPermission)
+            RuntimeError::KernelError(KernelError::InvalidCreateNodeVisibility {
+                actor: REActor::Function(ResolvedFunction::Scrypto {
+                    package_address: addr,
+                    blueprint_name: blueprint,
+                    ..
+                }),
+                ..
+            }) if addr.eq(&package_address) && blueprint.eq("NodeCreate")
         )
     });
 }
@@ -55,7 +62,14 @@ fn should_not_be_able_to_node_create_with_invalid_package() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::RENodeCreateInvalidPermission)
+            RuntimeError::KernelError(KernelError::InvalidCreateNodeVisibility {
+                actor: REActor::Function(ResolvedFunction::Scrypto {
+                    package_address: addr,
+                    blueprint_name: blueprint,
+                    ..
+                }),
+                ..
+            }) if addr.eq(&package_address) && blueprint.eq("NodeCreate")
         )
     });
 }

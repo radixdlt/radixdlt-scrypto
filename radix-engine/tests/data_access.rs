@@ -27,7 +27,7 @@ fn should_not_be_able_to_read_component_state_after_creation() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidSubstateLock { .. })
+            RuntimeError::KernelError(KernelError::InvalidSubstateVisibility { .. })
         )
     })
 }
@@ -55,7 +55,7 @@ fn should_not_be_able_to_write_component_state_after_creation() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidSubstateLock { .. })
+            RuntimeError::KernelError(KernelError::InvalidSubstateVisibility { .. })
         )
     })
 }
@@ -106,7 +106,7 @@ fn should_not_be_able_to_write_component_info() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidSubstateLock { .. })
+            RuntimeError::KernelError(KernelError::InvalidSubstateVisibility { .. })
         )
     });
 }

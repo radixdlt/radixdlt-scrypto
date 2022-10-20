@@ -3,6 +3,7 @@ use super::*;
 // TODO: Remove and replace with real HeapRENodes
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum ScryptoRENode {
+    Global(ComponentId),
     Component(PackageAddress, String, Vec<u8>),
     KeyValueStore,
 }

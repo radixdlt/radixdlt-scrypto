@@ -95,21 +95,10 @@ where
         scrypto_node: ScryptoRENode,
     ) -> Result<ScryptoValue, RuntimeError> {
         let node = match scrypto_node {
+            ScryptoRENode::Global(..) => {
+                panic!()
+            }
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
-                // TODO: Move these two checks into kernel
-                if !blueprint_name.eq(self.actor.blueprint_name()) {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::RENodeCreateInvalidPermission,
-                    ));
-                }
-                if !package_address.eq(self.actor.package_address()) {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::RENodeCreateInvalidPermission,
-                    ));
-                }
-
-                // TODO: Check state against blueprint schema
-
                 // Create component
                 RENode::Component(Component {
                     info: ComponentInfoSubstate::new(package_address, blueprint_name, Vec::new()),
