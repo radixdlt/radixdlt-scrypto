@@ -1,6 +1,7 @@
 mod auth_zone;
 mod bucket;
 mod component;
+mod global;
 mod kv_store;
 mod nf_store;
 mod non_fungible;
@@ -15,6 +16,7 @@ mod worktop;
 pub use auth_zone::*;
 pub use bucket::*;
 pub use component::*;
+pub use global::*;
 pub use kv_store::*;
 pub use nf_store::*;
 pub use non_fungible::*;

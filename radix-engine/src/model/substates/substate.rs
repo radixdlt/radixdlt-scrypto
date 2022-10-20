@@ -8,7 +8,7 @@ use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum PersistedSubstate {
-    GlobalRENode(GlobalAddressSubstate),
+    Global(GlobalAddressSubstate),
     System(SystemSubstate),
     ResourceManager(ResourceManagerSubstate),
     ComponentInfo(ComponentInfoSubstate),
@@ -32,7 +32,7 @@ impl Into<VaultSubstate> for PersistedSubstate {
 impl PersistedSubstate {
     pub fn to_runtime(self) -> RuntimeSubstate {
         match self {
-            PersistedSubstate::GlobalRENode(value) => RuntimeSubstate::Global(value),
+            PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
             PersistedSubstate::System(value) => RuntimeSubstate::System(value),
             PersistedSubstate::ResourceManager(value) => RuntimeSubstate::ResourceManager(value),
             PersistedSubstate::ComponentInfo(value) => RuntimeSubstate::ComponentInfo(value),
@@ -69,7 +69,7 @@ pub enum RuntimeSubstate {
 impl RuntimeSubstate {
     pub fn clone_to_persisted(&self) -> PersistedSubstate {
         match self {
-            RuntimeSubstate::Global(value) => PersistedSubstate::GlobalRENode(value.clone()),
+            RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
             RuntimeSubstate::System(value) => PersistedSubstate::System(value.clone()),
             RuntimeSubstate::ResourceManager(value) => {
                 PersistedSubstate::ResourceManager(value.clone())
@@ -94,7 +94,7 @@ impl RuntimeSubstate {
 
     pub fn to_persisted(self) -> PersistedSubstate {
         match self {
-            RuntimeSubstate::Global(value) => PersistedSubstate::GlobalRENode(value),
+            RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
             RuntimeSubstate::System(value) => PersistedSubstate::System(value),
             RuntimeSubstate::ResourceManager(value) => PersistedSubstate::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => PersistedSubstate::ComponentInfo(value),
