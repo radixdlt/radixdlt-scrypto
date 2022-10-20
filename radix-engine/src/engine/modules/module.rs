@@ -2,12 +2,14 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;
 use crate::types::*;
-use scrypto::core::FnIdent;
 
 pub enum SysCallInput<'a> {
-    Invoke {
-        fn_ident: &'a FnIdent,
-        input: &'a ScryptoValue,
+    InvokeScrypto {
+        invocation: &'a ScryptoInvocation,
+        depth: usize,
+    },
+    InvokeNative {
+        invocation: &'a NativeInvocation,
         depth: usize,
     },
     ReadOwnedNodes,
@@ -52,7 +54,10 @@ pub enum SysCallInput<'a> {
 }
 
 pub enum SysCallOutput<'a> {
-    Invoke {
+    InvokeScrypto {
+        output: &'a ScryptoValue,
+    },
+    InvokeNative {
         output: &'a ScryptoValue,
     },
     BorrowNode {
@@ -102,6 +107,14 @@ pub trait Module<R: FeeReserve> {
         track: &mut Track<R>,
         call_frames: &mut Vec<CallFrame>,
         output: SysCallOutput,
+    ) -> Result<(), ModuleError>;
+
+    fn on_run(
+        &mut self,
+        track: &mut Track<R>,
+        call_frames: &mut Vec<CallFrame>,
+        actor: &REActor,
+        input: &ScryptoValue,
     ) -> Result<(), ModuleError>;
 
     fn on_wasm_instantiation(

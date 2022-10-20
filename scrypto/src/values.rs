@@ -729,16 +729,6 @@ impl ScryptoValueFormatter {
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
                 f.write_str("\")")?;
             }
-            ScryptoType::Component => {
-                let value = Component::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidComponent)?;
-                write!(f, "Component(\"{}\")", value)?;
-            }
-            ScryptoType::KeyValueStore => {
-                let value = KeyValueStore::<(), ()>::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidKeyValueStore)?;
-                write!(f, "KeyValueStore(\"{}\")", value)?;
-            }
             ScryptoType::Hash => {
                 let value =
                     Hash::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidHash)?;
@@ -764,6 +754,7 @@ impl ScryptoValueFormatter {
                     .map_err(ScryptoCustomValueCheckError::InvalidEddsaEd25519Signature)?;
                 write!(f, "EddsaEd25519Signature(\"{}\")", value)?;
             }
+            /* RE node starts */
             ScryptoType::Bucket => {
                 let value =
                     Bucket::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBucket)?;
@@ -782,11 +773,22 @@ impl ScryptoValueFormatter {
                     write!(f, "Proof({}u32)", value.0)?;
                 }
             }
+            ScryptoType::Component => {
+                let value = Component::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidComponent)?;
+                write!(f, "Component(\"{}\")", value)?;
+            }
+            ScryptoType::KeyValueStore => {
+                let value = KeyValueStore::<(), ()>::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidKeyValueStore)?;
+                write!(f, "KeyValueStore(\"{}\")", value)?;
+            }
             ScryptoType::Vault => {
                 let value =
                     Vault::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidVault)?;
                 write!(f, "Vault(\"{}\")", value)?;
             }
+            /* RE node ends */
             ScryptoType::NonFungibleId => {
                 let value = NonFungibleId::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleId)?;

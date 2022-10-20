@@ -578,7 +578,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
             &BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)]),
             resource_address,
             |builder, proof_id| {
-                builder.call_scrypto_function(
+                builder.call_function(
                     package_address,
                     "Receiver",
                     "assert_ids",

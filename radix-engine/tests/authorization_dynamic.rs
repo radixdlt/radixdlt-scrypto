@@ -33,7 +33,7 @@ fn test_dynamic_auth(
     let package = test_runner.compile_and_publish("./tests/component");
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package,
             "AuthComponent",
             "create_component",
@@ -105,7 +105,7 @@ fn test_dynamic_authlist(
     let package = test_runner.compile_and_publish("./tests/component");
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package,
             "AuthListComponent",
             "create_component",
@@ -237,7 +237,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let players = [non_fungible_address, other_non_fungible_address.clone()];
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(package, "Chess", "create_game", args!(players))
+        .call_function(package, "Chess", "create_game", args!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
@@ -273,7 +273,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     ];
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(package, "Chess", "create_game", args!(players))
+        .call_function(package, "Chess", "create_game", args!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();

@@ -14,10 +14,13 @@
         "transaction/Cargo.toml",
     ],
     "cSpell.words": [
+        "bech",
+        "Decompilation",
         "decompile",
         "eddsa",
         "instantiatable",
         "Instrumenter",
+        "persistable",
         "Scrypto",
         "Substate",
         "substates",

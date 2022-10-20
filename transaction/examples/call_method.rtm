@@ -1,0 +1,38 @@
+# Inovke scrypto method (both global & and)
+CALL_METHOD ComponentAddress("component_sim1qgvyxt5rrjhwctw7krgmgkrhv82zuamcqkq75tkkrwgs00m736") "free_xrd";
+CALL_METHOD Component("000000000000000000000000000000000000000000000000000000000000000005000000") "free_xrd";
+
+# Invoke native method (ref)
+TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("xrd");
+CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Proof("proof");
+CALL_NATIVE_METHOD &Bucket("xrd") "get_resource_address";
+CALL_NATIVE_METHOD &Bucket(1u32) "get_resource_address";
+CALL_NATIVE_METHOD &Proof("proof") "get_resource_address";
+CALL_NATIVE_METHOD &Proof(1u32) "get_resource_address";
+CALL_NATIVE_METHOD &AuthZoneStack(1u32) "drain";
+CALL_NATIVE_METHOD &Worktop "drain";
+CALL_NATIVE_METHOD &KeyValueStore("000000000000000000000000000000000000000000000000000000000000000005000000") "method";
+CALL_NATIVE_METHOD &NonFungibleStore("000000000000000000000000000000000000000000000000000000000000000005000000") "method";
+CALL_NATIVE_METHOD &Component("000000000000000000000000000000000000000000000000000000000000000005000000") "add_access_check";
+CALL_NATIVE_METHOD &System("000000000000000000000000000000000000000000000000000000000000000005000000") "get_transaction_hash";
+CALL_NATIVE_METHOD &Vault("000000000000000000000000000000000000000000000000000000000000000005000000") "get_resource_address";
+CALL_NATIVE_METHOD &ResourceManager("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn"; # replace with vault id
+CALL_NATIVE_METHOD &Package("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "method";  # replace with package id
+CALL_NATIVE_METHOD &Global("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
+
+# Invoke native method (consumed)
+# TODO: fix resource flow verification for receiver
+CALL_NATIVE_METHOD Bucket("xrd") "get_resource_address";
+CALL_NATIVE_METHOD Bucket(1u32) "get_resource_address";
+CALL_NATIVE_METHOD Proof("proof") "get_resource_address";
+CALL_NATIVE_METHOD Proof(1u32) "get_resource_address";
+CALL_NATIVE_METHOD AuthZoneStack(1u32) "drain";
+CALL_NATIVE_METHOD Worktop "drain";
+CALL_NATIVE_METHOD KeyValueStore("000000000000000000000000000000000000000000000000000000000000000005000000") "method";
+CALL_NATIVE_METHOD NonFungibleStore("000000000000000000000000000000000000000000000000000000000000000005000000") "method";
+CALL_NATIVE_METHOD Component("000000000000000000000000000000000000000000000000000000000000000005000000") "add_access_check";
+CALL_NATIVE_METHOD System("000000000000000000000000000000000000000000000000000000000000000005000000") "get_transaction_hash";
+CALL_NATIVE_METHOD Vault("000000000000000000000000000000000000000000000000000000000000000005000000") "get_resource_address";
+CALL_NATIVE_METHOD ResourceManager("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
+CALL_NATIVE_METHOD Package("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "method";
+CALL_NATIVE_METHOD Global("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "method";

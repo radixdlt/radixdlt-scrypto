@@ -1,4 +1,4 @@
-use crate::engine::{REActor, ResolvedReceiver, ResolvedReceiverMethod};
+use crate::engine::{REActor, ResolvedReceiver};
 use crate::model::MethodAuthorizationError::NotAuthorized;
 use crate::model::{
     AuthZoneError, HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
@@ -216,13 +216,13 @@ impl AuthZoneStackSubstate {
     fn is_barrier(actor: &REActor) -> bool {
         matches!(
             actor,
-            REActor::Method(ResolvedReceiverMethod {
-                receiver: ResolvedReceiver {
+            REActor::Method(
+                _,
+                ResolvedReceiver {
                     derefed_from: Some(RENodeId::Global(GlobalAddress::Component(..))),
                     ..
-                },
-                ..
-            })
+                }
+            )
         )
     }
 

@@ -1,13 +1,10 @@
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::{FnIdent, MethodIdent, NativeMethod, ReceiverMethodIdent};
 
-use crate::core::{AuthZoneMethod, Receiver};
-use crate::engine::types::RENodeId;
-use crate::engine::{api::*, call_engine};
+use crate::engine::{api::*, types::*, utils::*};
 use crate::math::Decimal;
-use crate::native_functions;
+use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -49,7 +46,7 @@ pub struct AuthZoneDrainInput {}
 pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
-    native_functions! {
+    native_methods! {
         {
             let input = RadixEngineInput::GetVisibleNodeIds();
             let owned_node_ids: Vec<RENodeId> = call_engine(input);
@@ -94,11 +91,9 @@ impl ComponentAuthZone {
             .expect("AuthZone does not exist");
 
         let proof: Proof = proof.into();
-        let input = RadixEngineInput::Invoke(
-            FnIdent::Method(ReceiverMethodIdent {
-                receiver: Receiver::Ref(node_id),
-                method_ident: MethodIdent::Native(NativeMethod::AuthZone(AuthZoneMethod::Push)),
-            }),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::AuthZone(AuthZoneMethod::Push),
+            Receiver::Ref(node_id),
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
         );
         call_engine(input)

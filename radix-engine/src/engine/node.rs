@@ -207,11 +207,7 @@ impl HeapRENode {
             }
             HeapRENode::Proof(proof) => {
                 // TODO: Not sure if this is the right abstraction
-                if let REActor::Method(ResolvedReceiverMethod {
-                    method: ResolvedMethod::Native(NativeMethod::Proof(..)),
-                    ..
-                }) = to
-                {
+                if let REActor::Method(ResolvedMethod::Native(NativeMethod::Proof(..)), ..) = to {
                     return Ok(());
                 }
 

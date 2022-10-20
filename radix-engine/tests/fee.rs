@@ -26,7 +26,7 @@ where
             .lock_fee(10.into(), account)
             .withdraw_from_account_by_amount(10u32.into(), RADIX_TOKEN, account)
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.call_scrypto_function(
+                builder.call_function(
                     package_address,
                     "Fee",
                     "new",

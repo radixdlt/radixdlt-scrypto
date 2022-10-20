@@ -7,7 +7,6 @@ use crate::model::*;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
-use scrypto::core::{FnIdent, NativeFunction};
 use transaction::model::*;
 
 pub struct FeeReserveConfig {
@@ -165,14 +164,12 @@ where
                 modules,
             );
             kernel
-                .invoke(
-                    FnIdent::Function(FunctionIdent::Native(NativeFunction::TransactionProcessor(
-                        TransactionProcessorFunction::Run,
-                    ))),
+                .invoke_native(NativeInvocation::Function(
+                    NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
                     ScryptoValue::from_typed(&TransactionProcessorRunInput {
                         instructions: instructions.clone(),
                     }),
-                )
+                ))
                 .map(|o| {
                     scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
                         .expect("TransactionProcessor returned data of unexpected type")

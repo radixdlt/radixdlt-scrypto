@@ -45,7 +45,7 @@ fn test_native_and_safe_integer_interop() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
+        .call_function(
             package_address,
             "Hello",
             "native_and_safe_integer_interop",

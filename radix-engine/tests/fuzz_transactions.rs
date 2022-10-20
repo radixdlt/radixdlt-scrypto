@@ -79,7 +79,7 @@ impl TransactionFuzzer {
             match next {
                 0 => {
                     builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.call_scrypto_function(
+                        builder.call_function(
                             ACCOUNT_PACKAGE,
                             "Account",
                             "new_with_resource",
@@ -88,7 +88,7 @@ impl TransactionFuzzer {
                     });
                 }
                 1 => {
-                    builder.call_scrypto_function(
+                    builder.call_function(
                         ACCOUNT_PACKAGE,
                         "Account",
                         "new",
@@ -97,7 +97,7 @@ impl TransactionFuzzer {
                 }
                 2 => {
                     builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.call_scrypto_function(
+                        builder.call_function(
                             ACCOUNT_PACKAGE,
                             "Account",
                             "new_with_resource",

@@ -15,6 +15,7 @@ cd "$(dirname "$0")"
 (cd radix-engine-stores; cargo build; cargo test --no-run)
 (cd transaction; cargo build; cargo test --no-run)
 (cd simulator; cargo build; cargo test --no-run)
+(cd radix-engine/tests; find . -maxdepth 1 -type d \( ! -name . \) -print0 | xargs -0 -n1 -I '{}' scrypto build --path {})
 
 echo "Building assets and examples..."
 (cd assets/account; scrypto build)

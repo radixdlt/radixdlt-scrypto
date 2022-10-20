@@ -1,6 +1,5 @@
 use crate::engine::*;
 use crate::types::*;
-use scrypto::core::NativeFunction;
 
 /// A lock on a substate controlled by a call frame
 #[derive(Debug, Clone, PartialEq, Eq)]
