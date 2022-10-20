@@ -10,10 +10,9 @@ pub fn node_to_substates(node: RENode) -> HashMap<SubstateOffset, RuntimeSubstat
         RENode::Proof(_) => panic!("Unexpected"),
         RENode::AuthZone(_) => panic!("Unexpected"),
         RENode::Global(global_node) => {
-            let substate = global_node.address;
             substates.insert(
                 SubstateOffset::Global(GlobalOffset::Global),
-                RuntimeSubstate::GlobalRENode(substate),
+                RuntimeSubstate::GlobalRENode(global_node),
             );
         }
         RENode::Vault(vault) => {

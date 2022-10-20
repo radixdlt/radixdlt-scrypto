@@ -2,7 +2,7 @@ use crate::engine::{
     ExecutionMode, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
     ResolvedReceiver, RuntimeError,
 };
-use crate::model::{GlobalAddressSubstate, GlobalRENode};
+use crate::model::{GlobalAddressSubstate};
 use crate::types::*;
 
 pub struct VisibilityProperties;
@@ -39,9 +39,7 @@ impl VisibilityProperties {
                         && package_address.eq(&component.info.package_address)
                 }
                 RENode::KeyValueStore(..) => true,
-                RENode::Global(GlobalRENode {
-                    address: GlobalAddressSubstate::Component(..),
-                }) => true,
+                RENode::Global(GlobalAddressSubstate::Component(..)) => true,
                 _ => false,
             },
             _ => true,
