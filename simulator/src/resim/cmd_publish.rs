@@ -17,7 +17,7 @@ pub struct Publish {
     /// the path to a Scrypto package or a .wasm file
     path: PathBuf,
 
-    /// The package ID, for overwriting
+    /// The address of an existing package to overwrite
     #[clap(long)]
     package_address: Option<SimulatorPackageAddress>,
 
