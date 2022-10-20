@@ -56,7 +56,7 @@ impl Package {
                 let package_address: PackageAddress = node_id.into();
 
                 let global_node_id = system_api.create_node(RENode::Global(GlobalRENode {
-                    address: GlobalAddressSubstate::Package(package_address)
+                    address: GlobalAddressSubstate::Package(package_address),
                 }))?;
 
                 let package_address: PackageAddress = global_node_id.into();

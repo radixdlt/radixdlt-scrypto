@@ -441,9 +441,16 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         if is_success {
             for (id, loaded) in self.loaded_substates {
                 match (&id, &loaded) {
-                    (SubstateId(RENodeId::Global(global_address), SubstateOffset::Global(GlobalOffset::Global)), LoadedSubstate {
-                        metastate: SubstateMetaState::New, ..
-                    }) => {
+                    (
+                        SubstateId(
+                            RENodeId::Global(global_address),
+                            SubstateOffset::Global(GlobalOffset::Global),
+                        ),
+                        LoadedSubstate {
+                            metastate: SubstateMetaState::New,
+                            ..
+                        },
+                    ) => {
                         new_global_addresses.push(*global_address);
                     }
                     _ => {}
@@ -525,8 +532,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 &mut self.state_track,
                 invoke_result.is_ok(),
             );
-
-
 
             // TODO: update XRD supply or disable it
             // TODO: pay tips to the lead validator

@@ -1,6 +1,6 @@
 use crate::engine::{
-    ExecutionMode, KernelError, LockFlags, REActor, ResolvedFunction, ResolvedMethod,
-    ResolvedReceiver, RuntimeError, RENode
+    ExecutionMode, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
+    ResolvedReceiver, RuntimeError,
 };
 use crate::model::{GlobalAddressSubstate, GlobalRENode};
 use crate::types::*;
@@ -17,28 +17,34 @@ impl VisibilityProperties {
         match (mode, actor) {
             (
                 ExecutionMode::Application,
-                REActor::Method(ResolvedMethod::Scrypto {
-                                                             package_address,
-                                                             blueprint_name,
-                                                             ..
-                                                         },..) |
-                REActor::Function(ResolvedFunction::Scrypto {
-                                    package_address,
-                                    blueprint_name,
-                                    ..
-                                },..),
-            ) => {
-                match node {
-                    RENode::Component(component) => {
-                        blueprint_name.eq(&component.info.blueprint_name)
+                REActor::Method(
+                    ResolvedMethod::Scrypto {
+                        package_address,
+                        blueprint_name,
+                        ..
+                    },
+                    ..,
+                )
+                | REActor::Function(
+                    ResolvedFunction::Scrypto {
+                        package_address,
+                        blueprint_name,
+                        ..
+                    },
+                    ..,
+                ),
+            ) => match node {
+                RENode::Component(component) => {
+                    blueprint_name.eq(&component.info.blueprint_name)
                         && package_address.eq(&component.info.package_address)
-                    }
-                    RENode::KeyValueStore(..) => true,
-                    RENode::Global(GlobalRENode { address: GlobalAddressSubstate::Component(..) }) => true,
-                    _ => false,
                 }
-            }
-            _ => true
+                RENode::KeyValueStore(..) => true,
+                RENode::Global(GlobalRENode {
+                    address: GlobalAddressSubstate::Component(..),
+                }) => true,
+                _ => false,
+            },
+            _ => true,
         }
     }
 
@@ -205,5 +211,4 @@ impl SubstateProperties {
             ))),
         }
     }
-
 }

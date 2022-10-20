@@ -1117,22 +1117,25 @@ where
                 let (global_address, global_substate) = self.create_global_node(derefed)?;
                 let global_node_id = RENodeId::Global(global_address);
                 self.track.insert_substate(
-                    SubstateId(
-                        global_node_id,
-                        SubstateOffset::Global(GlobalOffset::Global),
-                    ),
+                    SubstateId(global_node_id, SubstateOffset::Global(GlobalOffset::Global)),
                     RuntimeSubstate::GlobalRENode(global_substate),
                 );
                 self.current_frame
                     .node_refs
                     .insert(global_node_id, RENodeLocation::Store);
-                self.current_frame
-                    .move_owned_node_to_store(&mut self.heap, &mut self.track, derefed)?;
+                self.current_frame.move_owned_node_to_store(
+                    &mut self.heap,
+                    &mut self.track,
+                    derefed,
+                )?;
                 global_node_id
             }
             _ => {
-                let node_id = Self::new_node_id(&mut self.id_allocator, self.transaction_hash, &re_node)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+                let node_id =
+                    Self::new_node_id(&mut self.id_allocator, self.transaction_hash, &re_node)
+                        .map_err(|e| {
+                            RuntimeError::KernelError(KernelError::IdAllocationError(e))
+                        })?;
                 self.current_frame
                     .create_node(&mut self.heap, node_id, re_node)?;
                 node_id

@@ -57,7 +57,6 @@ impl Into<ComponentAddress> for RENodeId {
     }
 }
 
-
 impl Into<PackageAddress> for RENodeId {
     fn into(self) -> PackageAddress {
         match self {
