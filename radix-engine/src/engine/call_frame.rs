@@ -314,7 +314,7 @@ impl CallFrame {
         mut re_node: RENode,
     ) -> Result<(), RuntimeError> {
         let mut child_nodes = HashSet::new();
-        for offset in re_node.get_substates() {
+        for offset in re_node.get_offsets() {
             let substate = re_node.borrow_substate(&offset)?;
             let (_, owned) = substate.references_and_owned_nodes();
             for child_id in owned {

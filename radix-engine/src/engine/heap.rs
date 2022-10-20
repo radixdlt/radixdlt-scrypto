@@ -1,6 +1,6 @@
 use crate::engine::{CallFrameError, HeapRENode, Track};
 use crate::fee::FeeReserve;
-use crate::model::{node_to_substates, RawSubstateRefMut, SubstateRef};
+use crate::model::{RawSubstateRefMut, SubstateRef};
 use crate::types::{HashMap, HashSet};
 use scrypto::engine::types::{RENodeId, SubstateId, SubstateOffset};
 
@@ -96,7 +96,7 @@ impl Heap {
             .nodes
             .remove(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
-        let substates = node_to_substates(node.root);
+        let substates = node.root.to_substates();
         for (offset, substate) in substates {
             track.insert_substate(SubstateId(node_id, offset), substate);
         }
