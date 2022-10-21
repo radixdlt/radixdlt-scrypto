@@ -274,13 +274,33 @@ impl CallFrame {
     }
 
     pub fn drop_frame(&mut self, heap: &mut Heap) -> Result<(), RuntimeError> {
-        let values = self
+        let nodes: Vec<(RENodeId, HeapRENode)> = self
             .owned_heap_nodes
             .drain()
-            .map(|id| heap.remove_node(id).unwrap())
+            .map(|id| {
+                let node = heap.remove_node(id).unwrap();
+                (id, node)
+            })
             .collect();
-        RENode::drop_nodes(values)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))
+
+        let mut worktops = Vec::new();
+
+        for (node_id, node) in nodes {
+            if let RENodeId::Worktop = node_id {
+                worktops.push(node);
+            } else {
+                node.try_drop()
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))?;
+            }
+        }
+
+        for worktop in worktops {
+            worktop
+                .try_drop()
+                .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))?;
+        }
+
+        Ok(())
     }
 
     fn remove_ref(&mut self, heap: &Heap, node_id: RENodeId) -> Result<(), CallFrameError> {
@@ -314,7 +334,11 @@ impl CallFrame {
         re_node: RENode,
     ) -> Result<(), RuntimeError> {
         let mut child_nodes = HashSet::new();
-        for (offset, substate_ref) in re_node.get_offsets() {
+
+        let substates = re_node.to_substates();
+
+        for (offset, substate) in &substates {
+            let substate_ref = substate.to_ref();
             let (_, owned) = substate_ref.references_and_owned_nodes();
             for child_id in owned {
                 SubstateProperties::verify_can_own(&offset, child_id)?;
@@ -325,7 +349,8 @@ impl CallFrame {
 
         // Insert node into heap
         let heap_root_node = HeapRENode {
-            root: re_node,
+            node_id,
+            substates,
             child_nodes,
         };
         heap.create_node(node_id, heap_root_node);

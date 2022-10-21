@@ -94,8 +94,7 @@ impl Heap {
             .nodes
             .remove(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
-        let substates = node.root.to_substates();
-        for (offset, substate) in substates {
+        for (offset, substate) in node.substates {
             track.insert_substate(SubstateId(node_id, offset), substate);
         }
 

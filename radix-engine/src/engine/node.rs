@@ -19,61 +19,27 @@ pub enum RENode {
 }
 
 impl RENode {
-    pub fn get_offsets(&self) -> Vec<(SubstateOffset, SubstateRef)> {
-        match self {
-            RENode::Global(substate) => {
-                vec![(SubstateOffset::Global(GlobalOffset::Global), SubstateRef::Global(substate))]
-            }
-            RENode::Component(info, state) => {
-                vec![
-                    (SubstateOffset::Component(ComponentOffset::State), SubstateRef::ComponentState(state)),
-                    (SubstateOffset::Component(ComponentOffset::Info), SubstateRef::ComponentInfo(info)),
-                ]
-            }
-            RENode::KeyValueStore(store) => store
-                .loaded_entries
-                .iter()
-                .map(|(key, value)| {
-                    (SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key.clone())), SubstateRef::KeyValueStoreEntry(value))
-                })
-                .collect(),
-            RENode::NonFungibleStore(..) => vec![],
-            RENode::ResourceManager(state) => {
-                vec![(SubstateOffset::ResourceManager(
-                    ResourceManagerOffset::ResourceManager,
-                ), SubstateRef::ResourceManager(state))]
-            }
-            RENode::Package(substate) => vec![
-                (SubstateOffset::Package(PackageOffset::Package), SubstateRef::Package(substate))
-            ],
-            RENode::Bucket(substate) => vec![
-                (SubstateOffset::Bucket(BucketOffset::Bucket), SubstateRef::Bucket(substate))
-            ],
-            RENode::Proof(proof) => vec![
-                (SubstateOffset::Proof(ProofOffset::Proof), SubstateRef::Proof(proof))
-            ],
-            RENode::AuthZone(state) => vec![
-                (SubstateOffset::AuthZone(AuthZoneOffset::AuthZone), SubstateRef::AuthZone(state))
-            ],
-            RENode::Vault(state) => vec![
-                (SubstateOffset::Vault(VaultOffset::Vault), SubstateRef::Vault(state))
-            ],
-            RENode::Worktop(state) => vec![
-                (SubstateOffset::Worktop(WorktopOffset::Worktop), SubstateRef::Worktop(state))
-            ],
-            RENode::System(state) => vec![
-                (SubstateOffset::System(SystemOffset::System), SubstateRef::System(state))
-            ],
-        }
-    }
-
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
-
         match self {
-            RENode::Bucket(_) => panic!("Unexpected"),
-            RENode::Proof(_) => panic!("Unexpected"),
-            RENode::AuthZone(_) => panic!("Unexpected"),
+            RENode::Bucket(bucket) => {
+                substates.insert(
+                    SubstateOffset::Bucket(BucketOffset::Bucket),
+                    RuntimeSubstate::Bucket(bucket),
+                );
+            }
+            RENode::Proof(proof) => {
+                substates.insert(
+                    SubstateOffset::Proof(ProofOffset::Proof),
+                    RuntimeSubstate::Proof(proof),
+                );
+            }
+            RENode::AuthZone(auth_zone) => {
+                substates.insert(
+                    SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+                    RuntimeSubstate::AuthZone(auth_zone),
+                );
+            }
             RENode::Global(global_node) => {
                 substates.insert(
                     SubstateOffset::Global(GlobalOffset::Global),
@@ -101,7 +67,12 @@ impl RENode {
                     state.into(),
                 );
             }
-            RENode::Worktop(_) => panic!("Unexpected"),
+            RENode::Worktop(worktop) => {
+                substates.insert(
+                    SubstateOffset::Worktop(WorktopOffset::Worktop),
+                    RuntimeSubstate::Worktop(worktop),
+                );
+            }
             RENode::Package(package) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Package),
@@ -129,211 +100,122 @@ impl RENode {
 
         substates
     }
-
-
-    pub fn try_drop(self) -> Result<(), DropFailure> {
-        match self {
-            RENode::Global(..) => panic!("Should never get here"),
-            RENode::AuthZone(mut auth_zone) => {
-                auth_zone.clear_all();
-                Ok(())
-            }
-            RENode::Package(..) => Err(DropFailure::Package),
-            RENode::Vault(..) => Err(DropFailure::Vault),
-            RENode::KeyValueStore(..) => Err(DropFailure::KeyValueStore),
-            RENode::NonFungibleStore(..) => Err(DropFailure::NonFungibleStore),
-            RENode::Component(..) => Err(DropFailure::Component),
-            RENode::Bucket(..) => Err(DropFailure::Bucket),
-            RENode::ResourceManager(..) => Err(DropFailure::Resource),
-            RENode::System(..) => Err(DropFailure::System),
-            RENode::Proof(proof) => {
-                proof.drop();
-                Ok(())
-            }
-            RENode::Worktop(worktop) => worktop.drop(),
-        }
-    }
-
-    pub fn drop_nodes(nodes: Vec<HeapRENode>) -> Result<(), DropFailure> {
-        let mut worktops = Vec::new();
-        for node in nodes {
-            // TODO: Remove this
-            if !node.child_nodes.is_empty() {
-                return Err(DropFailure::DroppingNodeWithChildren);
-            }
-
-            if let RENode::Worktop(worktop) = node.root {
-                worktops.push(worktop);
-            } else {
-                node.try_drop()?;
-            }
-        }
-        for worktop in worktops {
-            worktop.drop()?;
-        }
-
-        Ok(())
-    }
 }
 
 #[derive(Debug)]
 pub struct HeapRENode {
-    pub root: RENode,
+    pub node_id: RENodeId, // TODO: Remove this
+    pub substates: HashMap<SubstateOffset, RuntimeSubstate>,
     pub child_nodes: HashSet<RENodeId>,
 }
 
 impl HeapRENode {
     pub fn try_drop(self) -> Result<(), DropFailure> {
-        self.root.try_drop()
+        // TODO: Remove this
+        if !self.child_nodes.is_empty() {
+            return Err(DropFailure::DroppingNodeWithChildren);
+        }
+
+        for (_, substate) in self.substates {
+            match substate {
+                RuntimeSubstate::AuthZone(mut auth_zone) => {
+                    auth_zone.clear_all();
+                    Ok(())
+                }
+                RuntimeSubstate::GlobalRENode(..) => panic!("Should never get here"),
+                RuntimeSubstate::Package(..) => Err(DropFailure::Package),
+                RuntimeSubstate::Vault(..) => Err(DropFailure::Vault),
+                RuntimeSubstate::KeyValueStoreEntry(..) => Err(DropFailure::KeyValueStore),
+                RuntimeSubstate::NonFungible(..) => Err(DropFailure::NonFungibleStore),
+                RuntimeSubstate::ComponentInfo(..) => Err(DropFailure::Component),
+                RuntimeSubstate::ComponentState(..) => Err(DropFailure::Component),
+                RuntimeSubstate::Bucket(..) => Err(DropFailure::Bucket),
+                RuntimeSubstate::ResourceManager(..) => Err(DropFailure::Resource),
+                RuntimeSubstate::System(..) => Err(DropFailure::System),
+                RuntimeSubstate::Proof(proof) => {
+                    proof.drop();
+                    Ok(())
+                }
+                RuntimeSubstate::Worktop(worktop) => worktop.drop(),
+            }?;
+        }
+
+        Ok(())
     }
 
     pub fn borrow_substate(
         &mut self,
         offset: &SubstateOffset,
     ) -> Result<SubstateRef, RuntimeError> {
-        let substate_ref = match (&mut self.root, offset) {
-            (
-                RENode::Component(_info, state),
-                SubstateOffset::Component(ComponentOffset::State),
-            ) => SubstateRef::ComponentState(state),
-            (RENode::Component(info, ..), SubstateOffset::Component(ComponentOffset::Info)) => {
-                SubstateRef::ComponentInfo(info)
+        // TODO: Will clean this up when virtual substates is cleaned up
+        match (&self.node_id, &offset) {
+            (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
+                let entry = self.substates.entry(offset.clone()).or_insert(
+                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                );
+                Ok(entry.to_ref())
             }
-            (
-                RENode::NonFungibleStore(non_fungible_store),
-                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
-            ) => {
-                let entry = non_fungible_store
-                    .loaded_non_fungibles
-                    .entry(id.clone())
-                    .or_insert(NonFungibleSubstate(None));
-                SubstateRef::NonFungible(entry)
+            (RENodeId::NonFungibleStore(..), SubstateOffset::NonFungibleStore(..)) => {
+                let entry = self
+                    .substates
+                    .entry(offset.clone())
+                    .or_insert(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
+                Ok(entry.to_ref())
             }
-            (
-                RENode::KeyValueStore(kv_store),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-            ) => {
-                let entry = kv_store
-                    .loaded_entries
-                    .entry(key.to_vec())
-                    .or_insert(KeyValueStoreEntrySubstate(None));
-                SubstateRef::KeyValueStoreEntry(entry)
-            }
-            (
-                RENode::ResourceManager(resource_manager),
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-            ) => SubstateRef::ResourceManager(resource_manager),
-            (RENode::Bucket(bucket), SubstateOffset::Bucket(BucketOffset::Bucket)) => {
-                SubstateRef::Bucket(bucket)
-            }
-            (RENode::Proof(proof), SubstateOffset::Proof(ProofOffset::Proof)) => {
-                SubstateRef::Proof(proof)
-            }
-            (RENode::Worktop(worktop), SubstateOffset::Worktop(WorktopOffset::Worktop)) => {
-                SubstateRef::Worktop(worktop)
-            }
-            (RENode::AuthZone(auth_zone), SubstateOffset::AuthZone(AuthZoneOffset::AuthZone)) => {
-                SubstateRef::AuthZone(auth_zone)
-            }
-            (RENode::Vault(vault), SubstateOffset::Vault(VaultOffset::Vault)) => {
-                SubstateRef::Vault(vault)
-            }
-            (RENode::Package(package), SubstateOffset::Package(PackageOffset::Package)) => {
-                SubstateRef::Package(package)
-            }
-            (RENode::System(system), SubstateOffset::System(SystemOffset::System)) => {
-                SubstateRef::System(system)
-            }
-            (_, offset) => {
-                return Err(RuntimeError::KernelError(KernelError::InvalidOffset(
+            _ => self
+                .substates
+                .get(offset)
+                .map(|s| s.to_ref())
+                .ok_or(RuntimeError::KernelError(KernelError::InvalidOffset(
                     offset.clone(),
-                )));
-            }
-        };
-        Ok(substate_ref)
+                ))),
+        }
     }
 
     pub fn borrow_substate_mut(
         &mut self,
         offset: &SubstateOffset,
     ) -> Result<RawSubstateRefMut, RuntimeError> {
-        let substate_ref = match (&mut self.root, offset) {
-            (
-                RENode::Component(_info, state),
-                SubstateOffset::Component(ComponentOffset::State),
-            ) => RawSubstateRefMut::ComponentState(state),
-            (RENode::Component(info, ..), SubstateOffset::Component(ComponentOffset::Info)) => {
-                RawSubstateRefMut::ComponentInfo(info)
+        // TODO: Will clean this up when virtual substates is cleaned up
+        match (&self.node_id, &offset) {
+            (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
+                let entry = self.substates.entry(offset.clone()).or_insert(
+                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                );
+                Ok(entry.to_ref_mut())
             }
-            (
-                RENode::NonFungibleStore(non_fungible_store),
-                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
-            ) => {
-                let entry = non_fungible_store
-                    .loaded_non_fungibles
-                    .entry(id.clone())
-                    .or_insert(NonFungibleSubstate(None));
-                RawSubstateRefMut::NonFungible(entry)
+            (RENodeId::NonFungibleStore(..), SubstateOffset::NonFungibleStore(..)) => {
+                let entry = self
+                    .substates
+                    .entry(offset.clone())
+                    .or_insert(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
+                Ok(entry.to_ref_mut())
             }
-            (
-                RENode::KeyValueStore(kv_store),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-            ) => {
-                let entry = kv_store
-                    .loaded_entries
-                    .entry(key.to_vec())
-                    .or_insert(KeyValueStoreEntrySubstate(None));
-                RawSubstateRefMut::KeyValueStoreEntry(entry)
-            }
-            (
-                RENode::ResourceManager(resource_manager),
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-            ) => RawSubstateRefMut::ResourceManager(resource_manager),
-            (RENode::Bucket(bucket), SubstateOffset::Bucket(BucketOffset::Bucket)) => {
-                RawSubstateRefMut::Bucket(bucket)
-            }
-            (RENode::Proof(proof), SubstateOffset::Proof(ProofOffset::Proof)) => {
-                RawSubstateRefMut::Proof(proof)
-            }
-            (RENode::Worktop(worktop), SubstateOffset::Worktop(WorktopOffset::Worktop)) => {
-                RawSubstateRefMut::Worktop(worktop)
-            }
-            (RENode::AuthZone(auth_zone), SubstateOffset::AuthZone(AuthZoneOffset::AuthZone)) => {
-                RawSubstateRefMut::AuthZone(auth_zone)
-            }
-            (RENode::Vault(vault), SubstateOffset::Vault(VaultOffset::Vault)) => {
-                RawSubstateRefMut::Vault(vault)
-            }
-            (RENode::Package(package), SubstateOffset::Package(PackageOffset::Package)) => {
-                RawSubstateRefMut::Package(package)
-            }
-            (RENode::System(system), SubstateOffset::System(SystemOffset::System)) => {
-                RawSubstateRefMut::System(system)
-            }
-            (_, offset) => {
-                return Err(RuntimeError::KernelError(KernelError::InvalidOffset(
+            _ => self
+                .substates
+                .get_mut(offset)
+                .map(|s| s.to_ref_mut())
+                .ok_or(RuntimeError::KernelError(KernelError::InvalidOffset(
                     offset.clone(),
-                )));
-            }
-        };
-        Ok(substate_ref)
+                ))),
+        }
     }
 }
 
 impl Into<BucketSubstate> for HeapRENode {
-    fn into(self) -> BucketSubstate {
-        match self.root {
-            RENode::Bucket(bucket) => bucket,
-            _ => panic!("Expected to be a bucket"),
-        }
+    fn into(mut self) -> BucketSubstate {
+        self.substates
+            .remove(&SubstateOffset::Bucket(BucketOffset::Bucket))
+            .unwrap()
+            .into()
     }
 }
 
 impl Into<ProofSubstate> for HeapRENode {
-    fn into(self) -> ProofSubstate {
-        match self.root {
-            RENode::Proof(proof) => proof,
-            _ => panic!("Expected to be a proof"),
-        }
+    fn into(mut self) -> ProofSubstate {
+        self.substates
+            .remove(&SubstateOffset::Proof(ProofOffset::Proof))
+            .unwrap()
+            .into()
     }
 }
