@@ -81,6 +81,11 @@ pub struct ResourceManagerUpdateMetadataInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerSetResourceAddressInput {
+    pub address: ResourceAddress,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateNonFungibleDataInput {
     pub id: NonFungibleId,
     pub data: Vec<u8>,

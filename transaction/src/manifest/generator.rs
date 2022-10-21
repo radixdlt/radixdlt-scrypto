@@ -335,7 +335,7 @@ pub fn generate_instruction(
 
             Instruction::CallFunction {
                 function_ident: ScryptoFunctionIdent {
-                    package_address,
+                    package: ScryptoPackage::Global(package_address),
                     blueprint_name,
                     function_name,
                 },
@@ -481,7 +481,9 @@ pub fn generate_instruction(
 
             Instruction::CallNativeMethod {
                 method_ident: NativeMethodIdent {
-                    receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
+                        resource_address,
+                    ))),
                     method_name: ResourceManagerMethod::Mint.to_string(),
                 },
                 args: args!(input),
@@ -671,24 +673,10 @@ fn generate_re_node_id(
         ast::RENode::Component(node_id) => Ok(RENodeId::Component(generate_node_id(node_id)?)),
         ast::RENode::System(node_id) => Ok(RENodeId::System(generate_node_id(node_id)?)),
         ast::RENode::Vault(node_id) => Ok(RENodeId::Vault(generate_node_id(node_id)?)),
-        ast::RENode::ResourceManager(value) => {
-            let resource_address = match value {
-                ast::Value::String(s) => bech32_decoder
-                    .validate_and_decode_resource_address(s)
-                    .map_err(|_| GeneratorError::InvalidResourceAddress(s.into()))?,
-                v => return invalid_type!(v, ast::Type::String),
-            };
-            Ok(RENodeId::ResourceManager(resource_address))
+        ast::RENode::ResourceManager(node_id) => {
+            Ok(RENodeId::ResourceManager(generate_node_id(node_id)?))
         }
-        ast::RENode::Package(value) => {
-            let package_address = match value {
-                ast::Value::String(s) => bech32_decoder
-                    .validate_and_decode_package_address(s)
-                    .map_err(|_| GeneratorError::InvalidPackageAddress(s.into()))?,
-                v => return invalid_type!(v, ast::Type::String),
-            };
-            Ok(RENodeId::Package(package_address))
-        }
+        ast::RENode::Package(node_id) => Ok(RENodeId::Package(generate_node_id(node_id)?)),
         ast::RENode::Global(value) => match value {
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_package_address(s)
@@ -1408,11 +1396,14 @@ mod tests {
             r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8)  PreciseDecimal("120");"#,
             Instruction::CallFunction {
                 function_ident: ScryptoFunctionIdent {
-                    package_address: Bech32Decoder::for_simulator()
-                        .validate_and_decode_package_address(
-                            "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
-                        )
-                        .unwrap(),
+                    package: ScryptoPackage::Global(
+                        Bech32Decoder::for_simulator()
+                            .validate_and_decode_package_address(
+                                "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7"
+                                    .into()
+                            )
+                            .unwrap()
+                    ),
                     blueprint_name: "Airdrop".into(),
                     function_name: "new".to_string(),
                 },

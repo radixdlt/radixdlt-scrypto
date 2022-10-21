@@ -54,7 +54,7 @@ impl Heap {
         self.nodes.insert(node_id, node);
     }
 
-    pub fn add_child_nodes(
+    pub fn append_nodes_to_heap_node(
         &mut self,
         node_ids: HashSet<RENodeId>,
         to: RENodeId,

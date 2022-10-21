@@ -8,7 +8,7 @@ use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum PersistedSubstate {
-    GlobalRENode(GlobalAddressSubstate),
+    Global(GlobalAddressSubstate),
     System(SystemSubstate),
     ResourceManager(ResourceManagerSubstate),
     ComponentInfo(ComponentInfoSubstate),
@@ -32,7 +32,7 @@ impl Into<VaultSubstate> for PersistedSubstate {
 impl PersistedSubstate {
     pub fn to_runtime(self) -> RuntimeSubstate {
         match self {
-            PersistedSubstate::GlobalRENode(value) => RuntimeSubstate::GlobalRENode(value),
+            PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
             PersistedSubstate::System(value) => RuntimeSubstate::System(value),
             PersistedSubstate::ResourceManager(value) => RuntimeSubstate::ResourceManager(value),
             PersistedSubstate::ComponentInfo(value) => RuntimeSubstate::ComponentInfo(value),
@@ -55,7 +55,7 @@ pub enum PersistError {
 
 #[derive(Debug)]
 pub enum RuntimeSubstate {
-    GlobalRENode(GlobalAddressSubstate),
+    Global(GlobalAddressSubstate),
     System(SystemSubstate),
     ResourceManager(ResourceManagerSubstate),
     ComponentInfo(ComponentInfoSubstate),
@@ -69,7 +69,7 @@ pub enum RuntimeSubstate {
 impl RuntimeSubstate {
     pub fn clone_to_persisted(&self) -> PersistedSubstate {
         match self {
-            RuntimeSubstate::GlobalRENode(value) => PersistedSubstate::GlobalRENode(value.clone()),
+            RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
             RuntimeSubstate::System(value) => PersistedSubstate::System(value.clone()),
             RuntimeSubstate::ResourceManager(value) => {
                 PersistedSubstate::ResourceManager(value.clone())
@@ -94,7 +94,7 @@ impl RuntimeSubstate {
 
     pub fn to_persisted(self) -> PersistedSubstate {
         match self {
-            RuntimeSubstate::GlobalRENode(value) => PersistedSubstate::GlobalRENode(value),
+            RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
             RuntimeSubstate::System(value) => PersistedSubstate::System(value),
             RuntimeSubstate::ResourceManager(value) => PersistedSubstate::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => PersistedSubstate::ComponentInfo(value),
@@ -142,7 +142,7 @@ impl RuntimeSubstate {
 
     pub fn to_ref_mut(&mut self) -> RawSubstateRefMut {
         match self {
-            RuntimeSubstate::GlobalRENode(value) => RawSubstateRefMut::Global(value),
+            RuntimeSubstate::Global(value) => RawSubstateRefMut::Global(value),
             RuntimeSubstate::System(value) => RawSubstateRefMut::System(value),
             RuntimeSubstate::ResourceManager(value) => RawSubstateRefMut::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => RawSubstateRefMut::ComponentInfo(value),
@@ -158,7 +158,7 @@ impl RuntimeSubstate {
 
     pub fn to_ref(&self) -> SubstateRef {
         match self {
-            RuntimeSubstate::GlobalRENode(value) => SubstateRef::Global(value),
+            RuntimeSubstate::Global(value) => SubstateRef::Global(value),
             RuntimeSubstate::System(value) => SubstateRef::System(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => SubstateRef::ComponentInfo(value),
@@ -170,9 +170,9 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn global_re_node(&self) -> &GlobalAddressSubstate {
-        if let RuntimeSubstate::GlobalRENode(global_re_node) = self {
-            global_re_node
+    pub fn global(&self) -> &GlobalAddressSubstate {
+        if let RuntimeSubstate::Global(global) = self {
+            global
         } else {
             panic!("Not a global RENode");
         }
@@ -348,7 +348,7 @@ impl Into<SystemSubstate> for RuntimeSubstate {
 
 impl Into<GlobalAddressSubstate> for RuntimeSubstate {
     fn into(self) -> GlobalAddressSubstate {
-        if let RuntimeSubstate::GlobalRENode(substate) = self {
+        if let RuntimeSubstate::Global(substate) = self {
             substate
         } else {
             panic!("Not a global address substate");
@@ -514,8 +514,8 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::ResourceManager(substate) => {
                 let mut owned_nodes = HashSet::new();
-                if let Some(non_fungible_store_id) = substate.non_fungible_store_id {
-                    owned_nodes.insert(RENodeId::NonFungibleStore(non_fungible_store_id));
+                if let Some(nf_store_id) = substate.nf_store_id {
+                    owned_nodes.insert(RENodeId::NonFungibleStore(nf_store_id));
                 }
                 (HashSet::new(), owned_nodes)
             }
