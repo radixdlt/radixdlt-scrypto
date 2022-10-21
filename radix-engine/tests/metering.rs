@@ -144,7 +144,6 @@ fn test_basic_transfer() {
     receipt.expect_commit_success();
 
     // Assert
-
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
