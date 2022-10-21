@@ -1,7 +1,7 @@
 use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::ProofError::UnknownMethod;
-use crate::model::{InvokeError, ProofSubstate, ResourceOperationError};
+use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -70,21 +70,19 @@ impl Proof {
     }
 
     pub fn main_consume<'s, Y, R>(
-        node_id: RENodeId,
+        _node_id: RENodeId,
         method: ProofMethod,
         args: ScryptoValue,
-        system_api: &mut Y,
+        _system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ProofError>>
     where
         Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
-        let proof: ProofSubstate = system_api.drop_node(node_id)?.into();
         match method {
             ProofMethod::Drop => {
                 let _: ConsumingProofDropInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
-                proof.drop();
                 Ok(ScryptoValue::from_typed(&()))
             }
             _ => Err(InvokeError::Error(UnknownMethod)),

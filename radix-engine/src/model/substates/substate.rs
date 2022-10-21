@@ -64,6 +64,10 @@ pub enum RuntimeSubstate {
     Vault(VaultRuntimeSubstate),
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
+    AuthZone(AuthZoneStackSubstate),
+    Bucket(BucketSubstate),
+    Proof(ProofSubstate),
+    Worktop(WorktopSubstate),
 }
 
 impl RuntimeSubstate {
@@ -89,6 +93,12 @@ impl RuntimeSubstate {
                 let persisted_vault = value.clone_to_persisted();
                 PersistedSubstate::Vault(persisted_vault)
             }
+            RuntimeSubstate::AuthZone(..)
+            | RuntimeSubstate::Bucket(..)
+            | RuntimeSubstate::Proof(..)
+            | RuntimeSubstate::Worktop(..) => {
+                panic!("Should not get here");
+            }
         }
     }
 
@@ -109,6 +119,12 @@ impl RuntimeSubstate {
                     .to_persisted()
                     .expect("Vault should be liquid at end of successful transaction");
                 PersistedSubstate::Vault(persisted_vault)
+            }
+            RuntimeSubstate::AuthZone(..)
+            | RuntimeSubstate::Bucket(..)
+            | RuntimeSubstate::Proof(..)
+            | RuntimeSubstate::Worktop(..) => {
+                panic!("Should not get here");
             }
         }
     }
@@ -153,6 +169,10 @@ impl RuntimeSubstate {
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 RawSubstateRefMut::KeyValueStoreEntry(value)
             }
+            RuntimeSubstate::AuthZone(value) => RawSubstateRefMut::AuthZone(value),
+            RuntimeSubstate::Bucket(value) => RawSubstateRefMut::Bucket(value),
+            RuntimeSubstate::Proof(value) => RawSubstateRefMut::Proof(value),
+            RuntimeSubstate::Worktop(value) => RawSubstateRefMut::Worktop(value),
         }
     }
 
@@ -167,6 +187,10 @@ impl RuntimeSubstate {
             RuntimeSubstate::Vault(value) => SubstateRef::Vault(value),
             RuntimeSubstate::NonFungible(value) => SubstateRef::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
+            RuntimeSubstate::AuthZone(value) => SubstateRef::AuthZone(value),
+            RuntimeSubstate::Bucket(value) => SubstateRef::Bucket(value),
+            RuntimeSubstate::Proof(value) => SubstateRef::Proof(value),
+            RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
         }
     }
 
@@ -352,6 +376,26 @@ impl Into<GlobalAddressSubstate> for RuntimeSubstate {
             substate
         } else {
             panic!("Not a global address substate");
+        }
+    }
+}
+
+impl Into<BucketSubstate> for RuntimeSubstate {
+    fn into(self) -> BucketSubstate {
+        if let RuntimeSubstate::Bucket(substate) = self {
+            substate
+        } else {
+            panic!("Not a bucket");
+        }
+    }
+}
+
+impl Into<ProofSubstate> for RuntimeSubstate {
+    fn into(self) -> ProofSubstate {
+        if let RuntimeSubstate::Proof(substate) = self {
+            substate
+        } else {
+            panic!("Not a proof");
         }
     }
 }

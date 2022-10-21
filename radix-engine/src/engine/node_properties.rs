@@ -8,6 +8,49 @@ use crate::types::*;
 pub struct VisibilityProperties;
 
 impl VisibilityProperties {
+    pub fn check_drop_node_visibility(
+        mode: ExecutionMode,
+        actor: &REActor,
+        node_id: RENodeId,
+    ) -> bool {
+        if !mode.eq(&ExecutionMode::Application) {
+            return false;
+        }
+
+        // TODO: Cleanup and reduce to least privilege
+        match node_id {
+            RENodeId::Worktop => match actor {
+                REActor::Function(
+                    ResolvedFunction::Native(NativeFunction::TransactionProcessor(..)),
+                    ..,
+                ) => true,
+                _ => false,
+            },
+            RENodeId::AuthZoneStack(..) => match actor {
+                REActor::Function(
+                    ResolvedFunction::Native(NativeFunction::TransactionProcessor(..)),
+                    ..,
+                ) => true,
+                _ => false,
+            },
+            RENodeId::Bucket(..) => match actor {
+                REActor::Method(ResolvedMethod::Native(NativeMethod::Bucket(..)), ..)
+                | REActor::Method(ResolvedMethod::Native(NativeMethod::Worktop(..)), ..)
+                | REActor::Method(ResolvedMethod::Native(NativeMethod::ResourceManager(..)), ..)
+                | REActor::Method(ResolvedMethod::Native(NativeMethod::Vault(..)), ..) => true,
+                _ => false,
+            },
+            RENodeId::Proof(..) => match actor {
+                REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..) => true,
+                REActor::Method(ResolvedMethod::Native(NativeMethod::Proof(..)), ..) => true,
+                REActor::Method(ResolvedMethod::Scrypto { .. }, ..) => true,
+                REActor::Function(ResolvedFunction::Scrypto { .. }) => true,
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+
     pub fn check_create_node_visibility(
         mode: ExecutionMode,
         actor: &REActor,
@@ -34,9 +77,9 @@ impl VisibilityProperties {
                     ..,
                 ),
             ) => match node {
-                RENode::Component(component) => {
-                    blueprint_name.eq(&component.info.blueprint_name)
-                        && package_address.eq(&component.info.package_address)
+                RENode::Component(info, ..) => {
+                    blueprint_name.eq(&info.blueprint_name)
+                        && package_address.eq(&info.package_address)
                 }
                 RENode::KeyValueStore(..) => true,
                 RENode::Global(GlobalAddressSubstate::Component(..)) => true,
@@ -71,6 +114,13 @@ impl VisibilityProperties {
             },
             (ExecutionMode::MoveUpstream, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => flags == LockFlags::read_only(),
+                _ => false,
+            },
+            (ExecutionMode::DropNode, offset) => match offset {
+                SubstateOffset::Bucket(BucketOffset::Bucket) => true,
+                SubstateOffset::Proof(ProofOffset::Proof) => true,
+                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => true,
+                SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
                 _ => false,
             },
             (ExecutionMode::AuthModule, offset) => match offset {

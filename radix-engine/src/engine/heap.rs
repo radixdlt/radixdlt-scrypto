@@ -1,8 +1,11 @@
-use crate::engine::{CallFrameError, HeapRENode, Track};
+use crate::engine::{CallFrameError, Track};
 use crate::fee::FeeReserve;
-use crate::model::{node_to_substates, RawSubstateRefMut, SubstateRef};
+use crate::model::{
+    BucketSubstate, KeyValueStoreEntrySubstate, NonFungibleSubstate, ProofSubstate,
+    RawSubstateRefMut, RuntimeSubstate, SubstateRef,
+};
 use crate::types::{HashMap, HashSet};
-use scrypto::engine::types::{RENodeId, SubstateId, SubstateOffset};
+use scrypto::engine::types::{BucketOffset, ProofOffset, RENodeId, SubstateId, SubstateOffset};
 
 pub struct Heap {
     nodes: HashMap<RENodeId, HeapRENode>,
@@ -24,9 +27,28 @@ impl Heap {
             .nodes
             .get_mut(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
-        node.root
-            .borrow_substate(offset)
-            .map_err(|_| CallFrameError::OffsetDoesNotExist(node_id, offset.clone()))
+
+        // TODO: Will clean this up when virtual substates is cleaned up
+        match (&node_id, offset) {
+            (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
+                let entry = node.substates.entry(offset.clone()).or_insert(
+                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                );
+                Ok(entry.to_ref())
+            }
+            (RENodeId::NonFungibleStore(..), SubstateOffset::NonFungibleStore(..)) => {
+                let entry = node
+                    .substates
+                    .entry(offset.clone())
+                    .or_insert(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
+                Ok(entry.to_ref())
+            }
+            _ => node
+                .substates
+                .get(offset)
+                .map(|s| s.to_ref())
+                .ok_or(CallFrameError::OffsetDoesNotExist(node_id, offset.clone())),
+        }
     }
 
     pub fn get_substate_mut(
@@ -38,9 +60,28 @@ impl Heap {
             .nodes
             .get_mut(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
-        node.root
-            .borrow_substate_mut(offset)
-            .map_err(|_| CallFrameError::OffsetDoesNotExist(node_id, offset.clone()))
+
+        // TODO: Will clean this up when virtual substates is cleaned up
+        match (&node_id, offset) {
+            (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
+                let entry = node.substates.entry(offset.clone()).or_insert(
+                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                );
+                Ok(entry.to_ref_mut())
+            }
+            (RENodeId::NonFungibleStore(..), SubstateOffset::NonFungibleStore(..)) => {
+                let entry = node
+                    .substates
+                    .entry(offset.clone())
+                    .or_insert(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
+                Ok(entry.to_ref_mut())
+            }
+            _ => node
+                .substates
+                .get_mut(offset)
+                .map(|s| s.to_ref_mut())
+                .ok_or(CallFrameError::OffsetDoesNotExist(node_id, offset.clone())),
+        }
     }
 
     pub fn get_children(&self, node_id: RENodeId) -> Result<&HashSet<RENodeId>, CallFrameError> {
@@ -96,8 +137,7 @@ impl Heap {
             .nodes
             .remove(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
-        let substates = node_to_substates(node.root);
-        for (offset, substate) in substates {
+        for (offset, substate) in node.substates {
             track.insert_substate(SubstateId(node_id, offset), substate);
         }
 
@@ -110,5 +150,29 @@ impl Heap {
         self.nodes
             .remove(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))
+    }
+}
+
+#[derive(Debug)]
+pub struct HeapRENode {
+    pub substates: HashMap<SubstateOffset, RuntimeSubstate>,
+    pub child_nodes: HashSet<RENodeId>,
+}
+
+impl Into<BucketSubstate> for HeapRENode {
+    fn into(mut self) -> BucketSubstate {
+        self.substates
+            .remove(&SubstateOffset::Bucket(BucketOffset::Bucket))
+            .unwrap()
+            .into()
+    }
+}
+
+impl Into<ProofSubstate> for HeapRENode {
+    fn into(mut self) -> ProofSubstate {
+        self.substates
+            .remove(&SubstateOffset::Proof(ProofOffset::Proof))
+            .unwrap()
+            .into()
     }
 }

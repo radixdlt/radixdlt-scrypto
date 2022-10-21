@@ -1,4 +1,3 @@
-use radix_engine::engine::DropFailure;
 use radix_engine::engine::KernelError;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
@@ -27,7 +26,7 @@ fn test_worktop_resource_leak() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::DropFailure(DropFailure::Worktop))
+            RuntimeError::KernelError(KernelError::DropNodeFailure(RENodeId::Worktop))
         )
     });
 }

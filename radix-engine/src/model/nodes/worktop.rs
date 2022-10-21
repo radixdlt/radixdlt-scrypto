@@ -54,6 +54,7 @@ pub enum WorktopError {
     CouldNotCreateBucket,
     CouldNotTakeBucket,
     AssertionFailed,
+    CouldNotDrop,
 }
 
 pub struct Worktop;

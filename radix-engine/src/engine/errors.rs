@@ -74,12 +74,11 @@ pub enum KernelError {
     // RENode
     StoredNodeRemoved(RENodeId),
     RENodeGlobalizeTypeNotAllowed(RENodeId),
-
     TrackError(TrackError),
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
-    DropFailure(DropFailure),
     BlobNotFound(Hash),
+    DropNodeFailure(RENodeId),
 
     // Substate Constraints
     InvalidOffset(SubstateOffset),
@@ -87,6 +86,11 @@ pub enum KernelError {
     InvalidOverwrite,
 
     // Actor Constraints
+    InvalidDropNodeVisibility {
+        mode: ExecutionMode,
+        actor: REActor,
+        node_id: RENodeId,
+    },
     InvalidCreateNodeVisibility {
         mode: ExecutionMode,
         actor: REActor,
@@ -188,20 +192,6 @@ pub enum ApplicationError {
     WorktopError(WorktopError),
 
     AuthZoneError(AuthZoneError),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum DropFailure {
-    DroppingNodeWithChildren,
-    System,
-    Resource,
-    Component,
-    Bucket,
-    Worktop,
-    Vault,
-    Package,
-    KeyValueStore,
-    NonFungibleStore,
 }
 
 impl fmt::Display for RuntimeError {

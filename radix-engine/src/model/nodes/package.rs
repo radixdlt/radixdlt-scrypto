@@ -6,11 +6,7 @@ use crate::model::{GlobalAddressSubstate, PackageSubstate};
 use crate::types::*;
 use crate::wasm::*;
 
-/// A collection of blueprints, compiled and published as a single unit.
-#[derive(Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct Package {
-    pub info: PackageSubstate,
-}
+pub struct Package;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum PackageError {
@@ -22,14 +18,15 @@ pub enum PackageError {
 }
 
 impl Package {
-    pub fn new(code: Vec<u8>, abi: HashMap<String, BlueprintAbi>) -> Result<Self, PrepareError> {
+    fn new(
+        code: Vec<u8>,
+        abi: HashMap<String, BlueprintAbi>,
+    ) -> Result<PackageSubstate, PrepareError> {
         WasmValidator::default().validate(&code, &abi)?;
 
-        Ok(Self {
-            info: PackageSubstate {
-                code: code,
-                blueprint_abis: abi,
-            },
+        Ok(PackageSubstate {
+            code: code,
+            blueprint_abis: abi,
         })
     }
 
@@ -52,6 +49,7 @@ impl Package {
                     .map_err(|e| InvokeError::Error(PackageError::InvalidAbi(e)))?;
                 let package = Package::new(code, abi)
                     .map_err(|e| InvokeError::Error(PackageError::InvalidWasm(e)))?;
+
                 let node_id = system_api.create_node(RENode::Package(package))?;
                 let package_id: PackageId = node_id.into();
 
@@ -62,14 +60,5 @@ impl Package {
                 Ok(ScryptoValue::from_typed(&package_address))
             }
         }
-    }
-}
-
-impl Debug for Package {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Package")
-            .field("code_len", &self.info.code.len())
-            .field("blueprint_abis", &self.info.blueprint_abis)
-            .finish()
     }
 }

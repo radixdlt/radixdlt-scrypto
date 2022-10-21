@@ -333,7 +333,7 @@ impl AuthZone {
 
     pub fn clear(&mut self) {
         loop {
-            if let Some(proof) = self.proofs.pop() {
+            if let Some(mut proof) = self.proofs.pop() {
                 proof.drop();
             } else {
                 break;

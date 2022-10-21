@@ -248,39 +248,12 @@ impl CallFrame {
         &mut self,
         track: &mut Track<'s, R>,
     ) -> Result<(), RuntimeError> {
-        for (_, lock) in self.locks.drain() {
-            let SubstateLock {
-                substate_pointer: (node_pointer, node_id, offset),
-                flags,
-                ..
-            } = lock;
-            if !(matches!(offset, SubstateOffset::KeyValueStore(..))
-                || matches!(
-                    offset,
-                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
-                ))
-            {
-                Self::release_lock(
-                    track,
-                    node_pointer,
-                    node_id,
-                    offset.clone(),
-                    flags.contains(LockFlags::FORCE_WRITE),
-                )?;
-            }
+        let lock_ids: Vec<LockHandle> = self.locks.keys().cloned().collect();
+        for lock in lock_ids {
+            self.drop_lock(track, lock)?;
         }
 
         Ok(())
-    }
-
-    pub fn drop_frame(&mut self, heap: &mut Heap) -> Result<(), RuntimeError> {
-        let values = self
-            .owned_root_nodes
-            .drain()
-            .map(|id| heap.remove_node(id).unwrap())
-            .collect();
-        RENode::drop_nodes(values)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))
     }
 
     fn remove_ref(&mut self, heap: &Heap, node_id: RENodeId) -> Result<(), CallFrameError> {
@@ -311,12 +284,15 @@ impl CallFrame {
         &mut self,
         heap: &mut Heap,
         node_id: RENodeId,
-        mut re_node: RENode,
+        re_node: RENode,
     ) -> Result<(), RuntimeError> {
         let mut child_nodes = HashSet::new();
-        for offset in re_node.get_substates() {
-            let substate = re_node.borrow_substate(&offset)?;
-            let (_, owned) = substate.references_and_owned_nodes();
+
+        let substates = re_node.to_substates();
+
+        for (offset, substate) in &substates {
+            let substate_ref = substate.to_ref();
+            let (_, owned) = substate_ref.references_and_owned_nodes();
             for child_id in owned {
                 SubstateProperties::verify_can_own(&offset, child_id)?;
                 child_nodes.insert(child_id);
@@ -326,7 +302,7 @@ impl CallFrame {
 
         // Insert node into heap
         let heap_root_node = HeapRENode {
-            root: re_node,
+            substates,
             child_nodes,
         };
         heap.create_node(node_id, heap_root_node);
@@ -376,13 +352,24 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn drop_node(
+    pub fn owned_nodes(&self) -> Vec<RENodeId> {
+        self.owned_root_nodes.iter().cloned().collect()
+    }
+
+    pub fn remove_node(
         &mut self,
         heap: &mut Heap,
         node_id: RENodeId,
-    ) -> Result<HeapRENode, CallFrameError> {
+    ) -> Result<HeapRENode, RuntimeError> {
         self.take_node_internal(heap, node_id)?;
-        heap.remove_node(node_id)
+        let node = heap.remove_node(node_id)?;
+        // TODO: Remove this
+        if !node.child_nodes.is_empty() {
+            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                node_id,
+            )));
+        }
+        Ok(node)
     }
 
     fn borrow_substate<'f, 'p, 's, R: FeeReserve>(

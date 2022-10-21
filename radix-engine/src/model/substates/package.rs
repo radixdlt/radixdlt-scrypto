@@ -1,12 +1,18 @@
-use sbor::rust::fmt::Debug;
+use sbor::rust::fmt::{Debug, Formatter};
 
 use crate::types::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct PackageSubstate {
     pub code: Vec<u8>,
     pub blueprint_abis: HashMap<String, BlueprintAbi>,
+}
+
+impl Debug for PackageSubstate {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Package").finish()
+    }
 }
 
 impl PackageSubstate {

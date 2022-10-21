@@ -60,7 +60,7 @@ impl ResourceManagerSubstate {
         }
     }
 
-    fn check_amount(&self, amount: Decimal) -> Result<(), InvokeError<ResourceManagerError>> {
+    pub fn check_amount(&self, amount: Decimal) -> Result<(), InvokeError<ResourceManagerError>> {
         let divisibility = self.resource_type.divisibility();
 
         if amount.is_negative()

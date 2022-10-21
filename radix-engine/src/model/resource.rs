@@ -438,7 +438,7 @@ impl LockableResource {
         map.keys().cloned().max().unwrap_or(Decimal::zero())
     }
 
-    pub fn unlock(&mut self, resource: LockedAmountOrIds) {
+    pub fn unlock(&mut self, resource: &LockedAmountOrIds) {
         match resource {
             LockedAmountOrIds::Amount(amount) => match self {
                 Self::Fungible {
@@ -451,7 +451,7 @@ impl LockableResource {
                         .remove(&amount)
                         .expect("Attempted to unlock an amount that is not locked in container");
                     if count > 1 {
-                        locked_amounts.insert(amount, count - 1);
+                        locked_amounts.insert(*amount, count - 1);
                     } else {
                         let new_max_locked = Self::largest_key(locked_amounts);
                         *liquid_amount += max_locked - new_max_locked;
@@ -470,9 +470,9 @@ impl LockableResource {
                     for id in ids {
                         if let Some(cnt) = locked_ids.remove(&id) {
                             if cnt > 1 {
-                                locked_ids.insert(id, cnt - 1);
+                                locked_ids.insert(id.clone(), cnt - 1);
                             } else {
-                                liquid_ids.insert(id);
+                                liquid_ids.insert(id.clone());
                             }
                         } else {
                             panic!("Attempted to unlock a non-fungible that is not locked in container");

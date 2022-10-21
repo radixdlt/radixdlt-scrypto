@@ -56,9 +56,8 @@ impl System {
                 let _: SystemCreateInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
 
-                let node_id = system_api.create_node(RENode::System(System {
-                    info: SystemSubstate { epoch: 0 },
-                }))?;
+                let node_id =
+                    system_api.create_node(RENode::System(SystemSubstate { epoch: 0 }))?;
 
                 let global_node_id = system_api.create_node(RENode::Global(
                     GlobalAddressSubstate::SystemComponent(scrypto::component::Component(

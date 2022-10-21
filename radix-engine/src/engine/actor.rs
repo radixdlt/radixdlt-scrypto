@@ -128,4 +128,5 @@ pub enum ExecutionMode {
     ScryptoInterpreter,
     AuthModule,
     Application,
+    DropNode,
 }

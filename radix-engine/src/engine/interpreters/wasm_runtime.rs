@@ -2,7 +2,7 @@ use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::{
-    Component, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, InvokeError,
+    ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, InvokeError,
     KeyValueStore, RuntimeSubstate,
 };
 use crate::types::*;
@@ -100,10 +100,10 @@ where
             ),
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
                 // Create component
-                RENode::Component(Component {
-                    info: ComponentInfoSubstate::new(package_address, blueprint_name, Vec::new()),
-                    state: Some(ComponentStateSubstate::new(state)),
-                })
+                RENode::Component(
+                    ComponentInfoSubstate::new(package_address, blueprint_name, Vec::new()),
+                    ComponentStateSubstate::new(state),
+                )
             }
             ScryptoRENode::KeyValueStore => RENode::KeyValueStore(KeyValueStore::new()),
         };
