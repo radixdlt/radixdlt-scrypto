@@ -144,7 +144,6 @@ fn test_basic_transfer() {
     receipt.expect_commit_success();
 
     // Assert
-
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
@@ -163,7 +162,7 @@ fn test_basic_transfer() {
         + 22000 /* read_substate */
         + 1000 /* run_native_function */
         + 2200 /* run_native_method */
-        + 333592 /* run_wasm */
+        + 333558 /* run_wasm */
         + 428 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 16000, /* write_substate */
@@ -197,7 +196,7 @@ fn test_publish_large_package() {
     receipt.expect_commit_success();
 
     // Assert
-    assert_eq!(4294875, receipt.execution.fee_summary.cost_unit_consumed);
+    assert_eq!(4294369, receipt.execution.fee_summary.cost_unit_consumed);
 }
 
 #[test]

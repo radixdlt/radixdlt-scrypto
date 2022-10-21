@@ -16,8 +16,7 @@ pub enum RadixEngineInput {
     InvokeNativeFunction(NativeFunction, Vec<u8>),
     InvokeNativeMethod(NativeMethod, Receiver, Vec<u8>),
 
-    RENodeCreate(ScryptoRENode),
-    RENodeGlobalize(RENodeId),
+    CreateNode(ScryptoRENode),
     GetVisibleNodeIds(),
 
     LockSubstate(RENodeId, SubstateOffset, bool),

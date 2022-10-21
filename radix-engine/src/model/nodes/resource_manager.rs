@@ -1,7 +1,7 @@
 use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    BucketSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
+    BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
     ResourceMethodRule::{Protected, Public},
     VaultRuntimeSubstate,
 };
@@ -209,8 +209,10 @@ impl ResourceManager {
                     }
                     system_api.create_node(RENode::ResourceManager(resource_manager))?
                 };
-                let global_address = system_api.node_globalize(node_id)?;
-                let resource_address: ResourceAddress = global_address.into();
+                let global_node_id = system_api.create_node(RENode::Global(
+                    GlobalAddressSubstate::Resource(node_id.into()),
+                ))?;
+                let resource_address: ResourceAddress = global_node_id.into();
 
                 // FIXME this is temporary workaround for the resource address resolution problem
                 system_api

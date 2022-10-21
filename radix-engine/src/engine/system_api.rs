@@ -48,7 +48,11 @@ where
         contingent: bool,
     ) -> Result<Resource, RuntimeError>;
 
+    /// Retrieve the running actor for the current frame
     fn get_actor(&self) -> &REActor;
+
+    /// Retrieves all nodes referenceable by the current frame
+    fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
 
     fn invoke_scrypto(
         &mut self,
@@ -58,17 +62,11 @@ where
     fn invoke_native(&mut self, invocation: NativeInvocation)
         -> Result<ScryptoValue, RuntimeError>;
 
-    /// Retrieves all nodes referenceable by the current frame
-    fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
-
     /// Removes an RENode and all of it's children from the Heap
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;
 
-    /// Creates a new RENode and places it in the Heap
+    /// Creates a new RENode
     fn create_node(&mut self, re_node: RENode) -> Result<RENodeId, RuntimeError>;
-
-    /// Moves an RENode from Heap to Store
-    fn node_globalize(&mut self, node_id: RENodeId) -> Result<GlobalAddress, RuntimeError>;
 
     /// Locks a visible substate
     fn lock_substate(

@@ -51,7 +51,6 @@ pub struct Track<'s, R: FeeReserve> {
     application_logs: Vec<(Level, String)>,
     state_track: StateTrack<'s>,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
-    pub new_global_addresses: Vec<GlobalAddress>, // TODO: Remove
     pub fee_reserve: R,
     pub fee_table: FeeTable,
     pub vault_ops: Vec<(REActor, VaultId, VaultOp)>,
@@ -88,7 +87,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             application_logs: Vec::new(),
             state_track,
             loaded_substates: IndexMap::new(),
-            new_global_addresses: Vec::new(),
             fee_reserve,
             fee_table,
             vault_ops: Vec::new(),
@@ -437,9 +435,27 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn finalize(mut self, invoke_result: Result<Vec<Vec<u8>>, RuntimeError>) -> TrackReceipt {
         let is_success = invoke_result.is_ok();
 
+        let mut new_global_addresses = Vec::new();
+
         // Commit/rollback application state changes
         if is_success {
             for (id, loaded) in self.loaded_substates {
+                match (&id, &loaded) {
+                    (
+                        SubstateId(
+                            RENodeId::Global(global_address),
+                            SubstateOffset::Global(GlobalOffset::Global),
+                        ),
+                        LoadedSubstate {
+                            metastate: SubstateMetaState::New,
+                            ..
+                        },
+                    ) => {
+                        new_global_addresses.push(*global_address);
+                    }
+                    _ => {}
+                }
+
                 self.state_track
                     .put_substate(id, loaded.substate.to_persisted());
             }
@@ -526,7 +542,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     Err(error) => TransactionOutcome::Failure(error),
                 },
                 state_updates: self.state_track.generate_diff(),
-                entity_changes: EntityChanges::new(self.new_global_addresses),
+                entity_changes: EntityChanges::new(new_global_addresses),
                 resource_changes: execution_trace_receipt.resource_changes,
             })
         };

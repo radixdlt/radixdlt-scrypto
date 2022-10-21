@@ -1083,7 +1083,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        // TODO: Authorization
+        // TODO: Visibility check
 
         let node = self.current_frame.drop_node(&mut self.heap, node_id)?;
 
@@ -1111,12 +1111,58 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        // TODO: Authorization
+        // Change to kernel mode
+        let current_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
 
-        let node_id = Self::new_node_id(&mut self.id_allocator, self.transaction_hash, &re_node)
-            .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-        self.current_frame
-            .create_node(&mut self.heap, node_id, re_node)?;
+        if !VisibilityProperties::check_create_node_visibility(
+            current_mode,
+            &self.current_frame.actor,
+            &re_node,
+        ) {
+            return Err(RuntimeError::KernelError(
+                KernelError::InvalidCreateNodeVisibility {
+                    mode: current_mode,
+                    actor: self.current_frame.actor.clone(),
+                },
+            ));
+        }
+
+        // TODO: For Scrypto components, check state against blueprint schema
+
+        let node_id = match &re_node {
+            RENode::Global(global_re_node) => {
+                let derefed = global_re_node.node_deref();
+                let (global_address, global_substate) = self.create_global_node(derefed)?;
+                let global_node_id = RENodeId::Global(global_address);
+                self.track.insert_substate(
+                    SubstateId(global_node_id, SubstateOffset::Global(GlobalOffset::Global)),
+                    RuntimeSubstate::Global(global_substate),
+                );
+                self.current_frame
+                    .node_refs
+                    .insert(global_node_id, RENodeLocation::Store);
+                self.current_frame.move_owned_node_to_store(
+                    &mut self.heap,
+                    &mut self.track,
+                    derefed,
+                )?;
+                global_node_id
+            }
+            _ => {
+                let node_id =
+                    Self::new_node_id(&mut self.id_allocator, self.transaction_hash, &re_node)
+                        .map_err(|e| {
+                            RuntimeError::KernelError(KernelError::IdAllocationError(e))
+                        })?;
+                self.current_frame
+                    .create_node(&mut self.heap, node_id, re_node)?;
+                node_id
+            }
+        };
+
+        // Restore current mode
+        self.execution_mode = current_mode;
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -1129,54 +1175,6 @@ where
         }
 
         Ok(node_id)
-    }
-
-    fn node_globalize(&mut self, node_id: RENodeId) -> Result<GlobalAddress, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::GlobalizeNode { node_id: &node_id },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // Change to kernel mode
-        let current_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
-        // TODO: Authorization
-
-        let (global_address, global_substate) = self.create_global_node(node_id)?;
-        self.track.new_global_addresses.push(global_address);
-        self.track.insert_substate(
-            SubstateId(
-                RENodeId::Global(global_address),
-                SubstateOffset::Global(GlobalOffset::Global),
-            ),
-            RuntimeSubstate::Global(global_substate),
-        );
-        self.current_frame
-            .node_refs
-            .insert(RENodeId::Global(global_address), RENodeLocation::Store);
-        self.current_frame
-            .move_owned_node_to_store(&mut self.heap, &mut self.track, node_id)?;
-
-        // Restore current mode
-        self.execution_mode = current_mode;
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::GlobalizeNode,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(global_address)
     }
 
     fn lock_substate(
@@ -1212,7 +1210,7 @@ where
 
         // Authorization
         let actor = &self.current_frame.actor;
-        if !SubstateProperties::check_substate_access(
+        if !VisibilityProperties::check_substate_visibility(
             current_mode,
             actor,
             node_id,
@@ -1220,7 +1218,7 @@ where
             flags,
         ) {
             return Err(RuntimeError::KernelError(
-                KernelError::InvalidSubstateLock {
+                KernelError::InvalidSubstateVisibility {
                     mode: current_mode,
                     actor: actor.clone(),
                     node_id,

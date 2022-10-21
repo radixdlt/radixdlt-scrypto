@@ -1,43 +1,52 @@
 use crate::engine::{
-    ExecutionMode, KernelError, LockFlags, REActor, ResolvedFunction, ResolvedMethod,
+    ExecutionMode, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
     ResolvedReceiver, RuntimeError,
 };
+use crate::model::GlobalAddressSubstate;
 use crate::types::*;
 
-pub struct NodeProperties;
+pub struct VisibilityProperties;
 
-pub struct SubstateProperties;
-
-impl SubstateProperties {
-    pub fn verify_can_own(offset: &SubstateOffset, node_id: RENodeId) -> Result<(), RuntimeError> {
-        match offset {
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))
-            | SubstateOffset::Component(ComponentOffset::State) => match node_id {
-                RENodeId::KeyValueStore(..) | RENodeId::Component { .. } | RENodeId::Vault(..) => {
-                    Ok(())
+impl VisibilityProperties {
+    pub fn check_create_node_visibility(
+        mode: ExecutionMode,
+        actor: &REActor,
+        node: &RENode,
+    ) -> bool {
+        // TODO: Cleanup and reduce to least privilege
+        match (mode, actor) {
+            (
+                ExecutionMode::Application,
+                REActor::Method(
+                    ResolvedMethod::Scrypto {
+                        package_address,
+                        blueprint_name,
+                        ..
+                    },
+                    ..,
+                )
+                | REActor::Function(
+                    ResolvedFunction::Scrypto {
+                        package_address,
+                        blueprint_name,
+                        ..
+                    },
+                    ..,
+                ),
+            ) => match node {
+                RENode::Component(component) => {
+                    blueprint_name.eq(&component.info.blueprint_name)
+                        && package_address.eq(&component.info.package_address)
                 }
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
+                RENode::KeyValueStore(..) => true,
+                RENode::Global(GlobalAddressSubstate::Component(..)) => true,
+                _ => false,
             },
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
-                match node_id {
-                    RENodeId::NonFungibleStore(..) => Ok(()),
-                    _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                        offset.clone(),
-                        node_id,
-                    ))),
-                }
-            }
-            _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                offset.clone(),
-                node_id,
-            ))),
+            _ => true,
         }
     }
 
-    pub fn check_substate_access(
+    pub fn check_substate_visibility(
         mode: ExecutionMode,
         actor: &REActor,
         node_id: RENodeId,
@@ -166,6 +175,38 @@ impl SubstateProperties {
                     }
                 }
             }
+        }
+    }
+}
+
+pub struct SubstateProperties;
+
+impl SubstateProperties {
+    pub fn verify_can_own(offset: &SubstateOffset, node_id: RENodeId) -> Result<(), RuntimeError> {
+        match offset {
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))
+            | SubstateOffset::Component(ComponentOffset::State) => match node_id {
+                RENodeId::KeyValueStore(..) | RENodeId::Component { .. } | RENodeId::Vault(..) => {
+                    Ok(())
+                }
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
+            },
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
+                match node_id {
+                    RENodeId::NonFungibleStore(..) => Ok(()),
+                    _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                        offset.clone(),
+                        node_id,
+                    ))),
+                }
+            }
+            _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                offset.clone(),
+                node_id,
+            ))),
         }
     }
 }

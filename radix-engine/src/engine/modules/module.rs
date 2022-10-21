@@ -23,9 +23,6 @@ pub enum SysCallInput<'a> {
     CreateNode {
         node: &'a RENode,
     },
-    GlobalizeNode {
-        node_id: &'a RENodeId,
-    },
     LockSubstate {
         node_id: &'a RENodeId,
         offset: &'a SubstateOffset,
@@ -60,12 +57,10 @@ pub enum SysCallOutput<'a> {
     BorrowNode { node_pointer: &'a RENodeLocation },
     DropNode { node: &'a HeapRENode },
     CreateNode { node_id: &'a RENodeId },
-    GlobalizeNode,
     LockSubstate { lock_handle: LockHandle },
     GetRef { lock_handle: LockHandle },
     GetRefMut,
     DropLock,
-    TakeSubstate { value: &'a ScryptoValue },
     ReadTransactionHash { hash: &'a Hash },
     ReadBlob { blob: &'a [u8] },
     GenerateUuid { uuid: u128 },

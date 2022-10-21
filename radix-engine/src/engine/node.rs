@@ -4,7 +4,7 @@ use crate::types::*;
 
 #[derive(Debug)]
 pub enum RENode {
-    Global(GlobalRENode), // TODO: Remove
+    Global(GlobalAddressSubstate), // TODO: Remove
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     AuthZone(AuthZoneStackSubstate),
