@@ -39,15 +39,25 @@ pub fn resolve_native_method(receiver: &Receiver, method_name: &str) -> Option<N
             .ok()
             .map(NativeMethod::Worktop),
 
-        RENodeId::Component(_) | RENodeId::Global(GlobalAddress::Component(_)) => {
+        RENodeId::Component(_) => {
             ComponentMethod::from_str(method_name)
                 .ok()
                 .map(NativeMethod::Component)
         }
-
+        RENodeId::Global(GlobalAddress::Component(component_address))
+        if matches!(component_address, ComponentAddress::Normal(..) | ComponentAddress::Account(..)) => {
+            ComponentMethod::from_str(method_name)
+                .ok()
+                .map(NativeMethod::Component)
+        }
         RENodeId::System(_) => SystemMethod::from_str(method_name)
             .ok()
             .map(NativeMethod::System),
+        RENodeId::Global(GlobalAddress::Component(component_address)) if matches!(component_address, ComponentAddress::System(..)) => {
+            SystemMethod::from_str(method_name)
+                .ok()
+                .map(NativeMethod::System)
+        }
 
         RENodeId::Vault(_) => VaultMethod::from_str(method_name)
             .ok()
