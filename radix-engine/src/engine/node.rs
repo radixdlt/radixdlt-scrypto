@@ -4,7 +4,7 @@ use crate::types::*;
 
 #[derive(Debug)]
 pub enum RENode {
-    Global(GlobalAddressSubstate), // TODO: Remove
+    Global(GlobalAddressSubstate),
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     AuthZone(AuthZoneStackSubstate),
@@ -104,7 +104,6 @@ impl RENode {
 
 #[derive(Debug)]
 pub struct HeapRENode {
-    pub node_id: RENodeId, // TODO: Remove this
     pub substates: HashMap<SubstateOffset, RuntimeSubstate>,
     pub child_nodes: HashSet<RENodeId>,
 }
@@ -141,64 +140,6 @@ impl HeapRENode {
         }
 
         Ok(())
-    }
-
-    pub fn borrow_substate(
-        &mut self,
-        offset: &SubstateOffset,
-    ) -> Result<SubstateRef, RuntimeError> {
-        // TODO: Will clean this up when virtual substates is cleaned up
-        match (&self.node_id, &offset) {
-            (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
-                let entry = self.substates.entry(offset.clone()).or_insert(
-                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
-                );
-                Ok(entry.to_ref())
-            }
-            (RENodeId::NonFungibleStore(..), SubstateOffset::NonFungibleStore(..)) => {
-                let entry = self
-                    .substates
-                    .entry(offset.clone())
-                    .or_insert(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
-                Ok(entry.to_ref())
-            }
-            _ => self
-                .substates
-                .get(offset)
-                .map(|s| s.to_ref())
-                .ok_or(RuntimeError::KernelError(KernelError::InvalidOffset(
-                    offset.clone(),
-                ))),
-        }
-    }
-
-    pub fn borrow_substate_mut(
-        &mut self,
-        offset: &SubstateOffset,
-    ) -> Result<RawSubstateRefMut, RuntimeError> {
-        // TODO: Will clean this up when virtual substates is cleaned up
-        match (&self.node_id, &offset) {
-            (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
-                let entry = self.substates.entry(offset.clone()).or_insert(
-                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
-                );
-                Ok(entry.to_ref_mut())
-            }
-            (RENodeId::NonFungibleStore(..), SubstateOffset::NonFungibleStore(..)) => {
-                let entry = self
-                    .substates
-                    .entry(offset.clone())
-                    .or_insert(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
-                Ok(entry.to_ref_mut())
-            }
-            _ => self
-                .substates
-                .get_mut(offset)
-                .map(|s| s.to_ref_mut())
-                .ok_or(RuntimeError::KernelError(KernelError::InvalidOffset(
-                    offset.clone(),
-                ))),
-        }
     }
 }
 

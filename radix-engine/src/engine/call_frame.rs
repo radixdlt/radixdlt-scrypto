@@ -349,7 +349,6 @@ impl CallFrame {
 
         // Insert node into heap
         let heap_root_node = HeapRENode {
-            node_id,
             substates,
             child_nodes,
         };

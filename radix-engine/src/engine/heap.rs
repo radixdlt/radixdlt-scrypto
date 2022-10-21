@@ -1,6 +1,6 @@
 use crate::engine::{CallFrameError, HeapRENode, Track};
 use crate::fee::FeeReserve;
-use crate::model::{RawSubstateRefMut, SubstateRef};
+use crate::model::{KeyValueStoreEntrySubstate, NonFungibleSubstate, RawSubstateRefMut, RuntimeSubstate, SubstateRef};
 use crate::types::{HashMap, HashSet};
 use scrypto::engine::types::{RENodeId, SubstateId, SubstateOffset};
 
@@ -24,8 +24,28 @@ impl Heap {
             .nodes
             .get_mut(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
-        node.borrow_substate(offset)
-            .map_err(|_| CallFrameError::OffsetDoesNotExist(node_id, offset.clone()))
+
+        // TODO: Will clean this up when virtual substates is cleaned up
+        match (&node_id, offset) {
+            (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
+                let entry = node.substates.entry(offset.clone()).or_insert(
+                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                );
+                Ok(entry.to_ref())
+            }
+            (RENodeId::NonFungibleStore(..), SubstateOffset::NonFungibleStore(..)) => {
+                let entry = node
+                    .substates
+                    .entry(offset.clone())
+                    .or_insert(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
+                Ok(entry.to_ref())
+            }
+            _ => node
+                .substates
+                .get(offset)
+                .map(|s| s.to_ref())
+                .ok_or(CallFrameError::OffsetDoesNotExist(node_id, offset.clone())),
+        }
     }
 
     pub fn get_substate_mut(
@@ -37,8 +57,28 @@ impl Heap {
             .nodes
             .get_mut(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
-        node.borrow_substate_mut(offset)
-            .map_err(|_| CallFrameError::OffsetDoesNotExist(node_id, offset.clone()))
+
+        // TODO: Will clean this up when virtual substates is cleaned up
+        match (&node_id, offset) {
+            (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
+                let entry = node.substates.entry(offset.clone()).or_insert(
+                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                );
+                Ok(entry.to_ref_mut())
+            }
+            (RENodeId::NonFungibleStore(..), SubstateOffset::NonFungibleStore(..)) => {
+                let entry = node
+                    .substates
+                    .entry(offset.clone())
+                    .or_insert(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
+                Ok(entry.to_ref_mut())
+            }
+            _ => node
+                .substates
+                .get_mut(offset)
+                .map(|s| s.to_ref_mut())
+                .ok_or(CallFrameError::OffsetDoesNotExist(node_id, offset.clone())),
+        }
     }
 
     pub fn get_children(&self, node_id: RENodeId) -> Result<&HashSet<RENodeId>, CallFrameError> {
