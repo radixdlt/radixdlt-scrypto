@@ -2,7 +2,7 @@ use crate::constants::GENESIS_CREATION_CREDIT;
 use crate::engine::ScryptoInterpreter;
 use crate::fee::SystemLoanFeeReserve;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::transaction::{ExecutionConfig, TransactionExecutor};
+use crate::transaction::{ExecutionConfig, TransactionExecutor, TransactionReceipt};
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams};
@@ -226,7 +226,9 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
     }
 }
 
-pub fn bootstrap<S>(substate_store: &mut S)
+pub fn bootstrap<S>(
+    substate_store: &mut S
+) -> Option<TransactionReceipt>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
 {
@@ -249,7 +251,7 @@ where
 
         let mut executor = TransactionExecutor::new(substate_store, &mut scrypto_interpreter);
         let genesis_transaction = create_genesis();
-        let executable: Executable = genesis_transaction.into();
+        let executable: Executable = genesis_transaction.clone().into();
         let mut fee_reserve = SystemLoanFeeReserve::default();
         fee_reserve.credit(GENESIS_CREATION_CREDIT);
         let transaction_receipt = executor.execute_with_fee_reserve(
@@ -257,9 +259,13 @@ where
             &ExecutionConfig::standard(),
             fee_reserve,
         );
-        let commit_result = transaction_receipt.result.expect_commit();
+        let commit_result = transaction_receipt.clone().result.expect_commit();
         commit_result.outcome.expect_success();
         commit_result.state_updates.commit(substate_store);
+
+        Some(transaction_receipt)
+    } else {
+        None
     }
 }
 
