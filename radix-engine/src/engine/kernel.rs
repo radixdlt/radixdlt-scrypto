@@ -1106,7 +1106,9 @@ where
             ));
         }
 
-        let node = self.current_frame.drop_node(&mut self.heap, node_id)?;
+        let mut node = self.current_frame.drop_node(&mut self.heap, node_id)?;
+        node.try_drop()
+            .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))?;
 
         // Restore current mode
         self.execution_mode = current_mode;

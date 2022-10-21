@@ -362,9 +362,7 @@ impl CallFrame {
         node_id: RENodeId,
     ) -> Result<HeapRENode, RuntimeError> {
         self.take_node_internal(heap, node_id)?;
-        let mut node = heap.remove_node(node_id)?;
-        node.try_drop()
-            .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))?;
+        let node = heap.remove_node(node_id)?;
         Ok(node)
     }
 
