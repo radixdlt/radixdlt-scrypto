@@ -1,4 +1,4 @@
-use crate::engine::{AuthModule, HeapRENode, LockFlags, SystemApi};
+use crate::engine::{AuthModule, LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     HardAuthRule, HardProofRule, HardResourceOrNonFungible, InvokeError, MethodAuthorization,
@@ -56,7 +56,7 @@ impl System {
                 let _: SystemCreateInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
 
-                let node_id = system_api.node_create(HeapRENode::System(System {
+                let node_id = system_api.create_node(RENode::System(System {
                     info: SystemSubstate { epoch: 0 },
                 }))?;
 

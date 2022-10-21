@@ -62,10 +62,10 @@ where
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
 
     /// Removes an RENode and all of it's children from the Heap
-    fn node_drop(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError>;
+    fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;
 
     /// Creates a new RENode and places it in the Heap
-    fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError>;
+    fn create_node(&mut self, re_node: RENode) -> Result<RENodeId, RuntimeError>;
 
     /// Moves an RENode from Heap to Store
     fn node_globalize(&mut self, node_id: RENodeId) -> Result<GlobalAddress, RuntimeError>;

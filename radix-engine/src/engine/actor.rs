@@ -121,6 +121,9 @@ impl fmt::Debug for ResolvedMethod {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum ExecutionMode {
     Kernel,
+    Globalize,
+    MoveDownstream,
+    MoveUpstream,
     Deref,
     ScryptoInterpreter,
     AuthModule,

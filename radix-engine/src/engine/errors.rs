@@ -102,6 +102,7 @@ pub enum KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum CallFrameError {
+    OffsetDoesNotExist(RENodeId, SubstateOffset),
     RENodeNotVisible(RENodeId),
     RENodeNotOwned(RENodeId),
     MovingLockedRENode(RENodeId),
@@ -189,6 +190,7 @@ pub enum ApplicationError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum DropFailure {
+    DroppingNodeWithChildren,
     System,
     Resource,
     Component,

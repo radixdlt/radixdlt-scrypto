@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, LockFlags, SystemApi};
+use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{InvokeError, ProofError, ProofSubstate};
 use crate::types::*;
@@ -59,14 +59,14 @@ impl AuthZoneStack {
                     proof
                 };
 
-                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             AuthZoneMethod::Push => {
                 let input: AuthZonePushInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let mut proof: ProofSubstate =
-                    system_api.node_drop(RENodeId::Proof(input.proof.0))?.into();
+                    system_api.drop_node(RENodeId::Proof(input.proof.0))?.into();
                 proof.change_to_unrestricted();
 
                 let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
@@ -103,7 +103,7 @@ impl AuthZoneStack {
                     proof
                 };
 
-                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             AuthZoneMethod::CreateProofByAmount => {
@@ -134,7 +134,7 @@ impl AuthZoneStack {
                     proof
                 };
 
-                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             AuthZoneMethod::CreateProofByIds => {
@@ -163,7 +163,7 @@ impl AuthZoneStack {
                     proof
                 };
 
-                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             AuthZoneMethod::Clear => {
@@ -191,8 +191,7 @@ impl AuthZoneStack {
 
                 let mut proof_ids: Vec<scrypto::resource::Proof> = Vec::new();
                 for proof in proofs {
-                    let proof_id: ProofId =
-                        system_api.node_create(HeapRENode::Proof(proof))?.into();
+                    let proof_id: ProofId = system_api.create_node(RENode::Proof(proof))?.into();
                     proof_ids.push(scrypto::resource::Proof(proof_id));
                 }
 

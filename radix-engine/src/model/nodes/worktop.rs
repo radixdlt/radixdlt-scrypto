@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, InvokeError, LockFlags, SystemApi};
+use crate::engine::{InvokeError, LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
@@ -91,7 +91,7 @@ impl Worktop {
                 let input: WorktopPutInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let bucket = system_api
-                    .node_drop(RENodeId::Bucket(input.bucket.0))?
+                    .drop_node(RENodeId::Bucket(input.bucket.0))?
                     .into();
                 let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
@@ -138,7 +138,7 @@ impl Worktop {
                     Resource::new_empty(input.resource_address, resource_type)
                 };
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(resource_resource)))?
+                    .create_node(RENode::Bucket(BucketSubstate::new(resource_resource)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -180,7 +180,7 @@ impl Worktop {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(resource_resource)))?
+                    .create_node(RENode::Bucket(BucketSubstate::new(resource_resource)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -221,7 +221,7 @@ impl Worktop {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(resource_resource)))?
+                    .create_node(RENode::Bucket(BucketSubstate::new(resource_resource)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -285,7 +285,7 @@ impl Worktop {
                 let mut buckets = Vec::new();
                 for resource in resources {
                     let bucket_id = system_api
-                        .node_create(HeapRENode::Bucket(BucketSubstate::new(resource)))?
+                        .create_node(RENode::Bucket(BucketSubstate::new(resource)))?
                         .into();
                     buckets.push(scrypto::resource::Bucket(bucket_id))
                 }

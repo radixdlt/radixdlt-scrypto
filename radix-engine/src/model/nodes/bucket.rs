@@ -1,4 +1,6 @@
-use crate::engine::{HeapRENode, LockFlags, SystemApi};
+use scrypto::resource::ResourceManagerBurnInput;
+
+use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{BucketSubstate, InvokeError, ProofError, ResourceOperationError};
 use crate::types::*;
@@ -58,7 +60,7 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 substate_mut.flush()?;
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
+                    .create_node(RENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -75,7 +77,7 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 substate_mut.flush()?;
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
+                    .create_node(RENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -95,7 +97,7 @@ impl Bucket {
                 let input: BucketPutInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let other_bucket = system_api
-                    .node_drop(RENodeId::Bucket(input.bucket.0))?
+                    .drop_node(RENodeId::Bucket(input.bucket.0))?
                     .into();
                 let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
@@ -132,7 +134,7 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::ProofError(e)))?;
                 substate_mut.flush()?;
 
-                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))

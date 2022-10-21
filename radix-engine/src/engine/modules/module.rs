@@ -1,3 +1,4 @@
+use crate::engine::call_frame::RENodeLocation;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;
@@ -20,7 +21,7 @@ pub enum SysCallInput<'a> {
         node_id: &'a RENodeId,
     },
     CreateNode {
-        node: &'a HeapRENode,
+        node: &'a RENode,
     },
     GlobalizeNode {
         node_id: &'a RENodeId,
@@ -54,87 +55,70 @@ pub enum SysCallInput<'a> {
 }
 
 pub enum SysCallOutput<'a> {
-    InvokeScrypto {
-        output: &'a ScryptoValue,
-    },
-    InvokeNative {
-        output: &'a ScryptoValue,
-    },
-    BorrowNode {
-        node_pointer: &'a RENodePointer,
-    },
-    DropNode {
-        node: &'a HeapRootRENode,
-    },
-    CreateNode {
-        node_id: &'a RENodeId,
-    },
+    InvokeScrypto { output: &'a ScryptoValue },
+    InvokeNative { output: &'a ScryptoValue },
+    BorrowNode { node_pointer: &'a RENodeLocation },
+    DropNode { node: &'a HeapRENode },
+    CreateNode { node_id: &'a RENodeId },
     GlobalizeNode,
-    LockSubstate {
-        lock_handle: LockHandle,
-    },
-    GetRef {
-        node_pointer: &'a RENodePointer,
-        offset: &'a SubstateOffset,
-    },
+    LockSubstate { lock_handle: LockHandle },
+    GetRef { lock_handle: LockHandle },
     GetRefMut,
     DropLock,
-    TakeSubstate {
-        value: &'a ScryptoValue,
-    },
-    ReadTransactionHash {
-        hash: &'a Hash,
-    },
-    ReadBlob {
-        blob: &'a [u8],
-    },
-    GenerateUuid {
-        uuid: u128,
-    },
+    TakeSubstate { value: &'a ScryptoValue },
+    ReadTransactionHash { hash: &'a Hash },
+    ReadBlob { blob: &'a [u8] },
+    GenerateUuid { uuid: u128 },
     EmitLog,
 }
 
 pub trait Module<R: FeeReserve> {
     fn pre_sys_call(
         &mut self,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
         track: &mut Track<R>,
-        call_frames: &mut Vec<CallFrame>,
         input: SysCallInput,
     ) -> Result<(), ModuleError>;
 
     fn post_sys_call(
         &mut self,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
         track: &mut Track<R>,
-        call_frames: &mut Vec<CallFrame>,
         output: SysCallOutput,
     ) -> Result<(), ModuleError>;
 
     fn on_run(
         &mut self,
-        track: &mut Track<R>,
-        call_frames: &mut Vec<CallFrame>,
         actor: &REActor,
         input: &ScryptoValue,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
+        track: &mut Track<R>,
     ) -> Result<(), ModuleError>;
 
     fn on_wasm_instantiation(
         &mut self,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
         track: &mut Track<R>,
-        call_frames: &mut Vec<CallFrame>,
         code: &[u8],
     ) -> Result<(), ModuleError>;
 
     fn on_wasm_costing(
         &mut self,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
         track: &mut Track<R>,
-        call_frames: &mut Vec<CallFrame>,
         units: u32,
     ) -> Result<(), ModuleError>;
 
     fn on_lock_fee(
         &mut self,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
         track: &mut Track<R>,
-        call_frames: &mut Vec<CallFrame>,
         vault_id: VaultId,
         fee: Resource,
         contingent: bool,

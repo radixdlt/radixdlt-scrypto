@@ -1,5 +1,5 @@
 use crate::engine::{
-    CallFrame, KernelError, RENodePointer, RuntimeError, SubstateProperties, Track,
+    CallFrame, Heap, KernelError, RENodeLocation, RuntimeError, SubstateProperties, Track,
 };
 use crate::fee::FeeReserve;
 use crate::model::substates::worktop::WorktopSubstate;
@@ -552,11 +552,13 @@ impl<'a> SubstateRef<'a> {
 
 pub struct SubstateRefMut<'f, 's, R: FeeReserve> {
     flushed: bool,
-    lock_handle: LockHandle,
+    _lock_handle: LockHandle,
     prev_children: HashSet<RENodeId>,
-    node_pointer: RENodePointer,
+    location: RENodeLocation,
+    node_id: RENodeId,
     offset: SubstateOffset,
-    call_frames: &'f mut Vec<CallFrame>,
+    current_frame: &'f mut CallFrame,
+    heap: &'f mut Heap,
     track: &'f mut Track<'s, R>,
 }
 
@@ -572,19 +574,23 @@ impl<'f, 's, R: FeeReserve> Drop for SubstateRefMut<'f, 's, R> {
 impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
     pub fn new(
         lock_handle: LockHandle,
-        node_pointer: RENodePointer,
+        node_pointer: RENodeLocation,
+        node_id: RENodeId,
         offset: SubstateOffset,
         prev_children: HashSet<RENodeId>,
-        call_frames: &'f mut Vec<CallFrame>,
+        current_frame: &'f mut CallFrame,
+        heap: &'f mut Heap,
         track: &'f mut Track<'s, R>,
     ) -> Result<Self, RuntimeError> {
         let substate_ref_mut = Self {
             flushed: false,
-            lock_handle,
+            _lock_handle: lock_handle,
             prev_children,
-            node_pointer,
+            location: node_pointer,
+            node_id,
             offset,
-            call_frames,
+            current_frame,
+            heap,
             track,
         };
         Ok(substate_ref_mut)
@@ -601,11 +607,9 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             substate_ref_mut.to_ref().references_and_owned_nodes()
         };
 
-        let current_frame = self.call_frames.last_mut().unwrap();
-
         for global_address in new_global_references {
             let node_id = RENodeId::Global(global_address);
-            if !current_frame.node_refs.contains_key(&node_id) {
+            if !self.current_frame.node_refs.contains_key(&node_id) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidReferenceWrite(global_address),
                 ));
@@ -620,16 +624,27 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             }
         }
 
-        for child_id in new_children {
-            SubstateProperties::verify_can_own(&self.offset, child_id)?;
+        for child_id in &new_children {
+            SubstateProperties::verify_can_own(&self.offset, *child_id)?;
+            // Make child visible
+            //self.current_frame.add_lock_visible_node(self.lock_handle, *child_id)?;
+        }
 
-            // Move child from call frame owned to call frame reference
-            let current_frame = self.call_frames.last_mut().unwrap();
-            let node = current_frame.take_node(child_id)?;
-            current_frame.add_lock_visible_node(self.lock_handle, child_id)?;
-
-            self.node_pointer
-                .add_child(child_id, node, &mut self.call_frames, &mut self.track);
+        match self.location {
+            RENodeLocation::Heap => {
+                self.current_frame.move_owned_nodes_to_heap_node(
+                    self.heap,
+                    new_children,
+                    self.node_id,
+                )?;
+            }
+            RENodeLocation::Store => {
+                self.current_frame.move_owned_nodes_to_store(
+                    self.heap,
+                    self.track,
+                    new_children,
+                )?;
+            }
         }
 
         Ok(())
@@ -641,22 +656,18 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
     }
 
     pub fn get_raw_mut(&mut self) -> RawSubstateRefMut {
-        match self.node_pointer {
-            RENodePointer::Heap { frame_id, root, id } => {
-                let frame = self.call_frames.get_mut(frame_id).unwrap();
-                let heap_re_node = frame
-                    .get_owned_heap_node_mut(root)
-                    .unwrap()
-                    .get_node_mut(id.as_ref());
-                heap_re_node.borrow_substate_mut(&self.offset).unwrap()
-            }
-            RENodePointer::Store(node_id) => match (node_id, &self.offset) {
+        match self.location {
+            RENodeLocation::Heap => self
+                .heap
+                .get_substate_mut(self.node_id, &self.offset)
+                .unwrap(),
+            RENodeLocation::Store => match (self.node_id, &self.offset) {
                 (
                     RENodeId::KeyValueStore(..),
                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
                 ) => {
                     let parent_substate_id = SubstateId(
-                        node_id,
+                        self.node_id,
                         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
                     );
                     self.track
@@ -670,7 +681,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
                     )),
                 ) => {
                     let parent_substate_id = SubstateId(
-                        node_id,
+                        self.node_id,
                         SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
                     );
                     self.track
@@ -679,7 +690,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
                 }
                 _ => self
                     .track
-                    .borrow_substate_mut(node_id, self.offset.clone())
+                    .borrow_substate_mut(self.node_id, self.offset.clone())
                     .to_ref_mut(),
             },
         }
@@ -721,6 +732,13 @@ impl<'a> RawSubstateRefMut<'a> {
         match self {
             RawSubstateRefMut::Vault(value) => *value,
             _ => panic!("Not a vault"),
+        }
+    }
+
+    pub fn proof(&mut self) -> &mut ProofSubstate {
+        match self {
+            RawSubstateRefMut::Proof(value) => *value,
+            _ => panic!("Not a proof"),
         }
     }
 

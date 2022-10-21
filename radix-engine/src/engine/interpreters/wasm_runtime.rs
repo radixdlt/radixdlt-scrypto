@@ -111,15 +111,15 @@ where
                 // TODO: Check state against blueprint schema
 
                 // Create component
-                HeapRENode::Component(Component {
+                RENode::Component(Component {
                     info: ComponentInfoSubstate::new(package_address, blueprint_name, Vec::new()),
                     state: Some(ComponentStateSubstate::new(state)),
                 })
             }
-            ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(KeyValueStore::new()),
+            ScryptoRENode::KeyValueStore => RENode::KeyValueStore(KeyValueStore::new()),
         };
 
-        let id = self.system_api.node_create(node)?;
+        let id = self.system_api.create_node(node)?;
         Ok(ScryptoValue::from_typed(&id))
     }
 

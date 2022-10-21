@@ -3,7 +3,7 @@ use transaction::errors::IdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
 
-use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::resolve_native_function;
 use crate::model::resolve_native_method;
@@ -208,7 +208,7 @@ impl TransactionProcessor {
                 let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
 
                 let _worktop_id = system_api
-                    .node_create(HeapRENode::Worktop(WorktopSubstate::new()))
+                    .create_node(RENode::Worktop(WorktopSubstate::new()))
                     .map_err(InvokeError::Downstream)?;
 
                 let owned_node_ids = system_api

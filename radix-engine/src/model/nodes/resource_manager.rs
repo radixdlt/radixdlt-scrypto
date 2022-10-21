@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, LockFlags, SystemApi};
+use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     BucketSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
@@ -144,7 +144,7 @@ impl ResourceManager {
 
                 let node_id = if matches!(input.resource_type, ResourceType::NonFungible) {
                     let nf_store_node_id = system_api
-                        .node_create(HeapRENode::NonFungibleStore(NonFungibleStore::new()))?;
+                        .create_node(RENode::NonFungibleStore(NonFungibleStore::new()))?;
                     let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
 
                     let mut resource_manager = ResourceManager::new(
@@ -182,7 +182,7 @@ impl ResourceManager {
                             ));
                         }
                     }
-                    system_api.node_create(HeapRENode::ResourceManager(resource_manager))?
+                    system_api.create_node(RENode::ResourceManager(resource_manager))?
                 } else {
                     let mut resource_manager = ResourceManager::new(
                         input.resource_type,
@@ -207,7 +207,7 @@ impl ResourceManager {
                             ));
                         }
                     }
-                    system_api.node_create(HeapRENode::ResourceManager(resource_manager))?
+                    system_api.create_node(RENode::ResourceManager(resource_manager))?
                 };
                 let global_address = system_api.node_globalize(node_id)?;
                 let resource_address: ResourceAddress = global_address.into();
@@ -237,7 +237,7 @@ impl ResourceManager {
                         ),
                     };
                     let bucket_id = system_api
-                        .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
+                        .create_node(RENode::Bucket(BucketSubstate::new(container)))?
                         .into();
                     Some(scrypto::resource::Bucket(bucket_id))
                 } else {
@@ -289,7 +289,7 @@ impl ResourceManager {
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
 
                 let bucket: BucketSubstate = system_api
-                    .node_drop(RENodeId::Bucket(input.bucket.0))?
+                    .drop_node(RENodeId::Bucket(input.bucket.0))?
                     .into();
 
                 // Check if resource matches
@@ -388,7 +388,7 @@ impl ResourceManager {
                     resource_manager.resource_type,
                 );
                 let vault_id = system_api
-                    .node_create(HeapRENode::Vault(VaultRuntimeSubstate::new(resource)))?
+                    .create_node(RENode::Vault(VaultRuntimeSubstate::new(resource)))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Vault(vault_id))
             }
@@ -402,7 +402,7 @@ impl ResourceManager {
                     resource_manager.resource_type,
                 );
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
+                    .create_node(RENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
             }
@@ -423,7 +423,7 @@ impl ResourceManager {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(resource)))?
+                    .create_node(RENode::Bucket(BucketSubstate::new(resource)))?
                     .into();
 
                 let (nf_store_id, resource_address) = {
