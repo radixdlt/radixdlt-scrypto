@@ -273,36 +273,6 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn drop_frame(&mut self, heap: &mut Heap) -> Result<(), RuntimeError> {
-        let nodes: Vec<(RENodeId, HeapRENode)> = self
-            .owned_heap_nodes
-            .drain()
-            .map(|id| {
-                let node = heap.remove_node(id).unwrap();
-                (id, node)
-            })
-            .collect();
-
-        let mut worktops = Vec::new();
-
-        for (node_id, node) in nodes {
-            if let RENodeId::Worktop = node_id {
-                worktops.push(node);
-            } else {
-                node.try_drop()
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))?;
-            }
-        }
-
-        for worktop in worktops {
-            worktop
-                .try_drop()
-                .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))?;
-        }
-
-        Ok(())
-    }
-
     fn remove_ref(&mut self, heap: &Heap, node_id: RENodeId) -> Result<(), CallFrameError> {
         self.node_refs.remove(&node_id);
         for child_id in heap.get_children(node_id)? {
@@ -395,6 +365,30 @@ impl CallFrame {
     ) -> Result<(), RuntimeError> {
         self.take_node_internal(heap, node_id)?;
         heap.move_node_to_store(track, node_id)?;
+
+        Ok(())
+    }
+
+    pub fn drop_frame(&mut self, heap: &mut Heap) -> Result<(), RuntimeError> {
+        let nodes: Vec<RENodeId> = self.owned_heap_nodes.drain().collect();
+
+        let mut worktops = Vec::new();
+
+        for node_id in nodes {
+            if let RENodeId::Worktop = node_id {
+                worktops.push(node_id);
+            } else {
+                let node = heap.remove_node(node_id).unwrap();
+                node.try_drop()
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))?;
+            }
+        }
+
+        for worktop_id in worktops {
+            let node = heap.remove_node(worktop_id).unwrap();
+            node.try_drop()
+                .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))?;
+        }
 
         Ok(())
     }

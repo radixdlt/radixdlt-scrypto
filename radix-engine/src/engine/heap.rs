@@ -1,6 +1,9 @@
 use crate::engine::{CallFrameError, HeapRENode, Track};
 use crate::fee::FeeReserve;
-use crate::model::{KeyValueStoreEntrySubstate, NonFungibleSubstate, RawSubstateRefMut, RuntimeSubstate, SubstateRef};
+use crate::model::{
+    KeyValueStoreEntrySubstate, NonFungibleSubstate, RawSubstateRefMut, RuntimeSubstate,
+    SubstateRef,
+};
 use crate::types::{HashMap, HashSet};
 use scrypto::engine::types::{RENodeId, SubstateId, SubstateOffset};
 
