@@ -143,7 +143,7 @@ pub fn create_genesis() -> SystemTransaction {
         let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
         Instruction::CallFunction {
             function_ident: ScryptoFunctionIdent {
-                package_address: SYS_FAUCET_PACKAGE,
+                package: ScryptoPackage::Global(SYS_FAUCET_PACKAGE),
                 blueprint_name: "Faucet".to_string(),
                 function_name: "new".to_string(),
             },
@@ -232,7 +232,7 @@ where
 {
     if substate_store
         .get_substate(&SubstateId(
-            RENodeId::ResourceManager(RADIX_TOKEN),
+            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ))
         .is_none()

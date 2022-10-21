@@ -314,10 +314,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         // TODO: consider using a single address as function input
         let substate_id = match parent_address {
             SubstateId(
-                RENodeId::NonFungibleStore(non_fungible_store_id),
+                RENodeId::NonFungibleStore(nf_store_id),
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
             ) => SubstateId(
-                RENodeId::NonFungibleStore(non_fungible_store_id),
+                RENodeId::NonFungibleStore(nf_store_id),
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(NonFungibleId(key))),
             ),
             SubstateId(

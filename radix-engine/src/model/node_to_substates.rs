@@ -13,7 +13,7 @@ pub fn node_to_substates(node: RENode) -> HashMap<SubstateOffset, RuntimeSubstat
             let substate = global_node.address;
             substates.insert(
                 SubstateOffset::Global(GlobalOffset::Global),
-                RuntimeSubstate::GlobalRENode(substate),
+                RuntimeSubstate::Global(substate),
             );
         }
         RENode::Vault(vault) => {
@@ -54,8 +54,8 @@ pub fn node_to_substates(node: RENode) -> HashMap<SubstateOffset, RuntimeSubstat
                 substate.into(),
             );
         }
-        RENode::NonFungibleStore(non_fungible_store) => {
-            for (id, non_fungible) in non_fungible_store.loaded_non_fungibles {
+        RENode::NonFungibleStore(nf_store) => {
+            for (id, non_fungible) in nf_store.loaded_non_fungibles {
                 substates.insert(
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
                     non_fungible.into(),
