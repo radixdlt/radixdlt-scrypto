@@ -311,12 +311,11 @@ impl CallFrame {
         &mut self,
         heap: &mut Heap,
         node_id: RENodeId,
-        mut re_node: RENode,
+        re_node: RENode,
     ) -> Result<(), RuntimeError> {
         let mut child_nodes = HashSet::new();
-        for offset in re_node.get_offsets() {
-            let substate = re_node.borrow_substate(&offset)?;
-            let (_, owned) = substate.references_and_owned_nodes();
+        for (offset, substate_ref) in re_node.get_offsets() {
+            let (_, owned) = substate_ref.references_and_owned_nodes();
             for child_id in owned {
                 SubstateProperties::verify_can_own(&offset, child_id)?;
                 child_nodes.insert(child_id);

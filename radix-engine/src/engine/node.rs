@@ -19,37 +19,51 @@ pub enum RENode {
 }
 
 impl RENode {
-    pub fn get_offsets(&self) -> Vec<SubstateOffset> {
+    pub fn get_offsets(&self) -> Vec<(SubstateOffset, SubstateRef)> {
         match self {
-            RENode::Global(..) => {
-                vec![SubstateOffset::Global(GlobalOffset::Global)]
+            RENode::Global(substate) => {
+                vec![(SubstateOffset::Global(GlobalOffset::Global), SubstateRef::Global(substate))]
             }
-            RENode::Component(..) => {
+            RENode::Component(info, state) => {
                 vec![
-                    SubstateOffset::Component(ComponentOffset::State),
-                    SubstateOffset::Component(ComponentOffset::Info),
+                    (SubstateOffset::Component(ComponentOffset::State), SubstateRef::ComponentState(state)),
+                    (SubstateOffset::Component(ComponentOffset::Info), SubstateRef::ComponentInfo(info)),
                 ]
             }
             RENode::KeyValueStore(store) => store
                 .loaded_entries
                 .iter()
-                .map(|(key, _)| {
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key.clone()))
+                .map(|(key, value)| {
+                    (SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key.clone())), SubstateRef::KeyValueStoreEntry(value))
                 })
                 .collect(),
             RENode::NonFungibleStore(..) => vec![],
-            RENode::ResourceManager(..) => {
-                vec![SubstateOffset::ResourceManager(
+            RENode::ResourceManager(state) => {
+                vec![(SubstateOffset::ResourceManager(
                     ResourceManagerOffset::ResourceManager,
-                )]
+                ), SubstateRef::ResourceManager(state))]
             }
-            RENode::Package(..) => vec![SubstateOffset::Package(PackageOffset::Package)],
-            RENode::Bucket(..) => vec![SubstateOffset::Bucket(BucketOffset::Bucket)],
-            RENode::Proof(..) => vec![SubstateOffset::Proof(ProofOffset::Proof)],
-            RENode::AuthZone(..) => vec![SubstateOffset::AuthZone(AuthZoneOffset::AuthZone)],
-            RENode::Vault(..) => vec![SubstateOffset::Vault(VaultOffset::Vault)],
-            RENode::Worktop(..) => vec![SubstateOffset::Worktop(WorktopOffset::Worktop)],
-            RENode::System(..) => vec![SubstateOffset::System(SystemOffset::System)],
+            RENode::Package(substate) => vec![
+                (SubstateOffset::Package(PackageOffset::Package), SubstateRef::Package(substate))
+            ],
+            RENode::Bucket(substate) => vec![
+                (SubstateOffset::Bucket(BucketOffset::Bucket), SubstateRef::Bucket(substate))
+            ],
+            RENode::Proof(proof) => vec![
+                (SubstateOffset::Proof(ProofOffset::Proof), SubstateRef::Proof(proof))
+            ],
+            RENode::AuthZone(state) => vec![
+                (SubstateOffset::AuthZone(AuthZoneOffset::AuthZone), SubstateRef::AuthZone(state))
+            ],
+            RENode::Vault(state) => vec![
+                (SubstateOffset::Vault(VaultOffset::Vault), SubstateRef::Vault(state))
+            ],
+            RENode::Worktop(state) => vec![
+                (SubstateOffset::Worktop(WorktopOffset::Worktop), SubstateRef::Worktop(state))
+            ],
+            RENode::System(state) => vec![
+                (SubstateOffset::System(SystemOffset::System), SubstateRef::System(state))
+            ],
         }
     }
 
@@ -116,11 +130,68 @@ impl RENode {
         substates
     }
 
+
+    pub fn try_drop(self) -> Result<(), DropFailure> {
+        match self {
+            RENode::Global(..) => panic!("Should never get here"),
+            RENode::AuthZone(mut auth_zone) => {
+                auth_zone.clear_all();
+                Ok(())
+            }
+            RENode::Package(..) => Err(DropFailure::Package),
+            RENode::Vault(..) => Err(DropFailure::Vault),
+            RENode::KeyValueStore(..) => Err(DropFailure::KeyValueStore),
+            RENode::NonFungibleStore(..) => Err(DropFailure::NonFungibleStore),
+            RENode::Component(..) => Err(DropFailure::Component),
+            RENode::Bucket(..) => Err(DropFailure::Bucket),
+            RENode::ResourceManager(..) => Err(DropFailure::Resource),
+            RENode::System(..) => Err(DropFailure::System),
+            RENode::Proof(proof) => {
+                proof.drop();
+                Ok(())
+            }
+            RENode::Worktop(worktop) => worktop.drop(),
+        }
+    }
+
+    pub fn drop_nodes(nodes: Vec<HeapRENode>) -> Result<(), DropFailure> {
+        let mut worktops = Vec::new();
+        for node in nodes {
+            // TODO: Remove this
+            if !node.child_nodes.is_empty() {
+                return Err(DropFailure::DroppingNodeWithChildren);
+            }
+
+            if let RENode::Worktop(worktop) = node.root {
+                worktops.push(worktop);
+            } else {
+                node.try_drop()?;
+            }
+        }
+        for worktop in worktops {
+            worktop.drop()?;
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct HeapRENode {
+    pub root: RENode,
+    pub child_nodes: HashSet<RENodeId>,
+}
+
+impl HeapRENode {
+    pub fn try_drop(self) -> Result<(), DropFailure> {
+        self.root.try_drop()
+    }
+
     pub fn borrow_substate(
         &mut self,
         offset: &SubstateOffset,
     ) -> Result<SubstateRef, RuntimeError> {
-        let substate_ref = match (self, offset) {
+        let substate_ref = match (&mut self.root, offset) {
             (
                 RENode::Component(_info, state),
                 SubstateOffset::Component(ComponentOffset::State),
@@ -186,7 +257,7 @@ impl RENode {
         &mut self,
         offset: &SubstateOffset,
     ) -> Result<RawSubstateRefMut, RuntimeError> {
-        let substate_ref = match (self, offset) {
+        let substate_ref = match (&mut self.root, offset) {
             (
                 RENode::Component(_info, state),
                 SubstateOffset::Component(ComponentOffset::State),
@@ -246,66 +317,6 @@ impl RENode {
             }
         };
         Ok(substate_ref)
-    }
-
-    pub fn try_drop(self) -> Result<(), DropFailure> {
-        match self {
-            RENode::Global(..) => panic!("Should never get here"),
-            RENode::AuthZone(mut auth_zone) => {
-                auth_zone.clear_all();
-                Ok(())
-            }
-            RENode::Package(..) => Err(DropFailure::Package),
-            RENode::Vault(..) => Err(DropFailure::Vault),
-            RENode::KeyValueStore(..) => Err(DropFailure::KeyValueStore),
-            RENode::NonFungibleStore(..) => Err(DropFailure::NonFungibleStore),
-            RENode::Component(..) => Err(DropFailure::Component),
-            RENode::Bucket(..) => Err(DropFailure::Bucket),
-            RENode::ResourceManager(..) => Err(DropFailure::Resource),
-            RENode::System(..) => Err(DropFailure::System),
-            RENode::Proof(proof) => {
-                proof.drop();
-                Ok(())
-            }
-            RENode::Worktop(worktop) => worktop.drop(),
-        }
-    }
-
-    pub fn drop_nodes(nodes: Vec<HeapRENode>) -> Result<(), DropFailure> {
-        let mut worktops = Vec::new();
-        for node in nodes {
-            // TODO: Remove this
-            if !node.child_nodes.is_empty() {
-                return Err(DropFailure::DroppingNodeWithChildren);
-            }
-
-            if let RENode::Worktop(worktop) = node.root {
-                worktops.push(worktop);
-            } else {
-                node.try_drop()?;
-            }
-        }
-        for worktop in worktops {
-            worktop.drop()?;
-        }
-
-        Ok(())
-    }
-}
-
-#[derive(Debug)]
-pub struct HeapRENode {
-    pub root: RENode,
-    pub child_nodes: HashSet<RENodeId>,
-}
-
-impl HeapRENode {
-    pub fn get_mut(&mut self) -> &mut RENode {
-        &mut self.root
-    }
-
-    pub fn try_drop(self) -> Result<(), DropFailure> {
-        self.root.try_drop()
     }
 }
 

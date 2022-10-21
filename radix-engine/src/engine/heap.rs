@@ -24,8 +24,7 @@ impl Heap {
             .nodes
             .get_mut(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
-        node.root
-            .borrow_substate(offset)
+        node.borrow_substate(offset)
             .map_err(|_| CallFrameError::OffsetDoesNotExist(node_id, offset.clone()))
     }
 
@@ -38,8 +37,7 @@ impl Heap {
             .nodes
             .get_mut(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
-        node.root
-            .borrow_substate_mut(offset)
+        node.borrow_substate_mut(offset)
             .map_err(|_| CallFrameError::OffsetDoesNotExist(node_id, offset.clone()))
     }
 
