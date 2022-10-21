@@ -21,8 +21,8 @@ pub enum RENodeId {
     Component(ComponentId),
     System(ComponentId),
     Vault(VaultId),
-    ResourceManager(ResourceAddress), // TODO: Convert this into id
-    Package(PackageAddress),          // TODO: Convert this into id
+    ResourceManager(ResourceManagerId),
+    Package(PackageId),
 }
 
 impl Into<(Hash, u32)> for RENodeId {
@@ -33,6 +33,8 @@ impl Into<(Hash, u32)> for RENodeId {
             RENodeId::Vault(id) => id,
             RENodeId::Component(id) => id,
             RENodeId::System(id) => id,
+            RENodeId::ResourceManager(id) => id,
+            RENodeId::Package(id) => id,
             _ => panic!("Not a stored id"),
         }
     }
@@ -43,6 +45,7 @@ impl Into<u32> for RENodeId {
         match self {
             RENodeId::Bucket(id) => id,
             RENodeId::Proof(id) => id,
+            RENodeId::AuthZoneStack(id) => id,
             _ => panic!("Not a transient id"),
         }
     }
@@ -60,7 +63,6 @@ impl Into<ComponentAddress> for RENodeId {
 impl Into<PackageAddress> for RENodeId {
     fn into(self) -> PackageAddress {
         match self {
-            RENodeId::Package(package_address) => package_address,
             RENodeId::Global(GlobalAddress::Package(package_address)) => package_address,
             _ => panic!("Not a package address"),
         }
@@ -70,7 +72,6 @@ impl Into<PackageAddress> for RENodeId {
 impl Into<ResourceAddress> for RENodeId {
     fn into(self) -> ResourceAddress {
         match self {
-            RENodeId::ResourceManager(resource_address) => resource_address,
             RENodeId::Global(GlobalAddress::Resource(resource_address)) => resource_address,
             _ => panic!("Not a resource address"),
         }

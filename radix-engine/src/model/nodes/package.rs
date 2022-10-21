@@ -51,11 +51,10 @@ impl Package {
                     .map_err(|e| InvokeError::Error(PackageError::InvalidWasm(e)))?;
 
                 let node_id = system_api.create_node(RENode::Package(package))?;
-                let package_address: PackageAddress = node_id.into();
+                let package_id: PackageId = node_id.into();
 
-                let global_node_id = system_api.create_node(RENode::Global(
-                    GlobalAddressSubstate::Package(package_address),
-                ))?;
+                let global_node_id = system_api
+                    .create_node(RENode::Global(GlobalAddressSubstate::Package(package_id)))?;
 
                 let package_address: PackageAddress = global_node_id.into();
                 Ok(ScryptoValue::from_typed(&package_address))

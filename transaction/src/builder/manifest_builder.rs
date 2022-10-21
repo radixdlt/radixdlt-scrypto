@@ -356,7 +356,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             function_ident: ScryptoFunctionIdent {
-                package_address,
+                package: ScryptoPackage::Global(package_address),
                 blueprint_name: blueprint_name.to_string(),
                 function_name: function_name.to_string(),
             },
@@ -402,7 +402,7 @@ impl ManifestBuilder {
         Ok(self
             .add_instruction(Instruction::CallFunction {
                 function_ident: ScryptoFunctionIdent {
-                    package_address,
+                    package: ScryptoPackage::Global(package_address),
                     blueprint_name: blueprint_name.to_string(),
                     function_name: function.to_string(),
                 },
@@ -685,7 +685,7 @@ impl ManifestBuilder {
     pub fn new_account(&mut self, withdraw_auth: &AccessRuleNode) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             function_ident: ScryptoFunctionIdent {
-                package_address: ACCOUNT_PACKAGE,
+                package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
                 blueprint_name: "Account".to_owned(),
                 function_name: "new".to_string(),
             },
@@ -702,7 +702,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             function_ident: ScryptoFunctionIdent {
-                package_address: ACCOUNT_PACKAGE,
+                package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
                 blueprint_name: "Account".to_owned(),
                 function_name: "new_with_resource".to_string(),
             },

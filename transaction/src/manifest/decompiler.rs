@@ -339,9 +339,10 @@ pub fn decompile_call_function<F: fmt::Write>(
     write!(
         f,
         "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-        function_ident
-            .package_address
-            .display(context.bech32_encoder),
+        match &function_ident.package {
+            ScryptoPackage::Global(package_address) =>
+                package_address.display(context.bech32_encoder),
+        },
         function_ident.blueprint_name,
         function_ident.function_name,
     )?;
@@ -435,7 +436,7 @@ pub fn decompile_call_native_method<F: fmt::Write>(
                 return Ok(());
             }
         }
-        (Receiver::Ref(RENodeId::ResourceManager(resource_address)), "mint") => {
+        (Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))), "mint") => {
             if let Ok(input) = scrypto_decode::<ResourceManagerMintInput>(&args) {
                 if let MintParams::Fungible { amount } = input.mint_params {
                     write!(
@@ -514,13 +515,8 @@ fn format_node_id(node_id: &RENodeId, context: &mut DecompilationContext) -> Str
         RENodeId::Component(id) => format!("Component(\"{}\")", format_id(id)),
         RENodeId::System(id) => format!("System(\"{}\")", format_id(id)),
         RENodeId::Vault(id) => format!("Vault(\"{}\")", format_id(id)),
-        RENodeId::ResourceManager(address) => format!(
-            "ResourceManager(\"{}\")",
-            address.display(context.bech32_encoder)
-        ),
-        RENodeId::Package(address) => {
-            format!("Package(\"{}\")", address.display(context.bech32_encoder))
-        }
+        RENodeId::ResourceManager(id) => format!("ResourceManager(\"{}\")", format_id(id)),
+        RENodeId::Package(id) => format!("Package(\"{}\")", format_id(id)),
     }
 }
 
@@ -639,6 +635,7 @@ CALL_NATIVE_FUNCTION "TransactionProcessor" "run";
         )
         .unwrap();
         let manifest2 = decompile(&manifest.instructions, &network).unwrap();
+        println!("{}", manifest2);
         assert_eq!(
             manifest2,
             r#"CALL_METHOD ComponentAddress("component_sim1qgvyxt5rrjhwctw7krgmgkrhv82zuamcqkq75tkkrwgs00m736") "free_xrd";
@@ -656,8 +653,8 @@ CALL_NATIVE_METHOD &NonFungibleStore("000000000000000000000000000000000000000000
 CALL_NATIVE_METHOD &Component("000000000000000000000000000000000000000000000000000000000000000000000005") "add_access_check";
 CALL_NATIVE_METHOD &System("000000000000000000000000000000000000000000000000000000000000000000000005") "get_transaction_hash";
 CALL_NATIVE_METHOD &Vault("000000000000000000000000000000000000000000000000000000000000000000000005") "get_resource_address";
-CALL_NATIVE_METHOD &ResourceManager("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
-CALL_NATIVE_METHOD &Package("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "method";
+CALL_NATIVE_METHOD &ResourceManager("000000000000000000000000000000000000000000000000000000000000000005000000") "burn";
+CALL_NATIVE_METHOD &Package("000000000000000000000000000000000000000000000000000000000000000005000000") "method";
 CALL_NATIVE_METHOD &Global("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
 CALL_NATIVE_METHOD Bucket("bucket1") "get_resource_address";
 CALL_NATIVE_METHOD Bucket(1u32) "get_resource_address";
@@ -670,8 +667,8 @@ CALL_NATIVE_METHOD NonFungibleStore("0000000000000000000000000000000000000000000
 CALL_NATIVE_METHOD Component("000000000000000000000000000000000000000000000000000000000000000000000005") "add_access_check";
 CALL_NATIVE_METHOD System("000000000000000000000000000000000000000000000000000000000000000000000005") "get_transaction_hash";
 CALL_NATIVE_METHOD Vault("000000000000000000000000000000000000000000000000000000000000000000000005") "get_resource_address";
-CALL_NATIVE_METHOD ResourceManager("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
-CALL_NATIVE_METHOD Package("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "method";
+CALL_NATIVE_METHOD ResourceManager("000000000000000000000000000000000000000000000000000000000000000005000000") "burn";
+CALL_NATIVE_METHOD Package("000000000000000000000000000000000000000000000000000000000000000005000000") "method";
 CALL_NATIVE_METHOD Global("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "method";
 "#
         )

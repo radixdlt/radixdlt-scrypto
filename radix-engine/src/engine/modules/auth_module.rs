@@ -77,7 +77,7 @@ impl AuthModule {
                     ) => System::method_auth(method),
                     (
                         ResolvedMethod::Scrypto {
-                            package_address,
+                            package_id,
                             blueprint_name,
                             ident,
                             ..
@@ -87,7 +87,7 @@ impl AuthModule {
                             ..
                         },
                     ) => {
-                        let node_id = RENodeId::Package(package_address);
+                        let node_id = RENodeId::Package(package_id);
                         let offset = SubstateOffset::Package(PackageOffset::Package);
                         let handle =
                             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
