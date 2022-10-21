@@ -195,19 +195,23 @@ where
                 ))
             }
             HeapRENode::ResourceManager(..) => {
-                let resource_address: ResourceAddress = node_id.into();
-
+                let resource_address = id_allocator
+                    .new_resource_address(transaction_hash)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+                let resource_manager_id: ResourceManagerId = node_id.into();
                 Ok((
                     GlobalAddress::Resource(resource_address),
-                    GlobalAddressSubstate::Resource(resource_address),
+                    GlobalAddressSubstate::Resource(resource_manager_id),
                 ))
             }
             HeapRENode::Package(..) => {
-                let package_address: PackageAddress = node_id.into();
-
+                let package_address = id_allocator
+                    .new_package_address(transaction_hash)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+                let package_id: PackageId = node_id.into();
                 Ok((
                     GlobalAddress::Package(package_address),
-                    GlobalAddressSubstate::Package(package_address),
+                    GlobalAddressSubstate::Package(package_id),
                 ))
             }
             _ => Err(RuntimeError::KernelError(
@@ -245,18 +249,16 @@ where
                 Ok(RENodeId::KeyValueStore(kv_store_id))
             }
             HeapRENode::NonFungibleStore(..) => {
-                let non_fungible_store_id =
-                    id_allocator.new_non_fungible_store_id(transaction_hash)?;
-                Ok(RENodeId::NonFungibleStore(non_fungible_store_id))
+                let nf_store_id = id_allocator.new_nf_store_id(transaction_hash)?;
+                Ok(RENodeId::NonFungibleStore(nf_store_id))
             }
             HeapRENode::Package(..) => {
-                // Security Alert: ensure ID allocating will practically never fail
-                let package_address = id_allocator.new_package_address(transaction_hash)?;
-                Ok(RENodeId::Package(package_address))
+                let package_id = id_allocator.new_package_id(transaction_hash)?;
+                Ok(RENodeId::Package(package_id))
             }
             HeapRENode::ResourceManager(..) => {
-                let resource_address = id_allocator.new_resource_address(transaction_hash)?;
-                Ok(RENodeId::ResourceManager(resource_address))
+                let resource_manager_id = id_allocator.new_resource_manager_id(transaction_hash)?;
+                Ok(RENodeId::ResourceManager(resource_manager_id))
             }
             HeapRENode::Component(..) => {
                 let component_id = id_allocator.new_component_id(transaction_hash)?;
@@ -465,8 +467,10 @@ where
             ScryptoInvocation::Function(function_ident, args) => {
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
-                let global_node_id =
-                    RENodeId::Global(GlobalAddress::Package(function_ident.package_address));
+                let package_address = match function_ident.package {
+                    ScryptoPackage::Global(address) => address,
+                };
+                let global_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
                 let package_node_id = self.node_method_deref(global_node_id)?.unwrap();
                 let package = self.execute_in_mode::<_, _, RuntimeError>(
                     ExecutionMode::ScryptoInterpreter,
@@ -541,7 +545,8 @@ where
                 }
 
                 REActor::Function(ResolvedFunction::Scrypto {
-                    package_address: function_ident.package_address,
+                    package_address: package_address,
+                    package_id: package_node_id.into(),
                     blueprint_name: function_ident.blueprint_name.clone(),
                     ident: function_ident.function_name.clone(),
                     export_name: fn_abi.export_name.clone(),
@@ -666,6 +671,7 @@ where
                 REActor::Method(
                     ResolvedMethod::Scrypto {
                         package_address: component_info.package_address,
+                        package_id: package_node_id.into(),
                         blueprint_name: component_info.blueprint_name,
                         ident: method_ident.method_name.clone(),
                         export_name: fn_abi.export_name.clone(),
@@ -1123,7 +1129,7 @@ where
                 RENodeId::Global(global_address),
                 SubstateOffset::Global(GlobalOffset::Global),
             ),
-            RuntimeSubstate::GlobalRENode(global_substate),
+            RuntimeSubstate::Global(global_substate),
         );
         for (id, substate) in nodes_to_substates(node.to_nodes(node_id)) {
             self.track.insert_substate(id, substate);

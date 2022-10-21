@@ -1,7 +1,6 @@
 mod abi_extractor;
 mod auth_converter;
 mod fn_resolver;
-mod global;
 mod method_authorization;
 mod node_to_substates;
 mod nodes;
@@ -13,7 +12,6 @@ pub use crate::engine::InvokeError;
 pub use abi_extractor::*;
 pub use auth_converter::convert;
 pub use fn_resolver::*;
-pub use global::*;
 pub use method_authorization::*;
 pub use node_to_substates::*;
 pub use nodes::*;

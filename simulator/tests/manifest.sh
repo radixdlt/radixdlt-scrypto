@@ -19,7 +19,4 @@ export resource=`echo $output | cut -d " " -f2`
 
 $resim run ./tests/m2.rtm
 
-# publish to specific non-existing address
-$resim publish ../examples/hello-world --package-address package_sim1q9nmp3gffream9we6wtzywce82ezku488s9c5ekuzgcsvz6tmy
-
 $resim show-ledger
