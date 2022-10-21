@@ -126,8 +126,11 @@ impl Worktop {
                             RENodeId::Global(GlobalAddress::Resource(input.resource_address));
                         let offset =
                             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                        let resource_handle =
-                            system_api.lock_substate(resource_id, offset, LockFlags::empty())?;
+                        let resource_handle = system_api.lock_substate(
+                            resource_id,
+                            offset,
+                            LockFlags::read_only(),
+                        )?;
                         let substate_ref = system_api.get_ref(resource_handle)?;
                         substate_ref.resource_manager().resource_type
                     };
@@ -164,8 +167,11 @@ impl Worktop {
                             RENodeId::Global(GlobalAddress::Resource(input.resource_address));
                         let offset =
                             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                        let resource_handle =
-                            system_api.lock_substate(resource_id, offset, LockFlags::empty())?;
+                        let resource_handle = system_api.lock_substate(
+                            resource_id,
+                            offset,
+                            LockFlags::read_only(),
+                        )?;
                         let substate_ref = system_api.get_ref(resource_handle)?;
                         substate_ref.resource_manager().resource_type
                     };
@@ -202,8 +208,11 @@ impl Worktop {
                             RENodeId::Global(GlobalAddress::Resource(input.resource_address));
                         let offset =
                             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                        let resource_handle =
-                            system_api.lock_substate(resource_id, offset, LockFlags::empty())?;
+                        let resource_handle = system_api.lock_substate(
+                            resource_id,
+                            offset,
+                            LockFlags::read_only(),
+                        )?;
                         let substate_ref = system_api.get_ref(resource_handle)?;
                         substate_ref.resource_manager().resource_type
                     };

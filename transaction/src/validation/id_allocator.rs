@@ -145,10 +145,24 @@ impl IdAllocator {
     }
 
     /// Creates a new non-fungible store ID.
-    pub fn new_non_fungible_store_id(
+    pub fn new_nf_store_id(
         &mut self,
         transaction_hash: Hash,
     ) -> Result<NonFungibleStoreId, IdAllocationError> {
+        Ok((transaction_hash, self.next()?))
+    }
+
+    pub fn new_resource_manager_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<ResourceManagerId, IdAllocationError> {
+        Ok((transaction_hash, self.next()?))
+    }
+
+    pub fn new_package_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<PackageId, IdAllocationError> {
         Ok((transaction_hash, self.next()?))
     }
 }

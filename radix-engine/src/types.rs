@@ -42,12 +42,13 @@ pub use scrypto::resource::{
     ResourceManagerGetMetadataInput, ResourceManagerGetNonFungibleInput,
     ResourceManagerGetResourceTypeInput, ResourceManagerGetTotalSupplyInput,
     ResourceManagerLockAuthInput, ResourceManagerMintInput, ResourceManagerNonFungibleExistsInput,
-    ResourceManagerUpdateAuthInput, ResourceManagerUpdateMetadataInput,
-    ResourceManagerUpdateNonFungibleDataInput, ResourceMethodAuthKey, ResourceType, SoftCount,
-    SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
-    VaultCreateProofByAmountInput, VaultCreateProofByIdsInput, VaultCreateProofInput,
-    VaultGetAmountInput, VaultGetNonFungibleIdsInput, VaultGetResourceAddressInput,
-    VaultLockFeeInput, VaultPutInput, VaultTakeInput, VaultTakeNonFungiblesInput, LOCKED, MUTABLE,
+    ResourceManagerSetResourceAddressInput, ResourceManagerUpdateAuthInput,
+    ResourceManagerUpdateMetadataInput, ResourceManagerUpdateNonFungibleDataInput,
+    ResourceMethodAuthKey, ResourceType, SoftCount, SoftDecimal, SoftResource,
+    SoftResourceOrNonFungible, SoftResourceOrNonFungibleList, VaultCreateProofByAmountInput,
+    VaultCreateProofByIdsInput, VaultCreateProofInput, VaultGetAmountInput,
+    VaultGetNonFungibleIdsInput, VaultGetResourceAddressInput, VaultLockFeeInput, VaultPutInput,
+    VaultTakeInput, VaultTakeNonFungiblesInput, LOCKED, MUTABLE,
 };
 pub use scrypto::values::{ScryptoValue, ScryptoValueReplaceError};
 

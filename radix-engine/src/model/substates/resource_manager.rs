@@ -12,7 +12,8 @@ pub struct ResourceManagerSubstate {
     pub bucket_method_table: HashMap<BucketMethod, ResourceMethodRule>,
     pub authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule>,
     pub total_supply: Decimal,
-    pub non_fungible_store_id: Option<NonFungibleStoreId>,
+    pub nf_store_id: Option<NonFungibleStoreId>,
+    pub resource_address: Option<ResourceAddress>, // always set after instantiation
 }
 
 impl ResourceManagerSubstate {
@@ -110,6 +111,21 @@ impl ResourceManagerSubstate {
         new_metadata: HashMap<String, String>,
     ) -> Result<(), InvokeError<ResourceManagerError>> {
         self.metadata = new_metadata;
+
+        Ok(())
+    }
+
+    pub fn set_resource_address(
+        &mut self,
+        resource_address: ResourceAddress,
+    ) -> Result<(), InvokeError<ResourceManagerError>> {
+        if self.resource_address.is_some() {
+            return Err(InvokeError::Error(
+                ResourceManagerError::ResourceAddressAlreadySet,
+            ));
+        }
+
+        self.resource_address = Some(resource_address);
 
         Ok(())
     }
