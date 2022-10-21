@@ -27,7 +27,9 @@ impl Vault {
             VaultMethod::LockFee => {
                 LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE
             }
-            VaultMethod::LockContingentFee => LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE,
+            VaultMethod::LockContingentFee => {
+                LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE
+            }
             VaultMethod::Put => LockFlags::MUTABLE,
             VaultMethod::TakeNonFungibles => LockFlags::MUTABLE,
             VaultMethod::GetAmount => LockFlags::read_only(),
