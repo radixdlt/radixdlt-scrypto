@@ -1,5 +1,4 @@
-use sbor::rust::fmt::Debug;
-use std::fmt::Formatter;
+use sbor::rust::fmt::{Debug, Formatter};
 
 use crate::types::*;
 

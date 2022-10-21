@@ -357,18 +357,21 @@ where
     fn drop_nodes_in_frame(&mut self) -> Result<(), RuntimeError> {
         let mut worktops = Vec::new();
         let owned_nodes = self.current_frame.owned_nodes();
-        for node_id in owned_nodes {
-            if let RENodeId::Worktop = node_id {
-                worktops.push(node_id);
-            } else {
-                self.drop_node(node_id)?;
-            }
-        }
-        for worktop_id in worktops {
-            self.drop_node(worktop_id)?;
-        }
 
-        Ok(())
+        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Application, |system_api| {
+            for node_id in owned_nodes {
+                if let RENodeId::Worktop = node_id {
+                    worktops.push(node_id);
+                } else {
+                    system_api.drop_node(node_id)?;
+                }
+            }
+            for worktop_id in worktops {
+                system_api.drop_node(worktop_id)?;
+            }
+
+            Ok(())
+        })
     }
 
     fn run(
@@ -480,9 +483,7 @@ where
         self.current_frame.drop_all_locks(&mut self.track)?;
 
         // drop proofs and check resource leak
-        self.execution_mode = ExecutionMode::Application;
         self.drop_nodes_in_frame()?;
-        self.execution_mode = ExecutionMode::Kernel;
 
         // Restore previous frame
         self.current_frame = parent;
@@ -990,9 +991,7 @@ where
         // TODO: Move this into higher layer, e.g. transaction processor
         if self.current_frame.depth == 0 {
             self.current_frame.drop_all_locks(&mut self.track)?;
-            self.execution_mode = ExecutionMode::Application;
             self.drop_nodes_in_frame()?;
-            self.execution_mode = ExecutionMode::Kernel;
         }
 
         // Restore previous mode
