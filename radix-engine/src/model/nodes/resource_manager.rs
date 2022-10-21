@@ -212,7 +212,7 @@ impl ResourceManager {
                 let global_address = system_api.node_globalize(node_id)?;
                 let resource_address: ResourceAddress = global_address.into();
 
-                // Store the resource address in the resource manager state
+                // FIXME this is temporary workaround for the resource address resolution problem
                 system_api
                     .invoke_native(NativeInvocation::Method(
                         NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
