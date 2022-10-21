@@ -107,8 +107,6 @@ pub enum ResourceAddress {
     Normal([u8; 26]),
 }
 
-impl ResourceAddress {}
-
 /// Represents a resource manager.
 #[derive(Debug)]
 pub struct ResourceManager(pub(crate) ResourceAddress);

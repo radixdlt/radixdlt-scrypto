@@ -20,8 +20,6 @@ pub enum PackageAddress {
     Normal([u8; 26]),
 }
 
-impl PackageAddress {}
-
 /// Represents a published package.
 #[derive(Debug)]
 pub struct BorrowedPackage(pub(crate) PackageAddress);

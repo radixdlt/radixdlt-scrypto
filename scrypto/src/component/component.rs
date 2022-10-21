@@ -208,8 +208,6 @@ pub enum ComponentAddress {
     System([u8; 26]),
 }
 
-impl ComponentAddress {}
-
 //========
 // binary
 //========
