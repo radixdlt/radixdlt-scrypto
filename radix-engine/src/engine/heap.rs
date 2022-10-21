@@ -1,4 +1,4 @@
-use crate::engine::{CallFrameError, DropFailure, Track};
+use crate::engine::{CallFrameError, Track};
 use crate::fee::FeeReserve;
 use crate::model::{
     BucketSubstate, KeyValueStoreEntrySubstate, NonFungibleSubstate, ProofSubstate,
@@ -157,42 +157,6 @@ impl Heap {
 pub struct HeapRENode {
     pub substates: HashMap<SubstateOffset, RuntimeSubstate>,
     pub child_nodes: HashSet<RENodeId>,
-}
-
-impl HeapRENode {
-    // TODO: Move this into kernel
-    pub fn try_drop(&mut self) -> Result<(), DropFailure> {
-        // TODO: Remove this
-        if !self.child_nodes.is_empty() {
-            return Err(DropFailure::DroppingNodeWithChildren);
-        }
-
-        for (_, substate) in &mut self.substates {
-            match substate {
-                RuntimeSubstate::AuthZone(auth_zone) => {
-                    auth_zone.clear_all();
-                    Ok(())
-                }
-                RuntimeSubstate::GlobalRENode(..) => panic!("Should never get here"),
-                RuntimeSubstate::Package(..) => Err(DropFailure::Package),
-                RuntimeSubstate::Vault(..) => Err(DropFailure::Vault),
-                RuntimeSubstate::KeyValueStoreEntry(..) => Err(DropFailure::KeyValueStore),
-                RuntimeSubstate::NonFungible(..) => Err(DropFailure::NonFungibleStore),
-                RuntimeSubstate::ComponentInfo(..) => Err(DropFailure::Component),
-                RuntimeSubstate::ComponentState(..) => Err(DropFailure::Component),
-                RuntimeSubstate::Bucket(..) => Ok(()),
-                RuntimeSubstate::ResourceManager(..) => Err(DropFailure::Resource),
-                RuntimeSubstate::System(..) => Err(DropFailure::System),
-                RuntimeSubstate::Proof(proof) => {
-                    proof.drop();
-                    Ok(())
-                }
-                RuntimeSubstate::Worktop(worktop) => worktop.drop(),
-            }?;
-        }
-
-        Ok(())
-    }
 }
 
 impl Into<BucketSubstate> for HeapRENode {

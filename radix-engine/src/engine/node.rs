@@ -42,7 +42,7 @@ impl RENode {
             RENode::Global(global_node) => {
                 substates.insert(
                     SubstateOffset::Global(GlobalOffset::Global),
-                    RuntimeSubstate::GlobalRENode(global_node),
+                    RuntimeSubstate::Global(global_node),
                 );
             }
             RENode::Vault(vault) => {

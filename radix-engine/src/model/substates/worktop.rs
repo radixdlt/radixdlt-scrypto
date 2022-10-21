@@ -1,5 +1,6 @@
-use crate::engine::DropFailure;
-use crate::model::{BucketSubstate, LockableResource, Resource, ResourceOperationError};
+use crate::model::{
+    BucketSubstate, LockableResource, Resource, ResourceOperationError, WorktopError,
+};
 use crate::types::*;
 
 /// Worktop collects resources from function or method returns.
@@ -16,10 +17,10 @@ impl WorktopSubstate {
         }
     }
 
-    pub fn drop(&mut self) -> Result<(), DropFailure> {
+    pub fn drop(&mut self) -> Result<(), WorktopError> {
         for (_address, resource) in &self.resources {
             if !resource.borrow().is_empty() {
-                return Err(DropFailure::Worktop);
+                return Err(WorktopError::CouldNotDrop);
             }
         }
 

@@ -353,16 +353,22 @@ impl CallFrame {
     }
 
     pub fn owned_nodes(&self) -> Vec<RENodeId> {
-        self.owned_heap_nodes.iter().cloned().collect()
+        self.owned_root_nodes.iter().cloned().collect()
     }
 
-    pub fn drop_node(
+    pub fn remove_node(
         &mut self,
         heap: &mut Heap,
         node_id: RENodeId,
     ) -> Result<HeapRENode, RuntimeError> {
         self.take_node_internal(heap, node_id)?;
         let node = heap.remove_node(node_id)?;
+        // TODO: Remove this
+        if !node.child_nodes.is_empty() {
+            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                node_id,
+            )));
+        }
         Ok(node)
     }
 

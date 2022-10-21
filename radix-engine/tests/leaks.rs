@@ -1,6 +1,4 @@
-use radix_engine::engine::{
-    DropFailure, ExecutionMode, KernelError, REActor, ResolvedFunction, RuntimeError,
-};
+use radix_engine::engine::{ExecutionMode, KernelError, REActor, ResolvedFunction, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -105,7 +103,7 @@ fn dangling_worktop_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::DropFailure(DropFailure::Worktop))
+            RuntimeError::KernelError(KernelError::DropNodeFailure(RENodeId::Worktop))
         )
     });
 }

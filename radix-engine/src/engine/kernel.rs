@@ -354,10 +354,69 @@ where
         })
     }
 
+    fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
+        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |system_api| {
+            match node_id {
+                RENodeId::AuthZoneStack(..) => {
+                    let handle = system_api.lock_substate(
+                        node_id,
+                        SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+                        LockFlags::MUTABLE,
+                    )?;
+                    let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+                    let mut raw_mut = substate_ref_mut.get_raw_mut();
+                    let auth_zone = raw_mut.auth_zone();
+                    auth_zone.clear_all();
+                    substate_ref_mut.flush()?;
+                    system_api.drop_lock(handle)?;
+                    Ok(())
+                }
+                RENodeId::Proof(..) => {
+                    let handle = system_api.lock_substate(
+                        node_id,
+                        SubstateOffset::Proof(ProofOffset::Proof),
+                        LockFlags::MUTABLE,
+                    )?;
+                    let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+                    let mut raw_mut = substate_ref_mut.get_raw_mut();
+                    let proof = raw_mut.proof();
+                    proof.drop();
+                    substate_ref_mut.flush()?;
+                    system_api.drop_lock(handle)?;
+                    Ok(())
+                }
+                RENodeId::Worktop => {
+                    let handle = system_api.lock_substate(
+                        node_id,
+                        SubstateOffset::Worktop(WorktopOffset::Worktop),
+                        LockFlags::MUTABLE,
+                    )?;
+                    let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+                    let mut raw_mut = substate_ref_mut.get_raw_mut();
+                    let worktop = raw_mut.worktop();
+                    worktop.drop().map_err(|_| {
+                        RuntimeError::KernelError(KernelError::DropNodeFailure(node_id))
+                    })?;
+                    substate_ref_mut.flush()?;
+                    system_api.drop_lock(handle)?;
+                    Ok(())
+                }
+                RENodeId::Bucket(..) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                    node_id,
+                ))),
+            }
+        })?;
+
+        let node = self.current_frame.remove_node(&mut self.heap, node_id)?;
+        Ok(node)
+    }
+
     fn drop_nodes_in_frame(&mut self) -> Result<(), RuntimeError> {
         let mut worktops = Vec::new();
         let owned_nodes = self.current_frame.owned_nodes();
 
+        // Need to go through system_api so that visibility issues can be caught
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Application, |system_api| {
             for node_id in owned_nodes {
                 if let RENodeId::Worktop = node_id {
@@ -1124,9 +1183,7 @@ where
             ));
         }
 
-        let mut node = self.current_frame.drop_node(&mut self.heap, node_id)?;
-        node.try_drop()
-            .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))?;
+        let node = self.drop_node_internal(node_id)?;
 
         // Restore current mode
         self.execution_mode = current_mode;
