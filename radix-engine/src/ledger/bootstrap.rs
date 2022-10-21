@@ -251,7 +251,7 @@ where
 
         let mut executor = TransactionExecutor::new(substate_store, &mut scrypto_interpreter);
         let genesis_transaction = create_genesis();
-        let executable: Executable = genesis_transaction.clone().into();
+        let executable: Executable = genesis_transaction.into();
         let mut fee_reserve = SystemLoanFeeReserve::default();
         fee_reserve.credit(GENESIS_CREATION_CREDIT);
         let transaction_receipt = executor.execute_with_fee_reserve(
