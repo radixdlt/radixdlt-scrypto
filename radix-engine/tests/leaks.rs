@@ -1,4 +1,6 @@
-use radix_engine::engine::{DropFailure, KernelError, RuntimeError};
+use radix_engine::engine::{
+    DropFailure, ExecutionMode, KernelError, REActor, ResolvedFunction, RuntimeError,
+};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -22,7 +24,11 @@ fn dangling_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::DropFailure(DropFailure::Component))
+            RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
+                mode: ExecutionMode::Application,
+                actor: REActor::Function(ResolvedFunction::Scrypto { .. }),
+                node_id: RENodeId::Component(..)
+            })
         )
     });
 }
@@ -45,7 +51,11 @@ fn dangling_bucket_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::DropFailure(DropFailure::Bucket))
+            RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
+                mode: ExecutionMode::Application,
+                actor: REActor::Function(ResolvedFunction::Scrypto { .. }),
+                node_id: RENodeId::Bucket(..)
+            })
         )
     });
 }
@@ -68,7 +78,11 @@ fn dangling_vault_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::DropFailure(DropFailure::Vault))
+            RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
+                mode: ExecutionMode::Application,
+                actor: REActor::Function(ResolvedFunction::Scrypto { .. }),
+                node_id: RENodeId::Vault(..)
+            })
         )
     });
 }
@@ -114,7 +128,11 @@ fn dangling_kv_store_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::DropFailure(DropFailure::KeyValueStore))
+            RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
+                mode: ExecutionMode::Application,
+                actor: REActor::Function(ResolvedFunction::Scrypto { .. }),
+                node_id: RENodeId::KeyValueStore(..)
+            })
         )
     });
 }
@@ -142,7 +160,11 @@ fn dangling_bucket_with_proof_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::DropFailure(DropFailure::Bucket))
+            RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
+                mode: ExecutionMode::Application,
+                actor: REActor::Function(ResolvedFunction::Scrypto { .. }),
+                node_id: RENodeId::Bucket(..)
+            })
         )
     });
 }

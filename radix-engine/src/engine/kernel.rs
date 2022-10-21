@@ -339,6 +339,23 @@ where
         })
     }
 
+    fn drop_nodes_in_frame(&mut self) -> Result<(), RuntimeError> {
+        let mut worktops = Vec::new();
+        let owned_nodes = self.current_frame.owned_nodes();
+        for node_id in owned_nodes {
+            if let RENodeId::Worktop = node_id {
+                worktops.push(node_id);
+            } else {
+                self.drop_node(node_id)?;
+            }
+        }
+        for worktop_id in worktops {
+            self.drop_node(worktop_id)?;
+        }
+
+        Ok(())
+    }
+
     fn run(
         &mut self,
         actor: REActor,
@@ -448,8 +465,12 @@ where
         self.current_frame.drop_all_locks(&mut self.track)?;
 
         // drop proofs and check resource leak
-        let mut child = mem::replace(&mut self.current_frame, parent);
-        child.drop_frame(&mut self.heap)?;
+        self.execution_mode = ExecutionMode::Application;
+        self.drop_nodes_in_frame()?;
+        self.execution_mode = ExecutionMode::Kernel;
+
+        // Restore previous frame
+        self.current_frame = parent;
 
         Ok(output)
     }
@@ -949,7 +970,10 @@ where
 
         // TODO: Move this into higher layer, e.g. transaction processor
         if self.current_frame.depth == 0 {
-            self.current_frame.drop_frame(&mut self.heap)?;
+            self.current_frame.drop_all_locks(&mut self.track)?;
+            self.execution_mode = ExecutionMode::Application;
+            self.drop_nodes_in_frame()?;
+            self.execution_mode = ExecutionMode::Kernel;
         }
 
         // Restore previous mode
@@ -1064,9 +1088,28 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        // TODO: Visibility check
+        // Change to kernel mode
+        let current_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
+
+        if !VisibilityProperties::check_drop_node_visibility(
+            current_mode,
+            &self.current_frame.actor,
+            node_id,
+        ) {
+            return Err(RuntimeError::KernelError(
+                KernelError::InvalidDropNodeVisibility {
+                    mode: current_mode,
+                    actor: self.current_frame.actor.clone(),
+                    node_id,
+                },
+            ));
+        }
 
         let node = self.current_frame.drop_node(&mut self.heap, node_id)?;
+
+        // Restore current mode
+        self.execution_mode = current_mode;
 
         for m in &mut self.modules {
             m.post_sys_call(

@@ -16,8 +16,8 @@ impl WorktopSubstate {
         }
     }
 
-    pub fn drop(self) -> Result<(), DropFailure> {
-        for (_address, resource) in self.resources {
+    pub fn drop(&mut self) -> Result<(), DropFailure> {
+        for (_address, resource) in &self.resources {
             if !resource.borrow().is_empty() {
                 return Err(DropFailure::Worktop);
             }

@@ -8,6 +8,49 @@ use crate::types::*;
 pub struct VisibilityProperties;
 
 impl VisibilityProperties {
+    pub fn check_drop_node_visibility(
+        mode: ExecutionMode,
+        actor: &REActor,
+        node_id: RENodeId,
+    ) -> bool {
+        if !mode.eq(&ExecutionMode::Application) {
+            return false;
+        }
+
+        // TODO: Cleanup and reduce to least privilege
+        match node_id {
+            RENodeId::Worktop => match actor {
+                REActor::Function(
+                    ResolvedFunction::Native(NativeFunction::TransactionProcessor(..)),
+                    ..,
+                ) => true,
+                _ => false,
+            },
+            RENodeId::AuthZoneStack(..) => match actor {
+                REActor::Function(
+                    ResolvedFunction::Native(NativeFunction::TransactionProcessor(..)),
+                    ..,
+                ) => true,
+                _ => false,
+            },
+            RENodeId::Bucket(..) => match actor {
+                REActor::Method(ResolvedMethod::Native(NativeMethod::Bucket(..)), ..)
+                | REActor::Method(ResolvedMethod::Native(NativeMethod::Worktop(..)), ..)
+                | REActor::Method(ResolvedMethod::Native(NativeMethod::ResourceManager(..)), ..)
+                | REActor::Method(ResolvedMethod::Native(NativeMethod::Vault(..)), ..) => true,
+                _ => false,
+            },
+            RENodeId::Proof(..) => match actor {
+                REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..) => true,
+                REActor::Method(ResolvedMethod::Native(NativeMethod::Proof(..)), ..) => true,
+                REActor::Method(ResolvedMethod::Scrypto { .. }, ..) => true,
+                REActor::Function(ResolvedFunction::Scrypto { .. }) => true,
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+
     pub fn check_create_node_visibility(
         mode: ExecutionMode,
         actor: &REActor,

@@ -248,26 +248,9 @@ impl CallFrame {
         &mut self,
         track: &mut Track<'s, R>,
     ) -> Result<(), RuntimeError> {
-        for (_, lock) in self.locks.drain() {
-            let SubstateLock {
-                substate_pointer: (node_pointer, node_id, offset),
-                flags,
-                ..
-            } = lock;
-            if !(matches!(offset, SubstateOffset::KeyValueStore(..))
-                || matches!(
-                    offset,
-                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
-                ))
-            {
-                Self::release_lock(
-                    track,
-                    node_pointer,
-                    node_id,
-                    offset.clone(),
-                    flags.contains(LockFlags::UNMODIFIED_BASE),
-                )?;
-            }
+        let lock_ids: Vec<LockHandle> = self.locks.keys().cloned().collect();
+        for lock in lock_ids {
+            self.drop_lock(track, lock)?;
         }
 
         Ok(())
@@ -369,37 +352,20 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn drop_frame(&mut self, heap: &mut Heap) -> Result<(), RuntimeError> {
-        let nodes: Vec<RENodeId> = self.owned_heap_nodes.drain().collect();
-
-        let mut worktops = Vec::new();
-
-        for node_id in nodes {
-            if let RENodeId::Worktop = node_id {
-                worktops.push(node_id);
-            } else {
-                let node = heap.remove_node(node_id).unwrap();
-                node.try_drop()
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))?;
-            }
-        }
-
-        for worktop_id in worktops {
-            let node = heap.remove_node(worktop_id).unwrap();
-            node.try_drop()
-                .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))?;
-        }
-
-        Ok(())
+    pub fn owned_nodes(&self) -> Vec<RENodeId> {
+        self.owned_heap_nodes.iter().cloned().collect()
     }
 
     pub fn drop_node(
         &mut self,
         heap: &mut Heap,
         node_id: RENodeId,
-    ) -> Result<HeapRENode, CallFrameError> {
+    ) -> Result<HeapRENode, RuntimeError> {
         self.take_node_internal(heap, node_id)?;
-        heap.remove_node(node_id)
+        let mut node = heap.remove_node(node_id)?;
+        node.try_drop()
+            .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))?;
+        Ok(node)
     }
 
     fn borrow_substate<'f, 'p, 's, R: FeeReserve>(

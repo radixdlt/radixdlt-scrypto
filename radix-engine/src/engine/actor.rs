@@ -1,4 +1,5 @@
 use crate::types::*;
+use std::fmt::Debug;
 
 /// Resolved receiver including info whether receiver was derefed
 /// or not

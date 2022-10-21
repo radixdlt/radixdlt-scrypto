@@ -87,6 +87,11 @@ pub enum KernelError {
     InvalidOverwrite,
 
     // Actor Constraints
+    InvalidDropNodeVisibility {
+        mode: ExecutionMode,
+        actor: REActor,
+        node_id: RENodeId,
+    },
     InvalidCreateNodeVisibility {
         mode: ExecutionMode,
         actor: REActor,

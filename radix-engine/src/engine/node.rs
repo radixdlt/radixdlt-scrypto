@@ -109,15 +109,16 @@ pub struct HeapRENode {
 }
 
 impl HeapRENode {
-    pub fn try_drop(self) -> Result<(), DropFailure> {
+    // TODO: Move this into kernel
+    pub fn try_drop(&mut self) -> Result<(), DropFailure> {
         // TODO: Remove this
         if !self.child_nodes.is_empty() {
             return Err(DropFailure::DroppingNodeWithChildren);
         }
 
-        for (_, substate) in self.substates {
+        for (_, substate) in &mut self.substates {
             match substate {
-                RuntimeSubstate::AuthZone(mut auth_zone) => {
+                RuntimeSubstate::AuthZone(auth_zone) => {
                     auth_zone.clear_all();
                     Ok(())
                 }
@@ -128,7 +129,7 @@ impl HeapRENode {
                 RuntimeSubstate::NonFungible(..) => Err(DropFailure::NonFungibleStore),
                 RuntimeSubstate::ComponentInfo(..) => Err(DropFailure::Component),
                 RuntimeSubstate::ComponentState(..) => Err(DropFailure::Component),
-                RuntimeSubstate::Bucket(..) => Err(DropFailure::Bucket),
+                RuntimeSubstate::Bucket(..) => Ok(()),
                 RuntimeSubstate::ResourceManager(..) => Err(DropFailure::Resource),
                 RuntimeSubstate::System(..) => Err(DropFailure::System),
                 RuntimeSubstate::Proof(proof) => {

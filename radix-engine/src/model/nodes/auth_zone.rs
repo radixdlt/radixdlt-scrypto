@@ -1,6 +1,6 @@
 use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::{InvokeError, ProofError, ProofSubstate};
+use crate::model::{InvokeError, ProofError};
 use crate::types::*;
 use scrypto::resource::AuthZoneDrainInput;
 
@@ -65,14 +65,23 @@ impl AuthZoneStack {
             AuthZoneMethod::Push => {
                 let input: AuthZonePushInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
-                let mut proof: ProofSubstate =
-                    system_api.drop_node(RENodeId::Proof(input.proof.0))?.into();
-                proof.change_to_unrestricted();
+
+                let node_id = RENodeId::Proof(input.proof.0);
+                let handle = system_api.lock_substate(
+                    node_id,
+                    SubstateOffset::Proof(ProofOffset::Proof),
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = system_api.get_ref(handle)?;
+                let proof = substate_ref.proof();
+                // Take control of the proof lock as the proof in the call frame will lose it's lock once dropped
+                let mut cloned_proof = proof.clone();
+                cloned_proof.change_to_unrestricted();
 
                 let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
                 let auth_zone = raw_mut.auth_zone();
-                auth_zone.cur_auth_zone_mut().push(proof);
+                auth_zone.cur_auth_zone_mut().push(cloned_proof);
                 substate_mut.flush()?;
 
                 ScryptoValue::from_typed(&())
