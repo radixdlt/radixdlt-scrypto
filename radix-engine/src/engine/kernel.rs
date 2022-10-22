@@ -531,7 +531,7 @@ where
         )?;
 
         // Auto drop locks
-        self.current_frame.drop_all_locks(&mut self.track)?;
+        self.current_frame.drop_all_locks(&mut self.heap, &mut self.track)?;
 
         self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
             AuthModule::on_frame_end(system_api).map_err(|e| match e {
@@ -541,7 +541,7 @@ where
         })?;
 
         // Auto-drop locks again in case module forgot to drop
-        self.current_frame.drop_all_locks(&mut self.track)?;
+        self.current_frame.drop_all_locks(&mut self.heap, &mut self.track)?;
 
         // drop proofs and check resource leak
         self.drop_nodes_in_frame()?;
@@ -1051,7 +1051,7 @@ where
 
         // TODO: Move this into higher layer, e.g. transaction processor
         if self.current_frame.depth == 0 {
-            self.current_frame.drop_all_locks(&mut self.track)?;
+            self.current_frame.drop_all_locks(&mut self.heap, &mut self.track)?;
             self.drop_nodes_in_frame()?;
         }
 
@@ -1364,9 +1364,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        self.current_frame
-            .drop_lock(&mut self.track, lock_handle)
-            .map_err(RuntimeError::KernelError)?;
+        self.current_frame.drop_lock(&mut self.heap, &mut self.track, lock_handle)?;
 
         for m in &mut self.modules {
             m.post_sys_call(

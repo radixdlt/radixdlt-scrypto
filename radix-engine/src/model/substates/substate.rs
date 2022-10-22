@@ -597,7 +597,6 @@ impl<'a> SubstateRef<'a> {
 pub struct SubstateRefMut<'f, 's, R: FeeReserve> {
     flushed: bool,
     _lock_handle: LockHandle,
-    prev_children: HashSet<RENodeId>,
     location: RENodeLocation,
     node_id: RENodeId,
     offset: SubstateOffset,
@@ -621,7 +620,6 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         node_pointer: RENodeLocation,
         node_id: RENodeId,
         offset: SubstateOffset,
-        prev_children: HashSet<RENodeId>,
         current_frame: &'f mut CallFrame,
         heap: &'f mut Heap,
         track: &'f mut Track<'s, R>,
@@ -629,7 +627,6 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         let substate_ref_mut = Self {
             flushed: false,
             _lock_handle: lock_handle,
-            prev_children,
             location: node_pointer,
             node_id,
             offset,
@@ -646,6 +643,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
 
     // TODO: Move into kernel substate unlock
     fn do_flush(&mut self) -> Result<(), RuntimeError> {
+        /*
         let (new_global_references, mut new_children) = {
             let substate_ref_mut = self.get_raw_mut();
             substate_ref_mut.to_ref().references_and_owned_nodes()
@@ -687,6 +685,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
                 )?;
             }
         }
+         */
 
         Ok(())
     }
