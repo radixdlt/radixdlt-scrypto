@@ -1333,7 +1333,7 @@ where
 
         let lock_handle =
             self.current_frame
-                .acquire_lock(&mut self.track, node_id, offset.clone(), flags)?;
+                .acquire_lock(&mut self.heap, &mut self.track, node_id, offset.clone(), flags)?;
 
         // Restore current mode
         self.execution_mode = current_mode;

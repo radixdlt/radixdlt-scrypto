@@ -13,7 +13,7 @@ pub enum RENodeLocation {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock {
     pub substate_pointer: (RENodeLocation, RENodeId, SubstateOffset),
-    pub owned_nodes: HashSet<RENodeId>,
+    pub substate_owned_nodes: HashSet<RENodeId>,
     pub flags: LockFlags,
 }
 
@@ -42,6 +42,7 @@ pub struct CallFrame {
 impl CallFrame {
     pub fn acquire_lock<'s, R: FeeReserve>(
         &mut self,
+        heap: &mut Heap,
         track: &mut Track<'s, R>,
         node_id: RENodeId,
         offset: SubstateOffset,
@@ -71,12 +72,28 @@ impl CallFrame {
             }?;
         }
 
+
+        let substate_ref = self.get_substate(heap, track, location, node_id, &offset)?;
+        let (global_references, substate_owned_nodes) = substate_ref.references_and_owned_nodes();
+
+        // Expand references
+        {
+            // TODO: Figure out how to drop these references as well on reference drop
+            for global_address in global_references {
+                let node_id = RENodeId::Global(global_address);
+                self.node_refs.insert(node_id, RENodeLocation::Store);
+            }
+            for child_id in &substate_owned_nodes {
+                self.node_refs.insert(*child_id, location);
+            }
+        }
+
         let lock_handle = self.next_lock_handle;
         self.locks.insert(
             lock_handle,
             SubstateLock {
                 substate_pointer: (location, node_id, offset),
-                owned_nodes: HashSet::new(),
+                substate_owned_nodes,
                 flags,
             },
         );
@@ -113,7 +130,7 @@ impl CallFrame {
             .remove(&lock_handle)
             .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
 
-        for refed_node in substate_lock.owned_nodes {
+        for refed_node in substate_lock.substate_owned_nodes {
             self.node_refs.remove(&refed_node);
         }
 
@@ -166,7 +183,7 @@ impl CallFrame {
             .locks
             .get_mut(&lock_handle)
             .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
-        lock.owned_nodes.insert(node_id);
+        lock.substate_owned_nodes.insert(node_id);
         Ok(())
     }
 
@@ -384,24 +401,7 @@ impl CallFrame {
             .map_err(RuntimeError::KernelError)?
             .clone();
 
-        let substate_ref = self.get_substate(heap, track, node_location, node_id, &offset)?;
-        let (global_references, children) = substate_ref.references_and_owned_nodes();
-
-        // Expand references
-        {
-            // TODO: Figure out how to drop these references as well on reference drop
-            for global_address in global_references {
-                let node_id = RENodeId::Global(global_address);
-                self.node_refs.insert(node_id, RENodeLocation::Store);
-            }
-            for child_id in children {
-                self.node_refs.insert(child_id, node_location);
-                self.add_lock_visible_node(lock_handle, child_id)
-                    .map_err(RuntimeError::KernelError)?;
-            }
-        }
-
-        Ok(substate_ref)
+        self.get_substate(heap, track, node_location, node_id, &offset)
     }
 
     pub fn get_ref_mut<'f, 's, R: FeeReserve>(
