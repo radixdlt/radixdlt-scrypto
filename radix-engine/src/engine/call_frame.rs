@@ -106,21 +106,6 @@ impl CallFrame {
         Ok(lock_handle)
     }
 
-    fn release_lock<R: FeeReserve>(
-        track: &mut Track<R>,
-        pointer: RENodeLocation,
-        node_id: RENodeId,
-        offset: SubstateOffset,
-        force_write: bool,
-    ) -> Result<(), KernelError> {
-        match pointer {
-            RENodeLocation::Store => track
-                .release_lock(SubstateId(node_id, offset), force_write)
-                .map_err(KernelError::TrackError),
-            RENodeLocation::Heap => Ok(()),
-        }
-    }
-
     pub fn drop_lock<'s, R: FeeReserve>(
         &mut self,
         heap: &mut Heap,
@@ -161,14 +146,13 @@ impl CallFrame {
 
             for child_id in &new_children {
                 SubstateProperties::verify_can_own(&offset, *child_id)?;
+                self.take_node_internal(*child_id)?;
             }
 
             match location {
-                RENodeLocation::Heap => {
-                    self.move_owned_nodes_to_heap_node(new_children)?;
-                }
+                RENodeLocation::Heap => { }
                 RENodeLocation::Store => {
-                    self.move_owned_nodes_to_store(heap, track, new_children)?;
+                    heap.move_nodes_to_store(track, new_children)?;
                 }
             }
         }
@@ -195,36 +179,24 @@ impl CallFrame {
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
             ))
         {
-            Self::release_lock(
-                track,
-                location,
-                node_id,
-                offset.clone(),
-                flags.contains(LockFlags::FORCE_WRITE),
-            )?;
+            match location {
+                RENodeLocation::Store => track
+                    .release_lock(
+                        SubstateId(node_id, offset.clone()),
+                        flags.contains(LockFlags::FORCE_WRITE),
+                    )
+                    .map_err(KernelError::TrackError),
+                RENodeLocation::Heap => Ok(()),
+            }?;
         }
 
         Ok(())
     }
 
-    pub fn get_lock(&self, lock_handle: LockHandle) -> Result<&SubstateLock, KernelError> {
+    fn get_lock(&self, lock_handle: LockHandle) -> Result<&SubstateLock, KernelError> {
         self.locks
             .get(&lock_handle)
             .ok_or(KernelError::LockDoesNotExist(lock_handle))
-    }
-
-    // TODO: Figure out right interface for this
-    pub fn add_lock_visible_node(
-        &mut self,
-        lock_handle: LockHandle,
-        node_id: RENodeId,
-    ) -> Result<(), KernelError> {
-        let lock = self
-            .locks
-            .get_mut(&lock_handle)
-            .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
-        lock.substate_owned_nodes.insert(node_id);
-        Ok(())
     }
 
     pub fn new_root() -> Self {
@@ -348,32 +320,6 @@ impl CallFrame {
         };
         heap.create_node(node_id, heap_root_node);
         self.owned_root_nodes.insert(node_id);
-
-        Ok(())
-    }
-
-    pub fn move_owned_nodes_to_heap_node(
-        &mut self,
-        children: HashSet<RENodeId>,
-    ) -> Result<(), RuntimeError> {
-        for child_id in &children {
-            self.take_node_internal(*child_id)?;
-        }
-
-        Ok(())
-    }
-
-    pub fn move_owned_nodes_to_store<'f, 's, R: FeeReserve>(
-        &mut self,
-        heap: &mut Heap,
-        track: &'f mut Track<'s, R>,
-        node_ids: HashSet<RENodeId>,
-    ) -> Result<(), RuntimeError> {
-        for node_id in &node_ids {
-            self.take_node_internal(*node_id)?;
-        }
-
-        heap.move_nodes_to_store(track, node_ids)?;
 
         Ok(())
     }
