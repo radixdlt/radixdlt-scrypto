@@ -336,6 +336,7 @@ impl CallFrame {
         self.owned_root_nodes.iter().cloned().collect()
     }
 
+    /// Removes node from call frame and re-owns any children
     pub fn remove_node(
         &mut self,
         heap: &mut Heap,
@@ -343,14 +344,13 @@ impl CallFrame {
     ) -> Result<HeapRENode, RuntimeError> {
         self.take_node_internal(node_id)?;
         let node = heap.remove_node(node_id)?;
-        // TODO: Remove this
-        /*
-        if !node.child_nodes.is_empty() {
-            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                node_id,
-            )));
+        for (_, substate) in &node.substates {
+            let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
+            for child_node in child_nodes {
+                self.owned_root_nodes.insert(child_node);
+            }
         }
-         */
+
         Ok(node)
     }
 

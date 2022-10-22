@@ -409,6 +409,14 @@ where
         })?;
 
         let node = self.current_frame.remove_node(&mut self.heap, node_id)?;
+        for (_, substate) in &node.substates {
+            let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
+            for child_node in child_nodes {
+                // Need to go through system_api so that visibility issues can be caught
+                self.drop_node(child_node)?;
+            }
+        }
+        // TODO: REmove
         Ok(node)
     }
 
