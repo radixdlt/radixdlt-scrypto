@@ -55,7 +55,6 @@ impl AuthZoneStack {
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let auth_zone = raw_mut.auth_zone();
                     let proof = auth_zone.cur_auth_zone_mut().pop()?;
-                    substate_mut.flush()?;
                     proof
                 };
 
@@ -82,7 +81,6 @@ impl AuthZoneStack {
                 let mut raw_mut = substate_mut.get_raw_mut();
                 let auth_zone = raw_mut.auth_zone();
                 auth_zone.cur_auth_zone_mut().push(cloned_proof);
-                substate_mut.flush()?;
 
                 ScryptoValue::from_typed(&())
             }
@@ -108,7 +106,6 @@ impl AuthZoneStack {
                     let proof = auth_zone
                         .cur_auth_zone()
                         .create_proof(input.resource_address, resource_type)?;
-                    substate_mut.flush()?;
                     proof
                 };
 
@@ -139,7 +136,6 @@ impl AuthZoneStack {
                         input.resource_address,
                         resource_type,
                     )?;
-                    substate_mut.flush()?;
                     proof
                 };
 
@@ -182,7 +178,6 @@ impl AuthZoneStack {
                 let mut raw_mut = substate_mut.get_raw_mut();
                 let auth_zone = raw_mut.auth_zone();
                 auth_zone.cur_auth_zone_mut().clear();
-                substate_mut.flush()?;
                 ScryptoValue::from_typed(&())
             }
             AuthZoneMethod::Drain => {
@@ -194,7 +189,6 @@ impl AuthZoneStack {
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let auth_zone = raw_mut.auth_zone();
                     let proofs = auth_zone.cur_auth_zone_mut().drain();
-                    substate_mut.flush()?;
                     proofs
                 };
 

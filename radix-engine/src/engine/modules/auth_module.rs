@@ -197,7 +197,6 @@ impl AuthModule {
         auth_zone_ref_mut.new_frame(actor);
         new_refs.insert(auth_zone_id);
 
-        substate_mut_ref.flush()?;
         system_api.drop_lock(handle)?;
 
         Ok(new_refs)
@@ -230,7 +229,6 @@ impl AuthModule {
             let mut raw_mut = substate_ref_mut.get_raw_mut();
             let auth_zone = raw_mut.auth_zone();
             auth_zone.pop_frame();
-            substate_ref_mut.flush()?;
         }
         system_api.drop_lock(handle)?;
 

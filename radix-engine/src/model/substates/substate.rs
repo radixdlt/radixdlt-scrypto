@@ -1,5 +1,5 @@
 use crate::engine::{
-    CallFrame, Heap, KernelError, RENodeLocation, RuntimeError, SubstateProperties, Track,
+    Heap, KernelError, RENodeLocation, RuntimeError, Track,
 };
 use crate::fee::FeeReserve;
 use crate::model::substates::worktop::WorktopSubstate;
@@ -595,42 +595,25 @@ impl<'a> SubstateRef<'a> {
 }
 
 pub struct SubstateRefMut<'f, 's, R: FeeReserve> {
-    flushed: bool,
-    _lock_handle: LockHandle,
     location: RENodeLocation,
     node_id: RENodeId,
     offset: SubstateOffset,
-    current_frame: &'f mut CallFrame,
     heap: &'f mut Heap,
     track: &'f mut Track<'s, R>,
 }
 
-// TODO: Remove once flush is moved into kernel substate unlock
-impl<'f, 's, R: FeeReserve> Drop for SubstateRefMut<'f, 's, R> {
-    fn drop(&mut self) {
-        if !self.flushed {
-            self.do_flush().expect("Auto-flush failure.");
-        }
-    }
-}
-
 impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
     pub fn new(
-        lock_handle: LockHandle,
-        node_pointer: RENodeLocation,
+        location: RENodeLocation,
         node_id: RENodeId,
         offset: SubstateOffset,
-        current_frame: &'f mut CallFrame,
         heap: &'f mut Heap,
         track: &'f mut Track<'s, R>,
     ) -> Result<Self, RuntimeError> {
         let substate_ref_mut = Self {
-            flushed: false,
-            _lock_handle: lock_handle,
-            location: node_pointer,
+            location,
             node_id,
             offset,
-            current_frame,
             heap,
             track,
         };
@@ -639,60 +622,6 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
 
     pub fn offset(&self) -> &SubstateOffset {
         &self.offset
-    }
-
-    // TODO: Move into kernel substate unlock
-    fn do_flush(&mut self) -> Result<(), RuntimeError> {
-        /*
-        let (new_global_references, mut new_children) = {
-            let substate_ref_mut = self.get_raw_mut();
-            substate_ref_mut.to_ref().references_and_owned_nodes()
-        };
-
-        for global_address in new_global_references {
-            let node_id = RENodeId::Global(global_address);
-            if !self.current_frame.node_refs.contains_key(&node_id) {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidReferenceWrite(global_address),
-                ));
-            }
-        }
-
-        for old_child in &self.prev_children {
-            if !new_children.remove(old_child) {
-                return Err(RuntimeError::KernelError(KernelError::StoredNodeRemoved(
-                    old_child.clone(),
-                )));
-            }
-        }
-
-        for child_id in &new_children {
-            SubstateProperties::verify_can_own(&self.offset, *child_id)?;
-            // Make child visible
-            //self.current_frame.add_lock_visible_node(self.lock_handle, *child_id)?;
-        }
-
-        match self.location {
-            RENodeLocation::Heap => {
-                self.current_frame
-                    .move_owned_nodes_to_heap_node(new_children)?;
-            }
-            RENodeLocation::Store => {
-                self.current_frame.move_owned_nodes_to_store(
-                    self.heap,
-                    self.track,
-                    new_children,
-                )?;
-            }
-        }
-         */
-
-        Ok(())
-    }
-
-    pub fn flush(mut self) -> Result<(), RuntimeError> {
-        self.flushed = true;
-        self.do_flush()
     }
 
     pub fn get_raw_mut(&mut self) -> RawSubstateRefMut {
@@ -799,24 +728,6 @@ impl<'a> RawSubstateRefMut<'a> {
         match self {
             RawSubstateRefMut::System(value) => *value,
             _ => panic!("Not system"),
-        }
-    }
-
-    fn to_ref(&self) -> SubstateRef {
-        match self {
-            RawSubstateRefMut::Bucket(value) => SubstateRef::Bucket(value),
-            RawSubstateRefMut::Global(value) => SubstateRef::Global(value),
-            RawSubstateRefMut::System(value) => SubstateRef::System(value),
-            RawSubstateRefMut::ResourceManager(value) => SubstateRef::ResourceManager(value),
-            RawSubstateRefMut::ComponentInfo(value) => SubstateRef::ComponentInfo(value),
-            RawSubstateRefMut::ComponentState(value) => SubstateRef::ComponentState(value),
-            RawSubstateRefMut::Package(value) => SubstateRef::Package(value),
-            RawSubstateRefMut::Vault(value) => SubstateRef::Vault(value),
-            RawSubstateRefMut::NonFungible(value) => SubstateRef::NonFungible(value),
-            RawSubstateRefMut::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
-            RawSubstateRefMut::Proof(value) => SubstateRef::Proof(value),
-            RawSubstateRefMut::Worktop(value) => SubstateRef::Worktop(value),
-            RawSubstateRefMut::AuthZone(value) => SubstateRef::AuthZone(value),
         }
     }
 }

@@ -295,7 +295,6 @@ where
                             Ok(())
                         };
 
-                        substate_ref_mut.flush()?;
                         system_api.drop_lock(handle)?;
 
                         rtn
@@ -367,7 +366,6 @@ where
                     let mut raw_mut = substate_ref_mut.get_raw_mut();
                     let auth_zone = raw_mut.auth_zone();
                     auth_zone.clear_all();
-                    substate_ref_mut.flush()?;
                     system_api.drop_lock(handle)?;
                     Ok(())
                 }
@@ -381,7 +379,6 @@ where
                     let mut raw_mut = substate_ref_mut.get_raw_mut();
                     let proof = raw_mut.proof();
                     proof.drop();
-                    substate_ref_mut.flush()?;
                     system_api.drop_lock(handle)?;
                     Ok(())
                 }
@@ -397,7 +394,6 @@ where
                     worktop.drop().map_err(|_| {
                         RuntimeError::KernelError(KernelError::DropNodeFailure(node_id))
                     })?;
-                    substate_ref_mut.flush()?;
                     system_api.drop_lock(handle)?;
                     Ok(())
                 }

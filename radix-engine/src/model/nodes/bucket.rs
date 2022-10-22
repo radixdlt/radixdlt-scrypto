@@ -58,7 +58,6 @@ impl Bucket {
                 let container = bucket
                     .take(input.amount)
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
-                substate_mut.flush()?;
                 let bucket_id = system_api
                     .create_node(RENode::Bucket(BucketSubstate::new(container)))?
                     .into();
@@ -75,7 +74,6 @@ impl Bucket {
                 let container = bucket
                     .take_non_fungibles(&input.ids)
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
-                substate_mut.flush()?;
                 let bucket_id = system_api
                     .create_node(RENode::Bucket(BucketSubstate::new(container)))?
                     .into();
@@ -105,7 +103,6 @@ impl Bucket {
                 bucket
                     .put(other_bucket)
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
-                substate_mut.flush()?;
                 Ok(ScryptoValue::from_typed(&()))
             }
             BucketMethod::GetAmount => {
@@ -132,7 +129,6 @@ impl Bucket {
                 let proof = bucket
                     .create_proof(bucket_id)
                     .map_err(|e| InvokeError::Error(BucketError::ProofError(e)))?;
-                substate_mut.flush()?;
 
                 let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(

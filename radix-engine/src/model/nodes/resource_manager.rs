@@ -152,7 +152,6 @@ impl ResourceManager {
                                 *non_fungible_mut = NonFungibleSubstate(Some(
                                     NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
                                 ));
-                                substate_mut.flush()?;
                                 system_api.drop_lock(non_fungible_handle)?;
                             }
                             resource_manager.total_supply = entries.len().into();
@@ -295,7 +294,6 @@ impl ResourceManager {
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let resource_manager = raw_mut.resource_manager();
                     resource_manager.total_supply -= bucket.total_amount();
-                    substate_mut.flush()?;
                 }
 
                 // Burn non-fungible
@@ -317,7 +315,6 @@ impl ResourceManager {
                         let non_fungible_mut = raw_mut.non_fungible();
 
                         *non_fungible_mut = NonFungibleSubstate(None);
-                        substate_mut.flush()?;
                         system_api.drop_lock(non_fungible_handle)?;
                     }
                 }
@@ -338,7 +335,6 @@ impl ResourceManager {
                         input.method
                     ));
                 method_entry.main(MethodAccessRuleMethod::Update(input.access_rule))?;
-                substate_mut.flush()?;
 
                 ScryptoValue::unit()
             }
@@ -356,7 +352,6 @@ impl ResourceManager {
                         input.method
                     ));
                 method_entry.main(MethodAccessRuleMethod::Lock())?;
-                substate_mut.flush()?;
                 ScryptoValue::unit()
             }
             ResourceManagerMethod::CreateVault => {
@@ -400,7 +395,6 @@ impl ResourceManager {
                         input.mint_params,
                         resource_manager.resource_address.unwrap(),
                     )?;
-                    substate_mut.flush()?;
                     result
                 };
 
@@ -438,7 +432,6 @@ impl ResourceManager {
                         }
 
                         *non_fungible_mut = NonFungibleSubstate(Some(non_fungible));
-                        substate_mut.flush()?;
                     }
 
                     system_api.drop_lock(non_fungible_handle)?;
@@ -474,7 +467,6 @@ impl ResourceManager {
                 let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
                 raw_mut.resource_manager().update_metadata(input.metadata)?;
-                substate_mut.flush()?;
 
                 ScryptoValue::from_typed(&())
             }
@@ -507,7 +499,6 @@ impl ResourceManager {
                         ResourceManagerError::NonFungibleNotFound(non_fungible_address),
                     ));
                 }
-                substate_mut.flush()?;
 
                 system_api.drop_lock(non_fungible_handle)?;
 
@@ -573,7 +564,6 @@ impl ResourceManager {
                 raw_mut
                     .resource_manager()
                     .set_resource_address(input.address)?;
-                substate_mut.flush()?;
 
                 ScryptoValue::from_typed(&())
             }

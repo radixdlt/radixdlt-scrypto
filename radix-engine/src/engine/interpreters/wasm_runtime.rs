@@ -161,8 +161,6 @@ where
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
         }
 
-        substate_mut.flush()?;
-
         Ok(ScryptoValue::unit())
     }
 

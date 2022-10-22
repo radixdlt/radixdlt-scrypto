@@ -77,7 +77,6 @@ impl Component {
                     .component_info()
                     .access_rules
                     .push(input.access_rules);
-                substate_ref_mut.flush()?;
 
                 ScryptoValue::from_typed(&())
             }

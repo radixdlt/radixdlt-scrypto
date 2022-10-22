@@ -113,7 +113,6 @@ impl System {
                     .map_err(InvokeError::Downstream)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
                 raw_mut.system().epoch = epoch;
-                substate_mut.flush()?;
 
                 Ok(ScryptoValue::from_typed(&()))
             }

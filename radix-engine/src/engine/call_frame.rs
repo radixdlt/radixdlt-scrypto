@@ -468,12 +468,9 @@ impl CallFrame {
         }
 
         SubstateRefMut::new(
-            lock_handle,
             node_location,
             node_id,
             offset,
-            //children,
-            self,
             heap,
             track,
         )

@@ -100,7 +100,6 @@ impl Worktop {
                 worktop
                     .put(bucket)
                     .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
-                substate_mut.flush()?;
 
                 Ok(ScryptoValue::from_typed(&()))
             }
@@ -115,7 +114,6 @@ impl Worktop {
                     let maybe_resource = worktop
                         .take(input.amount, input.resource_address)
                         .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
-                    substate_mut.flush()?;
                     maybe_resource
                 };
 
@@ -156,7 +154,6 @@ impl Worktop {
                     let maybe_resource = worktop
                         .take_all(input.resource_address)
                         .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
-                    substate_mut.flush()?;
                     maybe_resource
                 };
 
@@ -197,7 +194,6 @@ impl Worktop {
                     let maybe_resource = worktop
                         .take_non_fungibles(&input.ids, input.resource_address)
                         .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
-                    substate_mut.flush()?;
                     maybe_resource
                 };
 
