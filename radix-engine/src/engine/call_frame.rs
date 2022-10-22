@@ -185,7 +185,6 @@ impl CallFrame {
     }
 
     pub fn new_child_from_parent(
-        heap: &mut Heap,
         parent: &mut CallFrame,
         actor: REActor,
         nodes_to_move: Vec<RENodeId>,
@@ -194,7 +193,7 @@ impl CallFrame {
         let mut owned_heap_nodes = HashSet::new();
 
         for node_id in nodes_to_move {
-            parent.take_node_internal(heap, node_id)?;
+            parent.take_node_internal(node_id)?;
             owned_heap_nodes.insert(node_id);
         }
 
@@ -212,14 +211,13 @@ impl CallFrame {
     }
 
     pub fn move_nodes_upstream(
-        heap: &mut Heap,
         from: &mut CallFrame,
         to: &mut CallFrame,
         node_ids: HashSet<RENodeId>,
     ) -> Result<(), RuntimeError> {
         for node_id in node_ids {
             // move re nodes to upstream call frame.
-            from.take_node_internal(heap, node_id)?;
+            from.take_node_internal(node_id)?;
             to.owned_root_nodes.insert(node_id);
         }
 
@@ -256,16 +254,7 @@ impl CallFrame {
         Ok(())
     }
 
-    fn remove_ref(&mut self, heap: &Heap, node_id: RENodeId) -> Result<(), CallFrameError> {
-        self.node_refs.remove(&node_id);
-        for child_id in heap.get_children(node_id)? {
-            self.remove_ref(heap, *child_id)?;
-        }
-
-        Ok(())
-    }
-
-    fn take_node_internal(&mut self, heap: &Heap, node_id: RENodeId) -> Result<(), CallFrameError> {
+    fn take_node_internal(&mut self, node_id: RENodeId) -> Result<(), CallFrameError> {
         if self.node_lock_count.contains_key(&node_id) {
             return Err(CallFrameError::MovingLockedRENode(node_id));
         }
@@ -273,9 +262,6 @@ impl CallFrame {
         if !self.owned_root_nodes.remove(&node_id) {
             return Err(CallFrameError::RENodeNotOwned(node_id));
         }
-
-        // Moved nodes must have their child node references removed
-        self.remove_ref(heap, node_id)?;
 
         Ok(())
     }
@@ -286,8 +272,6 @@ impl CallFrame {
         node_id: RENodeId,
         re_node: RENode,
     ) -> Result<(), RuntimeError> {
-        let mut child_nodes = HashSet::new();
-
         let substates = re_node.to_substates();
 
         for (offset, substate) in &substates {
@@ -295,15 +279,14 @@ impl CallFrame {
             let (_, owned) = substate_ref.references_and_owned_nodes();
             for child_id in owned {
                 SubstateProperties::verify_can_own(&offset, child_id)?;
-                child_nodes.insert(child_id);
-                self.take_node_internal(heap, child_id)?;
+                self.take_node_internal(child_id)?;
             }
         }
 
         // Insert node into heap
         let heap_root_node = HeapRENode {
             substates,
-            child_nodes,
+            //child_nodes,
         };
         heap.create_node(node_id, heap_root_node);
         self.owned_root_nodes.insert(node_id);
@@ -313,14 +296,11 @@ impl CallFrame {
 
     pub fn move_owned_nodes_to_heap_node(
         &mut self,
-        heap: &mut Heap,
         children: HashSet<RENodeId>,
-        to: RENodeId,
     ) -> Result<(), RuntimeError> {
         for child_id in &children {
-            self.take_node_internal(heap, *child_id)?;
+            self.take_node_internal(*child_id)?;
         }
-        heap.append_nodes_to_heap_node(children, to)?;
 
         Ok(())
     }
@@ -332,7 +312,7 @@ impl CallFrame {
         node_ids: HashSet<RENodeId>,
     ) -> Result<(), RuntimeError> {
         for node_id in &node_ids {
-            self.take_node_internal(heap, *node_id)?;
+            self.take_node_internal(*node_id)?;
         }
 
         heap.move_nodes_to_store(track, node_ids)?;
@@ -346,7 +326,7 @@ impl CallFrame {
         track: &'f mut Track<'s, R>,
         node_id: RENodeId,
     ) -> Result<(), RuntimeError> {
-        self.take_node_internal(heap, node_id)?;
+        self.take_node_internal(node_id)?;
         heap.move_node_to_store(track, node_id)?;
 
         Ok(())
@@ -361,14 +341,16 @@ impl CallFrame {
         heap: &mut Heap,
         node_id: RENodeId,
     ) -> Result<HeapRENode, RuntimeError> {
-        self.take_node_internal(heap, node_id)?;
+        self.take_node_internal(node_id)?;
         let node = heap.remove_node(node_id)?;
         // TODO: Remove this
+        /*
         if !node.child_nodes.is_empty() {
             return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                 node_id,
             )));
         }
+         */
         Ok(node)
     }
 
@@ -382,7 +364,7 @@ impl CallFrame {
     ) -> Result<SubstateRef<'f>, RuntimeError> {
         let substate_ref = match location {
             RENodeLocation::Heap => heap.get_substate(node_id, offset)?,
-            RENodeLocation::Store => track.get_substate(node_id, offset)
+            RENodeLocation::Store => track.get_substate(node_id, offset),
         };
 
         Ok(substate_ref)
@@ -444,8 +426,7 @@ impl CallFrame {
         }
 
         let (global_references, children) = {
-            let substate_ref =
-                self.get_substate(heap, track, node_location, node_id, &offset)?;
+            let substate_ref = self.get_substate(heap, track, node_location, node_id, &offset)?;
             substate_ref.references_and_owned_nodes()
         };
 

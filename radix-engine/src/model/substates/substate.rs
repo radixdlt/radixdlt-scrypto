@@ -676,11 +676,8 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
 
         match self.location {
             RENodeLocation::Heap => {
-                self.current_frame.move_owned_nodes_to_heap_node(
-                    self.heap,
-                    new_children,
-                    self.node_id,
-                )?;
+                self.current_frame
+                    .move_owned_nodes_to_heap_node(new_children)?;
             }
             RENodeLocation::Store => {
                 self.current_frame.move_owned_nodes_to_store(

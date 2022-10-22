@@ -84,36 +84,8 @@ impl Heap {
         }
     }
 
-    pub fn get_children(&self, node_id: RENodeId) -> Result<&HashSet<RENodeId>, CallFrameError> {
-        self.nodes
-            .get(&node_id)
-            .map(|n| &n.child_nodes)
-            .ok_or(CallFrameError::RENodeNotOwned(node_id))
-    }
-
     pub fn create_node(&mut self, node_id: RENodeId, node: HeapRENode) {
         self.nodes.insert(node_id, node);
-    }
-
-    pub fn append_nodes_to_heap_node(
-        &mut self,
-        node_ids: HashSet<RENodeId>,
-        to: RENodeId,
-    ) -> Result<(), CallFrameError> {
-        for node_id in &node_ids {
-            // Sanity check
-            if !self.nodes.contains_key(&node_id) {
-                return Err(CallFrameError::RENodeNotOwned(*node_id));
-            }
-        }
-
-        let heap_node = self
-            .nodes
-            .get_mut(&to)
-            .ok_or(CallFrameError::RENodeNotOwned(to))?;
-        heap_node.child_nodes.extend(node_ids);
-
-        Ok(())
     }
 
     pub fn move_nodes_to_store<R: FeeReserve>(
@@ -138,10 +110,10 @@ impl Heap {
             .remove(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
         for (offset, substate) in node.substates {
+            let (_, owned_nodes) = substate.to_ref().references_and_owned_nodes();
+            self.move_nodes_to_store(track, owned_nodes)?;
             track.insert_substate(SubstateId(node_id, offset), substate);
         }
-
-        self.move_nodes_to_store(track, node.child_nodes)?;
 
         Ok(())
     }
@@ -156,7 +128,6 @@ impl Heap {
 #[derive(Debug)]
 pub struct HeapRENode {
     pub substates: HashMap<SubstateOffset, RuntimeSubstate>,
-    pub child_nodes: HashSet<RENodeId>,
 }
 
 impl Into<BucketSubstate> for HeapRENode {

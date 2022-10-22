@@ -473,7 +473,6 @@ where
 
         // Call Frame Push
         let frame = CallFrame::new_child_from_parent(
-            &mut self.heap,
             &mut self.current_frame,
             actor.clone(), // TODO: Remove clone
             nodes_to_pass,
@@ -516,12 +515,7 @@ where
             self.prepare_move_upstream(*node_id)?;
         }
 
-        CallFrame::move_nodes_upstream(
-            &mut self.heap,
-            &mut self.current_frame,
-            &mut parent,
-            nodes_to_return,
-        )?;
+        CallFrame::move_nodes_upstream(&mut self.current_frame, &mut parent, nodes_to_return)?;
         CallFrame::copy_refs(
             &mut self.current_frame,
             &mut parent,
