@@ -8,7 +8,7 @@ use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
-use crate::model::NonFungibleSubstate;
+use crate::model::{NonFungibleSubstate, RawSubstateRefMut};
 use crate::model::Resource;
 use crate::model::RuntimeSubstate;
 use crate::model::{KeyValueStoreEntrySubstate, PersistedSubstate};
@@ -303,17 +303,44 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         runtime_substate.to_ref()
     }
 
-    pub fn borrow_substate_mut(
+    pub fn get_substate_mut(
         &mut self,
         node_id: RENodeId,
-        offset: SubstateOffset,
-    ) -> &mut RuntimeSubstate {
-        let substate_id = SubstateId(node_id, offset);
-        &mut self
-            .loaded_substates
-            .get_mut(&substate_id)
-            .expect(&format!("Substate {:?} was never locked", substate_id))
-            .substate
+        offset: &SubstateOffset,
+    ) -> RawSubstateRefMut {
+        let runtime_substate = match (node_id, offset) {
+            (
+                RENodeId::KeyValueStore(..),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ) => {
+                let parent_substate_id = SubstateId(
+                    node_id,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+                );
+                self.read_key_value_mut(parent_substate_id, key.to_vec())
+            }
+            (
+                RENodeId::NonFungibleStore(..),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
+                                                     non_fungible_id,
+                                                 )),
+            ) => {
+                let parent_substate_id = SubstateId(
+                    node_id,
+                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
+                );
+                self.read_key_value_mut(parent_substate_id, non_fungible_id.to_vec())
+            }
+            _ => {
+                let substate_id = SubstateId(node_id, offset.clone());
+                &mut self
+                    .loaded_substates
+                    .get_mut(&substate_id)
+                    .expect(&format!("Substate {:?} was never locked", substate_id))
+                    .substate
+            }
+        };
+        runtime_substate.to_ref_mut()
     }
 
     pub fn insert_substate(&mut self, substate_id: SubstateId, substate: RuntimeSubstate) {

@@ -702,38 +702,9 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
                 .heap
                 .get_substate_mut(self.node_id, &self.offset)
                 .unwrap(),
-            RENodeLocation::Store => match (self.node_id, &self.offset) {
-                (
-                    RENodeId::KeyValueStore(..),
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-                ) => {
-                    let parent_substate_id = SubstateId(
-                        self.node_id,
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
-                    );
-                    self.track
-                        .read_key_value_mut(parent_substate_id, key.to_vec())
-                        .to_ref_mut()
-                }
-                (
-                    RENodeId::NonFungibleStore(..),
-                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
-                        non_fungible_id,
-                    )),
-                ) => {
-                    let parent_substate_id = SubstateId(
-                        self.node_id,
-                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
-                    );
-                    self.track
-                        .read_key_value_mut(parent_substate_id, non_fungible_id.to_vec())
-                        .to_ref_mut()
-                }
-                _ => self
+            RENodeLocation::Store => self
                     .track
-                    .borrow_substate_mut(self.node_id, self.offset.clone())
-                    .to_ref_mut(),
-            },
+                    .get_substate_mut(self.node_id, &self.offset)
         }
     }
 }
