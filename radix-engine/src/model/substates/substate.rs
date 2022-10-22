@@ -1,7 +1,4 @@
-use crate::engine::{
-    Heap, KernelError, RENodeLocation, RuntimeError, Track,
-};
-use crate::fee::FeeReserve;
+use crate::engine::{KernelError, RuntimeError};
 use crate::model::substates::worktop::WorktopSubstate;
 use crate::model::*;
 use crate::types::*;
@@ -156,23 +153,21 @@ impl RuntimeSubstate {
         Ok(substate)
     }
 
-    pub fn to_ref_mut(&mut self) -> RawSubstateRefMut {
+    pub fn to_ref_mut(&mut self) -> SubstateRefMut {
         match self {
-            RuntimeSubstate::Global(value) => RawSubstateRefMut::Global(value),
-            RuntimeSubstate::System(value) => RawSubstateRefMut::System(value),
-            RuntimeSubstate::ResourceManager(value) => RawSubstateRefMut::ResourceManager(value),
-            RuntimeSubstate::ComponentInfo(value) => RawSubstateRefMut::ComponentInfo(value),
-            RuntimeSubstate::ComponentState(value) => RawSubstateRefMut::ComponentState(value),
-            RuntimeSubstate::Package(value) => RawSubstateRefMut::Package(value),
-            RuntimeSubstate::Vault(value) => RawSubstateRefMut::Vault(value),
-            RuntimeSubstate::NonFungible(value) => RawSubstateRefMut::NonFungible(value),
-            RuntimeSubstate::KeyValueStoreEntry(value) => {
-                RawSubstateRefMut::KeyValueStoreEntry(value)
-            }
-            RuntimeSubstate::AuthZone(value) => RawSubstateRefMut::AuthZone(value),
-            RuntimeSubstate::Bucket(value) => RawSubstateRefMut::Bucket(value),
-            RuntimeSubstate::Proof(value) => RawSubstateRefMut::Proof(value),
-            RuntimeSubstate::Worktop(value) => RawSubstateRefMut::Worktop(value),
+            RuntimeSubstate::Global(value) => SubstateRefMut::Global(value),
+            RuntimeSubstate::System(value) => SubstateRefMut::System(value),
+            RuntimeSubstate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
+            RuntimeSubstate::ComponentInfo(value) => SubstateRefMut::ComponentInfo(value),
+            RuntimeSubstate::ComponentState(value) => SubstateRefMut::ComponentState(value),
+            RuntimeSubstate::Package(value) => SubstateRefMut::Package(value),
+            RuntimeSubstate::Vault(value) => SubstateRefMut::Vault(value),
+            RuntimeSubstate::NonFungible(value) => SubstateRefMut::NonFungible(value),
+            RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
+            RuntimeSubstate::AuthZone(value) => SubstateRefMut::AuthZone(value),
+            RuntimeSubstate::Bucket(value) => SubstateRefMut::Bucket(value),
+            RuntimeSubstate::Proof(value) => SubstateRefMut::Proof(value),
+            RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
         }
     }
 
@@ -594,50 +589,7 @@ impl<'a> SubstateRef<'a> {
     }
 }
 
-pub struct SubstateRefMut<'f, 's, R: FeeReserve> {
-    location: RENodeLocation,
-    node_id: RENodeId,
-    offset: SubstateOffset,
-    heap: &'f mut Heap,
-    track: &'f mut Track<'s, R>,
-}
-
-impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
-    pub fn new(
-        location: RENodeLocation,
-        node_id: RENodeId,
-        offset: SubstateOffset,
-        heap: &'f mut Heap,
-        track: &'f mut Track<'s, R>,
-    ) -> Result<Self, RuntimeError> {
-        let substate_ref_mut = Self {
-            location,
-            node_id,
-            offset,
-            heap,
-            track,
-        };
-        Ok(substate_ref_mut)
-    }
-
-    pub fn offset(&self) -> &SubstateOffset {
-        &self.offset
-    }
-
-    pub fn get_raw_mut(&mut self) -> RawSubstateRefMut {
-        match self.location {
-            RENodeLocation::Heap => self
-                .heap
-                .get_substate_mut(self.node_id, &self.offset)
-                .unwrap(),
-            RENodeLocation::Store => self
-                    .track
-                    .get_substate_mut(self.node_id, &self.offset)
-        }
-    }
-}
-
-pub enum RawSubstateRefMut<'a> {
+pub enum SubstateRefMut<'a> {
     ComponentInfo(&'a mut ComponentInfoSubstate),
     ComponentState(&'a mut ComponentStateSubstate),
     NonFungible(&'a mut NonFungibleSubstate),
@@ -653,80 +605,80 @@ pub enum RawSubstateRefMut<'a> {
     AuthZone(&'a mut AuthZoneStackSubstate),
 }
 
-impl<'a> RawSubstateRefMut<'a> {
+impl<'a> SubstateRefMut<'a> {
     pub fn auth_zone(&mut self) -> &mut AuthZoneStackSubstate {
         match self {
-            RawSubstateRefMut::AuthZone(value) => *value,
+            SubstateRefMut::AuthZone(value) => *value,
             _ => panic!("Not an authzone"),
         }
     }
 
     pub fn worktop(&mut self) -> &mut WorktopSubstate {
         match self {
-            RawSubstateRefMut::Worktop(value) => *value,
+            SubstateRefMut::Worktop(value) => *value,
             _ => panic!("Not a worktop"),
         }
     }
 
     pub fn vault(&mut self) -> &mut VaultRuntimeSubstate {
         match self {
-            RawSubstateRefMut::Vault(value) => *value,
+            SubstateRefMut::Vault(value) => *value,
             _ => panic!("Not a vault"),
         }
     }
 
     pub fn proof(&mut self) -> &mut ProofSubstate {
         match self {
-            RawSubstateRefMut::Proof(value) => *value,
+            SubstateRefMut::Proof(value) => *value,
             _ => panic!("Not a proof"),
         }
     }
 
     pub fn bucket(&mut self) -> &mut BucketSubstate {
         match self {
-            RawSubstateRefMut::Bucket(value) => *value,
+            SubstateRefMut::Bucket(value) => *value,
             _ => panic!("Not a bucket"),
         }
     }
 
     pub fn non_fungible(&mut self) -> &mut NonFungibleSubstate {
         match self {
-            RawSubstateRefMut::NonFungible(value) => *value,
+            SubstateRefMut::NonFungible(value) => *value,
             _ => panic!("Not a non fungible"),
         }
     }
 
     pub fn resource_manager(&mut self) -> &mut ResourceManagerSubstate {
         match self {
-            RawSubstateRefMut::ResourceManager(value) => *value,
+            SubstateRefMut::ResourceManager(value) => *value,
             _ => panic!("Not resource manager"),
         }
     }
 
     pub fn kv_store_entry(&mut self) -> &mut KeyValueStoreEntrySubstate {
         match self {
-            RawSubstateRefMut::KeyValueStoreEntry(value) => *value,
+            SubstateRefMut::KeyValueStoreEntry(value) => *value,
             _ => panic!("Not a key value store entry"),
         }
     }
 
     pub fn component_state(&mut self) -> &mut ComponentStateSubstate {
         match self {
-            RawSubstateRefMut::ComponentState(value) => *value,
+            SubstateRefMut::ComponentState(value) => *value,
             _ => panic!("Not component state"),
         }
     }
 
     pub fn component_info(&mut self) -> &mut ComponentInfoSubstate {
         match self {
-            RawSubstateRefMut::ComponentInfo(value) => *value,
+            SubstateRefMut::ComponentInfo(value) => *value,
             _ => panic!("Not system"),
         }
     }
 
     pub fn system(&mut self) -> &mut SystemSubstate {
         match self {
-            RawSubstateRefMut::System(value) => *value,
+            SubstateRefMut::System(value) => *value,
             _ => panic!("Not system"),
         }
     }

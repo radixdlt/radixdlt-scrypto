@@ -2,7 +2,7 @@ use crate::engine::{CallFrameError, Track};
 use crate::fee::FeeReserve;
 use crate::model::{
     BucketSubstate, KeyValueStoreEntrySubstate, NonFungibleSubstate, ProofSubstate,
-    RawSubstateRefMut, RuntimeSubstate, SubstateRef,
+    RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
 use crate::types::{HashMap, HashSet};
 use scrypto::engine::types::{BucketOffset, ProofOffset, RENodeId, SubstateId, SubstateOffset};
@@ -55,7 +55,7 @@ impl Heap {
         &mut self,
         node_id: RENodeId,
         offset: &SubstateOffset,
-    ) -> Result<RawSubstateRefMut, CallFrameError> {
+    ) -> Result<SubstateRefMut, CallFrameError> {
         let node = self
             .nodes
             .get_mut(&node_id)

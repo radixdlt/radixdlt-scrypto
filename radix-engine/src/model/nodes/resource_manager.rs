@@ -147,8 +147,7 @@ impl ResourceManager {
                                 )?;
                                 let mut substate_mut =
                                     system_api.get_ref_mut(non_fungible_handle)?;
-                                let mut raw_mut = substate_mut.get_raw_mut();
-                                let non_fungible_mut = raw_mut.non_fungible();
+                                let non_fungible_mut = substate_mut.non_fungible();
                                 *non_fungible_mut = NonFungibleSubstate(Some(
                                     NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
                                 ));
@@ -291,8 +290,7 @@ impl ResourceManager {
                 // Update total supply
                 {
                     let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let resource_manager = raw_mut.resource_manager();
+                    let resource_manager = substate_mut.resource_manager();
                     resource_manager.total_supply -= bucket.total_amount();
                 }
 
@@ -311,8 +309,7 @@ impl ResourceManager {
                         let non_fungible_handle =
                             system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
                         let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
-                        let mut raw_mut = substate_mut.get_raw_mut();
-                        let non_fungible_mut = raw_mut.non_fungible();
+                        let non_fungible_mut = substate_mut.non_fungible();
 
                         *non_fungible_mut = NonFungibleSubstate(None);
                         system_api.drop_lock(non_fungible_handle)?;
@@ -325,8 +322,7 @@ impl ResourceManager {
                 let input: ResourceManagerUpdateAuthInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                let method_entry = raw_mut
+                let method_entry = substate_mut
                     .resource_manager()
                     .authorization
                     .get_mut(&input.method)
@@ -342,8 +338,7 @@ impl ResourceManager {
                 let input: ResourceManagerLockAuthInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                let method_entry = raw_mut
+                let method_entry = substate_mut
                     .resource_manager()
                     .authorization
                     .get_mut(&input.method)
@@ -389,8 +384,7 @@ impl ResourceManager {
 
                 let (resource, non_fungibles) = {
                     let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let resource_manager = raw_mut.resource_manager();
+                    let resource_manager = substate_mut.resource_manager();
                     let result = resource_manager.mint(
                         input.mint_params,
                         resource_manager.resource_address.unwrap(),
@@ -420,8 +414,7 @@ impl ResourceManager {
 
                     {
                         let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
-                        let mut raw_mut = substate_mut.get_raw_mut();
-                        let non_fungible_mut = raw_mut.non_fungible();
+                        let non_fungible_mut = substate_mut.non_fungible();
 
                         if non_fungible_mut.0.is_some() {
                             return Err(InvokeError::Error(
@@ -465,8 +458,9 @@ impl ResourceManager {
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
 
                 let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                raw_mut.resource_manager().update_metadata(input.metadata)?;
+                substate_mut
+                    .resource_manager()
+                    .update_metadata(input.metadata)?;
 
                 ScryptoValue::from_typed(&())
             }
@@ -489,8 +483,7 @@ impl ResourceManager {
                 let non_fungible_handle =
                     system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
                 let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                let non_fungible_mut = raw_mut.non_fungible();
+                let non_fungible_mut = substate_mut.non_fungible();
                 if let Some(ref mut non_fungible) = non_fungible_mut.0 {
                     non_fungible.set_mutable_data(input.data);
                 } else {
@@ -560,8 +553,7 @@ impl ResourceManager {
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
 
                 let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                raw_mut
+                substate_mut
                     .resource_manager()
                     .set_resource_address(input.address)?;
 

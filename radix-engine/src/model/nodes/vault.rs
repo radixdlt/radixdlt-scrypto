@@ -64,8 +64,7 @@ impl Vault {
                     .into();
 
                 let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                let vault = raw_mut.vault();
+                let vault = substate_mut.vault();
                 vault
                     .put(bucket)
                     .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
@@ -77,8 +76,7 @@ impl Vault {
 
                 let container = {
                     let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let vault = raw_mut.vault();
+                    let vault = substate_mut.vault();
                     vault.take(input.amount)?
                 };
 
@@ -93,8 +91,7 @@ impl Vault {
 
                 let fee = {
                     let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let vault = raw_mut.vault();
+                    let vault = substate_mut.vault();
 
                     // Check resource and take amount
                     if vault.resource_address() != RADIX_TOKEN {
@@ -117,8 +114,7 @@ impl Vault {
                 // Return changes
                 {
                     let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let vault = raw_mut.vault();
+                    let vault = substate_mut.vault();
                     vault
                         .borrow_resource_mut()
                         .put(changes)
@@ -133,8 +129,7 @@ impl Vault {
 
                 let container = {
                     let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let vault = raw_mut.vault();
+                    let vault = substate_mut.vault();
                     vault.take_non_fungibles(&input.non_fungible_ids)?
                 };
 
@@ -175,8 +170,7 @@ impl Vault {
 
                 let proof = {
                     let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let vault = raw_mut.vault();
+                    let vault = substate_mut.vault();
                     vault
                         .create_proof(ResourceContainerId::Vault(vault_id))
                         .map_err(|e| InvokeError::Error(VaultError::ProofError(e)))?
@@ -190,8 +184,7 @@ impl Vault {
 
                 let proof = {
                     let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let vault = raw_mut.vault();
+                    let vault = substate_mut.vault();
                     vault
                         .create_proof_by_amount(input.amount, ResourceContainerId::Vault(vault_id))
                         .map_err(|e| InvokeError::Error(VaultError::ProofError(e)))?
@@ -206,8 +199,7 @@ impl Vault {
 
                 let proof = {
                     let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let vault = raw_mut.vault();
+                    let vault = substate_mut.vault();
                     vault
                         .create_proof_by_ids(&input.ids, ResourceContainerId::Vault(vault_id))
                         .map_err(|e| InvokeError::Error(VaultError::ProofError(e)))?

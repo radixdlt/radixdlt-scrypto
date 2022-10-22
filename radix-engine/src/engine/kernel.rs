@@ -283,8 +283,7 @@ where
                             LockFlags::MUTABLE,
                         )?;
                         let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-                        let mut raw_mut = substate_ref_mut.get_raw_mut();
-                        let proof = raw_mut.proof();
+                        let proof = substate_ref_mut.proof();
 
                         let rtn = if proof.is_restricted() {
                             Err(RuntimeError::KernelError(KernelError::CantMoveDownstream(
@@ -363,8 +362,7 @@ where
                         LockFlags::MUTABLE,
                     )?;
                     let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-                    let mut raw_mut = substate_ref_mut.get_raw_mut();
-                    let auth_zone = raw_mut.auth_zone();
+                    let auth_zone = substate_ref_mut.auth_zone();
                     auth_zone.clear_all();
                     system_api.drop_lock(handle)?;
                     Ok(())
@@ -376,8 +374,7 @@ where
                         LockFlags::MUTABLE,
                     )?;
                     let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-                    let mut raw_mut = substate_ref_mut.get_raw_mut();
-                    let proof = raw_mut.proof();
+                    let proof = substate_ref_mut.proof();
                     proof.drop();
                     system_api.drop_lock(handle)?;
                     Ok(())
@@ -389,8 +386,7 @@ where
                         LockFlags::MUTABLE,
                     )?;
                     let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-                    let mut raw_mut = substate_ref_mut.get_raw_mut();
-                    let worktop = raw_mut.worktop();
+                    let worktop = substate_ref_mut.worktop();
                     worktop.drop().map_err(|_| {
                         RuntimeError::KernelError(KernelError::DropNodeFailure(node_id))
                     })?;
@@ -527,7 +523,8 @@ where
         )?;
 
         // Auto drop locks
-        self.current_frame.drop_all_locks(&mut self.heap, &mut self.track)?;
+        self.current_frame
+            .drop_all_locks(&mut self.heap, &mut self.track)?;
 
         self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
             AuthModule::on_frame_end(system_api).map_err(|e| match e {
@@ -537,7 +534,8 @@ where
         })?;
 
         // Auto-drop locks again in case module forgot to drop
-        self.current_frame.drop_all_locks(&mut self.heap, &mut self.track)?;
+        self.current_frame
+            .drop_all_locks(&mut self.heap, &mut self.track)?;
 
         // drop proofs and check resource leak
         self.drop_nodes_in_frame()?;
@@ -1047,7 +1045,8 @@ where
 
         // TODO: Move this into higher layer, e.g. transaction processor
         if self.current_frame.depth == 0 {
-            self.current_frame.drop_all_locks(&mut self.heap, &mut self.track)?;
+            self.current_frame
+                .drop_all_locks(&mut self.heap, &mut self.track)?;
             self.drop_nodes_in_frame()?;
         }
 
@@ -1327,9 +1326,13 @@ where
             ));
         }
 
-        let lock_handle =
-            self.current_frame
-                .acquire_lock(&mut self.heap, &mut self.track, node_id, offset.clone(), flags)?;
+        let lock_handle = self.current_frame.acquire_lock(
+            &mut self.heap,
+            &mut self.track,
+            node_id,
+            offset.clone(),
+            flags,
+        )?;
 
         // Restore current mode
         self.execution_mode = current_mode;
@@ -1360,7 +1363,8 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        self.current_frame.drop_lock(&mut self.heap, &mut self.track, lock_handle)?;
+        self.current_frame
+            .drop_lock(&mut self.heap, &mut self.track, lock_handle)?;
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -1413,7 +1417,7 @@ where
     fn get_ref_mut<'f>(
         &'f mut self,
         lock_handle: LockHandle,
-    ) -> Result<SubstateRefMut<'f, 's, R>, RuntimeError> {
+    ) -> Result<SubstateRefMut<'f>, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,

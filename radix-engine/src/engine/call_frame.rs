@@ -73,7 +73,6 @@ impl CallFrame {
             }?;
         }
 
-
         let substate_ref = self.get_substate(heap, track, location, node_id, &offset)?;
         let (global_references, substate_owned_nodes) = substate_ref.references_and_owned_nodes();
 
@@ -140,26 +139,28 @@ impl CallFrame {
         if substate_lock.flags.contains(LockFlags::MUTABLE) {
             let substate_ref = self.get_substate(heap, track, location, node_id, &offset)?;
 
-            let (new_global_references, mut new_children) = substate_ref.references_and_owned_nodes();
+            let (new_global_references, mut new_children) =
+                substate_ref.references_and_owned_nodes();
 
             for old_child in &substate_lock.substate_owned_nodes {
                 if !new_children.remove(old_child) {
-                    return Err(RuntimeError::KernelError(KernelError::StoredNodeRemoved(old_child.clone())));
+                    return Err(RuntimeError::KernelError(KernelError::StoredNodeRemoved(
+                        old_child.clone(),
+                    )));
                 }
             }
 
             for global_address in new_global_references {
                 let node_id = RENodeId::Global(global_address);
                 if !self.node_refs.contains_key(&node_id) {
-                    return Err(RuntimeError::KernelError(KernelError::InvalidReferenceWrite(global_address)));
+                    return Err(RuntimeError::KernelError(
+                        KernelError::InvalidReferenceWrite(global_address),
+                    ));
                 }
             }
 
-
             for child_id in &new_children {
                 SubstateProperties::verify_can_own(&offset, *child_id)?;
-                // Make child visible
-                //self.current_frame.add_lock_visible_node(self.lock_handle, *child_id)?;
             }
 
             match location {
@@ -171,7 +172,6 @@ impl CallFrame {
                 }
             }
         }
-
 
         for refed_node in substate_lock.substate_owned_nodes {
             self.node_refs.remove(&refed_node);
@@ -186,7 +186,6 @@ impl CallFrame {
             self.node_lock_count
                 .remove(&substate_lock.substate_pointer.1);
         }
-
 
         let flags = substate_lock.flags;
 
@@ -451,7 +450,7 @@ impl CallFrame {
         lock_handle: LockHandle,
         heap: &'f mut Heap,
         track: &'f mut Track<'s, R>,
-    ) -> Result<SubstateRefMut<'f, 's, R>, RuntimeError> {
+    ) -> Result<SubstateRefMut<'f>, RuntimeError> {
         let SubstateLock {
             substate_pointer: (node_location, node_id, offset),
             flags,
@@ -467,13 +466,12 @@ impl CallFrame {
             )));
         }
 
-        SubstateRefMut::new(
-            node_location,
-            node_id,
-            offset,
-            heap,
-            track,
-        )
+        let ref_mut = match node_location {
+            RENodeLocation::Heap => heap.get_substate_mut(node_id, &offset).unwrap(),
+            RENodeLocation::Store => track.get_substate_mut(node_id, &offset),
+        };
+
+        Ok(ref_mut)
     }
 
     pub fn get_node_location(&self, node_id: RENodeId) -> Result<RENodeLocation, CallFrameError> {

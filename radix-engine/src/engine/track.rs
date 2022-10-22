@@ -8,11 +8,11 @@ use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
-use crate::model::{NonFungibleSubstate, RawSubstateRefMut};
 use crate::model::Resource;
 use crate::model::RuntimeSubstate;
 use crate::model::{KeyValueStoreEntrySubstate, PersistedSubstate};
 use crate::model::{LockableResource, SubstateRef};
+use crate::model::{NonFungibleSubstate, SubstateRefMut};
 use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
@@ -307,7 +307,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         &mut self,
         node_id: RENodeId,
         offset: &SubstateOffset,
-    ) -> RawSubstateRefMut {
+    ) -> SubstateRefMut {
         let runtime_substate = match (node_id, offset) {
             (
                 RENodeId::KeyValueStore(..),
@@ -321,9 +321,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             }
             (
                 RENodeId::NonFungibleStore(..),
-                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
-                                                     non_fungible_id,
-                                                 )),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(non_fungible_id)),
             ) => {
                 let parent_substate_id = SubstateId(
                     node_id,

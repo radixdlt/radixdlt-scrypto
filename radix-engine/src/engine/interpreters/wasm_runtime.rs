@@ -19,6 +19,7 @@ where
 {
     actor: ScryptoActor,
     system_api: &'y mut Y,
+    lock_types: HashMap<LockHandle, SubstateOffset>,
     phantom1: PhantomData<R>,
     phantom2: PhantomData<&'s ()>,
 }
@@ -38,6 +39,7 @@ where
         RadixEngineWasmRuntime {
             actor,
             system_api,
+            lock_types: HashMap::new(),
             phantom1: PhantomData,
             phantom2: PhantomData,
         }
@@ -130,9 +132,13 @@ where
             LockFlags::read_only()
         };
 
-        self.system_api
-            .lock_substate(node_id, offset, flags)
-            .map(|handle| ScryptoValue::from_typed(&handle))
+        let handle = self
+            .system_api
+            .lock_substate(node_id, offset.clone(), flags)?;
+
+        self.lock_types.insert(handle, offset);
+
+        Ok(ScryptoValue::from_typed(&handle))
     }
 
     fn handle_read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
@@ -146,17 +152,22 @@ where
         lock_handle: LockHandle,
         buffer: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
+        let offset = self
+            .lock_types
+            .get(&lock_handle)
+            .ok_or(RuntimeError::KernelError(KernelError::LockDoesNotExist(
+                lock_handle,
+            )))?;
+        let substate = RuntimeSubstate::decode_from_buffer(offset, &buffer)?;
         let mut substate_mut = self.system_api.get_ref_mut(lock_handle)?;
-        let substate = RuntimeSubstate::decode_from_buffer(substate_mut.offset(), &buffer)?;
-        let mut raw_mut = substate_mut.get_raw_mut();
 
         match substate {
-            RuntimeSubstate::ComponentState(next) => *raw_mut.component_state() = next,
+            RuntimeSubstate::ComponentState(next) => *substate_mut.component_state() = next,
             RuntimeSubstate::KeyValueStoreEntry(next) => {
-                *raw_mut.kv_store_entry() = next;
+                *substate_mut.kv_store_entry() = next;
             }
             RuntimeSubstate::NonFungible(next) => {
-                *raw_mut.non_fungible() = next;
+                *substate_mut.non_fungible() = next;
             }
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
         }
@@ -165,6 +176,7 @@ where
     }
 
     fn handle_drop_lock(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+        self.lock_types.remove(&lock_handle);
         self.system_api
             .drop_lock(lock_handle)
             .map(|unit| ScryptoValue::from_typed(&unit))

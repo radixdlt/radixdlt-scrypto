@@ -179,8 +179,7 @@ impl AuthModule {
             LockFlags::MUTABLE,
         )?;
         let mut substate_mut_ref = system_api.get_ref_mut(handle)?;
-        let mut raw_mut = substate_mut_ref.get_raw_mut();
-        let auth_zone_ref_mut = raw_mut.auth_zone();
+        let auth_zone_ref_mut = substate_mut_ref.auth_zone();
 
         // Authorization check
         auth_zone_ref_mut
@@ -226,8 +225,7 @@ impl AuthModule {
         )?;
         {
             let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-            let mut raw_mut = substate_ref_mut.get_raw_mut();
-            let auth_zone = raw_mut.auth_zone();
+            let auth_zone = substate_ref_mut.auth_zone();
             auth_zone.pop_frame();
         }
         system_api.drop_lock(handle)?;
