@@ -8,7 +8,7 @@ use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
-use crate::model::LockableResource;
+use crate::model::{LockableResource, SubstateRef};
 use crate::model::NonFungibleSubstate;
 use crate::model::Resource;
 use crate::model::RuntimeSubstate;
@@ -201,41 +201,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         Ok(())
     }
 
-    pub fn borrow_substate(&self, node_id: RENodeId, offset: SubstateOffset) -> &RuntimeSubstate {
-        let substate_id = SubstateId(node_id, offset);
-        &self
-            .loaded_substates
-            .get(&substate_id)
-            .expect(&format!("Substate {:?} was never locked", substate_id))
-            .substate
-    }
-
-    pub fn borrow_substate_mut(
-        &mut self,
-        node_id: RENodeId,
-        offset: SubstateOffset,
-    ) -> &mut RuntimeSubstate {
-        let substate_id = SubstateId(node_id, offset);
-        &mut self
-            .loaded_substates
-            .get_mut(&substate_id)
-            .expect(&format!("Substate {:?} was never locked", substate_id))
-            .substate
-    }
-
-    pub fn insert_substate(&mut self, substate_id: SubstateId, substate: RuntimeSubstate) {
-        assert!(!self.loaded_substates.contains_key(&substate_id));
-
-        self.loaded_substates.insert(
-            substate_id,
-            LoadedSubstate {
-                substate,
-                lock_state: LockState::no_lock(),
-                metastate: SubstateMetaState::New,
-            },
-        );
-    }
-
     /// Returns the value of a key value pair
     pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> &RuntimeSubstate {
         // TODO: consider using a single address as function input
@@ -302,6 +267,68 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             }
             _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
+    }
+
+    pub fn get_substate(&mut self, node_id: RENodeId, offset: &SubstateOffset) -> SubstateRef {
+        let runtime_substate = match (node_id, offset) {
+            (
+                RENodeId::KeyValueStore(..),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ) => {
+                let parent_substate_id = SubstateId(
+                    node_id,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+                );
+                self.read_key_value(parent_substate_id, key.to_vec())
+            }
+            (
+                RENodeId::NonFungibleStore(..),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
+                                                     non_fungible_id,
+                                                 )),
+            ) => {
+                let parent_substate_id = SubstateId(
+                    node_id,
+                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
+                );
+                self.read_key_value(parent_substate_id, non_fungible_id.to_vec())
+            }
+            _ => {
+                let substate_id = SubstateId(node_id, offset.clone());
+                &self
+                    .loaded_substates
+                    .get(&substate_id)
+                    .expect(&format!("Substate {:?} was never locked", substate_id))
+                    .substate
+            }
+        };
+        runtime_substate.to_ref()
+    }
+
+    pub fn borrow_substate_mut(
+        &mut self,
+        node_id: RENodeId,
+        offset: SubstateOffset,
+    ) -> &mut RuntimeSubstate {
+        let substate_id = SubstateId(node_id, offset);
+        &mut self
+            .loaded_substates
+            .get_mut(&substate_id)
+            .expect(&format!("Substate {:?} was never locked", substate_id))
+            .substate
+    }
+
+    pub fn insert_substate(&mut self, substate_id: SubstateId, substate: RuntimeSubstate) {
+        assert!(!self.loaded_substates.contains_key(&substate_id));
+
+        self.loaded_substates.insert(
+            substate_id,
+            LoadedSubstate {
+                substate,
+                lock_state: LockState::no_lock(),
+                metastate: SubstateMetaState::New,
+            },
+        );
     }
 
     pub fn read_key_value_mut(

@@ -372,7 +372,7 @@ impl CallFrame {
         Ok(node)
     }
 
-    fn borrow_substate<'f, 'p, 's, R: FeeReserve>(
+    fn get_substate<'f, 'p, 's, R: FeeReserve>(
         &self,
         heap: &'f mut Heap,
         track: &'f mut Track<'s, R>,
@@ -382,35 +382,7 @@ impl CallFrame {
     ) -> Result<SubstateRef<'f>, RuntimeError> {
         let substate_ref = match location {
             RENodeLocation::Heap => heap.get_substate(node_id, offset)?,
-            RENodeLocation::Store => match (node_id, offset) {
-                (
-                    RENodeId::KeyValueStore(..),
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-                ) => {
-                    let parent_substate_id = SubstateId(
-                        node_id,
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
-                    );
-                    track
-                        .read_key_value(parent_substate_id, key.to_vec())
-                        .to_ref()
-                }
-                (
-                    RENodeId::NonFungibleStore(..),
-                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
-                        non_fungible_id,
-                    )),
-                ) => {
-                    let parent_substate_id = SubstateId(
-                        node_id,
-                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
-                    );
-                    track
-                        .read_key_value(parent_substate_id, non_fungible_id.to_vec())
-                        .to_ref()
-                }
-                _ => track.borrow_substate(node_id, offset.clone()).to_ref(),
-            },
+            RENodeLocation::Store => track.get_substate(node_id, offset)
         };
 
         Ok(substate_ref)
@@ -430,7 +402,7 @@ impl CallFrame {
             .map_err(RuntimeError::KernelError)?
             .clone();
 
-        let substate_ref = self.borrow_substate(heap, track, node_location, node_id, &offset)?;
+        let substate_ref = self.get_substate(heap, track, node_location, node_id, &offset)?;
         let (global_references, children) = substate_ref.references_and_owned_nodes();
 
         // Expand references
@@ -473,7 +445,7 @@ impl CallFrame {
 
         let (global_references, children) = {
             let substate_ref =
-                self.borrow_substate(heap, track, node_location, node_id, &offset)?;
+                self.get_substate(heap, track, node_location, node_id, &offset)?;
             substate_ref.references_and_owned_nodes()
         };
 
