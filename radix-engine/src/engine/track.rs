@@ -1,4 +1,3 @@
-use indexmap::IndexMap;
 use transaction::model::Executable;
 
 use crate::engine::StateTrack;
@@ -41,16 +40,16 @@ pub enum SubstateMetaState {
 
 #[derive(Debug)]
 pub struct LoadedSubstate {
-    pub substate: RuntimeSubstate,
-    pub lock_state: LockState,
-    pub metastate: SubstateMetaState,
+    substate: RuntimeSubstate,
+    lock_state: LockState,
+    metastate: SubstateMetaState,
 }
 
 /// Transaction-wide states and side effects
 pub struct Track<'s, R: FeeReserve> {
     application_logs: Vec<(Level, String)>,
     state_track: StateTrack<'s>,
-    loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
+    loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
     pub fee_reserve: R,
     pub fee_table: FeeTable,
     pub vault_ops: Vec<(REActor, VaultId, VaultOp)>,
@@ -86,7 +85,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         Self {
             application_logs: Vec::new(),
             state_track,
-            loaded_substates: IndexMap::new(),
+            loaded_substates: BTreeMap::new(),
             fee_reserve,
             fee_table,
             vault_ops: Vec::new(),

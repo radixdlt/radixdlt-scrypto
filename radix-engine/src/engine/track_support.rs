@@ -15,14 +15,14 @@ pub struct StateTrack<'s> {
     /// We're currently blocked by some Substate using `Rc<RefCell<T>>`, which may break
     /// the separation between app state track and base stack track.
     ///
-    substates: IndexMap<SubstateId, Option<Vec<u8>>>,
+    substates: BTreeMap<SubstateId, Option<Vec<u8>>>,
 }
 
 impl<'s> StateTrack<'s> {
     pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
         Self {
             substate_store,
-            substates: IndexMap::new(),
+            substates: BTreeMap::new(),
         }
     }
 
