@@ -3,7 +3,6 @@ use indexmap::IndexMap;
 use crate::ledger::*;
 use crate::model::*;
 use crate::state_manager::StateDiff;
-use crate::state_manager::VirtualSubstateId;
 use crate::types::*;
 
 /// Keeps track of state changes that that are non-reversible, such as fee payments
@@ -65,80 +64,21 @@ impl<'s> StateTrack<'s> {
 
         for (substate_id, substate) in &self.substates {
             if let Some(substate) = substate {
-                match &substate_id {
-                    SubstateId(
-                        RENodeId::NonFungibleStore(store_id),
-                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(key)),
-                    ) => {
-                        let next_version = if let Some(existing_output_id) =
-                            Self::get_substate_output_id(&self.substate_store, &substate_id)
-                        {
-                            let next_version = existing_output_id.version + 1;
-                            diff.down_substates.push(existing_output_id);
-                            next_version
-                        } else {
-                            let parent_address = SubstateId(
-                                RENodeId::NonFungibleStore(*store_id),
-                                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
-                            );
-                            let virtual_output_id =
-                                VirtualSubstateId(parent_address, key.0.clone());
-                            diff.down_virtual_substates.push(virtual_output_id);
-                            0
-                        };
-
-                        let output_value = OutputValue {
-                            substate: scrypto_decode(&substate)
-                                .expect("Failed to decode NonFungibleSubstate"),
-                            version: next_version,
-                        };
-                        diff.up_substates.insert(substate_id.clone(), output_value);
-                    }
-                    SubstateId(
-                        RENodeId::KeyValueStore(kv_store_id),
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-                    ) => {
-                        let next_version = if let Some(existing_output_id) =
-                            Self::get_substate_output_id(&self.substate_store, &substate_id)
-                        {
-                            let next_version = existing_output_id.version + 1;
-                            diff.down_substates.push(existing_output_id);
-                            next_version
-                        } else {
-                            let parent_address = SubstateId(
-                                RENodeId::KeyValueStore(*kv_store_id),
-                                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
-                            );
-                            let virtual_output_id = VirtualSubstateId(parent_address, key.clone());
-                            diff.down_virtual_substates.push(virtual_output_id);
-                            0
-                        };
-
-                        let output_value = OutputValue {
-                            substate: scrypto_decode(&substate)
-                                .expect("Failed to decode KeyValueStoreEntrySubstate"),
-                            version: next_version,
-                        };
-                        diff.up_substates.insert(substate_id.clone(), output_value);
-                    }
-                    _ => {
-                        let next_version = if let Some(existing_output_id) =
-                            Self::get_substate_output_id(&self.substate_store, &substate_id)
-                        {
-                            let next_version = existing_output_id.version + 1;
-                            diff.down_substates.push(existing_output_id);
-                            next_version
-                        } else {
-                            0
-                        };
-                        let output_value = OutputValue {
-                            substate: scrypto_decode(&substate)
-                                .expect(&format!("Failed to decode substate {:?}", substate_id)),
-                            version: next_version,
-                        };
-                        diff.up_substates.insert(substate_id.clone(), output_value);
-                    }
-                }
+                let next_version = if let Some(existing_output_id) =
+                    Self::get_substate_output_id(&self.substate_store, &substate_id)
+                {
+                    let next_version = existing_output_id.version + 1;
+                    diff.down_substates.push(existing_output_id);
+                    next_version
+                } else {
+                    0
+                };
+                let output_value = OutputValue {
+                    substate: scrypto_decode(&substate)
+                        .expect(&format!("Failed to decode substate {:?}", substate_id)),
+                    version: next_version,
+                };
+                diff.up_substates.insert(substate_id.clone(), output_value);
             } else {
                 // FIXME: How is this being recorded, considering that we're not rejecting the transaction
                 // if it attempts to touch some non-existing global addresses?

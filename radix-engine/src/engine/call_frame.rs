@@ -150,7 +150,7 @@ impl CallFrame {
             }
 
             match location {
-                RENodeLocation::Heap => { }
+                RENodeLocation::Heap => {}
                 RENodeLocation::Store => {
                     heap.move_nodes_to_store(track, new_children)?;
                 }
