@@ -516,7 +516,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
                 let mut substate = self
                     .state_track
-                    .get_substate(&substate_id)
+                    .get_updated_substate(&substate_id)
                     .expect("Failed to fetch a fee-locking vault")
                     .to_runtime();
                 substate

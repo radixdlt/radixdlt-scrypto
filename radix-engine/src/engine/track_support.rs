@@ -1,5 +1,3 @@
-use indexmap::IndexMap;
-
 use crate::ledger::*;
 use crate::model::*;
 use crate::state_manager::StateDiff;
@@ -15,7 +13,7 @@ pub struct StateTrack<'s> {
     /// We're currently blocked by some Substate using `Rc<RefCell<T>>`, which may break
     /// the separation between app state track and base stack track.
     ///
-    substates: BTreeMap<SubstateId, Option<Vec<u8>>>,
+    substates: BTreeMap<SubstateId, Vec<u8>>,
 }
 
 impl<'s> StateTrack<'s> {
@@ -28,24 +26,26 @@ impl<'s> StateTrack<'s> {
 
     pub fn put_substate(&mut self, substate_id: SubstateId, substate: PersistedSubstate) {
         self.substates
-            .insert(substate_id, Some(scrypto_encode(&substate)));
+            .insert(substate_id, scrypto_encode(&substate));
+    }
+
+    pub fn get_updated_substate(&mut self, substate_id: &SubstateId) -> Option<PersistedSubstate> {
+        self.substates
+            .get(substate_id)
+            .cloned()
+            .map(|x| {
+                scrypto_decode(&x).expect(&format!("Failed to decode substate {:?}", substate_id))
+            })
     }
 
     /// Returns a copy of the substate associated with the given address, if exists
     pub fn get_substate(&mut self, substate_id: &SubstateId) -> Option<PersistedSubstate> {
-        // First, try to copy it from the base track
-        self.substates
-            .get(substate_id)
-            .cloned()
-            .unwrap_or_else(|| {
-                // If not found, load from the substate store
-                self.substate_store
-                    .get_substate(substate_id)
-                    .map(|s| scrypto_encode(&s.substate))
-            })
-            .map(|x| {
-                scrypto_decode(&x).expect(&format!("Failed to decode substate {:?}", substate_id))
-            })
+        self.substate_store
+            .get_substate(substate_id)
+            .map(|s| scrypto_encode(&s.substate))
+        .map(|x| {
+            scrypto_decode(&x).expect(&format!("Failed to decode substate {:?}", substate_id))
+        })
     }
 
     fn get_substate_output_id(
@@ -63,26 +63,21 @@ impl<'s> StateTrack<'s> {
         let mut diff = StateDiff::new();
 
         for (substate_id, substate) in &self.substates {
-            if let Some(substate) = substate {
-                let next_version = if let Some(existing_output_id) =
-                    Self::get_substate_output_id(&self.substate_store, &substate_id)
-                {
-                    let next_version = existing_output_id.version + 1;
-                    diff.down_substates.push(existing_output_id);
-                    next_version
-                } else {
-                    0
-                };
-                let output_value = OutputValue {
-                    substate: scrypto_decode(&substate)
-                        .expect(&format!("Failed to decode substate {:?}", substate_id)),
-                    version: next_version,
-                };
-                diff.up_substates.insert(substate_id.clone(), output_value);
+            let next_version = if let Some(existing_output_id) =
+                Self::get_substate_output_id(&self.substate_store, &substate_id)
+            {
+                let next_version = existing_output_id.version + 1;
+                diff.down_substates.push(existing_output_id);
+                next_version
             } else {
-                // FIXME: How is this being recorded, considering that we're not rejecting the transaction
-                // if it attempts to touch some non-existing global addresses?
-            }
+                0
+            };
+            let output_value = OutputValue {
+                substate: scrypto_decode(&substate)
+                    .expect(&format!("Failed to decode substate {:?}", substate_id)),
+                version: next_version,
+            };
+            diff.up_substates.insert(substate_id.clone(), output_value);
         }
 
         diff

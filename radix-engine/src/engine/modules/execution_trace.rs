@@ -277,7 +277,7 @@ impl ExecutionTraceReceipt {
         state_track: &mut StateTrack,
     ) -> ResourceAddress {
         state_track
-            .get_substate(&SubstateId(
+            .get_updated_substate(&SubstateId(
                 RENodeId::Vault(vault_id),
                 SubstateOffset::Vault(VaultOffset::Vault),
             ))
