@@ -48,7 +48,8 @@ pub struct LoadedSubstate {
 /// Transaction-wide states and side effects
 pub struct Track<'s, R: FeeReserve> {
     application_logs: Vec<(Level, String)>,
-    state_track: StateTrack<'s>,
+    state_track: StateTrack,
+    substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
     pub fee_reserve: R,
     pub fee_table: FeeTable,
@@ -80,10 +81,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         fee_reserve: R,
         fee_table: FeeTable,
     ) -> Self {
-        let state_track = StateTrack::new(substate_store);
+        let state_track = StateTrack::new();
 
         Self {
             application_logs: Vec::new(),
+            substate_store,
             state_track,
             loaded_substates: BTreeMap::new(),
             fee_reserve,
@@ -95,6 +97,16 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     /// Adds a log message.
     pub fn add_log(&mut self, level: Level, message: String) {
         self.application_logs.push((level, message));
+    }
+
+    /// Returns a copy of the substate associated with the given address, if exists
+    fn load_substate(&mut self, substate_id: &SubstateId) -> Option<PersistedSubstate> {
+        self.substate_store
+            .get_substate(substate_id)
+            .map(|s| scrypto_encode(&s.substate))
+            .map(|x| {
+                scrypto_decode(&x).expect(&format!("Failed to decode substate {:?}", substate_id))
+            })
     }
 
     // TODO: to read/write a value owned by track requires three coordinated steps:
@@ -114,7 +126,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     ) -> Result<(), TrackError> {
         // Load the substate from state track
         if !self.loaded_substates.contains_key(&substate_id) {
-            let maybe_substate = self.state_track.get_substate(&substate_id);
+            let maybe_substate = self.load_substate(&substate_id);
             if let Some(substate) = maybe_substate {
                 self.loaded_substates.insert(
                     substate_id.clone(),
@@ -270,9 +282,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             ) => {
                 let substate_id = SubstateId(node_id, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
-                    let substate = self
-                        .state_track
-                        .get_substate(&substate_id)
+                    let substate = self.load_substate(&substate_id)
                         .map(PersistedSubstate::to_runtime)
                         .unwrap_or(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
 
@@ -295,8 +305,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 let substate_id = SubstateId(node_id, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let substate = self
-                        .state_track
-                        .get_substate(&substate_id)
+                        .load_substate(&substate_id)
                         .map(PersistedSubstate::to_runtime)
                         .unwrap_or(RuntimeSubstate::KeyValueStoreEntry(
                             KeyValueStoreEntrySubstate(None),
@@ -331,8 +340,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 let substate_id = SubstateId(node_id, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let substate = self
-                        .state_track
-                        .get_substate(&substate_id)
+                        .load_substate(&substate_id)
                         .map(PersistedSubstate::to_runtime)
                         .unwrap_or(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
 
@@ -359,8 +367,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 let substate_id = SubstateId(node_id, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let substate = self
-                        .state_track
-                        .get_substate(&substate_id)
+                        .load_substate(&substate_id)
                         .map(PersistedSubstate::to_runtime)
                         .unwrap_or(RuntimeSubstate::KeyValueStoreEntry(
                             KeyValueStoreEntrySubstate(None),
@@ -544,7 +551,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     Ok(output) => TransactionOutcome::Success(output),
                     Err(error) => TransactionOutcome::Failure(error),
                 },
-                state_updates: self.state_track.generate_diff(),
+                state_updates: self.state_track.generate_diff(self.substate_store),
                 entity_changes: EntityChanges::new(new_global_addresses),
                 resource_changes: execution_trace_receipt.resource_changes,
             })

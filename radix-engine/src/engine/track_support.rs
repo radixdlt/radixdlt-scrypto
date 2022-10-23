@@ -4,9 +4,7 @@ use crate::state_manager::StateDiff;
 use crate::types::*;
 
 /// Keeps track of state changes that that are non-reversible, such as fee payments
-pub struct StateTrack<'s> {
-    /// The parent state track
-    substate_store: &'s dyn ReadableSubstateStore,
+pub struct StateTrack {
     /// Substates either created during the transaction or loaded from substate store
     ///
     /// TODO: can we use Substate instead of `Vec<u8>`?
@@ -16,10 +14,9 @@ pub struct StateTrack<'s> {
     substates: BTreeMap<SubstateId, Vec<u8>>,
 }
 
-impl<'s> StateTrack<'s> {
-    pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
+impl StateTrack {
+    pub fn new() -> Self {
         Self {
-            substate_store,
             substates: BTreeMap::new(),
         }
     }
@@ -38,18 +35,8 @@ impl<'s> StateTrack<'s> {
             })
     }
 
-    /// Returns a copy of the substate associated with the given address, if exists
-    pub fn get_substate(&mut self, substate_id: &SubstateId) -> Option<PersistedSubstate> {
-        self.substate_store
-            .get_substate(substate_id)
-            .map(|s| scrypto_encode(&s.substate))
-        .map(|x| {
-            scrypto_decode(&x).expect(&format!("Failed to decode substate {:?}", substate_id))
-        })
-    }
-
     fn get_substate_output_id(
-        substate_store: &&'s dyn ReadableSubstateStore,
+        substate_store: &dyn ReadableSubstateStore,
         substate_id: &SubstateId,
     ) -> Option<OutputId> {
         substate_store.get_substate(&substate_id).map(|s| OutputId {
@@ -59,12 +46,12 @@ impl<'s> StateTrack<'s> {
         })
     }
 
-    pub fn generate_diff(&self) -> StateDiff {
+    pub fn generate_diff(&self, substate_store: &dyn ReadableSubstateStore) -> StateDiff {
         let mut diff = StateDiff::new();
 
         for (substate_id, substate) in &self.substates {
             let next_version = if let Some(existing_output_id) =
-                Self::get_substate_output_id(&self.substate_store, &substate_id)
+                Self::get_substate_output_id(substate_store, &substate_id)
             {
                 let next_version = existing_output_id.version + 1;
                 diff.down_substates.push(existing_output_id);
