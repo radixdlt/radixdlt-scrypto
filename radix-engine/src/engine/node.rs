@@ -11,7 +11,7 @@ pub enum RENode {
     Component(ComponentInfoSubstate, ComponentStateSubstate),
     Worktop(WorktopSubstate),
     Package(PackageSubstate),
-    KeyValueStore(KeyValueStore),
+    KeyValueStore(KeyValueStoreEmptySubstate),
     NonFungibleStore(NonFungibleStore),
     ResourceManager(ResourceManagerSubstate),
     System(SystemSubstate),
@@ -48,13 +48,11 @@ impl RENode {
             RENode::Vault(vault) => {
                 substates.insert(SubstateOffset::Vault(VaultOffset::Vault), vault.into());
             }
-            RENode::KeyValueStore(store) => {
-                for (k, v) in store.loaded_entries {
-                    substates.insert(
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(k)),
-                        v.into(),
-                    );
-                }
+            RENode::KeyValueStore(empty_substate) => {
+                substates.insert(
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(vec![])),
+                    RuntimeSubstate::KeyValueStoreEmptyEntry(empty_substate),
+                );
             }
             RENode::Component(info, state) => {
                 substates.insert(
