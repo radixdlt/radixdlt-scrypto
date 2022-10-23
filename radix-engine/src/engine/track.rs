@@ -12,6 +12,7 @@ use crate::model::RuntimeSubstate;
 use crate::model::{KeyValueStoreEntrySubstate, PersistedSubstate};
 use crate::model::{LockableResource, SubstateRef};
 use crate::model::{NonFungibleSubstate, SubstateRefMut};
+use crate::state_manager::StateDiff;
 use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
@@ -34,7 +35,7 @@ impl LockState {
 #[derive(Debug)]
 pub enum SubstateMetaState {
     New,
-    Updated,
+    Updated(Option<PersistedSubstate>),
     Loaded,
 }
 
@@ -81,12 +82,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         fee_reserve: R,
         fee_table: FeeTable,
     ) -> Self {
-        let state_track = StateTrack::new();
-
         Self {
             application_logs: Vec::new(),
             substate_store,
-            state_track,
+            state_track: StateTrack::new(),
             loaded_substates: BTreeMap::new(),
             fee_reserve,
             fee_table,
@@ -151,7 +150,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 SubstateMetaState::New => {
                     return Err(TrackError::LockUnmodifiedBaseOnNewSubstate(substate_id))
                 }
-                SubstateMetaState::Updated => {
+                SubstateMetaState::Updated(..) => {
                     return Err(TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(
                         substate_id,
                     ))
@@ -199,12 +198,17 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             LockState::Read(n) => loaded_substate.lock_state = LockState::Read(n - 1),
             LockState::Write => {
                 loaded_substate.lock_state = LockState::no_lock();
-                loaded_substate.metastate = SubstateMetaState::Updated;
 
                 if force_write {
                     let persisted_substate = loaded_substate.substate.clone_to_persisted();
-                    self.state_track
-                        .put_substate(substate_id, persisted_substate);
+                    loaded_substate.metastate = SubstateMetaState::Updated(Some(persisted_substate));
+                } else {
+                    match loaded_substate.metastate {
+                        SubstateMetaState::Updated(..) => {},
+                        _ => {
+                            loaded_substate.metastate = SubstateMetaState::Updated(None);
+                        }
+                    }
                 }
             }
         }
@@ -447,6 +451,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         let mut new_global_addresses = Vec::new();
 
+        let mut to_persist = HashMap::new();
+
         // Commit/rollback application state changes
         if is_success {
             for (id, loaded) in self.loaded_substates {
@@ -466,11 +472,17 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     _ => {}
                 }
 
-                self.state_track
-                    .put_substate(id, loaded.substate.to_persisted());
+                to_persist.insert(id, loaded.substate.to_persisted());
             }
         } else {
-            self.loaded_substates.clear();
+            for (id, loaded) in self.loaded_substates {
+                match loaded.metastate {
+                    SubstateMetaState::Updated(Some(force_persist)) => {
+                        to_persist.insert(id, force_persist);
+                    }
+                    _ => {}
+                }
+            }
         }
 
         // Close fee reserve
@@ -521,25 +533,34 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     SubstateOffset::Vault(VaultOffset::Vault),
                 );
 
+                let mut substate = to_persist.remove(&substate_id)
+                    .expect("Failed to fetch a fee-locking vault")
+                    .to_runtime();
+
+                /*
                 let mut substate = self
                     .state_track
                     .get_updated_substate(&substate_id)
                     .expect("Failed to fetch a fee-locking vault")
                     .to_runtime();
+                 */
                 substate
                     .vault_mut()
                     .borrow_resource_mut()
                     .put(locked)
                     .expect("Failed to put a fee-locking vault");
+                to_persist.insert(substate_id, substate.to_persisted());
+                /*
                 self.state_track
                     .put_substate(substate_id, substate.to_persisted());
+                 */
 
                 *actual_fee_payments.entry(vault_id).or_default() += amount;
             }
             let execution_trace_receipt = ExecutionTraceReceipt::new(
                 self.vault_ops,
                 actual_fee_payments,
-                &mut self.state_track,
+                &mut to_persist,
                 invoke_result.is_ok(),
             );
 
@@ -551,7 +572,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     Ok(output) => TransactionOutcome::Success(output),
                     Err(error) => TransactionOutcome::Failure(error),
                 },
-                state_updates: self.state_track.generate_diff(self.substate_store),
+                state_updates: Self::generate_diff(self.substate_store, to_persist),
                 entity_changes: EntityChanges::new(new_global_addresses),
                 resource_changes: execution_trace_receipt.resource_changes,
             })
@@ -562,5 +583,39 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             application_logs: self.application_logs,
             result,
         }
+    }
+
+    fn get_substate_output_id(
+        substate_store: &dyn ReadableSubstateStore,
+        substate_id: &SubstateId,
+    ) -> Option<OutputId> {
+        substate_store.get_substate(&substate_id).map(|s| OutputId {
+            substate_id: substate_id.clone(),
+            substate_hash: hash(scrypto_encode(&s.substate)),
+            version: s.version,
+        })
+    }
+
+    pub fn generate_diff(substate_store: &dyn ReadableSubstateStore, to_persist: HashMap<SubstateId, PersistedSubstate>) -> StateDiff {
+        let mut diff = StateDiff::new();
+
+        for (substate_id, substate) in to_persist {
+            let next_version = if let Some(existing_output_id) =
+            Self::get_substate_output_id(substate_store, &substate_id)
+            {
+                let next_version = existing_output_id.version + 1;
+                diff.down_substates.push(existing_output_id);
+                next_version
+            } else {
+                0
+            };
+            let output_value = OutputValue {
+                substate: substate,
+                version: next_version,
+            };
+            diff.up_substates.insert(substate_id.clone(), output_value);
+        }
+
+        diff
     }
 }

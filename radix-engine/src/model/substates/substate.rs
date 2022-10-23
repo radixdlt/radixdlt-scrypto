@@ -17,6 +17,16 @@ pub enum PersistedSubstate {
     KeyValueStoreEmptyEntry(KeyValueStoreEmptySubstate),
 }
 
+impl PersistedSubstate {
+    pub fn vault(&self) -> &VaultSubstate {
+        if let PersistedSubstate::Vault(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+}
+
 impl Into<VaultSubstate> for PersistedSubstate {
     fn into(self) -> VaultSubstate {
         if let PersistedSubstate::Vault(vault) = self {
@@ -217,6 +227,7 @@ impl RuntimeSubstate {
             panic!("Not a vault");
         }
     }
+
     pub fn vault_mut(&mut self) -> &mut VaultRuntimeSubstate {
         if let RuntimeSubstate::Vault(vault) = self {
             vault

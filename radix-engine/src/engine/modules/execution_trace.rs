@@ -199,7 +199,7 @@ impl ExecutionTraceReceipt {
     pub fn new(
         ops: Vec<(REActor, VaultId, VaultOp)>,
         actual_fee_payments: HashMap<VaultId, Decimal>,
-        state_track: &mut StateTrack,
+        to_persist: &mut HashMap<SubstateId, PersistedSubstate>,
         is_commit_success: bool,
     ) -> Self {
         let mut vault_changes = HashMap::<ComponentId, HashMap<VaultId, Decimal>>::new();
@@ -258,7 +258,7 @@ impl ExecutionTraceReceipt {
 
                 // Add a resource change log if non-zero
                 if !amount.is_zero() {
-                    let resource_address = Self::get_vault_resource_address(vault_id, state_track);
+                    let resource_address = Self::get_vault_resource_address(vault_id, to_persist);
                     resource_changes.push(ResourceChange {
                         resource_address,
                         component_id,
@@ -274,15 +274,13 @@ impl ExecutionTraceReceipt {
 
     fn get_vault_resource_address(
         vault_id: VaultId,
-        state_track: &mut StateTrack,
+        to_persist: &mut HashMap<SubstateId, PersistedSubstate>,
     ) -> ResourceAddress {
-        state_track
-            .get_updated_substate(&SubstateId(
+        to_persist.get(&SubstateId(
                 RENodeId::Vault(vault_id),
                 SubstateOffset::Vault(VaultOffset::Vault),
             ))
             .expect("Failed to find the vault substate")
-            .to_runtime()
             .vault()
             .resource_address()
     }
