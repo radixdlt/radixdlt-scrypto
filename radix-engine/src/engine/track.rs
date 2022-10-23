@@ -32,10 +32,18 @@ impl LockState {
 }
 
 #[derive(Debug)]
+pub enum ExistingMetaState {
+    Loaded,
+    Updated(Option<PersistedSubstate>),
+}
+
+#[derive(Debug)]
 pub enum SubstateMetaState {
     New,
-    Loaded(u32),
-    Updated(u32, Option<PersistedSubstate>),
+    Existing {
+        old_version: u32,
+        state: ExistingMetaState,
+    }
 }
 
 #[derive(Debug)]
@@ -124,7 +132,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     LoadedSubstate {
                         substate: output.substate.to_runtime(),
                         lock_state: LockState::no_lock(),
-                        metastate: SubstateMetaState::Loaded(output.version),
+                        metastate: SubstateMetaState::Existing {
+                            old_version: output.version,
+                            state: ExistingMetaState::Loaded,
+                        },
                     },
                 );
             } else {
@@ -142,12 +153,12 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 SubstateMetaState::New => {
                     return Err(TrackError::LockUnmodifiedBaseOnNewSubstate(substate_id))
                 }
-                SubstateMetaState::Updated(..) => {
+                SubstateMetaState::Existing { state: ExistingMetaState::Updated(..), ..} => {
                     return Err(TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(
                         substate_id,
                     ))
                 }
-                SubstateMetaState::Loaded(..) => {}
+                SubstateMetaState::Existing { state: ExistingMetaState::Loaded, ..} => {}
             }
         }
 
@@ -194,22 +205,21 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 if force_write {
                     let persisted_substate = loaded_substate.substate.clone_to_persisted();
                     match &mut loaded_substate.metastate {
-                        SubstateMetaState::Updated(_, force_persist) => {
-                            *force_persist = Some(persisted_substate);
-                        }
-                        SubstateMetaState::Loaded(old_version) => {
-                            loaded_substate.metastate = SubstateMetaState::Updated(*old_version, Some(persisted_substate));
+                        SubstateMetaState::Existing { state, .. } => {
+                            *state = ExistingMetaState::Updated(Some(persisted_substate));
                         }
                         SubstateMetaState::New => {
                             panic!("Unexpected");
                         }
                     }
                 } else {
-                    match loaded_substate.metastate {
+                    match &mut loaded_substate.metastate {
                         SubstateMetaState::New => {},
-                        SubstateMetaState::Updated(..) => {},
-                        SubstateMetaState::Loaded(old_version) => {
-                            loaded_substate.metastate = SubstateMetaState::Updated(old_version, None);
+                        SubstateMetaState::Existing { state, .. } => {
+                            match state {
+                                ExistingMetaState::Loaded => *state = ExistingMetaState::Updated(None),
+                                ExistingMetaState::Updated(..) => {},
+                            }
                         }
                     }
                 }
@@ -300,7 +310,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         LoadedSubstate {
                             substate,
                             lock_state: LockState::no_lock(),
-                            metastate: SubstateMetaState::Loaded(version),
+                            metastate: SubstateMetaState::Existing {
+                                old_version: version,
+                                state: ExistingMetaState::Loaded,
+                            },
                         },
                     );
                 }
@@ -324,7 +337,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         LoadedSubstate {
                             substate,
                             lock_state: LockState::no_lock(),
-                            metastate: SubstateMetaState::Loaded(version),
+                            metastate: SubstateMetaState::Existing {
+                                old_version: version,
+                                state: ExistingMetaState::Loaded,
+                            },
                         },
                     );
                 }
@@ -358,7 +374,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         LoadedSubstate {
                             substate,
                             lock_state: LockState::no_lock(),
-                            metastate: SubstateMetaState::Loaded(version),
+                            metastate: SubstateMetaState::Existing {
+                                old_version: version,
+                                state: ExistingMetaState::Loaded,
+                            },
                         },
                     );
                 }
@@ -382,7 +401,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         LoadedSubstate {
                             substate,
                             lock_state: LockState::no_lock(),
-                            metastate: SubstateMetaState::Loaded(version),
+                            metastate: SubstateMetaState::Existing {
+                                old_version: version,
+                                state: ExistingMetaState::Loaded,
+                            },
                         },
                     );
                 }
@@ -470,7 +492,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
                 let old_version = match &loaded.metastate {
                     SubstateMetaState::New => Option::None,
-                    SubstateMetaState::Loaded(old_version) | SubstateMetaState::Updated(old_version, ..) => {
+                    SubstateMetaState::Existing { old_version, .. } => {
                         Option::Some(*old_version)
                     }
                 };
@@ -480,7 +502,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         } else {
             for (id, loaded) in self.loaded_substates {
                 match loaded.metastate {
-                    SubstateMetaState::Updated(old_version, Some(force_persist)) => {
+                    SubstateMetaState::Existing { old_version, state: ExistingMetaState::Updated(Some(force_persist)) } => {
                         to_persist.insert(id, (force_persist, Option::Some(old_version)));
                     }
                     _ => {}
