@@ -414,7 +414,7 @@ mod tests {
                                 },
                                 "output": {
                                     "type": "Custom",
-                                    "type_id": 177,
+                                    "type_id": 146,
                                     "generics": []
                                 },
                                 "export_name": "Simple_free_token_main"
