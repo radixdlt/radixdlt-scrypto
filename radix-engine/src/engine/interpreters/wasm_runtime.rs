@@ -1,7 +1,10 @@
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::fee::*;
-use crate::model::{ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, InvokeError, KeyValueStoreEmptySubstate, RuntimeSubstate};
+use crate::model::{
+    ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, InvokeError,
+    KeyValueStoreEmptySubstate, RuntimeSubstate,
+};
 use crate::types::*;
 use crate::wasm::*;
 

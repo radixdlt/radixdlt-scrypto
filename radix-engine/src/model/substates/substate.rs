@@ -185,7 +185,9 @@ impl RuntimeSubstate {
             RuntimeSubstate::Vault(value) => SubstateRefMut::Vault(value),
             RuntimeSubstate::NonFungible(value) => SubstateRefMut::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
-            RuntimeSubstate::KeyValueStoreEmptyEntry(value) => SubstateRefMut::KeyValueStoreEmptyEntry(value),
+            RuntimeSubstate::KeyValueStoreEmptyEntry(value) => {
+                SubstateRefMut::KeyValueStoreEmptyEntry(value)
+            }
             RuntimeSubstate::AuthZone(value) => SubstateRefMut::AuthZone(value),
             RuntimeSubstate::Bucket(value) => SubstateRefMut::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRefMut::Proof(value),
@@ -204,7 +206,9 @@ impl RuntimeSubstate {
             RuntimeSubstate::Vault(value) => SubstateRef::Vault(value),
             RuntimeSubstate::NonFungible(value) => SubstateRef::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
-            RuntimeSubstate::KeyValueStoreEmptyEntry(value) => SubstateRef::KeyValueStoreEmptyEntry(value),
+            RuntimeSubstate::KeyValueStoreEmptyEntry(value) => {
+                SubstateRef::KeyValueStoreEmptyEntry(value)
+            }
             RuntimeSubstate::AuthZone(value) => SubstateRef::AuthZone(value),
             RuntimeSubstate::Bucket(value) => SubstateRef::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRef::Proof(value),

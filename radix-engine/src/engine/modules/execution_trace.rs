@@ -276,12 +276,12 @@ impl ExecutionTraceReceipt {
         vault_id: VaultId,
         to_persist: &mut HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
     ) -> ResourceAddress {
-        let (substate, _) = to_persist.get(&SubstateId(
+        let (substate, _) = to_persist
+            .get(&SubstateId(
                 RENodeId::Vault(vault_id),
                 SubstateOffset::Vault(VaultOffset::Vault),
             ))
             .expect("Failed to find the vault substate");
-        substate.vault()
-            .resource_address()
+        substate.vault().resource_address()
     }
 }

@@ -43,7 +43,7 @@ pub enum SubstateMetaState {
     Existing {
         old_version: u32,
         state: ExistingMetaState,
-    }
+    },
 }
 
 #[derive(Debug)]
@@ -58,6 +58,7 @@ pub struct Track<'s, R: FeeReserve> {
     application_logs: Vec<(Level, String)>,
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
+    new_global_addresses: Vec<GlobalAddress>,
     pub fee_reserve: R,
     pub fee_table: FeeTable,
     pub vault_ops: Vec<(REActor, VaultId, VaultOp)>,
@@ -92,6 +93,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             application_logs: Vec::new(),
             substate_store,
             loaded_substates: BTreeMap::new(),
+            new_global_addresses: Vec::new(),
             fee_reserve,
             fee_table,
             vault_ops: Vec::new(),
@@ -153,12 +155,18 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 SubstateMetaState::New => {
                     return Err(TrackError::LockUnmodifiedBaseOnNewSubstate(substate_id))
                 }
-                SubstateMetaState::Existing { state: ExistingMetaState::Updated(..), ..} => {
+                SubstateMetaState::Existing {
+                    state: ExistingMetaState::Updated(..),
+                    ..
+                } => {
                     return Err(TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(
                         substate_id,
                     ))
                 }
-                SubstateMetaState::Existing { state: ExistingMetaState::Loaded, ..} => {}
+                SubstateMetaState::Existing {
+                    state: ExistingMetaState::Loaded,
+                    ..
+                } => {}
             }
         }
 
@@ -214,13 +222,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     }
                 } else {
                     match &mut loaded_substate.metastate {
-                        SubstateMetaState::New => {},
-                        SubstateMetaState::Existing { state, .. } => {
-                            match state {
-                                ExistingMetaState::Loaded => *state = ExistingMetaState::Updated(None),
-                                ExistingMetaState::Updated(..) => {},
-                            }
-                        }
+                        SubstateMetaState::New => {}
+                        SubstateMetaState::Existing { state, .. } => match state {
+                            ExistingMetaState::Loaded => *state = ExistingMetaState::Updated(None),
+                            ExistingMetaState::Updated(..) => {}
+                        },
                     }
                 }
             }
@@ -280,6 +286,16 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn insert_substate(&mut self, substate_id: SubstateId, substate: RuntimeSubstate) {
         assert!(!self.loaded_substates.contains_key(&substate_id));
 
+        match &substate_id {
+            SubstateId(
+                RENodeId::Global(global_address),
+                SubstateOffset::Global(GlobalOffset::Global),
+            ) => {
+                self.new_global_addresses.push(*global_address);
+            }
+            _ => {}
+        }
+
         self.loaded_substates.insert(
             substate_id,
             LoadedSubstate {
@@ -303,7 +319,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let (substate, version) = output
                         .map(|o| (o.substate.to_runtime(), o.version))
                         .unwrap_or((RuntimeSubstate::NonFungible(NonFungibleSubstate(None)), 0));
-
 
                     self.loaded_substates.insert(
                         substate_id.clone(),
@@ -329,8 +344,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output
                         .map(|o| (o.substate.to_runtime(), o.version))
-                        .unwrap_or((RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)), 0));
-
+                        .unwrap_or((
+                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                            0,
+                        ));
 
                     self.loaded_substates.insert(
                         substate_id.clone(),
@@ -368,7 +385,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         .map(|o| (o.substate.to_runtime(), o.version))
                         .unwrap_or((RuntimeSubstate::NonFungible(NonFungibleSubstate(None)), 0));
 
-
                     self.loaded_substates.insert(
                         substate_id.clone(),
                         LoadedSubstate {
@@ -382,7 +398,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     );
                 }
 
-                &mut self.loaded_substates.get_mut(&substate_id).unwrap().substate
+                &mut self
+                    .loaded_substates
+                    .get_mut(&substate_id)
+                    .unwrap()
+                    .substate
             }
             (
                 RENodeId::KeyValueStore(..),
@@ -393,8 +413,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output
                         .map(|o| (o.substate.to_runtime(), o.version))
-                        .unwrap_or((RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)), 0));
-
+                        .unwrap_or((
+                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                            0,
+                        ));
 
                     self.loaded_substates.insert(
                         substate_id.clone(),
@@ -409,7 +431,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     );
                 }
 
-                &mut self.loaded_substates.get_mut(&substate_id).unwrap().substate
+                &mut self
+                    .loaded_substates
+                    .get_mut(&substate_id)
+                    .unwrap()
+                    .substate
             }
             _ => panic!("Invalid keyed value"),
         }
@@ -468,41 +494,27 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         let is_success = invoke_result.is_ok();
 
         let mut new_global_addresses = Vec::new();
-
         let mut to_persist = HashMap::new();
 
         // Commit/rollback application state changes
         if is_success {
             for (id, loaded) in self.loaded_substates {
-                match (&id, &loaded) {
-                    (
-                        SubstateId(
-                            RENodeId::Global(global_address),
-                            SubstateOffset::Global(GlobalOffset::Global),
-                        ),
-                        LoadedSubstate {
-                            metastate: SubstateMetaState::New,
-                            ..
-                        },
-                    ) => {
-                        new_global_addresses.push(*global_address);
-                    }
-                    _ => {}
-                }
-
                 let old_version = match &loaded.metastate {
                     SubstateMetaState::New => Option::None,
-                    SubstateMetaState::Existing { old_version, .. } => {
-                        Option::Some(*old_version)
-                    }
+                    SubstateMetaState::Existing { old_version, .. } => Option::Some(*old_version),
                 };
 
                 to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
             }
+
+            new_global_addresses = self.new_global_addresses;
         } else {
             for (id, loaded) in self.loaded_substates {
                 match loaded.metastate {
-                    SubstateMetaState::Existing { old_version, state: ExistingMetaState::Updated(Some(force_persist)) } => {
+                    SubstateMetaState::Existing {
+                        old_version,
+                        state: ExistingMetaState::Updated(Some(force_persist)),
+                    } => {
                         to_persist.insert(id, (force_persist, Option::Some(old_version)));
                     }
                     _ => {}
@@ -558,7 +570,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     SubstateOffset::Vault(VaultOffset::Vault),
                 );
 
-                let (substate, old_version) = to_persist.remove(&substate_id)
+                let (substate, old_version) = to_persist
+                    .remove(&substate_id)
                     .expect("Failed to fetch a fee-locking vault");
                 let mut runtime_substate = substate.to_runtime();
 
@@ -621,12 +634,15 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         })
     }
 
-    pub fn generate_diff(substate_store: &dyn ReadableSubstateStore, to_persist: HashMap<SubstateId, (PersistedSubstate, Option<u32>)>) -> StateDiff {
+    pub fn generate_diff(
+        substate_store: &dyn ReadableSubstateStore,
+        to_persist: HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
+    ) -> StateDiff {
         let mut diff = StateDiff::new();
 
         for (substate_id, (substate, ..)) in to_persist {
             let next_version = if let Some(existing_output_id) =
-            Self::get_substate_output_id(substate_store, &substate_id)
+                Self::get_substate_output_id(substate_store, &substate_id)
             {
                 let next_version = existing_output_id.version + 1;
                 diff.down_substates.push(existing_output_id);
