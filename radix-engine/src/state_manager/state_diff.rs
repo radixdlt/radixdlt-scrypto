@@ -5,7 +5,7 @@ use crate::types::*;
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct VirtualSubstateId(pub SubstateId, pub Vec<u8>);
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct StateDiff {
     pub down_virtual_substates: Vec<VirtualSubstateId>,
     pub up_substates: BTreeMap<SubstateId, OutputValue>,

@@ -9,19 +9,19 @@ use crate::fee::FeeSummary;
 use crate::state_manager::StateDiff;
 use crate::types::*;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TransactionContents {
     pub instructions: Vec<Instruction>,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
 }
 
 /// Captures whether a transaction should be committed, and its other results
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum TransactionResult {
     Commit(CommitResult),
     Reject(RejectResult),
@@ -36,7 +36,7 @@ impl TransactionResult {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CommitResult {
     pub outcome: TransactionOutcome,
     pub state_updates: StateDiff,
@@ -45,7 +45,7 @@ pub struct CommitResult {
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum TransactionOutcome {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
@@ -67,7 +67,7 @@ impl TransactionOutcome {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
@@ -100,13 +100,13 @@ impl EntityChanges {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct RejectResult {
     pub error: RejectionError,
 }
 
 /// Represents a transaction receipt.
-#[derive(TypeId, Encode, Decode)]
+#[derive(Clone, TypeId, Encode, Decode)]
 pub struct TransactionReceipt {
     pub contents: TransactionContents,
     pub execution: TransactionExecution, // THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
