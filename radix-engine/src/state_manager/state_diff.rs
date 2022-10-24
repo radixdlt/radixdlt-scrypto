@@ -2,7 +2,7 @@ use crate::ledger::*;
 use crate::state_manager::CommitReceipt;
 use crate::types::*;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct StateDiff {
     pub up_substates: BTreeMap<SubstateId, OutputValue>,
     pub down_substates: Vec<OutputId>,
