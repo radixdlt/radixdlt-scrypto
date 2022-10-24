@@ -39,13 +39,15 @@ pub fn resolve_native_method(receiver: &Receiver, method_name: &str) -> Option<N
             .ok()
             .map(NativeMethod::Worktop),
 
-        RENodeId::Component(_) => {
-            ComponentMethod::from_str(method_name)
-                .ok()
-                .map(NativeMethod::Component)
-        }
+        RENodeId::Component(_) => ComponentMethod::from_str(method_name)
+            .ok()
+            .map(NativeMethod::Component),
         RENodeId::Global(GlobalAddress::Component(component_address))
-        if matches!(component_address, ComponentAddress::Normal(..) | ComponentAddress::Account(..)) => {
+            if matches!(
+                component_address,
+                ComponentAddress::Normal(..) | ComponentAddress::Account(..)
+            ) =>
+        {
             ComponentMethod::from_str(method_name)
                 .ok()
                 .map(NativeMethod::Component)
@@ -53,7 +55,9 @@ pub fn resolve_native_method(receiver: &Receiver, method_name: &str) -> Option<N
         RENodeId::System(_) => SystemMethod::from_str(method_name)
             .ok()
             .map(NativeMethod::System),
-        RENodeId::Global(GlobalAddress::Component(component_address)) if matches!(component_address, ComponentAddress::System(..)) => {
+        RENodeId::Global(GlobalAddress::Component(component_address))
+            if matches!(component_address, ComponentAddress::System(..)) =>
+        {
             SystemMethod::from_str(method_name)
                 .ok()
                 .map(NativeMethod::System)

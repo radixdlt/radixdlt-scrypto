@@ -226,9 +226,7 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
     }
 }
 
-pub fn bootstrap<S>(
-    substate_store: &mut S
-) -> Option<TransactionReceipt>
+pub fn bootstrap<S>(substate_store: &mut S) -> Option<TransactionReceipt>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
 {
