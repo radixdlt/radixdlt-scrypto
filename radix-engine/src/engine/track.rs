@@ -574,24 +574,12 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     .remove(&substate_id)
                     .expect("Failed to fetch a fee-locking vault");
                 let mut runtime_substate = substate.to_runtime();
-
-                /*
-                let mut substate = self
-                    .state_track
-                    .get_updated_substate(&substate_id)
-                    .expect("Failed to fetch a fee-locking vault")
-                    .to_runtime();
-                 */
                 runtime_substate
                     .vault_mut()
                     .borrow_resource_mut()
                     .put(locked)
                     .expect("Failed to put a fee-locking vault");
                 to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
-                /*
-                self.state_track
-                    .put_substate(substate_id, substate.to_persisted());
-                 */
 
                 *actual_fee_payments.entry(vault_id).or_default() += amount;
             }
