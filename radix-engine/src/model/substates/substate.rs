@@ -14,7 +14,6 @@ pub enum PersistedSubstate {
     Vault(VaultSubstate),
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
-    KeyValueStoreEmptyEntry(KeyValueStoreEmptySubstate),
 }
 
 impl PersistedSubstate {
@@ -53,9 +52,6 @@ impl PersistedSubstate {
             PersistedSubstate::KeyValueStoreEntry(value) => {
                 RuntimeSubstate::KeyValueStoreEntry(value)
             }
-            PersistedSubstate::KeyValueStoreEmptyEntry(value) => {
-                RuntimeSubstate::KeyValueStoreEmptyEntry(value)
-            }
         }
     }
 }
@@ -74,7 +70,6 @@ pub enum RuntimeSubstate {
     Package(PackageSubstate),
     Vault(VaultRuntimeSubstate),
     NonFungible(NonFungibleSubstate),
-    KeyValueStoreEmptyEntry(KeyValueStoreEmptySubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
     AuthZone(AuthZoneStackSubstate),
     Bucket(BucketSubstate),
@@ -101,9 +96,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value.clone())
             }
-            RuntimeSubstate::KeyValueStoreEmptyEntry(value) => {
-                PersistedSubstate::KeyValueStoreEmptyEntry(value.clone())
-            }
             RuntimeSubstate::Vault(value) => {
                 let persisted_vault = value.clone_to_persisted();
                 PersistedSubstate::Vault(persisted_vault)
@@ -128,9 +120,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value)
-            }
-            RuntimeSubstate::KeyValueStoreEmptyEntry(value) => {
-                PersistedSubstate::KeyValueStoreEmptyEntry(value)
             }
             RuntimeSubstate::Vault(value) => {
                 let persisted_vault = value
@@ -185,9 +174,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::Vault(value) => SubstateRefMut::Vault(value),
             RuntimeSubstate::NonFungible(value) => SubstateRefMut::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
-            RuntimeSubstate::KeyValueStoreEmptyEntry(value) => {
-                SubstateRefMut::KeyValueStoreEmptyEntry(value)
-            }
             RuntimeSubstate::AuthZone(value) => SubstateRefMut::AuthZone(value),
             RuntimeSubstate::Bucket(value) => SubstateRefMut::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRefMut::Proof(value),
@@ -206,9 +192,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::Vault(value) => SubstateRef::Vault(value),
             RuntimeSubstate::NonFungible(value) => SubstateRef::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
-            RuntimeSubstate::KeyValueStoreEmptyEntry(value) => {
-                SubstateRef::KeyValueStoreEmptyEntry(value)
-            }
             RuntimeSubstate::AuthZone(value) => SubstateRef::AuthZone(value),
             RuntimeSubstate::Bucket(value) => SubstateRef::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRef::Proof(value),
@@ -432,7 +415,6 @@ pub enum SubstateRef<'a> {
     ComponentState(&'a ComponentStateSubstate),
     NonFungible(&'a NonFungibleSubstate),
     KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
-    KeyValueStoreEmptyEntry(&'a KeyValueStoreEmptySubstate),
     Package(&'a PackageSubstate),
     Vault(&'a VaultRuntimeSubstate),
     ResourceManager(&'a ResourceManagerSubstate),
@@ -623,7 +605,6 @@ pub enum SubstateRefMut<'a> {
     ComponentState(&'a mut ComponentStateSubstate),
     NonFungible(&'a mut NonFungibleSubstate),
     KeyValueStoreEntry(&'a mut KeyValueStoreEntrySubstate),
-    KeyValueStoreEmptyEntry(&'a mut KeyValueStoreEmptySubstate),
     Package(&'a mut PackageSubstate),
     Vault(&'a mut VaultRuntimeSubstate),
     ResourceManager(&'a mut ResourceManagerSubstate),

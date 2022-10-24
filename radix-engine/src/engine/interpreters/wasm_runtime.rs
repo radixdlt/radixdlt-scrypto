@@ -3,7 +3,7 @@ use crate::engine::*;
 use crate::fee::*;
 use crate::model::{
     ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, InvokeError,
-    KeyValueStoreEmptySubstate, RuntimeSubstate,
+    KeyValueStore, RuntimeSubstate,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -107,7 +107,7 @@ where
                     ComponentStateSubstate::new(state),
                 )
             }
-            ScryptoRENode::KeyValueStore => RENode::KeyValueStore(KeyValueStoreEmptySubstate),
+            ScryptoRENode::KeyValueStore => RENode::KeyValueStore(KeyValueStore::new()),
         };
 
         let id = self.system_api.create_node(node)?;
