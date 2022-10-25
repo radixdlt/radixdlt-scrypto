@@ -64,20 +64,20 @@ pub enum ScryptoType {
     ResourceAddress,
     SystemAddress,
 
-    // RE Nodes types
-    // TODO: replace with `Owned(RENodeId)` and `Ref(RENodeId)`
+    // RE nodes types
     Component,
     KeyValueStore,
     Bucket,
     Proof,
     Vault,
+    Reference,
 
-    // Engine/Transaction interpreted types
+    // Other interpreted types
     Expression,
     Blob,
+    NonFungibleAddress,
 
-    // Convenience types
-    // They have no special meaning to the engine and are mainly for better manifest representation.
+    // Uninterpreted, mainly for better manifest representation.
     Hash,
     EcdsaSecp256k1PublicKey,
     EcdsaSecp256k1Signature,
@@ -86,11 +86,10 @@ pub enum ScryptoType {
     Decimal,
     PreciseDecimal,
     NonFungibleId,
-    NonFungibleAddress,
 }
 
 // Need to update `scrypto-derive/src/import.rs` after changing the table below
-const MAPPING: [(ScryptoType, u8, &str); 20] = [
+const MAPPING: [(ScryptoType, u8, &str); 21] = [
     (ScryptoType::PackageAddress, 0x80, "PackageAddress"),
     (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"),
     (ScryptoType::ResourceAddress, 0x82, "ResourceAddress"),
@@ -100,8 +99,10 @@ const MAPPING: [(ScryptoType, u8, &str); 20] = [
     (ScryptoType::Bucket, 0x92, "Bucket"),
     (ScryptoType::Proof, 0x93, "Proof"),
     (ScryptoType::Vault, 0x94, "Vault"),
+    (ScryptoType::Reference, 0x95, "Reference"),
     (ScryptoType::Expression, 0xa0, "Expression"),
     (ScryptoType::Blob, 0xa1, "Blob"),
+    (ScryptoType::NonFungibleAddress, 0xa2, "NonFungibleAddress"),
     (ScryptoType::Hash, 0xb0, "Hash"),
     (
         ScryptoType::EcdsaSecp256k1PublicKey,
@@ -126,7 +127,6 @@ const MAPPING: [(ScryptoType, u8, &str); 20] = [
     (ScryptoType::Decimal, 0xb5, "Decimal"),
     (ScryptoType::PreciseDecimal, 0xb6, "PreciseDecimal"),
     (ScryptoType::NonFungibleId, 0xb7, "NonFungibleId"),
-    (ScryptoType::NonFungibleAddress, 0xb8, "NonFungibleAddress"),
 ];
 
 impl ScryptoType {

@@ -58,7 +58,6 @@ pub struct VaultLockFeeInput {
     pub amount: Decimal,
 }
 
-/// Represents a persistent resource container on ledger state.
 #[derive(PartialEq, Eq, Hash)]
 pub struct Vault(pub VaultId);
 
