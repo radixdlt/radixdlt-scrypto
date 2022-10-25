@@ -58,74 +58,75 @@ macro_rules! scrypto_type {
 /// They are custom types to SBOR serialization protocol.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScryptoType {
-    // component
+    // Global address types
     PackageAddress,
     ComponentAddress,
-    Component,
-    KeyValueStore,
+    ResourceAddress,
     SystemAddress,
 
-    // crypto
+    // RE Nodes types
+    // TODO: replace with `Owned(RENodeId)` and `Ref(RENodeId)`
+    Component,
+    KeyValueStore,
+    Bucket,
+    Proof,
+    Vault,
+
+    // Engine/Transaction interpreted types
+    Expression,
+    Blob,
+
+    // Convenience types
+    // They have no special meaning to the engine and are mainly for better manifest representation.
     Hash,
     EcdsaSecp256k1PublicKey,
     EcdsaSecp256k1Signature,
     EddsaEd25519PublicKey,
     EddsaEd25519Signature,
-
-    // math
     Decimal,
     PreciseDecimal,
-
-    // resource,
-    Bucket,
-    Proof,
-    Vault,
     NonFungibleId,
     NonFungibleAddress,
-    ResourceAddress,
-
-    Expression,
-    Blob,
 }
 
 // Need to update `scrypto-derive/src/import.rs` after changing the table below
 const MAPPING: [(ScryptoType, u8, &str); 20] = [
-    (ScryptoType::PackageAddress, 0x80, "PackageAddress"), // 128
-    (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"), // 129
-    (ScryptoType::Component, 0x82, "ComponentAddress"),    // 130
-    (ScryptoType::KeyValueStore, 0x83, "KeyValueStore"),   // 131
-    (ScryptoType::SystemAddress, 0x84, "SystemAddress"),   // 132
-    (ScryptoType::Hash, 0x90, "Hash"),                     // 144
+    (ScryptoType::PackageAddress, 0x80, "PackageAddress"),
+    (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"),
+    (ScryptoType::ResourceAddress, 0x82, "ResourceAddress"),
+    (ScryptoType::SystemAddress, 0x83, "SystemAddress"),
+    (ScryptoType::Component, 0x90, "Component"),
+    (ScryptoType::KeyValueStore, 0x91, "KeyValueStore"),
+    (ScryptoType::Bucket, 0x92, "Bucket"),
+    (ScryptoType::Proof, 0x93, "Proof"),
+    (ScryptoType::Vault, 0x94, "Vault"),
+    (ScryptoType::Expression, 0xa0, "Expression"),
+    (ScryptoType::Blob, 0xa1, "Blob"),
+    (ScryptoType::Hash, 0xb0, "Hash"),
     (
         ScryptoType::EcdsaSecp256k1PublicKey,
-        0x91,
+        0xb1,
         "EcdsaSecp256k1PublicKey",
-    ), // 145
+    ),
     (
         ScryptoType::EcdsaSecp256k1Signature,
-        0x92,
+        0xb2,
         "EcdsaSecp256k1Signature",
-    ), // 146
+    ),
     (
         ScryptoType::EddsaEd25519PublicKey,
-        0x93,
+        0xb3,
         "EddsaEd25519PublicKey",
-    ), // 147
+    ),
     (
         ScryptoType::EddsaEd25519Signature,
-        0x94,
+        0xb4,
         "EddsaEd25519Signature",
-    ), // 148
-    (ScryptoType::Decimal, 0xa1, "Decimal"),               // 161
-    (ScryptoType::PreciseDecimal, 0xa2, "PreciseDecimal"), // 162
-    (ScryptoType::Bucket, 0xb1, "Bucket"),                 // 177
-    (ScryptoType::Proof, 0xb2, "Proof"),                   // 178
-    (ScryptoType::Vault, 0xb3, "Vault"),                   // 179
-    (ScryptoType::NonFungibleId, 0xb4, "NonFungibleId"),   // 180
-    (ScryptoType::NonFungibleAddress, 0xb5, "NonFungibleAddress"), // 181
-    (ScryptoType::ResourceAddress, 0xb6, "ResourceAddress"), // 182
-    (ScryptoType::Expression, 0xc1, "Expression"),         // 193
-    (ScryptoType::Blob, 0xc2, "Blob"),                     // 194
+    ),
+    (ScryptoType::Decimal, 0xb5, "Decimal"),
+    (ScryptoType::PreciseDecimal, 0xb6, "PreciseDecimal"),
+    (ScryptoType::NonFungibleId, 0xb7, "NonFungibleId"),
+    (ScryptoType::NonFungibleAddress, 0xb8, "NonFungibleAddress"),
 ];
 
 impl ScryptoType {
