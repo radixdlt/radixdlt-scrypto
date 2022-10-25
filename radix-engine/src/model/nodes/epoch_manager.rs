@@ -88,7 +88,7 @@ impl EpochManager {
         R: FeeReserve,
     {
         let node_id = RENodeId::EpochManager(component_id);
-        let offset = SubstateOffset::EpochManager(EpochManagerOffset::System);
+        let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let handle = system_api.lock_substate(node_id, offset, Self::method_lock_flags(method))?;
 
         match method {

@@ -94,7 +94,7 @@ impl RENode {
             }
             RENode::EpochManager(system) => {
                 substates.insert(
-                    SubstateOffset::EpochManager(EpochManagerOffset::System),
+                    SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                     system.into(),
                 );
             }

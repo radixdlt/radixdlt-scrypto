@@ -165,7 +165,7 @@ pub enum VaultOffset {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum EpochManagerOffset {
-    System,
+    EpochManager,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]

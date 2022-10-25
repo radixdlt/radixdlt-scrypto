@@ -12,12 +12,6 @@ use scrypto::resource::Bucket;
 use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};
 
-#[derive(TypeId, Encode, Decode)]
-struct SystemComponentState {
-    vault: scrypto::resource::Vault,
-    transactions: scrypto::component::KeyValueStore<Hash, u64>,
-}
-
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
 const XRD_DESCRIPTION: &str = "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.";
