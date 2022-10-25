@@ -1,11 +1,13 @@
 use crate::types::*;
 
+// TODO: clean up after `Owned(RENodeId)`?
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum GlobalAddressSubstate {
     Component(scrypto::component::Component),
     Resource(ResourceManagerId),
     Package(PackageId),
-    System(EpochManagerId), // TODO: clean up after `Owned(RENodeId)`?
+    // We may consider using another enum here so we can map system addresses to nodes of different type.
+    System(EpochManagerId),
 }
 
 impl GlobalAddressSubstate {
@@ -14,7 +16,7 @@ impl GlobalAddressSubstate {
             GlobalAddressSubstate::Component(component) => RENodeId::Component(component.0),
             GlobalAddressSubstate::Resource(id) => RENodeId::ResourceManager(*id),
             GlobalAddressSubstate::Package(id) => RENodeId::Package(*id),
-            GlobalAddressSubstate::System(id) => RENodeId::System(*id),
+            GlobalAddressSubstate::System(id) => RENodeId::EpochManager(*id),
         }
     }
 }

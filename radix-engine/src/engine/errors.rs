@@ -177,7 +177,7 @@ pub enum ApplicationError {
 
     PackageError(PackageError),
 
-    SystemError(SystemError),
+    EpochManagerError(EpochManagerError),
 
     ResourceManagerError(ResourceManagerError),
 

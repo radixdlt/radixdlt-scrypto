@@ -40,7 +40,7 @@ fn set_epoch_without_supervisor_auth_fails() {
             package_address,
             "SystemTest",
             "set_epoch",
-            args!(SYS_SYSTEM_COMPONENT, epoch),
+            args!(EPOCH_MANAGER, epoch),
         )
         .call_function(package_address, "SystemTest", "get_epoch", args!())
         .build();
@@ -63,7 +63,7 @@ fn system_create_should_fail_with_supervisor_privilege() {
         .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
         .call_native_function(
             EPOCH_MANAGER_BLUEPRINT,
-            SystemFunction::Create.as_ref(),
+            EpochManagerFunction::Create.as_ref(),
             args!(),
         )
         .build();
@@ -87,7 +87,7 @@ fn system_create_should_succeed_with_system_privilege() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_native_function(
             EPOCH_MANAGER_BLUEPRINT,
-            SystemFunction::Create.as_ref(),
+            EpochManagerFunction::Create.as_ref(),
             args!(),
         )
         .build();

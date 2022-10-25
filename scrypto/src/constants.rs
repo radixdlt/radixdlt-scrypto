@@ -198,7 +198,7 @@ pub const SYS_FAUCET_COMPONENT: ComponentAddress = construct_address!(
     60
 );
 
-pub const SYS_SYSTEM_COMPONENT: SystemAddress = construct_address!(
+pub const EPOCH_MANAGER: SystemAddress = construct_address!(
     EntityType::System,
     242,
     112,

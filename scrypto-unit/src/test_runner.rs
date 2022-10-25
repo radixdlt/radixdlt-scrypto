@@ -675,11 +675,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             |kernel| {
                 kernel
                     .invoke_native(NativeInvocation::Method(
-                        NativeMethod::System(SystemMethod::SetEpoch),
-                        Receiver::Ref(RENodeId::Global(GlobalAddress::System(
-                            SYS_SYSTEM_COMPONENT,
-                        ))),
-                        ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
+                        NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
+                        Receiver::Ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER))),
+                        ScryptoValue::from_typed(&EpochManagerSetEpochInput { epoch }),
                     ))
                     .unwrap()
             },
@@ -690,11 +688,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
             kernel
                 .invoke_native(NativeInvocation::Method(
-                    NativeMethod::System(SystemMethod::GetCurrentEpoch),
-                    Receiver::Ref(RENodeId::Global(GlobalAddress::System(
-                        SYS_SYSTEM_COMPONENT,
-                    ))),
-                    ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),
+                    NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
+                    Receiver::Ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER))),
+                    ScryptoValue::from_typed(&EpochManagerGetCurrentEpochInput {}),
                 ))
                 .unwrap()
         });

@@ -156,7 +156,7 @@ pub fn create_genesis() -> SystemTransaction {
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-                function_name: SystemFunction::Create.to_string(),
+                function_name: EpochManagerFunction::Create.to_string(),
             },
             args: args!(),
         }
@@ -318,7 +318,7 @@ mod tests {
         assert_eq!(genesis_receipt.system_token, SYSTEM_TOKEN);
         assert_eq!(genesis_receipt.xrd_token, RADIX_TOKEN);
         assert_eq!(genesis_receipt.faucet_component, SYS_FAUCET_COMPONENT);
-        assert_eq!(genesis_receipt.epoch_manager, SYS_SYSTEM_COMPONENT);
+        assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
         assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
     }
 }

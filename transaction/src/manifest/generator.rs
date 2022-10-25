@@ -687,7 +687,9 @@ fn generate_re_node_id(
             Ok(RENodeId::NonFungibleStore(generate_node_id(node_id)?))
         }
         ast::RENode::Component(node_id) => Ok(RENodeId::Component(generate_node_id(node_id)?)),
-        ast::RENode::System(node_id) => Ok(RENodeId::System(generate_node_id(node_id)?)),
+        ast::RENode::EpochManager(node_id) => {
+            Ok(RENodeId::EpochManager(generate_node_id(node_id)?))
+        }
         ast::RENode::Vault(node_id) => Ok(RENodeId::Vault(generate_node_id(node_id)?)),
         ast::RENode::ResourceManager(node_id) => {
             Ok(RENodeId::ResourceManager(generate_node_id(node_id)?))

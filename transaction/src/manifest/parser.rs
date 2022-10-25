@@ -226,7 +226,7 @@ impl Parser {
             | TokenKind::KeyValueStore
             | TokenKind::NonFungibleStore
             | TokenKind::Component
-            | TokenKind::System
+            | TokenKind::EpochManager
             | TokenKind::Vault
             | TokenKind::ResourceManager
             | TokenKind::Package => Ok(Receiver::Owned(self.parse_re_node()?)),
@@ -249,7 +249,7 @@ impl Parser {
             TokenKind::KeyValueStore => Ok(RENode::KeyValueStore(self.parse_values_one()?)),
             TokenKind::NonFungibleStore => Ok(RENode::NonFungibleStore(self.parse_values_one()?)),
             TokenKind::Component => Ok(RENode::Component(self.parse_values_one()?)),
-            TokenKind::System => Ok(RENode::System(self.parse_values_one()?)),
+            TokenKind::EpochManager => Ok(RENode::EpochManager(self.parse_values_one()?)),
             TokenKind::Vault => Ok(RENode::Vault(self.parse_values_one()?)),
             TokenKind::ResourceManager => Ok(RENode::ResourceManager(self.parse_values_one()?)),
             TokenKind::Package => Ok(RENode::Package(self.parse_values_one()?)),

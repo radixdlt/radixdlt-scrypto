@@ -147,10 +147,10 @@ pub enum RENode {
     KeyValueStore(Value),
     NonFungibleStore(Value),
     Component(Value),
-    System(Value),
     Vault(Value),
     ResourceManager(Value),
     Package(Value),
+    EpochManager(Value),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

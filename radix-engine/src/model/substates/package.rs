@@ -11,7 +11,7 @@ pub struct PackageSubstate {
 
 impl Debug for PackageSubstate {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct(PACKAGE_BLUEPRINT).finish()
+        f.debug_struct("PackageSubstate").finish()
     }
 }
 

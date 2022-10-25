@@ -19,10 +19,10 @@ pub enum RENodeId {
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
     Component(ComponentId),
-    System(ComponentId),
     Vault(VaultId),
     ResourceManager(ResourceManagerId),
     Package(PackageId),
+    EpochManager(EpochManagerId),
 }
 
 impl Into<(Hash, u32)> for RENodeId {
@@ -32,7 +32,7 @@ impl Into<(Hash, u32)> for RENodeId {
             RENodeId::NonFungibleStore(id) => id,
             RENodeId::Vault(id) => id,
             RENodeId::Component(id) => id,
-            RENodeId::System(id) => id,
+            RENodeId::EpochManager(id) => id,
             RENodeId::ResourceManager(id) => id,
             RENodeId::Package(id) => id,
             _ => panic!("Not a stored id"),
@@ -164,7 +164,7 @@ pub enum VaultOffset {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum SystemOffset {
+pub enum EpochManagerOffset {
     System,
 }
 
@@ -194,7 +194,7 @@ pub enum SubstateOffset {
     KeyValueStore(KeyValueStoreOffset),
     NonFungibleStore(NonFungibleStoreOffset),
     Vault(VaultOffset),
-    System(SystemOffset),
+    EpochManager(EpochManagerOffset),
     Bucket(BucketOffset),
     Proof(ProofOffset),
     Worktop(WorktopOffset),

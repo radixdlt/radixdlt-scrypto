@@ -18,7 +18,7 @@ pub struct NativeMethodIdent {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, PartialOrd, Ord)]
 pub enum NativeMethod {
     Component(ComponentMethod),
-    System(SystemMethod),
+    EpochManager(EpochManagerMethod),
     AuthZone(AuthZoneMethod),
     ResourceManager(ResourceManagerMethod),
     Bucket(BucketMethod),
@@ -30,7 +30,7 @@ pub enum NativeMethod {
 // Native method enum used by Kernel SystemAPI and WASM
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, PartialOrd, Ord)]
 pub enum NativeFunction {
-    System(SystemFunction),
+    EpochManager(EpochManagerFunction),
     ResourceManager(ResourceManagerFunction),
     Package(PackageFunction),
     TransactionProcessor(TransactionProcessorFunction),
@@ -94,7 +94,7 @@ pub enum ComponentMethod {
     Display,
 )]
 #[strum(serialize_all = "snake_case")]
-pub enum SystemFunction {
+pub enum EpochManagerFunction {
     Create,
 }
 
@@ -118,7 +118,7 @@ pub enum SystemFunction {
     Display,
 )]
 #[strum(serialize_all = "snake_case")]
-pub enum SystemMethod {
+pub enum EpochManagerMethod {
     GetTransactionHash,
     GetCurrentEpoch,
     SetEpoch,

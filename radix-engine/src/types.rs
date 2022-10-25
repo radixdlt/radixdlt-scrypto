@@ -20,9 +20,9 @@ pub use scrypto::component::{
     ComponentAddAccessCheckInput, ComponentAddress, PackageAddress, PackagePublishInput,
 };
 pub use scrypto::constants::*;
-pub use scrypto::core::{SystemAddress, 
-    Blob, Expression, NetworkDefinition, ScryptoActor, SystemCreateInput,
-    SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput,
+pub use scrypto::core::{
+    Blob, EpochManagerCreateInput, EpochManagerGetCurrentEpochInput, EpochManagerSetEpochInput,
+    Expression, NetworkDefinition, ScryptoActor, SystemAddress, SystemGetTransactionHashInput,
 };
 pub use scrypto::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,

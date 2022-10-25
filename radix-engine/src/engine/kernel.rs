@@ -145,7 +145,7 @@ where
                     GlobalAddressSubstate::Component(scrypto::component::Component(component_id)),
                 ))
             }
-            RENodeId::System(epoch_manager_id) => {
+            RENodeId::EpochManager(epoch_manager_id) => {
                 let transaction_hash = system_api.transaction_hash;
 
                 let system_address = system_api
@@ -233,9 +233,9 @@ where
                 let component_id = id_allocator.new_component_id(transaction_hash)?;
                 Ok(RENodeId::Component(component_id))
             }
-            RENode::System(..) => {
+            RENode::EpochManager(..) => {
                 let component_id = id_allocator.new_component_id(transaction_hash)?;
-                Ok(RENodeId::System(component_id))
+                Ok(RENodeId::EpochManager(component_id))
             }
         }
     }
@@ -307,7 +307,7 @@ where
                 | RENodeId::Vault(..)
                 | RENodeId::Package(..)
                 | RENodeId::Worktop
-                | RENodeId::System(..)
+                | RENodeId::EpochManager(..)
                 | RENodeId::Global(..) => Err(RuntimeError::KernelError(
                     KernelError::CantMoveDownstream(node_id),
                 )),
@@ -343,7 +343,7 @@ where
             | RENodeId::NonFungibleStore(..)
             | RENodeId::Package(..)
             | RENodeId::Worktop
-            | RENodeId::System(..)
+            | RENodeId::EpochManager(..)
             | RENodeId::Global(..) => Err(RuntimeError::KernelError(
                 KernelError::CantMoveUpstream(node_id),
             )),
@@ -941,7 +941,7 @@ where
             static_refs.insert(GlobalAddress::Resource(RADIX_TOKEN));
             static_refs.insert(GlobalAddress::Resource(SYSTEM_TOKEN));
             static_refs.insert(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN));
-            static_refs.insert(GlobalAddress::System(SYS_SYSTEM_COMPONENT));
+            static_refs.insert(GlobalAddress::System(EPOCH_MANAGER));
             static_refs.insert(GlobalAddress::Package(ACCOUNT_PACKAGE));
             static_refs.insert(GlobalAddress::Package(SYS_FAUCET_PACKAGE));
 
@@ -994,7 +994,7 @@ where
             // Check that global references are owned by this call frame
             let mut global_references = invocation.args().global_references();
             global_references.insert(GlobalAddress::Resource(RADIX_TOKEN));
-            global_references.insert(GlobalAddress::System(SYS_SYSTEM_COMPONENT));
+            global_references.insert(GlobalAddress::System(EPOCH_MANAGER));
             for global_address in global_references {
                 let node_id = RENodeId::Global(global_address);
 
