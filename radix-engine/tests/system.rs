@@ -61,7 +61,11 @@ fn system_create_should_fail_with_supervisor_privilege() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
-        .call_native_function("System", SystemFunction::Create.as_ref(), args!())
+        .call_native_function(
+            EPOCH_MANAGER_BLUEPRINT,
+            SystemFunction::Create.as_ref(),
+            args!(),
+        )
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![AuthModule::validator_role_nf_address()]);
@@ -81,7 +85,11 @@ fn system_create_should_succeed_with_system_privilege() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_native_function("System", SystemFunction::Create.as_ref(), args!())
+        .call_native_function(
+            EPOCH_MANAGER_BLUEPRINT,
+            SystemFunction::Create.as_ref(),
+            args!(),
+        )
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![AuthModule::system_role_nf_address()]);

@@ -5,16 +5,16 @@ pub fn resolve_native_function(
     function_name: &str,
 ) -> Option<NativeFunction> {
     match blueprint_name {
-        "System" => SystemFunction::from_str(function_name)
+        EPOCH_MANAGER_BLUEPRINT => SystemFunction::from_str(function_name)
             .ok()
             .map(NativeFunction::System),
-        "ResourceManager" => ResourceManagerFunction::from_str(function_name)
+        RESOURCE_MANAGER_BLUEPRINT => ResourceManagerFunction::from_str(function_name)
             .ok()
             .map(NativeFunction::ResourceManager),
-        "Package" => PackageFunction::from_str(function_name)
+        PACKAGE_BLUEPRINT => PackageFunction::from_str(function_name)
             .ok()
             .map(NativeFunction::Package),
-        "TransactionProcessor" => TransactionProcessorFunction::from_str(function_name)
+        TRANSACTION_PROCESSOR_BLUEPRINT => TransactionProcessorFunction::from_str(function_name)
             .ok()
             .map(NativeFunction::TransactionProcessor),
         _ => None,

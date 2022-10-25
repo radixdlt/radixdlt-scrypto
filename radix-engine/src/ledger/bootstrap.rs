@@ -73,7 +73,7 @@ pub fn create_genesis() -> SystemTransaction {
         // TODO: Create token at a specific address
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
-                blueprint_name: "ResourceManager".to_string(),
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
@@ -96,7 +96,7 @@ pub fn create_genesis() -> SystemTransaction {
         // TODO: Create token at a specific address
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
-                blueprint_name: "ResourceManager".to_string(),
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
@@ -124,7 +124,7 @@ pub fn create_genesis() -> SystemTransaction {
 
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
-                blueprint_name: "ResourceManager".to_string(),
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
@@ -145,7 +145,7 @@ pub fn create_genesis() -> SystemTransaction {
         Instruction::CallFunction {
             function_ident: ScryptoFunctionIdent {
                 package: ScryptoPackage::Global(SYS_FAUCET_PACKAGE),
-                blueprint_name: "Faucet".to_string(),
+                blueprint_name: FAUCET_BLUEPRINT.to_string(),
                 function_name: "new".to_string(),
             },
             args: args!(bucket),
@@ -155,7 +155,7 @@ pub fn create_genesis() -> SystemTransaction {
     let create_epoch_manager = {
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
-                blueprint_name: "System".to_string(),
+                blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
                 function_name: SystemFunction::Create.to_string(),
             },
             args: args!(),
@@ -171,7 +171,7 @@ pub fn create_genesis() -> SystemTransaction {
         // TODO: Create token at a specific address
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
-                blueprint_name: "ResourceManager".to_string(),
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(

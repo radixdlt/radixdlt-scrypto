@@ -40,6 +40,7 @@ pub const SYS_FAUCET_PACKAGE: PackageAddress = construct_address!(
     207,
     158
 );
+pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
 /// The address of the account package.
 pub const ACCOUNT_PACKAGE: PackageAddress = construct_address!(
@@ -71,6 +72,7 @@ pub const ACCOUNT_PACKAGE: PackageAddress = construct_address!(
     157,
     255
 );
+pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
 /// The ECDSA virtual resource address.
 pub const ECDSA_SECP256K1_TOKEN: ResourceAddress = construct_address!(
@@ -256,3 +258,8 @@ pub const EDDSA_ED25519_TOKEN: ResourceAddress = address!(
     107,
     106
 );
+
+pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
+pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
+pub const PACKAGE_BLUEPRINT: &str = "Package";
+pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";

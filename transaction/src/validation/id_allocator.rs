@@ -69,7 +69,7 @@ impl IdAllocator {
         // println!("Genesis component {:?}", hash(&data).lower_26_bytes());
 
         match (package_address, blueprint_name) {
-            (ACCOUNT_PACKAGE, "Account") => {
+            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => {
                 Ok(ComponentAddress::Account(hash(data).lower_26_bytes()))
             }
             _ => Ok(ComponentAddress::Normal(hash(data).lower_26_bytes())),

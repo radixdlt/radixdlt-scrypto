@@ -47,7 +47,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     writeln!(
         output,
         "{}: {}",
-        "Package".green().bold(),
+        PACKAGE_BLUEPRINT.green().bold(),
         package_address.display(&bech32_encoder)
     );
     writeln!(

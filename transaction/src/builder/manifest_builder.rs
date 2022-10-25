@@ -321,7 +321,7 @@ impl ManifestBuilder {
 
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
-                blueprint_name: "ResourceManager".to_string(),
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: scrypto_encode(&input),
@@ -531,7 +531,7 @@ impl ManifestBuilder {
         let mint_params: Option<MintParams> = Option::None;
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
-                blueprint_name: "ResourceManager".to_owned(),
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
@@ -555,7 +555,7 @@ impl ManifestBuilder {
 
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
-                blueprint_name: "ResourceManager".to_owned(),
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
@@ -591,7 +591,7 @@ impl ManifestBuilder {
 
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
-                blueprint_name: "ResourceManager".to_owned(),
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
@@ -615,7 +615,7 @@ impl ManifestBuilder {
 
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
-                blueprint_name: "ResourceManager".to_owned(),
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
@@ -686,7 +686,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallFunction {
             function_ident: ScryptoFunctionIdent {
                 package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
-                blueprint_name: "Account".to_owned(),
+                blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
                 function_name: "new".to_string(),
             },
             args: args!(withdraw_auth.clone()),
@@ -703,7 +703,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallFunction {
             function_ident: ScryptoFunctionIdent {
                 package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
-                blueprint_name: "Account".to_owned(),
+                blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
                 function_name: "new_with_resource".to_string(),
             },
             args: args!(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)),

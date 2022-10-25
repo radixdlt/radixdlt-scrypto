@@ -620,7 +620,7 @@ PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02
         assert_eq!(
             manifest2,
             r#"CALL_FUNCTION PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "Blueprint" "function";
-CALL_NATIVE_FUNCTION "System" "create";
+CALL_NATIVE_FUNCTION "EpochManager" "create";
 CALL_NATIVE_FUNCTION "ResourceManager" "create";
 CALL_NATIVE_FUNCTION "Package" "publish";
 CALL_NATIVE_FUNCTION "TransactionProcessor" "run";

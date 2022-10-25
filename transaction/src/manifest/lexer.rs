@@ -426,7 +426,7 @@ impl Lexer {
             "KeyValueStore" => Ok(TokenKind::KeyValueStore),
             "NonFungibleStore" => Ok(TokenKind::NonFungibleStore),
             "Component" => Ok(TokenKind::Component),
-            "System" => Ok(TokenKind::System),
+            "EpochManager" => Ok(TokenKind::System),
             "Vault" => Ok(TokenKind::Vault),
             "ResourceManager" => Ok(TokenKind::ResourceManager),
             "Package" => Ok(TokenKind::Package),
