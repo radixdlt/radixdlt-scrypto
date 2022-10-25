@@ -10,7 +10,7 @@ use crate::{address, construct_address};
 //
 // We've arranged the addresses in the order they're created in the genesis transaction.
 
-/// The address of the sys-faucet package.
+/// The address of the faucet package.
 pub const SYS_FAUCET_PACKAGE: PackageAddress = construct_address!(
     EntityType::Package,
     0,
@@ -167,8 +167,8 @@ pub const RADIX_TOKEN: ResourceAddress = address!(
     208
 );
 
-/// The address of the SysFaucet component
-pub const SYS_FAUCET_COMPONENT: ComponentAddress = construct_address!(
+/// The address of the faucet component, test network only.
+pub const FAUCET_COMPONENT: ComponentAddress = construct_address!(
     EntityType::NormalComponent,
     87,
     220,

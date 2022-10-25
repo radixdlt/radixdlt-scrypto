@@ -14,7 +14,7 @@ fn test_loop() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000"));
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -33,7 +33,7 @@ fn test_loop_out_of_cost_unit() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "70000000"));
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(45.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(45.into(), FAUCET_COMPONENT)
         .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -53,7 +53,7 @@ fn test_recursion() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "128"));
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -72,7 +72,7 @@ fn test_recursion_stack_overflow() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "129"));
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -91,7 +91,7 @@ fn test_grow_memory() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100"));
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -110,7 +110,7 @@ fn test_grow_memory_out_of_cost_unit() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -189,7 +189,7 @@ fn test_publish_large_package() {
     ));
     assert_eq!(4194343, code.len());
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(100.into(), FAUCET_COMPONENT)
         .publish_package(code, HashMap::new())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

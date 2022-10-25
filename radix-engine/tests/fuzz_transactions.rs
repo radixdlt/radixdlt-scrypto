@@ -106,7 +106,7 @@ impl TransactionFuzzer {
                     });
                 }
                 3 => {
-                    builder.call_method(SYS_FAUCET_COMPONENT, "lock_fee", args!(dec!("100")));
+                    builder.call_method(FAUCET_COMPONENT, "lock_fee", args!(dec!("100")));
                 }
                 _ => panic!("Unexpected"),
             }

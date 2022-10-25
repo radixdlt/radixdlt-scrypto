@@ -10,7 +10,7 @@ fn stored_resource_is_invokeable() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package = test_runner.compile_and_publish("./tests/stored_resource");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package, "StoredResource", "create", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -22,7 +22,7 @@ fn stored_resource_is_invokeable() {
 
     // Act
     let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_method(component, "total_supply", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest2, vec![]);

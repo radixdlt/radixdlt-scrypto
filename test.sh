@@ -27,7 +27,7 @@ echo "Testing with no_std..."
 
 echo "Building system packages and examples..."
 (cd assets/account; scrypto test)
-(cd assets/sys-faucet; scrypto test)
+(cd assets/faucet; scrypto test)
 (cd examples/hello-world; scrypto test)
 (cd examples/no-std; scrypto test)
 
