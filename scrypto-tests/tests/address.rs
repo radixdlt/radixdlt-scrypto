@@ -193,7 +193,7 @@ fn decode_matching_system_address_entity_id_succeeds() {
     .unwrap();
 
     let decoded_system_address =
-        bech32_decoder.validate_and_decode_component_address(&encoded_system_address);
+        bech32_decoder.validate_and_decode_system_address(&encoded_system_address);
 
     // Assert
     assert!(matches!(decoded_system_address, Ok(_)));

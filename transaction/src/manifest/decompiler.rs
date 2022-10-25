@@ -516,7 +516,7 @@ fn format_node_id(node_id: &RENodeId, context: &mut DecompilationContext) -> Str
         RENodeId::KeyValueStore(id) => format!("KeyValueStore(\"{}\")", format_id(id)),
         RENodeId::NonFungibleStore(id) => format!("NonFungibleStore(\"{}\")", format_id(id)),
         RENodeId::Component(id) => format!("Component(\"{}\")", format_id(id)),
-        RENodeId::EpochManager(id) => format!("System(\"{}\")", format_id(id)),
+        RENodeId::EpochManager(id) => format!("EpochManager(\"{}\")", format_id(id)),
         RENodeId::Vault(id) => format!("Vault(\"{}\")", format_id(id)),
         RENodeId::ResourceManager(id) => format!("ResourceManager(\"{}\")", format_id(id)),
         RENodeId::Package(id) => format!("Package(\"{}\")", format_id(id)),
