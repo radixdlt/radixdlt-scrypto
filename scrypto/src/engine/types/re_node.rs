@@ -78,6 +78,15 @@ impl Into<ResourceAddress> for RENodeId {
     }
 }
 
+impl Into<SystemAddress> for RENodeId {
+    fn into(self) -> SystemAddress {
+        match self {
+            RENodeId::Global(GlobalAddress::System(system_address)) => system_address,
+            _ => panic!("Not a system address"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum GlobalAddress {
     Component(ComponentAddress),

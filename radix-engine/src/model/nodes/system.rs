@@ -63,9 +63,9 @@ impl System {
                     GlobalAddressSubstate::System(node_id.into()),
                 ))?;
 
-                let component_address: ComponentAddress = global_node_id.into();
+                let system_address: SystemAddress = global_node_id.into();
 
-                Ok(ScryptoValue::from_typed(&component_address))
+                Ok(ScryptoValue::from_typed(&system_address))
             }
         }
     }

@@ -20,7 +20,7 @@ pub use scrypto::component::{
     ComponentAddAccessCheckInput, ComponentAddress, PackageAddress, PackagePublishInput,
 };
 pub use scrypto::constants::*;
-pub use scrypto::core::{
+pub use scrypto::core::{SystemAddress, 
     Blob, Expression, NetworkDefinition, ScryptoActor, SystemCreateInput,
     SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput,
 };
