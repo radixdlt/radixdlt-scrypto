@@ -6,11 +6,15 @@ blueprint! {
     }
 
     impl Account {
+        pub fn create() -> AccountComponent {
+           Self {
+               vaults: KeyValueStore::new(),
+           }
+           .instantiate()
+        }
+
         fn internal_new(withdraw_rule: AccessRule, bucket: Option<Bucket>) -> ComponentAddress {
-            let mut account = Self {
-                vaults: KeyValueStore::new(),
-            }
-            .instantiate();
+            let mut account = Self::create();
 
             if let Some(b) = bucket {
                 // Test out the local component calls
