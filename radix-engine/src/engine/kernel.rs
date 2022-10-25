@@ -1309,11 +1309,19 @@ where
             }
             Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
                 SubstateId(
-                    RENodeId::Global(GlobalAddress::Component(ComponentAddress::Account(..))),
+                    RENodeId::Global(GlobalAddress::Component(ComponentAddress::VirtualAccount(..))),
                     SubstateOffset::Global(GlobalOffset::Global),
                 ),
             )))) => {
-
+                let _ = self.invoke_scrypto(ScryptoInvocation::Function(
+                    ScryptoFunctionIdent {
+                        package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
+                        blueprint_name: "Account".to_string(),
+                        function_name: "create".to_string(),
+                    },
+                    ScryptoValue::from_slice(&args!()).unwrap(),
+                ))?;
+                //let component_id = result.component_ids.iter().next().unwrap();
             }
             Err(err) => return Err(err),
         }

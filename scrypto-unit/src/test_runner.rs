@@ -153,6 +153,20 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .map(|output| output.substate.into())
     }
 
+    pub fn load_virtual_account(&mut self) {
+        let account_address = ComponentAddress::VirtualAccount([0u8; 26]);
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .call_method(SYS_FAUCET_COMPONENT, "free", args!())
+            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+                builder.call_method(account_address, "deposit", args!(scrypto::resource::Bucket(bucket_id)))
+            })
+            .build();
+
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit_success();
+    }
+
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)

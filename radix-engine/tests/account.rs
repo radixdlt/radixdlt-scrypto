@@ -7,6 +7,15 @@ use transaction::builder::ManifestBuilder;
 use transaction::model::*;
 
 #[test]
+fn can_withdraw_from_my_virtual_account() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    test_runner.load_virtual_account();
+}
+
+
+#[test]
 fn can_withdraw_from_my_account() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
