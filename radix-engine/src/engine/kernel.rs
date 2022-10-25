@@ -150,7 +150,7 @@ where
 
                 let component_address = system_api
                     .id_allocator
-                    .new_system_component_address(transaction_hash)
+                    .new_system_address(transaction_hash)
                     .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
                 Ok((

@@ -186,9 +186,7 @@ fn decode_matching_system_address_entity_id_succeeds() {
 
     // Act
     let encoded_system_address = bech32::encode(
-        bech32_encoder
-            .hrp_set
-            .get_entity_hrp(&EntityType::System),
+        bech32_encoder.hrp_set.get_entity_hrp(&EntityType::System),
         generate_u8_array(SYSTEM_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )

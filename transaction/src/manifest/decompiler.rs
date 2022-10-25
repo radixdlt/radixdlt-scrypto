@@ -499,6 +499,9 @@ fn format_node_id(node_id: &RENodeId, context: &mut DecompilationContext) -> Str
             GlobalAddress::Resource(address) => {
                 format!("Global(\"{}\")", address.display(context.bech32_encoder))
             }
+            GlobalAddress::System(address) => {
+                format!("Global(\"{}\")", address.display(context.bech32_encoder))
+            }
         },
         RENodeId::Bucket(id) => match context.bucket_names.get(id) {
             Some(name) => format!("Bucket(\"{}\")", name),

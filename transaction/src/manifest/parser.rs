@@ -289,6 +289,7 @@ impl Parser {
             TokenKind::Decimal
             | TokenKind::PreciseDecimal
             | TokenKind::PackageAddress
+            | TokenKind::SystemAddress
             | TokenKind::ComponentAddress
             | TokenKind::ResourceAddress
             | TokenKind::Hash
@@ -391,6 +392,7 @@ impl Parser {
             TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
             TokenKind::PreciseDecimal => Ok(Value::PreciseDecimal(self.parse_values_one()?.into())),
             TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
+            TokenKind::SystemAddress => Ok(Value::SystemAddress(self.parse_values_one()?.into())),
             TokenKind::ComponentAddress => {
                 Ok(Value::ComponentAddress(self.parse_values_one()?.into()))
             }
@@ -489,6 +491,7 @@ impl Parser {
             TokenKind::Map => Ok(Type::Map),
             TokenKind::Decimal => Ok(Type::Decimal),
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
+            TokenKind::SystemAddress => Ok(Type::SystemAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
             TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
             TokenKind::Hash => Ok(Type::Hash),
