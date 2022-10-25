@@ -177,7 +177,6 @@ impl FeeTable {
             }
             NativeMethod::EpochManager(system_ident) => match system_ident {
                 EpochManagerMethod::GetCurrentEpoch => self.fixed_low,
-                EpochManagerMethod::GetTransactionHash => self.fixed_low,
                 EpochManagerMethod::SetEpoch => self.fixed_low,
             },
             NativeMethod::Bucket(bucket_ident) => match bucket_ident {

@@ -74,7 +74,6 @@ impl EpochManager {
         match method {
             EpochManagerMethod::SetEpoch => LockFlags::MUTABLE,
             EpochManagerMethod::GetCurrentEpoch => LockFlags::read_only(),
-            EpochManagerMethod::GetTransactionHash => LockFlags::read_only(),
         }
     }
 
@@ -112,13 +111,6 @@ impl EpochManager {
                 substate_mut.epoch_manager().epoch = epoch;
 
                 Ok(ScryptoValue::from_typed(&()))
-            }
-            EpochManagerMethod::GetTransactionHash => {
-                let _: SystemGetTransactionHashInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(EpochManagerError::InvalidRequestData(e)))?;
-                Ok(ScryptoValue::from_typed(
-                    &system_api.read_transaction_hash()?,
-                ))
             }
         }
     }

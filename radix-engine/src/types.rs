@@ -22,7 +22,7 @@ pub use scrypto::component::{
 pub use scrypto::constants::*;
 pub use scrypto::core::{
     Blob, EpochManagerCreateInput, EpochManagerGetCurrentEpochInput, EpochManagerSetEpochInput,
-    Expression, NetworkDefinition, ScryptoActor, SystemAddress, SystemGetTransactionHashInput,
+    Expression, NetworkDefinition, ScryptoActor, SystemAddress,
 };
 pub use scrypto::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,

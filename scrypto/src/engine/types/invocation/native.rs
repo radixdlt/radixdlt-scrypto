@@ -119,7 +119,6 @@ pub enum EpochManagerFunction {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum EpochManagerMethod {
-    GetTransactionHash,
     GetCurrentEpoch,
     SetEpoch,
 }

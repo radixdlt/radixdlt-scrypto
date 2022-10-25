@@ -21,9 +21,6 @@ pub struct EpochManagerSetEpochInput {
     pub epoch: u64,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct SystemGetTransactionHashInput {}
-
 /// The transaction runtime.
 #[derive(Debug)]
 pub struct Runtime {}
@@ -88,11 +85,7 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethod::EpochManager(EpochManagerMethod::GetTransactionHash),
-            Receiver::Ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER))),
-            scrypto_encode(&SystemGetTransactionHashInput {}),
-        );
+        let input = RadixEngineInput::GetTransactionHash();
         call_engine(input)
     }
 

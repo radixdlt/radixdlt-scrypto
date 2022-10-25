@@ -15,6 +15,5 @@ pub use logger::Logger;
 pub use network::{NetworkDefinition, ParseNetworkError};
 pub use runtime::{
     EpochManagerCreateInput, EpochManagerGetCurrentEpochInput, EpochManagerSetEpochInput, Runtime,
-    SystemGetTransactionHashInput,
 };
 pub use system::*;
