@@ -140,13 +140,11 @@ pub enum ResourceManagerOffset {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum KeyValueStoreOffset {
-    Space,
     Entry(Vec<u8>),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum NonFungibleStoreOffset {
-    Space,
     Entry(NonFungibleId),
 }
 

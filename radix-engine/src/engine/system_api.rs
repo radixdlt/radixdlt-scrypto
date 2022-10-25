@@ -83,10 +83,7 @@ where
     fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError>;
 
     /// Get a mutable reference to a locked substate
-    fn get_ref_mut(
-        &mut self,
-        lock_handle: LockHandle,
-    ) -> Result<SubstateRefMut<'_, 's, R>, RuntimeError>;
+    fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError>;
 
     fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError>;
 

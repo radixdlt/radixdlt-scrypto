@@ -72,12 +72,10 @@ impl Component {
                 }
 
                 let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-                let mut raw_mut = substate_ref_mut.get_raw_mut();
-                raw_mut
+                substate_ref_mut
                     .component_info()
                     .access_rules
                     .push(input.access_rules);
-                substate_ref_mut.flush()?;
 
                 ScryptoValue::from_typed(&())
             }

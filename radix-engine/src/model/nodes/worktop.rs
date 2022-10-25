@@ -95,12 +95,10 @@ impl Worktop {
                     .drop_node(RENodeId::Bucket(input.bucket.0))?
                     .into();
                 let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                let worktop = raw_mut.worktop();
+                let worktop = substate_mut.worktop();
                 worktop
                     .put(bucket)
                     .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
-                substate_mut.flush()?;
 
                 Ok(ScryptoValue::from_typed(&()))
             }
@@ -110,12 +108,10 @@ impl Worktop {
 
                 let maybe_resource = {
                     let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let worktop = raw_mut.worktop();
+                    let worktop = substate_mut.worktop();
                     let maybe_resource = worktop
                         .take(input.amount, input.resource_address)
                         .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
-                    substate_mut.flush()?;
                     maybe_resource
                 };
 
@@ -151,12 +147,10 @@ impl Worktop {
 
                 let maybe_resource = {
                     let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let worktop = raw_mut.worktop();
+                    let worktop = substate_mut.worktop();
                     let maybe_resource = worktop
                         .take_all(input.resource_address)
                         .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
-                    substate_mut.flush()?;
                     maybe_resource
                 };
 
@@ -192,12 +186,10 @@ impl Worktop {
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let maybe_resource = {
                     let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let worktop = raw_mut.worktop();
+                    let worktop = substate_mut.worktop();
                     let maybe_resource = worktop
                         .take_non_fungibles(&input.ids, input.resource_address)
                         .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
-                    substate_mut.flush()?;
                     maybe_resource
                 };
 
@@ -271,8 +263,7 @@ impl Worktop {
                 let mut resources = Vec::new();
                 {
                     let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let worktop = raw_mut.worktop();
+                    let worktop = substate_mut.worktop();
                     for (_, resource) in worktop.resources.drain() {
                         let taken = resource.borrow_mut().take_all_liquid().map_err(|e| {
                             InvokeError::Error(WorktopError::ResourceOperationError(e))

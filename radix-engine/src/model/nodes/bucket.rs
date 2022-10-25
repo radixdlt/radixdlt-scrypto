@@ -53,12 +53,10 @@ impl Bucket {
                 let input: BucketTakeInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                let bucket = raw_mut.bucket();
+                let bucket = substate_mut.bucket();
                 let container = bucket
                     .take(input.amount)
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
-                substate_mut.flush()?;
                 let bucket_id = system_api
                     .create_node(RENode::Bucket(BucketSubstate::new(container)))?
                     .into();
@@ -70,12 +68,10 @@ impl Bucket {
                 let input: BucketTakeNonFungiblesInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                let bucket = raw_mut.bucket();
+                let bucket = substate_mut.bucket();
                 let container = bucket
                     .take_non_fungibles(&input.ids)
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
-                substate_mut.flush()?;
                 let bucket_id = system_api
                     .create_node(RENode::Bucket(BucketSubstate::new(container)))?
                     .into();
@@ -100,12 +96,10 @@ impl Bucket {
                     .drop_node(RENodeId::Bucket(input.bucket.0))?
                     .into();
                 let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                let bucket = raw_mut.bucket();
+                let bucket = substate_mut.bucket();
                 bucket
                     .put(other_bucket)
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
-                substate_mut.flush()?;
                 Ok(ScryptoValue::from_typed(&()))
             }
             BucketMethod::GetAmount => {
@@ -127,12 +121,10 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
 
                 let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                let bucket = raw_mut.bucket();
+                let bucket = substate_mut.bucket();
                 let proof = bucket
                     .create_proof(bucket_id)
                     .map_err(|e| InvokeError::Error(BucketError::ProofError(e)))?;
-                substate_mut.flush()?;
 
                 let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
