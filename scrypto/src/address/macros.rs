@@ -12,8 +12,8 @@ macro_rules! construct_address {
     (EntityType::AccountComponent, $($bytes:expr),*) => {
         ::scrypto::component::ComponentAddress::Account([$($bytes),*])
     };
-    (EntityType::SystemComponent, $($bytes:expr),*) => {
-        ::scrypto::component::ComponentAddress::System([$($bytes),*])
+    (EntityType::System, $($bytes:expr),*) => {
+        ::scrypto::core::SystemAddress::Normal([$($bytes),*])
     };
 }
 

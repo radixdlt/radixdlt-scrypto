@@ -1,4 +1,5 @@
 use crate::component::{ComponentAddress, PackageAddress};
+use crate::core::SystemAddress;
 use crate::resource::ResourceAddress;
 
 /// A unique identifier used in the addressing of Resource Addresses.
@@ -13,8 +14,8 @@ pub const NORMAL_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x02;
 /// A unique identifier used in the addressing of Account Component Addresses.
 pub const ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x03;
 
-/// A unique identifier used in the addressing of System Component Addresses.
-pub const SYSTEM_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x04;
+/// A unique identifier used in the addressing of System Addresses.
+pub const SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x04;
 
 /// An enum which represents the different addressable entities.
 #[derive(PartialEq, Eq)]
@@ -23,7 +24,7 @@ pub enum EntityType {
     Package,
     NormalComponent,
     AccountComponent,
-    SystemComponent,
+    System,
 }
 
 impl EntityType {
@@ -37,8 +38,11 @@ impl EntityType {
         match address {
             ComponentAddress::Normal(_) => Self::NormalComponent,
             ComponentAddress::Account(_) => Self::AccountComponent,
-            ComponentAddress::System(_) => Self::SystemComponent,
         }
+    }
+
+    pub fn system(_address: &SystemAddress) -> Self {
+        Self::System
     }
 
     pub fn id(&self) -> u8 {
@@ -47,7 +51,7 @@ impl EntityType {
             Self::Package => PACKAGE_ADDRESS_ENTITY_ID,
             Self::NormalComponent => NORMAL_COMPONENT_ADDRESS_ENTITY_ID,
             Self::AccountComponent => ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
-            Self::SystemComponent => SYSTEM_COMPONENT_ADDRESS_ENTITY_ID,
+            Self::System => SYSTEM_ADDRESS_ENTITY_ID,
         }
     }
 }
@@ -61,7 +65,7 @@ impl TryFrom<u8> for EntityType {
             PACKAGE_ADDRESS_ENTITY_ID => Ok(Self::Package),
             NORMAL_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::NormalComponent),
             ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::AccountComponent),
-            SYSTEM_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::SystemComponent),
+            SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::System),
             _ => Err(EntityTypeError::InvalidEntityTypeId(value)),
         }
     }

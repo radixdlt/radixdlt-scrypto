@@ -83,6 +83,7 @@ pub enum GlobalAddress {
     Component(ComponentAddress),
     Package(PackageAddress),
     Resource(ResourceAddress),
+    System(SystemAddress),
 }
 
 impl Into<ComponentAddress> for GlobalAddress {

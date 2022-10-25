@@ -1,4 +1,5 @@
 use crate::component::{ComponentAddress, PackageAddress};
+use crate::core::SystemAddress;
 use crate::resource::*;
 use crate::{address, construct_address};
 
@@ -195,8 +196,8 @@ pub const SYS_FAUCET_COMPONENT: ComponentAddress = construct_address!(
     60
 );
 
-pub const SYS_SYSTEM_COMPONENT: ComponentAddress = construct_address!(
-    EntityType::SystemComponent,
+pub const SYS_SYSTEM_COMPONENT: SystemAddress = construct_address!(
+    EntityType::System,
     242,
     112,
     114,

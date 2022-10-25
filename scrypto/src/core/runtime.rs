@@ -90,7 +90,7 @@ impl Runtime {
     pub fn transaction_hash() -> Hash {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::System(SystemMethod::GetTransactionHash),
-            Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+            Receiver::Ref(RENodeId::Global(GlobalAddress::System(
                 SYS_SYSTEM_COMPONENT,
             ))),
             scrypto_encode(&SystemGetTransactionHashInput {}),
@@ -102,7 +102,7 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::System(SystemMethod::GetCurrentEpoch),
-            Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+            Receiver::Ref(RENodeId::Global(GlobalAddress::System(
                 SYS_SYSTEM_COMPONENT,
             ))),
             scrypto_encode(&SystemGetCurrentEpochInput {}),

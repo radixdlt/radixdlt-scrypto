@@ -7,7 +7,7 @@ use super::entity::EntityType;
 use super::errors::AddressError;
 use super::hrpset::HrpSet;
 use crate::component::{ComponentAddress, PackageAddress};
-use crate::core::NetworkDefinition;
+use crate::core::{NetworkDefinition, SystemAddress};
 use crate::misc::combine;
 use crate::resource::ResourceAddress;
 
@@ -50,6 +50,27 @@ impl Bech32Encoder {
         }
     }
 
+    /// Encodes a system address in Bech32 and returns a String or panics on failure.
+    pub fn encode_system_address_to_string(&self, system_address: &SystemAddress) -> String {
+        let mut buf = String::new();
+        self.encode_system_address_to_fmt(&mut buf, system_address)
+            .expect("Failed to encode system address as Bech32");
+        buf
+    }
+
+    /// Encodes a system address in Bech32 to the given fmt, or returns an `AddressError` on failure.
+    pub fn encode_system_address_to_fmt<F: fmt::Write>(
+        &self,
+        fmt: &mut F,
+        system_address: &SystemAddress,
+    ) -> Result<(), AddressError> {
+        match system_address {
+            SystemAddress::Normal(data) => {
+                self.encode_to_fmt(fmt, EntityType::system(system_address), data)
+            }
+        }
+    }
+
     /// Encodes a component address in Bech32 and returns a String or panics on failure.
     pub fn encode_component_address_to_string(
         &self,
@@ -68,9 +89,7 @@ impl Bech32Encoder {
         component_address: &ComponentAddress,
     ) -> Result<(), AddressError> {
         match component_address {
-            ComponentAddress::Normal(data)
-            | ComponentAddress::Account(data)
-            | ComponentAddress::System(data) => {
+            ComponentAddress::Normal(data) | ComponentAddress::Account(data) => {
                 self.encode_to_fmt(fmt, EntityType::component(component_address), data)
             }
         }
