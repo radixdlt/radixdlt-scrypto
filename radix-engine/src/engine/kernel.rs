@@ -1343,12 +1343,13 @@ where
             Ok(lock_handle) => lock_handle,
             Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
                 SubstateId(
-                    RENodeId::Global(GlobalAddress::Component(ComponentAddress::VirtualAccount(
-                        ..,
-                    ))),
-                    SubstateOffset::Global(GlobalOffset::Global),
+                    RENodeId::Global(global_address),
+                    offset,
                 ),
-            )))) => {
+            )))) if matches!(global_address, GlobalAddress::Component(ComponentAddress::VirtualAccount(
+                        ..,
+                    ))) && matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) => {
+
                 let result = self.invoke_scrypto(ScryptoInvocation::Function(
                     ScryptoFunctionIdent {
                         package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
@@ -1358,6 +1359,26 @@ where
                     ScryptoValue::from_slice(&args!()).unwrap(),
                 ))?;
                 let component_id = result.component_ids.into_iter().next().unwrap();
+                let global_substate = GlobalAddressSubstate::Component(scrypto::component::Component(component_id));
+                self.track.insert_substate(
+                    SubstateId(node_id, offset.clone()),
+                    RuntimeSubstate::Global(global_substate),
+                );
+                self.current_frame
+                    .node_refs
+                    .insert(node_id, RENodeLocation::Store);
+                self.current_frame.move_owned_node_to_store(
+                    &mut self.heap,
+                    &mut self.track,
+                    RENodeId::Component(component_id),
+                )?;
+                self.current_frame.acquire_lock(
+                    &mut self.heap,
+                    &mut self.track,
+                    node_id,
+                    offset.clone(),
+                    flags,
+                )?
             }
             Err(err) => return Err(err),
         };
