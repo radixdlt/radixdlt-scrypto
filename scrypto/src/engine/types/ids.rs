@@ -11,3 +11,4 @@ pub type NonFungibleStoreId = (Hash, u32);
 pub type VaultId = (Hash, u32);
 pub type ResourceManagerId = (Hash, u32);
 pub type PackageId = (Hash, u32);
+pub type EpochManagerId = (Hash, u32);

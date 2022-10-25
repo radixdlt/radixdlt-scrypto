@@ -676,7 +676,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 kernel
                     .invoke_native(NativeInvocation::Method(
                         NativeMethod::System(SystemMethod::SetEpoch),
-                        Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                        Receiver::Ref(RENodeId::Global(GlobalAddress::System(
                             SYS_SYSTEM_COMPONENT,
                         ))),
                         ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
@@ -691,7 +691,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             kernel
                 .invoke_native(NativeInvocation::Method(
                     NativeMethod::System(SystemMethod::GetCurrentEpoch),
-                    Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                    Receiver::Ref(RENodeId::Global(GlobalAddress::System(
                         SYS_SYSTEM_COMPONENT,
                     ))),
                     ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),

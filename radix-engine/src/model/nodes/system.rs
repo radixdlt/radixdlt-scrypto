@@ -60,9 +60,7 @@ impl System {
                     system_api.create_node(RENode::System(SystemSubstate { epoch: 0 }))?;
 
                 let global_node_id = system_api.create_node(RENode::Global(
-                    GlobalAddressSubstate::SystemComponent(scrypto::component::Component(
-                        node_id.into(),
-                    )),
+                    GlobalAddressSubstate::System(node_id.into()),
                 ))?;
 
                 let component_address: ComponentAddress = global_node_id.into();

@@ -7,6 +7,7 @@ use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams};
 
+use scrypto::core::SystemAddress;
 use scrypto::resource::Bucket;
 use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};
@@ -30,7 +31,7 @@ pub struct GenesisReceipt {
     pub system_token: ResourceAddress,
     pub xrd_token: ResourceAddress,
     pub faucet_component: ComponentAddress,
-    pub system_component: ComponentAddress,
+    pub epoch_manager: SystemAddress,
     pub eddsa_ed25519_token: ResourceAddress,
 }
 
@@ -151,7 +152,7 @@ pub fn create_genesis() -> SystemTransaction {
         }
     };
 
-    let create_system_component = {
+    let create_epoch_manager = {
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: "System".to_string(),
@@ -191,7 +192,7 @@ pub fn create_genesis() -> SystemTransaction {
             create_xrd_token,
             take_xrd,
             create_xrd_faucet,
-            create_system_component,
+            create_epoch_manager,
             create_eddsa_ed25519_token,
         ],
         blobs,
@@ -210,7 +211,7 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
     let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) =
         scrypto_decode(&invoke_result[4]).unwrap();
     let faucet_component: ComponentAddress = scrypto_decode(&invoke_result[6]).unwrap();
-    let system_component: ComponentAddress = scrypto_decode(&invoke_result[7]).unwrap();
+    let epoch_manager: SystemAddress = scrypto_decode(&invoke_result[7]).unwrap();
     let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) =
         scrypto_decode(&invoke_result[8]).unwrap();
 
@@ -221,7 +222,7 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
         system_token,
         xrd_token,
         faucet_component,
-        system_component,
+        epoch_manager,
         eddsa_ed25519_token,
     }
 }
@@ -317,7 +318,7 @@ mod tests {
         assert_eq!(genesis_receipt.system_token, SYSTEM_TOKEN);
         assert_eq!(genesis_receipt.xrd_token, RADIX_TOKEN);
         assert_eq!(genesis_receipt.faucet_component, SYS_FAUCET_COMPONENT);
-        assert_eq!(genesis_receipt.system_component, SYS_SYSTEM_COMPONENT);
+        assert_eq!(genesis_receipt.epoch_manager, SYS_SYSTEM_COMPONENT);
         assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
     }
 }

@@ -12,7 +12,8 @@ pub struct HrpSet {
 
     normal_component: String,
     account_component: String,
-    system_component: String,
+
+    system: String,
 }
 
 impl HrpSet {
@@ -23,7 +24,7 @@ impl HrpSet {
 
             EntityType::NormalComponent => &self.normal_component,
             EntityType::AccountComponent => &self.account_component,
-            EntityType::System => &self.system_component,
+            EntityType::System => &self.system,
         }
     }
 }
@@ -34,7 +35,7 @@ impl From<&NetworkDefinition> for HrpSet {
         HrpSet {
             normal_component: format!("component_{}", suffix),
             account_component: format!("account_{}", suffix),
-            system_component: format!("system_{}", suffix),
+            system: format!("system_{}", suffix),
             package: format!("package_{}", suffix),
             resource: format!("resource_{}", suffix),
         }

@@ -532,8 +532,8 @@ impl<'a> SubstateRef<'a> {
                     GlobalAddressSubstate::Component(component) => {
                         owned_nodes.insert(RENodeId::Component(component.0))
                     }
-                    GlobalAddressSubstate::SystemComponent(component) => {
-                        owned_nodes.insert(RENodeId::System(component.0))
+                    GlobalAddressSubstate::System(epoch_manager_id) => {
+                        owned_nodes.insert(RENodeId::System(*epoch_manager_id))
                     }
                     GlobalAddressSubstate::Package(package_address) => {
                         owned_nodes.insert(RENodeId::Package(*package_address))

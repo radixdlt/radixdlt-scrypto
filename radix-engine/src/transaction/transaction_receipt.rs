@@ -1,5 +1,6 @@
 use colored::*;
 use scrypto::address::{AddressDisplayContext, NO_NETWORK};
+use scrypto::core::SystemAddress;
 use scrypto::misc::ContextualDisplay;
 use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
 use transaction::model::*;
@@ -72,6 +73,7 @@ pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
     pub new_resource_addresses: Vec<ResourceAddress>,
+    pub new_system_addresses: Vec<SystemAddress>,
 }
 
 impl EntityChanges {
@@ -80,6 +82,7 @@ impl EntityChanges {
             new_package_addresses: Vec::new(),
             new_component_addresses: Vec::new(),
             new_resource_addresses: Vec::new(),
+            new_system_addresses: Vec::new(),
         };
 
         for new_global_address in new_global_addresses {
@@ -92,6 +95,9 @@ impl EntityChanges {
                     .push(component_address),
                 GlobalAddress::Resource(resource_address) => {
                     entity_changes.new_resource_addresses.push(resource_address)
+                }
+                GlobalAddress::System(system_address) => {
+                    entity_changes.new_system_addresses.push(system_address)
                 }
             }
         }
@@ -221,6 +227,11 @@ impl TransactionReceipt {
     pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
         let commit = self.expect_commit();
         &commit.entity_changes.new_resource_addresses
+    }
+
+    pub fn new_system_addresses(&self) -> &Vec<SystemAddress> {
+        let commit = self.expect_commit();
+        &commit.entity_changes.new_system_addresses
     }
 }
 

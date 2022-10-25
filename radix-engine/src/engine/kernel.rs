@@ -145,19 +145,17 @@ where
                     GlobalAddressSubstate::Component(scrypto::component::Component(component_id)),
                 ))
             }
-            RENodeId::System(component_id) => {
+            RENodeId::System(epoch_manager_id) => {
                 let transaction_hash = system_api.transaction_hash;
 
-                let component_address = system_api
+                let system_address = system_api
                     .id_allocator
                     .new_system_address(transaction_hash)
                     .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
                 Ok((
-                    GlobalAddress::Component(component_address),
-                    GlobalAddressSubstate::SystemComponent(scrypto::component::Component(
-                        component_id,
-                    )),
+                    GlobalAddress::System(system_address),
+                    GlobalAddressSubstate::System(epoch_manager_id),
                 ))
             }
             RENodeId::ResourceManager(resource_id) => {
@@ -943,7 +941,7 @@ where
             static_refs.insert(GlobalAddress::Resource(RADIX_TOKEN));
             static_refs.insert(GlobalAddress::Resource(SYSTEM_TOKEN));
             static_refs.insert(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN));
-            static_refs.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
+            static_refs.insert(GlobalAddress::System(SYS_SYSTEM_COMPONENT));
             static_refs.insert(GlobalAddress::Package(ACCOUNT_PACKAGE));
             static_refs.insert(GlobalAddress::Package(SYS_FAUCET_PACKAGE));
 
@@ -996,7 +994,7 @@ where
             // Check that global references are owned by this call frame
             let mut global_references = invocation.args().global_references();
             global_references.insert(GlobalAddress::Resource(RADIX_TOKEN));
-            global_references.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
+            global_references.insert(GlobalAddress::System(SYS_SYSTEM_COMPONENT));
             for global_address in global_references {
                 let node_id = RENodeId::Global(global_address);
 
