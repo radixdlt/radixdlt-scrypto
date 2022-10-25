@@ -19,7 +19,6 @@ pub const SYSTEM_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x04;
 /// A unique identifier used in the addressing of Account Component Addresses.
 pub const VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x05;
 
-
 /// An enum which represents the different addressable entities.
 #[derive(PartialEq, Eq)]
 pub enum EntityType {

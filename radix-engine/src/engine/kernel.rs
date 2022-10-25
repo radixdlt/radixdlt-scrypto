@@ -978,7 +978,12 @@ where
                 // TODO: static check here is to support the current genesis transaction which
                 // TODO: requires references to dynamically created resources. Can remove
                 // TODO: when this is resolved.
-                if !static_refs.contains(&global_address) {
+                if !static_refs.contains(&global_address)
+                    && !matches!(
+                        global_address,
+                        GlobalAddress::Component(ComponentAddress::VirtualAccount(..))
+                    )
+                {
                     self.track
                         .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
                         .map_err(|_| KernelError::GlobalAddressNotFound(global_address))?;
@@ -1300,30 +1305,8 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         // Deref
-        let derefed = self.node_offset_deref(node_id, &offset);
-        match derefed {
-            Ok(deref_success) => {
-                if let Some(derefed) = deref_success {
-                    node_id = derefed;
-                }
-            }
-            Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
-                SubstateId(
-                    RENodeId::Global(GlobalAddress::Component(ComponentAddress::VirtualAccount(..))),
-                    SubstateOffset::Global(GlobalOffset::Global),
-                ),
-            )))) => {
-                let _ = self.invoke_scrypto(ScryptoInvocation::Function(
-                    ScryptoFunctionIdent {
-                        package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
-                        blueprint_name: "Account".to_string(),
-                        function_name: "create".to_string(),
-                    },
-                    ScryptoValue::from_slice(&args!()).unwrap(),
-                ))?;
-                //let component_id = result.component_ids.iter().next().unwrap();
-            }
-            Err(err) => return Err(err),
+        if let Some(derefed) = self.node_offset_deref(node_id, &offset)?{
+            node_id = derefed;
         }
 
         // TODO: Check if valid offset for node_id
@@ -1348,13 +1331,36 @@ where
             ));
         }
 
-        let lock_handle = self.current_frame.acquire_lock(
+        let maybe_lock_handle = self.current_frame.acquire_lock(
             &mut self.heap,
             &mut self.track,
             node_id,
             offset.clone(),
             flags,
-        )?;
+        );
+
+        let lock_handle = match maybe_lock_handle {
+            Ok(lock_handle) => lock_handle,
+            Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
+                SubstateId(
+                    RENodeId::Global(GlobalAddress::Component(ComponentAddress::VirtualAccount(
+                        ..,
+                    ))),
+                    SubstateOffset::Global(GlobalOffset::Global),
+                ),
+            )))) => {
+                let result = self.invoke_scrypto(ScryptoInvocation::Function(
+                    ScryptoFunctionIdent {
+                        package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
+                        blueprint_name: "Account".to_string(),
+                        function_name: "create".to_string(),
+                    },
+                    ScryptoValue::from_slice(&args!()).unwrap(),
+                ))?;
+                let component_id = result.component_ids.into_iter().next().unwrap();
+            }
+            Err(err) => return Err(err),
+        };
 
         // Restore current mode
         self.execution_mode = current_mode;

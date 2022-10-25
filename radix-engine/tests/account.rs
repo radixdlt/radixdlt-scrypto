@@ -14,7 +14,6 @@ fn can_withdraw_from_my_virtual_account() {
     test_runner.load_virtual_account();
 }
 
-
 #[test]
 fn can_withdraw_from_my_account() {
     // Arrange

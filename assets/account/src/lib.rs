@@ -7,10 +7,10 @@ blueprint! {
 
     impl Account {
         pub fn create() -> AccountComponent {
-           Self {
-               vaults: KeyValueStore::new(),
-           }
-           .instantiate()
+            Self {
+                vaults: KeyValueStore::new(),
+            }
+            .instantiate()
         }
 
         fn internal_new(withdraw_rule: AccessRule, bucket: Option<Bucket>) -> ComponentAddress {

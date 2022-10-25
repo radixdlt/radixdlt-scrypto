@@ -159,7 +159,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
             .call_method(SYS_FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.call_method(account_address, "deposit", args!(scrypto::resource::Bucket(bucket_id)))
+                builder.call_method(
+                    account_address,
+                    "deposit",
+                    args!(scrypto::resource::Bucket(bucket_id)),
+                )
             })
             .build();
 

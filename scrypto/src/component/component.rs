@@ -223,7 +223,9 @@ impl TryFrom<&[u8]> for ComponentAddress {
             {
                 EntityType::NormalComponent => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
                 EntityType::AccountComponent => Ok(Self::Account(copy_u8_array(&slice[1..]))),
-                EntityType::VirtualAccountComponent => Ok(Self::VirtualAccount(copy_u8_array(&slice[1..]))),
+                EntityType::VirtualAccountComponent => {
+                    Ok(Self::VirtualAccount(copy_u8_array(&slice[1..])))
+                }
                 EntityType::SystemComponent => Ok(Self::System(copy_u8_array(&slice[1..]))),
                 _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
             },
@@ -237,7 +239,9 @@ impl ComponentAddress {
         let mut buf = Vec::new();
         buf.push(EntityType::component(self).id());
         match self {
-            Self::Normal(v) | Self::Account(v) | Self::VirtualAccount(v) | Self::System(v) => buf.extend(v),
+            Self::Normal(v) | Self::Account(v) | Self::VirtualAccount(v) | Self::System(v) => {
+                buf.extend(v)
+            }
         }
         buf
     }
