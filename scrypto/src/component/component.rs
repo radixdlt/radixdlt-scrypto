@@ -205,6 +205,7 @@ impl fmt::Debug for Component {
 pub enum ComponentAddress {
     Normal([u8; 26]),
     Account([u8; 26]),
+    VirtualAccount([u8; 26]),
     System([u8; 26]),
 }
 
@@ -222,6 +223,7 @@ impl TryFrom<&[u8]> for ComponentAddress {
             {
                 EntityType::NormalComponent => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
                 EntityType::AccountComponent => Ok(Self::Account(copy_u8_array(&slice[1..]))),
+                EntityType::VirtualAccountComponent => Ok(Self::VirtualAccount(copy_u8_array(&slice[1..]))),
                 EntityType::SystemComponent => Ok(Self::System(copy_u8_array(&slice[1..]))),
                 _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
             },
@@ -235,7 +237,7 @@ impl ComponentAddress {
         let mut buf = Vec::new();
         buf.push(EntityType::component(self).id());
         match self {
-            Self::Normal(v) | Self::Account(v) | Self::System(v) => buf.extend(v),
+            Self::Normal(v) | Self::Account(v) | Self::VirtualAccount(v) | Self::System(v) => buf.extend(v),
         }
         buf
     }
@@ -282,6 +284,9 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
             }
             ComponentAddress::Account(_) => {
                 write!(f, "AccountComponent[{}]", self.to_hex())
+            }
+            ComponentAddress::VirtualAccount(_) => {
+                write!(f, "VirtualAccountComponent[{}]", self.to_hex())
             }
             ComponentAddress::System(_) => {
                 write!(f, "SystemComponent[{}]", self.to_hex())

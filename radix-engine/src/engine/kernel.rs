@@ -1300,8 +1300,22 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         // Deref
-        if let Some(derefed) = self.node_offset_deref(node_id, &offset)? {
-            node_id = derefed;
+        let derefed = self.node_offset_deref(node_id, &offset);
+        match derefed {
+            Ok(deref_success) => {
+                if let Some(derefed) = deref_success {
+                    node_id = derefed;
+                }
+            }
+            Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
+                SubstateId(
+                    RENodeId::Global(GlobalAddress::Component(ComponentAddress::Account(..))),
+                    SubstateOffset::Global(GlobalOffset::Global),
+                ),
+            )))) => {
+
+            }
+            Err(err) => return Err(err),
         }
 
         // TODO: Check if valid offset for node_id

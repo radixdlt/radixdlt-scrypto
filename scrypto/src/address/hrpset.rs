@@ -23,6 +23,7 @@ impl HrpSet {
 
             EntityType::NormalComponent => &self.normal_component,
             EntityType::AccountComponent => &self.account_component,
+            EntityType::VirtualAccountComponent => &self.account_component,
             EntityType::SystemComponent => &self.system_component,
         }
     }

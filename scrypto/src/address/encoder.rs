@@ -70,6 +70,7 @@ impl Bech32Encoder {
         match component_address {
             ComponentAddress::Normal(data)
             | ComponentAddress::Account(data)
+            | ComponentAddress::VirtualAccount(data)
             | ComponentAddress::System(data) => {
                 self.encode_to_fmt(fmt, EntityType::component(component_address), data)
             }

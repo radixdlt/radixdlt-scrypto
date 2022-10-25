@@ -16,6 +16,10 @@ pub const ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x03;
 /// A unique identifier used in the addressing of System Component Addresses.
 pub const SYSTEM_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x04;
 
+/// A unique identifier used in the addressing of Account Component Addresses.
+pub const VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x05;
+
+
 /// An enum which represents the different addressable entities.
 #[derive(PartialEq, Eq)]
 pub enum EntityType {
@@ -23,6 +27,7 @@ pub enum EntityType {
     Package,
     NormalComponent,
     AccountComponent,
+    VirtualAccountComponent,
     SystemComponent,
 }
 
@@ -37,6 +42,7 @@ impl EntityType {
         match address {
             ComponentAddress::Normal(_) => Self::NormalComponent,
             ComponentAddress::Account(_) => Self::AccountComponent,
+            ComponentAddress::VirtualAccount(_) => Self::VirtualAccountComponent,
             ComponentAddress::System(_) => Self::SystemComponent,
         }
     }
@@ -47,6 +53,7 @@ impl EntityType {
             Self::Package => PACKAGE_ADDRESS_ENTITY_ID,
             Self::NormalComponent => NORMAL_COMPONENT_ADDRESS_ENTITY_ID,
             Self::AccountComponent => ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
+            Self::VirtualAccountComponent => VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
             Self::SystemComponent => SYSTEM_COMPONENT_ADDRESS_ENTITY_ID,
         }
     }
@@ -61,6 +68,7 @@ impl TryFrom<u8> for EntityType {
             PACKAGE_ADDRESS_ENTITY_ID => Ok(Self::Package),
             NORMAL_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::NormalComponent),
             ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::AccountComponent),
+            VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::VirtualAccountComponent),
             SYSTEM_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::SystemComponent),
             _ => Err(EntityTypeError::InvalidEntityTypeId(value)),
         }
