@@ -43,6 +43,7 @@ impl VisibilityProperties {
             RENodeId::Proof(..) => match actor {
                 REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..) => true,
                 REActor::Method(ResolvedMethod::Native(NativeMethod::Proof(..)), ..) => true,
+                REActor::Function(ResolvedFunction::Native(NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run))) => true,
                 REActor::Method(ResolvedMethod::Scrypto { .. }, ..) => true,
                 REActor::Function(ResolvedFunction::Scrypto { .. }) => true,
                 _ => false,

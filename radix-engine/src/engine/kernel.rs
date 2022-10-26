@@ -268,12 +268,6 @@ where
                     }
                 }
                 RENodeId::Proof(..) => {
-                    // TODO: Remove Proof consuming method
-                    if let REActor::Method(ResolvedMethod::Native(NativeMethod::Proof(..)), ..) = to
-                    {
-                        return Ok(());
-                    }
-
                     let from = system_api.get_actor();
 
                     if from.is_scrypto_or_transaction() || to.is_scrypto_or_transaction() {

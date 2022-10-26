@@ -119,6 +119,11 @@ where
         Ok(ScryptoValue::from_typed(&node_ids))
     }
 
+    fn handle_drop_node(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api.drop_node(node_id)?;
+        Ok(ScryptoValue::from_typed(&()))
+    }
+
     fn handle_lock_substate(
         &mut self,
         node_id: RENodeId,
@@ -222,7 +227,7 @@ where
             }
             RadixEngineInput::CreateNode(node) => self.handle_node_create(node)?,
             RadixEngineInput::GetVisibleNodeIds() => self.handle_get_visible_node_ids()?,
-
+            RadixEngineInput::DropNode(node_id) => self.handle_drop_node(node_id)?,
             RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
                 self.handle_lock_substate(node_id, offset, mutable)?
             }

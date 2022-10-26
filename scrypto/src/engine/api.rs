@@ -18,6 +18,7 @@ pub enum RadixEngineInput {
 
     CreateNode(ScryptoRENode),
     GetVisibleNodeIds(),
+    DropNode(RENodeId),
 
     LockSubstate(RENodeId, SubstateOffset, bool),
     DropLock(LockHandle),

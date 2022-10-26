@@ -231,8 +231,9 @@ impl Proof {
         }
     }
 
-    pub fn drop(self) -> () {
-        // Proof will get auto-dropped so no need to call engine
+    pub fn drop(self) {
+        let input = RadixEngineInput::DropNode(RENodeId::Proof(self.0));
+        let _: () = call_engine(input);
     }
 }
 

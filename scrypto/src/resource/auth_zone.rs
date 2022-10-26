@@ -43,7 +43,8 @@ pub struct AuthZoneDrainInput {}
 ///
 /// 1. Call methods on another component;
 /// 2. Access resource system.
-pub struct ComponentAuthZone {}
+pub struct ComponentAuthZone {
+}
 
 impl ComponentAuthZone {
     native_methods! {
