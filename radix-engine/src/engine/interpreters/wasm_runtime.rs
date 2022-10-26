@@ -82,7 +82,7 @@ where
     fn handle_invoke_native_method(
         &mut self,
         native_method: NativeMethod,
-        receiver: Receiver,
+        receiver: RENodeId,
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)

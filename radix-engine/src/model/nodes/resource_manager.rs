@@ -195,7 +195,7 @@ impl ResourceManager {
                 system_api
                     .invoke_native(NativeInvocation::Method(
                         NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
-                        Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))),
+                        RENodeId::Global(GlobalAddress::Resource(resource_address)),
                         ScryptoValue::from_typed(&ResourceManagerSetResourceAddressInput {
                             address: resource_address,
                         }),
@@ -244,7 +244,7 @@ impl ResourceManager {
                 system_api
                     .invoke_native(NativeInvocation::Method(
                         NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
-                        Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))),
+                        RENodeId::Global(GlobalAddress::Resource(resource_address)),
                         ScryptoValue::from_typed(&ResourceManagerBurnInput {
                             bucket: scrypto::resource::Bucket(bucket_id),
                         }),

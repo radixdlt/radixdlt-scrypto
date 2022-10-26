@@ -113,18 +113,15 @@ impl ExecutionTraceModule {
             let caller = &call_frame.actor;
 
             match (native_method, resolved_receiver.receiver) {
-                (
-                    NativeMethod::Vault(VaultMethod::Put),
-                    RENodeId::Vault(vault_id),
-                ) => Self::handle_vault_put(heap, track, caller, &vault_id, input),
-                (
-                    NativeMethod::Vault(VaultMethod::Take),
-                    RENodeId::Vault(vault_id),
-                ) => Self::handle_vault_take(track, caller, &vault_id, input),
-                (
-                    NativeMethod::Vault(VaultMethod::LockFee),
-                    RENodeId::Vault(vault_id),
-                ) => Self::handle_vault_lock_fee(track, caller, &vault_id),
+                (NativeMethod::Vault(VaultMethod::Put), RENodeId::Vault(vault_id)) => {
+                    Self::handle_vault_put(heap, track, caller, &vault_id, input)
+                }
+                (NativeMethod::Vault(VaultMethod::Take), RENodeId::Vault(vault_id)) => {
+                    Self::handle_vault_take(track, caller, &vault_id, input)
+                }
+                (NativeMethod::Vault(VaultMethod::LockFee), RENodeId::Vault(vault_id)) => {
+                    Self::handle_vault_lock_fee(track, caller, &vault_id)
+                }
                 (
                     NativeMethod::Vault(VaultMethod::LockContingentFee),
                     RENodeId::Vault(vault_id),
@@ -206,8 +203,7 @@ impl ExecutionTraceReceipt {
         let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
         for (actor, vault_id, vault_op) in ops {
             if let REActor::Method(_, resolved_receiver) = actor {
-                if let RENodeId::Component(component_id) = resolved_receiver.receiver
-                {
+                if let RENodeId::Component(component_id) = resolved_receiver.receiver {
                     match vault_op {
                         VaultOp::Create(_) => todo!("Not supported yet!"),
                         VaultOp::Put(amount) => {

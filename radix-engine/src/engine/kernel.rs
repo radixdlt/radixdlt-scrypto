@@ -247,67 +247,65 @@ where
         node_id: RENodeId,
         to: &REActor,
     ) -> Result<(), RuntimeError> {
-        self.execute_in_mode(ExecutionMode::MoveDownstream, |system_api| {
-            match node_id {
-                RENodeId::Bucket(..) => {
+        self.execute_in_mode(ExecutionMode::MoveDownstream, |system_api| match node_id {
+            RENodeId::Bucket(..) => {
+                let handle = system_api.lock_substate(
+                    node_id,
+                    SubstateOffset::Bucket(BucketOffset::Bucket),
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = system_api.get_ref(handle)?;
+                let bucket = substate_ref.bucket();
+                let locked = bucket.is_locked();
+                system_api.drop_lock(handle)?;
+                if locked {
+                    Err(RuntimeError::KernelError(KernelError::CantMoveDownstream(
+                        node_id,
+                    )))
+                } else {
+                    Ok(())
+                }
+            }
+            RENodeId::Proof(..) => {
+                let from = system_api.get_actor();
+
+                if from.is_scrypto_or_transaction() || to.is_scrypto_or_transaction() {
                     let handle = system_api.lock_substate(
                         node_id,
-                        SubstateOffset::Bucket(BucketOffset::Bucket),
-                        LockFlags::read_only(),
+                        SubstateOffset::Proof(ProofOffset::Proof),
+                        LockFlags::MUTABLE,
                     )?;
-                    let substate_ref = system_api.get_ref(handle)?;
-                    let bucket = substate_ref.bucket();
-                    let locked = bucket.is_locked();
-                    system_api.drop_lock(handle)?;
-                    if locked {
+                    let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+                    let proof = substate_ref_mut.proof();
+
+                    let rtn = if proof.is_restricted() {
                         Err(RuntimeError::KernelError(KernelError::CantMoveDownstream(
                             node_id,
                         )))
                     } else {
+                        proof.change_to_restricted();
                         Ok(())
-                    }
+                    };
+
+                    system_api.drop_lock(handle)?;
+
+                    rtn
+                } else {
+                    Ok(())
                 }
-                RENodeId::Proof(..) => {
-                    let from = system_api.get_actor();
-
-                    if from.is_scrypto_or_transaction() || to.is_scrypto_or_transaction() {
-                        let handle = system_api.lock_substate(
-                            node_id,
-                            SubstateOffset::Proof(ProofOffset::Proof),
-                            LockFlags::MUTABLE,
-                        )?;
-                        let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-                        let proof = substate_ref_mut.proof();
-
-                        let rtn = if proof.is_restricted() {
-                            Err(RuntimeError::KernelError(KernelError::CantMoveDownstream(
-                                node_id,
-                            )))
-                        } else {
-                            proof.change_to_restricted();
-                            Ok(())
-                        };
-
-                        system_api.drop_lock(handle)?;
-
-                        rtn
-                    } else {
-                        Ok(())
-                    }
-                }
-                RENodeId::Component(..) => Ok(()),
-                RENodeId::AuthZoneStack(..)
-                | RENodeId::ResourceManager(..)
-                | RENodeId::KeyValueStore(..)
-                | RENodeId::NonFungibleStore(..)
-                | RENodeId::Vault(..)
-                | RENodeId::Package(..)
-                | RENodeId::Worktop
-                | RENodeId::System(..)
-                | RENodeId::Global(..) => Err(RuntimeError::KernelError(
-                    KernelError::CantMoveDownstream(node_id),
-                )),
             }
+            RENodeId::Component(..) => Ok(()),
+            RENodeId::AuthZoneStack(..)
+            | RENodeId::ResourceManager(..)
+            | RENodeId::KeyValueStore(..)
+            | RENodeId::NonFungibleStore(..)
+            | RENodeId::Vault(..)
+            | RENodeId::Package(..)
+            | RENodeId::Worktop
+            | RENodeId::System(..)
+            | RENodeId::Global(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveDownstream(node_id),
+            )),
         })
     }
 
@@ -592,13 +590,7 @@ where
     fn resolve_scrypto_actor(
         &mut self,
         invocation: &ScryptoInvocation,
-    ) -> Result<
-        (
-            REActor,
-            HashMap<RENodeId, RENodeLocation>,
-        ),
-        RuntimeError,
-    > {
+    ) -> Result<(REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError> {
         let mut additional_ref_copy = HashMap::new();
 
         let actor = match invocation {
@@ -837,37 +829,24 @@ where
     fn resolve_native_actor(
         &mut self,
         invocation: &NativeInvocation,
-    ) -> Result<
-        (
-            REActor,
-            HashMap<RENodeId, RENodeLocation>,
-        ),
-        RuntimeError,
-    > {
+    ) -> Result<(REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError> {
         let mut additional_ref_copy = HashMap::new();
 
         let actor = match invocation {
             NativeInvocation::Function(native_function, _) => {
                 REActor::Function(ResolvedFunction::Native(*native_function))
             }
-            NativeInvocation::Method(native_method, receiver, _) => {
-                let resolved_receiver = match receiver {
-                    Receiver::Ref(node_id) => {
-                        // Deref
-                        let resolved_receiver =
-                            if let Some(derefed) = self.node_method_deref(*node_id)? {
-                                ResolvedReceiver::derefed(derefed, *node_id)
-                            } else {
-                                ResolvedReceiver::new(*node_id)
-                            };
-
-                        let resolved_node_id = resolved_receiver.receiver;
-                        let location = self.current_frame.get_node_location(resolved_node_id)?;
-                        additional_ref_copy.insert(resolved_node_id, location);
-
-                        resolved_receiver
-                    }
+            NativeInvocation::Method(native_method, node_id, _) => {
+                // Deref
+                let resolved_receiver = if let Some(derefed) = self.node_method_deref(*node_id)? {
+                    ResolvedReceiver::derefed(derefed, *node_id)
+                } else {
+                    ResolvedReceiver::new(*node_id)
                 };
+
+                let resolved_node_id = resolved_receiver.receiver;
+                let location = self.current_frame.get_node_location(resolved_node_id)?;
+                additional_ref_copy.insert(resolved_node_id, location);
 
                 REActor::Method(ResolvedMethod::Native(*native_method), resolved_receiver)
             }

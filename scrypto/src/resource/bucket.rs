@@ -49,7 +49,7 @@ impl Bucket {
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
-            Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))),
+            RENodeId::Global(GlobalAddress::Resource(resource_address)),
             scrypto_encode(&ResourceManagerCreateBucketInput {}),
         );
         call_engine(input)
@@ -58,9 +58,7 @@ impl Bucket {
     pub fn burn(self) -> () {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
-            Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address(),
-            ))),
+            RENodeId::Global(GlobalAddress::Resource(self.resource_address())),
             scrypto_encode(&ResourceManagerBurnInput { bucket: self }),
         );
         call_engine(input)
@@ -69,14 +67,14 @@ impl Bucket {
     fn take_internal(&mut self, amount: Decimal) -> Self {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Bucket(BucketMethod::Take),
-            Receiver::Ref(RENodeId::Bucket(self.0)),
+            RENodeId::Bucket(self.0),
             scrypto_encode(&BucketTakeInput { amount }),
         );
         call_engine(input)
     }
 
     native_methods! {
-        Receiver::Ref(RENodeId::Bucket(self.0)), NativeMethod::Bucket => {
+        RENodeId::Bucket(self.0), NativeMethod::Bucket => {
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
                 BucketMethod::TakeNonFungibles,
                 BucketTakeNonFungiblesInput {

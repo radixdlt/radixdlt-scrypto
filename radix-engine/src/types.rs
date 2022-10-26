@@ -74,7 +74,7 @@ pub enum ScryptoInvocation {
 /// Native function/method invocation.
 pub enum NativeInvocation {
     Function(NativeFunction, ScryptoValue),
-    Method(NativeMethod, Receiver, ScryptoValue),
+    Method(NativeMethod, RENodeId, ScryptoValue),
 }
 
 impl Invocation {

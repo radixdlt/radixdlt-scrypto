@@ -436,7 +436,7 @@ pub fn decompile_call_native_method<F: fmt::Write>(
 ) -> Result<(), DecompileError> {
     // Try to recognize the invocation
     match (method_ident.receiver, method_ident.method_name.as_ref()) {
-        (Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))), "mint") => {
+        (RENodeId::Global(GlobalAddress::Resource(resource_address)), "mint") => {
             if let Ok(input) = scrypto_decode::<ResourceManagerMintInput>(&args) {
                 if let MintParams::Fungible { amount } = input.mint_params {
                     write!(
@@ -453,9 +453,7 @@ pub fn decompile_call_native_method<F: fmt::Write>(
     }
 
     // Fall back to generic representation
-    let receiver = match method_ident.receiver {
-        Receiver::Ref(node_id) => format_node_id(&node_id, context),
-    };
+    let receiver = format_node_id(&method_ident.receiver, context);
     f.write_str(&format!(
         "CALL_NATIVE_METHOD {} \"{}\"",
         receiver, method_ident.method_name

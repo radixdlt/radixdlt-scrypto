@@ -43,16 +43,14 @@ pub struct AuthZoneDrainInput {}
 ///
 /// 1. Call methods on another component;
 /// 2. Access resource system.
-pub struct ComponentAuthZone {
-}
+pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
     native_methods! {
         {
             let input = RadixEngineInput::GetVisibleNodeIds();
             let owned_node_ids: Vec<RENodeId> = call_engine(input);
-            let node_id = owned_node_ids.into_iter().find(|n| matches!(n, RENodeId::AuthZoneStack(..))).expect("AuthZone does not exist");
-            Receiver::Ref(node_id)
+            owned_node_ids.into_iter().find(|n| matches!(n, RENodeId::AuthZoneStack(..))).expect("AuthZone does not exist")
         }, NativeMethod::AuthZone => {
             pub fn pop() -> Proof {
                 AuthZoneMethod::Pop,
@@ -94,7 +92,7 @@ impl ComponentAuthZone {
         let proof: Proof = proof.into();
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::AuthZone(AuthZoneMethod::Push),
-            Receiver::Ref(node_id),
+            node_id,
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
         );
         call_engine(input)

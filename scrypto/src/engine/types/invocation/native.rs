@@ -10,7 +10,7 @@ pub struct NativeFunctionIdent {
 // Native method identifier used by transaction model
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub struct NativeMethodIdent {
-    pub receiver: Receiver,
+    pub receiver: RENodeId,
     pub method_name: String,
 }
 
@@ -34,19 +34,6 @@ pub enum NativeFunction {
     ResourceManager(ResourceManagerFunction),
     Package(PackageFunction),
     TransactionProcessor(TransactionProcessorFunction),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Copy, TypeId, Encode, Decode)]
-pub enum Receiver {
-    Ref(RENodeId),
-}
-
-impl Receiver {
-    pub fn node_id(&self) -> RENodeId {
-        match self {
-            Receiver::Ref(node_id) => *node_id,
-        }
-    }
 }
 
 #[derive(

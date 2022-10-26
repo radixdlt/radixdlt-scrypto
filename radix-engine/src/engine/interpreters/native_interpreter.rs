@@ -111,10 +111,9 @@ impl NativeInterpreter {
         R: FeeReserve,
     {
         match (resolved_receiver.receiver, native_method.clone()) {
-            (
-                RENodeId::AuthZoneStack(auth_zone_id),
-                NativeMethod::AuthZone(method),
-            ) => AuthZoneStack::main(auth_zone_id, method, input, system_api).map_err(|e| e.into()),
+            (RENodeId::AuthZoneStack(auth_zone_id), NativeMethod::AuthZone(method)) => {
+                AuthZoneStack::main(auth_zone_id, method, input, system_api).map_err(|e| e.into())
+            }
             (RENodeId::Bucket(bucket_id), NativeMethod::Bucket(method)) => {
                 Bucket::main(bucket_id, method, input, system_api).map_err(|e| e.into())
             }

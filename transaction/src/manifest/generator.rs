@@ -483,9 +483,7 @@ pub fn generate_instruction(
 
             Instruction::CallNativeMethod {
                 method_ident: NativeMethodIdent {
-                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
-                        resource_address,
-                    ))),
+                    receiver: RENodeId::Global(GlobalAddress::Resource(resource_address)),
                     method_name: ResourceManagerMethod::Mint.to_string(),
                 },
                 args: args!(input),
@@ -615,13 +613,9 @@ fn generate_receiver(
     receiver: &ast::Receiver,
     bech32_decoder: &Bech32Decoder,
     resolver: &mut NameResolver,
-) -> Result<Receiver, GeneratorError> {
+) -> Result<RENodeId, GeneratorError> {
     match receiver {
-        ast::Receiver::Ref(re_node) => Ok(Receiver::Ref(generate_re_node_id(
-            re_node,
-            bech32_decoder,
-            resolver,
-        )?)),
+        ast::Receiver::Ref(re_node) => Ok(generate_re_node_id(re_node, bech32_decoder, resolver)?),
     }
 }
 
