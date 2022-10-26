@@ -489,17 +489,35 @@ impl Parser {
             TokenKind::List => Ok(Type::List),
             TokenKind::Set => Ok(Type::Set),
             TokenKind::Map => Ok(Type::Map),
-            TokenKind::Decimal => Ok(Type::Decimal),
+
+            // Globals
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
-            TokenKind::SystemAddress => Ok(Type::SystemAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
             TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
-            TokenKind::Hash => Ok(Type::Hash),
+            TokenKind::SystemAddress => Ok(Type::SystemAddress),
+
+            // RE Nodes
+            TokenKind::Component => Ok(Type::Component),
+            TokenKind::KeyValueStore => Ok(Type::KeyValueStore),
             TokenKind::Bucket => Ok(Type::Bucket),
             TokenKind::Proof => Ok(Type::Proof),
-            TokenKind::NonFungibleId => Ok(Type::NonFungibleId),
+            TokenKind::Vault => Ok(Type::Vault),
+
+            // Other interpreted types
             TokenKind::Expression => Ok(Type::Expression),
             TokenKind::Blob => Ok(Type::Blob),
+            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
+
+            // Uninterpreted
+            TokenKind::Hash => Ok(Type::Hash),
+            TokenKind::EcdsaSecp256k1PublicKey => Ok(Type::EcdsaSecp256k1PublicKey),
+            TokenKind::EcdsaSecp256k1Signature => Ok(Type::EcdsaSecp256k1Signature),
+            TokenKind::EddsaEd25519PublicKey => Ok(Type::EddsaEd25519PublicKey),
+            TokenKind::EddsaEd25519Signature => Ok(Type::EddsaEd25519Signature),
+            TokenKind::Decimal => Ok(Type::Decimal),
+            TokenKind::PreciseDecimal => Ok(Type::PreciseDecimal),
+            TokenKind::NonFungibleId => Ok(Type::NonFungibleId),
+
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }

@@ -997,14 +997,6 @@ fn generate_value(
                 blobs,
             )?,
         }),
-        ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
-            type_id: ScryptoType::Decimal.id(),
-            bytes: v.to_vec(),
-        }),
-        ast::Value::PreciseDecimal(_) => generate_precise_decimal(value).map(|v| Value::Custom {
-            type_id: ScryptoType::PreciseDecimal.id(),
-            bytes: v.to_vec(),
-        }),
         ast::Value::PackageAddress(_) => {
             generate_package_address(value, bech32_decoder).map(|v| Value::Custom {
                 type_id: ScryptoType::PackageAddress.id(),
@@ -1029,10 +1021,9 @@ fn generate_value(
                 bytes: v.to_vec(),
             })
         }
-        ast::Value::Hash(_) => generate_hash(value).map(|v| Value::Custom {
-            type_id: ScryptoType::Hash.id(),
-            bytes: v.to_vec(),
-        }),
+
+        ast::Value::Component(_) => todo!(),
+        ast::Value::KeyValueStore(_) => todo!(),
         ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| Value::Custom {
             type_id: ScryptoType::Bucket.id(),
             bytes: scrypto::resource::Bucket(v).to_vec(),
@@ -1041,8 +1032,14 @@ fn generate_value(
             type_id: ScryptoType::Proof.id(),
             bytes: scrypto::resource::Proof(v).to_vec(),
         }),
-        ast::Value::NonFungibleId(_) => generate_non_fungible_id(value).map(|v| Value::Custom {
-            type_id: ScryptoType::NonFungibleId.id(),
+        ast::Value::Vault(_) => todo!(),
+
+        ast::Value::Expression(_) => generate_expression(value).map(|v| Value::Custom {
+            type_id: ScryptoType::Expression.id(),
+            bytes: v.to_vec(),
+        }),
+        ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| Value::Custom {
+            type_id: ScryptoType::Blob.id(),
             bytes: v.to_vec(),
         }),
         ast::Value::NonFungibleAddress(_) => {
@@ -1051,12 +1048,25 @@ fn generate_value(
                 bytes: v.to_vec(),
             })
         }
-        ast::Value::Expression(_) => generate_expression(value).map(|v| Value::Custom {
-            type_id: ScryptoType::Expression.id(),
+
+        ast::Value::Hash(_) => generate_hash(value).map(|v| Value::Custom {
+            type_id: ScryptoType::Hash.id(),
             bytes: v.to_vec(),
         }),
-        ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| Value::Custom {
-            type_id: ScryptoType::Blob.id(),
+        ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
+            type_id: ScryptoType::Decimal.id(),
+            bytes: v.to_vec(),
+        }),
+        ast::Value::PreciseDecimal(_) => generate_precise_decimal(value).map(|v| Value::Custom {
+            type_id: ScryptoType::PreciseDecimal.id(),
+            bytes: v.to_vec(),
+        }),
+        ast::Value::EcdsaSecp256k1PublicKey(_) => todo!(),
+        ast::Value::EcdsaSecp256k1Signature(_) => todo!(),
+        ast::Value::EddsaEd25519PublicKey(_) => todo!(),
+        ast::Value::EddsaEd25519Signature(_) => todo!(),
+        ast::Value::NonFungibleId(_) => generate_non_fungible_id(value).map(|v| Value::Custom {
+            type_id: ScryptoType::NonFungibleId.id(),
             bytes: v.to_vec(),
         }),
     }
@@ -1137,19 +1147,34 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::List => TYPE_LIST,
         ast::Type::Set => TYPE_SET,
         ast::Type::Map => TYPE_MAP,
-        ast::Type::Decimal => ScryptoType::Decimal.id(),
-        ast::Type::PreciseDecimal => ScryptoType::PreciseDecimal.id(),
+
+        // Globals
         ast::Type::PackageAddress => ScryptoType::PackageAddress.id(),
-        ast::Type::SystemAddress => ScryptoType::SystemAddress.id(),
         ast::Type::ComponentAddress => ScryptoType::ComponentAddress.id(),
         ast::Type::ResourceAddress => ScryptoType::ResourceAddress.id(),
-        ast::Type::Hash => ScryptoType::Hash.id(),
+        ast::Type::SystemAddress => ScryptoType::SystemAddress.id(),
+
+        // RE Nodes
+        ast::Type::Component => ScryptoType::Component.id(),
+        ast::Type::KeyValueStore => ScryptoType::KeyValueStore.id(),
         ast::Type::Bucket => ScryptoType::Bucket.id(),
         ast::Type::Proof => ScryptoType::Proof.id(),
-        ast::Type::NonFungibleId => ScryptoType::NonFungibleId.id(),
-        ast::Type::NonFungibleAddress => ScryptoType::NonFungibleAddress.id(),
+        ast::Type::Vault => ScryptoType::Vault.id(),
+
+        // Other interpreted types
         ast::Type::Expression => ScryptoType::Expression.id(),
         ast::Type::Blob => ScryptoType::Blob.id(),
+        ast::Type::NonFungibleAddress => ScryptoType::NonFungibleAddress.id(),
+
+        // Uninterpreted=> ScryptoType::Decimal.id(),
+        ast::Type::Hash => ScryptoType::Hash.id(),
+        ast::Type::EcdsaSecp256k1PublicKey => ScryptoType::EcdsaSecp256k1PublicKey.id(),
+        ast::Type::EcdsaSecp256k1Signature => ScryptoType::EcdsaSecp256k1Signature.id(),
+        ast::Type::EddsaEd25519PublicKey => ScryptoType::EddsaEd25519PublicKey.id(),
+        ast::Type::EddsaEd25519Signature => ScryptoType::EddsaEd25519Signature.id(),
+        ast::Type::Decimal => ScryptoType::Decimal.id(),
+        ast::Type::PreciseDecimal => ScryptoType::PreciseDecimal.id(),
+        ast::Type::NonFungibleId => ScryptoType::NonFungibleId.id(),
     }
 }
 
