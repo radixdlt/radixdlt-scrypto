@@ -12,9 +12,6 @@ use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ConsumingProofDropInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
 pub struct ProofGetAmountInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -234,13 +231,8 @@ impl Proof {
         }
     }
 
-    native_methods! {
-        Receiver::Consumed(RENodeId::Proof(self.0)), NativeMethod::Proof => {
-            pub fn drop(self) -> () {
-                ProofMethod::Drop,
-                ConsumingProofDropInput {}
-            }
-        }
+    pub fn drop(self) -> () {
+        // Proof will get auto-dropped so no need to call engine
     }
 }
 

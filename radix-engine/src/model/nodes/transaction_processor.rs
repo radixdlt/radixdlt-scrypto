@@ -524,11 +524,8 @@ impl TransactionProcessor {
                             .remove(proof_id)
                             .map(|real_id| {
                                 system_api
-                                    .invoke_native(NativeInvocation::Method(
-                                        NativeMethod::Proof(ProofMethod::Drop),
-                                        Receiver::Consumed(RENodeId::Proof(real_id)),
-                                        ScryptoValue::from_typed(&ConsumingProofDropInput {}),
-                                    ))
+                                    .drop_node(RENodeId::Proof(real_id))
+                                    .map(|_| ScryptoValue::unit())
                                     .map_err(InvokeError::Downstream)
                             })
                             .unwrap_or(Err(InvokeError::Error(
@@ -537,11 +534,7 @@ impl TransactionProcessor {
                         Instruction::DropAllProofs => {
                             for (_, real_id) in proof_id_mapping.drain() {
                                 system_api
-                                    .invoke_native(NativeInvocation::Method(
-                                        NativeMethod::Proof(ProofMethod::Drop),
-                                        Receiver::Consumed(RENodeId::Proof(real_id)),
-                                        ScryptoValue::from_typed(&ConsumingProofDropInput {}),
-                                    ))
+                                    .drop_node(RENodeId::Proof(real_id))
                                     .map_err(InvokeError::Downstream)?;
                             }
                             system_api

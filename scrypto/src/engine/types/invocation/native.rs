@@ -305,7 +305,6 @@ pub enum ProofMethod {
     GetAmount,
     GetNonFungibleIds,
     GetResourceAddress,
-    Drop,
 }
 
 #[derive(

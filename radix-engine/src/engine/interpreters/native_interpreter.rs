@@ -111,9 +111,6 @@ impl NativeInterpreter {
         R: FeeReserve,
     {
         match (resolved_receiver.receiver(), native_method.clone()) {
-            (Receiver::Consumed(node_id), NativeMethod::Proof(method)) => {
-                Proof::main_consume(node_id, method, input, system_api).map_err(|e| e.into())
-            }
             (
                 Receiver::Ref(RENodeId::AuthZoneStack(auth_zone_id)),
                 NativeMethod::AuthZone(method),

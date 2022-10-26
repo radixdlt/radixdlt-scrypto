@@ -195,7 +195,6 @@ impl FeeTable {
                 ProofMethod::GetNonFungibleIds => self.fixed_low,
                 ProofMethod::GetResourceAddress => self.fixed_low,
                 ProofMethod::Clone => self.fixed_low,
-                ProofMethod::Drop => self.fixed_medium,
             },
             NativeMethod::ResourceManager(resource_manager_ident) => match resource_manager_ident {
                 ResourceManagerMethod::UpdateAuth => self.fixed_medium,
