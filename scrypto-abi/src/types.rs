@@ -70,12 +70,11 @@ pub enum ScryptoType {
     Bucket,
     Proof,
     Vault,
-    Reference,
 
     // Other interpreted types
     Expression,
     Blob,
-    NonFungibleAddress,
+    NonFungibleAddress, // for resource address contained
 
     // Uninterpreted, mainly for better manifest representation.
     Hash,
@@ -89,7 +88,7 @@ pub enum ScryptoType {
 }
 
 // Need to update `scrypto-derive/src/import.rs` after changing the table below
-const MAPPING: [(ScryptoType, u8, &str); 21] = [
+const MAPPING: [(ScryptoType, u8, &str); 20] = [
     (ScryptoType::PackageAddress, 0x80, "PackageAddress"),
     (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"),
     (ScryptoType::ResourceAddress, 0x82, "ResourceAddress"),
@@ -99,7 +98,6 @@ const MAPPING: [(ScryptoType, u8, &str); 21] = [
     (ScryptoType::Bucket, 0x92, "Bucket"),
     (ScryptoType::Proof, 0x93, "Proof"),
     (ScryptoType::Vault, 0x94, "Vault"),
-    (ScryptoType::Reference, 0x95, "Reference"),
     (ScryptoType::Expression, 0xa0, "Expression"),
     (ScryptoType::Blob, 0xa1, "Blob"),
     (ScryptoType::NonFungibleAddress, 0xa2, "NonFungibleAddress"),

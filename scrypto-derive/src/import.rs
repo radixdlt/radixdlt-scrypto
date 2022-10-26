@@ -322,7 +322,6 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 ScryptoType::Bucket => "::scrypto::resource::Bucket",
                 ScryptoType::Proof => "::scrypto::resource::Proof",
                 ScryptoType::Vault => "::scrypto::resource::Vault",
-                ScryptoType::Reference => "::scrypto::core::Reference",
                 // Other interpreted types
                 ScryptoType::Expression => "::scrypto::core::Expression",
                 ScryptoType::Blob => "::scrypto::core::Blob",
