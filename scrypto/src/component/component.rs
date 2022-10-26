@@ -205,7 +205,8 @@ impl fmt::Debug for Component {
 pub enum ComponentAddress {
     Normal([u8; 26]),
     Account([u8; 26]),
-    VirtualAccount([u8; 26]),
+    EcdsaSecp256k1VirtualAccount([u8; 26]),
+    EddsaEd25519VirtualAccount([u8; 26]),
     System([u8; 26]),
 }
 
@@ -223,8 +224,11 @@ impl TryFrom<&[u8]> for ComponentAddress {
             {
                 EntityType::NormalComponent => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
                 EntityType::AccountComponent => Ok(Self::Account(copy_u8_array(&slice[1..]))),
-                EntityType::VirtualAccountComponent => {
-                    Ok(Self::VirtualAccount(copy_u8_array(&slice[1..])))
+                EntityType::EcdsaSecp256k1VirtualAccountComponent => Ok(
+                    Self::EcdsaSecp256k1VirtualAccount(copy_u8_array(&slice[1..])),
+                ),
+                EntityType::EddsaEd25519VirtualAccountComponent => {
+                    Ok(Self::EddsaEd25519VirtualAccount(copy_u8_array(&slice[1..])))
                 }
                 EntityType::SystemComponent => Ok(Self::System(copy_u8_array(&slice[1..]))),
                 _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
@@ -238,11 +242,13 @@ impl ComponentAddress {
     pub fn virtual_account_from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self {
         match public_key.clone().into() {
             PublicKey::EcdsaSecp256k1(public_key) => {
-                ComponentAddress::VirtualAccount(hash(public_key.to_vec()).lower_26_bytes())
+                ComponentAddress::EcdsaSecp256k1VirtualAccount(
+                    hash(public_key.to_vec()).lower_26_bytes(),
+                )
             }
-            PublicKey::EddsaEd25519(..) => {
-                todo!()
-            }
+            PublicKey::EddsaEd25519(public_key) => ComponentAddress::EddsaEd25519VirtualAccount(
+                hash(public_key.to_vec()).lower_26_bytes(),
+            ),
         }
     }
 
@@ -250,9 +256,11 @@ impl ComponentAddress {
         let mut buf = Vec::new();
         buf.push(EntityType::component(self).id());
         match self {
-            Self::Normal(v) | Self::Account(v) | Self::VirtualAccount(v) | Self::System(v) => {
-                buf.extend(v)
-            }
+            Self::Normal(v)
+            | Self::Account(v)
+            | Self::EddsaEd25519VirtualAccount(v)
+            | Self::EcdsaSecp256k1VirtualAccount(v)
+            | Self::System(v) => buf.extend(v),
         }
         buf
     }
@@ -300,8 +308,15 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
             ComponentAddress::Account(_) => {
                 write!(f, "AccountComponent[{}]", self.to_hex())
             }
-            ComponentAddress::VirtualAccount(_) => {
-                write!(f, "VirtualAccountComponent[{}]", self.to_hex())
+            ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => {
+                write!(
+                    f,
+                    "EcdsaSecp256k1VirtualAccountComponent[{}]",
+                    self.to_hex()
+                )
+            }
+            ComponentAddress::EddsaEd25519VirtualAccount(_) => {
+                write!(f, "EddsaEd25519VirtualAccountComponent[{}]", self.to_hex())
             }
             ComponentAddress::System(_) => {
                 write!(f, "SystemComponent[{}]", self.to_hex())
