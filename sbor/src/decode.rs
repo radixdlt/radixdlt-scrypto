@@ -145,7 +145,7 @@ impl<'de> Decoder<'de> {
 
     pub fn check_static_size(&mut self, expected: usize) -> Result<(), DecodeError> {
         if self.with_static_info {
-            let len = self.read_dynamic_size()?;
+            let len = self.read_static_size()?;
             if len != expected {
                 return Err(DecodeError::InvalidLength {
                     expected,
