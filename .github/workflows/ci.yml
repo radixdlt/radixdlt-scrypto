@@ -1,19 +1,38 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  cancel_running_workflows:
+    name: Cancel running workflows
+    runs-on: ubuntu-20.04
+    steps:
+      - name: cancel running workflows
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+
   check-code-format:
     name: Check code format
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v2
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang -y
+      if: matrix.os == 'linux'
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -30,7 +49,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
@@ -50,7 +69,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
@@ -70,7 +89,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
@@ -93,7 +112,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
@@ -110,9 +129,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v2
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake -y
+      if: matrix.os == 'linux'
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -137,9 +160,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v2
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake -y
+      if: matrix.os == 'linux'
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -157,9 +184,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v2
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake -y
+      if: matrix.os == 'linux'
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -177,9 +208,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v2
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake -y
+      if: matrix.os == 'linux'
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -197,7 +232,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
@@ -211,9 +246,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v2
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake -y
+      if: matrix.os == 'linux'
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
