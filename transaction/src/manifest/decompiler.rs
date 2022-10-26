@@ -8,7 +8,7 @@ use scrypto::crypto::Hash;
 use scrypto::engine::types::*;
 use scrypto::misc::ContextualDisplay;
 use scrypto::resource::{
-    ConsumingBucketBurnInput, MintParams, ResourceManagerCreateInput, ResourceManagerMintInput,
+    MintParams, ResourceManagerBurnInput, ResourceManagerCreateInput, ResourceManagerMintInput,
 };
 use scrypto::values::*;
 
@@ -361,6 +361,20 @@ pub fn decompile_call_native_function<F: fmt::Write>(
     let blueprint_name = &function_ident.blueprint_name;
     let function_name = &function_ident.function_name;
     match (blueprint_name.as_str(), function_name.as_ref()) {
+        ("ResourceManager", "burn") => {
+            if let Ok(input) = scrypto_decode::<ResourceManagerBurnInput>(&args) {
+                write!(
+                    f,
+                    "BURN_BUCKET Bucket({});",
+                    context
+                        .bucket_names
+                        .get(&input.bucket.0)
+                        .map(|name| format!("\"{}\"", name))
+                        .unwrap_or(format!("{}u32", input.bucket.0)),
+                )?;
+                return Ok(());
+            }
+        }
         ("ResourceManager", "create") => {
             if let Ok(input) = scrypto_decode::<ResourceManagerCreateInput>(&args) {
                 f.write_str(&format!(
@@ -422,20 +436,6 @@ pub fn decompile_call_native_method<F: fmt::Write>(
 ) -> Result<(), DecompileError> {
     // Try to recognize the invocation
     match (method_ident.receiver, method_ident.method_name.as_ref()) {
-        (Receiver::Consumed(RENodeId::Bucket(bucket_id)), "burn") => {
-            if let Ok(_input) = scrypto_decode::<ConsumingBucketBurnInput>(&args) {
-                write!(
-                    f,
-                    "BURN_BUCKET Bucket({});",
-                    context
-                        .bucket_names
-                        .get(&bucket_id)
-                        .map(|name| format!("\"{}\"", name))
-                        .unwrap_or(format!("{}u32", bucket_id)),
-                )?;
-                return Ok(());
-            }
-        }
         (Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))), "mint") => {
             if let Ok(input) = scrypto_decode::<ResourceManagerMintInput>(&args) {
                 if let MintParams::Fungible { amount } = input.mint_params {

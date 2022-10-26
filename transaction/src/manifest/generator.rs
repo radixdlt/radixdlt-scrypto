@@ -5,7 +5,7 @@ use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
-use scrypto::buffer::scrypto_decode;
+use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::component::ComponentAddress;
 use scrypto::component::PackageAddress;
 use scrypto::core::{Blob, Expression};
@@ -13,8 +13,8 @@ use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{
-    MintParams, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerCreateInput,
-    ResourceManagerMintInput,
+    MintParams, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerBurnInput,
+    ResourceManagerCreateInput, ResourceManagerMintInput,
 };
 use scrypto::values::*;
 use scrypto::{args, args_from_value_vec};
@@ -460,12 +460,14 @@ pub fn generate_instruction(
         }
         ast::Instruction::BurnBucket { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
-            Instruction::CallNativeMethod {
-                method_ident: NativeMethodIdent {
-                    receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
-                    method_name: BucketMethod::Burn.to_string(),
+            Instruction::CallNativeFunction {
+                function_ident: NativeFunctionIdent {
+                    blueprint_name: "ResourceManager".to_owned(),
+                    function_name: ResourceManagerFunction::BurnBucket.to_string(),
                 },
-                args: args!(),
+                args: scrypto_encode(&ResourceManagerBurnInput {
+                    bucket: scrypto::resource::Bucket(bucket_id),
+                }),
             }
         }
         ast::Instruction::MintFungible {

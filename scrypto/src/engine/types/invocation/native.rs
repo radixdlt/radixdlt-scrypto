@@ -176,6 +176,7 @@ pub enum AuthZoneMethod {
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFunction {
     Create,
+    BurnBucket,
 }
 
 #[derive(
@@ -236,7 +237,6 @@ pub enum ResourceManagerMethod {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum BucketMethod {
-    Burn,
     Take,
     TakeNonFungibles,
     Put,

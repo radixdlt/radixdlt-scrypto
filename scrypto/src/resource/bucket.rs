@@ -14,9 +14,6 @@ use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ConsumingBucketBurnInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketTakeInput {
     pub amount: Decimal,
 }
@@ -58,13 +55,15 @@ impl Bucket {
         call_engine(input)
     }
 
-    native_methods! {
-        Receiver::Consumed(RENodeId::Bucket(self.0)), NativeMethod::Bucket => {
-           pub fn burn(self) -> () {
-                BucketMethod::Burn,
-                ConsumingBucketBurnInput {}
-            }
-        }
+    pub fn burn(self) -> () {
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
+            Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
+                self.resource_address(),
+            ))),
+            scrypto_encode(&ResourceManagerBurnInput { bucket: self }),
+        );
+        call_engine(input)
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Self {
