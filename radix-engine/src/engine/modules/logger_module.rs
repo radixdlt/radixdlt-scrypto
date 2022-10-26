@@ -2,6 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;
 use crate::types::*;
+use transaction::model::Instruction;
 
 pub struct LoggerModule {
     depth: usize,
@@ -186,5 +187,25 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
         _contingent: bool,
     ) -> Result<Resource, ModuleError> {
         Ok(fee)
+    }
+
+    fn pre_execute_instruction(
+        &mut self,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
+        track: &mut Track<R>,
+        instruction: &Instruction,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn post_execute_instruction(
+        &mut self,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
+        track: &mut Track<R>,
+        instruction: &Instruction,
+    ) -> Result<(), ModuleError> {
+        Ok(())
     }
 }

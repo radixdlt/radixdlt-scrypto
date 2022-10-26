@@ -3,6 +3,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;
 use crate::types::*;
+use transaction::model::Instruction;
 
 pub enum SysCallInput<'a> {
     InvokeScrypto {
@@ -118,4 +119,20 @@ pub trait Module<R: FeeReserve> {
         fee: Resource,
         contingent: bool,
     ) -> Result<Resource, ModuleError>;
+
+    fn pre_execute_instruction(
+        &mut self,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
+        track: &mut Track<R>,
+        instruction: &Instruction,
+    ) -> Result<(), ModuleError>;
+
+    fn post_execute_instruction(
+        &mut self,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
+        track: &mut Track<R>,
+        instruction: &Instruction,
+    ) -> Result<(), ModuleError>;
 }

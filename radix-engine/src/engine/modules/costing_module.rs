@@ -2,6 +2,7 @@ use crate::engine::*;
 use crate::fee::{FeeReserve, FeeReserveError, SystemApiCostingEntry};
 use crate::model::Resource;
 use crate::types::*;
+use transaction::model::Instruction;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum CostingError {
@@ -380,5 +381,25 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                 .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
             _ => Ok(()),
         }
+    }
+
+    fn pre_execute_instruction(
+        &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        _instruction: &Instruction,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn post_execute_instruction(
+        &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        _instruction: &Instruction,
+    ) -> Result<(), ModuleError> {
+        Ok(())
     }
 }

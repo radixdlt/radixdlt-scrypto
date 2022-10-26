@@ -2,6 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
+use transaction::model::Instruction;
 
 #[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
 pub struct ResourceChange {
@@ -26,10 +27,40 @@ pub enum VaultOp {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum ExecutionTraceError {}
+pub enum ExecutionTraceError {
+    InvalidState(String),
+}
 
-#[derive(Debug)]
-pub struct ExecutionTraceModule {}
+pub struct ExecutionTraceModule {
+    snapshot_pre_current_instruction: Option<TraceHeapSnapshot>,
+}
+
+#[derive(Clone, Debug, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct ProofSnapshot {
+    pub resource_address: ResourceAddress,
+    pub resource_type: ResourceType,
+    pub restricted: bool,
+    pub total_locked: LockedAmountOrIds,
+}
+
+impl From<&ProofSubstate> for ProofSnapshot {
+    fn from(proof: &ProofSubstate) -> ProofSnapshot {
+        ProofSnapshot {
+            resource_address: proof.resource_address,
+            resource_type: proof.resource_type,
+            restricted: proof.restricted,
+            total_locked: proof.total_locked.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct TraceHeapSnapshot {
+    pub owned_buckets: HashMap<BucketId, Resource>,
+    pub owned_proofs: HashMap<ProofId, ProofSnapshot>,
+    pub auth_zone_proofs: Vec<ProofSnapshot>,
+    pub worktop_resources: HashMap<ResourceAddress, Resource>,
+}
 
 impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     fn pre_sys_call(
@@ -95,11 +126,133 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     ) -> Result<Resource, ModuleError> {
         Ok(fee)
     }
+
+    fn pre_execute_instruction(
+        &mut self,
+        _call_frame: &CallFrame,
+        heap: &mut Heap,
+        _track: &mut Track<R>,
+        _instruction: &Instruction,
+    ) -> Result<(), ModuleError> {
+        self.pre_instruction_trace(heap)
+    }
+
+    fn post_execute_instruction(
+        &mut self,
+        _call_frame: &CallFrame,
+        heap: &mut Heap,
+        track: &mut Track<R>,
+        instruction: &Instruction,
+    ) -> Result<(), ModuleError> {
+        self.post_instruction_trace(heap, track, instruction)
+    }
 }
 
 impl ExecutionTraceModule {
     pub fn new() -> ExecutionTraceModule {
-        Self {}
+        Self {
+            snapshot_pre_current_instruction: None,
+        }
+    }
+
+    fn pre_instruction_trace(&mut self, heap: &mut Heap) -> Result<(), ModuleError> {
+        if self.snapshot_pre_current_instruction.is_none() {
+            let pre_snapshot = ExecutionTraceModule::heap_snapshot(heap)?;
+            self.snapshot_pre_current_instruction = Some(pre_snapshot);
+            Ok(())
+        } else {
+            Err(ModuleError::ExecutionTraceError(
+                ExecutionTraceError::InvalidState("Unexpected \"pre\" trace".to_string()),
+            ))
+        }
+    }
+
+    fn post_instruction_trace<'s, R: FeeReserve>(
+        &mut self,
+        heap: &mut Heap,
+        track: &mut Track<'s, R>,
+        instruction: &Instruction,
+    ) -> Result<(), ModuleError> {
+        match self.snapshot_pre_current_instruction.take() {
+            Some(pre_snapshot) => {
+                let post_snapshot = ExecutionTraceModule::heap_snapshot(heap)?;
+                track
+                    .instruction_traces
+                    .push((instruction.clone(), pre_snapshot, post_snapshot));
+                Ok(())
+            }
+            None => Err(ModuleError::ExecutionTraceError(
+                ExecutionTraceError::InvalidState("Missing \"pre\" trace".to_string()),
+            )),
+        }
+    }
+
+    fn heap_snapshot(heap: &mut Heap) -> Result<TraceHeapSnapshot, ModuleError> {
+        // Trace worktop resources
+        let worktop_substate_ref = heap
+            .get_substate(
+                RENodeId::Worktop,
+                &SubstateOffset::Worktop(WorktopOffset::Worktop),
+            )
+            .expect("Worktop does not exist");
+
+        let worktop_resources = worktop_substate_ref.worktop().peek_resources();
+
+        // Trace proofs in AuthZone
+        let auth_zone_node = heap
+            .nodes()
+            .iter()
+            .find(|(node_id, _)| matches!(node_id, RENodeId::AuthZoneStack(..)))
+            .expect("AuthZone does not exist")
+            .1;
+
+        let auth_zone_substate_ref = auth_zone_node
+            .substates
+            .get(&SubstateOffset::AuthZone(AuthZoneOffset::AuthZone))
+            .expect("AuthZone node does not contain an AuthZone substate")
+            .to_ref();
+
+        let auth_zone = auth_zone_substate_ref.auth_zone().cur_auth_zone();
+
+        let auth_zone_proofs: Vec<ProofSnapshot> = auth_zone
+            .proofs()
+            .iter()
+            .map(|proof| proof.into())
+            .collect();
+
+        // Trace owned Bucket and Proof nodes
+        let mut owned_buckets = HashMap::new();
+        let mut owned_proofs: HashMap<ProofId, ProofSnapshot> = HashMap::new();
+        for (owned_node_id, owned_node) in heap.nodes() {
+            match owned_node_id {
+                RENodeId::Bucket(bucket_id) => {
+                    let bucket_substate_ref = owned_node
+                        .substates
+                        .get(&SubstateOffset::Bucket(BucketOffset::Bucket))
+                        .expect("Bucket node does not contain a Bucket substate")
+                        .to_ref();
+                    let resource = bucket_substate_ref.bucket().peek_resource();
+                    owned_buckets.insert(bucket_id.clone(), resource);
+                }
+                RENodeId::Proof(proof_id) => {
+                    let proof_substate_ref = owned_node
+                        .substates
+                        .get(&SubstateOffset::Proof(ProofOffset::Proof))
+                        .expect("Proof node does not contain a Proof substate")
+                        .to_ref();
+                    let proof_trace: ProofSnapshot = proof_substate_ref.proof().into();
+                    owned_proofs.insert(proof_id.clone(), proof_trace);
+                }
+                _ => (), // no-op
+            }
+        }
+
+        Ok(TraceHeapSnapshot {
+            owned_buckets,
+            owned_proofs,
+            auth_zone_proofs,
+            worktop_resources,
+        })
     }
 
     fn trace_run<'s, R: FeeReserve>(

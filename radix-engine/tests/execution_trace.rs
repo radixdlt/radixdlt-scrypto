@@ -1,8 +1,11 @@
+use radix_engine::engine::TraceHeapSnapshot;
 use radix_engine::ledger::TypedInMemorySubstateStore;
+use radix_engine::model::LockedAmountOrIds;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use std::ops::Add;
 use transaction::builder::ManifestBuilder;
+use transaction::model::Instruction;
 
 #[test]
 fn test_trace_resource_transfers() {
@@ -140,4 +143,158 @@ fn test_trace_fee_payments() {
     assert!(resource_changes
         .iter()
         .any(|r| r.component_id == funded_component_id && r.amount == -total_fee_paid));
+}
+
+#[test]
+fn test_instruction_traces() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let package_address = test_runner.compile_and_publish("./tests/execution_trace");
+
+    let manfiest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
+        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+            builder
+                .create_proof_from_bucket(bucket_id, |builder, proof_id| {
+                    builder.drop_proof(proof_id)
+                })
+                .return_to_worktop(bucket_id)
+        })
+        .call_function(
+            package_address,
+            "ExecutionTraceTest",
+            "create_and_fund_a_component",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+
+    let receipt = test_runner.execute_manifest(manfiest, vec![]);
+
+    receipt.expect_commit_success();
+
+    // Check traces for the 7 manifest instructions
+    let traces = receipt.execution.instruction_traces;
+
+    {
+        // LOCK_FEE
+        let (inst, pre, post) = traces.get(0).unwrap();
+        assert_method(inst, "lock_fee");
+        assert_all_empty(pre);
+        assert_all_empty(post);
+    }
+
+    {
+        // CALL_METHOD: free
+        let prev_post = &traces.get(0).unwrap().2;
+        let (inst, pre, post) = traces.get(1).unwrap();
+        assert_method(inst, "free");
+        assert_eq!(pre, prev_post);
+        assert!(post.auth_zone_proofs.is_empty());
+        assert!(post.owned_proofs.is_empty());
+        assert!(post.owned_buckets.is_empty());
+        assert_eq!(1, post.worktop_resources.len());
+        assert_eq!(
+            dec!("1000"),
+            post.worktop_resources.get(&RADIX_TOKEN).unwrap().amount()
+        );
+    }
+
+    {
+        // TAKE_FROM_WORKTOP
+        let prev_post = &traces.get(1).unwrap().2;
+        let (inst, pre, post) = traces.get(2).unwrap();
+        assert!(matches!(inst, Instruction::TakeFromWorktop { .. }));
+        assert_eq!(pre, prev_post);
+
+        assert!(post.auth_zone_proofs.is_empty());
+        assert!(post.owned_proofs.is_empty());
+        // TODO: fixme, currently worktop resources still contains an entry with 0 amount
+        assert_eq!(1, post.worktop_resources.len());
+        assert_eq!(
+            dec!("0"),
+            post.worktop_resources.get(&RADIX_TOKEN).unwrap().amount()
+        );
+        assert_eq!(1, post.owned_buckets.len());
+        let owned_resource = post.owned_buckets.iter().nth(0).unwrap().1;
+        assert_eq!(dec!("1000"), owned_resource.amount());
+        assert_eq!(RADIX_TOKEN, owned_resource.resource_address());
+    }
+
+    {
+        // CREATE_PROOF_FROM_BUCKET
+        let prev_post = &traces.get(2).unwrap().2;
+        let (inst, pre, post) = traces.get(3).unwrap();
+        assert!(matches!(inst, Instruction::CreateProofFromBucket { .. }));
+        assert_eq!(pre, prev_post);
+
+        assert!(post.auth_zone_proofs.is_empty());
+        // TODO: fixme, currently worktop resources still contains an entry with 0 amount
+        assert_eq!(1, post.worktop_resources.len());
+        assert_eq!(
+            dec!("0"),
+            post.worktop_resources.get(&RADIX_TOKEN).unwrap().amount()
+        );
+        assert_eq!(1, post.owned_buckets.len());
+        let owned_resource = post.owned_buckets.iter().nth(0).unwrap().1;
+        // Owned amount is 0
+        assert_eq!(dec!("0"), owned_resource.amount());
+        assert_eq!(RADIX_TOKEN, owned_resource.resource_address());
+        // And there is a proof
+        assert_eq!(1, post.owned_proofs.len());
+        let owned_proof = post.owned_proofs.iter().nth(0).unwrap().1;
+        assert_eq!(RADIX_TOKEN, owned_proof.resource_address);
+        assert_eq!(
+            LockedAmountOrIds::Amount(dec!("1000")),
+            owned_proof.total_locked
+        );
+    }
+
+    {
+        // DROP_PROOF
+        let (_, prev_pre, prev_post) = &traces.get(3).unwrap();
+        let (inst, pre, post) = traces.get(4).unwrap();
+        assert!(matches!(inst, Instruction::DropProof { .. }));
+        assert_eq!(pre, prev_post);
+        assert_eq!(post, prev_pre); // DropProof should simply revert CreateProof
+    }
+
+    {
+        // RETURN_TO_WORKTOP
+        let (_, pre_take_from_worktop, _) = &traces.get(2).unwrap();
+        let (_, _, prev_post) = &traces.get(4).unwrap();
+        let (inst, pre, post) = traces.get(5).unwrap();
+        assert!(matches!(inst, Instruction::ReturnToWorktop { .. }));
+        assert_eq!(pre, prev_post);
+        assert_eq!(post, pre_take_from_worktop); // ReturnToWorktop should simply revert TakeFromWorktop
+    }
+
+    {
+        // CALL_FUNCTION: create_and_fund_a_component
+        let prev_post = &traces.get(5).unwrap().2;
+        let (inst, pre, post) = traces.get(6).unwrap();
+        assert_function(inst, "create_and_fund_a_component");
+        assert_eq!(pre, prev_post);
+        assert_all_empty(post);
+    }
+}
+
+fn assert_all_empty(snapshot: &TraceHeapSnapshot) {
+    assert!(snapshot.auth_zone_proofs.is_empty());
+    assert!(snapshot.worktop_resources.is_empty());
+    assert!(snapshot.owned_buckets.is_empty());
+    assert!(snapshot.owned_proofs.is_empty());
+}
+
+fn assert_function(inst: &Instruction, fn_name: &str) {
+    assert!(
+        matches!(inst, Instruction::CallFunction { function_ident, .. } if function_ident.function_name == fn_name)
+    );
+}
+
+fn assert_method(inst: &Instruction, method_name: &str) {
+    assert!(
+        matches!(inst, Instruction::CallMethod { method_ident, .. } if method_ident.method_name == method_name)
+    );
 }

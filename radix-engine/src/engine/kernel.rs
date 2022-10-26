@@ -1614,4 +1614,30 @@ where
 
         Ok(())
     }
+
+    fn pre_execute_instruction(&mut self, instruction: &Instruction) -> Result<(), RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_execute_instruction(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                instruction,
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+        Ok(())
+    }
+
+    fn post_execute_instruction(&mut self, instruction: &Instruction) -> Result<(), RuntimeError> {
+        for m in &mut self.modules {
+            m.post_execute_instruction(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                instruction,
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+        Ok(())
+    }
 }

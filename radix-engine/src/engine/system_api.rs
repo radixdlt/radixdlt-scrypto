@@ -4,6 +4,7 @@ use crate::fee::FeeReserve;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use bitflags::bitflags;
+use transaction::model::Instruction;
 
 bitflags! {
     #[derive(Encode, Decode, TypeId)]
@@ -92,4 +93,9 @@ where
     fn generate_uuid(&mut self) -> Result<u128, RuntimeError>;
 
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError>;
+
+    // Used to trigger the ExecutionTraceModule from within TransactionProcessor.
+    fn pre_execute_instruction(&mut self, instruction: &Instruction) -> Result<(), RuntimeError>;
+
+    fn post_execute_instruction(&mut self, instruction: &Instruction) -> Result<(), RuntimeError>;
 }

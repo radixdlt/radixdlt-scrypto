@@ -135,4 +135,9 @@ impl BucketSubstate {
     pub fn borrow_resource_mut(&mut self) -> RefMut<LockableResource> {
         self.resource.borrow_mut()
     }
+
+    pub fn peek_resource(&self) -> Resource {
+        let lockable_resource: &LockableResource = &self.borrow_resource();
+        lockable_resource.into()
+    }
 }

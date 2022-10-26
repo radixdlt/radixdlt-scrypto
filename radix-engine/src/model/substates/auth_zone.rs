@@ -377,4 +377,8 @@ impl AuthZone {
 
         Ok(proof)
     }
+
+    pub fn proofs(&self) -> &Vec<ProofSubstate> {
+        &self.proofs
+    }
 }

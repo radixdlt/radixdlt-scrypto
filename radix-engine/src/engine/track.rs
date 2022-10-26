@@ -1,4 +1,4 @@
-use transaction::model::Executable;
+use transaction::model::{Executable, Instruction};
 
 use crate::engine::*;
 use crate::fee::FeeReserve;
@@ -62,6 +62,7 @@ pub struct Track<'s, R: FeeReserve> {
     pub fee_reserve: R,
     pub fee_table: FeeTable,
     pub vault_ops: Vec<(REActor, VaultId, VaultOp)>,
+    pub instruction_traces: Vec<(Instruction, TraceHeapSnapshot, TraceHeapSnapshot)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -76,6 +77,7 @@ pub struct TrackReceipt {
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
     pub result: TransactionResult,
+    pub instruction_traces: Vec<(Instruction, TraceHeapSnapshot, TraceHeapSnapshot)>,
 }
 
 pub struct PreExecutionError {
@@ -97,6 +99,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             fee_reserve,
             fee_table,
             vault_ops: Vec::new(),
+            instruction_traces: Vec::new(),
         }
     }
 
@@ -608,6 +611,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             fee_summary,
             application_logs: self.application_logs,
             result,
+            instruction_traces: self.instruction_traces,
         }
     }
 

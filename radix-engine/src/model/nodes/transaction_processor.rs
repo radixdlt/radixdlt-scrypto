@@ -201,6 +201,10 @@ impl TransactionProcessor {
                 let auth_zone_ref = auth_zone_node_id;
 
                 for inst in input.instructions.as_ref() {
+                    system_api
+                        .pre_execute_instruction(inst)
+                        .map_err(InvokeError::Downstream)?;
+
                     let result = match inst {
                         Instruction::TakeFromWorktop { resource_address } => id_allocator
                             .new_bucket_id()
@@ -743,6 +747,10 @@ impl TransactionProcessor {
                         }
                     }?;
                     outputs.push(result);
+
+                    system_api
+                        .post_execute_instruction(inst)
+                        .map_err(InvokeError::Downstream)?;
                 }
 
                 Ok(ScryptoValue::from_typed(
