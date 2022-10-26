@@ -1,5 +1,5 @@
-use crate::engine::*;
 use crate::engine::system_api::LockInfo;
+use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::{SubstateRef, SubstateRefMut};
 use crate::types::*;
@@ -114,7 +114,7 @@ impl CallFrame {
             .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
 
         Ok(LockInfo {
-            offset: substate_lock.substate_pointer.2.clone()
+            offset: substate_lock.substate_pointer.2.clone(),
         })
     }
 

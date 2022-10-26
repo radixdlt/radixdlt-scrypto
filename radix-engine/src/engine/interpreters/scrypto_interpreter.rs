@@ -17,39 +17,23 @@ impl<I: WasmInstance> ScryptoExecutor<I> {
         Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
-        let (export_name, return_type, scrypto_actor) = match system_api.get_actor() {
+        let (export_name, return_type) = match system_api.get_actor() {
             REActor::Method(
                 ResolvedMethod::Scrypto {
-                    package_address,
-                    blueprint_name,
                     export_name,
                     return_type,
                     ..
                 },
                 ResolvedReceiver {
-                    receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                    receiver: Receiver::Ref(RENodeId::Component(..)),
                     ..
                 },
-            ) => (
-                export_name.to_string(),
-                return_type.clone(),
-                ScryptoActor::Component(
-                    *component_id,
-                    package_address.clone(),
-                    blueprint_name.clone(),
-                ),
-            ),
+            ) => (export_name.to_string(), return_type.clone()),
             REActor::Function(ResolvedFunction::Scrypto {
-                package_address,
-                blueprint_name,
                 export_name,
                 return_type,
                 ..
-            }) => (
-                export_name.to_string(),
-                return_type.clone(),
-                ScryptoActor::blueprint(*package_address, blueprint_name.clone()),
-            ),
+            }) => (export_name.to_string(), return_type.clone()),
 
             _ => panic!("Should not get here."),
         };
@@ -57,7 +41,7 @@ impl<I: WasmInstance> ScryptoExecutor<I> {
         let output = {
             system_api.execute_in_mode(ExecutionMode::Application, |system_api| {
                 let mut runtime: Box<dyn WasmRuntime> =
-                    Box::new(RadixEngineWasmRuntime::new(scrypto_actor, system_api));
+                    Box::new(RadixEngineWasmRuntime::new(system_api));
                 self.instance
                     .invoke_export(&export_name, &input, &mut runtime)
                     .map_err(|e| match e {

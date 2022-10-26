@@ -17,7 +17,6 @@ where
     Y: SystemApi<'s, R>,
     R: FeeReserve,
 {
-    actor: ScryptoActor,
     system_api: &'y mut Y,
     phantom1: PhantomData<R>,
     phantom2: PhantomData<&'s ()>,
@@ -34,9 +33,8 @@ where
 
     // TODO: do we check existence of blobs when being passed as arguments/return?
 
-    pub fn new(actor: ScryptoActor, system_api: &'y mut Y) -> Self {
+    pub fn new(system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
-            actor,
             system_api,
             phantom1: PhantomData,
             phantom2: PhantomData,
@@ -173,7 +171,32 @@ where
     }
 
     fn handle_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {
-        return Ok(self.actor.clone());
+        let actor = match self.system_api.get_actor() {
+            REActor::Method(
+                ResolvedMethod::Scrypto {
+                    package_address,
+                    blueprint_name,
+                    ..
+                },
+                ResolvedReceiver {
+                    receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                    ..
+                },
+            ) => ScryptoActor::Component(
+                *component_id,
+                package_address.clone(),
+                blueprint_name.clone(),
+            ),
+            REActor::Function(ResolvedFunction::Scrypto {
+                package_address,
+                blueprint_name,
+                ..
+            }) => ScryptoActor::blueprint(*package_address, blueprint_name.clone()),
+
+            _ => panic!("Should not get here."),
+        };
+
+        return Ok(actor);
     }
 
     fn handle_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
