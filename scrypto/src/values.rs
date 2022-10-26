@@ -208,6 +208,7 @@ impl ScryptoValue {
             + self.proof_ids.len()
             + self.vault_ids.len()
             + self.component_ids.len()
+            + self.kv_store_ids.len()
     }
 }
 
