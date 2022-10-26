@@ -9,7 +9,7 @@ use crate::address::*;
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
-use crate::crypto::Hash;
+use crate::crypto::{hash, Hash, PublicKey};
 use crate::engine::{api::*, types::*, utils::*};
 use crate::misc::*;
 use crate::resource::AccessRules;
@@ -235,6 +235,17 @@ impl TryFrom<&[u8]> for ComponentAddress {
 }
 
 impl ComponentAddress {
+    pub fn virtual_account_from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self {
+        match public_key.clone().into() {
+            PublicKey::EcdsaSecp256k1(public_key) => {
+                ComponentAddress::VirtualAccount(hash(public_key.to_vec()).lower_26_bytes())
+            }
+            PublicKey::EddsaEd25519(..) => {
+                todo!()
+            }
+        }
+    }
+
     pub fn to_vec(&self) -> Vec<u8> {
         let mut buf = Vec::new();
         buf.push(EntityType::component(self).id());

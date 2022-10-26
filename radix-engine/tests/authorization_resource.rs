@@ -16,7 +16,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
     let (token_address, mint_auth, burn_auth, withdraw_auth, admin_auth) =
         test_runner.create_restricted_token(account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);

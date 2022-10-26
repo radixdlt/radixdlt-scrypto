@@ -76,7 +76,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         EcdsaSecp256k1PrivateKey,
         NonFungibleAddress,
     ) {
-        let key_pair = self.new_account();
+        let key_pair = self.new_allocated_account();
         (
             key_pair.0,
             key_pair.1,
@@ -153,8 +153,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .map(|output| output.substate.into())
     }
 
-    pub fn load_virtual_account(&mut self) {
-        let account_address = ComponentAddress::VirtualAccount([0u8; 26]);
+    pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
             .call_method(SYS_FAUCET_COMPONENT, "free", args!())
@@ -189,7 +188,22 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .new_component_addresses[0]
     }
 
-    pub fn new_account(
+    pub fn new_virtual_account(
+        &mut self,
+    ) -> (
+        EcdsaSecp256k1PublicKey,
+        EcdsaSecp256k1PrivateKey,
+        ComponentAddress,
+    ) {
+        let (pub_key, priv_key) = self.new_key_pair();
+        let account = ComponentAddress::virtual_account_from_public_key(
+            &PublicKey::EcdsaSecp256k1(pub_key.clone()),
+        );
+        self.load_account_from_faucet(account);
+        (pub_key, priv_key, account)
+    }
+
+    pub fn new_allocated_account(
         &mut self,
     ) -> (
         EcdsaSecp256k1PublicKey,
@@ -200,6 +214,21 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let withdraw_auth = rule!(require(NonFungibleAddress::from_public_key(&key_pair.0)));
         let account = self.new_account_with_auth_rule(&withdraw_auth);
         (key_pair.0, key_pair.1, account)
+    }
+
+    pub fn new_account(
+        &mut self,
+        is_virtual: bool,
+    ) -> (
+        EcdsaSecp256k1PublicKey,
+        EcdsaSecp256k1PrivateKey,
+        ComponentAddress,
+    ) {
+        if is_virtual {
+            self.new_virtual_account()
+        } else {
+            self.new_allocated_account()
+        }
     }
 
     pub fn publish_package(

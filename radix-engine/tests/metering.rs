@@ -124,8 +124,8 @@ fn test_basic_transfer() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key1, _, account1) = test_runner.new_account();
-    let (_, _, account2) = test_runner.new_account();
+    let (public_key1, _, account1) = test_runner.new_allocated_account();
+    let (_, _, account2) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -204,7 +204,7 @@ fn should_be_able_run_large_manifest() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
     let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
@@ -235,7 +235,7 @@ fn should_be_able_invoke_account_balance_50_times() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
     let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
@@ -258,7 +258,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 0, account);
 
     // Act

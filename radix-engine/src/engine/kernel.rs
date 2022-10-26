@@ -1305,7 +1305,7 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         // Deref
-        if let Some(derefed) = self.node_offset_deref(node_id, &offset)?{
+        if let Some(derefed) = self.node_offset_deref(node_id, &offset)? {
             node_id = derefed;
         }
 
@@ -1343,23 +1343,30 @@ where
             Ok(lock_handle) => lock_handle,
             Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
                 SubstateId(
-                    RENodeId::Global(global_address),
+                    RENodeId::Global(GlobalAddress::Component(ComponentAddress::VirtualAccount(
+                        address,
+                    ))),
                     offset,
                 ),
-            )))) if matches!(global_address, GlobalAddress::Component(ComponentAddress::VirtualAccount(
-                        ..,
-                    ))) && matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) => {
+            )))) if matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) => {
+                let non_fungible_address = NonFungibleAddress::new(
+                    ECDSA_SECP256K1_TOKEN,
+                    NonFungibleId::from_bytes(address.into()),
+                );
 
+                let access_rule = rule!(require(non_fungible_address));
                 let result = self.invoke_scrypto(ScryptoInvocation::Function(
                     ScryptoFunctionIdent {
                         package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
                         blueprint_name: "Account".to_string(),
                         function_name: "create".to_string(),
                     },
-                    ScryptoValue::from_slice(&args!()).unwrap(),
+                    ScryptoValue::from_slice(&args!(access_rule)).unwrap(),
                 ))?;
                 let component_id = result.component_ids.into_iter().next().unwrap();
-                let global_substate = GlobalAddressSubstate::Component(scrypto::component::Component(component_id));
+
+                let global_substate =
+                    GlobalAddressSubstate::Component(scrypto::component::Component(component_id));
                 self.track.insert_substate(
                     SubstateId(node_id, offset.clone()),
                     RuntimeSubstate::Global(global_substate),
