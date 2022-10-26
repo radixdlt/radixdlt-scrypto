@@ -19,7 +19,6 @@ where
 {
     actor: ScryptoActor,
     system_api: &'y mut Y,
-    lock_types: HashMap<LockHandle, SubstateOffset>,
     phantom1: PhantomData<R>,
     phantom2: PhantomData<&'s ()>,
 }
@@ -39,7 +38,6 @@ where
         RadixEngineWasmRuntime {
             actor,
             system_api,
-            lock_types: HashMap::new(),
             phantom1: PhantomData,
             phantom2: PhantomData,
         }
@@ -136,8 +134,6 @@ where
             .system_api
             .lock_substate(node_id, offset.clone(), flags)?;
 
-        self.lock_types.insert(handle, offset);
-
         Ok(ScryptoValue::from_typed(&handle))
     }
 
@@ -152,13 +148,8 @@ where
         lock_handle: LockHandle,
         buffer: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let offset = self
-            .lock_types
-            .get(&lock_handle)
-            .ok_or(RuntimeError::KernelError(KernelError::LockDoesNotExist(
-                lock_handle,
-            )))?;
-        let substate = RuntimeSubstate::decode_from_buffer(offset, &buffer)?;
+        let offset = self.system_api.get_lock_info(lock_handle)?.offset;
+        let substate = RuntimeSubstate::decode_from_buffer(&offset, &buffer)?;
         let mut substate_mut = self.system_api.get_ref_mut(lock_handle)?;
 
         match substate {
@@ -176,7 +167,6 @@ where
     }
 
     fn handle_drop_lock(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
-        self.lock_types.remove(&lock_handle);
         self.system_api
             .drop_lock(lock_handle)
             .map(|unit| ScryptoValue::from_typed(&unit))

@@ -26,6 +26,10 @@ impl LockFlags {
     }
 }
 
+pub struct LockInfo {
+    pub offset: SubstateOffset,
+}
+
 pub trait SystemApi<'s, R>
 where
     R: FeeReserve,
@@ -75,6 +79,8 @@ where
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;
+
+    fn get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError>;
 
     /// Drops a lock
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;

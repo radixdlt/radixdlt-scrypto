@@ -5,6 +5,7 @@ use transaction::validation::*;
 
 use crate::engine::call_frame::RENodeLocation;
 use crate::engine::*;
+use crate::engine::system_api::LockInfo;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
@@ -1348,6 +1349,10 @@ where
         }
 
         Ok(lock_handle)
+    }
+
+    fn get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
+        self.current_frame.get_lock_info(lock_handle)
     }
 
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
