@@ -5,4 +5,5 @@ mod scrypto_interface;
 
 pub use native_interpreter::*;
 pub use scrypto_interpreter::*;
+pub use scrypto_interface::*;
 pub use wasm_runtime::*;

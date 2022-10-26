@@ -1,4 +1,3 @@
-use sbor::Encode;
 use scrypto::core::ScryptoActor;
 use scrypto::engine::types::{Level, LockHandle, NativeFunction, NativeMethod, Receiver, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode, SubstateOffset};
 use scrypto::values::ScryptoValue;

@@ -14,7 +14,7 @@ impl<I: WasmInstance> ScryptoExecutor<I> {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        Y: SystemApi<'s, R>,
+        Y: SystemApi<'s, R> + ScryptoSyscalls<RuntimeError>,
         R: FeeReserve,
     {
         let (export_name, return_type) = match system_api.get_actor() {
