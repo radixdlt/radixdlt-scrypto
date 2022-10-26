@@ -1,7 +1,6 @@
 use sbor::Encode;
 use scrypto::core::ScryptoActor;
-use scrypto::engine::api::RadixEngineInput;
-use scrypto::engine::types::{Receiver, RENodeId, ScryptoRENode};
+use scrypto::engine::types::{Level, LockHandle, NativeFunction, NativeMethod, Receiver, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode, SubstateOffset};
 use scrypto::values::ScryptoValue;
 use crate::engine::{Kernel, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
@@ -10,137 +9,147 @@ use crate::types::{NativeInvocation, ScryptoInvocation};
 use crate::wasm::{WasmEngine, WasmInstance};
 
 pub trait ScryptoSyscalls<E> {
-    fn sys_call(&mut self, input: RadixEngineInput) -> Result<ScryptoValue, E>;
-}
-
-fn encode<T: Encode>(output: T) -> ScryptoValue {
-    ScryptoValue::from_typed(&output)
+    fn sys_invoke_scrypto_function(&mut self, fn_ident: ScryptoFunctionIdent, args: Vec<u8>) -> Result<ScryptoValue, E>;
+    fn sys_invoke_scrypto_method(&mut self, method_ident: ScryptoMethodIdent, args: Vec<u8>) -> Result<ScryptoValue, E>;
+    fn sys_invoke_native_function(&mut self, native_function: NativeFunction, args: Vec<u8>) -> Result<ScryptoValue, E>;
+    fn sys_invoke_native_method(&mut self, native_method: NativeMethod, receiver: Receiver, args: Vec<u8>) -> Result<ScryptoValue, E>;
+    fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, E>;
+    fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, E>;
+    fn sys_lock_substate(&mut self, node_id: RENodeId, offset: SubstateOffset, mutable: bool) -> Result<LockHandle, E>;
+    fn sys_read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, E>;
+    fn sys_write(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), E>;
+    fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), E>;
+    fn sys_get_actor(&mut self) -> Result<ScryptoActor, E>;
+    fn sys_generate_uuid(&mut self) -> Result<u128, E>;
+    fn sys_emit_log(&mut self, level: Level, message: String) -> Result<(), E>;
 }
 
 impl<'g, 's, W, I, R> ScryptoSyscalls<RuntimeError> for Kernel<'g, 's, W, I, R>
 where W: WasmEngine<I>,
 I: WasmInstance,
 R: FeeReserve,{
-    fn sys_call(&mut self, input: RadixEngineInput) -> Result<ScryptoValue, RuntimeError> {
-        match input {
-            RadixEngineInput::InvokeScryptoFunction(fn_ident, args) => {
-                let args = ScryptoValue::from_slice(&args)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                self.invoke_scrypto(ScryptoInvocation::Function(fn_ident, args))
+    fn sys_invoke_scrypto_function(&mut self, fn_ident: ScryptoFunctionIdent, args: Vec<u8>) -> Result<ScryptoValue, RuntimeError> {
+        let args = ScryptoValue::from_slice(&args)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+        self.invoke_scrypto(ScryptoInvocation::Function(fn_ident, args))
+    }
+
+    fn sys_invoke_scrypto_method(&mut self, method_ident: ScryptoMethodIdent, args: Vec<u8>) -> Result<ScryptoValue, RuntimeError> {
+        let args = ScryptoValue::from_slice(&args)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+        self.invoke_scrypto(ScryptoInvocation::Method(method_ident, args))
+    }
+
+
+    fn sys_invoke_native_function(&mut self, native_function: NativeFunction, args: Vec<u8>) -> Result<ScryptoValue, RuntimeError> {
+        let args = ScryptoValue::from_slice(&args)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+
+        self.invoke_native(NativeInvocation::Function(native_function, args))
+    }
+
+    fn sys_invoke_native_method(&mut self, native_method: NativeMethod, receiver: Receiver, args: Vec<u8>) -> Result<ScryptoValue, RuntimeError> {
+        let args = ScryptoValue::from_slice(&args)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+
+        self.invoke_native(NativeInvocation::Method(native_method, receiver, args))
+    }
+
+    fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
+        let node = match node {
+            ScryptoRENode::GlobalComponent(component_id) => RENode::Global(
+                GlobalAddressSubstate::Component(scrypto::component::Component(component_id)),
+            ),
+            ScryptoRENode::Component(package_address, blueprint_name, state) => {
+                // Create component
+                RENode::Component(
+                    ComponentInfoSubstate::new(package_address, blueprint_name, Vec::new()),
+                    ComponentStateSubstate::new(state),
+                )
             }
-            RadixEngineInput::InvokeScryptoMethod(method_ident, args) => {
-                let args = ScryptoValue::from_slice(&args)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                self.invoke_scrypto(ScryptoInvocation::Method(method_ident, args))
+            ScryptoRENode::KeyValueStore => RENode::KeyValueStore(KeyValueStore::new()),
+        };
+
+        self.create_node(node)
+    }
+
+    fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
+        self.get_visible_node_ids()
+    }
+
+    fn sys_lock_substate(&mut self, node_id: RENodeId, offset: SubstateOffset, mutable: bool) -> Result<LockHandle, RuntimeError> {
+        let flags = if mutable {
+            LockFlags::MUTABLE
+        } else {
+            // TODO: Do we want to expose full flag functionality to Scrypto?
+            LockFlags::read_only()
+        };
+
+        self.lock_substate(node_id, offset, flags)
+    }
+
+    fn sys_read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+        self.get_ref(lock_handle)
+            .map(|substate_ref| substate_ref.to_scrypto_value())
+    }
+
+    fn sys_write(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), RuntimeError> {
+        let offset = self.get_lock_info(lock_handle)?.offset;
+        let substate = RuntimeSubstate::decode_from_buffer(&offset, &buffer)?;
+        let mut substate_mut = self.get_ref_mut(lock_handle)?;
+
+        match substate {
+            RuntimeSubstate::ComponentState(next) => *substate_mut.component_state() = next,
+            RuntimeSubstate::KeyValueStoreEntry(next) => {
+                *substate_mut.kv_store_entry() = next;
             }
-            RadixEngineInput::InvokeNativeFunction(native_function, args) => {
-                let args = ScryptoValue::from_slice(&args)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-
-                self.invoke_native(NativeInvocation::Function(native_function, args))
+            RuntimeSubstate::NonFungible(next) => {
+                *substate_mut.non_fungible() = next;
             }
-            RadixEngineInput::InvokeNativeMethod(native_method, receiver, args) => {
-                let args = ScryptoValue::from_slice(&args)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-
-                self.invoke_native(NativeInvocation::Method(native_method, receiver, args))
-            }
-            RadixEngineInput::CreateNode(node) => {
-                let node = match node {
-                    ScryptoRENode::GlobalComponent(component_id) => RENode::Global(
-                        GlobalAddressSubstate::Component(scrypto::component::Component(component_id)),
-                    ),
-                    ScryptoRENode::Component(package_address, blueprint_name, state) => {
-                        // Create component
-                        RENode::Component(
-                            ComponentInfoSubstate::new(package_address, blueprint_name, Vec::new()),
-                            ComponentStateSubstate::new(state),
-                        )
-                    }
-                    ScryptoRENode::KeyValueStore => RENode::KeyValueStore(KeyValueStore::new()),
-                };
-
-                let id = self.create_node(node)?;
-                Ok(ScryptoValue::from_typed(&id))
-            },
-            RadixEngineInput::GetVisibleNodeIds() => {
-                let node_ids = self.get_visible_node_ids()?;
-                Ok(ScryptoValue::from_typed(&node_ids))
-            },
-
-            RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
-                let flags = if mutable {
-                    LockFlags::MUTABLE
-                } else {
-                    // TODO: Do we want to expose full flag functionality to Scrypto?
-                    LockFlags::read_only()
-                };
-
-                let handle = self.lock_substate(node_id, offset.clone(), flags)?;
-
-                Ok(ScryptoValue::from_typed(&handle))
-            }
-            RadixEngineInput::Read(lock_handle) => {
-                self.get_ref(lock_handle)
-                    .map(|substate_ref| substate_ref.to_scrypto_value())
-            },
-            RadixEngineInput::Write(lock_handle, buffer) => {
-                let offset = self.get_lock_info(lock_handle)?.offset;
-                let substate = RuntimeSubstate::decode_from_buffer(&offset, &buffer)?;
-                let mut substate_mut = self.get_ref_mut(lock_handle)?;
-
-                match substate {
-                    RuntimeSubstate::ComponentState(next) => *substate_mut.component_state() = next,
-                    RuntimeSubstate::KeyValueStoreEntry(next) => {
-                        *substate_mut.kv_store_entry() = next;
-                    }
-                    RuntimeSubstate::NonFungible(next) => {
-                        *substate_mut.non_fungible() = next;
-                    }
-                    _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
-                }
-
-                Ok(ScryptoValue::unit())
-            },
-            RadixEngineInput::DropLock(lock_handle) => {
-                self.drop_lock(lock_handle)
-                    .map(|unit| ScryptoValue::from_typed(&unit))
-            },
-
-            RadixEngineInput::GetActor() => {
-                let actor = match self.get_actor() {
-                    REActor::Method(
-                        ResolvedMethod::Scrypto {
-                            package_address,
-                            blueprint_name,
-                            ..
-                        },
-                        ResolvedReceiver {
-                            receiver: Receiver::Ref(RENodeId::Component(component_id)),
-                            ..
-                        },
-                    ) => ScryptoActor::Component(
-                        *component_id,
-                        package_address.clone(),
-                        blueprint_name.clone(),
-                    ),
-                    REActor::Function(ResolvedFunction::Scrypto {
-                                          package_address,
-                                          blueprint_name,
-                                          ..
-                                      }) => ScryptoActor::blueprint(*package_address, blueprint_name.clone()),
-
-                    _ => panic!("Should not get here."),
-                };
-
-                return Ok(ScryptoValue::from_typed(&actor));
-            },
-            RadixEngineInput::GenerateUuid() => {
-                self.generate_uuid().map(encode)
-            },
-            RadixEngineInput::EmitLog(level, message) => {
-                self.emit_log(level, message).map(encode)
-            }
+            _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
         }
+
+        Ok(())
+    }
+
+    fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+        self.drop_lock(lock_handle)
+    }
+
+    fn sys_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {
+        let actor = match self.get_actor() {
+            REActor::Method(
+                ResolvedMethod::Scrypto {
+                    package_address,
+                    blueprint_name,
+                    ..
+                },
+                ResolvedReceiver {
+                    receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                    ..
+                },
+            ) => ScryptoActor::Component(
+                *component_id,
+                package_address.clone(),
+                blueprint_name.clone(),
+            ),
+            REActor::Function(ResolvedFunction::Scrypto {
+                                  package_address,
+                                  blueprint_name,
+                                  ..
+                              }) => ScryptoActor::blueprint(*package_address, blueprint_name.clone()),
+
+            _ => panic!("Should not get here."),
+        };
+
+        Ok(actor)
+    }
+
+    fn sys_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
+        self.generate_uuid()
+    }
+
+    fn sys_emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        self.emit_log(level, message)
     }
 }
