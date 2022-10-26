@@ -1,3 +1,4 @@
+use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
