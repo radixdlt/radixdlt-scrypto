@@ -169,7 +169,7 @@ impl VisibilityProperties {
                         REActor::Method(
                             ResolvedMethod::Scrypto { .. },
                             ResolvedReceiver {
-                                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                                receiver: RENodeId::Component(component_address),
                                 ..
                             },
                         ) => match (node_id, offset) {
@@ -208,7 +208,7 @@ impl VisibilityProperties {
                         REActor::Method(
                             ResolvedMethod::Scrypto { .. },
                             ResolvedReceiver {
-                                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                                receiver: RENodeId::Component(component_address),
                                 ..
                             },
                         ) => match (node_id, offset) {

@@ -708,14 +708,14 @@ where
                 // Deref if global
                 let resolved_receiver =
                     if let Some(derefed) = self.node_method_deref(original_node_id)? {
-                        ResolvedReceiver::derefed(Receiver::Ref(derefed), original_node_id)
+                        ResolvedReceiver::derefed(derefed, original_node_id)
                     } else {
-                        ResolvedReceiver::new(Receiver::Ref(original_node_id))
+                        ResolvedReceiver::new(original_node_id)
                     };
 
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
-                let component_node_id = resolved_receiver.node_id();
+                let component_node_id = resolved_receiver.receiver;
                 let component_info = self.execute_in_mode::<_, _, RuntimeError>(
                     ExecutionMode::ScryptoInterpreter,
                     |system_api| {
@@ -856,12 +856,12 @@ where
                         // Deref
                         let resolved_receiver =
                             if let Some(derefed) = self.node_method_deref(*node_id)? {
-                                ResolvedReceiver::derefed(Receiver::Ref(derefed), *node_id)
+                                ResolvedReceiver::derefed(derefed, *node_id)
                             } else {
-                                ResolvedReceiver::new(Receiver::Ref(*node_id))
+                                ResolvedReceiver::new(*node_id)
                             };
 
-                        let resolved_node_id = resolved_receiver.node_id();
+                        let resolved_node_id = resolved_receiver.receiver;
                         let location = self.current_frame.get_node_location(resolved_node_id)?;
                         additional_ref_copy.insert(resolved_node_id, location);
 

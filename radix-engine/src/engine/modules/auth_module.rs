@@ -52,7 +52,7 @@ impl AuthModule {
                     (
                         ResolvedMethod::Native(NativeMethod::ResourceManager(ref method)),
                         ResolvedReceiver {
-                            receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                            receiver: RENodeId::ResourceManager(resource_address),
                             ..
                         },
                     ) => {
@@ -71,7 +71,7 @@ impl AuthModule {
                     (
                         ResolvedMethod::Native(NativeMethod::System(ref method)),
                         ResolvedReceiver {
-                            receiver: Receiver::Ref(RENodeId::System(..)),
+                            receiver: RENodeId::System(..),
                             ..
                         },
                     ) => System::method_auth(method),
@@ -83,7 +83,7 @@ impl AuthModule {
                             ..
                         },
                         ResolvedReceiver {
-                            receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                            receiver: RENodeId::Component(component_id),
                             ..
                         },
                     ) => {
@@ -133,7 +133,7 @@ impl AuthModule {
                     (
                         ResolvedMethod::Native(NativeMethod::Vault(ref vault_fn)),
                         ResolvedReceiver {
-                            receiver: Receiver::Ref(RENodeId::Vault(vault_id)),
+                            receiver: RENodeId::Vault(vault_id),
                             ..
                         },
                     ) => {
