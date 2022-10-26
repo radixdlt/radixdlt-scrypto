@@ -596,7 +596,6 @@ where
         (
             REActor,
             HashMap<RENodeId, RENodeLocation>,
-            HashSet<RENodeId>,
         ),
         RuntimeError,
     > {
@@ -832,7 +831,7 @@ where
             }
         };
 
-        Ok((actor, additional_ref_copy, HashSet::new()))
+        Ok((actor, additional_ref_copy))
     }
 
     fn resolve_native_actor(
@@ -842,12 +841,10 @@ where
         (
             REActor,
             HashMap<RENodeId, RENodeLocation>,
-            HashSet<RENodeId>,
         ),
         RuntimeError,
     > {
         let mut additional_ref_copy = HashMap::new();
-        let mut additional_node_move = HashSet::new();
 
         let actor = match invocation {
             NativeInvocation::Function(native_function, _) => {
@@ -855,10 +852,6 @@ where
             }
             NativeInvocation::Method(native_method, receiver, _) => {
                 let resolved_receiver = match receiver {
-                    Receiver::Consumed(node_id) => {
-                        additional_node_move.insert(*node_id);
-                        ResolvedReceiver::new(Receiver::Consumed(*node_id))
-                    }
                     Receiver::Ref(node_id) => {
                         // Deref
                         let resolved_receiver =
@@ -880,7 +873,7 @@ where
             }
         };
 
-        Ok((actor, additional_ref_copy, additional_node_move))
+        Ok((actor, additional_ref_copy))
     }
 
     fn verify_valid_mode_transition(
@@ -1013,12 +1006,11 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (next_actor, additional_ref_copy, additional_node_move) = match &invocation {
+        let (next_actor, additional_ref_copy) = match &invocation {
             Invocation::Scrypto(i) => self.resolve_scrypto_actor(&i)?,
             Invocation::Native(i) => self.resolve_native_actor(&i)?,
         };
         next_node_refs.extend(additional_ref_copy);
-        nodes_to_pass_downstream.extend(additional_node_move);
 
         let output = self.run(
             next_actor,

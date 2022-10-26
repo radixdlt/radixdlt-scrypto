@@ -69,11 +69,6 @@ impl TransactionProcessor {
                 proof_id_mapping,
                 bucket_id_mapping,
             )?),
-            Receiver::Consumed(node_id) => Receiver::Consumed(Self::replace_node_id(
-                node_id,
-                proof_id_mapping,
-                bucket_id_mapping,
-            )?),
         };
 
         Ok(receiver)

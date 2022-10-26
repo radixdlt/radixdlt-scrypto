@@ -133,7 +133,6 @@ pub enum ScryptoReceiver {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Receiver {
-    Owned(RENode),
     Ref(RENode),
 }
 

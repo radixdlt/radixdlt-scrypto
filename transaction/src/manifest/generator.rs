@@ -622,11 +622,6 @@ fn generate_receiver(
             bech32_decoder,
             resolver,
         )?)),
-        ast::Receiver::Owned(re_node) => Ok(Receiver::Consumed(generate_re_node_id(
-            re_node,
-            bech32_decoder,
-            resolver,
-        )?)),
     }
 }
 

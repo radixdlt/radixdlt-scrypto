@@ -454,8 +454,7 @@ pub fn decompile_call_native_method<F: fmt::Write>(
 
     // Fall back to generic representation
     let receiver = match method_ident.receiver {
-        Receiver::Ref(node_id) => format!("&{}", format_node_id(&node_id, context)),
-        Receiver::Consumed(node_id) => format_node_id(&node_id, context),
+        Receiver::Ref(node_id) => format_node_id(&node_id, context),
     };
     f.write_str(&format!(
         "CALL_NATIVE_METHOD {} \"{}\"",

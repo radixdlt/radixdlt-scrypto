@@ -38,14 +38,13 @@ pub enum NativeFunction {
 
 #[derive(Debug, Clone, Eq, PartialEq, Copy, TypeId, Encode, Decode)]
 pub enum Receiver {
-    Consumed(RENodeId),
     Ref(RENodeId),
 }
 
 impl Receiver {
     pub fn node_id(&self) -> RENodeId {
         match self {
-            Receiver::Consumed(node_id) | Receiver::Ref(node_id) => *node_id,
+            Receiver::Ref(node_id) => *node_id,
         }
     }
 }
