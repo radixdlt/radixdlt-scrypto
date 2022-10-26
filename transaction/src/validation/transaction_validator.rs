@@ -1,4 +1,5 @@
 use sbor::Decode;
+use scrypto::core::NetworkDefinition;
 use std::collections::{BTreeSet, HashSet};
 
 use scrypto::buffer::scrypto_decode;
@@ -38,9 +39,24 @@ pub trait TransactionValidator<T: Decode> {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ValidationConfig {
     pub network_id: u8,
-    pub current_epoch: u64,
     pub max_cost_unit_limit: u32,
     pub min_tip_percentage: u32,
+    pub max_epoch_range: u64,
+}
+
+impl ValidationConfig {
+    pub fn default(network_id: u8) -> Self {
+        Self {
+            network_id,
+            max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+            min_tip_percentage: DEFAULT_MIN_TIP_PERCENTAGE,
+            max_epoch_range: DEFAULT_MAX_EPOCH_RANGE,
+        }
+    }
+
+    pub fn simulator() -> Self {
+        Self::default(NetworkDefinition::simulator().id)
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -246,13 +262,8 @@ impl NotarizedTransactionValidator {
         if header.end_epoch_exclusive <= header.start_epoch_inclusive {
             return Err(HeaderValidationError::InvalidEpochRange);
         }
-        if header.end_epoch_exclusive - header.start_epoch_inclusive > MAX_EPOCH_DURATION {
+        if header.end_epoch_exclusive - header.start_epoch_inclusive > self.config.max_epoch_range {
             return Err(HeaderValidationError::EpochRangeTooLarge);
-        }
-        if self.config.current_epoch < header.start_epoch_inclusive
-            || self.config.current_epoch >= header.end_epoch_exclusive
-        {
-            return Err(HeaderValidationError::OutOfEpochRange);
         }
 
         // cost unit limit and tip
@@ -341,12 +352,7 @@ mod tests {
     macro_rules! assert_invalid_tx {
         ($result: expr, ($version: expr, $start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
             let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
-            let config: ValidationConfig = ValidationConfig {
-                network_id: NetworkDefinition::simulator().id,
-                current_epoch: 1,
-                max_cost_unit_limit: 10_000_000,
-                min_tip_percentage: 0,
-            };
+            let config: ValidationConfig = ValidationConfig::simulator();
             let validator = NotarizedTransactionValidator::new(config);
             assert_eq!(
                 Err($result),
@@ -416,12 +422,7 @@ mod tests {
         // Build the whole transaction but only really care about the intent
         let tx = create_transaction(1, 0, 100, 5, vec![1, 2], 2);
 
-        let validator = NotarizedTransactionValidator::new(ValidationConfig {
-            network_id: NetworkDefinition::simulator().id,
-            current_epoch: 1,
-            max_cost_unit_limit: 10_000_000,
-            min_tip_percentage: 0,
-        });
+        let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
         let result = validator.validate_preview_intent(
             PreviewIntent {
