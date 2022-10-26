@@ -14,25 +14,23 @@ use sbor::*;
 /// Represents an error ocurred during decoding.
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum DecodeError {
+    ExtraTrailingBytes(usize),
+
     Underflow { required: usize, remaining: usize },
 
     InvalidType { expected: Option<u8>, actual: u8 },
 
-    InvalidName { expected: String, actual: String },
+    InvalidSize { expected: usize, actual: usize },
 
-    InvalidLength { expected: usize, actual: usize },
+    InvalidVariantIndex(u8),
 
-    InvalidIndex(u8),
-
-    InvalidEnumVariant(String),
+    InvalidVariantLabel(String),
 
     InvalidUnit(u8),
 
     InvalidBool(u8),
 
     InvalidUtf8,
-
-    NotAllBytesUsed(usize),
 
     CustomError(String),
 }
@@ -147,7 +145,7 @@ impl<'de> Decoder<'de> {
         if self.with_static_info {
             let len = self.read_static_size()?;
             if len != expected {
-                return Err(DecodeError::InvalidLength {
+                return Err(DecodeError::InvalidSize {
                     expected,
                     actual: len,
                 });
@@ -160,7 +158,7 @@ impl<'de> Decoder<'de> {
     pub fn check_end(&self) -> Result<(), DecodeError> {
         let n = self.remaining();
         if n != 0 {
-            Err(DecodeError::NotAllBytesUsed(n))
+            Err(DecodeError::ExtraTrailingBytes(n))
         } else {
             Ok(())
         }
@@ -287,7 +285,7 @@ impl<T: Decode> Decode for Option<T> {
         match index {
             OPTION_VARIANT_SOME => Ok(Some(T::decode(decoder)?)),
             OPTION_VARIANT_NONE => Ok(None),
-            _ => Err(DecodeError::InvalidIndex(index)),
+            _ => Err(DecodeError::InvalidVariantIndex(index)),
         }
     }
 }
@@ -393,7 +391,7 @@ impl<T: Decode + TypeId, E: Decode + TypeId> Decode for Result<T, E> {
         match index {
             RESULT_VARIANT_OK => Ok(Ok(T::decode(decoder)?)),
             RESULT_VARIANT_ERR => Ok(Err(E::decode(decoder)?)),
-            _ => Err(DecodeError::InvalidIndex(index)),
+            _ => Err(DecodeError::InvalidVariantIndex(index)),
         }
     }
 }
