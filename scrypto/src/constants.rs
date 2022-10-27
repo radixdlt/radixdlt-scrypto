@@ -199,7 +199,7 @@ pub const FAUCET_COMPONENT: ComponentAddress = construct_address!(
 );
 
 pub const EPOCH_MANAGER: SystemAddress = construct_address!(
-    EntityType::System,
+    EntityType::EpochManager,
     242,
     112,
     114,

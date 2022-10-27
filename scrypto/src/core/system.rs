@@ -11,7 +11,7 @@ use crate::misc::*;
 /// To interact with such nodes, native invocation should be used.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SystemAddress {
-    Normal([u8; 26]),
+    EpochManager([u8; 26]),
 }
 
 //========
@@ -26,7 +26,7 @@ impl TryFrom<&[u8]> for SystemAddress {
             27 => match EntityType::try_from(slice[0])
                 .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
             {
-                EntityType::System => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
+                EntityType::EpochManager => Ok(Self::EpochManager(copy_u8_array(&slice[1..]))),
                 _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
             },
             _ => Err(AddressError::InvalidLength(slice.len())),
@@ -39,7 +39,7 @@ impl SystemAddress {
         let mut buf = Vec::new();
         buf.push(EntityType::system(self).id());
         match self {
-            Self::Normal(v) => buf.extend(v),
+            Self::EpochManager(v) => buf.extend(v),
         }
         buf
     }
@@ -81,8 +81,8 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for SystemAddress {
 
         // This could be made more performant by streaming the hex into the formatter
         match self {
-            SystemAddress::Normal(_) => {
-                write!(f, "NormalSystem[{}]", self.to_hex())
+            SystemAddress::EpochManager(_) => {
+                write!(f, "EpochManagerSystem[{}]", self.to_hex())
             }
         }
         .map_err(|err| AddressError::FormatError(err))

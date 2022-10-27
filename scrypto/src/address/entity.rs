@@ -15,7 +15,7 @@ pub const NORMAL_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x02;
 pub const ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x03;
 
 /// A unique identifier used in the addressing of System Addresses.
-pub const SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x04;
+pub const EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x04;
 
 /// An enum which represents the different addressable entities.
 #[derive(PartialEq, Eq)]
@@ -24,7 +24,7 @@ pub enum EntityType {
     Package,
     NormalComponent,
     AccountComponent,
-    System,
+    EpochManager,
 }
 
 impl EntityType {
@@ -41,8 +41,10 @@ impl EntityType {
         }
     }
 
-    pub fn system(_address: &SystemAddress) -> Self {
-        Self::System
+    pub fn system(address: &SystemAddress) -> Self {
+        match address {
+            SystemAddress::EpochManager(_) => Self::EpochManager,
+        }
     }
 
     pub fn id(&self) -> u8 {
@@ -51,7 +53,7 @@ impl EntityType {
             Self::Package => PACKAGE_ADDRESS_ENTITY_ID,
             Self::NormalComponent => NORMAL_COMPONENT_ADDRESS_ENTITY_ID,
             Self::AccountComponent => ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
-            Self::System => SYSTEM_ADDRESS_ENTITY_ID,
+            Self::EpochManager => EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID,
         }
     }
 }
@@ -65,7 +67,7 @@ impl TryFrom<u8> for EntityType {
             PACKAGE_ADDRESS_ENTITY_ID => Ok(Self::Package),
             NORMAL_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::NormalComponent),
             ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::AccountComponent),
-            SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::System),
+            EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::EpochManager),
             _ => Err(EntityTypeError::InvalidEntityTypeId(value)),
         }
     }
