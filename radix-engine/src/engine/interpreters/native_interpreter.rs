@@ -1,3 +1,4 @@
+use scrypto::engine::utils::ScryptoSyscalls;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
@@ -81,7 +82,7 @@ impl NativeInterpreter {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        Y: SystemApi<'s, R>,
+        Y: SystemApi<'s, R> + ScryptoSyscalls<RuntimeError>,
         R: FeeReserve,
     {
         match fn_identifier {

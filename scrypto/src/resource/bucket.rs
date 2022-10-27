@@ -63,6 +63,19 @@ impl Bucket {
         )
     }
 
+    #[cfg(target_arch = "wasm32")]
+    pub fn create_proof(&self) -> scrypto::resource::Proof {
+        self.sys_create_proof(&mut Syscalls).unwrap()
+    }
+
+    pub fn sys_create_proof<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<scrypto::resource::Proof, E> where Y: ScryptoSyscalls<E> {
+        sys_calls.sys_invoke_native_method(
+            NativeMethod::Bucket(BucketMethod::CreateProof),
+            Receiver::Ref(RENodeId::Bucket(self.0)),
+            scrypto_encode(&BucketCreateProofInput {}),
+        )
+    }
+
     native_methods! {
         Receiver::Consumed(RENodeId::Bucket(self.0)), NativeMethod::Bucket => {
            pub fn burn(self) -> () {
@@ -110,11 +123,7 @@ impl Bucket {
                 BucketGetResourceAddressInput {
                 }
             }
-            pub fn create_proof(&self) -> scrypto::resource::Proof {
-                BucketMethod::CreateProof,
-                BucketCreateProofInput {
-                }
-            }
+
         }
     }
 
@@ -132,6 +141,7 @@ impl Bucket {
     }
 
     /// Uses resources in this bucket as authorization for an operation.
+    #[cfg(target_arch = "wasm32")]
     pub fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
         ComponentAuthZone::push(self.create_proof());
         let output = f();

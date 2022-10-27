@@ -1,9 +1,10 @@
+use scrypto::engine::utils::ScryptoSyscalls;
 use scrypto::resource::AuthZoneDrainInput;
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
 
-use crate::engine::{RENode, SystemApi};
+use crate::engine::{RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::resolve_native_function;
 use crate::model::resolve_native_method;
@@ -192,7 +193,7 @@ impl TransactionProcessor {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
     where
-        Y: SystemApi<'s, R>,
+        Y: SystemApi<'s, R> + ScryptoSyscalls<RuntimeError>,
         R: FeeReserve,
     {
         match func {
@@ -478,17 +479,12 @@ impl TransactionProcessor {
                                     ))
                             })
                             .and_then(|(new_id, real_bucket_id)| {
-                                system_api
-                                    .invoke_native(NativeInvocation::Method(
-                                        NativeMethod::Bucket(BucketMethod::CreateProof),
-                                        Receiver::Ref(RENodeId::Bucket(real_bucket_id)),
-                                        ScryptoValue::from_typed(&BucketCreateProofInput {}),
-                                    ))
+                                let bucket = scrypto::resource::Bucket(real_bucket_id);
+                                bucket.sys_create_proof(system_api)
                                     .map_err(InvokeError::Downstream)
-                                    .map(|rtn| {
-                                        let proof_id = Self::first_proof(&rtn);
-                                        proof_id_mapping.insert(new_id, proof_id);
-                                        ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
+                                    .map(|p| {
+                                        proof_id_mapping.insert(new_id, p.0);
+                                        ScryptoValue::from_typed(&p)
                                     })
                             }),
                         Instruction::CloneProof { proof_id } => id_allocator
