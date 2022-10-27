@@ -1,4 +1,5 @@
 use crate::component::{ComponentAddress, PackageAddress};
+use crate::core::SystemAddress;
 use crate::resource::*;
 use crate::{address, construct_address};
 
@@ -9,7 +10,7 @@ use crate::{address, construct_address};
 //
 // We've arranged the addresses in the order they're created in the genesis transaction.
 
-/// The address of the sys-faucet package.
+/// The address of the faucet package.
 pub const SYS_FAUCET_PACKAGE: PackageAddress = construct_address!(
     EntityType::Package,
     0,
@@ -39,6 +40,7 @@ pub const SYS_FAUCET_PACKAGE: PackageAddress = construct_address!(
     207,
     158
 );
+pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
 /// The address of the account package.
 pub const ACCOUNT_PACKAGE: PackageAddress = construct_address!(
@@ -70,6 +72,7 @@ pub const ACCOUNT_PACKAGE: PackageAddress = construct_address!(
     157,
     255
 );
+pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
 /// The ECDSA virtual resource address.
 pub const ECDSA_SECP256K1_TOKEN: ResourceAddress = construct_address!(
@@ -164,8 +167,8 @@ pub const RADIX_TOKEN: ResourceAddress = address!(
     208
 );
 
-/// The address of the SysFaucet component
-pub const SYS_FAUCET_COMPONENT: ComponentAddress = construct_address!(
+/// The address of the faucet component, test network only.
+pub const FAUCET_COMPONENT: ComponentAddress = construct_address!(
     EntityType::NormalComponent,
     87,
     220,
@@ -195,8 +198,8 @@ pub const SYS_FAUCET_COMPONENT: ComponentAddress = construct_address!(
     60
 );
 
-pub const SYS_SYSTEM_COMPONENT: ComponentAddress = construct_address!(
-    EntityType::SystemComponent,
+pub const EPOCH_MANAGER: SystemAddress = construct_address!(
+    EntityType::EpochManager,
     242,
     112,
     114,
@@ -255,3 +258,8 @@ pub const EDDSA_ED25519_TOKEN: ResourceAddress = address!(
     107,
     106
 );
+
+pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
+pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
+pub const PACKAGE_BLUEPRINT: &str = "Package";
+pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";

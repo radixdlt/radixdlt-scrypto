@@ -68,9 +68,9 @@ impl Into<ApplicationError> for ComponentError {
     }
 }
 
-impl Into<ApplicationError> for SystemError {
+impl Into<ApplicationError> for EpochManagerError {
     fn into(self) -> ApplicationError {
-        ApplicationError::SystemError(self)
+        ApplicationError::EpochManagerError(self)
     }
 }
 
@@ -94,8 +94,8 @@ impl NativeInterpreter {
             NativeFunction::ResourceManager(func) => {
                 ResourceManager::static_main(func, input, system_api).map_err(|e| e.into())
             }
-            NativeFunction::System(func) => {
-                System::static_main(func, input, system_api).map_err(|e| e.into())
+            NativeFunction::EpochManager(func) => {
+                EpochManager::static_main(func, input, system_api).map_err(|e| e.into())
             }
         }
     }
@@ -134,8 +134,8 @@ impl NativeInterpreter {
                 NativeMethod::ResourceManager(method),
             ) => ResourceManager::main(resource_address, method, input, system_api)
                 .map_err(|e| e.into()),
-            (RENodeId::System(component_id), NativeMethod::System(method)) => {
-                System::main(component_id, method, input, system_api).map_err(|e| e.into())
+            (RENodeId::EpochManager(component_id), NativeMethod::EpochManager(method)) => {
+                EpochManager::main(component_id, method, input, system_api).map_err(|e| e.into())
             }
             (receiver, _) => {
                 return Err(RuntimeError::KernelError(

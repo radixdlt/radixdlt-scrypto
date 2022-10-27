@@ -63,6 +63,7 @@ pub enum ScryptoType {
     ComponentAddress,
     Component,
     KeyValueStore,
+    SystemAddress,
 
     // crypto
     Hash,
@@ -88,11 +89,12 @@ pub enum ScryptoType {
 }
 
 // Need to update `scrypto-derive/src/import.rs` after changing the table below
-const MAPPING: [(ScryptoType, u8, &str); 19] = [
+const MAPPING: [(ScryptoType, u8, &str); 20] = [
     (ScryptoType::PackageAddress, 0x80, "PackageAddress"), // 128
     (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"), // 129
     (ScryptoType::Component, 0x82, "ComponentAddress"),    // 130
     (ScryptoType::KeyValueStore, 0x83, "KeyValueStore"),   // 131
+    (ScryptoType::SystemAddress, 0x84, "SystemAddress"),   // 132
     (ScryptoType::Hash, 0x90, "Hash"),                     // 144
     (
         ScryptoType::EcdsaSecp256k1PublicKey,

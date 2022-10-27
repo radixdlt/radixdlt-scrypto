@@ -16,7 +16,7 @@ fn test_transaction_preview_cost_estimate() {
     let mut test_runner = TestRunner::new(true, &mut substate_store);
     let network = NetworkDefinition::simulator();
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .clear_auth_zone()
         .build();
     let preview_flags = PreviewFlags {

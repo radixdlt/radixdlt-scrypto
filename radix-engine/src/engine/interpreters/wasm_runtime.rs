@@ -191,6 +191,10 @@ where
         return Ok(self.actor.clone());
     }
 
+    fn handle_get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
+        self.system_api.read_transaction_hash()
+    }
+
     fn handle_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
         self.system_api.generate_uuid()
     }
@@ -236,6 +240,9 @@ where
             RadixEngineInput::DropLock(lock_handle) => self.handle_drop_lock(lock_handle)?,
 
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode)?,
+            RadixEngineInput::GetTransactionHash() => {
+                self.handle_get_transaction_hash().map(encode)?
+            }
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode)?,
             RadixEngineInput::EmitLog(level, message) => {
                 self.handle_emit_log(level, message).map(encode)?

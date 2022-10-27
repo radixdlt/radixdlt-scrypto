@@ -57,7 +57,7 @@ impl CallFunction {
         }
 
         let manifest = manifest_builder
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100.into(), FAUCET_COMPONENT)
             .call_function_with_abi(
                 self.package_address.0,
                 &self.blueprint_name,

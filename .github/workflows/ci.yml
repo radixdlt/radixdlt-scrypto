@@ -123,9 +123,9 @@ jobs:
     - name: Build account
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: assets/account
-    - name: Build sys-faucet
+    - name: Build faucet
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: assets/sys-faucet
+      working-directory: assets/faucet
     - name: Build no-std
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/no-std

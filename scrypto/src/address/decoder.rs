@@ -1,7 +1,7 @@
 use sbor::rust::vec::Vec;
 
 use crate::component::{ComponentAddress, PackageAddress};
-use crate::core::NetworkDefinition;
+use crate::core::{NetworkDefinition, SystemAddress};
 use crate::resource::ResourceAddress;
 
 use super::entity::EntityType;
@@ -35,6 +35,17 @@ impl Bech32Decoder {
     ) -> Result<PackageAddress, AddressError> {
         Ok(PackageAddress::try_from(
             self.validate_and_decode(package_address)?.as_slice(),
+        )?)
+    }
+
+    /// Decodes a system address string from a Bech32 string into a `SystemAddress` and returns an `AddressError` on
+    /// validation or decoding failure.
+    pub fn validate_and_decode_system_address(
+        &self,
+        system_address: &str,
+    ) -> Result<SystemAddress, AddressError> {
+        Ok(SystemAddress::try_from(
+            self.validate_and_decode(system_address)?.as_slice(),
         )?)
     }
 

@@ -96,7 +96,7 @@ blueprint! {
     impl PackageTest {
         pub fn publish() -> PackageAddress {
             component_system().publish_package(
-                include_bytes!("../../../../assets/sys_faucet.wasm").to_vec(),
+                include_bytes!("../../../../assets/faucet.wasm").to_vec(),
                 HashMap::new(),
             )
         }
