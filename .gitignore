@@ -3,8 +3,31 @@
 
 # Rust auto-generated
 target/
-Cargo.lock
 **/*.rs.bk
+
+# Old (ignored) cargo locks of crates now part of central workspace
+# These will be ignored by cargo now.
+# Keep these git'ignored so that they don't cause confusion on developers' computers
+radix-engine/Cargo.lock
+radix-engine-stores/Cargo.lock
+scrypto/Cargo.lock
+scrypto-unit/Cargo.lock
+scrypto-derive/Cargo.lock
+scrypto-abi/Cargo.lock
+scrypto-tests/Cargo.lock
+transaction/Cargo.lock
+simulator/Cargo.lock
+sbor/Cargo.lock
+sbor-derive/Cargo.lock
+sbor-tests/Cargo.lock
+
+# Also - continue to ignore the scrypto Cargo.locks for now
+# We should source control these at some point (and put up with the painful developer merge conflicts)
+# ... or create separate sub-workspaces for each of them to move the problem and solve in a nicer way!
+radix-engine/tests/**/Cargo.lock
+examples/**/Cargo.lock
+assets/**/Cargo.lock
+simulator/tests/blueprints/**/Cargo.lock
 
 # Flamegraph profiles
 flamegraph.svg
