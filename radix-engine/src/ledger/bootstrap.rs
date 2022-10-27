@@ -7,15 +7,10 @@ use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams};
 
+use scrypto::core::SystemAddress;
 use scrypto::resource::Bucket;
 use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};
-
-#[derive(TypeId, Encode, Decode)]
-struct SystemComponentState {
-    vault: scrypto::resource::Vault,
-    transactions: scrypto::component::KeyValueStore<Hash, u64>,
-}
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
@@ -24,29 +19,29 @@ const XRD_URL: &str = "https://tokens.radixdlt.com";
 const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 
 pub struct GenesisReceipt {
-    pub sys_faucet_package: PackageAddress,
+    pub faucet_package: PackageAddress,
     pub account_package: PackageAddress,
     pub ecdsa_secp256k1_token: ResourceAddress,
     pub system_token: ResourceAddress,
     pub xrd_token: ResourceAddress,
     pub faucet_component: ComponentAddress,
-    pub system_component: ComponentAddress,
+    pub epoch_manager: SystemAddress,
     pub eddsa_ed25519_token: ResourceAddress,
 }
 
 pub fn create_genesis() -> SystemTransaction {
     let mut blobs = Vec::new();
     let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
-    let create_sys_faucet_package = {
-        let sys_faucet_code = include_bytes!("../../../assets/sys_faucet.wasm").to_vec();
-        let sys_faucet_abi = include_bytes!("../../../assets/sys_faucet.abi").to_vec();
+    let create_faucet_package = {
+        let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
+        let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
         let inst = Instruction::PublishPackage {
-            code: Blob(hash(&sys_faucet_code)),
-            abi: Blob(hash(&sys_faucet_abi)),
+            code: Blob(hash(&faucet_code)),
+            abi: Blob(hash(&faucet_abi)),
         };
 
-        blobs.push(sys_faucet_code);
-        blobs.push(sys_faucet_abi);
+        blobs.push(faucet_code);
+        blobs.push(faucet_abi);
 
         inst
     };
@@ -72,7 +67,7 @@ pub fn create_genesis() -> SystemTransaction {
         // TODO: Create token at a specific address
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
-                blueprint_name: "ResourceManager".to_string(),
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
@@ -95,7 +90,7 @@ pub fn create_genesis() -> SystemTransaction {
         // TODO: Create token at a specific address
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
-                blueprint_name: "ResourceManager".to_string(),
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
@@ -123,7 +118,7 @@ pub fn create_genesis() -> SystemTransaction {
 
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
-                blueprint_name: "ResourceManager".to_string(),
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
@@ -144,18 +139,18 @@ pub fn create_genesis() -> SystemTransaction {
         Instruction::CallFunction {
             function_ident: ScryptoFunctionIdent {
                 package: ScryptoPackage::Global(SYS_FAUCET_PACKAGE),
-                blueprint_name: "Faucet".to_string(),
+                blueprint_name: FAUCET_BLUEPRINT.to_string(),
                 function_name: "new".to_string(),
             },
             args: args!(bucket),
         }
     };
 
-    let create_system_component = {
+    let create_epoch_manager = {
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
-                blueprint_name: "System".to_string(),
-                function_name: SystemFunction::Create.to_string(),
+                blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+                function_name: EpochManagerFunction::Create.to_string(),
             },
             args: args!(),
         }
@@ -170,7 +165,7 @@ pub fn create_genesis() -> SystemTransaction {
         // TODO: Create token at a specific address
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
-                blueprint_name: "ResourceManager".to_string(),
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
@@ -184,14 +179,14 @@ pub fn create_genesis() -> SystemTransaction {
 
     let manifest = TransactionManifest {
         instructions: vec![
-            create_sys_faucet_package,
+            create_faucet_package,
             create_account_package,
             create_ecdsa_secp256k1_token,
             create_system_token,
             create_xrd_token,
             take_xrd,
             create_xrd_faucet,
-            create_system_component,
+            create_epoch_manager,
             create_eddsa_ed25519_token,
         ],
         blobs,
@@ -201,7 +196,7 @@ pub fn create_genesis() -> SystemTransaction {
 }
 
 pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
-    let sys_faucet_package: PackageAddress = scrypto_decode(&invoke_result[0]).unwrap();
+    let faucet_package: PackageAddress = scrypto_decode(&invoke_result[0]).unwrap();
     let account_package: PackageAddress = scrypto_decode(&invoke_result[1]).unwrap();
     let (ecdsa_secp256k1_token, _bucket): (ResourceAddress, Option<Bucket>) =
         scrypto_decode(&invoke_result[2]).unwrap();
@@ -210,18 +205,18 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
     let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) =
         scrypto_decode(&invoke_result[4]).unwrap();
     let faucet_component: ComponentAddress = scrypto_decode(&invoke_result[6]).unwrap();
-    let system_component: ComponentAddress = scrypto_decode(&invoke_result[7]).unwrap();
+    let epoch_manager: SystemAddress = scrypto_decode(&invoke_result[7]).unwrap();
     let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) =
         scrypto_decode(&invoke_result[8]).unwrap();
 
     GenesisReceipt {
-        sys_faucet_package,
+        faucet_package,
         account_package,
         ecdsa_secp256k1_token,
         system_token,
         xrd_token,
         faucet_component,
-        system_component,
+        epoch_manager,
         eddsa_ed25519_token,
     }
 }
@@ -311,13 +306,13 @@ mod tests {
         let invoke_result = commit_result.outcome.expect_success();
         let genesis_receipt = genesis_result(&invoke_result);
 
-        assert_eq!(genesis_receipt.sys_faucet_package, SYS_FAUCET_PACKAGE);
+        assert_eq!(genesis_receipt.faucet_package, SYS_FAUCET_PACKAGE);
         assert_eq!(genesis_receipt.account_package, ACCOUNT_PACKAGE);
         assert_eq!(genesis_receipt.ecdsa_secp256k1_token, ECDSA_SECP256K1_TOKEN);
         assert_eq!(genesis_receipt.system_token, SYSTEM_TOKEN);
         assert_eq!(genesis_receipt.xrd_token, RADIX_TOKEN);
-        assert_eq!(genesis_receipt.faucet_component, SYS_FAUCET_COMPONENT);
-        assert_eq!(genesis_receipt.system_component, SYS_SYSTEM_COMPONENT);
+        assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
+        assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
         assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
     }
 }

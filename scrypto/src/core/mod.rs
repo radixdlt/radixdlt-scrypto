@@ -5,6 +5,7 @@ mod expression;
 mod logger;
 mod network;
 mod runtime;
+mod system;
 
 pub use actor::ScryptoActor;
 pub use blob::*;
@@ -13,6 +14,6 @@ pub use expression::*;
 pub use logger::Logger;
 pub use network::{NetworkDefinition, ParseNetworkError};
 pub use runtime::{
-    Runtime, SystemCreateInput, SystemGetCurrentEpochInput, SystemGetTransactionHashInput,
-    SystemSetEpochInput,
+    EpochManagerCreateInput, EpochManagerGetCurrentEpochInput, EpochManagerSetEpochInput, Runtime,
 };
+pub use system::*;

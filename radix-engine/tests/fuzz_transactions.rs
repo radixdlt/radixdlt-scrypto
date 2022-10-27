@@ -81,7 +81,7 @@ impl TransactionFuzzer {
                     builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.call_function(
                             ACCOUNT_PACKAGE,
-                            "Account",
+                            ACCOUNT_BLUEPRINT,
                             "new_with_resource",
                             args!(AccessRule::AllowAll, scrypto::resource::Bucket(bucket_id)),
                         )
@@ -90,7 +90,7 @@ impl TransactionFuzzer {
                 1 => {
                     builder.call_function(
                         ACCOUNT_PACKAGE,
-                        "Account",
+                        ACCOUNT_BLUEPRINT,
                         "new",
                         args!(AccessRule::AllowAll),
                     );
@@ -99,14 +99,14 @@ impl TransactionFuzzer {
                     builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.call_function(
                             ACCOUNT_PACKAGE,
-                            "Account",
+                            ACCOUNT_BLUEPRINT,
                             "new_with_resource",
                             args!(AccessRule::AllowAll, scrypto::resource::Bucket(bucket_id)),
                         )
                     });
                 }
                 3 => {
-                    builder.call_method(SYS_FAUCET_COMPONENT, "lock_fee", args!(dec!("100")));
+                    builder.call_method(FAUCET_COMPONENT, "lock_fee", args!(dec!("100")));
                 }
                 _ => panic!("Unexpected"),
             }

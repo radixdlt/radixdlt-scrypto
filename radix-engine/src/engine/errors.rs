@@ -63,7 +63,7 @@ pub enum KernelError {
 
     MaxCallDepthLimitReached,
     InvalidScryptoFnOutput,
-    MethodReceiverNotMatch(NativeMethod, Receiver),
+    MethodReceiverNotMatch(NativeMethod, RENodeId),
 
     // ID allocation
     IdAllocationError(IdAllocationError),
@@ -177,7 +177,7 @@ pub enum ApplicationError {
 
     PackageError(PackageError),
 
-    SystemError(SystemError),
+    EpochManagerError(EpochManagerError),
 
     ResourceManagerError(ResourceManagerError),
 

@@ -68,9 +68,9 @@ impl Into<ApplicationError> for ComponentError {
     }
 }
 
-impl Into<ApplicationError> for SystemError {
+impl Into<ApplicationError> for EpochManagerError {
     fn into(self) -> ApplicationError {
-        ApplicationError::SystemError(self)
+        ApplicationError::EpochManagerError(self)
     }
 }
 
@@ -94,8 +94,8 @@ impl NativeInterpreter {
             NativeFunction::ResourceManager(func) => {
                 ResourceManager::static_main(func, input, system_api).map_err(|e| e.into())
             }
-            NativeFunction::System(func) => {
-                System::static_main(func, input, system_api).map_err(|e| e.into())
+            NativeFunction::EpochManager(func) => {
+                EpochManager::static_main(func, input, system_api).map_err(|e| e.into())
             }
         }
     }
@@ -110,39 +110,32 @@ impl NativeInterpreter {
         Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
-        match (resolved_receiver.receiver(), native_method.clone()) {
-            (Receiver::Consumed(node_id), NativeMethod::Bucket(method)) => {
-                Bucket::consuming_main(node_id, method, input, system_api).map_err(|e| e.into())
+        match (resolved_receiver.receiver, native_method.clone()) {
+            (RENodeId::AuthZoneStack(auth_zone_id), NativeMethod::AuthZone(method)) => {
+                AuthZoneStack::main(auth_zone_id, method, input, system_api).map_err(|e| e.into())
             }
-            (Receiver::Consumed(node_id), NativeMethod::Proof(method)) => {
-                Proof::main_consume(node_id, method, input, system_api).map_err(|e| e.into())
-            }
-            (
-                Receiver::Ref(RENodeId::AuthZoneStack(auth_zone_id)),
-                NativeMethod::AuthZone(method),
-            ) => AuthZoneStack::main(auth_zone_id, method, input, system_api).map_err(|e| e.into()),
-            (Receiver::Ref(RENodeId::Bucket(bucket_id)), NativeMethod::Bucket(method)) => {
+            (RENodeId::Bucket(bucket_id), NativeMethod::Bucket(method)) => {
                 Bucket::main(bucket_id, method, input, system_api).map_err(|e| e.into())
             }
-            (Receiver::Ref(RENodeId::Proof(proof_id)), NativeMethod::Proof(method)) => {
+            (RENodeId::Proof(proof_id), NativeMethod::Proof(method)) => {
                 Proof::main(proof_id, method, input, system_api).map_err(|e| e.into())
             }
-            (Receiver::Ref(RENodeId::Worktop), NativeMethod::Worktop(method)) => {
+            (RENodeId::Worktop, NativeMethod::Worktop(method)) => {
                 Worktop::main(method, input, system_api).map_err(|e| e.into())
             }
-            (Receiver::Ref(RENodeId::Vault(vault_id)), NativeMethod::Vault(method)) => {
+            (RENodeId::Vault(vault_id), NativeMethod::Vault(method)) => {
                 Vault::main(vault_id, method, input, system_api).map_err(|e| e.into())
             }
-            (Receiver::Ref(RENodeId::Component(component_id)), NativeMethod::Component(method)) => {
+            (RENodeId::Component(component_id), NativeMethod::Component(method)) => {
                 Component::main(component_id, method, input, system_api).map_err(|e| e.into())
             }
             (
-                Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                RENodeId::ResourceManager(resource_address),
                 NativeMethod::ResourceManager(method),
             ) => ResourceManager::main(resource_address, method, input, system_api)
                 .map_err(|e| e.into()),
-            (Receiver::Ref(RENodeId::System(component_id)), NativeMethod::System(method)) => {
-                System::main(component_id, method, input, system_api).map_err(|e| e.into())
+            (RENodeId::EpochManager(component_id), NativeMethod::EpochManager(method)) => {
+                EpochManager::main(component_id, method, input, system_api).map_err(|e| e.into())
             }
             (receiver, _) => {
                 return Err(RuntimeError::KernelError(

@@ -155,8 +155,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
-            .call_method(SYS_FAUCET_COMPONENT, "free", args!())
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .call_method(FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_method(
                     account_address,
@@ -172,8 +172,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
-            .call_method(SYS_FAUCET_COMPONENT, "free", args!())
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .call_method(FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(withdraw_auth, bucket_id)
             })
@@ -237,7 +237,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         abi: HashMap<String, BlueprintAbi>,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .publish_package(code, abi)
             .build();
 
@@ -320,7 +320,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             0,
             transaction::model::Instruction::CallMethod {
                 method_ident: ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Global(SYS_FAUCET_COMPONENT),
+                    receiver: ScryptoReceiver::Global(FAUCET_COMPONENT),
                     method_name: "lock_fee".to_string(),
                 },
                 args: args!(dec!("100")),
@@ -434,7 +434,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) {
         let package = self.compile_and_publish("./tests/resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .create_proof_from_account(auth, account)
             .call_function(package, "ResourceCreator", function, args!(token, set_auth))
             .call_method(
@@ -493,7 +493,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
                 HashMap::new(),
@@ -538,7 +538,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
                 HashMap::new(),
@@ -578,7 +578,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
                 HashMap::new(),
@@ -624,7 +624,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::NonFungible,
                 HashMap::new(),
@@ -655,7 +655,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility },
                 HashMap::new(),
@@ -686,7 +686,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         signer_public_key: EcdsaSecp256k1PublicKey,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .call_function_with_abi(
                 package_address,
                 blueprint_name,
@@ -722,11 +722,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             |kernel| {
                 kernel
                     .invoke_native(NativeInvocation::Method(
-                        NativeMethod::System(SystemMethod::SetEpoch),
-                        Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                            SYS_SYSTEM_COMPONENT,
-                        ))),
-                        ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
+                        NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
+                        RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+                        ScryptoValue::from_typed(&EpochManagerSetEpochInput { epoch }),
                     ))
                     .unwrap()
             },
@@ -737,11 +735,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
             kernel
                 .invoke_native(NativeInvocation::Method(
-                    NativeMethod::System(SystemMethod::GetCurrentEpoch),
-                    Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                        SYS_SYSTEM_COMPONENT,
-                    ))),
-                    ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),
+                    NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
+                    RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+                    ScryptoValue::from_typed(&EpochManagerGetCurrentEpochInput {}),
                 ))
                 .unwrap()
         });

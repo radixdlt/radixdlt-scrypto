@@ -31,8 +31,8 @@ impl NewAccount {
         let auth_address = NonFungibleAddress::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_address));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .call_method(SYS_FAUCET_COMPONENT, "free", args!())
+            .lock_fee(100.into(), FAUCET_COMPONENT)
+            .call_method(FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(&withdraw_auth, bucket_id)
             })

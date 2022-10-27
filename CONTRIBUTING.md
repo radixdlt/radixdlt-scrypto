@@ -64,7 +64,7 @@ Bash scripts that might be of help:
 * `format.sh` - Formats the entire repo
 * `build.sh` - Builds main packages
 * `test.sh` - Runs all the tests
-* `assets/update-assets.sh` - Updates `Account`/`SysFaucet`/`SysUtils` scrypto packages (needed when your change would affect the output WASM)
+* `assets/update-assets.sh` - Updates `Account`/`Faucet` scrypto packages (needed when your change would affect the output WASM)
 
 ## Branching strategy
 

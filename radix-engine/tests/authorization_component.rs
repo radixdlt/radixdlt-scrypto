@@ -17,7 +17,7 @@ fn cannot_make_cross_component_call_without_authorization() {
 
     let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "CrossComponent",
@@ -33,7 +33,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .new_component_addresses[0];
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "CrossComponent",
@@ -50,7 +50,7 @@ fn cannot_make_cross_component_call_without_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_method(
             my_component,
             "cross_component_call",
@@ -77,7 +77,7 @@ fn can_make_cross_component_call_with_authorization() {
 
     let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "CrossComponent",
@@ -93,7 +93,7 @@ fn can_make_cross_component_call_with_authorization() {
         .new_component_addresses[0];
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "CrossComponent",
@@ -109,7 +109,7 @@ fn can_make_cross_component_call_with_authorization() {
         .new_component_addresses[0];
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .withdraw_from_account_by_ids(&BTreeSet::from([auth_id]), auth, account)
         .call_method(
             my_component,
@@ -125,7 +125,7 @@ fn can_make_cross_component_call_with_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_method(
             my_component,
             "cross_component_call",
@@ -152,7 +152,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
 
     let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "CrossComponent",
@@ -168,7 +168,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
         .new_component_addresses[0];
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "CrossComponent",
@@ -185,7 +185,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .create_proof_from_account(auth, account)
         .call_method(
             my_component,

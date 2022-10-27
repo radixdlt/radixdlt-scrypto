@@ -40,6 +40,7 @@ pub struct ScryptoValue {
     pub resource_addresses: HashSet<ResourceAddress>,
     pub non_fungible_addresses: HashSet<NonFungibleAddress>,
     pub package_addresses: HashSet<PackageAddress>,
+    pub system_addresses: HashSet<SystemAddress>,
 }
 
 impl ScryptoValue {
@@ -83,6 +84,7 @@ impl ScryptoValue {
             resource_addresses: checker.resource_addresses,
             non_fungible_addresses: checker.non_fungible_addresses,
             package_addresses: checker.package_addresses,
+            system_addresses: checker.system_addresses,
         })
     }
 
@@ -104,6 +106,7 @@ impl ScryptoValue {
             resource_addresses: HashSet::new(),
             non_fungible_addresses: HashSet::new(),
             package_addresses: HashSet::new(),
+            system_addresses: HashSet::new(),
         })
     }
 
@@ -142,6 +145,9 @@ impl ScryptoValue {
         }
         for package_address in &self.package_addresses {
             node_ids.insert(GlobalAddress::Package(*package_address));
+        }
+        for system_address in &self.system_addresses {
+            node_ids.insert(GlobalAddress::System(*system_address));
         }
         node_ids
     }
@@ -250,6 +256,7 @@ pub struct ScryptoCustomValueChecker {
     pub resource_addresses: HashSet<ResourceAddress>,
     pub non_fungible_addresses: HashSet<NonFungibleAddress>,
     pub package_addresses: HashSet<PackageAddress>,
+    pub system_addresses: HashSet<SystemAddress>,
 }
 
 /// Represents an error when validating a Scrypto-specific value.
@@ -261,6 +268,7 @@ pub enum ScryptoCustomValueCheckError {
     InvalidPackageAddress(AddressError),
     InvalidComponent(ParseComponentError),
     InvalidComponentAddress(AddressError),
+    InvalidSystemAddress(AddressError),
     InvalidResourceAddress(AddressError),
     InvalidHash(ParseHashError),
     InvalidEcdsaSecp256k1PublicKey(ParseEcdsaSecp256k1PublicKeyError),
@@ -291,6 +299,7 @@ impl ScryptoCustomValueChecker {
             resource_addresses: HashSet::new(),
             non_fungible_addresses: HashSet::new(),
             package_addresses: HashSet::new(),
+            system_addresses: HashSet::new(),
         }
     }
 }
@@ -314,6 +323,11 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                 let component_address = ComponentAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
                 self.ref_components.insert(component_address);
+            }
+            ScryptoType::SystemAddress => {
+                let system_address = SystemAddress::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidSystemAddress)?;
+                self.system_addresses.insert(system_address);
             }
             ScryptoType::Component => {
                 let component = Component::try_from(data)
@@ -727,6 +741,15 @@ impl ScryptoValueFormatter {
                 value
                     .format(f, context.bech32_encoder)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
+                f.write_str("\")")?;
+            }
+            ScryptoType::SystemAddress => {
+                let value = SystemAddress::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidSystemAddress)?;
+                f.write_str("SystemAddress(\"")?;
+                value
+                    .format(f, context.bech32_encoder)
+                    .map_err(ScryptoCustomValueCheckError::InvalidSystemAddress)?;
                 f.write_str("\")")?;
             }
             ScryptoType::Hash => {

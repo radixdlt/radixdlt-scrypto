@@ -6,7 +6,7 @@ use crate::types::*;
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum PersistedSubstate {
     Global(GlobalAddressSubstate),
-    System(SystemSubstate),
+    EpochManager(EpochManagerSubstate),
     ResourceManager(ResourceManagerSubstate),
     ComponentInfo(ComponentInfoSubstate),
     ComponentState(ComponentStateSubstate),
@@ -40,7 +40,7 @@ impl PersistedSubstate {
     pub fn to_runtime(self) -> RuntimeSubstate {
         match self {
             PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
-            PersistedSubstate::System(value) => RuntimeSubstate::System(value),
+            PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
             PersistedSubstate::ResourceManager(value) => RuntimeSubstate::ResourceManager(value),
             PersistedSubstate::ComponentInfo(value) => RuntimeSubstate::ComponentInfo(value),
             PersistedSubstate::ComponentState(value) => RuntimeSubstate::ComponentState(value),
@@ -63,7 +63,7 @@ pub enum PersistError {
 #[derive(Debug)]
 pub enum RuntimeSubstate {
     Global(GlobalAddressSubstate),
-    System(SystemSubstate),
+    EpochManager(EpochManagerSubstate),
     ResourceManager(ResourceManagerSubstate),
     ComponentInfo(ComponentInfoSubstate),
     ComponentState(ComponentStateSubstate),
@@ -81,7 +81,7 @@ impl RuntimeSubstate {
     pub fn clone_to_persisted(&self) -> PersistedSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
-            RuntimeSubstate::System(value) => PersistedSubstate::System(value.clone()),
+            RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
             RuntimeSubstate::ResourceManager(value) => {
                 PersistedSubstate::ResourceManager(value.clone())
             }
@@ -112,7 +112,7 @@ impl RuntimeSubstate {
     pub fn to_persisted(self) -> PersistedSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
-            RuntimeSubstate::System(value) => PersistedSubstate::System(value),
+            RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
             RuntimeSubstate::ResourceManager(value) => PersistedSubstate::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => PersistedSubstate::ComponentInfo(value),
             RuntimeSubstate::ComponentState(value) => PersistedSubstate::ComponentState(value),
@@ -166,7 +166,7 @@ impl RuntimeSubstate {
     pub fn to_ref_mut(&mut self) -> SubstateRefMut {
         match self {
             RuntimeSubstate::Global(value) => SubstateRefMut::Global(value),
-            RuntimeSubstate::System(value) => SubstateRefMut::System(value),
+            RuntimeSubstate::EpochManager(value) => SubstateRefMut::EpochManager(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => SubstateRefMut::ComponentInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRefMut::ComponentState(value),
@@ -184,7 +184,7 @@ impl RuntimeSubstate {
     pub fn to_ref(&self) -> SubstateRef {
         match self {
             RuntimeSubstate::Global(value) => SubstateRef::Global(value),
-            RuntimeSubstate::System(value) => SubstateRef::System(value),
+            RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => SubstateRef::ComponentInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRef::ComponentState(value),
@@ -248,9 +248,9 @@ impl RuntimeSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for SystemSubstate {
+impl Into<RuntimeSubstate> for EpochManagerSubstate {
     fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::System(self)
+        RuntimeSubstate::EpochManager(self)
     }
 }
 
@@ -366,9 +366,9 @@ impl Into<VaultRuntimeSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<SystemSubstate> for RuntimeSubstate {
-    fn into(self) -> SystemSubstate {
-        if let RuntimeSubstate::System(system) = self {
+impl Into<EpochManagerSubstate> for RuntimeSubstate {
+    fn into(self) -> EpochManagerSubstate {
+        if let RuntimeSubstate::EpochManager(system) = self {
             system
         } else {
             panic!("Not a resource manager");
@@ -418,7 +418,7 @@ pub enum SubstateRef<'a> {
     Package(&'a PackageSubstate),
     Vault(&'a VaultRuntimeSubstate),
     ResourceManager(&'a ResourceManagerSubstate),
-    System(&'a SystemSubstate),
+    EpochManager(&'a EpochManagerSubstate),
     Global(&'a GlobalAddressSubstate),
 }
 
@@ -426,7 +426,7 @@ impl<'a> SubstateRef<'a> {
     pub fn to_scrypto_value(&self) -> ScryptoValue {
         match self {
             SubstateRef::Global(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::System(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::EpochManager(value) => ScryptoValue::from_typed(*value),
             SubstateRef::ResourceManager(value) => ScryptoValue::from_typed(*value),
             SubstateRef::ComponentInfo(value) => ScryptoValue::from_typed(*value),
             SubstateRef::ComponentState(value) => ScryptoValue::from_typed(*value),
@@ -444,9 +444,9 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn system(&self) -> &SystemSubstate {
+    pub fn epoch_manager(&self) -> &EpochManagerSubstate {
         match self {
-            SubstateRef::System(system) => *system,
+            SubstateRef::EpochManager(system) => *system,
             _ => panic!("Not a system substate"),
         }
     }
@@ -532,8 +532,8 @@ impl<'a> SubstateRef<'a> {
                     GlobalAddressSubstate::Component(component) => {
                         owned_nodes.insert(RENodeId::Component(component.0))
                     }
-                    GlobalAddressSubstate::SystemComponent(component) => {
-                        owned_nodes.insert(RENodeId::System(component.0))
+                    GlobalAddressSubstate::System(epoch_manager_id) => {
+                        owned_nodes.insert(RENodeId::EpochManager(*epoch_manager_id))
                     }
                     GlobalAddressSubstate::Package(package_address) => {
                         owned_nodes.insert(RENodeId::Package(*package_address))
@@ -608,7 +608,7 @@ pub enum SubstateRefMut<'a> {
     Package(&'a mut PackageSubstate),
     Vault(&'a mut VaultRuntimeSubstate),
     ResourceManager(&'a mut ResourceManagerSubstate),
-    System(&'a mut SystemSubstate),
+    EpochManager(&'a mut EpochManagerSubstate),
     Global(&'a mut GlobalAddressSubstate),
     Bucket(&'a mut BucketSubstate),
     Proof(&'a mut ProofSubstate),
@@ -687,9 +687,9 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn system(&mut self) -> &mut SystemSubstate {
+    pub fn epoch_manager(&mut self) -> &mut EpochManagerSubstate {
         match self {
-            SubstateRefMut::System(value) => *value,
+            SubstateRefMut::EpochManager(value) => *value,
             _ => panic!("Not system"),
         }
     }

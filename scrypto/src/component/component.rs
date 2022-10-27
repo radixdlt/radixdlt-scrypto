@@ -86,7 +86,7 @@ impl Component {
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Component(ComponentMethod::AddAccessCheck),
-            Receiver::Ref(RENodeId::Component(self.0)),
+            RENodeId::Component(self.0),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
         );
         let _: () = call_engine(input);
@@ -140,7 +140,7 @@ impl BorrowedGlobalComponent {
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Component(ComponentMethod::AddAccessCheck),
-            Receiver::Ref(RENodeId::Global(GlobalAddress::Component(self.0))),
+            RENodeId::Global(GlobalAddress::Component(self.0)),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
         );
         let _: () = call_engine(input);
@@ -207,7 +207,6 @@ pub enum ComponentAddress {
     Account([u8; 26]),
     EcdsaSecp256k1VirtualAccount([u8; 26]),
     EddsaEd25519VirtualAccount([u8; 26]),
-    System([u8; 26]),
 }
 
 //========
@@ -230,7 +229,6 @@ impl TryFrom<&[u8]> for ComponentAddress {
                 EntityType::EddsaEd25519VirtualAccountComponent => {
                     Ok(Self::EddsaEd25519VirtualAccount(copy_u8_array(&slice[1..])))
                 }
-                EntityType::SystemComponent => Ok(Self::System(copy_u8_array(&slice[1..]))),
                 _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
             },
             _ => Err(AddressError::InvalidLength(slice.len())),
@@ -259,8 +257,7 @@ impl ComponentAddress {
             Self::Normal(v)
             | Self::Account(v)
             | Self::EddsaEd25519VirtualAccount(v)
-            | Self::EcdsaSecp256k1VirtualAccount(v)
-            | Self::System(v) => buf.extend(v),
+            | Self::EcdsaSecp256k1VirtualAccount(v) => buf.extend(v),
         }
         buf
     }
@@ -317,9 +314,6 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
             }
             ComponentAddress::EddsaEd25519VirtualAccount(_) => {
                 write!(f, "EddsaEd25519VirtualAccountComponent[{}]", self.to_hex())
-            }
-            ComponentAddress::System(_) => {
-                write!(f, "SystemComponent[{}]", self.to_hex())
             }
         }
         .map_err(|err| AddressError::FormatError(err))

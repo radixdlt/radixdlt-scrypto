@@ -315,6 +315,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 ScryptoType::ComponentAddress => "::scrypto::component::ComponentAddress",
                 ScryptoType::Component => "::scrypto::component::Component",
                 ScryptoType::KeyValueStore => "::scrypto::component::KeyValueStore",
+                ScryptoType::SystemAddress => "::scrypto::core::SystemAddress",
                 ScryptoType::Hash => "::scrypto::crypto::Hash",
                 ScryptoType::EcdsaSecp256k1PublicKey => {
                     "::scrypto::crypto::EcdsaSecp256k1PublicKey"

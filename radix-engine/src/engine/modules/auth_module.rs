@@ -42,8 +42,8 @@ impl AuthModule {
 
         let method_auths = match actor.clone() {
             REActor::Function(function_ident) => match function_ident {
-                ResolvedFunction::Native(NativeFunction::System(system_func)) => {
-                    System::function_auth(&system_func)
+                ResolvedFunction::Native(NativeFunction::EpochManager(system_func)) => {
+                    EpochManager::function_auth(&system_func)
                 }
                 _ => vec![],
             },
@@ -52,7 +52,7 @@ impl AuthModule {
                     (
                         ResolvedMethod::Native(NativeMethod::ResourceManager(ref method)),
                         ResolvedReceiver {
-                            receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                            receiver: RENodeId::ResourceManager(resource_address),
                             ..
                         },
                     ) => {
@@ -69,12 +69,12 @@ impl AuthModule {
                         auth
                     }
                     (
-                        ResolvedMethod::Native(NativeMethod::System(ref method)),
+                        ResolvedMethod::Native(NativeMethod::EpochManager(ref method)),
                         ResolvedReceiver {
-                            receiver: Receiver::Ref(RENodeId::System(..)),
+                            receiver: RENodeId::EpochManager(..),
                             ..
                         },
-                    ) => System::method_auth(method),
+                    ) => EpochManager::method_auth(method),
                     (
                         ResolvedMethod::Scrypto {
                             package_id,
@@ -83,7 +83,7 @@ impl AuthModule {
                             ..
                         },
                         ResolvedReceiver {
-                            receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                            receiver: RENodeId::Component(component_id),
                             ..
                         },
                     ) => {
@@ -133,7 +133,7 @@ impl AuthModule {
                     (
                         ResolvedMethod::Native(NativeMethod::Vault(ref vault_fn)),
                         ResolvedReceiver {
-                            receiver: Receiver::Ref(RENodeId::Vault(vault_id)),
+                            receiver: RENodeId::Vault(vault_id),
                             ..
                         },
                     ) => {

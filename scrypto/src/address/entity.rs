@@ -1,4 +1,5 @@
 use crate::component::{ComponentAddress, PackageAddress};
+use crate::core::SystemAddress;
 use crate::resource::ResourceAddress;
 
 /// A unique identifier used in the addressing of Resource Addresses.
@@ -13,8 +14,8 @@ pub const NORMAL_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x02;
 /// A unique identifier used in the addressing of Account Component Addresses.
 pub const ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x03;
 
-/// A unique identifier used in the addressing of System Component Addresses.
-pub const SYSTEM_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x04;
+/// A unique identifier used in the addressing of System Addresses.
+pub const EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x04;
 
 /// A unique identifier used in the addressing of a virtual Account Component Addresses.
 pub const ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x05;
@@ -31,7 +32,7 @@ pub enum EntityType {
     AccountComponent,
     EcdsaSecp256k1VirtualAccountComponent,
     EddsaEd25519VirtualAccountComponent,
-    SystemComponent,
+    EpochManager,
 }
 
 impl EntityType {
@@ -51,7 +52,12 @@ impl EntityType {
             ComponentAddress::EddsaEd25519VirtualAccount(_) => {
                 Self::EddsaEd25519VirtualAccountComponent
             }
-            ComponentAddress::System(_) => Self::SystemComponent,
+        }
+    }
+
+    pub fn system(address: &SystemAddress) -> Self {
+        match address {
+            SystemAddress::EpochManager(_) => Self::EpochManager,
         }
     }
 
@@ -67,7 +73,7 @@ impl EntityType {
             Self::EddsaEd25519VirtualAccountComponent => {
                 EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID
             }
-            Self::SystemComponent => SYSTEM_COMPONENT_ADDRESS_ENTITY_ID,
+            Self::EpochManager => EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID,
         }
     }
 }
@@ -87,7 +93,7 @@ impl TryFrom<u8> for EntityType {
             EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID => {
                 Ok(Self::EddsaEd25519VirtualAccountComponent)
             }
-            SYSTEM_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::SystemComponent),
+            EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::EpochManager),
             _ => Err(EntityTypeError::InvalidEntityTypeId(value)),
         }
     }

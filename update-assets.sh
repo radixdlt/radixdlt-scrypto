@@ -7,7 +7,7 @@ cd "$(dirname "$0")/assets"
 
 echo "Building packages..."
 (cd account; scrypto build)
-(cd sys-faucet; scrypto build)
+(cd faucet; scrypto build)
 
 echo "Publishing artifacts..."
 wasm-opt \
@@ -22,10 +22,10 @@ cp \
 wasm-opt \
   -Os -g \
   --strip-debug --strip-dwarf --strip-producers \
-  -o ./sys_faucet.wasm \
-  ./sys-faucet/target/wasm32-unknown-unknown/release/sys_faucet.wasm
+  -o ./faucet.wasm \
+  ./faucet/target/wasm32-unknown-unknown/release/faucet.wasm
 cp \
-  ./sys-faucet/target/wasm32-unknown-unknown/release/sys_faucet.abi \
-  ./sys_faucet.abi
+  ./faucet/target/wasm32-unknown-unknown/release/faucet.abi \
+  ./faucet.abi
 
 echo "Done!"

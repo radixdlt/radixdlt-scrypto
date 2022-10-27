@@ -15,7 +15,7 @@ fn test_set_mintable_with_self_resource_address() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "ResourceTest",
@@ -42,7 +42,7 @@ fn test_resource_manager() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "ResourceTest", "create_fungible", args!())
         .call_function(package_address, "ResourceTest", "query", args!())
         .call_function(package_address, "ResourceTest", "burn", args!())
@@ -77,7 +77,7 @@ fn mint_with_bad_granularity_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "ResourceTest",
@@ -118,7 +118,7 @@ fn mint_too_much_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "ResourceTest",

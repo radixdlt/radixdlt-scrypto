@@ -93,8 +93,8 @@ fn test_trace_fee_payments() {
 
     // Prepare the component that will pay the fee
     let manifest_prepare = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .call_method(FAUCET_COMPONENT, "free", args!())
         .call_function(
             package_address,
             "ExecutionTraceTest",
@@ -119,7 +119,7 @@ fn test_trace_fee_payments() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_method(
             funded_component.clone(),
             "test_lock_contingent_fee",
