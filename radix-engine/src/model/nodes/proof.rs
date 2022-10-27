@@ -1,6 +1,5 @@
 use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::ProofError::UnknownMethod;
 use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
 
@@ -18,7 +17,6 @@ pub enum ProofError {
     FungibleOperationNotAllowed,
     CouldNotCreateProof,
     InvalidRequestData(DecodeError),
-    UnknownMethod,
 }
 
 pub struct Proof;
@@ -63,29 +61,8 @@ impl Proof {
                 let proof_id = system_api.create_node(RENode::Proof(cloned_proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
-            _ => return Err(InvokeError::Error(ProofError::UnknownMethod)),
         };
 
         Ok(rtn)
-    }
-
-    pub fn main_consume<'s, Y, R>(
-        _node_id: RENodeId,
-        method: ProofMethod,
-        args: ScryptoValue,
-        _system_api: &mut Y,
-    ) -> Result<ScryptoValue, InvokeError<ProofError>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve,
-    {
-        match method {
-            ProofMethod::Drop => {
-                let _: ConsumingProofDropInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
-                Ok(ScryptoValue::from_typed(&()))
-            }
-            _ => Err(InvokeError::Error(UnknownMethod)),
-        }
     }
 }

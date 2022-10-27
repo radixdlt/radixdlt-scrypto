@@ -6,14 +6,17 @@ use sbor::type_id::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
 use scrypto::buffer::scrypto_decode;
-use scrypto::component::{Component, ComponentAddress, KeyValueStore, PackageAddress};
+use scrypto::buffer::scrypto_encode;
+use scrypto::component::ComponentAddress;
+use scrypto::component::PackageAddress;
+use scrypto::component::{Component, KeyValueStore};
 use scrypto::core::{Blob, Expression, SystemAddress};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{
-    MintParams, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerCreateInput,
-    ResourceManagerMintInput, Vault,
+    MintParams, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerBurnInput,
+    ResourceManagerCreateInput, ResourceManagerMintInput, Vault,
 };
 use scrypto::values::*;
 use scrypto::{args, args_from_value_vec};
@@ -467,12 +470,14 @@ pub fn generate_instruction(
         }
         ast::Instruction::BurnBucket { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
-            Instruction::CallNativeMethod {
-                method_ident: NativeMethodIdent {
-                    receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
-                    method_name: BucketMethod::Burn.to_string(),
+            Instruction::CallNativeFunction {
+                function_ident: NativeFunctionIdent {
+                    blueprint_name: "ResourceManager".to_owned(),
+                    function_name: ResourceManagerFunction::BurnBucket.to_string(),
                 },
-                args: args!(),
+                args: scrypto_encode(&ResourceManagerBurnInput {
+                    bucket: scrypto::resource::Bucket(bucket_id),
+                }),
             }
         }
         ast::Instruction::MintFungible {
@@ -488,9 +493,7 @@ pub fn generate_instruction(
 
             Instruction::CallNativeMethod {
                 method_ident: NativeMethodIdent {
-                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
-                        resource_address,
-                    ))),
+                    receiver: RENodeId::Global(GlobalAddress::Resource(resource_address)),
                     method_name: ResourceManagerMethod::Mint.to_string(),
                 },
                 args: args!(input),
@@ -687,18 +690,9 @@ fn generate_receiver(
     receiver: &ast::Receiver,
     bech32_decoder: &Bech32Decoder,
     resolver: &mut NameResolver,
-) -> Result<Receiver, GeneratorError> {
+) -> Result<RENodeId, GeneratorError> {
     match receiver {
-        ast::Receiver::Ref(re_node) => Ok(Receiver::Ref(generate_re_node_id(
-            re_node,
-            bech32_decoder,
-            resolver,
-        )?)),
-        ast::Receiver::Owned(re_node) => Ok(Receiver::Consumed(generate_re_node_id(
-            re_node,
-            bech32_decoder,
-            resolver,
-        )?)),
+        ast::Receiver::Ref(re_node) => Ok(generate_re_node_id(re_node, bech32_decoder, resolver)?),
     }
 }
 

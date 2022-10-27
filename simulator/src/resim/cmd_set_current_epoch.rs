@@ -56,7 +56,7 @@ impl SetCurrentEpoch {
         kernel
             .invoke_native(NativeInvocation::Method(
                 NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
-                Receiver::Ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER))),
+                RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
                 ScryptoValue::from_typed(&EpochManagerSetEpochInput { epoch: self.epoch }),
             ))
             .map(|_| ())

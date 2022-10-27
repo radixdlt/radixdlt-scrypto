@@ -5,30 +5,22 @@ use crate::types::*;
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub struct ResolvedReceiver {
     pub derefed_from: Option<RENodeId>,
-    pub receiver: Receiver,
+    pub receiver: RENodeId,
 }
 
 impl ResolvedReceiver {
-    pub fn derefed(receiver: Receiver, from: RENodeId) -> Self {
+    pub fn derefed(receiver: RENodeId, from: RENodeId) -> Self {
         Self {
             receiver,
             derefed_from: Some(from),
         }
     }
 
-    pub fn new(receiver: Receiver) -> Self {
+    pub fn new(receiver: RENodeId) -> Self {
         Self {
             receiver,
             derefed_from: None,
         }
-    }
-
-    pub fn receiver(&self) -> Receiver {
-        self.receiver
-    }
-
-    pub fn node_id(&self) -> RENodeId {
-        self.receiver.node_id()
     }
 }
 

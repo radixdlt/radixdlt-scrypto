@@ -27,7 +27,7 @@ impl<I: WasmInstance> ScryptoExecutor<I> {
                     ..
                 },
                 ResolvedReceiver {
-                    receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                    receiver: RENodeId::Component(component_id),
                     ..
                 },
             ) => (

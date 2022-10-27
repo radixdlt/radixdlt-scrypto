@@ -1,5 +1,3 @@
-use scrypto::resource::ResourceManagerBurnInput;
-
 use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{BucketSubstate, InvokeError, ProofError, ResourceOperationError};
@@ -22,7 +20,6 @@ pub struct Bucket;
 impl Bucket {
     pub fn method_locks(method: BucketMethod) -> LockFlags {
         match method {
-            BucketMethod::Burn => LockFlags::read_only(),
             BucketMethod::Take => LockFlags::MUTABLE,
             BucketMethod::TakeNonFungibles => LockFlags::MUTABLE,
             BucketMethod::Put => LockFlags::MUTABLE,
@@ -60,9 +57,9 @@ impl Bucket {
                 let bucket_id = system_api
                     .create_node(RENode::Bucket(BucketSubstate::new(container)))?
                     .into();
-                Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
-                    bucket_id,
-                )))
+                Ok::<ScryptoValue, InvokeError<BucketError>>(ScryptoValue::from_typed(
+                    &scrypto::resource::Bucket(bucket_id),
+                ))
             }
             BucketMethod::TakeNonFungibles => {
                 let input: BucketTakeNonFungiblesInput = scrypto_decode(&args.raw)
@@ -131,50 +128,8 @@ impl Bucket {
                     proof_id,
                 )))
             }
-            _ => Err(InvokeError::Error(BucketError::MethodNotFound(method))),
         }?;
 
         Ok(rtn)
-    }
-
-    pub fn consuming_main<'s, Y, R>(
-        node_id: RENodeId,
-        method: BucketMethod,
-        args: ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<ScryptoValue, InvokeError<BucketError>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve,
-    {
-        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-
-        match method {
-            BucketMethod::Burn => {
-                let _: ConsumingBucketBurnInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
-
-                let bucket_handle =
-                    system_api.lock_substate(node_id, offset, Self::method_locks(method))?;
-                let substate_ref = system_api.get_ref(bucket_handle)?;
-                let resource_address = substate_ref.bucket().resource_address();
-                let bucket_id = match node_id {
-                    RENodeId::Bucket(bucket_id) => bucket_id,
-                    _ => panic!("Unexpected"),
-                };
-                system_api.drop_lock(bucket_handle)?;
-
-                system_api
-                    .invoke_native(NativeInvocation::Method(
-                        NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
-                        Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))),
-                        ScryptoValue::from_typed(&ResourceManagerBurnInput {
-                            bucket: scrypto::resource::Bucket(bucket_id),
-                        }),
-                    ))
-                    .map_err(InvokeError::Downstream)
-            }
-            _ => Err(InvokeError::Error(BucketError::MethodNotFound(method))),
-        }
     }
 }

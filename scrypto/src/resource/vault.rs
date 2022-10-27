@@ -66,7 +66,7 @@ impl Vault {
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault),
-            Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))),
+            RENodeId::Global(GlobalAddress::Resource(resource_address)),
             scrypto_encode(&ResourceManagerCreateVaultInput {}),
         );
         call_engine(input)
@@ -82,7 +82,7 @@ impl Vault {
     fn take_internal(&mut self, amount: Decimal) -> Bucket {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Vault(VaultMethod::Take),
-            Receiver::Ref(RENodeId::Vault(self.0)),
+            RENodeId::Vault(self.0),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
@@ -91,7 +91,7 @@ impl Vault {
     fn lock_fee_internal(&mut self, amount: Decimal) {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Vault(VaultMethod::LockFee),
-            Receiver::Ref(RENodeId::Vault(self.0)),
+            RENodeId::Vault(self.0),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
@@ -100,14 +100,14 @@ impl Vault {
     fn lock_contingent_fee_internal(&mut self, amount: Decimal) {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Vault(VaultMethod::LockContingentFee),
-            Receiver::Ref(RENodeId::Vault(self.0)),
+            RENodeId::Vault(self.0),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
     }
 
     native_methods! {
-        Receiver::Ref(RENodeId::Vault(self.0)), NativeMethod::Vault => {
+        RENodeId::Vault(self.0), NativeMethod::Vault => {
             pub fn put(&mut self, bucket: Bucket) -> () {
                 VaultMethod::Put,
                 VaultPutInput {
