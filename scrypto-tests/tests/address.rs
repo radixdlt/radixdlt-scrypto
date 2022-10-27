@@ -179,7 +179,7 @@ fn decode_matching_account_address_entity_id_succeeds() {
 }
 
 #[test]
-fn decode_matching_EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID_succeeds() {
+fn decode_matching_epoch_manager_system_address_entity_id_succeeds() {
     // Arrange
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
