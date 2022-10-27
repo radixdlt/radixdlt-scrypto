@@ -65,7 +65,7 @@ impl Bech32Encoder {
         system_address: &SystemAddress,
     ) -> Result<(), AddressError> {
         match system_address {
-            SystemAddress::Normal(data) => {
+            SystemAddress::EpochManager(data) => {
                 self.encode_to_fmt(fmt, EntityType::system(system_address), data)
             }
         }

@@ -24,7 +24,7 @@ impl HrpSet {
 
             EntityType::NormalComponent => &self.normal_component,
             EntityType::AccountComponent => &self.account_component,
-            EntityType::System => &self.system,
+            EntityType::EpochManager => &self.system,
         }
     }
 }

@@ -1,7 +1,7 @@
 use scrypto::address::{
     AddressError, Bech32Decoder, Bech32Encoder, EntityType, ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
-    NORMAL_COMPONENT_ADDRESS_ENTITY_ID, PACKAGE_ADDRESS_ENTITY_ID, RESOURCE_ADDRESS_ENTITY_ID,
-    SYSTEM_ADDRESS_ENTITY_ID,
+    EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID, NORMAL_COMPONENT_ADDRESS_ENTITY_ID,
+    PACKAGE_ADDRESS_ENTITY_ID, RESOURCE_ADDRESS_ENTITY_ID,
 };
 use scrypto::core::NetworkDefinition;
 use scrypto::prelude::{PackageAddress, ResourceAddress};
@@ -179,15 +179,17 @@ fn decode_matching_account_address_entity_id_succeeds() {
 }
 
 #[test]
-fn decode_matching_system_address_entity_id_succeeds() {
+fn decode_matching_EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID_succeeds() {
     // Arrange
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
 
     // Act
     let encoded_system_address = bech32::encode(
-        bech32_encoder.hrp_set.get_entity_hrp(&EntityType::System),
-        generate_u8_array(SYSTEM_ADDRESS_ENTITY_ID).to_base32(),
+        bech32_encoder
+            .hrp_set
+            .get_entity_hrp(&EntityType::EpochManager),
+        generate_u8_array(EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )
     .unwrap();

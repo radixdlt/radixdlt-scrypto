@@ -85,7 +85,7 @@ impl IdAllocator {
 
         // println!("Genesis system {:?}", hash(&data).lower_26_bytes());
 
-        Ok(SystemAddress::Normal(hash(data).lower_26_bytes()))
+        Ok(SystemAddress::EpochManager(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new resource address.
