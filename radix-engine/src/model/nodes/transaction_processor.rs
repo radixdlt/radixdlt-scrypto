@@ -1,5 +1,5 @@
 use scrypto::engine::utils::ScryptoSyscalls;
-use scrypto::resource::AuthZoneDrainInput;
+use scrypto::resource::{AuthZoneDrainInput, ComponentAuthZone};
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
@@ -381,14 +381,9 @@ impl TransactionProcessor {
                                 TransactionProcessorError::ProofNotFound(*proof_id),
                             ))
                             .and_then(|real_id| {
-                                system_api
-                                    .invoke_native(NativeInvocation::Method(
-                                        NativeMethod::AuthZone(AuthZoneMethod::Push),
-                                        auth_zone_ref,
-                                        ScryptoValue::from_typed(&AuthZonePushInput {
-                                            proof: scrypto::resource::Proof(real_id),
-                                        }),
-                                    ))
+                                let proof = scrypto::resource::Proof(real_id);
+                                ComponentAuthZone::sys_push(proof, system_api)
+                                    .map(|_| ScryptoValue::unit())
                                     .map_err(InvokeError::Downstream)
                             }),
                         Instruction::CreateProofFromAuthZone { resource_address } => id_allocator
@@ -570,14 +565,8 @@ impl TransactionProcessor {
                             .and_then(|result| {
                                 // Auto move into auth_zone
                                 for (proof_id, _) in &result.proof_ids {
-                                    system_api
-                                        .invoke_native(NativeInvocation::Method(
-                                            NativeMethod::AuthZone(AuthZoneMethod::Push),
-                                            auth_zone_ref,
-                                            ScryptoValue::from_typed(&AuthZonePushInput {
-                                                proof: scrypto::resource::Proof(*proof_id),
-                                            }),
-                                        ))
+                                    let proof = scrypto::resource::Proof(*proof_id);
+                                    ComponentAuthZone::sys_push(proof, system_api)
                                         .map_err(InvokeError::Downstream)?;
                                 }
                                 // Auto move into worktop
@@ -614,14 +603,8 @@ impl TransactionProcessor {
                             .and_then(|result| {
                                 // Auto move into auth_zone
                                 for (proof_id, _) in &result.proof_ids {
-                                    system_api
-                                        .invoke_native(NativeInvocation::Method(
-                                            NativeMethod::AuthZone(AuthZoneMethod::Push),
-                                            auth_zone_ref,
-                                            ScryptoValue::from_typed(&AuthZonePushInput {
-                                                proof: scrypto::resource::Proof(*proof_id),
-                                            }),
-                                        ))
+                                    let proof = scrypto::resource::Proof(*proof_id);
+                                    ComponentAuthZone::sys_push(proof, system_api)
                                         .map_err(InvokeError::Downstream)?;
                                 }
                                 // Auto move into worktop
@@ -680,14 +663,8 @@ impl TransactionProcessor {
                             .and_then(|result| {
                                 // Auto move into auth_zone
                                 for (proof_id, _) in &result.proof_ids {
-                                    system_api
-                                        .invoke_native(NativeInvocation::Method(
-                                            NativeMethod::AuthZone(AuthZoneMethod::Push),
-                                            auth_zone_ref,
-                                            ScryptoValue::from_typed(&AuthZonePushInput {
-                                                proof: scrypto::resource::Proof(*proof_id),
-                                            }),
-                                        ))
+                                    let proof = scrypto::resource::Proof(*proof_id);
+                                    ComponentAuthZone::sys_push(proof, system_api)
                                         .map_err(InvokeError::Downstream)?;
                                 }
                                 // Auto move into worktop
@@ -739,14 +716,8 @@ impl TransactionProcessor {
                             .and_then(|result| {
                                 // Auto move into auth_zone
                                 for (proof_id, _) in &result.proof_ids {
-                                    system_api
-                                        .invoke_native(NativeInvocation::Method(
-                                            NativeMethod::AuthZone(AuthZoneMethod::Push),
-                                            auth_zone_ref,
-                                            ScryptoValue::from_typed(&AuthZonePushInput {
-                                                proof: scrypto::resource::Proof(*proof_id),
-                                            }),
-                                        ))
+                                    let proof = scrypto::resource::Proof(*proof_id);
+                                    ComponentAuthZone::sys_push(proof, system_api)
                                         .map_err(InvokeError::Downstream)?;
                                 }
                                 // Auto move into worktop

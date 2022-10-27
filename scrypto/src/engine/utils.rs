@@ -1,5 +1,7 @@
-use std::fmt::Debug;
+use sbor::rust::fmt::Debug;
 use sbor::Decode;
+use sbor::rust::vec::Vec;
+use sbor::rust::string::String;
 use scrypto::core::*;
 use scrypto::engine::types::*;
 use crate::values::ScryptoValue;

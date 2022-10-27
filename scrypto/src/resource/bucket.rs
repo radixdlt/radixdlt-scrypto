@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use sbor::rust::fmt::Debug;
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;

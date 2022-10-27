@@ -1,5 +1,6 @@
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
+use sbor::rust::fmt::Debug;
 use sbor::*;
 
 use crate::engine::{api::*, types::*, utils::*};
@@ -82,20 +83,24 @@ impl ComponentAuthZone {
         }
     }
 
+    #[cfg(target_arch = "wasm32")]
     pub fn push<P: Into<Proof>>(proof: P) {
-        let input = RadixEngineInput::GetVisibleNodeIds();
-        let owned_node_ids: Vec<RENodeId> = call_engine(input);
+        Self::sys_push(proof, &mut Syscalls).unwrap()
+    }
+
+    pub fn sys_push<P: Into<Proof>, Y, E: Debug + TypeId + Decode>(proof: P, sys_calls: &mut Y) -> Result<(), E> where Y: ScryptoSyscalls<E> {
+        let owned_node_ids = sys_calls.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
 
         let proof: Proof = proof.into();
-        let input = RadixEngineInput::InvokeNativeMethod(
+
+        sys_calls.sys_invoke_native_method(
             NativeMethod::AuthZone(AuthZoneMethod::Push),
             Receiver::Ref(node_id),
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
-        );
-        call_engine(input)
+        )
     }
 }
