@@ -16,7 +16,7 @@ use scrypto::core::{Blob, NetworkDefinition};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
-use scrypto::resource::{require, LOCKED};
+use scrypto::resource::{require, ResourceManagerBurnInput, LOCKED};
 use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
 use scrypto::resource::{
     MintParams, Mutability, ResourceManagerCreateInput, ResourceMethodAuthKey,
@@ -431,7 +431,7 @@ impl ManifestBuilder {
     /// Calls a native method where the arguments should be an array of encoded Scrypto value.
     pub fn call_native_method(
         &mut self,
-        receiver: Receiver,
+        receiver: RENodeId,
         method_name: &str,
         args: Vec<u8>,
     ) -> &mut Self {
@@ -634,9 +634,7 @@ impl ManifestBuilder {
     pub fn mint(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
         self.add_instruction(Instruction::CallNativeMethod {
             method_ident: NativeMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
-                    resource_address,
-                ))),
+                receiver: RENodeId::Global(GlobalAddress::Resource(resource_address)),
                 method_name: ResourceManagerMethod::Mint.to_string(),
             },
             args: scrypto_encode(&ResourceManagerMintInput {
@@ -652,10 +650,12 @@ impl ManifestBuilder {
             builder
                 .add_instruction(Instruction::CallNativeMethod {
                     method_ident: NativeMethodIdent {
-                        receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
-                        method_name: BucketMethod::Burn.to_string(),
+                        receiver: RENodeId::Global(GlobalAddress::Resource(resource_address)),
+                        method_name: ResourceManagerMethod::Burn.to_string(),
                     },
-                    args: args!(),
+                    args: scrypto_encode(&ResourceManagerBurnInput {
+                        bucket: scrypto::resource::Bucket(bucket_id),
+                    }),
                 })
                 .0
         })
@@ -671,10 +671,14 @@ impl ManifestBuilder {
                 builder
                     .add_instruction(Instruction::CallNativeMethod {
                         method_ident: NativeMethodIdent {
-                            receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
-                            method_name: BucketMethod::Burn.to_string(),
+                            receiver: RENodeId::Global(GlobalAddress::Resource(
+                                non_fungible_address.resource_address(),
+                            )),
+                            method_name: ResourceManagerMethod::Burn.to_string(),
                         },
-                        args: args!(),
+                        args: scrypto_encode(&ResourceManagerBurnInput {
+                            bucket: scrypto::resource::Bucket(bucket_id),
+                        }),
                     })
                     .0
             },

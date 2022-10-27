@@ -43,6 +43,9 @@ impl VisibilityProperties {
             RENodeId::Proof(..) => match actor {
                 REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..) => true,
                 REActor::Method(ResolvedMethod::Native(NativeMethod::Proof(..)), ..) => true,
+                REActor::Function(ResolvedFunction::Native(
+                    NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
+                )) => true,
                 REActor::Method(ResolvedMethod::Scrypto { .. }, ..) => true,
                 REActor::Function(ResolvedFunction::Scrypto { .. }) => true,
                 _ => false,
@@ -168,7 +171,7 @@ impl VisibilityProperties {
                         REActor::Method(
                             ResolvedMethod::Scrypto { .. },
                             ResolvedReceiver {
-                                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                                receiver: RENodeId::Component(component_address),
                                 ..
                             },
                         ) => match (node_id, offset) {
@@ -207,7 +210,7 @@ impl VisibilityProperties {
                         REActor::Method(
                             ResolvedMethod::Scrypto { .. },
                             ResolvedReceiver {
-                                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                                receiver: RENodeId::Component(component_address),
                                 ..
                             },
                         ) => match (node_id, offset) {

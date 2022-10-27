@@ -93,7 +93,6 @@ pub enum TokenKind {
     GreaterThan,
     Comma,
     Semicolon,
-    And,
 
     /* Instructions */
     TakeFromWorktop,
@@ -474,7 +473,6 @@ impl Lexer {
             '>' => TokenKind::GreaterThan,
             ',' => TokenKind::Comma,
             ';' => TokenKind::Semicolon,
-            '&' => TokenKind::And,
             _ => {
                 return Err(self.unexpected_char());
             }

@@ -12,9 +12,6 @@ use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ConsumingProofDropInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
 pub struct ProofGetAmountInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -65,7 +62,7 @@ impl From<NonFungibleAddress> for ProofValidationMode {
 
 impl Clone for Proof {
     native_methods! {
-        Receiver::Ref(RENodeId::Proof(self.0)), NativeMethod::Proof => {
+        RENodeId::Proof(self.0), NativeMethod::Proof => {
             fn clone(&self) -> Self {
                 ProofMethod::Clone,
                 ProofCloneInput {}
@@ -218,7 +215,7 @@ impl Proof {
     }
 
     native_methods! {
-        Receiver::Ref(RENodeId::Proof(self.0)), NativeMethod::Proof => {
+        RENodeId::Proof(self.0), NativeMethod::Proof => {
             fn amount(&self) -> Decimal {
                 ProofMethod::GetAmount,
                 ProofGetAmountInput {}
@@ -234,13 +231,9 @@ impl Proof {
         }
     }
 
-    native_methods! {
-        Receiver::Consumed(RENodeId::Proof(self.0)), NativeMethod::Proof => {
-            pub fn drop(self) -> () {
-                ProofMethod::Drop,
-                ConsumingProofDropInput {}
-            }
-        }
+    pub fn drop(self) {
+        let input = RadixEngineInput::DropNode(RENodeId::Proof(self.0));
+        let _: () = call_engine(input);
     }
 }
 
@@ -256,7 +249,7 @@ impl Clone for ValidatedProof {
 
 impl ValidatedProof {
     native_methods! {
-        Receiver::Ref(RENodeId::Proof(self.proof_id())), NativeMethod::Proof => {
+        RENodeId::Proof(self.proof_id()), NativeMethod::Proof => {
             pub fn amount(&self) -> Decimal {
                 ProofMethod::GetAmount,
                 ProofGetAmountInput {}

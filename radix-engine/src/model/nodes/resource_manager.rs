@@ -55,8 +55,7 @@ impl ResourceManager {
         vault_method_table.insert(VaultMethod::CreateProofByIds, Public);
         vault_method_table.insert(VaultMethod::TakeNonFungibles, Protected(Withdraw));
 
-        let mut bucket_method_table: HashMap<BucketMethod, ResourceMethodRule> = HashMap::new();
-        bucket_method_table.insert(BucketMethod::Burn, Protected(Burn));
+        let bucket_method_table: HashMap<BucketMethod, ResourceMethodRule> = HashMap::new();
 
         let mut method_table: HashMap<ResourceManagerMethod, ResourceMethodRule> = HashMap::new();
         method_table.insert(ResourceManagerMethod::Mint, Protected(Mint));
@@ -69,7 +68,7 @@ impl ResourceManager {
         method_table.insert(ResourceManagerMethod::GetResourceType, Public);
         method_table.insert(ResourceManagerMethod::GetTotalSupply, Public);
         method_table.insert(ResourceManagerMethod::CreateVault, Public);
-        method_table.insert(ResourceManagerMethod::Burn, Public);
+        method_table.insert(ResourceManagerMethod::Burn, Protected(Burn));
         method_table.insert(ResourceManagerMethod::SetResourceAddress, Public);
 
         // Non Fungible methods
@@ -196,7 +195,7 @@ impl ResourceManager {
                 system_api
                     .invoke_native(NativeInvocation::Method(
                         NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
-                        Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))),
+                        RENodeId::Global(GlobalAddress::Resource(resource_address)),
                         ScryptoValue::from_typed(&ResourceManagerSetResourceAddressInput {
                             address: resource_address,
                         }),
@@ -225,6 +224,32 @@ impl ResourceManager {
                 };
 
                 Ok(ScryptoValue::from_typed(&(resource_address, bucket_id)))
+            }
+            ResourceManagerFunction::BurnBucket => {
+                let input: ResourceManagerBurnInput = scrypto_decode(&args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
+                let node_id = RENodeId::Bucket(input.bucket.0);
+                let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
+
+                let bucket_handle =
+                    system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+                let substate_ref = system_api.get_ref(bucket_handle)?;
+                let resource_address = substate_ref.bucket().resource_address();
+                let bucket_id = match node_id {
+                    RENodeId::Bucket(bucket_id) => bucket_id,
+                    _ => panic!("Unexpected"),
+                };
+                system_api.drop_lock(bucket_handle)?;
+
+                system_api
+                    .invoke_native(NativeInvocation::Method(
+                        NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
+                        RENodeId::Global(GlobalAddress::Resource(resource_address)),
+                        ScryptoValue::from_typed(&ResourceManagerBurnInput {
+                            bucket: scrypto::resource::Bucket(bucket_id),
+                        }),
+                    ))
+                    .map_err(InvokeError::Downstream)
             }
         }
     }

@@ -8,7 +8,7 @@ use scrypto::crypto::Hash;
 use scrypto::engine::types::*;
 use scrypto::misc::ContextualDisplay;
 use scrypto::resource::{
-    ConsumingBucketBurnInput, MintParams, ResourceManagerCreateInput, ResourceManagerMintInput,
+    MintParams, ResourceManagerBurnInput, ResourceManagerCreateInput, ResourceManagerMintInput,
 };
 use scrypto::values::*;
 
@@ -361,6 +361,20 @@ pub fn decompile_call_native_function<F: fmt::Write>(
     let blueprint_name = &function_ident.blueprint_name;
     let function_name = &function_ident.function_name;
     match (blueprint_name.as_str(), function_name.as_ref()) {
+        ("ResourceManager", "burn") => {
+            if let Ok(input) = scrypto_decode::<ResourceManagerBurnInput>(&args) {
+                write!(
+                    f,
+                    "BURN_BUCKET Bucket({});",
+                    context
+                        .bucket_names
+                        .get(&input.bucket.0)
+                        .map(|name| format!("\"{}\"", name))
+                        .unwrap_or(format!("{}u32", input.bucket.0)),
+                )?;
+                return Ok(());
+            }
+        }
         ("ResourceManager", "create") => {
             if let Ok(input) = scrypto_decode::<ResourceManagerCreateInput>(&args) {
                 f.write_str(&format!(
@@ -422,21 +436,7 @@ pub fn decompile_call_native_method<F: fmt::Write>(
 ) -> Result<(), DecompileError> {
     // Try to recognize the invocation
     match (method_ident.receiver, method_ident.method_name.as_ref()) {
-        (Receiver::Consumed(RENodeId::Bucket(bucket_id)), "burn") => {
-            if let Ok(_input) = scrypto_decode::<ConsumingBucketBurnInput>(&args) {
-                write!(
-                    f,
-                    "BURN_BUCKET Bucket({});",
-                    context
-                        .bucket_names
-                        .get(&bucket_id)
-                        .map(|name| format!("\"{}\"", name))
-                        .unwrap_or(format!("{}u32", bucket_id)),
-                )?;
-                return Ok(());
-            }
-        }
-        (Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))), "mint") => {
+        (RENodeId::Global(GlobalAddress::Resource(resource_address)), "mint") => {
             if let Ok(input) = scrypto_decode::<ResourceManagerMintInput>(&args) {
                 if let MintParams::Fungible { amount } = input.mint_params {
                     write!(
@@ -453,10 +453,7 @@ pub fn decompile_call_native_method<F: fmt::Write>(
     }
 
     // Fall back to generic representation
-    let receiver = match method_ident.receiver {
-        Receiver::Ref(node_id) => format!("&{}", format_node_id(&node_id, context)),
-        Receiver::Consumed(node_id) => format_node_id(&node_id, context),
-    };
+    let receiver = format_node_id(&method_ident.receiver, context);
     f.write_str(&format!(
         "CALL_NATIVE_METHOD {} \"{}\"",
         receiver, method_ident.method_name
@@ -645,20 +642,6 @@ CALL_NATIVE_FUNCTION "TransactionProcessor" "run";
 CALL_METHOD Component("000000000000000000000000000000000000000000000000000000000000000000000005") "free_xrd";
 TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");
 CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Proof("proof1");
-CALL_NATIVE_METHOD &Bucket("bucket1") "get_resource_address";
-CALL_NATIVE_METHOD &Bucket(1u32) "get_resource_address";
-CALL_NATIVE_METHOD &Bucket(513u32) "get_resource_address";
-CALL_NATIVE_METHOD &Bucket(1u32) "get_resource_address";
-CALL_NATIVE_METHOD &AuthZoneStack(1u32) "drain";
-CALL_NATIVE_METHOD &Worktop "drain";
-CALL_NATIVE_METHOD &KeyValueStore("000000000000000000000000000000000000000000000000000000000000000000000005") "method";
-CALL_NATIVE_METHOD &NonFungibleStore("000000000000000000000000000000000000000000000000000000000000000000000005") "method";
-CALL_NATIVE_METHOD &Component("000000000000000000000000000000000000000000000000000000000000000000000005") "add_access_check";
-CALL_NATIVE_METHOD &EpochManager("000000000000000000000000000000000000000000000000000000000000000000000005") "get_transaction_hash";
-CALL_NATIVE_METHOD &Vault("000000000000000000000000000000000000000000000000000000000000000000000005") "get_resource_address";
-CALL_NATIVE_METHOD &ResourceManager("000000000000000000000000000000000000000000000000000000000000000005000000") "burn";
-CALL_NATIVE_METHOD &Package("000000000000000000000000000000000000000000000000000000000000000005000000") "method";
-CALL_NATIVE_METHOD &Global("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
 CALL_NATIVE_METHOD Bucket("bucket1") "get_resource_address";
 CALL_NATIVE_METHOD Bucket(1u32) "get_resource_address";
 CALL_NATIVE_METHOD Bucket(513u32) "get_resource_address";

@@ -676,7 +676,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 kernel
                     .invoke_native(NativeInvocation::Method(
                         NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
-                        Receiver::Ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER))),
+                        RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
                         ScryptoValue::from_typed(&EpochManagerSetEpochInput { epoch }),
                     ))
                     .unwrap()
@@ -689,7 +689,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             kernel
                 .invoke_native(NativeInvocation::Method(
                     NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
-                    Receiver::Ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER))),
+                    RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
                     ScryptoValue::from_typed(&EpochManagerGetCurrentEpochInput {}),
                 ))
                 .unwrap()

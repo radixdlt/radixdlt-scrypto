@@ -229,11 +229,7 @@ impl Parser {
             | TokenKind::EpochManager
             | TokenKind::Vault
             | TokenKind::ResourceManager
-            | TokenKind::Package => Ok(Receiver::Owned(self.parse_re_node()?)),
-            TokenKind::And => {
-                self.advance()?;
-                Ok(Receiver::Ref(self.parse_re_node()?))
-            }
+            | TokenKind::Package => Ok(Receiver::Ref(self.parse_re_node()?)),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
