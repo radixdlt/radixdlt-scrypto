@@ -1,5 +1,8 @@
+use sbor::Decode;
+use scrypto::buffer::scrypto_decode;
 use scrypto::core::ScryptoActor;
 use scrypto::engine::types::{Level, LockHandle, NativeFunction, NativeMethod, Receiver, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode, SubstateOffset};
+use scrypto::engine::utils::ScryptoSyscalls;
 use scrypto::values::ScryptoValue;
 use crate::engine::{Kernel, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
@@ -7,51 +10,40 @@ use crate::model::{ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressS
 use crate::types::{NativeInvocation, ScryptoInvocation};
 use crate::wasm::{WasmEngine, WasmInstance};
 
-pub trait ScryptoSyscalls<E> {
-    fn sys_invoke_scrypto_function(&mut self, fn_ident: ScryptoFunctionIdent, args: Vec<u8>) -> Result<ScryptoValue, E>;
-    fn sys_invoke_scrypto_method(&mut self, method_ident: ScryptoMethodIdent, args: Vec<u8>) -> Result<ScryptoValue, E>;
-    fn sys_invoke_native_function(&mut self, native_function: NativeFunction, args: Vec<u8>) -> Result<ScryptoValue, E>;
-    fn sys_invoke_native_method(&mut self, native_method: NativeMethod, receiver: Receiver, args: Vec<u8>) -> Result<ScryptoValue, E>;
-    fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, E>;
-    fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, E>;
-    fn sys_lock_substate(&mut self, node_id: RENodeId, offset: SubstateOffset, mutable: bool) -> Result<LockHandle, E>;
-    fn sys_read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, E>;
-    fn sys_write(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), E>;
-    fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), E>;
-    fn sys_get_actor(&mut self) -> Result<ScryptoActor, E>;
-    fn sys_generate_uuid(&mut self) -> Result<u128, E>;
-    fn sys_emit_log(&mut self, level: Level, message: String) -> Result<(), E>;
-}
+
 
 impl<'g, 's, W, I, R> ScryptoSyscalls<RuntimeError> for Kernel<'g, 's, W, I, R>
 where W: WasmEngine<I>,
 I: WasmInstance,
 R: FeeReserve,{
-    fn sys_invoke_scrypto_function(&mut self, fn_ident: ScryptoFunctionIdent, args: Vec<u8>) -> Result<ScryptoValue, RuntimeError> {
+    fn sys_invoke_scrypto_function<V: Decode>(&mut self, fn_ident: ScryptoFunctionIdent, args: Vec<u8>) -> Result<V, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
         self.invoke_scrypto(ScryptoInvocation::Function(fn_ident, args))
+            .map(|value| scrypto_decode(&value.raw).unwrap())
     }
 
-    fn sys_invoke_scrypto_method(&mut self, method_ident: ScryptoMethodIdent, args: Vec<u8>) -> Result<ScryptoValue, RuntimeError> {
+    fn sys_invoke_scrypto_method<V: Decode>(&mut self, method_ident: ScryptoMethodIdent, args: Vec<u8>) -> Result<V, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
         self.invoke_scrypto(ScryptoInvocation::Method(method_ident, args))
+            .map(|value| scrypto_decode(&value.raw).unwrap())
     }
 
-
-    fn sys_invoke_native_function(&mut self, native_function: NativeFunction, args: Vec<u8>) -> Result<ScryptoValue, RuntimeError> {
+    fn sys_invoke_native_function<V: Decode>(&mut self, native_function: NativeFunction, args: Vec<u8>) -> Result<V, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
 
         self.invoke_native(NativeInvocation::Function(native_function, args))
+            .map(|value| scrypto_decode(&value.raw).unwrap())
     }
 
-    fn sys_invoke_native_method(&mut self, native_method: NativeMethod, receiver: Receiver, args: Vec<u8>) -> Result<ScryptoValue, RuntimeError> {
+    fn sys_invoke_native_method<V: Decode>(&mut self, native_method: NativeMethod, receiver: Receiver, args: Vec<u8>) -> Result<V, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
 
         self.invoke_native(NativeInvocation::Method(native_method, receiver, args))
+            .map(|value| scrypto_decode(&value.raw).unwrap())
     }
 
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
@@ -87,9 +79,10 @@ R: FeeReserve,{
         self.lock_substate(node_id, offset, flags)
     }
 
-    fn sys_read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+    fn sys_read<V: Decode>(&mut self, lock_handle: LockHandle) -> Result<V, RuntimeError> {
         self.get_ref(lock_handle)
             .map(|substate_ref| substate_ref.to_scrypto_value())
+            .map(|value| scrypto_decode(&value.raw).unwrap())
     }
 
     fn sys_write(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), RuntimeError> {

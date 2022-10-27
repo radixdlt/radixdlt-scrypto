@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
@@ -49,13 +50,17 @@ pub struct Bucket(pub BucketId);
 
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
+    #[cfg(target_arch = "wasm32")]
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::InvokeNativeMethod(
+        Self::sys_new(resource_address, &mut Syscalls).unwrap()
+    }
+
+    pub fn sys_new<Y, E: Debug + TypeId + Decode>(resource_address: ResourceAddress, sys_calls: &mut Y) -> Result<Self, E> where Y: ScryptoSyscalls<E> {
+        sys_calls.sys_invoke_native_method(
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
             Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))),
             scrypto_encode(&ResourceManagerCreateBucketInput {}),
-        );
-        call_engine(input)
+        )
     }
 
     native_methods! {

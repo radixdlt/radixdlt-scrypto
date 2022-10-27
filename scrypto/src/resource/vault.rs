@@ -62,6 +62,7 @@ pub struct VaultLockFeeInput {
 #[derive(PartialEq, Eq, Hash)]
 pub struct Vault(pub VaultId);
 
+#[cfg(target_arch = "wasm32")]
 impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {

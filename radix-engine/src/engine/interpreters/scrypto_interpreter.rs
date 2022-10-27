@@ -1,3 +1,4 @@
+use scrypto::engine::utils::ScryptoSyscalls;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::types::*;

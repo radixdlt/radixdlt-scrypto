@@ -325,17 +325,6 @@ macro_rules! include_abi {
 ///     blueprint.instantiate_global("account_name")
 /// }
 ///
-/// fn create_and_transfer() {
-///     let component_address = instantiate_custom_account();
-///
-///     let mut account = AccountInterface::at(component_address);
-///
-///     let resource_address = Bech32Decoder::for_simulator()
-///         .validate_and_decode_resource_address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
-///         .unwrap();
-///     let empty_bucket = Bucket::new(resource_address);
-///     account.deposit(empty_bucket);
-/// }
 /// ```
 ///
 /// # Related
