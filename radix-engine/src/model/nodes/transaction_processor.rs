@@ -192,11 +192,9 @@ impl TransactionProcessor {
                 // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
                 //        Which could allow for better caching of transaction validity over epoch boundaries
                 let response = system_api.invoke_native(NativeInvocation::Method(
-                    NativeMethod::System(SystemMethod::GetCurrentEpoch),
-                    Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                        SYS_SYSTEM_COMPONENT,
-                    ))),
-                    ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),
+                    NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
+                    RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+                    ScryptoValue::from_typed(&EpochManagerGetCurrentEpochInput {}),
                 ))?;
                 let current_epoch = scrypto_decode::<u64>(&response.raw).map_err(|err| {
                     InvokeError::Error(TransactionProcessorError::InvalidGetEpochResponseData(err))
