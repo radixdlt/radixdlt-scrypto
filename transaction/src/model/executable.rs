@@ -1,4 +1,5 @@
 use sbor::rust::vec::Vec;
+use sbor::{Decode, Encode, TypeId};
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::*;
 use scrypto::resource::{NonFungibleAddress, ResourceAddress};
@@ -15,12 +16,23 @@ pub struct AuthZoneParams {
 /// Represents a validated transaction
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Executable {
-    pub transaction_hash: Hash,
-    pub instructions: Vec<Instruction>,
-    pub auth_zone_params: AuthZoneParams,
-    pub cost_unit_limit: u32,
-    pub tip_percentage: u32,
-    pub blobs: Vec<Vec<u8>>,
+    transaction_hash: Hash,
+    instructions: Vec<Instruction>,
+    auth_zone_params: AuthZoneParams,
+    cost_unit_limit: u32,
+    tip_percentage: u32,
+    blobs: Vec<Vec<u8>>,
+    intent_validation: IntentValidation,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+pub enum IntentValidation {
+    User {
+        intent_hash: Hash,
+        start_epoch_inclusive: u64,
+        end_epoch_exclusive: u64,
+    },
+    None,
 }
 
 impl Executable {
@@ -31,6 +43,7 @@ impl Executable {
         cost_unit_limit: u32,
         tip_percentage: u32,
         blobs: Vec<Vec<u8>>,
+        intent_validation: IntentValidation,
     ) -> Self {
         Self {
             transaction_hash,
@@ -39,6 +52,7 @@ impl Executable {
             cost_unit_limit,
             tip_percentage,
             blobs,
+            intent_validation,
         }
     }
 
@@ -62,11 +76,15 @@ impl Executable {
         &self.instructions
     }
 
-    pub fn auth_zone_params(&self) -> AuthZoneParams {
-        self.auth_zone_params.clone()
+    pub fn auth_zone_params(&self) -> &AuthZoneParams {
+        &self.auth_zone_params
     }
 
     pub fn blobs(&self) -> &[Vec<u8>] {
         &self.blobs
+    }
+
+    pub fn intent_validation(&self) -> &IntentValidation {
+        &self.intent_validation
     }
 }

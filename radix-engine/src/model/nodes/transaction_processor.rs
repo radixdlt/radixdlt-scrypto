@@ -17,12 +17,22 @@ use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInput {
+    pub intent_validation: IntentValidation,
     pub instructions: Vec<Instruction>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum TransactionProcessorError {
+    TransactionEpochNotYetValid {
+        valid_from: u64,
+        current_epoch: u64,
+    },
+    TransactionEpochNoLongerValid {
+        valid_until: u64,
+        current_epoch: u64,
+    },
     InvalidRequestData(DecodeError),
+    InvalidGetEpochResponseData(DecodeError),
     InvalidMethod,
     BucketNotFound(BucketId),
     ProofNotFound(ProofId),
@@ -165,6 +175,58 @@ impl TransactionProcessor {
             .0
     }
 
+    fn perform_intent_validation<'s, Y, R>(
+        intent_validation: IntentValidation,
+        system_api: &mut Y,
+    ) -> Result<(), InvokeError<TransactionProcessorError>>
+    where
+        Y: SystemApi<'s, R>,
+        R: FeeReserve,
+    {
+        match intent_validation {
+            IntentValidation::User {
+                intent_hash: _,
+                start_epoch_inclusive,
+                end_epoch_exclusive,
+            } => {
+                // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
+                //        Which could allow for better caching of transaction validity over epoch boundaries
+                let response = system_api.invoke_native(NativeInvocation::Method(
+                    NativeMethod::System(SystemMethod::GetCurrentEpoch),
+                    Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                        SYS_SYSTEM_COMPONENT,
+                    ))),
+                    ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),
+                ))?;
+                let current_epoch = scrypto_decode::<u64>(&response.raw).map_err(|err| {
+                    InvokeError::Error(TransactionProcessorError::InvalidGetEpochResponseData(err))
+                })?;
+
+                if current_epoch < start_epoch_inclusive {
+                    return Err(InvokeError::Error(
+                        TransactionProcessorError::TransactionEpochNotYetValid {
+                            valid_from: start_epoch_inclusive,
+                            current_epoch,
+                        },
+                    ));
+                }
+                if current_epoch >= end_epoch_exclusive {
+                    return Err(InvokeError::Error(
+                        TransactionProcessorError::TransactionEpochNoLongerValid {
+                            valid_until: end_epoch_exclusive - 1,
+                            current_epoch,
+                        },
+                    ));
+                }
+
+                // TODO - Add intent hash replay prevention here
+                // This will to enable its removal from the node
+                Ok(())
+            }
+            IntentValidation::None => Ok(()),
+        }
+    }
+
     pub fn static_main<'s, Y, R>(
         func: TransactionProcessorFunction,
         args: ScryptoValue,
@@ -180,6 +242,8 @@ impl TransactionProcessor {
                     scrypto_decode(&args.raw).map_err(|e| {
                         InvokeError::Error(TransactionProcessorError::InvalidRequestData(e))
                     })?;
+
+                Self::perform_intent_validation(input.intent_validation, system_api)?;
 
                 let mut proof_id_mapping = HashMap::new();
                 let mut bucket_id_mapping = HashMap::new();

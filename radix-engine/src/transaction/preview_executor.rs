@@ -5,7 +5,6 @@ use transaction::validation::IntentHashManager;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
 
-use crate::constants::DEFAULT_MAX_COST_UNIT_LIMIT;
 use crate::constants::PREVIEW_CREDIT;
 use crate::engine::ScryptoInterpreter;
 use crate::fee::SystemLoanFeeReserve;
@@ -66,13 +65,7 @@ where
         &mut self,
         preview_intent: PreviewIntent,
     ) -> Result<PreviewResult, PreviewError> {
-        // TODO: construct validation config based on current world state
-        let validation_config = ValidationConfig {
-            network_id: self.network.id,
-            current_epoch: 1,
-            max_cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
-            min_tip_percentage: 0,
-        };
+        let validation_config = ValidationConfig::default(self.network.id);
 
         let validator = NotarizedTransactionValidator::new(validation_config);
 

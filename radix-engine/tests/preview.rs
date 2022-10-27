@@ -32,7 +32,7 @@ fn test_transaction_preview_cost_estimate() {
     let preview_receipt = preview_result.unwrap().receipt;
     preview_receipt.expect_commit_success();
 
-    let receipt = test_runner.execute_transaction(
+    let receipt = test_runner.execute_transaction_with_config(
         &validated_transaction,
         &FeeReserveConfig::standard(),
         &ExecutionConfig::standard(),
@@ -110,12 +110,7 @@ fn prepare_test_tx_and_preview_intent(
         .notarize(&notary_priv_key)
         .build();
 
-    let validator = NotarizedTransactionValidator::new(ValidationConfig {
-        network_id: network.id,
-        current_epoch: 1,
-        max_cost_unit_limit: 10_000_000,
-        min_tip_percentage: 0,
-    });
+    let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
 
     let validated_transaction = validator
         .validate(notarized_transaction.clone(), &TestIntentHashManager::new())

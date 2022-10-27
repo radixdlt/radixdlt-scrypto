@@ -105,7 +105,7 @@ where
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
         let auth_zone_params = transaction.auth_zone_params();
-        let instructions = transaction.instructions().to_vec();
+        let instructions = transaction.instructions();
         let blobs: HashMap<Hash, Vec<u8>> = transaction
             .blobs()
             .iter()
@@ -131,7 +131,9 @@ where
             Ok(track) => track,
             Err(err) => {
                 return TransactionReceipt {
-                    contents: TransactionContents { instructions },
+                    contents: TransactionContents {
+                        instructions: instructions.to_vec(),
+                    },
                     execution: TransactionExecution {
                         fee_summary: err.fee_summary,
                         application_logs: vec![],
@@ -156,7 +158,7 @@ where
 
             let mut kernel = Kernel::new(
                 transaction_hash,
-                auth_zone_params,
+                auth_zone_params.clone(),
                 &blobs,
                 execution_config.max_call_depth,
                 &mut track,
@@ -167,7 +169,8 @@ where
                 .invoke_native(NativeInvocation::Function(
                     NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
                     ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                        instructions: instructions.clone(),
+                        intent_validation: transaction.intent_validation().clone(),
+                        instructions: instructions.to_vec(),
                     }),
                 ))
                 .map(|o| {
@@ -180,7 +183,9 @@ where
         let track_receipt = track.finalize(invoke_result);
 
         let receipt = TransactionReceipt {
-            contents: TransactionContents { instructions },
+            contents: TransactionContents {
+                instructions: instructions.to_vec(),
+            },
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
                 application_logs: track_receipt.application_logs,

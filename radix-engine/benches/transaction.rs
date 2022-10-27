@@ -80,12 +80,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
     let transaction_bytes = transaction.to_bytes();
     println!("Transaction size: {} bytes", transaction_bytes.len());
 
-    let validator = NotarizedTransactionValidator::new(ValidationConfig {
-        network_id: NetworkDefinition::simulator().id,
-        current_epoch: 1,
-        max_cost_unit_limit: 10_000_000,
-        min_tip_percentage: 0,
-    });
+    let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
     c.bench_function("Transaction validation", |b| {
         b.iter(|| {

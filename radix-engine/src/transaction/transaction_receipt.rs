@@ -157,7 +157,7 @@ impl TransactionReceipt {
                         );
                     }
                 }
-                RejectionError::SuccessButFeeLoanNotRepaid => panic!(
+                _ => panic!(
                     "Expected specific rejection but was different error:\n{:?}",
                     self
                 ),

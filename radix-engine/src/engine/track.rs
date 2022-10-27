@@ -8,6 +8,7 @@ use crate::fee::FeeTable;
 use crate::ledger::*;
 use crate::model::Resource;
 use crate::model::RuntimeSubstate;
+use crate::model::TransactionProcessorError;
 use crate::model::{KeyValueStoreEntrySubstate, PersistedSubstate};
 use crate::model::{LockableResource, SubstateRef};
 use crate::model::{NonFungibleSubstate, SubstateRefMut};
@@ -524,12 +525,20 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         // Close fee reserve
         let fee_summary = self.fee_reserve.finalize();
-        let is_rejection = !fee_summary.loan_fully_repaid;
+        let required_rejection = match &invoke_result {
+            Ok(_) => None,
+            Err(err) => extract_required_rejection(err),
+        };
+        let is_loan_payback_rejection = !fee_summary.loan_fully_repaid;
 
         let mut actual_fee_payments: HashMap<VaultId, Decimal> = HashMap::new();
 
         // Commit fee state changes
-        let result = if is_rejection {
+        let result = if let Some(rejection_error) = required_rejection {
+            TransactionResult::Reject(RejectResult {
+                error: rejection_error,
+            })
+        } else if is_loan_payback_rejection {
             TransactionResult::Reject(RejectResult {
                 error: match invoke_result {
                     Ok(..) => RejectionError::SuccessButFeeLoanNotRepaid,
@@ -646,5 +655,29 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         }
 
         diff
+    }
+}
+
+fn extract_required_rejection(runtime_error: &RuntimeError) -> Option<RejectionError> {
+    match runtime_error {
+        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+            TransactionProcessorError::TransactionEpochNoLongerValid {
+                valid_until,
+                current_epoch,
+            },
+        )) => Some(RejectionError::TransactionEpochNoLongerValid {
+            valid_until: *valid_until,
+            current_epoch: *current_epoch,
+        }),
+        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+            TransactionProcessorError::TransactionEpochNotYetValid {
+                valid_from,
+                current_epoch,
+            },
+        )) => Some(RejectionError::TransactionEpochNotYetValid {
+            valid_from: *valid_from,
+            current_epoch: *current_epoch,
+        }),
+        _ => None,
     }
 }

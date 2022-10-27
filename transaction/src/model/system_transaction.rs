@@ -3,9 +3,10 @@ use sbor::*;
 use scrypto::crypto::Hash;
 use std::collections::BTreeSet;
 
+use super::IntentValidation;
+
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct SystemTransaction {
-    // TODO: Add header
     pub manifest: TransactionManifest,
 }
 
@@ -27,6 +28,7 @@ impl Into<Executable> for SystemTransaction {
             10_000,
             0,
             blobs,
+            IntentValidation::None,
         )
     }
 }
