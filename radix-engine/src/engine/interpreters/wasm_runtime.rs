@@ -82,7 +82,7 @@ where
     fn handle_invoke_native_method(
         &mut self,
         native_method: NativeMethod,
-        receiver: Receiver,
+        receiver: RENodeId,
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)
@@ -117,6 +117,11 @@ where
     fn handle_get_visible_node_ids(&mut self) -> Result<ScryptoValue, RuntimeError> {
         let node_ids = self.system_api.get_visible_node_ids()?;
         Ok(ScryptoValue::from_typed(&node_ids))
+    }
+
+    fn handle_drop_node(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api.drop_node(node_id)?;
+        Ok(ScryptoValue::from_typed(&()))
     }
 
     fn handle_lock_substate(
@@ -222,7 +227,7 @@ where
             }
             RadixEngineInput::CreateNode(node) => self.handle_node_create(node)?,
             RadixEngineInput::GetVisibleNodeIds() => self.handle_get_visible_node_ids()?,
-
+            RadixEngineInput::DropNode(node_id) => self.handle_drop_node(node_id)?,
             RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
                 self.handle_lock_substate(node_id, offset, mutable)?
             }

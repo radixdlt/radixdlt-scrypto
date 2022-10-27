@@ -153,6 +153,7 @@ impl FeeTable {
             NativeFunction::ResourceManager(resource_manager_ident) => {
                 match resource_manager_ident {
                     ResourceManagerFunction::Create => self.fixed_high, // TODO: more investigation about fungibility
+                    ResourceManagerFunction::BurnBucket => self.fixed_low,
                 }
             }
         }
@@ -188,14 +189,12 @@ impl FeeTable {
                 BucketMethod::GetAmount => self.fixed_low,
                 BucketMethod::GetResourceAddress => self.fixed_low,
                 BucketMethod::CreateProof => self.fixed_low,
-                BucketMethod::Burn => self.fixed_medium,
             },
             NativeMethod::Proof(proof_ident) => match proof_ident {
                 ProofMethod::GetAmount => self.fixed_low,
                 ProofMethod::GetNonFungibleIds => self.fixed_low,
                 ProofMethod::GetResourceAddress => self.fixed_low,
                 ProofMethod::Clone => self.fixed_low,
-                ProofMethod::Drop => self.fixed_medium,
             },
             NativeMethod::ResourceManager(resource_manager_ident) => match resource_manager_ident {
                 ResourceManagerMethod::UpdateAuth => self.fixed_medium,

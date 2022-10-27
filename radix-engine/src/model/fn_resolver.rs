@@ -21,8 +21,8 @@ pub fn resolve_native_function(
     }
 }
 
-pub fn resolve_native_method(receiver: &Receiver, method_name: &str) -> Option<NativeMethod> {
-    match receiver.node_id() {
+pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<NativeMethod> {
+    match receiver {
         RENodeId::Bucket(_) => BucketMethod::from_str(method_name)
             .ok()
             .map(NativeMethod::Bucket),
