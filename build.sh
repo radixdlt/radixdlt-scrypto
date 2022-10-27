@@ -33,9 +33,10 @@ echo "Building assets and examples..."
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
     | xargs -n1 -I '{}' bash -c "set -x; $scrypto build --path {}"
 )
+# Note - We use a slightly different formulation for the scrypto build line so that scrypto build picks up the `rust-toolchain` file and compiles with nightly
+# This is possibly a rustup bug where it doesn't look for the toolchain file correctly (https://rust-lang.github.io/rustup/overrides.html) when using the `--manifest-path` flag
 (
     find "examples" -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
-     # We use a slightly different formulation here so scrypto build picks up the `rust-toolchain` file and compiles with nightly
     | xargs -n1 -I '{}' bash -c "set -x; cd '{}'; $scrypto build" 
 )
