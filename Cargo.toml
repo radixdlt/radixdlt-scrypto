@@ -1,0 +1,50 @@
+[workspace]
+members = [
+    "sbor-derive",
+    "sbor",
+    "sbor-tests",
+    "scrypto-abi",
+    "scrypto-derive",
+    "scrypto",
+    "scrypto-tests",
+    "scrypto-unit",
+    "transaction",
+    "radix-engine",
+    "radix-engine-stores",
+    "simulator",
+]
+
+# Note - we don't include anything Scrypto here - they should be loaded/built separately.
+# This is examples/* and radix-engine/tests/*
+# We should be able to use "exclude" but due to this bug, we instead need to include
+# an empty [workspace] in each of the Cargo.tomls
+exclude = [
+    "examples/hello-world",
+    "examples/no-std",
+    "radix-engine/tests/abi",
+    "radix-engine/tests/arguments",
+    "radix-engine/tests/bucket",
+    "radix-engine/tests/component",
+    "radix-engine/tests/core",
+    "radix-engine/tests/data_access",
+    "radix-engine/tests/execution_trace",
+    "radix-engine/tests/external_blueprint_caller",
+    "radix-engine/tests/fee",
+    "radix-engine/tests/kernel",
+    "radix-engine/tests/kv_store",
+    "radix-engine/tests/leaks",
+    "radix-engine/tests/local_component",
+    "radix-engine/tests/local_recursion",
+    "radix-engine/tests/math-ops-check",
+    "radix-engine/tests/non_fungible",
+    "radix-engine/tests/package",
+    "radix-engine/tests/proof",
+    "radix-engine/tests/recursion",
+    "radix-engine/tests/resource",
+    "radix-engine/tests/resource_creator",
+    "radix-engine/tests/stored_external_component",
+    "radix-engine/tests/stored_resource",
+    "radix-engine/tests/stored_values",
+    "radix-engine/tests/system",
+    "radix-engine/tests/vault"
+]

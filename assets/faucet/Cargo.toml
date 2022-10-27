@@ -22,3 +22,6 @@ overflow-checks = true # Panic in the case of an overflow.
 
 [lib]
 crate-type = ["cdylib", "lib"]
+
+[workspace]
+# Empty to hide it from the root workspace

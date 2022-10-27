@@ -17,3 +17,6 @@ strip = "debuginfo" # Strip debug info.
 
 [lib]
 crate-type = ["cdylib", "lib"]
+
+[workspace]
+# Empty to hide it from the root workspace
