@@ -1,5 +1,5 @@
-use sbor::rust::fmt::Debug;
 use sbor::rust::fmt;
+use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -56,9 +56,14 @@ impl Component {
         self.sys_call(method, args, &mut Syscalls).unwrap()
     }
 
-    pub fn sys_call<T: Decode, Y, E: Debug + TypeId + Decode>(&self, method: &str, args: Vec<u8>, sys_calls: &mut Y) -> Result<T, E>
-        where
-            Y: ScryptoSyscalls<E>,
+    pub fn sys_call<T: Decode, Y, E: Debug + TypeId + Decode>(
+        &self,
+        method: &str,
+        args: Vec<u8>,
+        sys_calls: &mut Y,
+    ) -> Result<T, E>
+    where
+        Y: ScryptoSyscalls<E>,
     {
         let rtn: T = sys_calls.sys_invoke_scrypto_method(
             ScryptoMethodIdent {
@@ -92,12 +97,17 @@ impl Component {
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        self.sys_add_access_check(access_rules, &mut Syscalls).unwrap()
+        self.sys_add_access_check(access_rules, &mut Syscalls)
+            .unwrap()
     }
 
-    pub fn sys_add_access_check<Y, E: Debug + TypeId + Decode>(&mut self, access_rules: AccessRules, sys_calls: &mut Y) -> Result<&mut Self, E>
-        where
-            Y: ScryptoSyscalls<E>,
+    pub fn sys_add_access_check<Y, E: Debug + TypeId + Decode>(
+        &mut self,
+        access_rules: AccessRules,
+        sys_calls: &mut Y,
+    ) -> Result<&mut Self, E>
+    where
+        Y: ScryptoSyscalls<E>,
     {
         let _: () = sys_calls.sys_invoke_native_method(
             NativeMethod::Component(ComponentMethod::AddAccessCheck),
@@ -112,13 +122,15 @@ impl Component {
         self.sys_globalize(&mut Syscalls).unwrap()
     }
 
-    pub fn sys_globalize<Y, E: Debug + TypeId + Decode>(self, sys_calls: &mut Y) -> Result<ComponentAddress, E>
-        where
-            Y: ScryptoSyscalls<E>,
+    pub fn sys_globalize<Y, E: Debug + TypeId + Decode>(
+        self,
+        sys_calls: &mut Y,
+    ) -> Result<ComponentAddress, E>
+    where
+        Y: ScryptoSyscalls<E>,
     {
-        let node_id: RENodeId = sys_calls.sys_create_node(
-            ScryptoRENode::GlobalComponent(self.0),
-        )?;
+        let node_id: RENodeId =
+            sys_calls.sys_create_node(ScryptoRENode::GlobalComponent(self.0))?;
         Ok(node_id.into())
     }
 }

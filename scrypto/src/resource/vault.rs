@@ -1,6 +1,7 @@
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt;
+use sbor::rust::fmt::Debug;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -62,7 +63,6 @@ pub struct VaultLockFeeInput {
 #[derive(PartialEq, Eq, Hash)]
 pub struct Vault(pub VaultId);
 
-#[cfg(target_arch = "wasm32")]
 impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
@@ -108,6 +108,22 @@ impl Vault {
         call_engine(input)
     }
 
+    #[cfg(target_arch = "wasm32")]
+    pub fn amount(&self) -> Decimal {
+        self.sys_amount(&mut Syscalls).unwrap()
+    }
+
+    pub fn sys_amount<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
+    where
+        Y: ScryptoSyscalls<E>,
+    {
+        sys_calls.sys_invoke_native_method(
+            NativeMethod::Vault(VaultMethod::GetAmount),
+            RENodeId::Vault(self.0),
+            scrypto_encode(&VaultGetAmountInput {}),
+        )
+    }
+
     native_methods! {
         RENodeId::Vault(self.0), NativeMethod::Vault => {
             pub fn put(&mut self, bucket: Bucket) -> () {
@@ -122,11 +138,6 @@ impl Vault {
                 VaultTakeNonFungiblesInput {
                     non_fungible_ids: non_fungible_ids.clone(),
                 }
-            }
-
-            pub fn amount(&self) -> Decimal {
-                VaultMethod::GetAmount,
-                VaultGetAmountInput {}
             }
 
             pub fn resource_address(&self) -> ResourceAddress {
@@ -177,6 +188,7 @@ impl Vault {
     }
 
     /// Takes all resource stored in this vault.
+    #[cfg(target_arch = "wasm32")]
     pub fn take_all(&mut self) -> Bucket {
         self.take(self.amount())
     }
@@ -190,6 +202,7 @@ impl Vault {
     }
 
     /// Uses resources in this vault as authorization for an operation.
+    #[cfg(target_arch = "wasm32")]
     pub fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
         ComponentAuthZone::push(self.create_proof());
         let output = f();
@@ -198,6 +211,7 @@ impl Vault {
     }
 
     /// Checks if this vault is empty.
+    #[cfg(target_arch = "wasm32")]
     pub fn is_empty(&self) -> bool {
         self.amount() == 0.into()
     }

@@ -1,10 +1,10 @@
+use crate::engine::utils::call_engine;
 use crate::engine::utils::ScryptoSyscalls;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::core::*;
 use scrypto::engine::types::*;
-use crate::engine::utils::call_engine;
 
 use super::types::*;
 
