@@ -56,7 +56,7 @@ pub enum Value {
         fields: Vec<Value>,
     },
     Enum {
-        name: String,
+        discriminator: String,
         fields: Vec<Value>,
     },
     Array {
@@ -112,7 +112,10 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                 encode_any_internal(None, field, enc);
             }
         }
-        Value::Enum { name, fields } => {
+        Value::Enum {
+            discriminator: name,
+            fields,
+        } => {
             if ty_ctx.is_none() {
                 enc.write_type_id(TYPE_ENUM);
             }
@@ -175,8 +178,6 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
         Some(t) => t,
         None => dec.read_type_id()?,
     };
-
-    println!("{}", ty);
 
     match ty {
         // primitive types
@@ -241,7 +242,10 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             for _ in 0..len {
                 fields.push(decode_next(None, dec)?);
             }
-            Ok(Value::Enum { name, fields })
+            Ok(Value::Enum {
+                discriminator: name,
+                fields,
+            })
         }
         // composite types
         TYPE_ARRAY => {
@@ -468,11 +472,11 @@ mod tests {
                         value: String::from("abc")
                     },
                     Value::Enum {
-                        name: "Some".to_string(),
+                        discriminator: "Some".to_string(),
                         fields: vec![Value::U32 { value: 1 }]
                     },
                     Value::Enum {
-                        name: "Ok".to_string(),
+                        discriminator: "Ok".to_string(),
                         fields: vec![Value::U32 { value: 2 }]
                     },
                     Value::Array {
@@ -490,15 +494,15 @@ mod tests {
                         fields: vec![Value::U32 { value: 1 }]
                     },
                     Value::Enum {
-                        name: "A".to_string(),
+                        discriminator: "A".to_string(),
                         fields: vec![Value::U32 { value: 1 }]
                     },
                     Value::Enum {
-                        name: "B".to_string(),
+                        discriminator: "B".to_string(),
                         fields: vec![Value::U32 { value: 2 }]
                     },
                     Value::Enum {
-                        name: "C".to_string(),
+                        discriminator: "C".to_string(),
                         fields: vec![]
                     },
                     Value::Array {

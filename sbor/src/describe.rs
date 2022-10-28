@@ -104,7 +104,11 @@ impl Type {
             Type::U128 => matches!(value, Value::U128 { .. }),
             Type::String => matches!(value, Value::String { .. }),
             Type::Option { value: type_value } => {
-                if let Value::Enum { name, fields } = value {
+                if let Value::Enum {
+                    discriminator: name,
+                    fields,
+                } = value
+                {
                     match name.as_str() {
                         OPTION_VARIANT_SOME => fields.len() == 1 && type_value.matches(&fields[0]),
                         OPTION_VARIANT_NONE => fields.len() == 0,
@@ -143,7 +147,11 @@ impl Type {
                 }
             }
             Type::Result { okay, error } => {
-                if let Value::Enum { name, fields } = value {
+                if let Value::Enum {
+                    discriminator: name,
+                    fields,
+                } = value
+                {
                     match name.as_str() {
                         RESULT_VARIANT_OK => fields.len() == 1 && okay.matches(&fields[0]),
                         RESULT_VARIANT_ERR => fields.len() == 1 && error.matches(&fields[0]),
@@ -227,7 +235,11 @@ impl Type {
                 name: _,
                 variants: type_variants,
             } => {
-                if let Value::Enum { name, fields } = value {
+                if let Value::Enum {
+                    discriminator: name,
+                    fields,
+                } = value
+                {
                     for variant in type_variants {
                         if variant.name.eq(name) {
                             return match &variant.fields {

@@ -86,8 +86,8 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
         Data::Enum(DataEnum { variants, .. }) => {
             let match_arms = variants.iter().map(|v| {
                 let v_id = &v.ident;
-                let name_string = v_id.to_string();
-                let name: Expr = parse_quote! { #name_string };
+                let discriminator_string = v_id.to_string();
+                let discriminator: Expr = parse_quote! { #discriminator_string };
 
                 match &v.fields {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
@@ -97,7 +97,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         let ns_len = Index::from(ns.len());
                         quote! {
                             Self::#v_id {#(#ns_ids,)* ..} => {
-                                encoder.write_discriminator(#name);
+                                encoder.write_discriminator(#discriminator);
                                 encoder.write_size(#ns_len);
                                 #(#ns_ids2.encode(encoder);)*
                             }
@@ -114,7 +114,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         let ns_len = Index::from(ns_args.len());
                         quote! {
                             Self::#v_id (#(#args),*) => {
-                                encoder.write_discriminator(#name);
+                                encoder.write_discriminator(#discriminator);
                                 encoder.write_size(#ns_len);
                                 #(#ns_args.encode(encoder);)*
                             }
@@ -123,7 +123,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     syn::Fields::Unit => {
                         quote! {
                             Self::#v_id => {
-                                encoder.write_discriminator(#name);
+                                encoder.write_discriminator(#discriminator);
                                 encoder.write_size(0);
                             }
                         }

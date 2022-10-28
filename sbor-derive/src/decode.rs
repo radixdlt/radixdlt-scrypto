@@ -96,8 +96,8 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
         Data::Enum(DataEnum { variants, .. }) => {
             let match_arms = variants.iter().map(|v| {
                 let v_id = &v.ident;
-                let name_string = v_id.to_string();
-                let name: Expr = parse_quote! { #name_string };
+                let discriminator_string = v_id.to_string();
+                let discriminator: Expr = parse_quote! { #discriminator_string };
 
                 match &v.fields {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
@@ -109,7 +109,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         let s_ids = s.iter().map(|f| &f.ident);
                         let s_types = s.iter().map(|f| &f.ty);
                         quote! {
-                            #name => {
+                            #discriminator => {
                                 decoder.check_size(#ns_len)?;
                                 Ok(Self::#v_id {
                                     #(#ns_ids: <#ns_types>::decode(decoder)?,)*
@@ -130,7 +130,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         }
                         let ns_len = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
                         quote! {
-                            #name => {
+                            #discriminator => {
                                 decoder.check_size(#ns_len)?;
                                 Ok(Self::#v_id (
                                     #(#fields),*
@@ -140,7 +140,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     }
                     syn::Fields::Unit => {
                         quote! {
-                            #name => {
+                            #discriminator => {
                                 decoder.check_size(0)?;
                                 Ok(Self::#v_id)
                             }
@@ -159,10 +159,10 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
 
-                        let name = decoder.read_discriminator()?;
-                        match name.as_str() {
+                        let discriminator = decoder.read_discriminator()?;
+                        match discriminator.as_str() {
                             #(#match_arms,)*
-                            _ => Err(::sbor::DecodeError::InvalidDiscriminator(name))
+                            _ => Err(::sbor::DecodeError::InvalidDiscriminator(discriminator))
                         }
                     }
                 }
@@ -257,8 +257,8 @@ mod tests {
                     #[inline]
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-                        let name = decoder.read_discriminator()?;
-                        match name.as_str() {
+                        let discriminator = decoder.read_discriminator()?;
+                        match discriminator.as_str() {
                             "A" => {
                                 decoder.check_size(0)?;
                                 Ok(Self::A)
@@ -273,7 +273,7 @@ mod tests {
                                     x: <u8>::decode(decoder)?,
                                 })
                             },
-                            _ => Err(::sbor::DecodeError::InvalidDiscriminator(name))
+                            _ => Err(::sbor::DecodeError::InvalidDiscriminator(discriminator))
                         }
                     }
                 }
