@@ -236,9 +236,13 @@ impl Proof {
         }
     }
 
+    #[cfg(target_arch = "wasm32")]
     pub fn drop(self) {
-        let input = RadixEngineInput::DropNode(RENodeId::Proof(self.0));
-        let _: () = call_engine(input);
+        self.sys_drop(&mut Syscalls).unwrap()
+    }
+
+    pub fn sys_drop<Y, E: Debug + TypeId + Decode>(self, sys_calls: &mut Y) -> Result<(), E> where Y: ScryptoSyscalls<E> {
+        sys_calls.sys_drop_node(RENodeId::Proof(self.0))
     }
 }
 
@@ -271,6 +275,7 @@ impl ValidatedProof {
         }
     }
 
+    #[cfg(target_arch = "wasm32")]
     pub fn drop(self) {
         self.0.drop()
     }

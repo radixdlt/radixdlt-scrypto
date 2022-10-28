@@ -57,6 +57,11 @@ impl ScryptoSyscalls<SyscallError> for Syscalls {
         Ok(rtn)
     }
 
+    fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), SyscallError> {
+        let rtn = call_engine(RadixEngineInput::DropNode(node_id));
+        Ok(rtn)
+    }
+
     fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, SyscallError> {
         let rtn = call_engine(RadixEngineInput::GetVisibleNodeIds());
         Ok(rtn)

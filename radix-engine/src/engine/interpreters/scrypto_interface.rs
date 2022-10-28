@@ -62,6 +62,11 @@ R: FeeReserve,{
         self.create_node(node)
     }
 
+    fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
+        self.drop_node(node_id)?;
+        Ok(())
+    }
+
     fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
         self.get_visible_node_ids()
     }
