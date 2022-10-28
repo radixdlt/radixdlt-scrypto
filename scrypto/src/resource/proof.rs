@@ -1,7 +1,7 @@
-use sbor::rust::fmt::Debug;
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
+use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
@@ -106,7 +106,10 @@ impl Proof {
         }
     }
 
-    pub fn sys_clone<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<Proof, E> where Y: ScryptoSyscalls<E> {
+    pub fn sys_clone<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<Proof, E>
+    where
+        Y: ScryptoSyscalls<E>,
+    {
         sys_calls.sys_invoke_native_method(
             NativeMethod::Proof(ProofMethod::Clone),
             RENodeId::Proof(self.0),
@@ -241,7 +244,10 @@ impl Proof {
         self.sys_drop(&mut Syscalls).unwrap()
     }
 
-    pub fn sys_drop<Y, E: Debug + TypeId + Decode>(self, sys_calls: &mut Y) -> Result<(), E> where Y: ScryptoSyscalls<E> {
+    pub fn sys_drop<Y, E: Debug + TypeId + Decode>(self, sys_calls: &mut Y) -> Result<(), E>
+    where
+        Y: ScryptoSyscalls<E>,
+    {
         sys_calls.sys_drop_node(RENodeId::Proof(self.0))
     }
 }

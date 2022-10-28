@@ -1,7 +1,7 @@
-use sbor::rust::fmt::Debug;
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
+use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::types::GlobalAddress;
@@ -52,7 +52,13 @@ impl Bucket {
         Self::sys_new(resource_address, &mut Syscalls).unwrap()
     }
 
-    pub fn sys_new<Y, E: Debug + TypeId + Decode>(resource_address: ResourceAddress, sys_calls: &mut Y) -> Result<Self, E> where Y: ScryptoSyscalls<E> {
+    pub fn sys_new<Y, E: Debug + TypeId + Decode>(
+        resource_address: ResourceAddress,
+        sys_calls: &mut Y,
+    ) -> Result<Self, E>
+    where
+        Y: ScryptoSyscalls<E>,
+    {
         sys_calls.sys_invoke_native_method(
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
             RENodeId::Global(GlobalAddress::Resource(resource_address)),
@@ -65,7 +71,13 @@ impl Bucket {
         self.sys_create_proof(&mut Syscalls).unwrap()
     }
 
-    pub fn sys_create_proof<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<scrypto::resource::Proof, E> where Y: ScryptoSyscalls<E> {
+    pub fn sys_create_proof<Y, E: Debug + TypeId + Decode>(
+        &self,
+        sys_calls: &mut Y,
+    ) -> Result<scrypto::resource::Proof, E>
+    where
+        Y: ScryptoSyscalls<E>,
+    {
         sys_calls.sys_invoke_native_method(
             NativeMethod::Bucket(BucketMethod::CreateProof),
             RENodeId::Bucket(self.0),

@@ -1,8 +1,8 @@
-use scrypto::engine::utils::ScryptoSyscalls;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
+use scrypto::engine::utils::ScryptoSyscalls;
 
 pub struct NativeInterpreter;
 

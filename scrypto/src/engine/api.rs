@@ -1,9 +1,9 @@
+use crate::engine::utils::ScryptoSyscalls;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::core::*;
 use scrypto::engine::types::*;
-use crate::engine::utils::ScryptoSyscalls;
 
 #[cfg(target_arch = "wasm32")]
 use crate::engine::utils::call_engine;
@@ -24,30 +24,46 @@ pub struct Syscalls;
 
 #[cfg(target_arch = "wasm32")]
 impl ScryptoSyscalls<SyscallError> for Syscalls {
-    fn sys_invoke_scrypto_function<V: Decode>(&mut self, fn_ident: ScryptoFunctionIdent, args: Vec<u8>) -> Result<V, SyscallError> {
-        let rtn = call_engine(RadixEngineInput::InvokeScryptoFunction(
-            fn_ident, args
-        ));
+    fn sys_invoke_scrypto_function<V: Decode>(
+        &mut self,
+        fn_ident: ScryptoFunctionIdent,
+        args: Vec<u8>,
+    ) -> Result<V, SyscallError> {
+        let rtn = call_engine(RadixEngineInput::InvokeScryptoFunction(fn_ident, args));
         Ok(rtn)
     }
 
-    fn sys_invoke_scrypto_method<V: Decode>(&mut self, method_ident: ScryptoMethodIdent, args: Vec<u8>) -> Result<V, SyscallError> {
-        let rtn = call_engine(RadixEngineInput::InvokeScryptoMethod(
-            method_ident, args
-        ));
+    fn sys_invoke_scrypto_method<V: Decode>(
+        &mut self,
+        method_ident: ScryptoMethodIdent,
+        args: Vec<u8>,
+    ) -> Result<V, SyscallError> {
+        let rtn = call_engine(RadixEngineInput::InvokeScryptoMethod(method_ident, args));
         Ok(rtn)
     }
 
-    fn sys_invoke_native_function<V: Decode>(&mut self, native_function: NativeFunction, args: Vec<u8>) -> Result<V, SyscallError> {
+    fn sys_invoke_native_function<V: Decode>(
+        &mut self,
+        native_function: NativeFunction,
+        args: Vec<u8>,
+    ) -> Result<V, SyscallError> {
         let rtn = call_engine(RadixEngineInput::InvokeNativeFunction(
-            native_function, args
+            native_function,
+            args,
         ));
         Ok(rtn)
     }
 
-    fn sys_invoke_native_method<V: Decode>(&mut self, native_method: NativeMethod, receiver: RENodeId, args: Vec<u8>) -> Result<V, SyscallError> {
+    fn sys_invoke_native_method<V: Decode>(
+        &mut self,
+        native_method: NativeMethod,
+        receiver: RENodeId,
+        args: Vec<u8>,
+    ) -> Result<V, SyscallError> {
         let rtn = call_engine(RadixEngineInput::InvokeNativeMethod(
-            native_method, receiver, args
+            native_method,
+            receiver,
+            args,
         ));
         Ok(rtn)
     }
@@ -67,7 +83,12 @@ impl ScryptoSyscalls<SyscallError> for Syscalls {
         Ok(rtn)
     }
 
-    fn sys_lock_substate(&mut self, node_id: RENodeId, offset: SubstateOffset, mutable: bool) -> Result<LockHandle, SyscallError> {
+    fn sys_lock_substate(
+        &mut self,
+        node_id: RENodeId,
+        offset: SubstateOffset,
+        mutable: bool,
+    ) -> Result<LockHandle, SyscallError> {
         let rtn = call_engine(RadixEngineInput::LockSubstate(node_id, offset, mutable));
         Ok(rtn)
     }
@@ -102,7 +123,6 @@ impl ScryptoSyscalls<SyscallError> for Syscalls {
         Ok(rtn)
     }
 }
-
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum RadixEngineInput {
