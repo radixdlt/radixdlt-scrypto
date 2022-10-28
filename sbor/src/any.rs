@@ -78,17 +78,17 @@ pub enum Value {
 pub fn encode_any(value: &Value) -> Vec<u8> {
     let mut bytes = Vec::new();
     let mut enc = ::sbor::Encoder::new(&mut bytes);
-    encode_any_internal(None, value, &mut enc);
+    encode_value(None, value, &mut enc);
     bytes
 }
 
 /// Encodes any SBOR value with a given buffer
 pub fn encode_any_with_buffer(value: &Value, buffer: &mut Vec<u8>) {
     let mut enc = ::sbor::Encoder::new(buffer);
-    encode_any_internal(None, value, &mut enc);
+    encode_value(None, value, &mut enc);
 }
 
-fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
+fn encode_value(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
     match value {
         Value::Unit => encode_basic(ty_ctx, TYPE_UNIT, &(), enc),
         Value::Bool { value } => encode_basic(ty_ctx, TYPE_BOOL, value, enc),
@@ -109,20 +109,20 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
             enc.write_size(fields.len());
             for field in fields {
-                encode_any_internal(None, field, enc);
+                encode_value(None, field, enc);
             }
         }
         Value::Enum {
-            discriminator: name,
+            discriminator,
             fields,
         } => {
             if ty_ctx.is_none() {
                 enc.write_type_id(TYPE_ENUM);
             }
-            name.encode_value(enc);
+            enc.write_discriminator(discriminator);
             enc.write_size(fields.len());
             for field in fields {
-                encode_any_internal(None, field, enc);
+                encode_value(None, field, enc);
             }
         }
         Value::Array {
@@ -135,7 +135,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             enc.write_type_id(*element_type_id);
             enc.write_size(elements.len());
             for e in elements {
-                encode_any_internal(Some(*element_type_id), e, enc);
+                encode_value(Some(*element_type_id), e, enc);
             }
         }
         Value::Tuple { elements } => {
@@ -144,7 +144,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
             enc.write_size(elements.len());
             for e in elements {
-                encode_any_internal(None, e, enc);
+                encode_value(None, e, enc);
             }
         }
         // custom
@@ -233,8 +233,8 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             Ok(Value::Struct { fields })
         }
         TYPE_ENUM => {
-            // name
-            let name = <String>::decode_value(dec)?;
+            // discriminator
+            let discriminator = <String>::decode_value(dec)?;
             // number of fields
             let len = dec.read_size()?;
             // fields
@@ -243,7 +243,7 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
                 fields.push(decode_next(None, dec)?);
             }
             Ok(Value::Enum {
-                discriminator: name,
+                discriminator,
                 fields,
             })
         }
@@ -536,7 +536,7 @@ mod tests {
 
         let mut bytes2 = Vec::new();
         let mut enc = Encoder::new(&mut bytes2);
-        encode_any_internal(None, &value, &mut enc);
+        encode_value(None, &value, &mut enc);
         assert_eq!(bytes2, bytes);
     }
 

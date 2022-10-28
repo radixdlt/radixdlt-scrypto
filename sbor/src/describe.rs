@@ -29,10 +29,6 @@ pub enum Type {
     U128,
     String,
 
-    Option {
-        value: Box<Type>,
-    },
-
     Array {
         element: Box<Type>,
         length: u16,
@@ -50,6 +46,10 @@ pub enum Type {
     Enum {
         name: String,
         variants: Vec<Variant>, // Order matters as it decides of the variant discriminator
+    },
+
+    Option {
+        value: Box<Type>,
     },
 
     Result {
@@ -88,6 +88,37 @@ pub enum Type {
 }
 
 impl Type {
+    pub fn id(&self) -> u8 {
+        match self {
+            Type::Unit => TYPE_UNIT,
+            Type::Bool => TYPE_BOOL,
+            Type::I8 => TYPE_I8,
+            Type::I16 => TYPE_I16,
+            Type::I32 => TYPE_I32,
+            Type::I64 => TYPE_I64,
+            Type::I128 => TYPE_I128,
+            Type::U8 => TYPE_U8,
+            Type::U16 => TYPE_U16,
+            Type::U32 => TYPE_U32,
+            Type::U64 => TYPE_U64,
+            Type::U128 => TYPE_U128,
+            Type::String => TYPE_STRING,
+            Type::Array { .. } => TYPE_ARRAY,
+            Type::Tuple { .. } => TYPE_TUPLE,
+            Type::Struct { .. } => TYPE_STRUCT,
+            Type::Enum { .. } => TYPE_ENUM,
+            Type::Option { .. } => TYPE_ENUM,
+            Type::Result { .. } => TYPE_ENUM,
+            Type::Vec { .. } => TYPE_ARRAY,
+            Type::TreeSet { .. } => TYPE_ARRAY,
+            Type::TreeMap { .. } => TYPE_ARRAY,
+            Type::HashSet { .. } => TYPE_ARRAY,
+            Type::HashMap { .. } => TYPE_ARRAY,
+            Type::Custom { type_id, .. } => *type_id,
+            Type::Any => 0xff, // FIXME incorrect abstraction
+        }
+    }
+
     pub fn matches(&self, value: &Value) -> bool {
         match self {
             Type::Unit => matches!(value, Value::Unit),
@@ -103,32 +134,15 @@ impl Type {
             Type::U64 => matches!(value, Value::U64 { .. }),
             Type::U128 => matches!(value, Value::U128 { .. }),
             Type::String => matches!(value, Value::String { .. }),
-            Type::Option { value: type_value } => {
-                if let Value::Enum {
-                    discriminator: name,
-                    fields,
-                } = value
-                {
-                    match name.as_str() {
-                        OPTION_VARIANT_SOME => fields.len() == 1 && type_value.matches(&fields[0]),
-                        OPTION_VARIANT_NONE => fields.len() == 0,
-                        _ => false,
-                    }
-                } else {
-                    false
-                }
-            }
-            Type::Array {
-                element: type_element,
-                length,
-            } => {
+            Type::Array { element, length } => {
                 if let Value::Array {
-                    element_type_id: _,
+                    element_type_id,
                     elements,
                 } = value
                 {
-                    let length = usize::from(*length);
-                    length == elements.len() && elements.iter().all(|v| type_element.matches(v))
+                    *element_type_id == element.id()
+                        && usize::from(*length) == elements.len()
+                        && elements.iter().all(|v| element.matches(v))
                 } else {
                     false
                 }
@@ -146,13 +160,28 @@ impl Type {
                     false
                 }
             }
-            Type::Result { okay, error } => {
+            Type::Option { value: type_value } => {
                 if let Value::Enum {
-                    discriminator: name,
+                    discriminator,
                     fields,
                 } = value
                 {
-                    match name.as_str() {
+                    match discriminator.as_str() {
+                        OPTION_VARIANT_SOME => fields.len() == 1 && type_value.matches(&fields[0]),
+                        OPTION_VARIANT_NONE => fields.len() == 0,
+                        _ => false,
+                    }
+                } else {
+                    false
+                }
+            }
+            Type::Result { okay, error } => {
+                if let Value::Enum {
+                    discriminator,
+                    fields,
+                } = value
+                {
+                    match discriminator.as_str() {
                         RESULT_VARIANT_OK => fields.len() == 1 && okay.matches(&fields[0]),
                         RESULT_VARIANT_ERR => fields.len() == 1 && error.matches(&fields[0]),
                         _ => false,
@@ -161,46 +190,38 @@ impl Type {
                     false
                 }
             }
-
-            Type::Vec {
-                element: type_element,
-            }
-            | Type::HashSet {
-                element: type_element,
-            }
-            | Type::TreeSet {
-                element: type_element,
-            } => {
+            Type::Vec { element } | Type::HashSet { element } | Type::TreeSet { element } => {
                 if let Value::Array {
-                    element_type_id: _,
+                    element_type_id,
                     elements,
                 } = value
                 {
-                    elements.iter().all(|v| type_element.matches(v))
+                    *element_type_id == element.id() && elements.iter().all(|v| element.matches(v))
                 } else {
                     false
                 }
             }
             Type::TreeMap {
-                key: type_key,
-                value: type_value,
+                key: key_type,
+                value: value_type,
             }
             | Type::HashMap {
-                key: type_key,
-                value: type_value,
+                key: key_type,
+                value: value_type,
             } => {
                 if let Value::Array {
-                    element_type_id: TYPE_TUPLE,
+                    element_type_id,
                     elements,
                 } = value
                 {
-                    elements.iter().enumerate().all(|(i, e)| {
-                        if i % 2 == 0 {
-                            type_key.matches(e)
-                        } else {
-                            type_value.matches(e)
-                        }
-                    })
+                    *element_type_id == TYPE_TUPLE
+                        && elements.iter().enumerate().all(|(i, e)| {
+                            if i % 2 == 0 {
+                                key_type.matches(e)
+                            } else {
+                                value_type.matches(e)
+                            }
+                        })
                 } else {
                     false
                 }
@@ -236,12 +257,12 @@ impl Type {
                 variants: type_variants,
             } => {
                 if let Value::Enum {
-                    discriminator: name,
+                    discriminator,
                     fields,
                 } = value
                 {
                     for variant in type_variants {
-                        if variant.name.eq(name) {
+                        if variant.name.eq(discriminator) {
                             return match &variant.fields {
                                 Fields::Unit => fields.is_empty(),
                                 Fields::Unnamed { unnamed } => {
