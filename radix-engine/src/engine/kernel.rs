@@ -919,7 +919,7 @@ where
             let maybe_txn: Result<TransactionProcessorRunInput, DecodeError> =
                 scrypto_decode(&invocation.args().raw);
             if let Ok(input) = maybe_txn {
-                for instruction in &input.instructions {
+                for instruction in input.instructions.as_ref() {
                     match instruction {
                         Instruction::CallFunction { args, .. }
                         | Instruction::CallMethod { args, .. }

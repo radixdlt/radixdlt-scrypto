@@ -225,6 +225,17 @@ impl<T: Encode + TypeId> Encode for Option<T> {
     }
 }
 
+impl<'a, B: ?Sized + 'a + ToOwned + Encode> Encode for crate::rust::borrow::Cow<'a, B> {
+    #[inline]
+    fn encode_type_id(encoder: &mut Encoder) {
+        B::encode_type_id(encoder)
+    }
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.as_ref().encode_value(encoder);
+    }
+}
+
 impl<T: Encode> Encode for Box<T> {
     #[inline]
     fn encode_type_id(encoder: &mut Encoder) {
