@@ -21,6 +21,8 @@ pub enum BuildError {
 
     IOErrorAtPath(io::Error, PathBuf),
 
+    CargoTargetDirectoryResolutionError,
+
     CargoFailure(ExitStatus),
 
     AbiExtractionError(ExtractAbiError),
@@ -48,7 +50,7 @@ pub enum FormatError {
     CargoFailure(ExitStatus),
 }
 
-fn run_cargo_build(manifest_path: &OsStr, target_path: &OsStr, trace: bool, no_abi_gen: bool) -> Result<(), BuildError> {
+fn run_cargo_build(manifest_path: impl AsRef<OsStr>, target_path: impl AsRef<OsStr>, trace: bool, no_abi_gen: bool) -> Result<(), BuildError> {
     let mut features = Vec::<String>::new();
     if trace {
         features.push("scrypto/trace".to_owned());
@@ -66,9 +68,9 @@ fn run_cargo_build(manifest_path: &OsStr, target_path: &OsStr, trace: bool, no_a
         .arg("wasm32-unknown-unknown")
         .arg("--release")
         .arg("--target-dir")
-        .arg(target_path)
+        .arg(target_path.as_ref())
         .arg("--manifest-path")
-        .arg(manifest_path)
+        .arg(manifest_path.as_ref())
         .args(features)
         .status()
         .map_err(BuildError::IOError)?;
@@ -79,8 +81,33 @@ fn run_cargo_build(manifest_path: &OsStr, target_path: &OsStr, trace: bool, no_a
     }
 }
 
+/// Gets the default cargo directory for the given crate.
+/// This respects whether the crate is in a workspace.
+pub fn get_default_target_directory(manifest_path: impl AsRef<OsStr>) -> Result<String, BuildError> {
+    let output = Command::new("cargo")
+        .arg("metadata")
+        .arg("--manifest-path")
+        .arg(manifest_path.as_ref())
+        .arg("--format-version")
+        .arg("1")
+        .arg("--no-deps")
+        .output()
+        .map_err(BuildError::IOError)?;
+    if output.status.success() {
+        let parsed = serde_json::from_slice::<serde_json::Value>(&output.stdout)
+            .map_err(|_| BuildError::CargoTargetDirectoryResolutionError)?;
+        let target_directory = parsed.as_object()
+            .and_then(|o| o.get("target_directory"))
+            .and_then(|o| o.as_str())
+            .ok_or(BuildError::CargoTargetDirectoryResolutionError)?;
+        Ok(target_directory.to_owned())
+    } else {
+        Err(BuildError::CargoFailure(output.status))
+    }
+}
+
 /// Builds a package.
-pub fn build_package<P: AsRef<Path>>(base_path: P, trace: bool) -> Result<(PathBuf, PathBuf), BuildError> {
+pub fn build_package<P: AsRef<Path>>(base_path: P, trace: bool, force_local_target: bool) -> Result<(PathBuf, PathBuf), BuildError> {
     let base_path = base_path.as_ref().to_owned();
 
     let mut manifest_path = base_path.clone();
@@ -92,15 +119,23 @@ pub fn build_package<P: AsRef<Path>>(base_path: P, trace: bool) -> Result<(PathB
 
     // Use the scrypto directory as a target, even if the scrypto crate is part of a workspace
     // This allows us to find where the WASM and ABI ends up deterministically.
-    let mut target_path = base_path.clone();
-    target_path.push("target");
+    let target_path = if force_local_target {
+        let mut target_path = base_path.clone();
+        target_path.push("target");
+        target_path
+    } else {
+        PathBuf::from_str(&get_default_target_directory(&manifest_path)?)
+            .unwrap()// Infallible
+    };
+
+    println!("{:?}", target_path);
 
     let mut out_path = target_path.clone();
     out_path.push("wasm32-unknown-unknown");
     out_path.push("release");
 
     // Build with ABI
-    run_cargo_build(manifest_path.as_os_str(), target_path.as_os_str(), trace, false)?;
+    run_cargo_build(&manifest_path, &target_path, trace, false)?;
 
     // Find the binary paths
     let manifest = Manifest::from_path(&manifest_path)
@@ -126,7 +161,7 @@ pub fn build_package<P: AsRef<Path>>(base_path: P, trace: bool) -> Result<(PathB
     fs::write(&abi_path, scrypto_encode(&abi)).map_err(|err| BuildError::IOErrorAtPath(err, abi_path.clone()))?;
 
     // Build without ABI
-    run_cargo_build(manifest_path.as_os_str(), target_path.as_os_str(), trace, true)?;
+    run_cargo_build(&manifest_path, &target_path, trace, true)?;
 
     Ok((wasm_path, abi_path))
 }
@@ -137,7 +172,7 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    build_package(&path, false).map_err(TestError::BuildError)?;
+    build_package(&path, false, false).map_err(TestError::BuildError)?;
 
     let mut cargo = path.as_ref().to_owned();
     cargo.push("Cargo.toml");

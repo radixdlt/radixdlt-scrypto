@@ -13,22 +13,22 @@ cd "$(dirname "$0")"
 scrypto="scrypto"
 
 (
-    find "assets" -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    find "assets/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
     | xargs -n1 -I '{}' bash -c "set -x; $scrypto fmt --path {}"
 )
 (
-    find "examples" -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    find "examples" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
     | xargs -n1 -I '{}' bash -c "set -x; $scrypto fmt --path {}"
 )
 (
-    find "radix-engine/tests" -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    find "radix-engine/tests" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
     | xargs -n1 -I '{}' bash -c "set -x; $scrypto fmt --path {}"
 )
 (
-    find "simulator/tests" -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    find "simulator/tests" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
     | xargs -n1 -I '{}' bash -c "set -x; $scrypto fmt --path {}"
 )
