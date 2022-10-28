@@ -1,4 +1,5 @@
 use std::io;
+use std::path::PathBuf;
 
 use radix_engine::engine::*;
 use radix_engine::model::{ExportError, ExtractAbiError};
@@ -21,6 +22,8 @@ pub enum Error {
     ConfigDecodingError(sbor::DecodeError),
 
     IOError(io::Error),
+
+    IOErrorAtPath(io::Error, PathBuf),
 
     DataError(DecodeError),
 

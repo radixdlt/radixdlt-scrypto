@@ -13,17 +13,19 @@ use radix_engine::types::*;
 
 #[derive(Debug)]
 pub enum BuildError {
-    NotCargoPackage,
+    NotCargoPackage(PathBuf),
 
     MissingPackageName,
 
     IOError(io::Error),
 
+    IOErrorAtPath(io::Error, PathBuf),
+
     CargoFailure(ExitStatus),
 
     AbiExtractionError(ExtractAbiError),
 
-    InvalidManifestFile,
+    InvalidManifestFile(PathBuf),
 }
 
 #[derive(Debug)]
@@ -46,7 +48,7 @@ pub enum FormatError {
     CargoFailure(ExitStatus),
 }
 
-fn run_cargo_build(path: &str, trace: bool, no_abi_gen: bool) -> Result<(), BuildError> {
+fn run_cargo_build(manifest_path: &OsStr, target_path: &OsStr, trace: bool, no_abi_gen: bool) -> Result<(), BuildError> {
     let mut features = Vec::<String>::new();
     if trace {
         features.push("scrypto/trace".to_owned());
@@ -63,8 +65,10 @@ fn run_cargo_build(path: &str, trace: bool, no_abi_gen: bool) -> Result<(), Buil
         .arg("--target")
         .arg("wasm32-unknown-unknown")
         .arg("--release")
+        .arg("--target-dir")
+        .arg(target_path)
         .arg("--manifest-path")
-        .arg(path)
+        .arg(manifest_path)
         .args(features)
         .status()
         .map_err(BuildError::IOError)?;
@@ -76,44 +80,55 @@ fn run_cargo_build(path: &str, trace: bool, no_abi_gen: bool) -> Result<(), Buil
 }
 
 /// Builds a package.
-pub fn build_package<P: AsRef<Path>>(path: P, trace: bool) -> Result<PathBuf, BuildError> {
-    let mut cargo = path.as_ref().to_owned();
-    cargo.push("Cargo.toml");
-    if cargo.exists() {
-        // Build with ABI
-        run_cargo_build(cargo.to_str().unwrap(), trace, false)?;
+pub fn build_package<P: AsRef<Path>>(base_path: P, trace: bool) -> Result<(PathBuf, PathBuf), BuildError> {
+    let base_path = base_path.as_ref().to_owned();
 
-        // Find the binary paths
-        let manifest = Manifest::from_path(&cargo).map_err(|_| BuildError::InvalidManifestFile)?;
-        let mut wasm_name = None;
-        if let Some(lib) = manifest.lib {
-            wasm_name = lib.name.clone();
-        }
-        if wasm_name == None {
-            if let Some(pkg) = manifest.package {
-                wasm_name = Some(pkg.name.replace("-", "_"));
-            }
-        }
-        let mut bin = path.as_ref().to_owned();
-        bin.push("target");
-        bin.push("wasm32-unknown-unknown");
-        bin.push("release");
-        bin.push(wasm_name.ok_or(BuildError::InvalidManifestFile)?);
-        let wasm_path = bin.with_extension("wasm");
-        let abi_path = bin.with_extension("abi");
+    let mut manifest_path = base_path.clone();
+    manifest_path.push("Cargo.toml");
 
-        // Extract ABI
-        let wasm = fs::read(&wasm_path).map_err(BuildError::IOError)?;
-        let abi = extract_abi(&wasm).map_err(BuildError::AbiExtractionError)?;
-        fs::write(&abi_path, scrypto_encode(&abi)).map_err(BuildError::IOError)?;
-
-        // Build without ABI
-        run_cargo_build(cargo.to_str().unwrap(), trace, true)?;
-
-        Ok(wasm_path)
-    } else {
-        Err(BuildError::NotCargoPackage)
+    if !manifest_path.exists() {
+        return Err(BuildError::NotCargoPackage(manifest_path));
     }
+
+    // Use the scrypto directory as a target, even if the scrypto crate is part of a workspace
+    // This allows us to find where the WASM and ABI ends up deterministically.
+    let mut target_path = base_path.clone();
+    target_path.push("target");
+
+    let mut out_path = target_path.clone();
+    out_path.push("wasm32-unknown-unknown");
+    out_path.push("release");
+
+    // Build with ABI
+    run_cargo_build(manifest_path.as_os_str(), target_path.as_os_str(), trace, false)?;
+
+    // Find the binary paths
+    let manifest = Manifest::from_path(&manifest_path)
+        .map_err(|_| BuildError::InvalidManifestFile(manifest_path.clone()))?;
+    let mut wasm_name = None;
+    if let Some(lib) = manifest.lib {
+        wasm_name = lib.name.clone();
+    }
+    if wasm_name == None {
+        if let Some(pkg) = manifest.package {
+            wasm_name = Some(pkg.name.replace("-", "_"));
+        }
+    }
+    let mut bin_path = out_path.clone();
+    bin_path.push(wasm_name.ok_or(BuildError::InvalidManifestFile(manifest_path.clone()))?);
+
+    let wasm_path = bin_path.with_extension("wasm");
+    let abi_path = bin_path.with_extension("abi");
+
+    // Extract ABI
+    let wasm = fs::read(&wasm_path).map_err(|err| BuildError::IOErrorAtPath(err, wasm_path.clone()))?;
+    let abi = extract_abi(&wasm).map_err(BuildError::AbiExtractionError)?;
+    fs::write(&abi_path, scrypto_encode(&abi)).map_err(|err| BuildError::IOErrorAtPath(err, abi_path.clone()))?;
+
+    // Build without ABI
+    run_cargo_build(manifest_path.as_os_str(), target_path.as_os_str(), trace, true)?;
+
+    Ok((wasm_path, abi_path))
 }
 
 /// Runs tests within a package.
