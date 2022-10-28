@@ -5,15 +5,35 @@
 target/
 **/*.rs.bk
 
-# Note we explicitly opt-in to source controlling the workspace Cargo.lock
-# Whilst this isn't typical for libraries (http://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries)
-# this is because we are building the CLI application.
-# This Cargo.lock is ignored for users pulling in the crates as libraries, or building scrypto packages
-# Sure applications will maintain their own Cargo.lock
+# CARGO.LOCK - Source controlling strategy
+#
+# We have multiple workspaces/crates in this repository:
+#
+# TYPE 1:
+# - The root workspace of libraries. As per docs in below link, libraries shouldn't have Cargo.lock source controlled.
+#   The Cargo.lock of packages is ignored anyway by crates pulling them in.
+#   http://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries
+Cargo.lock
 
-# Old (ignored) cargo locks of crates now part of central workspace
-# These will be ignored by cargo now.
-# Keep these git'ignored so that they don't cause confusion on developers' computers
+# TYPE 2:
+# - The simulator workspace/package. This is an application, and so has its Cargo.lock source controlled
+!simulator/Cargo.lock
+
+# TYPE 3:
+# - The asset scrypto packages. These need to be built deterministically, so include a Cargo.lock (at a shared workspace layer)
+#   But also keep blanket ignoring all the old Cargo.locks before they moved to blueprints, to make developers' lives better
+assets/**/Cargo.lock
+!assets/blueprints/Cargo.lock
+
+# TYPE 4:
+# - Various test scrypto packages. We don't care too much about -- so don't source control their Cargo.locks
+radix-engine/tests/**/Cargo.lock
+examples/**/Cargo.lock
+simulator/tests/blueprints/**/Cargo.lock
+
+# TYPE 5:
+# - Old cargo locks of crates now part of central workspace. These will be ignored by cargo now.
+#   Keep these git'ignored so that they don't cause confusion on developers' computers
 radix-engine/Cargo.lock
 radix-engine-stores/Cargo.lock
 scrypto/Cargo.lock
@@ -22,18 +42,16 @@ scrypto-derive/Cargo.lock
 scrypto-abi/Cargo.lock
 scrypto-tests/Cargo.lock
 transaction/Cargo.lock
-simulator/Cargo.lock
 sbor/Cargo.lock
 sbor-derive/Cargo.lock
 sbor-tests/Cargo.lock
 
-# Also - continue to ignore the scrypto Cargo.locks for now
-# We should source control these at some point (and put up with the painful developer merge conflicts)
-# ... or create separate sub-workspaces for each of them to move the problem and solve in a nicer way!
-radix-engine/tests/**/Cargo.lock
-examples/**/Cargo.lock
-assets/**/Cargo.lock
-simulator/tests/blueprints/**/Cargo.lock
+# FURTHER DETAILS:
+# Our CI tests ensure that libraries can build and have their tests run with an empty lock file (ie, with the latest semver
+# crates available on crates.io).
+#
+# In the future, we leave the option open to including more Cargo.locks for more of the repository, to speed up our local
+# builds and provide a consistent set of dependencies developers can use to get-up-and-running.
 
 # Flamegraph profiles
 flamegraph.svg
