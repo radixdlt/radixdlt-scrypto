@@ -1,3 +1,5 @@
+use crate::rust::borrow::Cow;
+use crate::rust::borrow::ToOwned;
 use crate::rust::boxed::Box;
 use crate::rust::cell::RefCell;
 use crate::rust::collections::*;
@@ -289,6 +291,19 @@ impl<T: Decode> Decode for Option<T> {
             OPTION_VARIANT_NONE => Ok(None),
             _ => Err(DecodeError::InvalidIndex(index)),
         }
+    }
+}
+
+impl<'a, B: ?Sized + 'a + ToOwned<Owned = O>, O: Decode + TypeId> Decode
+    for crate::rust::borrow::Cow<'a, B>
+{
+    #[inline]
+    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+        decoder.check_type_id(O::type_id())
+    }
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        let v = O::decode_value(decoder)?;
+        Ok(crate::rust::borrow::Cow::Owned(v))
     }
 }
 
