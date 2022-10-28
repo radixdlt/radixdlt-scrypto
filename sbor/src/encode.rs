@@ -1,3 +1,5 @@
+use crate::rust::borrow::Cow;
+use crate::rust::borrow::ToOwned;
 use crate::rust::boxed::Box;
 use crate::rust::cell::RefCell;
 use crate::rust::collections::*;
@@ -5,8 +7,6 @@ use crate::rust::hash::Hash;
 use crate::rust::ptr::copy;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
-use crate::rust::borrow::Cow;
-use crate::rust::borrow::ToOwned;
 use crate::type_id::*;
 
 /// A data structure that can be serialized into a byte array using SBOR.

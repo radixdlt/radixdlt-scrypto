@@ -1,3 +1,5 @@
+use crate::rust::borrow::Cow;
+use crate::rust::borrow::ToOwned;
 use crate::rust::boxed::Box;
 use crate::rust::cell::RefCell;
 use crate::rust::collections::*;
@@ -8,8 +10,6 @@ use crate::rust::rc::Rc;
 use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
-use crate::rust::borrow::Cow;
-use crate::rust::borrow::ToOwned;
 use crate::type_id::*;
 use sbor::*;
 
