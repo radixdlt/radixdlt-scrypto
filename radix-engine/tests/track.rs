@@ -22,7 +22,7 @@ fn batched_executions_should_result_in_the_same_result() {
     // These runners should mirror each other
     let mut store0 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner0 = TestRunner::new(true, &mut store0);
-    let (public_key, _, account) = test_runner0.new_account();
+    let (public_key, _, account) = test_runner0.new_allocated_account();
     let mut manifests = Vec::<(TransactionManifest, Vec<NonFungibleAddress>)>::new();
     for amount in 0u32..10u32 {
         let manifest = self_transfer_txn(account, Decimal::from(amount));
@@ -34,16 +34,16 @@ fn batched_executions_should_result_in_the_same_result() {
 
     let mut store1 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner1 = TestRunner::new(true, &mut store1);
-    let _ = test_runner1.new_account();
+    let _ = test_runner1.new_allocated_account();
     let mut store2 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner2 = TestRunner::new(true, &mut store2);
-    let _ = test_runner2.new_account();
+    let _ = test_runner2.new_allocated_account();
     let mut store3 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner3 = TestRunner::new(true, &mut store3);
-    let _ = test_runner3.new_account();
+    let _ = test_runner3.new_allocated_account();
     let mut store4 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner4 = TestRunner::new(true, &mut store4);
-    let _ = test_runner4.new_account();
+    let _ = test_runner4.new_allocated_account();
 
     // Act
 

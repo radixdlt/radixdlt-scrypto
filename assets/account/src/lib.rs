@@ -6,6 +6,22 @@ blueprint! {
     }
 
     impl Account {
+        pub fn create(withdraw_rule: AccessRule) -> AccountComponent {
+            let mut account = Self {
+                vaults: KeyValueStore::new(),
+            }
+            .instantiate();
+
+            let access_rules = AccessRules::new()
+                .method("balance", rule!(allow_all))
+                .method("deposit", rule!(allow_all))
+                .method("deposit_batch", rule!(allow_all))
+                .default(withdraw_rule);
+            account.add_access_check(access_rules);
+
+            account
+        }
+
         fn internal_new(withdraw_rule: AccessRule, bucket: Option<Bucket>) -> ComponentAddress {
             let mut account = Self {
                 vaults: KeyValueStore::new(),

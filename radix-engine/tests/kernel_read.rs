@@ -9,7 +9,7 @@ fn should_not_be_able_to_read_global_substate() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (_, _, account) = test_runner.new_account();
+    let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/kernel");
 
     // Act
