@@ -282,10 +282,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         self.execute_manifest(manifest, initial_proofs)
     }
 
-    pub fn execute_transaction(
-        &mut self,
-        transaction: &Executable,
-    ) -> TransactionReceipt {
+    pub fn execute_transaction(&mut self, transaction: &Executable) -> TransactionReceipt {
         self.execute_transaction_with_config(
             transaction,
             &FeeReserveConfig::standard(),
