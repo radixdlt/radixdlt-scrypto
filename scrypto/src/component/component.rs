@@ -1,3 +1,4 @@
+use sbor::rust::fmt::Debug;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
@@ -51,16 +52,23 @@ pub struct ComponentStateSubstate {
 }
 
 impl Component {
-    /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
-        let input = RadixEngineInput::InvokeScryptoMethod(
+        self.sys_call(method, args, &mut Syscalls).unwrap()
+    }
+
+    pub fn sys_call<T: Decode, Y, E: Debug + TypeId + Decode>(&self, method: &str, args: Vec<u8>, sys_calls: &mut Y) -> Result<T, E>
+        where
+            Y: ScryptoSyscalls<E>,
+    {
+        let rtn: T = sys_calls.sys_invoke_scrypto_method(
             ScryptoMethodIdent {
                 receiver: ScryptoReceiver::Component(self.0),
                 method_name: method.to_string(),
             },
             args,
-        );
-        call_engine(input)
+        )?;
+
+        Ok(rtn)
     }
 
     /// Returns the package ID of this component.
@@ -84,20 +92,34 @@ impl Component {
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        let input = RadixEngineInput::InvokeNativeMethod(
+        self.sys_add_access_check(access_rules, &mut Syscalls).unwrap()
+    }
+
+    pub fn sys_add_access_check<Y, E: Debug + TypeId + Decode>(&mut self, access_rules: AccessRules, sys_calls: &mut Y) -> Result<&mut Self, E>
+        where
+            Y: ScryptoSyscalls<E>,
+    {
+        let _: () = sys_calls.sys_invoke_native_method(
             NativeMethod::Component(ComponentMethod::AddAccessCheck),
             RENodeId::Component(self.0),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
-        );
-        let _: () = call_engine(input);
+        )?;
 
-        self
+        Ok(self)
     }
 
     pub fn globalize(self) -> ComponentAddress {
-        let input = RadixEngineInput::CreateNode(ScryptoRENode::GlobalComponent(self.0));
-        let node_id: RENodeId = call_engine(input);
-        node_id.into()
+        self.sys_globalize(&mut Syscalls).unwrap()
+    }
+
+    pub fn sys_globalize<Y, E: Debug + TypeId + Decode>(self, sys_calls: &mut Y) -> Result<ComponentAddress, E>
+        where
+            Y: ScryptoSyscalls<E>,
+    {
+        let node_id: RENodeId = sys_calls.sys_create_node(
+            ScryptoRENode::GlobalComponent(self.0),
+        )?;
+        Ok(node_id.into())
     }
 }
 

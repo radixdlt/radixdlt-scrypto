@@ -4,8 +4,6 @@ use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::core::*;
 use scrypto::engine::types::*;
-
-#[cfg(target_arch = "wasm32")]
 use crate::engine::utils::call_engine;
 
 use super::types::*;
@@ -15,14 +13,11 @@ extern "C" {
     pub fn radix_engine(input: *mut u8) -> *mut u8;
 }
 
-#[cfg(target_arch = "wasm32")]
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct SyscallError;
 
-#[cfg(target_arch = "wasm32")]
 pub struct Syscalls;
 
-#[cfg(target_arch = "wasm32")]
 impl ScryptoSyscalls<SyscallError> for Syscalls {
     fn sys_invoke_scrypto_function<V: Decode>(
         &mut self,
