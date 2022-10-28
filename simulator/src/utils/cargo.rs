@@ -50,7 +50,12 @@ pub enum FormatError {
     CargoFailure(ExitStatus),
 }
 
-fn run_cargo_build(manifest_path: impl AsRef<OsStr>, target_path: impl AsRef<OsStr>, trace: bool, no_abi_gen: bool) -> Result<(), BuildError> {
+fn run_cargo_build(
+    manifest_path: impl AsRef<OsStr>,
+    target_path: impl AsRef<OsStr>,
+    trace: bool,
+    no_abi_gen: bool,
+) -> Result<(), BuildError> {
     let mut features = Vec::<String>::new();
     if trace {
         features.push("scrypto/trace".to_owned());
@@ -83,7 +88,9 @@ fn run_cargo_build(manifest_path: impl AsRef<OsStr>, target_path: impl AsRef<OsS
 
 /// Gets the default cargo directory for the given crate.
 /// This respects whether the crate is in a workspace.
-pub fn get_default_target_directory(manifest_path: impl AsRef<OsStr>) -> Result<String, BuildError> {
+pub fn get_default_target_directory(
+    manifest_path: impl AsRef<OsStr>,
+) -> Result<String, BuildError> {
     let output = Command::new("cargo")
         .arg("metadata")
         .arg("--manifest-path")
@@ -96,7 +103,8 @@ pub fn get_default_target_directory(manifest_path: impl AsRef<OsStr>) -> Result<
     if output.status.success() {
         let parsed = serde_json::from_slice::<serde_json::Value>(&output.stdout)
             .map_err(|_| BuildError::CargoTargetDirectoryResolutionError)?;
-        let target_directory = parsed.as_object()
+        let target_directory = parsed
+            .as_object()
             .and_then(|o| o.get("target_directory"))
             .and_then(|o| o.as_str())
             .ok_or(BuildError::CargoTargetDirectoryResolutionError)?;
@@ -107,7 +115,11 @@ pub fn get_default_target_directory(manifest_path: impl AsRef<OsStr>) -> Result<
 }
 
 /// Builds a package.
-pub fn build_package<P: AsRef<Path>>(base_path: P, trace: bool, force_local_target: bool) -> Result<(PathBuf, PathBuf), BuildError> {
+pub fn build_package<P: AsRef<Path>>(
+    base_path: P,
+    trace: bool,
+    force_local_target: bool,
+) -> Result<(PathBuf, PathBuf), BuildError> {
     let base_path = base_path.as_ref().to_owned();
 
     let mut manifest_path = base_path.clone();
@@ -124,8 +136,8 @@ pub fn build_package<P: AsRef<Path>>(base_path: P, trace: bool, force_local_targ
         target_path.push("target");
         target_path
     } else {
-        PathBuf::from_str(&get_default_target_directory(&manifest_path)?)
-            .unwrap()// Infallible
+        PathBuf::from_str(&get_default_target_directory(&manifest_path)?).unwrap()
+        // Infallible
     };
 
     let mut out_path = target_path.clone();
@@ -154,9 +166,11 @@ pub fn build_package<P: AsRef<Path>>(base_path: P, trace: bool, force_local_targ
     let abi_path = bin_path.with_extension("abi");
 
     // Extract ABI
-    let wasm = fs::read(&wasm_path).map_err(|err| BuildError::IOErrorAtPath(err, wasm_path.clone()))?;
+    let wasm =
+        fs::read(&wasm_path).map_err(|err| BuildError::IOErrorAtPath(err, wasm_path.clone()))?;
     let abi = extract_abi(&wasm).map_err(BuildError::AbiExtractionError)?;
-    fs::write(&abi_path, scrypto_encode(&abi)).map_err(|err| BuildError::IOErrorAtPath(err, abi_path.clone()))?;
+    fs::write(&abi_path, scrypto_encode(&abi))
+        .map_err(|err| BuildError::IOErrorAtPath(err, abi_path.clone()))?;
 
     // Build without ABI
     run_cargo_build(&manifest_path, &target_path, trace, true)?;

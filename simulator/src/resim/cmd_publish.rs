@@ -47,10 +47,9 @@ impl Publish {
 
         let code = fs::read(&code_path).map_err(Error::IOError)?;
         let abi = scrypto_decode(
-            &fs::read(&abi_path)
-                .map_err(|err| Error::IOErrorAtPath(err, abi_path))?
-            )
-            .map_err(Error::DataError)?;
+            &fs::read(&abi_path).map_err(|err| Error::IOErrorAtPath(err, abi_path))?,
+        )
+        .map_err(Error::DataError)?;
 
         if let Some(package_address) = self.package_address.clone() {
             let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
