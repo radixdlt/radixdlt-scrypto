@@ -1,4 +1,6 @@
-use crate::engine::{AuthModule, LockFlags, NativeFunctionActor, NativeInterpreter, RENode, SystemApi};
+use crate::engine::{
+    AuthModule, LockFlags, NativeFunctionActor, NativeInterpreter, RENode, SystemApi,
+};
 use crate::fee::FeeReserve;
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
@@ -16,10 +18,19 @@ pub struct EpochManager {
     pub info: EpochManagerSubstate,
 }
 
-impl NativeFunctionActor<EpochManagerCreateInput, SystemAddress, EpochManagerError> for NativeInterpreter {
-    fn execute<'s, Y, R>(_input: EpochManagerCreateInput, system_api: &mut Y) -> Result<SystemAddress, InvokeError<EpochManagerError>> where Y: SystemApi<'s, R>, R: FeeReserve {
-        let node_id = system_api
-            .create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
+impl NativeFunctionActor<EpochManagerCreateInput, SystemAddress, EpochManagerError>
+    for NativeInterpreter
+{
+    fn execute<'s, Y, R>(
+        _input: EpochManagerCreateInput,
+        system_api: &mut Y,
+    ) -> Result<SystemAddress, InvokeError<EpochManagerError>>
+    where
+        Y: SystemApi<'s, R>,
+        R: FeeReserve,
+    {
+        let node_id =
+            system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
 
         let global_node_id = system_api.create_node(RENode::Global(
             GlobalAddressSubstate::System(node_id.into()),
@@ -28,7 +39,6 @@ impl NativeFunctionActor<EpochManagerCreateInput, SystemAddress, EpochManagerErr
         Ok(global_node_id.into())
     }
 }
-
 
 impl EpochManager {
     pub fn function_auth(func: &EpochManagerFunction) -> Vec<MethodAuthorization> {

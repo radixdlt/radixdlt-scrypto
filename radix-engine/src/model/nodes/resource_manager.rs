@@ -113,7 +113,9 @@ impl ResourceManager {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ResourceManagerError>>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation, ScryptoValue> + Invokable<NativeInvocation, ScryptoValue>,
+        Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation, ScryptoValue>
+            + Invokable<NativeInvocation, ScryptoValue>,
         R: FeeReserve,
     {
         match func {
@@ -280,7 +282,9 @@ impl ResourceManager {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ResourceManagerError>>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation, ScryptoValue> + Invokable<NativeInvocation, ScryptoValue>,
+        Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation, ScryptoValue>
+            + Invokable<NativeInvocation, ScryptoValue>,
         R: FeeReserve,
     {
         let node_id = RENodeId::ResourceManager(resource_manager_id);

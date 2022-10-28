@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 pub use sbor::rust::borrow::ToOwned;
 pub use sbor::rust::boxed::Box;
 pub use sbor::rust::cell::{Ref, RefCell, RefMut};
@@ -52,6 +53,7 @@ pub use scrypto::resource::{
 pub use scrypto::values::{ScryptoValue, ScryptoValueReplaceError};
 
 // methods and macros
+use crate::engine::{Kernel, REActor, RENodeLocation, RuntimeError};
 pub use sbor::decode_any;
 pub use scrypto::buffer::{scrypto_decode, scrypto_encode};
 pub use scrypto::crypto::hash;
@@ -60,9 +62,9 @@ pub use scrypto::resource::{
 };
 pub use scrypto::{access_and_or, access_rule_node, args, dec, pdec, rule};
 
-pub enum Invocation {
-    Scrypto(ScryptoInvocation),
-    Native(NativeInvocation),
+pub trait Invocation {
+    fn args(&self) -> &ScryptoValue;
+    fn name(&self) -> String;
 }
 
 /// Scrypto function/method invocation.
@@ -71,35 +73,48 @@ pub enum ScryptoInvocation {
     Method(ScryptoMethodIdent, ScryptoValue),
 }
 
+impl Invocation for ScryptoInvocation {
+    fn args(&self) -> &ScryptoValue {
+        match self {
+            ScryptoInvocation::Function(_, args) => &args,
+            ScryptoInvocation::Method(_, args) => &args,
+        }
+    }
+
+    fn name(&self) -> String {
+        match self {
+            ScryptoInvocation::Function(ident, ..) => {
+                format!("{:?}", ident)
+            },
+            ScryptoInvocation::Method(ident, ..) => {
+                format!("{:?}", ident)
+            }
+        }
+    }
+}
+
 /// Native function/method invocation.
 pub enum NativeInvocation {
     Function(NativeFunction, ScryptoValue),
     Method(NativeMethod, RENodeId, ScryptoValue),
 }
 
-impl Invocation {
-    pub fn args(&self) -> &ScryptoValue {
-        match self {
-            Invocation::Scrypto(i) => i.args(),
-            Invocation::Native(i) => i.args(),
-        }
-    }
-}
-
-impl ScryptoInvocation {
-    pub fn args(&self) -> &ScryptoValue {
-        match self {
-            ScryptoInvocation::Function(_, args) => &args,
-            ScryptoInvocation::Method(_, args) => &args,
-        }
-    }
-}
-
-impl NativeInvocation {
-    pub fn args(&self) -> &ScryptoValue {
+impl Invocation for NativeInvocation {
+    fn args(&self) -> &ScryptoValue {
         match self {
             NativeInvocation::Function(_, args) => &args,
             NativeInvocation::Method(_, _, args) => &args,
+        }
+    }
+
+    fn name(&self) -> String {
+        match self {
+            NativeInvocation::Function(ident, ..) => {
+                format!("{:?}", ident)
+            },
+            NativeInvocation::Method(ident, ..) => {
+                format!("{:?}", ident)
+            }
         }
     }
 }

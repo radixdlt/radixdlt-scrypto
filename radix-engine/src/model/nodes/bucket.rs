@@ -1,8 +1,8 @@
-use scrypto::resource::Proof;
 use crate::engine::{LockFlags, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{BucketSubstate, InvokeError, ProofError, ResourceOperationError};
 use crate::types::*;
+use scrypto::resource::Proof;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum BucketError {
@@ -19,18 +19,29 @@ pub enum BucketError {
 pub struct Bucket;
 
 trait BucketMethodActor<I, O, E> {
-    fn execute<'s, Y, R>(bucket_id: BucketId, input: I, system_api: &mut Y) -> Result<O, InvokeError<E>>
-        where
-            Y: SystemApi<'s, R>,
-            R: FeeReserve;
+    fn execute<'s, Y, R>(
+        bucket_id: BucketId,
+        input: I,
+        system_api: &mut Y,
+    ) -> Result<O, InvokeError<E>>
+    where
+        Y: SystemApi<'s, R>,
+        R: FeeReserve;
 }
 
 impl BucketMethodActor<BucketTakeInput, scrypto::resource::Bucket, BucketError> for Bucket {
-    fn execute<'s, Y, R>(bucket_id: BucketId, input: BucketTakeInput, system_api: &mut Y) -> Result<scrypto::resource::Bucket, InvokeError<BucketError>> where Y: SystemApi<'s, R>, R: FeeReserve {
+    fn execute<'s, Y, R>(
+        bucket_id: BucketId,
+        input: BucketTakeInput,
+        system_api: &mut Y,
+    ) -> Result<scrypto::resource::Bucket, InvokeError<BucketError>>
+    where
+        Y: SystemApi<'s, R>,
+        R: FeeReserve,
+    {
         let node_id = RENodeId::Bucket(bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle =
-            system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
@@ -44,12 +55,21 @@ impl BucketMethodActor<BucketTakeInput, scrypto::resource::Bucket, BucketError> 
     }
 }
 
-impl BucketMethodActor<BucketTakeNonFungiblesInput, scrypto::resource::Bucket, BucketError> for Bucket {
-    fn execute<'s, Y, R>(bucket_id: BucketId, input: BucketTakeNonFungiblesInput, system_api: &mut Y) -> Result<scrypto::resource::Bucket, InvokeError<BucketError>> where Y: SystemApi<'s, R>, R: FeeReserve {
+impl BucketMethodActor<BucketTakeNonFungiblesInput, scrypto::resource::Bucket, BucketError>
+    for Bucket
+{
+    fn execute<'s, Y, R>(
+        bucket_id: BucketId,
+        input: BucketTakeNonFungiblesInput,
+        system_api: &mut Y,
+    ) -> Result<scrypto::resource::Bucket, InvokeError<BucketError>>
+    where
+        Y: SystemApi<'s, R>,
+        R: FeeReserve,
+    {
         let node_id = RENodeId::Bucket(bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle =
-            system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
@@ -63,12 +83,21 @@ impl BucketMethodActor<BucketTakeNonFungiblesInput, scrypto::resource::Bucket, B
     }
 }
 
-impl BucketMethodActor<BucketGetNonFungibleIdsInput, BTreeSet<NonFungibleId>, BucketError> for Bucket {
-    fn execute<'s, Y, R>(bucket_id: BucketId, _input: BucketGetNonFungibleIdsInput, system_api: &mut Y) -> Result<BTreeSet<NonFungibleId>, InvokeError<BucketError>> where Y: SystemApi<'s, R>, R: FeeReserve {
+impl BucketMethodActor<BucketGetNonFungibleIdsInput, BTreeSet<NonFungibleId>, BucketError>
+    for Bucket
+{
+    fn execute<'s, Y, R>(
+        bucket_id: BucketId,
+        _input: BucketGetNonFungibleIdsInput,
+        system_api: &mut Y,
+    ) -> Result<BTreeSet<NonFungibleId>, InvokeError<BucketError>>
+    where
+        Y: SystemApi<'s, R>,
+        R: FeeReserve,
+    {
         let node_id = RENodeId::Bucket(bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle =
-            system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
 
         let substate_ref = system_api.get_ref(bucket_handle)?;
         let bucket = substate_ref.bucket();
@@ -78,13 +107,19 @@ impl BucketMethodActor<BucketGetNonFungibleIdsInput, BTreeSet<NonFungibleId>, Bu
     }
 }
 
-
 impl BucketMethodActor<BucketGetAmountInput, Decimal, BucketError> for Bucket {
-    fn execute<'s, Y, R>(bucket_id: BucketId, _input: BucketGetAmountInput, system_api: &mut Y) -> Result<Decimal, InvokeError<BucketError>> where Y: SystemApi<'s, R>, R: FeeReserve {
+    fn execute<'s, Y, R>(
+        bucket_id: BucketId,
+        _input: BucketGetAmountInput,
+        system_api: &mut Y,
+    ) -> Result<Decimal, InvokeError<BucketError>>
+    where
+        Y: SystemApi<'s, R>,
+        R: FeeReserve,
+    {
         let node_id = RENodeId::Bucket(bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle =
-            system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
 
         let substate = system_api.get_ref(bucket_handle)?;
         let bucket = substate.bucket();
@@ -93,11 +128,18 @@ impl BucketMethodActor<BucketGetAmountInput, Decimal, BucketError> for Bucket {
 }
 
 impl BucketMethodActor<BucketPutInput, (), BucketError> for Bucket {
-    fn execute<'s, Y, R>(bucket_id: BucketId, input: BucketPutInput, system_api: &mut Y) -> Result<(), InvokeError<BucketError>> where Y: SystemApi<'s, R>, R: FeeReserve {
+    fn execute<'s, Y, R>(
+        bucket_id: BucketId,
+        input: BucketPutInput,
+        system_api: &mut Y,
+    ) -> Result<(), InvokeError<BucketError>>
+    where
+        Y: SystemApi<'s, R>,
+        R: FeeReserve,
+    {
         let node_id = RENodeId::Bucket(bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle =
-            system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let other_bucket = system_api
             .drop_node(RENodeId::Bucket(input.bucket.0))?
@@ -112,11 +154,18 @@ impl BucketMethodActor<BucketPutInput, (), BucketError> for Bucket {
 }
 
 impl BucketMethodActor<BucketGetResourceAddressInput, ResourceAddress, BucketError> for Bucket {
-    fn execute<'s, Y, R>(bucket_id: BucketId, _input: BucketGetResourceAddressInput, system_api: &mut Y) -> Result<ResourceAddress, InvokeError<BucketError>> where Y: SystemApi<'s, R>, R: FeeReserve {
+    fn execute<'s, Y, R>(
+        bucket_id: BucketId,
+        _input: BucketGetResourceAddressInput,
+        system_api: &mut Y,
+    ) -> Result<ResourceAddress, InvokeError<BucketError>>
+    where
+        Y: SystemApi<'s, R>,
+        R: FeeReserve,
+    {
         let node_id = RENodeId::Bucket(bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle =
-            system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
 
         let substate = system_api.get_ref(bucket_handle)?;
         let bucket = substate.bucket();
@@ -124,13 +173,19 @@ impl BucketMethodActor<BucketGetResourceAddressInput, ResourceAddress, BucketErr
     }
 }
 
-
 impl BucketMethodActor<BucketCreateProofInput, scrypto::resource::Proof, BucketError> for Bucket {
-    fn execute<'s, Y, R>(bucket_id: BucketId, _input: BucketCreateProofInput, system_api: &mut Y) -> Result<Proof, InvokeError<BucketError>> where Y: SystemApi<'s, R>, R: FeeReserve {
+    fn execute<'s, Y, R>(
+        bucket_id: BucketId,
+        _input: BucketCreateProofInput,
+        system_api: &mut Y,
+    ) -> Result<Proof, InvokeError<BucketError>>
+    where
+        Y: SystemApi<'s, R>,
+        R: FeeReserve,
+    {
         let node_id = RENodeId::Bucket(bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle =
-            system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
@@ -142,7 +197,6 @@ impl BucketMethodActor<BucketCreateProofInput, scrypto::resource::Proof, BucketE
         Ok(scrypto::resource::Proof(proof_id))
     }
 }
-
 
 impl Bucket {
     pub fn main<'s, Y, R>(

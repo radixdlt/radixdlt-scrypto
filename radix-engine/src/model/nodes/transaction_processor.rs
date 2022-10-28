@@ -82,7 +82,9 @@ impl TransactionProcessor {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation, ScryptoValue> + Invokable<NativeInvocation, ScryptoValue>,
+        Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation, ScryptoValue>
+            + Invokable<NativeInvocation, ScryptoValue>,
         R: FeeReserve,
     {
         let mut value = args.dom;
@@ -172,7 +174,9 @@ impl TransactionProcessor {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation, ScryptoValue> + Invokable<NativeInvocation, ScryptoValue>,
+        Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation, ScryptoValue>
+            + Invokable<NativeInvocation, ScryptoValue>,
         R: FeeReserve,
     {
         match func {
@@ -582,10 +586,7 @@ impl TransactionProcessor {
                             .and_then(|args| Self::process_expressions(args, system_api))
                             .and_then(|args| {
                                 system_api
-                                    .invoke(ScryptoInvocation::Method(
-                                        method_ident.clone(),
-                                        args,
-                                    ))
+                                    .invoke(ScryptoInvocation::Method(method_ident.clone(), args))
                                     .map_err(InvokeError::Downstream)
                             })
                             .and_then(|result| {

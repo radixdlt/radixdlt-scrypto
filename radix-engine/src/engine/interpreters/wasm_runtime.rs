@@ -14,7 +14,9 @@ use crate::wasm::*;
 /// the system api will bill properly.
 pub struct RadixEngineWasmRuntime<'y, 's, Y, R>
 where
-    Y: SystemApi<'s, R> + Invokable<ScryptoInvocation, ScryptoValue> + Invokable<NativeInvocation, ScryptoValue>,
+    Y: SystemApi<'s, R>
+        + Invokable<ScryptoInvocation, ScryptoValue>
+        + Invokable<NativeInvocation, ScryptoValue>,
     R: FeeReserve,
 {
     actor: ScryptoActor,
@@ -26,7 +28,9 @@ where
 
 impl<'y, 's, Y, R> RadixEngineWasmRuntime<'y, 's, Y, R>
 where
-    Y: SystemApi<'s, R> + Invokable<ScryptoInvocation, ScryptoValue> + Invokable<NativeInvocation, ScryptoValue>,
+    Y: SystemApi<'s, R>
+        + Invokable<ScryptoInvocation, ScryptoValue>
+        + Invokable<NativeInvocation, ScryptoValue>,
     R: FeeReserve,
 {
     // TODO: expose API for reading blobs
@@ -210,7 +214,9 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
 
 impl<'y, 's, Y, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, Y, R>
 where
-    Y: SystemApi<'s, R> + Invokable<ScryptoInvocation, ScryptoValue> + Invokable<NativeInvocation, ScryptoValue>,
+    Y: SystemApi<'s, R>
+        + Invokable<ScryptoInvocation, ScryptoValue>
+        + Invokable<NativeInvocation, ScryptoValue>,
     R: FeeReserve,
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {
