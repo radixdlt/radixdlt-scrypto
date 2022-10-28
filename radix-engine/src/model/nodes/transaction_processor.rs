@@ -188,6 +188,7 @@ impl TransactionProcessor {
                 intent_hash: _,
                 start_epoch_inclusive,
                 end_epoch_exclusive,
+                skip_epoch_assertions: skip_epoch_validation,
             } => {
                 // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
                 //        Which could allow for better caching of transaction validity over epoch boundaries
@@ -200,7 +201,7 @@ impl TransactionProcessor {
                     InvokeError::Error(TransactionProcessorError::InvalidGetEpochResponseData(err))
                 })?;
 
-                if current_epoch < start_epoch_inclusive {
+                if !skip_epoch_validation && current_epoch < start_epoch_inclusive {
                     return Err(InvokeError::Error(
                         TransactionProcessorError::TransactionEpochNotYetValid {
                             valid_from: start_epoch_inclusive,
@@ -208,7 +209,7 @@ impl TransactionProcessor {
                         },
                     ));
                 }
-                if current_epoch >= end_epoch_exclusive {
+                if !skip_epoch_validation && current_epoch >= end_epoch_exclusive {
                     return Err(InvokeError::Error(
                         TransactionProcessorError::TransactionEpochNoLongerValid {
                             valid_until: end_epoch_exclusive - 1,

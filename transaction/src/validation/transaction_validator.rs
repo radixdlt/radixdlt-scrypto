@@ -103,6 +103,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
                 intent_hash,
                 start_epoch_inclusive: header.start_epoch_inclusive,
                 end_epoch_exclusive: header.end_epoch_exclusive,
+                skip_epoch_assertions: false,
             },
         ))
     }
@@ -120,6 +121,7 @@ impl NotarizedTransactionValidator {
     ) -> Result<Executable, TransactionValidationError> {
         let transaction_hash = preview_intent.hash();
         let intent = preview_intent.intent;
+        let intent_hash = intent.hash();
         let instructions = self.validate_intent(&intent, intent_hash_manager)?;
         let initial_proofs = AuthModule::pk_non_fungibles(&preview_intent.signer_public_keys);
 
@@ -139,7 +141,12 @@ impl NotarizedTransactionValidator {
             intent.header.cost_unit_limit,
             intent.header.tip_percentage,
             intent.manifest.blobs,
-            IntentValidation::None,
+            IntentValidation::User {
+                intent_hash,
+                start_epoch_inclusive: intent.header.start_epoch_inclusive,
+                end_epoch_exclusive: intent.header.end_epoch_exclusive,
+                skip_epoch_assertions: !preview_intent.flags.permit_invalid_header_epoch,
+            },
         ))
     }
 
@@ -433,6 +440,7 @@ mod tests {
                 flags: PreviewFlags {
                     unlimited_loan: true,
                     assume_all_signature_proofs: false,
+                    permit_invalid_header_epoch: false,
                 },
             },
             &mut intent_hash_manager,

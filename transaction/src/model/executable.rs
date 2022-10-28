@@ -31,6 +31,8 @@ pub enum IntentValidation {
         intent_hash: Hash,
         start_epoch_inclusive: u64,
         end_epoch_exclusive: u64,
+        /// For preview - still do the look ups to give equivalent cost unit spend, but ignore the result
+        skip_epoch_assertions: bool,
     },
     None,
 }
