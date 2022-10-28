@@ -54,7 +54,7 @@ impl Transfer {
         }
 
         let manifest = manifest_builder
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100.into(), FAUCET_COMPONENT)
             .withdraw_from_account_by_amount(self.amount, self.resource_address.0, default_account)
             .call_method(
                 self.recipient.0,

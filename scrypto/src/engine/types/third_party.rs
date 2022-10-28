@@ -7,6 +7,7 @@ pub use sbor::*;
 pub use strum::*;
 
 pub use crate::component::{ComponentAddress, PackageAddress};
+pub use crate::core::SystemAddress;
 pub use crate::crypto::Hash;
 pub use crate::resource::NonFungibleId;
 pub use crate::resource::ResourceAddress;

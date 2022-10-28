@@ -60,7 +60,7 @@ impl ComponentAuthZone {
             .expect("AuthZone does not exist");
         sys_calls.sys_invoke_native_method(
             NativeMethod::AuthZone(AuthZoneMethod::Pop),
-            Receiver::Ref(node_id),
+            node_id,
             scrypto::buffer::scrypto_encode(&(AuthZonePopInput { })),
         )
     }
@@ -69,8 +69,7 @@ impl ComponentAuthZone {
         {
             let input = RadixEngineInput::GetVisibleNodeIds();
             let owned_node_ids: Vec<RENodeId> = call_engine(input);
-            let node_id = owned_node_ids.into_iter().find(|n| matches!(n, RENodeId::AuthZoneStack(..))).expect("AuthZone does not exist");
-            Receiver::Ref(node_id)
+            owned_node_ids.into_iter().find(|n| matches!(n, RENodeId::AuthZoneStack(..))).expect("AuthZone does not exist")
         }, NativeMethod::AuthZone => {
             pub fn create_proof(resource_address: ResourceAddress) -> Proof {
                 AuthZoneMethod::CreateProof,
@@ -112,7 +111,7 @@ impl ComponentAuthZone {
 
         sys_calls.sys_invoke_native_method(
             NativeMethod::AuthZone(AuthZoneMethod::Push),
-            Receiver::Ref(node_id),
+            node_id,
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
         )
     }

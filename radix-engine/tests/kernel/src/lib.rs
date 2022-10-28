@@ -1,12 +1,13 @@
 use scrypto::engine::{api::*, types::*, utils::*};
 use scrypto::prelude::*;
 
+// TODO: de-dup
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum GlobalAddressSubstate {
     Component(scrypto::component::Component),
-    SystemComponent(scrypto::component::Component),
-    Resource(ResourceAddress),
-    Package(PackageAddress),
+    Resource(ResourceManagerId),
+    Package(PackageId),
+    System(EpochManagerId),
 }
 
 blueprint! {

@@ -10,7 +10,7 @@ pub struct NativeFunctionIdent {
 // Native method identifier used by transaction model
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub struct NativeMethodIdent {
-    pub receiver: Receiver,
+    pub receiver: RENodeId,
     pub method_name: String,
 }
 
@@ -18,7 +18,7 @@ pub struct NativeMethodIdent {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, PartialOrd, Ord)]
 pub enum NativeMethod {
     Component(ComponentMethod),
-    System(SystemMethod),
+    EpochManager(EpochManagerMethod),
     AuthZone(AuthZoneMethod),
     ResourceManager(ResourceManagerMethod),
     Bucket(BucketMethod),
@@ -30,24 +30,10 @@ pub enum NativeMethod {
 // Native method enum used by Kernel SystemAPI and WASM
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, PartialOrd, Ord)]
 pub enum NativeFunction {
-    System(SystemFunction),
+    EpochManager(EpochManagerFunction),
     ResourceManager(ResourceManagerFunction),
     Package(PackageFunction),
     TransactionProcessor(TransactionProcessorFunction),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Copy, TypeId, Encode, Decode)]
-pub enum Receiver {
-    Consumed(RENodeId),
-    Ref(RENodeId),
-}
-
-impl Receiver {
-    pub fn node_id(&self) -> RENodeId {
-        match self {
-            Receiver::Consumed(node_id) | Receiver::Ref(node_id) => *node_id,
-        }
-    }
 }
 
 #[derive(
@@ -94,7 +80,7 @@ pub enum ComponentMethod {
     Display,
 )]
 #[strum(serialize_all = "snake_case")]
-pub enum SystemFunction {
+pub enum EpochManagerFunction {
     Create,
 }
 
@@ -118,8 +104,7 @@ pub enum SystemFunction {
     Display,
 )]
 #[strum(serialize_all = "snake_case")]
-pub enum SystemMethod {
-    GetTransactionHash,
+pub enum EpochManagerMethod {
     GetCurrentEpoch,
     SetEpoch,
 }
@@ -176,6 +161,7 @@ pub enum AuthZoneMethod {
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFunction {
     Create,
+    BurnBucket,
 }
 
 #[derive(
@@ -236,7 +222,6 @@ pub enum ResourceManagerMethod {
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum BucketMethod {
-    Burn,
     Take,
     TakeNonFungibles,
     Put,
@@ -305,7 +290,6 @@ pub enum ProofMethod {
     GetAmount,
     GetNonFungibleIds,
     GetResourceAddress,
-    Drop,
 }
 
 #[derive(

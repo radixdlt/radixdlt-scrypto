@@ -24,7 +24,7 @@ cd "$(dirname "$0")"
 scrypto="scrypto"
 
 (cd assets/account; $scrypto fmt)
-(cd assets/sys-faucet; $scrypto fmt)
+(cd assets/faucet; $scrypto fmt)
 
 (cd examples;
     find . -maxdepth 2 -type f \( -name Cargo.toml \) -print \

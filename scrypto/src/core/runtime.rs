@@ -2,7 +2,7 @@ use sbor::rust::borrow::ToOwned;
 use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::constants::SYS_SYSTEM_COMPONENT;
+use scrypto::constants::EPOCH_MANAGER;
 
 use crate::buffer::scrypto_encode;
 use crate::component::*;
@@ -11,18 +11,15 @@ use crate::crypto::*;
 use crate::engine::{api::*, types::*, utils::*};
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct SystemCreateInput {}
+pub struct EpochManagerCreateInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct SystemGetCurrentEpochInput {}
+pub struct EpochManagerGetCurrentEpochInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct SystemSetEpochInput {
+pub struct EpochManagerSetEpochInput {
     pub epoch: u64,
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct SystemGetTransactionHashInput {}
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -88,24 +85,16 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethod::System(SystemMethod::GetTransactionHash),
-            Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                SYS_SYSTEM_COMPONENT,
-            ))),
-            scrypto_encode(&SystemGetTransactionHashInput {}),
-        );
+        let input = RadixEngineInput::GetTransactionHash();
         call_engine(input)
     }
 
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethod::System(SystemMethod::GetCurrentEpoch),
-            Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                SYS_SYSTEM_COMPONENT,
-            ))),
-            scrypto_encode(&SystemGetCurrentEpochInput {}),
+            NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
+            RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+            scrypto_encode(&EpochManagerGetCurrentEpochInput {}),
         );
         call_engine(input)
     }

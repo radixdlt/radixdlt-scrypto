@@ -13,9 +13,6 @@ use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ConsumingProofDropInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
 pub struct ProofGetAmountInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -112,7 +109,7 @@ impl Proof {
     pub fn sys_clone<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<Proof, E> where Y: ScryptoSyscalls<E> {
         sys_calls.sys_invoke_native_method(
             NativeMethod::Proof(ProofMethod::Clone),
-            Receiver::Ref(RENodeId::Proof(self.0)),
+            RENodeId::Proof(self.0),
             scrypto::buffer::scrypto_encode(&ProofCloneInput {}),
         )
     }
@@ -223,7 +220,7 @@ impl Proof {
     }
 
     native_methods! {
-        Receiver::Ref(RENodeId::Proof(self.0)), NativeMethod::Proof => {
+        RENodeId::Proof(self.0), NativeMethod::Proof => {
             fn amount(&self) -> Decimal {
                 ProofMethod::GetAmount,
                 ProofGetAmountInput {}
@@ -239,13 +236,9 @@ impl Proof {
         }
     }
 
-    native_methods! {
-        Receiver::Consumed(RENodeId::Proof(self.0)), NativeMethod::Proof => {
-            pub fn drop(self) -> () {
-                ProofMethod::Drop,
-                ConsumingProofDropInput {}
-            }
-        }
+    pub fn drop(self) {
+        let input = RadixEngineInput::DropNode(RENodeId::Proof(self.0));
+        let _: () = call_engine(input);
     }
 }
 
@@ -253,6 +246,7 @@ impl Proof {
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct ValidatedProof(pub(crate) Proof);
 
+#[cfg(target_arch = "wasm32")]
 impl Clone for ValidatedProof {
     fn clone(&self) -> Self {
         ValidatedProof(self.0.clone())
@@ -261,7 +255,7 @@ impl Clone for ValidatedProof {
 
 impl ValidatedProof {
     native_methods! {
-        Receiver::Ref(RENodeId::Proof(self.proof_id())), NativeMethod::Proof => {
+        RENodeId::Proof(self.proof_id()), NativeMethod::Proof => {
             pub fn amount(&self) -> Decimal {
                 ProofMethod::GetAmount,
                 ProofGetAmountInput {}

@@ -1,7 +1,7 @@
 use sbor::Decode;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::ScryptoActor;
-use scrypto::engine::types::{Level, LockHandle, NativeFunction, NativeMethod, Receiver, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode, SubstateOffset};
+use scrypto::engine::types::{Level, LockHandle, NativeFunction, NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode, SubstateOffset};
 use scrypto::engine::utils::ScryptoSyscalls;
 use scrypto::values::ScryptoValue;
 use crate::engine::{Kernel, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi};
@@ -9,8 +9,6 @@ use crate::fee::FeeReserve;
 use crate::model::{ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore, RuntimeSubstate};
 use crate::types::{NativeInvocation, ScryptoInvocation};
 use crate::wasm::{WasmEngine, WasmInstance};
-
-
 
 impl<'g, 's, W, I, R> ScryptoSyscalls<RuntimeError> for Kernel<'g, 's, W, I, R>
 where W: WasmEngine<I>,
@@ -38,7 +36,7 @@ R: FeeReserve,{
             .map(|value| scrypto_decode(&value.raw).unwrap())
     }
 
-    fn sys_invoke_native_method<V: Decode>(&mut self, native_method: NativeMethod, receiver: Receiver, args: Vec<u8>) -> Result<V, RuntimeError> {
+    fn sys_invoke_native_method<V: Decode>(&mut self, native_method: NativeMethod, receiver: RENodeId, args: Vec<u8>) -> Result<V, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
 
@@ -117,7 +115,7 @@ R: FeeReserve,{
                     ..
                 },
                 ResolvedReceiver {
-                    receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                    receiver: RENodeId::Component(component_id),
                     ..
                 },
             ) => ScryptoActor::Component(

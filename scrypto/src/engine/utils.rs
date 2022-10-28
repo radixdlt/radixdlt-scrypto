@@ -31,7 +31,7 @@ pub trait ScryptoSyscalls<E: Debug> {
     fn sys_invoke_scrypto_function<V: Decode>(&mut self, fn_ident: ScryptoFunctionIdent, args: Vec<u8>) -> Result<V, E>;
     fn sys_invoke_scrypto_method<V: Decode>(&mut self, method_ident: ScryptoMethodIdent, args: Vec<u8>) -> Result<V, E>;
     fn sys_invoke_native_function<V: Decode>(&mut self, native_function: NativeFunction, args: Vec<u8>) -> Result<V, E>;
-    fn sys_invoke_native_method<V: Decode>(&mut self, native_method: NativeMethod, receiver: Receiver, args: Vec<u8>) -> Result<V, E>;
+    fn sys_invoke_native_method<V: Decode>(&mut self, native_method: NativeMethod, receiver: RENodeId, args: Vec<u8>) -> Result<V, E>;
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, E>;
     fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, E>;
     fn sys_lock_substate(&mut self, node_id: RENodeId, offset: SubstateOffset, mutable: bool) -> Result<LockHandle, E>;

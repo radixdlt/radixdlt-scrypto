@@ -10,7 +10,7 @@ fn test_process_and_transaction() {
     let package_address = test_runner.compile_and_publish("./tests/core");
 
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "CoreTest", "query", args![])
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -25,7 +25,7 @@ fn test_call() {
     let package_address = test_runner.compile_and_publish("./tests/core");
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "MoveTest", "move_bucket", args![])
         .call_function(package_address, "MoveTest", "move_proof", args![])
         .call_method(

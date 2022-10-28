@@ -16,7 +16,7 @@ fn can_withdraw_from_my_account() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method(
             other_account,

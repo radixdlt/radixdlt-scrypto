@@ -26,7 +26,7 @@ impl<I: WasmInstance> ScryptoExecutor<I> {
                     ..
                 },
                 ResolvedReceiver {
-                    receiver: Receiver::Ref(RENodeId::Component(..)),
+                    receiver: RENodeId::Component(..),
                     ..
                 },
             ) => (export_name.to_string(), return_type.clone()),

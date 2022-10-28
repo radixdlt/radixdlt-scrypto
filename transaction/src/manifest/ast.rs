@@ -133,7 +133,6 @@ pub enum ScryptoReceiver {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Receiver {
-    Owned(RENode),
     Ref(RENode),
 }
 
@@ -147,10 +146,10 @@ pub enum RENode {
     KeyValueStore(Value),
     NonFungibleStore(Value),
     Component(Value),
-    System(Value),
     Vault(Value),
     ResourceManager(Value),
     Package(Value),
+    EpochManager(Value),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -189,6 +188,7 @@ pub enum Type {
     Decimal,
     PreciseDecimal,
     PackageAddress,
+    SystemAddress,
     ComponentAddress,
     ResourceAddress,
     Hash,
@@ -231,6 +231,7 @@ pub enum Value {
     Decimal(Box<Value>),
     PreciseDecimal(Box<Value>),
     PackageAddress(Box<Value>),
+    SystemAddress(Box<Value>),
     ComponentAddress(Box<Value>),
     ResourceAddress(Box<Value>),
     Hash(Box<Value>),
@@ -270,6 +271,7 @@ impl Value {
             Value::Decimal(_) => Type::Decimal,
             Value::PreciseDecimal(_) => Type::PreciseDecimal,
             Value::PackageAddress(_) => Type::PackageAddress,
+            Value::SystemAddress(_) => Type::SystemAddress,
             Value::ComponentAddress(_) => Type::ComponentAddress,
             Value::ResourceAddress(_) => Type::ResourceAddress,
             Value::Hash(_) => Type::Hash,

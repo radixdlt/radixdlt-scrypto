@@ -45,7 +45,7 @@ impl ScryptoSyscalls<SyscallError> for Syscalls {
         Ok(rtn)
     }
 
-    fn sys_invoke_native_method<V: Decode>(&mut self, native_method: NativeMethod, receiver: Receiver, args: Vec<u8>) -> Result<V, SyscallError> {
+    fn sys_invoke_native_method<V: Decode>(&mut self, native_method: NativeMethod, receiver: RENodeId, args: Vec<u8>) -> Result<V, SyscallError> {
         let rtn = call_engine(RadixEngineInput::InvokeNativeMethod(
             native_method, receiver, args
         ));
@@ -104,10 +104,11 @@ pub enum RadixEngineInput {
     InvokeScryptoFunction(ScryptoFunctionIdent, Vec<u8>),
     InvokeScryptoMethod(ScryptoMethodIdent, Vec<u8>),
     InvokeNativeFunction(NativeFunction, Vec<u8>),
-    InvokeNativeMethod(NativeMethod, Receiver, Vec<u8>),
+    InvokeNativeMethod(NativeMethod, RENodeId, Vec<u8>),
 
     CreateNode(ScryptoRENode),
     GetVisibleNodeIds(),
+    DropNode(RENodeId),
 
     LockSubstate(RENodeId, SubstateOffset, bool),
     DropLock(LockHandle),
@@ -117,4 +118,5 @@ pub enum RadixEngineInput {
     GetActor(),
     EmitLog(Level, String),
     GenerateUuid(),
+    GetTransactionHash(),
 }

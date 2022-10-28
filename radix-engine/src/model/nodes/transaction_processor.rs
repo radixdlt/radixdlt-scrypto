@@ -59,27 +59,6 @@ impl TransactionProcessor {
         }
     }
 
-    fn replace_receiver(
-        receiver: Receiver,
-        proof_id_mapping: &mut HashMap<ProofId, ProofId>,
-        bucket_id_mapping: &mut HashMap<BucketId, BucketId>,
-    ) -> Result<Receiver, InvokeError<TransactionProcessorError>> {
-        let receiver = match receiver {
-            Receiver::Ref(node_id) => Receiver::Ref(Self::replace_node_id(
-                node_id,
-                proof_id_mapping,
-                bucket_id_mapping,
-            )?),
-            Receiver::Consumed(node_id) => Receiver::Consumed(Self::replace_node_id(
-                node_id,
-                proof_id_mapping,
-                bucket_id_mapping,
-            )?),
-        };
-
-        Ok(receiver)
-    }
-
     fn replace_ids(
         proof_id_mapping: &mut HashMap<ProofId, ProofId>,
         bucket_id_mapping: &mut HashMap<BucketId, BucketId>,
@@ -113,7 +92,7 @@ impl TransactionProcessor {
                     let buckets = system_api
                         .invoke_native(NativeInvocation::Method(
                             NativeMethod::Worktop(WorktopMethod::Drain),
-                            Receiver::Ref(RENodeId::Worktop),
+                            RENodeId::Worktop,
                             ScryptoValue::from_typed(&WorktopDrainInput {}),
                         ))
                         .map_err(InvokeError::Downstream)
@@ -143,7 +122,7 @@ impl TransactionProcessor {
                     let proofs = system_api
                         .invoke_native(NativeInvocation::Method(
                             NativeMethod::AuthZone(AuthZoneMethod::Drain),
-                            Receiver::Ref(auth_zone_node_id),
+                            auth_zone_node_id,
                             ScryptoValue::from_typed(&AuthZoneDrainInput {}),
                         ))
                         .map_err(InvokeError::Downstream)
@@ -219,7 +198,7 @@ impl TransactionProcessor {
                     .into_iter()
                     .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
                     .expect("AuthZone does not exist");
-                let auth_zone_ref = Receiver::Ref(auth_zone_node_id);
+                let auth_zone_ref = auth_zone_node_id;
 
                 for inst in &input.instructions {
                     let result = match inst {
@@ -232,7 +211,7 @@ impl TransactionProcessor {
                                 system_api
                                     .invoke_native(NativeInvocation::Method(
                                         NativeMethod::Worktop(WorktopMethod::TakeAll),
-                                        Receiver::Ref(RENodeId::Worktop),
+                                        RENodeId::Worktop,
                                         ScryptoValue::from_typed(&WorktopTakeAllInput {
                                             resource_address: *resource_address,
                                         }),
@@ -256,7 +235,7 @@ impl TransactionProcessor {
                                 system_api
                                     .invoke_native(NativeInvocation::Method(
                                         NativeMethod::Worktop(WorktopMethod::TakeAmount),
-                                        Receiver::Ref(RENodeId::Worktop),
+                                        RENodeId::Worktop,
                                         ScryptoValue::from_typed(&WorktopTakeAmountInput {
                                             amount: *amount,
                                             resource_address: *resource_address,
@@ -281,7 +260,7 @@ impl TransactionProcessor {
                                 system_api
                                     .invoke_native(NativeInvocation::Method(
                                         NativeMethod::Worktop(WorktopMethod::TakeNonFungibles),
-                                        Receiver::Ref(RENodeId::Worktop),
+                                        RENodeId::Worktop,
                                         ScryptoValue::from_typed(&WorktopTakeNonFungiblesInput {
                                             ids: ids.clone(),
                                             resource_address: *resource_address,
@@ -300,7 +279,7 @@ impl TransactionProcessor {
                                 system_api
                                     .invoke_native(NativeInvocation::Method(
                                         NativeMethod::Worktop(WorktopMethod::Put),
-                                        Receiver::Ref(RENodeId::Worktop),
+                                        RENodeId::Worktop,
                                         ScryptoValue::from_typed(&WorktopPutInput {
                                             bucket: scrypto::resource::Bucket(real_id),
                                         }),
@@ -313,7 +292,7 @@ impl TransactionProcessor {
                         Instruction::AssertWorktopContains { resource_address } => system_api
                             .invoke_native(NativeInvocation::Method(
                                 NativeMethod::Worktop(WorktopMethod::AssertContains),
-                                Receiver::Ref(RENodeId::Worktop),
+                                RENodeId::Worktop,
                                 ScryptoValue::from_typed(&WorktopAssertContainsInput {
                                     resource_address: *resource_address,
                                 }),
@@ -325,7 +304,7 @@ impl TransactionProcessor {
                         } => system_api
                             .invoke_native(NativeInvocation::Method(
                                 NativeMethod::Worktop(WorktopMethod::AssertContainsAmount),
-                                Receiver::Ref(RENodeId::Worktop),
+                                RENodeId::Worktop,
                                 ScryptoValue::from_typed(&WorktopAssertContainsAmountInput {
                                     amount: *amount,
                                     resource_address: *resource_address,
@@ -338,7 +317,7 @@ impl TransactionProcessor {
                         } => system_api
                             .invoke_native(NativeInvocation::Method(
                                 NativeMethod::Worktop(WorktopMethod::AssertContainsNonFungibles),
-                                Receiver::Ref(RENodeId::Worktop),
+                                RENodeId::Worktop,
                                 ScryptoValue::from_typed(&WorktopAssertContainsNonFungiblesInput {
                                     ids: ids.clone(),
                                     resource_address: *resource_address,
@@ -502,11 +481,8 @@ impl TransactionProcessor {
                             .remove(proof_id)
                             .map(|real_id| {
                                 system_api
-                                    .invoke_native(NativeInvocation::Method(
-                                        NativeMethod::Proof(ProofMethod::Drop),
-                                        Receiver::Consumed(RENodeId::Proof(real_id)),
-                                        ScryptoValue::from_typed(&ConsumingProofDropInput {}),
-                                    ))
+                                    .drop_node(RENodeId::Proof(real_id))
+                                    .map(|_| ScryptoValue::unit())
                                     .map_err(InvokeError::Downstream)
                             })
                             .unwrap_or(Err(InvokeError::Error(
@@ -515,11 +491,7 @@ impl TransactionProcessor {
                         Instruction::DropAllProofs => {
                             for (_, real_id) in proof_id_mapping.drain() {
                                 system_api
-                                    .invoke_native(NativeInvocation::Method(
-                                        NativeMethod::Proof(ProofMethod::Drop),
-                                        Receiver::Consumed(RENodeId::Proof(real_id)),
-                                        ScryptoValue::from_typed(&ConsumingProofDropInput {}),
-                                    ))
+                                    .drop_node(RENodeId::Proof(real_id))
                                     .map_err(InvokeError::Downstream)?;
                             }
                             system_api
@@ -561,7 +533,7 @@ impl TransactionProcessor {
                                     system_api
                                         .invoke_native(NativeInvocation::Method(
                                             NativeMethod::Worktop(WorktopMethod::Put),
-                                            Receiver::Ref(RENodeId::Worktop),
+                                            RENodeId::Worktop,
                                             ScryptoValue::from_typed(&WorktopPutInput {
                                                 bucket: scrypto::resource::Bucket(*bucket_id),
                                             }),
@@ -599,7 +571,7 @@ impl TransactionProcessor {
                                     system_api
                                         .invoke_native(NativeInvocation::Method(
                                             NativeMethod::Worktop(WorktopMethod::Put),
-                                            Receiver::Ref(RENodeId::Worktop),
+                                            RENodeId::Worktop,
                                             ScryptoValue::from_typed(&WorktopPutInput {
                                                 bucket: scrypto::resource::Bucket(*bucket_id),
                                             }),
@@ -659,7 +631,7 @@ impl TransactionProcessor {
                                     system_api
                                         .invoke_native(NativeInvocation::Method(
                                             NativeMethod::Worktop(WorktopMethod::Put),
-                                            Receiver::Ref(RENodeId::Worktop),
+                                            RENodeId::Worktop,
                                             ScryptoValue::from_typed(&WorktopPutInput {
                                                 bucket: scrypto::resource::Bucket(*bucket_id),
                                             }),
@@ -681,7 +653,7 @@ impl TransactionProcessor {
                                 system_api
                                     .invoke_native(NativeInvocation::Method(
                                         resolve_native_method(
-                                            &method_ident.receiver,
+                                            method_ident.receiver,
                                             &method_ident.method_name,
                                         )
                                         .ok_or(
@@ -691,8 +663,8 @@ impl TransactionProcessor {
                                                 ),
                                             ),
                                         )?,
-                                        Self::replace_receiver(
-                                            method_ident.receiver.clone(),
+                                        Self::replace_node_id(
+                                            method_ident.receiver,
                                             &mut proof_id_mapping,
                                             &mut bucket_id_mapping,
                                         )?,
@@ -712,7 +684,7 @@ impl TransactionProcessor {
                                     system_api
                                         .invoke_native(NativeInvocation::Method(
                                             NativeMethod::Worktop(WorktopMethod::Put),
-                                            Receiver::Ref(RENodeId::Worktop),
+                                            RENodeId::Worktop,
                                             ScryptoValue::from_typed(&WorktopPutInput {
                                                 bucket: scrypto::resource::Bucket(*bucket_id),
                                             }),

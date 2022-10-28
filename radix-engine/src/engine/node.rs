@@ -14,7 +14,7 @@ pub enum RENode {
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
     ResourceManager(ResourceManagerSubstate),
-    System(SystemSubstate),
+    EpochManager(EpochManagerSubstate),
 }
 
 impl RENode {
@@ -92,8 +92,11 @@ impl RENode {
                     );
                 }
             }
-            RENode::System(system) => {
-                substates.insert(SubstateOffset::System(SystemOffset::System), system.into());
+            RENode::EpochManager(system) => {
+                substates.insert(
+                    SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+                    system.into(),
+                );
             }
         }
 
