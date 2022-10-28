@@ -9,7 +9,7 @@ use crate::model::{
 };
 use crate::types::{NativeInvocation, ScryptoInvocation};
 use crate::wasm::{WasmEngine, WasmInstance};
-use sbor::Decode;
+use sbor::{Decode, Encode};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::ScryptoActor;
 use scrypto::engine::types::{
@@ -59,15 +59,13 @@ where
             .map(|value| scrypto_decode(&value.raw).unwrap())
     }
 
-    fn sys_invoke_native_method<V: Decode>(
+    fn sys_invoke_native_method<ARGS: Encode, V: Decode>(
         &mut self,
         native_method: NativeMethod,
         receiver: RENodeId,
-        args: Vec<u8>,
+        args: &ARGS,
     ) -> Result<V, RuntimeError> {
-        let args = ScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-
+        let args = ScryptoValue::from_typed(args);
         self.invoke_native(NativeInvocation::Method(native_method, receiver, args))
             .map(|value| scrypto_decode(&value.raw).unwrap())
     }

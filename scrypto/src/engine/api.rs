@@ -5,6 +5,7 @@ use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::core::*;
 use scrypto::engine::types::*;
+use crate::buffer::scrypto_encode;
 
 use super::types::*;
 
@@ -49,16 +50,16 @@ impl ScryptoSyscalls<SyscallError> for Syscalls {
         Ok(rtn)
     }
 
-    fn sys_invoke_native_method<V: Decode>(
+    fn sys_invoke_native_method<ARGS: Encode, V: Decode>(
         &mut self,
         native_method: NativeMethod,
         receiver: RENodeId,
-        args: Vec<u8>,
+        args: &ARGS,
     ) -> Result<V, SyscallError> {
         let rtn = call_engine(RadixEngineInput::InvokeNativeMethod(
             native_method,
             receiver,
-            args,
+            scrypto_encode(args),
         ));
         Ok(rtn)
     }

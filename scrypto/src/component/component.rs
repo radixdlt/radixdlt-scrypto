@@ -112,7 +112,7 @@ impl Component {
         let _: () = sys_calls.sys_invoke_native_method(
             NativeMethod::Component(ComponentMethod::AddAccessCheck),
             RENodeId::Component(self.0),
-            scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
+            &ComponentAddAccessCheckInput { access_rules },
         )?;
 
         Ok(self)

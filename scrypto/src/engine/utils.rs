@@ -2,7 +2,7 @@ use crate::values::ScryptoValue;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::Decode;
+use sbor::{Decode, Encode};
 use scrypto::core::*;
 use scrypto::engine::types::*;
 
@@ -43,11 +43,11 @@ pub trait ScryptoSyscalls<E: Debug> {
         native_function: NativeFunction,
         args: Vec<u8>,
     ) -> Result<V, E>;
-    fn sys_invoke_native_method<V: Decode>(
+    fn sys_invoke_native_method<ARGS: Encode, V: Decode>(
         &mut self,
         native_method: NativeMethod,
         receiver: RENodeId,
-        args: Vec<u8>,
+        args: &ARGS,
     ) -> Result<V, E>;
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, E>;
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), E>;

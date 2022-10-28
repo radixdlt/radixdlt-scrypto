@@ -64,7 +64,7 @@ impl ComponentAuthZone {
         sys_calls.sys_invoke_native_method(
             NativeMethod::AuthZone(AuthZoneMethod::Pop),
             node_id,
-            scrypto::buffer::scrypto_encode(&(AuthZonePopInput {})),
+            &AuthZonePopInput {},
         )
     }
 
@@ -88,7 +88,7 @@ impl ComponentAuthZone {
         sys_calls.sys_invoke_native_method(
             NativeMethod::AuthZone(AuthZoneMethod::CreateProof),
             node_id,
-            scrypto::buffer::scrypto_encode(&(AuthZoneCreateProofInput { resource_address })),
+            &AuthZoneCreateProofInput { resource_address },
         )
     }
 
@@ -113,12 +113,10 @@ impl ComponentAuthZone {
         sys_calls.sys_invoke_native_method(
             NativeMethod::AuthZone(AuthZoneMethod::CreateProofByAmount),
             node_id,
-            scrypto::buffer::scrypto_encode(
-                &(AuthZoneCreateProofByAmountInput {
-                    amount,
-                    resource_address,
-                }),
-            ),
+            &AuthZoneCreateProofByAmountInput {
+                amount,
+                resource_address,
+            },
         )
     }
 
@@ -146,12 +144,10 @@ impl ComponentAuthZone {
         sys_calls.sys_invoke_native_method(
             NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds),
             node_id,
-            scrypto::buffer::scrypto_encode(
-                &(AuthZoneCreateProofByIdsInput {
-                    ids: ids.clone(),
-                    resource_address,
-                }),
-            ),
+            &AuthZoneCreateProofByIdsInput {
+                ids: ids.clone(),
+                resource_address,
+            },
         )
     }
 
@@ -178,7 +174,7 @@ impl ComponentAuthZone {
         sys_calls.sys_invoke_native_method(
             NativeMethod::AuthZone(AuthZoneMethod::Push),
             node_id,
-            scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
+            &AuthZonePushInput { proof },
         )
     }
 }

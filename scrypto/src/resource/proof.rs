@@ -113,7 +113,7 @@ impl Proof {
         sys_calls.sys_invoke_native_method(
             NativeMethod::Proof(ProofMethod::Clone),
             RENodeId::Proof(self.0),
-            scrypto::buffer::scrypto_encode(&ProofCloneInput {}),
+            &ProofCloneInput {},
         )
     }
 

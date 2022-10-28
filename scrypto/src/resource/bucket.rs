@@ -62,7 +62,7 @@ impl Bucket {
         sys_calls.sys_invoke_native_method(
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
             RENodeId::Global(GlobalAddress::Resource(resource_address)),
-            scrypto_encode(&ResourceManagerCreateBucketInput {}),
+            &ResourceManagerCreateBucketInput {},
         )
     }
 
@@ -81,7 +81,7 @@ impl Bucket {
         sys_calls.sys_invoke_native_method(
             NativeMethod::Bucket(BucketMethod::CreateProof),
             RENodeId::Bucket(self.0),
-            scrypto_encode(&BucketCreateProofInput {}),
+            &BucketCreateProofInput {},
         )
     }
 

@@ -120,7 +120,7 @@ impl Vault {
         sys_calls.sys_invoke_native_method(
             NativeMethod::Vault(VaultMethod::GetAmount),
             RENodeId::Vault(self.0),
-            scrypto_encode(&VaultGetAmountInput {}),
+            &VaultGetAmountInput {},
         )
     }
 
