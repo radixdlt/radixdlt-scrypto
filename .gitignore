@@ -5,6 +5,12 @@
 target/
 **/*.rs.bk
 
+# Note we explicitly opt-in to source controlling the workspace Cargo.lock
+# Whilst this isn't typical for libraries (http://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries)
+# this is because we are building the CLI application.
+# This Cargo.lock is ignored for users pulling in the crates as libraries, or building scrypto packages
+# Sure applications will maintain their own Cargo.lock
+
 # Old (ignored) cargo locks of crates now part of central workspace
 # These will be ignored by cargo now.
 # Keep these git'ignored so that they don't cause confusion on developers' computers
