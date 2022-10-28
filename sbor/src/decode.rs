@@ -1,4 +1,3 @@
-use crate::rust::borrow::Cow;
 use crate::rust::borrow::ToOwned;
 use crate::rust::boxed::Box;
 use crate::rust::cell::RefCell;
