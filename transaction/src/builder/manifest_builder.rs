@@ -715,6 +715,56 @@ impl ManifestBuilder {
         .0
     }
 
+    pub fn lock_fee_and_withdraw(
+        &mut self,
+        amount: Decimal,
+        resource_address: ResourceAddress,
+        account: ComponentAddress,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "lock_fee_and_withdraw".to_string(),
+            },
+            args: args!(amount, resource_address),
+        })
+        .0
+    }
+
+    pub fn lock_fee_and_withdraw_by_amount(
+        &mut self,
+        amount_to_lock: Decimal,
+        amount: Decimal,
+        resource_address: ResourceAddress,
+        account: ComponentAddress,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "lock_fee_and_withdraw_by_amount".to_string(),
+            },
+            args: args!(amount_to_lock, amount, resource_address),
+        })
+        .0
+    }
+
+    pub fn lock_fee_and_withdraw_by_ids(
+        &mut self,
+        amount_to_lock: Decimal,
+        ids: BTreeSet<NonFungibleId>,
+        resource_address: ResourceAddress,
+        account: ComponentAddress,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "lock_fee_and_withdraw_by_ids".to_string(),
+            },
+            args: args!(amount_to_lock, ids, resource_address),
+        })
+        .0
+    }
+
     /// Locks a fee from the XRD vault of an account.
     pub fn lock_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {

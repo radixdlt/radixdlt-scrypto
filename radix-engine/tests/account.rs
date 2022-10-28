@@ -15,8 +15,7 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
-        .withdraw_from_account(RADIX_TOKEN, account)
+        .lock_fee_and_withdraw(10.into(), RADIX_TOKEN, account)
         .call_method(
             other_account,
             "deposit_batch",
@@ -31,15 +30,13 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
 
     // Assert
     let outputs = receipt.expect_commit_success();
-    let other_account_balance: Decimal = scrypto_decode(&outputs[3]).unwrap();
+    let other_account_balance: Decimal = scrypto_decode(&outputs[2]).unwrap();
     let transfer_amount = other_account_balance - 1000 /* initial balance */;
-    let account_id: ComponentId = test_runner.deref_component(account).unwrap().into();
     let other_account_id: ComponentId = test_runner.deref_component(other_account).unwrap().into();
 
     assert_resource_changes_for_transfer(
         &receipt.expect_commit().resource_changes,
         RADIX_TOKEN,
-        account_id,
         other_account_id,
         transfer_amount,
     );
@@ -65,8 +62,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
-        .withdraw_from_account(resource_address, account)
+        .lock_fee_and_withdraw(10.into(), resource_address, account)
         .call_method(
             other_account,
             "deposit_batch",
@@ -134,8 +130,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account(use_virtual);
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
-        .withdraw_from_account(RADIX_TOKEN, account)
+        .lock_fee_and_withdraw(10.into(), RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::CallMethod {
@@ -209,18 +204,12 @@ fn test_virtual_account_balance() {
 fn assert_resource_changes_for_transfer(
     resource_changes: &Vec<ResourceChange>,
     resource_address: ResourceAddress,
-    source_account: ComponentId,
     target_account: ComponentId,
     transfer_amount: Decimal,
 ) {
     println!("transfer: {:?}", transfer_amount);
     println!("{:?}", resource_changes);
-    assert_eq!(3, resource_changes.len()); // Two transfers (withdrawal, deposit) + fee payment
-    assert!(resource_changes
-        .iter()
-        .any(|r| r.resource_address == resource_address
-            && r.component_id == source_account
-            && r.amount == -transfer_amount));
+    assert_eq!(2, resource_changes.len()); // Two transfers (withdraw + fee, deposit)
     assert!(resource_changes
         .iter()
         .any(|r| r.resource_address == resource_address
