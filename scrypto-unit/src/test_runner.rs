@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -226,7 +227,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let mut cargo = package_dir.as_ref().to_owned();
         cargo.push("Cargo.toml");
         let wasm_name = if cargo.exists() {
-            let content = fs::read_to_string(cargo).expect("Failed to read the Cargo.toml file");
+            let content = fs::read_to_string(&cargo).expect("Failed to read the Cargo.toml file");
             Self::extract_crate_name(&content)
                 .expect("Failed to extract crate name from the Cargo.toml file")
                 .replace("-", "_")
@@ -241,8 +242,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 .to_owned()
                 .replace("-", "_")
         };
-        let mut path = PathBuf::from(package_dir.as_ref());
-        path.push("target");
+        let mut path = PathBuf::from_str(&get_cargo_target_directory(&cargo)).unwrap(); // Infallible;
         path.push("wasm32-unknown-unknown");
         path.push("release");
         path.push(wasm_name);
@@ -385,7 +385,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         account: ComponentAddress,
         signer_public_key: EcdsaSecp256k1PublicKey,
     ) {
-        let package = self.compile_and_publish("./tests/resource_creator");
+        let package = self.compile_and_publish("./tests/blueprints/resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .create_proof_from_account(auth, account)
@@ -762,6 +762,32 @@ pub fn wat2wasm(wat: &str) -> Vec<u8> {
             .replace("${buffer}", include_str!("snippets/buffer.wat")),
     )
     .expect("Failed to compiled WAT into WASM")
+}
+
+/// Gets the default cargo directory for the given crate.
+/// This respects whether the crate is in a workspace.
+pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
+    let output = Command::new("cargo")
+        .arg("metadata")
+        .arg("--manifest-path")
+        .arg(manifest_path.as_ref())
+        .arg("--format-version")
+        .arg("1")
+        .arg("--no-deps")
+        .output()
+        .expect("Failed to call cargo metadata");
+    if output.status.success() {
+        let parsed = serde_json::from_slice::<serde_json::Value>(&output.stdout)
+            .expect("Failed to parse cargo metadata");
+        let target_directory = parsed
+            .as_object()
+            .and_then(|o| o.get("target_directory"))
+            .and_then(|o| o.as_str())
+            .expect("Failed to parse target_directory from cargo metadata");
+        target_directory.to_owned()
+    } else {
+        panic!("Cargo metadata call was not successful");
+    }
 }
 
 pub fn test_abi_any_in_void_out(

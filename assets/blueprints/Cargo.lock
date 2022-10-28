@@ -733,6 +733,8 @@ dependencies = [
  "radix-engine",
  "sbor",
  "scrypto",
+ "serde",
+ "serde_json",
  "transaction",
  "wabt",
 ]

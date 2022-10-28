@@ -10,7 +10,7 @@ fn test_max_call_depth_success() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/recursion");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
 
     // Act
     // ============================
@@ -35,7 +35,7 @@ fn test_max_call_depth_failure() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/recursion");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

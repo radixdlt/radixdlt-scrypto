@@ -9,7 +9,7 @@ fn local_component_should_return_correct_info() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/local_component");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -32,7 +32,7 @@ fn local_component_should_be_callable_read_only() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/local_component");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -50,7 +50,7 @@ fn local_component_should_be_callable_with_write() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/local_component");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -68,7 +68,7 @@ fn local_component_with_access_rules_should_not_be_callable() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/local_component");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
     let (public_key, _, account) = test_runner.new_account();
     let auth_resource_address = test_runner.create_non_fungible_resource(account);
     let auth_id = NonFungibleId::from_u32(1);
@@ -100,7 +100,7 @@ fn local_component_with_access_rules_should_be_callable() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/local_component");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
     let (public_key, _, account) = test_runner.new_account();
     let auth_resource_address = test_runner.create_non_fungible_resource(account);
     let auth_id = NonFungibleId::from_u32(1);
@@ -136,7 +136,7 @@ fn recursion_bomb() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.compile_and_publish("./tests/local_recursion");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/local_recursion");
 
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
@@ -172,7 +172,7 @@ fn recursion_bomb_to_failure() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.compile_and_publish("./tests/local_recursion");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/local_recursion");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -212,7 +212,7 @@ fn recursion_bomb_2() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.compile_and_publish("./tests/local_recursion");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/local_recursion");
 
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
@@ -248,7 +248,7 @@ fn recursion_bomb_2_to_failure() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.compile_and_publish("./tests/local_recursion");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/local_recursion");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

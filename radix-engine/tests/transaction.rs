@@ -146,7 +146,7 @@ fn test_entire_auth_zone() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
