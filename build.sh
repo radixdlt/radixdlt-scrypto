@@ -10,6 +10,11 @@ echo "Building the workspace packages..."
 (set -x; cargo test --no-run)
 (set -x; cargo bench --no-run)
 
+echo "Building the simulator packages..."
+
+(set -x; cd simulator; cargo build)
+(set -x; cd simulator; cargo test --no-run)
+
 # We use a globally loaded scrypto CLI so that this script works even if the code doesn't compile at present
 # It's also a little faster. If you wish to use the local version instead, swap out the below line.
 # scrypto="cargo run --manifest-path $PWD/simulator/Cargo.toml --bin scrypto $@ --"
