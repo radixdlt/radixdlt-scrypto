@@ -1,3 +1,4 @@
+use sbor::rust::fmt::Debug;
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
@@ -63,14 +64,10 @@ impl From<NonFungibleAddress> for ProofValidationMode {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 impl Clone for Proof {
-    native_methods! {
-        Receiver::Ref(RENodeId::Proof(self.0)), NativeMethod::Proof => {
-            fn clone(&self) -> Self {
-                ProofMethod::Clone,
-                ProofCloneInput {}
-            }
-        }
+    fn clone(&self) -> Self {
+        self.sys_clone(&mut Syscalls).unwrap()
     }
 }
 
@@ -110,6 +107,14 @@ impl Proof {
             Ok(()) => Ok(ValidatedProof(self)),
             Err(error) => Err((self, error)),
         }
+    }
+
+    pub fn sys_clone<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<Proof, E> where Y: ScryptoSyscalls<E> {
+        sys_calls.sys_invoke_native_method(
+            NativeMethod::Proof(ProofMethod::Clone),
+            Receiver::Ref(RENodeId::Proof(self.0)),
+            scrypto::buffer::scrypto_encode(&ProofCloneInput {}),
+        )
     }
 
     /// Skips the validation process of the proof producing a validated proof **WITHOUT** performing any validation.

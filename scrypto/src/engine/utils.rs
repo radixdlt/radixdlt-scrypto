@@ -45,9 +45,9 @@ pub trait ScryptoSyscalls<E: Debug> {
 
 #[macro_export]
 macro_rules! native_methods {
-    ($receiver:expr, $type_ident:expr => { $($vis:vis $fn:ident $method_name:ident $s:tt -> $rtn:ty { $fn_ident:expr, $arg:expr })* } ) => {
+    ($receiver:expr, $type_ident:expr => { $($vis:vis $fn:ident $method_name:ident ($($args:tt)*) -> $rtn:ty { $fn_ident:expr, $arg:expr })* } ) => {
         $(
-            $vis $fn $method_name $s -> $rtn {
+            $vis $fn $method_name ($($args)*) -> $rtn {
                 let input = RadixEngineInput::InvokeNativeMethod(
                     $type_ident($fn_ident),
                     $receiver,

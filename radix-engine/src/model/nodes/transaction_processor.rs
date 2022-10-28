@@ -352,17 +352,11 @@ impl TransactionProcessor {
                                 InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                             })
                             .and_then(|new_id| {
-                                system_api
-                                    .invoke_native(NativeInvocation::Method(
-                                        NativeMethod::AuthZone(AuthZoneMethod::Pop),
-                                        auth_zone_ref,
-                                        ScryptoValue::from_typed(&AuthZonePopInput {}),
-                                    ))
+                                ComponentAuthZone::sys_pop(system_api)
                                     .map_err(InvokeError::Downstream)
-                                    .map(|rtn| {
-                                        let proof_id = Self::first_proof(&rtn);
-                                        proof_id_mapping.insert(new_id, proof_id);
-                                        ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
+                                    .map(|proof| {
+                                        proof_id_mapping.insert(new_id, proof.0);
+                                        ScryptoValue::from_typed(&proof)
                                     })
                             }),
                         Instruction::ClearAuthZone => {
@@ -492,19 +486,12 @@ impl TransactionProcessor {
                                     .get(proof_id)
                                     .cloned()
                                     .map(|real_id| {
-                                        system_api
-                                            .invoke_native(NativeInvocation::Method(
-                                                NativeMethod::Proof(ProofMethod::Clone),
-                                                Receiver::Ref(RENodeId::Proof(real_id)),
-                                                ScryptoValue::from_typed(&ProofCloneInput {}),
-                                            ))
+                                        let proof = scrypto::resource::Proof(real_id);
+                                        proof.sys_clone(system_api)
                                             .map_err(InvokeError::Downstream)
-                                            .map(|v| {
-                                                let cloned_proof_id = Self::first_proof(&v);
-                                                proof_id_mapping.insert(new_id, cloned_proof_id);
-                                                ScryptoValue::from_typed(&scrypto::resource::Proof(
-                                                    new_id,
-                                                ))
+                                            .map(|proof| {
+                                                proof_id_mapping.insert(new_id, proof.0);
+                                                ScryptoValue::from_typed(&proof)
                                             })
                                     })
                                     .unwrap_or(Err(InvokeError::Error(

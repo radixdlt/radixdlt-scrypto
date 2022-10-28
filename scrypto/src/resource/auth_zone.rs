@@ -47,6 +47,24 @@ pub struct AuthZoneDrainInput {}
 pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
+    #[cfg(target_arch = "wasm32")]
+    pub fn pop() -> Proof {
+        Self::sys_pop(&mut Syscalls).unwrap()
+    }
+
+    pub fn sys_pop<Y, E: Debug + TypeId + Decode>(sys_calls: &mut Y) -> Result<Proof, E> where Y: ScryptoSyscalls<E> {
+        let owned_node_ids = sys_calls.sys_get_visible_nodes()?;
+        let node_id = owned_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+            .expect("AuthZone does not exist");
+        sys_calls.sys_invoke_native_method(
+            NativeMethod::AuthZone(AuthZoneMethod::Pop),
+            Receiver::Ref(node_id),
+            scrypto::buffer::scrypto_encode(&(AuthZonePopInput { })),
+        )
+    }
+
     native_methods! {
         {
             let input = RadixEngineInput::GetVisibleNodeIds();
@@ -54,11 +72,6 @@ impl ComponentAuthZone {
             let node_id = owned_node_ids.into_iter().find(|n| matches!(n, RENodeId::AuthZoneStack(..))).expect("AuthZone does not exist");
             Receiver::Ref(node_id)
         }, NativeMethod::AuthZone => {
-            pub fn pop() -> Proof {
-                AuthZoneMethod::Pop,
-                AuthZonePopInput {}
-            }
-
             pub fn create_proof(resource_address: ResourceAddress) -> Proof {
                 AuthZoneMethod::CreateProof,
                 AuthZoneCreateProofInput {
