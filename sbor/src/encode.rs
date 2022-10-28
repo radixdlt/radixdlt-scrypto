@@ -5,6 +5,8 @@ use crate::rust::hash::Hash;
 use crate::rust::ptr::copy;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
+use crate::rust::borrow::Cow;
+use crate::rust::borrow::ToOwned;
 use crate::type_id::*;
 
 /// A data structure that can be serialized into a byte array using SBOR.
@@ -225,7 +227,7 @@ impl<T: Encode + TypeId> Encode for Option<T> {
     }
 }
 
-impl<'a, B: ?Sized + 'a + ToOwned + Encode> Encode for crate::rust::borrow::Cow<'a, B> {
+impl<'a, B: ?Sized + 'a + ToOwned + Encode> Encode for Cow<'a, B> {
     #[inline]
     fn encode_type_id(encoder: &mut Encoder) {
         B::encode_type_id(encoder)
