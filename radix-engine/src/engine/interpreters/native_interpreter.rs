@@ -74,6 +74,14 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
+trait NativeFunctionActor<I, O, E> {
+    fn execute<'s, Y, R>(input: I, system_api: &mut Y) -> Result<O, InvokeError<E>>
+        where
+            Y: SystemApi<'s, R>,
+            R: FeeReserve;
+}
+
+
 impl NativeInterpreter {
     pub fn run_function<'s, Y, R>(
         fn_identifier: NativeFunction,

@@ -16,6 +16,27 @@ pub struct EpochManager {
     pub info: EpochManagerSubstate,
 }
 
+trait NativeFunctionActor<I, O, E> {
+    fn execute<'s, Y, R>(input: I, system_api: &mut Y) -> Result<O, InvokeError<E>>
+        where
+            Y: SystemApi<'s, R>,
+            R: FeeReserve;
+}
+
+impl NativeFunctionActor<EpochManagerCreateInput, SystemAddress, EpochManagerError> for EpochManager {
+    fn execute<'s, Y, R>(_input: EpochManagerCreateInput, system_api: &mut Y) -> Result<SystemAddress, InvokeError<EpochManagerError>> where Y: SystemApi<'s, R>, R: FeeReserve {
+        let node_id = system_api
+            .create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
+
+        let global_node_id = system_api.create_node(RENode::Global(
+            GlobalAddressSubstate::System(node_id.into()),
+        ))?;
+
+        Ok(global_node_id.into())
+    }
+}
+
+
 impl EpochManager {
     pub fn function_auth(func: &EpochManagerFunction) -> Vec<MethodAuthorization> {
         match func {
@@ -53,19 +74,10 @@ impl EpochManager {
     {
         match func {
             EpochManagerFunction::Create => {
-                let _: EpochManagerCreateInput = scrypto_decode(&args.raw)
+                let input: EpochManagerCreateInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(EpochManagerError::InvalidRequestData(e)))?;
-
-                let node_id = system_api
-                    .create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
-
-                let global_node_id = system_api.create_node(RENode::Global(
-                    GlobalAddressSubstate::System(node_id.into()),
-                ))?;
-
-                let system_address: SystemAddress = global_node_id.into();
-
-                Ok(ScryptoValue::from_typed(&system_address))
+                Self::execute(input, system_api)
+                    .map(|rtn| ScryptoValue::from_typed(&rtn))
             }
         }
     }
