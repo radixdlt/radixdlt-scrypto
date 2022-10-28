@@ -132,6 +132,7 @@ pub enum ScryptoFnResolvingError {
 pub enum InterpreterError {
     InvalidScryptoFunctionInvocation(ScryptoFunctionIdent, ScryptoFnResolvingError),
     InvalidScryptoMethodInvocation(ScryptoMethodIdent, ScryptoFnResolvingError),
+    InvalidNativeFunctionInput,
     InvalidNativeFunctionIdent(NativeFunctionIdent),
     InvalidNativeMethodIdent(NativeMethodIdent),
 }

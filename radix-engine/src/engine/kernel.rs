@@ -5,6 +5,7 @@ use transaction::validation::*;
 
 use crate::engine::call_frame::RENodeLocation;
 use crate::engine::*;
+use crate::engine::system_api::Invokable;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
@@ -268,7 +269,7 @@ where
                 };
 
                 let access_rule = rule!(require(non_fungible_address));
-                let result = self.invoke_scrypto(ScryptoInvocation::Function(
+                let result = self.invoke(ScryptoInvocation::Function(
                     ScryptoFunctionIdent {
                         package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
                         blueprint_name: "Account".to_string(),
@@ -534,10 +535,12 @@ where
 
         // Execute
         let output = match actor.clone() {
-            REActor::Function(ResolvedFunction::Native(native_fn)) => self
-                .execute_in_mode(ExecutionMode::Application, |system_api| {
-                    NativeInterpreter::run_function(native_fn, input, system_api)
-                }),
+            REActor::Function(ResolvedFunction::Native(native_fn)) => {
+                self
+                    .execute_in_mode(ExecutionMode::Application, |system_api| {
+                        NativeInterpreter::run_function(native_fn, input, system_api)
+                    })
+            },
             REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) => self
                 .execute_in_mode(ExecutionMode::Application, |system_api| {
                     NativeInterpreter::run_method(
@@ -926,7 +929,7 @@ where
         }
     }
 
-    fn invoke(&mut self, invocation: Invocation) -> Result<ScryptoValue, RuntimeError> {
+    fn invoke_internal(&mut self, invocation: Invocation) -> Result<ScryptoValue, RuntimeError> {
         let depth = self.current_frame.depth;
 
         for m in &mut self.modules {
@@ -1090,6 +1093,28 @@ where
     }
 }
 
+impl<'g, 's, W, I, R> Invokable<ScryptoInvocation, ScryptoValue> for Kernel<'g, 's, W, I, R>
+    where
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+{
+    fn invoke(&mut self, input: ScryptoInvocation) -> Result<ScryptoValue, RuntimeError> {
+        self.invoke_internal(Invocation::Scrypto(input))
+    }
+}
+
+impl<'g, 's, W, I, R> Invokable<NativeInvocation, ScryptoValue> for Kernel<'g, 's, W, I, R>
+    where
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+{
+    fn invoke(&mut self, input: NativeInvocation) -> Result<ScryptoValue, RuntimeError> {
+        self.invoke_internal(Invocation::Native(input))
+    }
+}
+
 impl<'g, 's, W, I, R> SystemApi<'s, R> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
@@ -1152,20 +1177,6 @@ where
 
     fn get_actor(&self) -> &REActor {
         &self.current_frame.actor
-    }
-
-    fn invoke_scrypto(
-        &mut self,
-        invocation: ScryptoInvocation,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        self.invoke(Invocation::Scrypto(invocation))
-    }
-
-    fn invoke_native(
-        &mut self,
-        invocation: NativeInvocation,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        self.invoke(Invocation::Native(invocation))
     }
 
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {

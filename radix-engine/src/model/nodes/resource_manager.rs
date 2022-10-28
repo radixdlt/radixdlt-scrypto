@@ -1,4 +1,4 @@
-use crate::engine::{LockFlags, RENode, SystemApi};
+use crate::engine::{Invokable, LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
@@ -113,7 +113,7 @@ impl ResourceManager {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ResourceManagerError>>
     where
-        Y: SystemApi<'s, R>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation, ScryptoValue> + Invokable<NativeInvocation, ScryptoValue>,
         R: FeeReserve,
     {
         match func {
@@ -193,7 +193,7 @@ impl ResourceManager {
 
                 // FIXME this is temporary workaround for the resource address resolution problem
                 system_api
-                    .invoke_native(NativeInvocation::Method(
+                    .invoke(NativeInvocation::Method(
                         NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
                         RENodeId::Global(GlobalAddress::Resource(resource_address)),
                         ScryptoValue::from_typed(&ResourceManagerSetResourceAddressInput {
@@ -242,7 +242,7 @@ impl ResourceManager {
                 system_api.drop_lock(bucket_handle)?;
 
                 system_api
-                    .invoke_native(NativeInvocation::Method(
+                    .invoke(NativeInvocation::Method(
                         NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
                         RENodeId::Global(GlobalAddress::Resource(resource_address)),
                         ScryptoValue::from_typed(&ResourceManagerBurnInput {
@@ -280,7 +280,7 @@ impl ResourceManager {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ResourceManagerError>>
     where
-        Y: SystemApi<'s, R>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation, ScryptoValue> + Invokable<NativeInvocation, ScryptoValue>,
         R: FeeReserve,
     {
         let node_id = RENodeId::ResourceManager(resource_manager_id);

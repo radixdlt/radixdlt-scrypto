@@ -14,7 +14,7 @@ use crate::wasm::*;
 /// the system api will bill properly.
 pub struct RadixEngineWasmRuntime<'y, 's, Y, R>
 where
-    Y: SystemApi<'s, R>,
+    Y: SystemApi<'s, R> + Invokable<ScryptoInvocation, ScryptoValue> + Invokable<NativeInvocation, ScryptoValue>,
     R: FeeReserve,
 {
     actor: ScryptoActor,
@@ -26,7 +26,7 @@ where
 
 impl<'y, 's, Y, R> RadixEngineWasmRuntime<'y, 's, Y, R>
 where
-    Y: SystemApi<'s, R>,
+    Y: SystemApi<'s, R> + Invokable<ScryptoInvocation, ScryptoValue> + Invokable<NativeInvocation, ScryptoValue>,
     R: FeeReserve,
 {
     // TODO: expose API for reading blobs
@@ -53,7 +53,7 @@ where
         let args = ScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
         self.system_api
-            .invoke_scrypto(ScryptoInvocation::Function(fn_ident, args))
+            .invoke(ScryptoInvocation::Function(fn_ident, args))
     }
 
     fn handle_invoke_scrypto_method(
@@ -64,7 +64,7 @@ where
         let args = ScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
         self.system_api
-            .invoke_scrypto(ScryptoInvocation::Method(fn_ident, args))
+            .invoke(ScryptoInvocation::Method(fn_ident, args))
     }
 
     fn handle_invoke_native_function(
@@ -76,7 +76,7 @@ where
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
 
         self.system_api
-            .invoke_native(NativeInvocation::Function(native_function, args))
+            .invoke(NativeInvocation::Function(native_function, args))
     }
 
     fn handle_invoke_native_method(
@@ -89,7 +89,7 @@ where
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
 
         self.system_api
-            .invoke_native(NativeInvocation::Method(native_method, receiver, args))
+            .invoke(NativeInvocation::Method(native_method, receiver, args))
     }
 
     fn handle_node_create(
@@ -210,7 +210,7 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
 
 impl<'y, 's, Y, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, Y, R>
 where
-    Y: SystemApi<'s, R>,
+    Y: SystemApi<'s, R> + Invokable<ScryptoInvocation, ScryptoValue> + Invokable<NativeInvocation, ScryptoValue>,
     R: FeeReserve,
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {

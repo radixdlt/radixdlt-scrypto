@@ -164,7 +164,7 @@ where
                 modules,
             );
             kernel
-                .invoke_native(NativeInvocation::Function(
+                .invoke(NativeInvocation::Function(
                     NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
                     ScryptoValue::from_typed(&TransactionProcessorRunInput {
                         instructions: sbor::rust::borrow::Cow::Borrowed(&instructions),

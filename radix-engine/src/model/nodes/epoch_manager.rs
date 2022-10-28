@@ -1,4 +1,4 @@
-use crate::engine::{AuthModule, LockFlags, RENode, SystemApi};
+use crate::engine::{AuthModule, LockFlags, NativeFunctionActor, NativeInterpreter, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
@@ -16,14 +16,7 @@ pub struct EpochManager {
     pub info: EpochManagerSubstate,
 }
 
-trait NativeFunctionActor<I, O, E> {
-    fn execute<'s, Y, R>(input: I, system_api: &mut Y) -> Result<O, InvokeError<E>>
-        where
-            Y: SystemApi<'s, R>,
-            R: FeeReserve;
-}
-
-impl NativeFunctionActor<EpochManagerCreateInput, SystemAddress, EpochManagerError> for EpochManager {
+impl NativeFunctionActor<EpochManagerCreateInput, SystemAddress, EpochManagerError> for NativeInterpreter {
     fn execute<'s, Y, R>(_input: EpochManagerCreateInput, system_api: &mut Y) -> Result<SystemAddress, InvokeError<EpochManagerError>> where Y: SystemApi<'s, R>, R: FeeReserve {
         let node_id = system_api
             .create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
@@ -60,25 +53,6 @@ impl EpochManager {
                 ))]
             }
             _ => vec![],
-        }
-    }
-
-    pub fn static_main<'s, Y, R>(
-        func: EpochManagerFunction,
-        args: ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<ScryptoValue, InvokeError<EpochManagerError>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve,
-    {
-        match func {
-            EpochManagerFunction::Create => {
-                let input: EpochManagerCreateInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(EpochManagerError::InvalidRequestData(e)))?;
-                Self::execute(input, system_api)
-                    .map(|rtn| ScryptoValue::from_typed(&rtn))
-            }
         }
     }
 

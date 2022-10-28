@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use radix_engine::constants::*;
-use radix_engine::engine::{Kernel, KernelError, ModuleError, ScryptoInterpreter};
+use radix_engine::engine::{Invokable, Kernel, KernelError, ModuleError, ScryptoInterpreter};
 use radix_engine::engine::{RuntimeError, SystemApi, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
@@ -721,7 +721,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             )],
             |kernel| {
                 kernel
-                    .invoke_native(NativeInvocation::Method(
+                    .invoke(NativeInvocation::Method(
                         NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
                         RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
                         ScryptoValue::from_typed(&EpochManagerSetEpochInput { epoch }),
@@ -734,7 +734,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn get_current_epoch(&mut self) -> u64 {
         let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
             kernel
-                .invoke_native(NativeInvocation::Method(
+                .invoke(NativeInvocation::Method(
                     NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
                     RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
                     ScryptoValue::from_typed(&EpochManagerGetCurrentEpochInput {}),

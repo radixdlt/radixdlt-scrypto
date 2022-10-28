@@ -74,7 +74,7 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
-trait NativeFunctionActor<I, O, E> {
+pub trait NativeFunctionActor<I, O, E> {
     fn execute<'s, Y, R>(input: I, system_api: &mut Y) -> Result<O, InvokeError<E>>
         where
             Y: SystemApi<'s, R>,
@@ -89,7 +89,7 @@ impl NativeInterpreter {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        Y: SystemApi<'s, R>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation, ScryptoValue> + Invokable<NativeInvocation, ScryptoValue>,
         R: FeeReserve,
     {
         match fn_identifier {
@@ -103,7 +103,15 @@ impl NativeInterpreter {
                 ResourceManager::static_main(func, input, system_api).map_err(|e| e.into())
             }
             NativeFunction::EpochManager(func) => {
-                EpochManager::static_main(func, input, system_api).map_err(|e| e.into())
+                match func {
+                    EpochManagerFunction::Create => {
+                        let input: EpochManagerCreateInput = scrypto_decode(&input.raw)
+                            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidNativeFunctionInput))?;
+                        Self::execute(input, system_api)
+                            .map(|rtn| ScryptoValue::from_typed(&rtn))
+                            .map_err(|e| e.into())
+                    }
+                }
             }
         }
     }
@@ -115,7 +123,7 @@ impl NativeInterpreter {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        Y: SystemApi<'s, R>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation, ScryptoValue> + Invokable<NativeInvocation, ScryptoValue>,
         R: FeeReserve,
     {
         match (resolved_receiver.receiver, native_method.clone()) {
