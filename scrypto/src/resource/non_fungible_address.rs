@@ -7,7 +7,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::constants::{ECDSA_SECP256K1_TOKEN, EDDSA_ED25519_TOKEN};
-use crate::crypto::PublicKey;
+use crate::crypto::{hash, PublicKey};
 use crate::resource::*;
 
 /// Identifier for a non-fungible unit.
@@ -30,11 +30,11 @@ impl NonFungibleAddress {
         match public_key {
             PublicKey::EcdsaSecp256k1(public_key) => NonFungibleAddress::new(
                 ECDSA_SECP256K1_TOKEN,
-                NonFungibleId::from_bytes(public_key.to_vec()),
+                NonFungibleId::from_bytes(hash(public_key.to_vec()).lower_26_bytes().into()),
             ),
             PublicKey::EddsaEd25519(public_key) => NonFungibleAddress::new(
                 EDDSA_ED25519_TOKEN,
-                NonFungibleId::from_bytes(public_key.to_vec()),
+                NonFungibleId::from_bytes(hash(public_key.to_vec()).lower_26_bytes().into()),
             ),
         }
     }

@@ -14,7 +14,13 @@ macro_rules! trace {
 pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_encode() starts");
 
-    let DeriveInput { ident, data, .. } = parse2(input)?;
+    let DeriveInput {
+        ident,
+        data,
+        generics,
+        ..
+    } = parse2(input)?;
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     trace!("Encoding: {}", ident);
 
     let output = match data {
@@ -25,7 +31,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 let ns_ids = ns.iter().map(|f| &f.ident);
                 let ns_len = Index::from(ns_ids.len());
                 quote! {
-                    impl ::sbor::Encode for #ident {
+                    impl #impl_generics ::sbor::Encode for #ident #ty_generics #where_clause {
                         #[inline]
                         fn encode_type_id(encoder: &mut ::sbor::Encoder) {
                             encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
@@ -48,7 +54,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 }
                 let ns_len = Index::from(ns_indices.len());
                 quote! {
-                    impl ::sbor::Encode for #ident {
+                    impl #impl_generics ::sbor::Encode for #ident #ty_generics #where_clause {
                         #[inline]
                         fn encode_type_id(encoder: &mut ::sbor::Encoder) {
                             encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
@@ -64,7 +70,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl ::sbor::Encode for #ident {
+                    impl #impl_generics ::sbor::Encode for #ident #ty_generics #where_clause {
                         #[inline]
                         fn encode_type_id(encoder: &mut ::sbor::Encoder) {
                             encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
@@ -127,7 +133,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
 
             if match_arms.len() == 0 {
                 quote! {
-                    impl ::sbor::Encode for #ident {
+                    impl #impl_generics ::sbor::Encode for #ident #ty_generics #where_clause {
                         #[inline]
                         fn encode_type_id(encoder: &mut ::sbor::Encoder) {
                             encoder.write_type_id(::sbor::type_id::TYPE_ENUM);
@@ -139,7 +145,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 }
             } else {
                 quote! {
-                    impl ::sbor::Encode for #ident {
+                    impl #impl_generics ::sbor::Encode for #ident #ty_generics #where_clause {
                         #[inline]
                         fn encode_type_id(encoder: &mut ::sbor::Encoder) {
                             encoder.write_type_id(::sbor::type_id::TYPE_ENUM);

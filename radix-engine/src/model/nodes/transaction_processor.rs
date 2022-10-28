@@ -1,3 +1,4 @@
+use sbor::rust::borrow::Cow;
 use scrypto::resource::AuthZoneDrainInput;
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
@@ -16,8 +17,8 @@ use crate::model::{
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct TransactionProcessorRunInput {
-    pub instructions: Vec<Instruction>,
+pub struct TransactionProcessorRunInput<'a> {
+    pub instructions: Cow<'a, Vec<Instruction>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -199,7 +200,7 @@ impl TransactionProcessor {
                     .expect("AuthZone does not exist");
                 let auth_zone_ref = auth_zone_node_id;
 
-                for inst in &input.instructions {
+                for inst in input.instructions.as_ref() {
                     let result = match inst {
                         Instruction::TakeFromWorktop { resource_address } => id_allocator
                             .new_bucket_id()

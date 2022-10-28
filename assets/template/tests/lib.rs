@@ -11,7 +11,7 @@ fn test_hello() {
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Create an account
-    let (public_key, _private_key, account_component) = test_runner.new_account();
+    let (public_key, _private_key, account_component) = test_runner.new_allocated_account();
 
     // Publish package
     let package_address = test_runner.compile_and_publish(this_package!());

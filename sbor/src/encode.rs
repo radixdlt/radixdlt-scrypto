@@ -1,3 +1,5 @@
+use crate::rust::borrow::Cow;
+use crate::rust::borrow::ToOwned;
 use crate::rust::boxed::Box;
 use crate::rust::cell::RefCell;
 use crate::rust::collections::*;
@@ -222,6 +224,17 @@ impl<T: Encode + TypeId> Encode for Option<T> {
                 encoder.write_variant_index(OPTION_VARIANT_NONE);
             }
         }
+    }
+}
+
+impl<'a, B: ?Sized + 'a + ToOwned + Encode> Encode for Cow<'a, B> {
+    #[inline]
+    fn encode_type_id(encoder: &mut Encoder) {
+        B::encode_type_id(encoder)
+    }
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.as_ref().encode_value(encoder);
     }
 }
 

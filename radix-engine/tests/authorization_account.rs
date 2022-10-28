@@ -16,7 +16,7 @@ fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
 ) {
     // Arrange
     let account = test_runner.new_account_with_auth_rule(auth_rule);
-    let (_, _, other_account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -234,7 +234,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let xrd_auth = rule!(require(RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
-    let (_, _, other_account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -269,7 +269,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let xrd_auth = rule!(require_amount(Decimal(I256::from(1)), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
-    let (_, _, other_account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -304,7 +304,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     let mut test_runner = TestRunner::new(true, &mut store);
     let xrd_auth = rule!(require_amount(Decimal::from(1), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
-    let (_, _, other_account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

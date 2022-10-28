@@ -10,7 +10,7 @@ fn test_bucket_internal(method_name: &str) {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
@@ -81,7 +81,7 @@ fn test_bucket_empty_non_fungible() {
 fn test_bucket_of_badges() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -108,7 +108,7 @@ fn test_take_with_invalid_granularity() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
     let resource_address_str =
         Bech32Encoder::for_simulator().encode_resource_address_to_string(&resource_address);
@@ -153,7 +153,7 @@ fn test_take_with_negative_amount() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
     let resource_address_str =
         Bech32Encoder::for_simulator().encode_resource_address_to_string(&resource_address);
@@ -198,7 +198,7 @@ fn create_empty_bucket() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
