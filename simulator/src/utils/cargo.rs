@@ -128,8 +128,6 @@ pub fn build_package<P: AsRef<Path>>(base_path: P, trace: bool, force_local_targ
             .unwrap()// Infallible
     };
 
-    println!("{:?}", target_path);
-
     let mut out_path = target_path.clone();
     out_path.push("wasm32-unknown-unknown");
     out_path.push("release");
