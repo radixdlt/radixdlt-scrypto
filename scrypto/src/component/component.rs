@@ -53,27 +53,12 @@ pub struct ComponentStateSubstate {
 
 impl Component {
     pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
-        self.sys_call(method, args, &mut Syscalls).unwrap()
-    }
-
-    pub fn sys_call<T: Decode, Y, E: Debug + TypeId + Decode>(
-        &self,
-        method: &str,
-        args: Vec<u8>,
-        sys_calls: &mut Y,
-    ) -> Result<T, E>
-    where
-        Y: ScryptoSyscalls<E>,
-    {
-        let rtn: T = sys_calls.sys_invoke_scrypto_method(
-            ScryptoMethodIdent {
+        call_engine(
+            RadixEngineInput::InvokeScryptoMethod(ScryptoMethodIdent {
                 receiver: ScryptoReceiver::Component(self.0),
                 method_name: method.to_string(),
-            },
-            args,
-        )?;
-
-        Ok(rtn)
+            }, args)
+        )
     }
 
     /// Returns the package ID of this component.

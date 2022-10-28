@@ -20,32 +20,33 @@ pub struct SyscallError;
 pub struct Syscalls;
 
 impl ScryptoSyscalls<SyscallError> for Syscalls {
-    fn sys_invoke_scrypto_function<V: Decode>(
+    fn sys_invoke_scrypto_function<ARGS: Encode, V: Decode>(
         &mut self,
         fn_ident: ScryptoFunctionIdent,
-        args: Vec<u8>,
+        args: &ARGS,
     ) -> Result<V, SyscallError> {
-        let rtn = call_engine(RadixEngineInput::InvokeScryptoFunction(fn_ident, args));
+        let rtn = call_engine(
+            RadixEngineInput::InvokeScryptoFunction(fn_ident, scrypto_encode(args)));
         Ok(rtn)
     }
 
-    fn sys_invoke_scrypto_method<V: Decode>(
+    fn sys_invoke_scrypto_method<ARGS: Encode, V: Decode>(
         &mut self,
         method_ident: ScryptoMethodIdent,
-        args: Vec<u8>,
+        args: &ARGS,
     ) -> Result<V, SyscallError> {
-        let rtn = call_engine(RadixEngineInput::InvokeScryptoMethod(method_ident, args));
+        let rtn = call_engine(RadixEngineInput::InvokeScryptoMethod(method_ident, scrypto_encode(args)));
         Ok(rtn)
     }
 
-    fn sys_invoke_native_function<V: Decode>(
+    fn sys_invoke_native_function<ARGS: Encode, V: Decode>(
         &mut self,
         native_function: NativeFunction,
-        args: Vec<u8>,
+        args: &ARGS,
     ) -> Result<V, SyscallError> {
         let rtn = call_engine(RadixEngineInput::InvokeNativeFunction(
             native_function,
-            args,
+            scrypto_encode(args),
         ));
         Ok(rtn)
     }

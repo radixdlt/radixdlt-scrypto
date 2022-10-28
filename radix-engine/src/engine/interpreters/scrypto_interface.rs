@@ -25,36 +25,32 @@ where
     I: WasmInstance,
     R: FeeReserve,
 {
-    fn sys_invoke_scrypto_function<V: Decode>(
+    fn sys_invoke_scrypto_function<ARGS: Encode, V: Decode>(
         &mut self,
         fn_ident: ScryptoFunctionIdent,
-        args: Vec<u8>,
+        args: &ARGS,
     ) -> Result<V, RuntimeError> {
-        let args = ScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+        let args = ScryptoValue::from_typed(args);
         self.invoke_scrypto(ScryptoInvocation::Function(fn_ident, args))
             .map(|value| scrypto_decode(&value.raw).unwrap())
     }
 
-    fn sys_invoke_scrypto_method<V: Decode>(
+    fn sys_invoke_scrypto_method<ARGS: Encode, V: Decode>(
         &mut self,
         method_ident: ScryptoMethodIdent,
-        args: Vec<u8>,
+        args: &ARGS,
     ) -> Result<V, RuntimeError> {
-        let args = ScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+        let args = ScryptoValue::from_typed(args);
         self.invoke_scrypto(ScryptoInvocation::Method(method_ident, args))
             .map(|value| scrypto_decode(&value.raw).unwrap())
     }
 
-    fn sys_invoke_native_function<V: Decode>(
+    fn sys_invoke_native_function<ARGS: Encode, V: Decode>(
         &mut self,
         native_function: NativeFunction,
-        args: Vec<u8>,
+        args: &ARGS,
     ) -> Result<V, RuntimeError> {
-        let args = ScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-
+        let args = ScryptoValue::from_typed(args);
         self.invoke_native(NativeInvocation::Function(native_function, args))
             .map(|value| scrypto_decode(&value.raw).unwrap())
     }

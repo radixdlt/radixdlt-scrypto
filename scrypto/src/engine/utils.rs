@@ -28,20 +28,20 @@ pub fn call_engine<V: Decode>(_input: RadixEngineInput) -> V {
 }
 
 pub trait ScryptoSyscalls<E: Debug> {
-    fn sys_invoke_scrypto_function<V: Decode>(
+    fn sys_invoke_scrypto_function<ARGS: Encode, V: Decode>(
         &mut self,
         fn_ident: ScryptoFunctionIdent,
-        args: Vec<u8>,
+        args: &ARGS,
     ) -> Result<V, E>;
-    fn sys_invoke_scrypto_method<V: Decode>(
+    fn sys_invoke_scrypto_method<ARGS: Encode, V: Decode>(
         &mut self,
         method_ident: ScryptoMethodIdent,
-        args: Vec<u8>,
+        args: &ARGS,
     ) -> Result<V, E>;
-    fn sys_invoke_native_function<V: Decode>(
+    fn sys_invoke_native_function<ARGS: Encode, V: Decode>(
         &mut self,
         native_function: NativeFunction,
-        args: Vec<u8>,
+        args: &ARGS,
     ) -> Result<V, E>;
     fn sys_invoke_native_method<ARGS: Encode, V: Decode>(
         &mut self,
