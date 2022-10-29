@@ -9,6 +9,16 @@ pub struct CallFrameUpdate {
     pub node_refs_to_copy: HashSet<RENodeId>,
 }
 
+impl CallFrameUpdate {
+    pub fn empty() -> Self {
+        CallFrameUpdate {
+            nodes_to_move: Vec::new(),
+            node_refs_to_copy: HashSet::new(),
+        }
+    }
+}
+
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RENodeLocation {
     Heap,

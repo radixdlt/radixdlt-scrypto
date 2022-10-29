@@ -727,8 +727,57 @@ pub trait Executor<O> {
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
             + Invokable<NativeFunctionInvocation, ScryptoValue>
+            + Invokable<EpochManagerCreateInput, ScryptoValue>
             + Invokable<NativeMethodInvocation, ScryptoValue>,
         R: FeeReserve;
+}
+
+
+// TODO: remove redundant code and move this method to the interpreter
+impl<'g, 's, W, I, R> Invokable<EpochManagerCreateInput, ScryptoValue> for Kernel<'g, 's, W, I, R>
+    where
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+{
+    fn invoke(&mut self, invocation: EpochManagerCreateInput) -> Result<ScryptoValue, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallInput::Invoke {
+                    name: format!("{:?}", invocation),
+                    input_size: 0,
+                    value_count: 0,
+                    depth: self.current_frame.depth,
+                },
+            )
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
+        // Change to kernel mode
+        let saved_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
+
+        let (executor, actor, call_frame_update) = self.resolve(invocation)?;
+        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
+
+        // Restore previous mode
+        self.execution_mode = saved_mode;
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallOutput::Invoke { output: &rtn },
+            )
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(rtn)
+    }
 }
 
 // TODO: remove redundant code and move this method to the interpreter
@@ -1637,66 +1686,6 @@ where
             actor,
             CallFrameUpdate {
                 nodes_to_move: invocation.args().node_ids().into_iter().collect(),
-                node_refs_to_copy,
-            },
-        ))
-    }
-}
-
-impl<'g, 's, W, I, R>
-    InvocationResolver<NativeFunctionInvocation, NativeFunctionExecutor, ScryptoValue>
-    for Kernel<'g, 's, W, I, R>
-where
-    W: WasmEngine<I>,
-    I: WasmInstance,
-    R: FeeReserve,
-{
-    fn resolve(
-        &mut self,
-        native_function: NativeFunctionInvocation,
-    ) -> Result<(NativeFunctionExecutor, REActor, CallFrameUpdate), RuntimeError> {
-        let mut node_refs_to_copy = HashSet::new();
-        let actor = REActor::Function(ResolvedFunction::Native(native_function.0));
-        for global_address in native_function.args().global_references() {
-            node_refs_to_copy.insert(RENodeId::Global(global_address));
-        }
-
-        // TODO: This can be refactored out once any type in sbor is implemented
-        let maybe_txn: Result<TransactionProcessorRunInput, DecodeError> =
-            scrypto_decode(&native_function.args().raw);
-        if let Ok(input) = maybe_txn {
-            for instruction in input.instructions.as_ref() {
-                match instruction {
-                    Instruction::CallFunction { args, .. }
-                    | Instruction::CallMethod { args, .. }
-                    | Instruction::CallNativeFunction { args, .. }
-                    | Instruction::CallNativeMethod { args, .. } => {
-                        let scrypto_value =
-                            ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
-                        for global_address in scrypto_value.global_references() {
-                            node_refs_to_copy.insert(RENodeId::Global(global_address));
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            ECDSA_SECP256K1_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            EDDSA_ED25519_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
-
-        Ok((
-            NativeFunctionExecutor(native_function.0, native_function.1.clone()),
-            actor,
-            CallFrameUpdate {
-                nodes_to_move: native_function.args().node_ids().into_iter().collect(),
                 node_refs_to_copy,
             },
         ))
