@@ -2,7 +2,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::types::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
-use transaction::model::{NotarizedTransaction, TransactionHeader};
+use transaction::model::TransactionHeader;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::signing::EddsaEd25519PrivateKey;
 use transaction::validation::verify_ecdsa_secp256k1;
@@ -86,12 +86,13 @@ fn bench_transaction_validation(c: &mut Criterion) {
         b.iter(|| {
             let intent_hash_manager = TestIntentHashManager::new();
 
-            TransactionValidator::<NotarizedTransaction>::validate_from_slice(
-                &validator,
+            let transaction = NotarizedTransactionValidator::check_length_and_decode_from_slice(
                 &transaction_bytes,
-                &intent_hash_manager,
             )
             .unwrap();
+            validator
+                .validate(&transaction, &intent_hash_manager)
+                .unwrap();
         })
     });
 }

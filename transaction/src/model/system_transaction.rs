@@ -10,11 +10,9 @@ pub struct SystemTransaction {
     pub manifest: TransactionManifest,
 }
 
-impl Into<Executable> for SystemTransaction {
-    fn into(self) -> Executable {
+impl SystemTransaction {
+    pub fn get_executable<'a>(&'a self) -> Executable<'a> {
         let transaction_hash = Hash([0u8; Hash::LENGTH]);
-        let instructions = self.manifest.instructions;
-        let blobs = self.manifest.blobs;
 
         let auth_zone_params = AuthZoneParams {
             initial_proofs: vec![AuthModule::system_role_nf_address()],
@@ -22,8 +20,8 @@ impl Into<Executable> for SystemTransaction {
         };
 
         Executable::new(
-            instructions,
-            &blobs,
+            &self.manifest.instructions,
+            &self.manifest.blobs,
             ExecutionContext {
                 transaction_hash,
                 auth_zone_params,

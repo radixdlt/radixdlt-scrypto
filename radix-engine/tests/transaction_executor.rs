@@ -23,14 +23,14 @@ fn pre_execution_rejection_should_return_rejected_receipt() {
     // Arrange
     let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut substate_store);
-    let executable_transaction = create_executable_transaction(TransactionParams {
+    let transaction = create_notarized_transaction(TransactionParams {
         cost_unit_limit: 1,
         start_epoch_inclusive: 0,
         end_epoch_exclusive: 10,
     });
 
     // Act
-    let receipt = test_runner.execute_transaction(&executable_transaction);
+    let receipt = test_runner.execute_transaction(&get_executable(&transaction));
 
     // Assert
     let rejection_error = receipt.expect_rejection();
@@ -56,14 +56,14 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
 
     test_runner.set_current_epoch(CURRENT_EPOCH);
 
-    let executable_transaction = create_executable_transaction(TransactionParams {
+    let transaction = create_notarized_transaction(TransactionParams {
         cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
         start_epoch_inclusive: VALID_FROM_EPOCH,
         end_epoch_exclusive: VALID_UNTIL_EPOCH + 1,
     });
 
     // Act
-    let receipt = test_runner.execute_transaction(&executable_transaction);
+    let receipt = test_runner.execute_transaction(&get_executable(&transaction));
 
     // Assert
     let rejection_error = receipt.expect_rejection();
@@ -93,14 +93,14 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
 
     test_runner.set_current_epoch(CURRENT_EPOCH);
 
-    let executable_transaction = create_executable_transaction(TransactionParams {
+    let transaction = create_notarized_transaction(TransactionParams {
         cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
         start_epoch_inclusive: VALID_FROM_EPOCH,
         end_epoch_exclusive: VALID_UNTIL_EPOCH + 1,
     });
 
     // Act
-    let receipt = test_runner.execute_transaction(&executable_transaction);
+    let receipt = test_runner.execute_transaction(&get_executable(&transaction));
 
     // Assert
     let rejection_error = receipt.expect_rejection();
@@ -143,31 +143,30 @@ fn test_normal_transaction_flow() {
     })
     .to_bytes();
 
+    let transaction =
+        NotarizedTransactionValidator::check_length_and_decode_from_slice(&raw_transaction)
+            .expect("Invalid transaction");
+
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
-    let validated_transaction: Executable = validator
-        .validate_from_slice(&raw_transaction, &intent_hash_manager)
+    let executable = validator
+        .validate(&transaction, &intent_hash_manager)
         .expect("Invalid transaction");
+
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut scrypto_interpreter);
 
     // Act
-    let receipt = executor.execute_and_commit(
-        &validated_transaction,
-        &fee_reserve_config,
-        &execution_config,
-    );
+    let receipt = executor.execute_and_commit(&executable, &fee_reserve_config, &execution_config);
 
     // Assert
     receipt.expect_commit_success();
 }
 
-fn create_executable_transaction(params: TransactionParams) -> Executable {
-    let notarized_transaction = create_notarized_transaction(params);
-
+fn get_executable<'a>(transaction: &'a NotarizedTransaction) -> Executable<'a> {
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
     validator
-        .validate(notarized_transaction, &TestIntentHashManager::new())
+        .validate(&transaction, &TestIntentHashManager::new())
         .unwrap()
 }
 

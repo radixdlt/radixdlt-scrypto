@@ -24,8 +24,8 @@ use transaction::validation::{
 fn execute_single_transaction(transaction: NotarizedTransaction) {
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
-    let transaction = validator
-        .validate(transaction, &TestIntentHashManager::new())
+    let executable = validator
+        .validate(&transaction, &TestIntentHashManager::new())
         .unwrap();
 
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
@@ -53,7 +53,7 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
     let mut staged_store = staged_store_manager.get_output_store(staged_node);
     let mut transaction_executor =
         TransactionExecutor::new(&mut staged_store, &mut scrypto_interpreter);
-    transaction_executor.execute_and_commit(&transaction, &fee_reserve_config, &execution_config);
+    transaction_executor.execute_and_commit(&executable, &fee_reserve_config, &execution_config);
 }
 
 struct TransactionFuzzer {

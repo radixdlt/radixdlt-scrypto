@@ -14,26 +14,24 @@ use crate::validation::*;
 pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
 
 pub trait TransactionValidator<T: Decode> {
-    fn validate_from_slice<I: IntentHashManager>(
-        &self,
+    fn check_length_and_decode_from_slice(
         transaction: &[u8],
-        intent_hash_manager: &I,
-    ) -> Result<Executable, TransactionValidationError> {
+    ) -> Result<T, TransactionValidationError> {
         if transaction.len() > MAX_PAYLOAD_SIZE {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
-        let transaction: T = scrypto_decode(transaction)
+        let transaction = scrypto_decode(transaction)
             .map_err(TransactionValidationError::DeserializationError)?;
 
-        self.validate(transaction, intent_hash_manager)
+        Ok(transaction)
     }
 
-    fn validate<I: IntentHashManager>(
-        &self,
-        transaction: T,
-        intent_hash_manager: &I,
-    ) -> Result<Executable, TransactionValidationError>;
+    fn validate<'a, 't, I: IntentHashManager>(
+        &'a self,
+        transaction: &'t T,
+        intent_hash_manager: &'a I,
+    ) -> Result<Executable<'t>, TransactionValidationError>;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -65,38 +63,32 @@ pub struct NotarizedTransactionValidator {
 }
 
 impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidator {
-    fn validate<I: IntentHashManager>(
-        &self,
-        transaction: NotarizedTransaction,
-        intent_hash_manager: &I,
-    ) -> Result<Executable, TransactionValidationError> {
-        // verify the intent
-        let instructions =
-            self.validate_intent(&transaction.signed_intent.intent, intent_hash_manager)?;
+    fn validate<'a, 't, I: IntentHashManager>(
+        &'a self,
+        transaction: &'t NotarizedTransaction,
+        intent_hash_manager: &'a I,
+    ) -> Result<Executable<'t>, TransactionValidationError> {
+        self.validate_intent(&transaction.signed_intent.intent, intent_hash_manager)?;
 
-        // verify signatures
-        let keys = self
+        let signer_keys = self
             .validate_signatures(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
 
         let transaction_hash = transaction.hash();
 
-        let intent = transaction.signed_intent.intent;
+        let intent = &transaction.signed_intent.intent;
         let intent_hash = intent.hash();
 
-        let header = intent.header;
-        let manifest = intent.manifest;
-
-        let auth_zone_params = AuthZoneParams {
-            initial_proofs: AuthModule::pk_non_fungibles(&keys),
-            virtualizable_proofs_resource_addresses: BTreeSet::new(),
-        };
+        let header = &intent.header;
 
         Ok(Executable::new(
-            instructions,
-            &manifest.blobs,
+            &intent.manifest.instructions,
+            &intent.manifest.blobs,
             ExecutionContext {
-                auth_zone_params,
+                auth_zone_params: AuthZoneParams {
+                    initial_proofs: AuthModule::pk_non_fungibles(&signer_keys),
+                    virtualizable_proofs_resource_addresses: BTreeSet::new(),
+                },
                 transaction_hash,
                 fee_payment: FeePayment {
                     cost_unit_limit: header.cost_unit_limit,
@@ -118,15 +110,15 @@ impl NotarizedTransactionValidator {
         Self { config }
     }
 
-    pub fn validate_preview_intent<I: IntentHashManager>(
-        &self,
-        preview_intent: PreviewIntent,
-        intent_hash_manager: &I,
-    ) -> Result<Executable, TransactionValidationError> {
+    pub fn validate_preview_intent<'a, 't, I: IntentHashManager>(
+        &'a self,
+        preview_intent: &'t PreviewIntent,
+        intent_hash_manager: &'a I,
+    ) -> Result<Executable<'t>, TransactionValidationError> {
         let transaction_hash = preview_intent.hash();
-        let intent = preview_intent.intent;
+        let intent = &preview_intent.intent;
         let intent_hash = intent.hash();
-        let instructions = self.validate_intent(&intent, intent_hash_manager)?;
+        self.validate_intent(intent, intent_hash_manager)?;
         let initial_proofs = AuthModule::pk_non_fungibles(&preview_intent.signer_public_keys);
 
         let mut virtualizable_proofs_resource_addresses = BTreeSet::new();
@@ -136,7 +128,7 @@ impl NotarizedTransactionValidator {
         }
 
         Ok(Executable::new(
-            instructions,
+            &intent.manifest.instructions,
             &intent.manifest.blobs,
             ExecutionContext {
                 transaction_hash,
@@ -162,7 +154,7 @@ impl NotarizedTransactionValidator {
         &self,
         intent: &TransactionIntent,
         intent_hash_manager: &I,
-    ) -> Result<Vec<Instruction>, TransactionValidationError> {
+    ) -> Result<(), TransactionValidationError> {
         // verify intent hash
         if !intent_hash_manager.allows(&intent.hash()) {
             return Err(TransactionValidationError::IntentHashRejected);
@@ -172,18 +164,18 @@ impl NotarizedTransactionValidator {
         self.validate_header(&intent)
             .map_err(TransactionValidationError::HeaderValidationError)?;
 
-        let instructions = Self::validate_manifest(&intent.manifest)?;
+        Self::validate_manifest(&intent.manifest)?;
 
-        return Ok(instructions);
+        return Ok(());
     }
 
     pub fn validate_manifest(
         manifest: &TransactionManifest,
-    ) -> Result<Vec<Instruction>, TransactionValidationError> {
+    ) -> Result<(), TransactionValidationError> {
         // semantic analysis
         let mut id_validator = IdValidator::new();
         for inst in &manifest.instructions {
-            match inst.clone() {
+            match inst {
                 Instruction::TakeFromWorktop { .. } => {
                     id_validator
                         .new_bucket()
@@ -201,7 +193,7 @@ impl NotarizedTransactionValidator {
                 }
                 Instruction::ReturnToWorktop { bucket_id } => {
                     id_validator
-                        .drop_bucket(bucket_id)
+                        .drop_bucket(*bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 Instruction::AssertWorktopContains { .. } => {}
@@ -214,7 +206,7 @@ impl NotarizedTransactionValidator {
                 }
                 Instruction::PushToAuthZone { proof_id } => {
                     id_validator
-                        .drop_proof(proof_id)
+                        .drop_proof(*proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 Instruction::ClearAuthZone => {}
@@ -235,17 +227,17 @@ impl NotarizedTransactionValidator {
                 }
                 Instruction::CreateProofFromBucket { bucket_id } => {
                     id_validator
-                        .new_proof(ProofKind::BucketProof(bucket_id))
+                        .new_proof(ProofKind::BucketProof(*bucket_id))
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 Instruction::CloneProof { proof_id } => {
                     id_validator
-                        .clone_proof(proof_id)
+                        .clone_proof(*proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 Instruction::DropProof { proof_id } => {
                     id_validator
-                        .drop_proof(proof_id)
+                        .drop_proof(*proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 Instruction::DropAllProofs => {
@@ -265,7 +257,7 @@ impl NotarizedTransactionValidator {
             }
         }
 
-        Ok(manifest.instructions.clone())
+        Ok(())
     }
 
     pub fn validate_header(&self, intent: &TransactionIntent) -> Result<(), HeaderValidationError> {
@@ -380,7 +372,7 @@ mod tests {
             assert_eq!(
                 Err($result),
                 validator.validate(
-                    create_transaction(
+                    &create_transaction(
                         $version,
                         $start_epoch,
                         $end_epoch,
@@ -441,18 +433,17 @@ mod tests {
 
         let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
-        let result = validator.validate_preview_intent(
-            PreviewIntent {
-                intent: tx.signed_intent.intent,
-                signer_public_keys: Vec::new(),
-                flags: PreviewFlags {
-                    unlimited_loan: true,
-                    assume_all_signature_proofs: false,
-                    permit_invalid_header_epoch: false,
-                },
+        let preview_intent = PreviewIntent {
+            intent: tx.signed_intent.intent,
+            signer_public_keys: Vec::new(),
+            flags: PreviewFlags {
+                unlimited_loan: true,
+                assume_all_signature_proofs: false,
+                permit_invalid_header_epoch: false,
             },
-            &mut intent_hash_manager,
-        );
+        };
+
+        let result = validator.validate_preview_intent(&preview_intent, &mut intent_hash_manager);
 
         assert!(result.is_ok());
     }

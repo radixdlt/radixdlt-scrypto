@@ -42,11 +42,8 @@ fn bench_transfer(c: &mut Criterion) {
         .build();
     let account1 = executor
         .execute_and_commit(
-            &TestTransaction::new(
-                manifest.clone(),
-                1,
-                vec![NonFungibleAddress::from_public_key(&public_key)],
-            ),
+            &TestTransaction::new(manifest.clone(), 1)
+                .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
             &FeeReserveConfig::standard(),
             &ExecutionConfig::default(),
         )
@@ -55,11 +52,8 @@ fn bench_transfer(c: &mut Criterion) {
         .new_component_addresses[0];
     let account2 = executor
         .execute_and_commit(
-            &TestTransaction::new(
-                manifest,
-                2,
-                vec![NonFungibleAddress::from_public_key(&public_key)],
-            ),
+            &TestTransaction::new(manifest, 2)
+                .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
             &FeeReserveConfig::standard(),
             &ExecutionConfig::default(),
         )
@@ -80,11 +74,8 @@ fn bench_transfer(c: &mut Criterion) {
     for nonce in 0..1000 {
         executor
             .execute_and_commit(
-                &TestTransaction::new(
-                    manifest.clone(),
-                    nonce,
-                    vec![NonFungibleAddress::from_public_key(&public_key)],
-                ),
+                &TestTransaction::new(manifest.clone(), nonce)
+                    .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
                 &FeeReserveConfig::standard(),
                 &ExecutionConfig::default(),
             )
@@ -107,11 +98,8 @@ fn bench_transfer(c: &mut Criterion) {
     c.bench_function("Transfer", |b| {
         b.iter(|| {
             let receipt = executor.execute_and_commit(
-                &TestTransaction::new(
-                    manifest.clone(),
-                    nonce,
-                    vec![NonFungibleAddress::from_public_key(&public_key)],
-                ),
+                &TestTransaction::new(manifest.clone(), nonce)
+                    .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
                 &FeeReserveConfig::standard(),
                 &ExecutionConfig::default(),
             );

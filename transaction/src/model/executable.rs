@@ -28,9 +28,9 @@ pub struct FeePayment {
 
 /// Represents a validated transaction
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Executable {
-    instructions: Vec<Instruction>,
-    blobs: HashMap<Hash, Vec<u8>>,
+pub struct Executable<'a> {
+    instructions: &'a [Instruction],
+    blobs: HashMap<Hash, &'a [u8]>,
     context: ExecutionContext,
 }
 
@@ -46,13 +46,13 @@ pub enum IntentValidation {
     None,
 }
 
-impl Executable {
+impl<'a> Executable<'a> {
     pub fn new(
-        instructions: Vec<Instruction>,
-        blobs: &[Vec<u8>],
+        instructions: &'a [Instruction],
+        blobs: &'a [Vec<u8>],
         context: ExecutionContext,
     ) -> Self {
-        let blobs = blobs.iter().map(|b| (hash(b), b.clone())).collect();
+        let blobs = blobs.iter().map(|b| (hash(b), b.as_slice())).collect();
         Self {
             instructions,
             blobs,
@@ -80,7 +80,7 @@ impl Executable {
         &self.context.auth_zone_params
     }
 
-    pub fn blobs(&self) -> &HashMap<Hash, Vec<u8>> {
+    pub fn blobs(&self) -> &HashMap<Hash, &[u8]> {
         &self.blobs
     }
 

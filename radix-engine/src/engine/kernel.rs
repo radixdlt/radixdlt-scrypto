@@ -37,7 +37,7 @@ pub struct Kernel<
     /// The transaction hash
     transaction_hash: Hash,
     /// Blobs attached to the transaction
-    blobs: &'g HashMap<Hash, Vec<u8>>,
+    blobs: &'g HashMap<Hash, &'g [u8]>,
     /// ID allocator
     id_allocator: IdAllocator,
 
@@ -70,7 +70,7 @@ where
     pub fn new(
         transaction_hash: Hash,
         auth_zone_params: AuthZoneParams,
-        blobs: &'g HashMap<Hash, Vec<u8>>,
+        blobs: &'g HashMap<Hash, &'g [u8]>,
         max_depth: usize,
         track: &'g mut Track<'s, R>,
         scrypto_interpreter: &'g mut ScryptoInterpreter<I, W>,

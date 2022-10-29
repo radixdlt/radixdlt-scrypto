@@ -69,8 +69,8 @@ where
 
         let validator = NotarizedTransactionValidator::new(validation_config);
 
-        let validated_preview_transaction = validator
-            .validate_preview_intent(preview_intent.clone(), self.intent_hash_manager)
+        let executable = validator
+            .validate_preview_intent(&preview_intent, self.intent_hash_manager)
             .map_err(PreviewError::TransactionValidationError)?;
 
         let mut transaction_executor =
@@ -81,7 +81,7 @@ where
             fee_reserve.credit(PREVIEW_CREDIT);
         }
         let receipt = transaction_executor.execute_with_fee_reserve(
-            &validated_preview_transaction,
+            &executable,
             &ExecutionConfig::default(),
             SystemLoanFeeReserve::default(),
         );
