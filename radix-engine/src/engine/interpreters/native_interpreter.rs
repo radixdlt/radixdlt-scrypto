@@ -1,9 +1,9 @@
-use transaction::model::Instruction;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance};
+use transaction::model::Instruction;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
     fn into(self) -> RuntimeError {
@@ -96,7 +96,7 @@ impl Executor<ScryptoValue> for NativeFunctionExecutor {
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
             + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<EpochManagerCreateInput, ScryptoValue>
+            + Invokable<EpochManagerCreateInput, SystemAddress>
             + Invokable<NativeMethodInvocation, ScryptoValue>,
         R: FeeReserve,
     {
@@ -139,9 +139,8 @@ impl Executor<ScryptoValue> for NativeFunctionExecutor {
     }
 }
 
-
 pub struct EpochManagerCreateExecutor(EpochManagerCreateInput, ScryptoValue);
-impl Executor<ScryptoValue> for EpochManagerCreateExecutor {
+impl Executor<SystemAddress> for EpochManagerCreateExecutor {
     fn args(&self) -> &ScryptoValue {
         &self.1
     }
@@ -149,15 +148,14 @@ impl Executor<ScryptoValue> for EpochManagerCreateExecutor {
     fn execute<'s, Y, R>(
         self,
         system_api: &mut Y,
-    ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R>
+    ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
             + Invokable<NativeFunctionInvocation, ScryptoValue>
             + Invokable<NativeMethodInvocation, ScryptoValue>,
-            R: FeeReserve,
+        R: FeeReserve,
     {
-
         let node_id =
             system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
 
@@ -166,35 +164,34 @@ impl Executor<ScryptoValue> for EpochManagerCreateExecutor {
         ))?;
 
         let system_address: SystemAddress = global_node_id.into();
-        let output = ScryptoValue::from_typed(&system_address);
+        let mut node_refs_to_copy = HashSet::new();
+        node_refs_to_copy.insert(global_node_id);
 
         let update = CallFrameUpdate {
-            node_refs_to_copy: output
-                .global_references()
-                .into_iter()
-                .map(|a| RENodeId::Global(a))
-                .collect(),
-            nodes_to_move: output.node_ids().into_iter().collect(),
+            node_refs_to_copy,
+            nodes_to_move: vec![],
         };
 
-        Ok((output, update))
+        Ok((system_address, update))
     }
 }
 
 impl<'g, 's, W, I, R>
-InvocationResolver<EpochManagerCreateInput, EpochManagerCreateExecutor, ScryptoValue>
-for Kernel<'g, 's, W, I, R>
-    where
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        R: FeeReserve,
+    InvocationResolver<EpochManagerCreateInput, EpochManagerCreateExecutor, SystemAddress>
+    for Kernel<'g, 's, W, I, R>
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
 {
     fn resolve(
         &mut self,
         invocation: EpochManagerCreateInput,
     ) -> Result<(EpochManagerCreateExecutor, REActor, CallFrameUpdate), RuntimeError> {
         let input = ScryptoValue::from_typed(&invocation);
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(EpochManagerFunction::Create)));
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
+            EpochManagerFunction::Create,
+        )));
         Ok((
             EpochManagerCreateExecutor(invocation, input),
             actor,
@@ -203,14 +200,13 @@ for Kernel<'g, 's, W, I, R>
     }
 }
 
-
 impl<'g, 's, W, I, R>
-InvocationResolver<NativeFunctionInvocation, NativeFunctionExecutor, ScryptoValue>
-for Kernel<'g, 's, W, I, R>
-    where
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        R: FeeReserve,
+    InvocationResolver<NativeFunctionInvocation, NativeFunctionExecutor, ScryptoValue>
+    for Kernel<'g, 's, W, I, R>
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
 {
     fn resolve(
         &mut self,
@@ -263,7 +259,6 @@ for Kernel<'g, 's, W, I, R>
         ))
     }
 }
-
 
 pub struct NativeMethodExecutor(pub NativeMethod, pub ResolvedReceiver, pub ScryptoValue);
 

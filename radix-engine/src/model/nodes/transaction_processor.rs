@@ -178,7 +178,7 @@ impl TransactionProcessor {
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
             + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<EpochManagerCreateInput, ScryptoValue>
+            + Invokable<EpochManagerCreateInput, SystemAddress>
             + Invokable<NativeMethodInvocation, ScryptoValue>,
         R: FeeReserve,
     {
@@ -645,25 +645,29 @@ impl TransactionProcessor {
                                     &function_ident.blueprint_name,
                                     &function_ident.function_name,
                                 )
-                                    .ok_or(
-                                        InvokeError::Error(
-                                            TransactionProcessorError::NativeFunctionNotFound(
-                                                function_ident.clone(),
-                                            ),
-                                        ),
-                                    )?;
+                                .ok_or(InvokeError::Error(
+                                    TransactionProcessorError::NativeFunctionNotFound(
+                                        function_ident.clone(),
+                                    ),
+                                ))?;
                                 match native_function {
                                     NativeFunction::EpochManager(EpochManagerFunction::Create) => {
-                                        let invocation: EpochManagerCreateInput = scrypto_decode(&args.raw)
-                                            .map_err(|e| InvokeError::Error(TransactionProcessorError::InvalidRequestData(e)))?;
-                                        system_api.invoke(invocation)
+                                        let invocation: EpochManagerCreateInput =
+                                            scrypto_decode(&args.raw).map_err(|e| {
+                                                InvokeError::Error(
+                                                    TransactionProcessorError::InvalidRequestData(
+                                                        e,
+                                                    ),
+                                                )
+                                            })?;
+                                        system_api
+                                            .invoke(invocation)
+                                            .map(|a| ScryptoValue::from_typed(&a))
                                     }
                                     _ => system_api
-                                        .invoke(NativeFunctionInvocation(
-                                            native_function,
-                                            args,
-                                        ))
-                                }.map_err(InvokeError::Downstream)
+                                        .invoke(NativeFunctionInvocation(native_function, args)),
+                                }
+                                .map_err(InvokeError::Downstream)
                             })
                             .and_then(|result| {
                                 // Auto move into auth_zone

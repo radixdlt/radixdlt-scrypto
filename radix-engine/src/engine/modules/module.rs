@@ -50,7 +50,7 @@ pub enum SysCallInput<'a> {
 }
 
 pub enum SysCallOutput<'a> {
-    Invoke { output: &'a ScryptoValue },
+    Invoke { rtn: String },
     BorrowNode { node_pointer: &'a RENodeLocation },
     DropNode { node: &'a HeapRENode },
     CreateNode { node_id: &'a RENodeId },

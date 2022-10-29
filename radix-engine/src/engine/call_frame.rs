@@ -18,7 +18,6 @@ impl CallFrameUpdate {
     }
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RENodeLocation {
     Heap,

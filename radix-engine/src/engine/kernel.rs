@@ -727,20 +727,22 @@ pub trait Executor<O> {
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
             + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<EpochManagerCreateInput, ScryptoValue>
+            + Invokable<EpochManagerCreateInput, SystemAddress>
             + Invokable<NativeMethodInvocation, ScryptoValue>,
         R: FeeReserve;
 }
 
-
 // TODO: remove redundant code and move this method to the interpreter
-impl<'g, 's, W, I, R> Invokable<EpochManagerCreateInput, ScryptoValue> for Kernel<'g, 's, W, I, R>
-    where
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        R: FeeReserve,
+impl<'g, 's, W, I, R> Invokable<EpochManagerCreateInput, SystemAddress> for Kernel<'g, 's, W, I, R>
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
 {
-    fn invoke(&mut self, invocation: EpochManagerCreateInput) -> Result<ScryptoValue, RuntimeError> {
+    fn invoke(
+        &mut self,
+        invocation: EpochManagerCreateInput,
+    ) -> Result<SystemAddress, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,
@@ -753,7 +755,7 @@ impl<'g, 's, W, I, R> Invokable<EpochManagerCreateInput, ScryptoValue> for Kerne
                     depth: self.current_frame.depth,
                 },
             )
-                .map_err(RuntimeError::ModuleError)?;
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         // Change to kernel mode
@@ -771,9 +773,11 @@ impl<'g, 's, W, I, R> Invokable<EpochManagerCreateInput, ScryptoValue> for Kerne
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::Invoke { output: &rtn },
+                SysCallOutput::Invoke {
+                    rtn: format!("{:?}", rtn),
+                },
             )
-                .map_err(RuntimeError::ModuleError)?;
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         Ok(rtn)
@@ -818,7 +822,9 @@ where
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::Invoke { output: &rtn },
+                SysCallOutput::Invoke {
+                    rtn: format!("{:?}", rtn),
+                },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
@@ -867,7 +873,9 @@ where
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::Invoke { output: &rtn },
+                SysCallOutput::Invoke {
+                    rtn: format!("{:?}", rtn),
+                },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
@@ -913,7 +921,9 @@ where
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::Invoke { output: &rtn },
+                SysCallOutput::Invoke {
+                    rtn: format!("{:?}", rtn),
+                },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
