@@ -525,10 +525,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         // Close fee reserve
         let fee_summary = self.fee_reserve.finalize();
-        let required_rejection = match &invoke_result {
-            Ok(_) => None,
-            Err(err) => extract_required_rejection(err),
-        };
+        let required_rejection = invoke_result
+            .as_ref()
+            .err()
+            .and_then(extract_required_rejection);
         let is_loan_payback_rejection = !fee_summary.loan_fully_repaid;
 
         let mut actual_fee_payments: HashMap<VaultId, Decimal> = HashMap::new();
