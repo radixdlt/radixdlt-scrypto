@@ -814,7 +814,7 @@ pub trait Executor<I, O> {
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
             + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<NativeInvocation, ScryptoValue>,
+            + Invokable<NativeMethodInvocation, ScryptoValue>,
         R: FeeReserve;
 }
 
@@ -831,23 +831,23 @@ where
 }
 
 impl<'g, 's, W, I, R> Invokable<NativeFunctionInvocation, ScryptoValue> for Kernel<'g, 's, W, I, R>
-    where
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        R: FeeReserve,
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
 {
     fn invoke(&mut self, input: NativeFunctionInvocation) -> Result<ScryptoValue, RuntimeError> {
         self.invoke_internal(input, Self::resolve)
     }
 }
 
-impl<'g, 's, W, I, R> Invokable<NativeInvocation, ScryptoValue> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, I, R> Invokable<NativeMethodInvocation, ScryptoValue> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
     R: FeeReserve,
 {
-    fn invoke(&mut self, input: NativeInvocation) -> Result<ScryptoValue, RuntimeError> {
+    fn invoke(&mut self, input: NativeMethodInvocation) -> Result<ScryptoValue, RuntimeError> {
         self.invoke_internal(input, Self::resolve)
     }
 }
@@ -1641,47 +1641,49 @@ where
     fn resolve(
         &mut self,
         native_function: &NativeFunctionInvocation,
-    ) -> Result<(NativeFunctionExecutor, REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError> {
+    ) -> Result<
+        (
+            NativeFunctionExecutor,
+            REActor,
+            HashMap<RENodeId, RENodeLocation>,
+        ),
+        RuntimeError,
+    > {
         let actor = REActor::Function(ResolvedFunction::Native(native_function.0));
-        Ok((NativeFunctionExecutor(native_function.0), actor, HashMap::new()))
+        Ok((
+            NativeFunctionExecutor(native_function.0),
+            actor,
+            HashMap::new(),
+        ))
     }
 }
 
 impl<'g, 's, W, I, R>
-InvocationResolver<NativeInvocation, NativeExecutor, ScryptoValue, ScryptoValue>
-for Kernel<'g, 's, W, I, R>
-    where
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        R: FeeReserve,
+    InvocationResolver<NativeMethodInvocation, NativeExecutor, ScryptoValue, ScryptoValue>
+    for Kernel<'g, 's, W, I, R>
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
 {
     fn resolve(
         &mut self,
-        invocation: &NativeInvocation,
+        native_method: &NativeMethodInvocation,
     ) -> Result<(NativeExecutor, REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError> {
         let mut additional_ref_copy = HashMap::new();
 
-        let actor = match invocation {
-            NativeInvocation::Function(native_function) => {
-                REActor::Function(ResolvedFunction::Native(native_function.0))
-            }
-            NativeInvocation::Method(native_method, node_id, _) => {
-                // Deref
-                let resolved_receiver = if let Some(derefed) = self.node_method_deref(*node_id)? {
-                    ResolvedReceiver::derefed(derefed, *node_id)
-                } else {
-                    ResolvedReceiver::new(*node_id)
-                };
-
-                let resolved_node_id = resolved_receiver.receiver;
-                let location = self.current_frame.get_node_location(resolved_node_id)?;
-                additional_ref_copy.insert(resolved_node_id, location);
-
-                REActor::Method(ResolvedMethod::Native(*native_method), resolved_receiver)
-            }
+        // Deref
+        let resolved_receiver = if let Some(derefed) = self.node_method_deref(native_method.1)? {
+            ResolvedReceiver::derefed(derefed, native_method.1)
+        } else {
+            ResolvedReceiver::new(native_method.1)
         };
 
+        let resolved_node_id = resolved_receiver.receiver;
+        let location = self.current_frame.get_node_location(resolved_node_id)?;
+        additional_ref_copy.insert(resolved_node_id, location);
+
+        let actor = REActor::Method(ResolvedMethod::Native(native_method.0), resolved_receiver);
         Ok((NativeExecutor(actor.clone()), actor, additional_ref_copy))
     }
 }
-

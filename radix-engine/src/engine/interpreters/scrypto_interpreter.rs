@@ -17,7 +17,7 @@ impl<I: WasmInstance> Executor<ScryptoValue, ScryptoValue> for ScryptoExecutor<I
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
             + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<NativeInvocation, ScryptoValue>,
+            + Invokable<NativeMethodInvocation, ScryptoValue>,
         R: FeeReserve,
     {
         let (export_name, return_type, scrypto_actor) = match system_api.get_actor() {

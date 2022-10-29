@@ -16,9 +16,9 @@ pub struct RadixEngineWasmRuntime<'y, 's, Y, R>
 where
     Y: SystemApi<'s, R>
         + Invokable<ScryptoInvocation, ScryptoValue>
-        + Invokable<NativeInvocation, ScryptoValue>
+        + Invokable<NativeMethodInvocation, ScryptoValue>
         + Invokable<NativeFunctionInvocation, ScryptoValue>,
-R: FeeReserve,
+    R: FeeReserve,
 {
     actor: ScryptoActor,
     system_api: &'y mut Y,
@@ -32,7 +32,7 @@ where
     Y: SystemApi<'s, R>
         + Invokable<ScryptoInvocation, ScryptoValue>
         + Invokable<NativeFunctionInvocation, ScryptoValue>
-        + Invokable<NativeInvocation, ScryptoValue>,
+        + Invokable<NativeMethodInvocation, ScryptoValue>,
     R: FeeReserve,
 {
     // TODO: expose API for reading blobs
@@ -95,7 +95,7 @@ where
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
 
         self.system_api
-            .invoke(NativeInvocation::Method(native_method, receiver, args))
+            .invoke(NativeMethodInvocation(native_method, receiver, args))
     }
 
     fn handle_node_create(
@@ -219,7 +219,7 @@ where
     Y: SystemApi<'s, R>
         + Invokable<ScryptoInvocation, ScryptoValue>
         + Invokable<NativeFunctionInvocation, ScryptoValue>
-        + Invokable<NativeInvocation, ScryptoValue>,
+        + Invokable<NativeMethodInvocation, ScryptoValue>,
     R: FeeReserve,
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {

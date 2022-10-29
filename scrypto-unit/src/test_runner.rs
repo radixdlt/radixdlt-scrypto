@@ -721,7 +721,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             )],
             |kernel| {
                 kernel
-                    .invoke(NativeInvocation::Method(
+                    .invoke(NativeMethodInvocation(
                         NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
                         RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
                         ScryptoValue::from_typed(&EpochManagerSetEpochInput { epoch }),
@@ -734,7 +734,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn get_current_epoch(&mut self) -> u64 {
         let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
             kernel
-                .invoke(NativeInvocation::Method(
+                .invoke(NativeMethodInvocation(
                     NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
                     RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
                     ScryptoValue::from_typed(&EpochManagerGetCurrentEpochInput {}),

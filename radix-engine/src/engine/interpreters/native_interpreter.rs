@@ -74,7 +74,6 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
-
 pub struct NativeFunctionExecutor(pub NativeFunction);
 
 impl Executor<ScryptoValue, ScryptoValue> for NativeFunctionExecutor {
@@ -83,12 +82,12 @@ impl Executor<ScryptoValue, ScryptoValue> for NativeFunctionExecutor {
         input: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
-        where
-            Y: SystemApi<'s, R>
+    where
+        Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
             + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<NativeInvocation, ScryptoValue>,
-            R: FeeReserve,
+            + Invokable<NativeMethodInvocation, ScryptoValue>,
+        R: FeeReserve,
     {
         NativeInterpreter::run_function(self.0, input, system_api)
     }
@@ -102,12 +101,12 @@ impl Executor<ScryptoValue, ScryptoValue> for NativeExecutor {
         input: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
-        where
-            Y: SystemApi<'s, R>
-                + Invokable<ScryptoInvocation, ScryptoValue>
-                + Invokable<NativeFunctionInvocation, ScryptoValue>
-                + Invokable<NativeInvocation, ScryptoValue>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation, ScryptoValue>
+            + Invokable<NativeFunctionInvocation, ScryptoValue>
+            + Invokable<NativeMethodInvocation, ScryptoValue>,
+        R: FeeReserve,
     {
         match self.0.clone() {
             REActor::Function(ResolvedFunction::Native(native_fn)) => {
@@ -120,7 +119,6 @@ impl Executor<ScryptoValue, ScryptoValue> for NativeExecutor {
         }
     }
 }
-
 
 pub trait NativeFunctionActor<I, O, E> {
     fn execute<'s, Y, R>(input: I, system_api: &mut Y) -> Result<O, InvokeError<E>>
@@ -139,7 +137,7 @@ impl NativeInterpreter {
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
             + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<NativeInvocation, ScryptoValue>,
+            + Invokable<NativeMethodInvocation, ScryptoValue>,
         R: FeeReserve,
     {
         match fn_identifier {
@@ -177,7 +175,7 @@ impl NativeInterpreter {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
-            + Invokable<NativeInvocation, ScryptoValue>,
+            + Invokable<NativeMethodInvocation, ScryptoValue>,
         R: FeeReserve,
     {
         match (resolved_receiver.receiver, native_method.clone()) {

@@ -105,27 +105,14 @@ impl Invocation for NativeFunctionInvocation {
     }
 }
 
+pub struct NativeMethodInvocation(pub NativeMethod, pub RENodeId, pub ScryptoValue);
 
-/// Native function/method invocation.
-pub enum NativeInvocation {
-    Function(NativeFunctionInvocation),
-    Method(NativeMethod, RENodeId, ScryptoValue),
-}
-
-impl Invocation for NativeInvocation {
+impl Invocation for NativeMethodInvocation {
     fn args(&self) -> &ScryptoValue {
-        match self {
-            NativeInvocation::Function(i) => i.args(),
-            NativeInvocation::Method(_, _, args) => &args,
-        }
+        &self.2
     }
 
     fn name(&self) -> String {
-        match self {
-            NativeInvocation::Function(i) => i.name(),
-            NativeInvocation::Method(ident, ..) => {
-                format!("{:?}", ident)
-            }
-        }
+        format!("{:?}", self.0)
     }
 }
