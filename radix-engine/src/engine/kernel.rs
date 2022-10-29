@@ -513,12 +513,12 @@ where
         })
     }
 
-    fn run<X: Executor<ScryptoValue>>(
+    fn run<O, X: Executor<O>>(
         &mut self,
         executor: X,
         actor: REActor,
         mut call_frame_update: CallFrameUpdate,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<O, RuntimeError> {
         let new_refed_nodes = self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
             AuthModule::on_before_frame_start(&actor, &executor, system_api).map_err(|e| match e {
                 InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
@@ -545,11 +545,8 @@ where
         }
 
         // Call Frame Push
-        let frame = CallFrame::new_child_from_parent(
-            &mut self.current_frame,
-            actor,
-            call_frame_update,
-        )?;
+        let frame =
+            CallFrame::new_child_from_parent(&mut self.current_frame, actor, call_frame_update)?;
 
         let parent = mem::replace(&mut self.current_frame, frame);
         self.prev_frame_stack.push(parent);
@@ -653,12 +650,12 @@ where
         }
     }
 
-    fn invoke_internal<X: Executor<ScryptoValue>>(
+    fn invoke_internal<O, X: Executor<O>>(
         &mut self,
         executor: X,
         actor: REActor,
         call_frame_update: CallFrameUpdate,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<O, RuntimeError> {
         // check call depth
         let depth = self.current_frame.depth;
         if depth == self.max_depth {
@@ -1386,10 +1383,7 @@ where
 }
 
 pub trait InvocationResolver<V: Invocation, X: Executor<O>, O> {
-    fn resolve(
-        &mut self,
-        invocation: &V,
-    ) -> Result<(X, REActor, CallFrameUpdate), RuntimeError>;
+    fn resolve(&mut self, invocation: &V) -> Result<(X, REActor, CallFrameUpdate), RuntimeError>;
 }
 
 impl<'g, 's, W, I, R> InvocationResolver<ScryptoInvocation, ScryptoExecutor<I>, ScryptoValue>
@@ -1402,14 +1396,7 @@ where
     fn resolve(
         &mut self,
         invocation: &ScryptoInvocation,
-    ) -> Result<
-        (
-            ScryptoExecutor<I>,
-            REActor,
-            CallFrameUpdate,
-        ),
-        RuntimeError,
-    > {
+    ) -> Result<(ScryptoExecutor<I>, REActor, CallFrameUpdate), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
 
         let (executor, actor) = match invocation {
@@ -1648,7 +1635,7 @@ where
             CallFrameUpdate {
                 nodes_to_move: invocation.args().node_ids().into_iter().collect(),
                 node_refs_to_copy,
-            }
+            },
         ))
     }
 }
@@ -1664,14 +1651,7 @@ where
     fn resolve(
         &mut self,
         native_function: &NativeFunctionInvocation,
-    ) -> Result<
-        (
-            NativeFunctionExecutor,
-            REActor,
-            CallFrameUpdate,
-        ),
-        RuntimeError,
-    > {
+    ) -> Result<(NativeFunctionExecutor, REActor, CallFrameUpdate), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
         let actor = REActor::Function(ResolvedFunction::Native(native_function.0));
         for global_address in native_function.args().global_references() {
@@ -1715,7 +1695,7 @@ where
             CallFrameUpdate {
                 nodes_to_move: native_function.args().node_ids().into_iter().collect(),
                 node_refs_to_copy,
-            }
+            },
         ))
     }
 }
@@ -1730,14 +1710,7 @@ where
     fn resolve(
         &mut self,
         native_method: &NativeMethodInvocation,
-    ) -> Result<
-        (
-            NativeMethodExecutor,
-            REActor,
-            CallFrameUpdate,
-        ),
-        RuntimeError,
-    > {
+    ) -> Result<(NativeMethodExecutor, REActor, CallFrameUpdate), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
 
         // Deref

@@ -227,7 +227,6 @@ impl CallFrame {
         let mut owned_heap_nodes = HashSet::new();
         let mut next_node_refs = HashMap::new();
 
-
         for node_id in call_frame_update.nodes_to_move {
             parent.take_node_internal(node_id)?;
             owned_heap_nodes.insert(node_id);
@@ -251,7 +250,11 @@ impl CallFrame {
         Ok(frame)
     }
 
-    pub fn update_upstream(from: &mut CallFrame, to: &mut CallFrame, update: CallFrameUpdate) -> Result<(), RuntimeError> {
+    pub fn update_upstream(
+        from: &mut CallFrame,
+        to: &mut CallFrame,
+        update: CallFrameUpdate,
+    ) -> Result<(), RuntimeError> {
         for node_id in update.nodes_to_move {
             // move re nodes to upstream call frame.
             from.take_node_internal(node_id)?;
@@ -260,7 +263,10 @@ impl CallFrame {
 
         for node_id in update.node_refs_to_copy {
             // Make sure not to allow owned nodes to be passed as references upstream
-            let location = from.node_refs.get(&node_id).ok_or(CallFrameError::RENodeNotVisible(node_id))?;
+            let location = from
+                .node_refs
+                .get(&node_id)
+                .ok_or(CallFrameError::RENodeNotVisible(node_id))?;
             to.node_refs.insert(node_id, location.clone());
         }
 
