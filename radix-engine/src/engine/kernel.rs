@@ -513,7 +513,7 @@ where
         })
     }
 
-    fn run<X: Executor<ScryptoValue, ScryptoValue>>(
+    fn run<X: Executor<ScryptoValue>>(
         &mut self,
         executor: X,
         actor: REActor,
@@ -661,7 +661,7 @@ where
         }
     }
 
-    fn invoke_internal<X: Executor<ScryptoValue, ScryptoValue>>(
+    fn invoke_internal<X: Executor<ScryptoValue>>(
         &mut self,
         executor: X,
         actor: REActor,
@@ -730,7 +730,7 @@ where
     }
 }
 
-pub trait Executor<I, O> {
+pub trait Executor<O> {
     // TODO: Remove
     fn args(&self) -> &ScryptoValue;
 
@@ -1394,15 +1394,14 @@ where
     }
 }
 
-pub trait InvocationResolver<V: Invocation, X: Executor<I, O>, I, O> {
+pub trait InvocationResolver<V: Invocation, X: Executor<O>, O> {
     fn resolve(
         &mut self,
         invocation: &V,
     ) -> Result<(X, REActor, Vec<RENodeId>, HashSet<RENodeId>), RuntimeError>;
 }
 
-impl<'g, 's, W, I, R>
-    InvocationResolver<ScryptoInvocation, ScryptoExecutor<I>, ScryptoValue, ScryptoValue>
+impl<'g, 's, W, I, R> InvocationResolver<ScryptoInvocation, ScryptoExecutor<I>, ScryptoValue>
     for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
@@ -1663,7 +1662,7 @@ where
 }
 
 impl<'g, 's, W, I, R>
-    InvocationResolver<NativeFunctionInvocation, NativeFunctionExecutor, ScryptoValue, ScryptoValue>
+    InvocationResolver<NativeFunctionInvocation, NativeFunctionExecutor, ScryptoValue>
     for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
@@ -1728,8 +1727,7 @@ where
     }
 }
 
-impl<'g, 's, W, I, R>
-    InvocationResolver<NativeMethodInvocation, NativeMethodExecutor, ScryptoValue, ScryptoValue>
+impl<'g, 's, W, I, R> InvocationResolver<NativeMethodInvocation, NativeMethodExecutor, ScryptoValue>
     for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,

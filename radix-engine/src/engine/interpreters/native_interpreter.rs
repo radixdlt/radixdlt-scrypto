@@ -81,7 +81,7 @@ pub trait NativeFunctionActor<I, O, E> {
 
 pub struct NativeFunctionExecutor(pub NativeFunction, pub ScryptoValue);
 
-impl Executor<ScryptoValue, ScryptoValue> for NativeFunctionExecutor {
+impl Executor<ScryptoValue> for NativeFunctionExecutor {
     fn args(&self) -> &ScryptoValue {
         &self.1
     }
@@ -123,7 +123,7 @@ impl Executor<ScryptoValue, ScryptoValue> for NativeFunctionExecutor {
 
 pub struct NativeMethodExecutor(pub NativeMethod, pub ResolvedReceiver, pub ScryptoValue);
 
-impl Executor<ScryptoValue, ScryptoValue> for NativeMethodExecutor {
+impl Executor<ScryptoValue> for NativeMethodExecutor {
     fn args(&self) -> &ScryptoValue {
         &self.2
     }

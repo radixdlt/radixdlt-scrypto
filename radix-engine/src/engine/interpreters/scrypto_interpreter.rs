@@ -8,7 +8,7 @@ pub struct ScryptoExecutor<I: WasmInstance> {
     args: ScryptoValue,
 }
 
-impl<I: WasmInstance> Executor<ScryptoValue, ScryptoValue> for ScryptoExecutor<I> {
+impl<I: WasmInstance> Executor<ScryptoValue> for ScryptoExecutor<I> {
     fn args(&self) -> &ScryptoValue {
         &self.args
     }
