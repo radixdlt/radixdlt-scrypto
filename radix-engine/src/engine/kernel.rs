@@ -1659,7 +1659,7 @@ where
 }
 
 impl<'g, 's, W, I, R>
-    InvocationResolver<NativeMethodInvocation, NativeExecutor, ScryptoValue, ScryptoValue>
+    InvocationResolver<NativeMethodInvocation, NativeMethodExecutor, ScryptoValue, ScryptoValue>
     for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
@@ -1669,7 +1669,7 @@ where
     fn resolve(
         &mut self,
         native_method: &NativeMethodInvocation,
-    ) -> Result<(NativeExecutor, REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError> {
+    ) -> Result<(NativeMethodExecutor, REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError> {
         let mut additional_ref_copy = HashMap::new();
 
         // Deref
@@ -1684,6 +1684,6 @@ where
         additional_ref_copy.insert(resolved_node_id, location);
 
         let actor = REActor::Method(ResolvedMethod::Native(native_method.0), resolved_receiver);
-        Ok((NativeExecutor(actor.clone()), actor, additional_ref_copy))
+        Ok((NativeMethodExecutor(native_method.0, resolved_receiver), actor, additional_ref_copy))
     }
 }

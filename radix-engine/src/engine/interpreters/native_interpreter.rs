@@ -3,8 +3,6 @@ use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 
-pub struct NativeInterpreter;
-
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
     fn into(self) -> RuntimeError {
         match self {
@@ -74,6 +72,14 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
+pub trait NativeFunctionActor<I, O, E> {
+    fn run<'s, Y, R>(input: I, system_api: &mut Y) -> Result<O, InvokeError<E>>
+        where
+            Y: SystemApi<'s, R>,
+            R: FeeReserve;
+}
+
+
 pub struct NativeFunctionExecutor(pub NativeFunction);
 
 impl Executor<ScryptoValue, ScryptoValue> for NativeFunctionExecutor {
@@ -89,58 +95,7 @@ impl Executor<ScryptoValue, ScryptoValue> for NativeFunctionExecutor {
             + Invokable<NativeMethodInvocation, ScryptoValue>,
         R: FeeReserve,
     {
-        NativeInterpreter::run_function(self.0, input, system_api)
-    }
-}
-
-pub struct NativeExecutor(pub REActor);
-
-impl Executor<ScryptoValue, ScryptoValue> for NativeExecutor {
-    fn execute<'s, Y, R>(
-        &mut self,
-        input: ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<ScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation, ScryptoValue>
-            + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<NativeMethodInvocation, ScryptoValue>,
-        R: FeeReserve,
-    {
-        match self.0.clone() {
-            REActor::Function(ResolvedFunction::Native(native_fn)) => {
-                NativeInterpreter::run_function(native_fn, input, system_api)
-            }
-            REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) => {
-                NativeInterpreter::run_method(native_method, resolved_receiver, input, system_api)
-            }
-            _ => panic!("Should not get here"),
-        }
-    }
-}
-
-pub trait NativeFunctionActor<I, O, E> {
-    fn execute<'s, Y, R>(input: I, system_api: &mut Y) -> Result<O, InvokeError<E>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve;
-}
-
-impl NativeInterpreter {
-    pub fn run_function<'s, Y, R>(
-        fn_identifier: NativeFunction,
-        input: ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<ScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation, ScryptoValue>
-            + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<NativeMethodInvocation, ScryptoValue>,
-        R: FeeReserve,
-    {
-        match fn_identifier {
+        match self.0 {
             NativeFunction::TransactionProcessor(func) => {
                 TransactionProcessor::static_main(func, input, system_api).map_err(|e| e.into())
             }
@@ -158,27 +113,32 @@ impl NativeInterpreter {
                                 InterpreterError::InvalidNativeFunctionInput,
                             )
                         })?;
-                    Self::execute(input, system_api)
+                    Self::run(input, system_api)
                         .map(|rtn| ScryptoValue::from_typed(&rtn))
                         .map_err(|e| e.into())
                 }
             },
         }
     }
+}
 
-    pub fn run_method<'s, Y, R>(
-        native_method: NativeMethod,
-        resolved_receiver: ResolvedReceiver,
+pub struct NativeMethodExecutor(pub NativeMethod, pub ResolvedReceiver);
+
+impl Executor<ScryptoValue, ScryptoValue> for NativeMethodExecutor {
+    fn execute<'s, Y, R>(
+        &mut self,
         input: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
+            + Invokable<NativeFunctionInvocation, ScryptoValue>
             + Invokable<NativeMethodInvocation, ScryptoValue>,
         R: FeeReserve,
     {
-        match (resolved_receiver.receiver, native_method.clone()) {
+
+        match (self.1.receiver, self.0) {
             (RENodeId::AuthZoneStack(auth_zone_id), NativeMethod::AuthZone(method)) => {
                 AuthZoneStack::main(auth_zone_id, method, input, system_api).map_err(|e| e.into())
             }
@@ -205,7 +165,7 @@ impl NativeInterpreter {
             (RENodeId::EpochManager(component_id), NativeMethod::EpochManager(method)) => {
                 EpochManager::main(component_id, method, input, system_api).map_err(|e| e.into())
             }
-            (receiver, _) => {
+            (receiver, native_method) => {
                 return Err(RuntimeError::KernelError(
                     KernelError::MethodReceiverNotMatch(native_method, receiver),
                 ));
@@ -213,3 +173,4 @@ impl NativeInterpreter {
         }
     }
 }
+

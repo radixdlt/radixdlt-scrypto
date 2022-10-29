@@ -1,6 +1,4 @@
-use crate::engine::{
-    AuthModule, LockFlags, NativeFunctionActor, NativeInterpreter, RENode, SystemApi,
-};
+use crate::engine::{AuthModule, LockFlags, NativeFunctionActor, NativeFunctionExecutor, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
@@ -19,9 +17,9 @@ pub struct EpochManager {
 }
 
 impl NativeFunctionActor<EpochManagerCreateInput, SystemAddress, EpochManagerError>
-    for NativeInterpreter
+    for NativeFunctionExecutor
 {
-    fn execute<'s, Y, R>(
+    fn run<'s, Y, R>(
         _input: EpochManagerCreateInput,
         system_api: &mut Y,
     ) -> Result<SystemAddress, InvokeError<EpochManagerError>>
