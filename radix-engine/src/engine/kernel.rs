@@ -517,8 +517,7 @@ where
         &mut self,
         executor: X,
         actor: REActor,
-        nodes_to_pass: Vec<RENodeId>,
-        mut node_refs: HashSet<RENodeId>,
+        mut call_frame_update: CallFrameUpdate,
     ) -> Result<ScryptoValue, RuntimeError> {
         let new_refed_nodes = self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
             AuthModule::on_before_frame_start(&actor, &executor, system_api).map_err(|e| match e {
@@ -528,9 +527,9 @@ where
         })?;
 
         // TODO: Do this in a better way by allowing module to execute in next call frame
-        node_refs.extend(new_refed_nodes);
+        call_frame_update.node_refs_to_copy.extend(new_refed_nodes);
 
-        for node_id in &nodes_to_pass {
+        for node_id in &call_frame_update.nodes_to_move {
             self.prepare_move_downstream(*node_id, &actor)?;
         }
 
@@ -549,8 +548,7 @@ where
         let frame = CallFrame::new_child_from_parent(
             &mut self.current_frame,
             actor,
-            nodes_to_pass,
-            node_refs,
+            call_frame_update,
         )?;
 
         let parent = mem::replace(&mut self.current_frame, frame);
@@ -665,8 +663,7 @@ where
         &mut self,
         executor: X,
         actor: REActor,
-        nodes_to_move: Vec<RENodeId>,
-        node_refs_to_copy: HashSet<RENodeId>,
+        call_frame_update: CallFrameUpdate,
     ) -> Result<ScryptoValue, RuntimeError> {
         // check call depth
         let depth = self.current_frame.depth;
@@ -678,7 +675,7 @@ where
 
         // TODO: Move to higher layer
         if depth == 0 {
-            for node_id in &node_refs_to_copy {
+            for node_id in &call_frame_update.node_refs_to_copy {
                 if let RENodeId::Global(global_address) = node_id {
                     if self.current_frame.get_node_location(*node_id).is_err() {
                         if matches!(
@@ -717,7 +714,7 @@ where
             }
         }
 
-        let output = self.run(executor, actor, nodes_to_move, node_refs_to_copy)?;
+        let output = self.run(executor, actor, call_frame_update)?;
 
         // TODO: Move to higher layer
         if depth == 0 {
@@ -769,8 +766,8 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, nodes_to_move, node_refs_to_copy) = self.resolve(&invocation)?;
-        let rtn = self.invoke_internal(executor, actor, nodes_to_move, node_refs_to_copy)?;
+        let (executor, actor, call_frame_update) = self.resolve(&invocation)?;
+        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
@@ -817,8 +814,8 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, nodes_to_move, node_refs_to_copy) = self.resolve(&invocation)?;
-        let rtn = self.invoke_internal(executor, actor, nodes_to_move, node_refs_to_copy)?;
+        let (executor, actor, call_frame_update) = self.resolve(&invocation)?;
+        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
@@ -862,8 +859,8 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, nodes_to_move, node_refs_to_copy) = self.resolve(&invocation)?;
-        let rtn = self.invoke_internal(executor, actor, nodes_to_move, node_refs_to_copy)?;
+        let (executor, actor, call_frame_update) = self.resolve(&invocation)?;
+        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
@@ -1398,7 +1395,7 @@ pub trait InvocationResolver<V: Invocation, X: Executor<O>, O> {
     fn resolve(
         &mut self,
         invocation: &V,
-    ) -> Result<(X, REActor, Vec<RENodeId>, HashSet<RENodeId>), RuntimeError>;
+    ) -> Result<(X, REActor, CallFrameUpdate), RuntimeError>;
 }
 
 impl<'g, 's, W, I, R> InvocationResolver<ScryptoInvocation, ScryptoExecutor<I>, ScryptoValue>
@@ -1415,8 +1412,7 @@ where
         (
             ScryptoExecutor<I>,
             REActor,
-            Vec<RENodeId>,
-            HashSet<RENodeId>,
+            CallFrameUpdate,
         ),
         RuntimeError,
     > {
@@ -1655,8 +1651,10 @@ where
         Ok((
             executor,
             actor,
-            invocation.args().node_ids().into_iter().collect(),
-            node_refs_to_copy,
+            CallFrameUpdate {
+                nodes_to_move: invocation.args().node_ids().into_iter().collect(),
+                node_refs_to_copy,
+            }
         ))
     }
 }
@@ -1676,8 +1674,7 @@ where
         (
             NativeFunctionExecutor,
             REActor,
-            Vec<RENodeId>,
-            HashSet<RENodeId>,
+            CallFrameUpdate,
         ),
         RuntimeError,
     > {
@@ -1721,8 +1718,10 @@ where
         Ok((
             NativeFunctionExecutor(native_function.0, native_function.1.clone()),
             actor,
-            native_function.args().node_ids().into_iter().collect(),
-            node_refs_to_copy,
+            CallFrameUpdate {
+                nodes_to_move: native_function.args().node_ids().into_iter().collect(),
+                node_refs_to_copy,
+            }
         ))
     }
 }
@@ -1741,8 +1740,7 @@ where
         (
             NativeMethodExecutor,
             REActor,
-            Vec<RENodeId>,
-            HashSet<RENodeId>,
+            CallFrameUpdate,
         ),
         RuntimeError,
     > {
@@ -1776,8 +1774,10 @@ where
         Ok((
             NativeMethodExecutor(native_method.0, resolved_receiver, native_method.2.clone()),
             actor,
-            native_method.args().node_ids().into_iter().collect(),
-            node_refs_to_copy,
+            CallFrameUpdate {
+                nodes_to_move: native_method.args().node_ids().into_iter().collect(),
+                node_refs_to_copy,
+            },
         ))
     }
 }

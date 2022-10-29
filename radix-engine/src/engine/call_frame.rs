@@ -3,6 +3,12 @@ use crate::fee::FeeReserve;
 use crate::model::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CallFrameUpdate {
+    pub nodes_to_move: Vec<RENodeId>,
+    pub node_refs_to_copy: HashSet<RENodeId>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RENodeLocation {
     Heap,
@@ -216,18 +222,18 @@ impl CallFrame {
     pub fn new_child_from_parent(
         parent: &mut CallFrame,
         actor: REActor,
-        nodes_to_move: Vec<RENodeId>,
-        node_refs: HashSet<RENodeId>,
+        call_frame_update: CallFrameUpdate,
     ) -> Result<Self, RuntimeError> {
         let mut owned_heap_nodes = HashSet::new();
         let mut next_node_refs = HashMap::new();
 
-        for node_id in nodes_to_move {
+
+        for node_id in call_frame_update.nodes_to_move {
             parent.take_node_internal(node_id)?;
             owned_heap_nodes.insert(node_id);
         }
 
-        for node_id in node_refs {
+        for node_id in call_frame_update.node_refs_to_copy {
             let location = parent.get_node_location(node_id)?;
             next_node_refs.insert(node_id, location);
         }
