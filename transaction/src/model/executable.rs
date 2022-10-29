@@ -62,10 +62,6 @@ impl Executable {
         self.transaction_hash
     }
 
-    pub fn manifest_instructions_size(&self) -> u32 {
-        scrypto_encode(&self.instructions).len() as u32
-    }
-
     pub fn cost_unit_limit(&self) -> u32 {
         self.cost_unit_limit
     }

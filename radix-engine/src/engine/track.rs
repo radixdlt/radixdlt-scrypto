@@ -446,41 +446,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         mut self,
         transaction: &Executable,
     ) -> Result<Self, PreExecutionError> {
-        let result = self
-            .fee_reserve
-            .consume(self.fee_table.tx_base_fee(), "base_fee", true)
-            .and_then(|()| {
-                self.fee_reserve.consume(
-                    self.fee_table.tx_manifest_decoding_per_byte()
-                        * transaction.manifest_instructions_size() as u32,
-                    "decode_manifest",
-                    true,
-                )
-            })
-            .and_then(|()| {
-                self.fee_reserve.consume(
-                    self.fee_table.tx_manifest_verification_per_byte()
-                        * transaction.manifest_instructions_size() as u32,
-                    "verify_manifest",
-                    true,
-                )
-            })
-            .and_then(|()| {
-                self.fee_reserve.consume(
-                    self.fee_table.tx_signature_verification_per_sig()
-                        * transaction.auth_zone_params().initial_proofs.len() as u32,
-                    "verify_signatures",
-                    true,
-                )
-            })
-            .and_then(|()| {
-                self.fee_reserve.consume(
-                    transaction.blobs().iter().map(|b| b.len()).sum::<usize>() as u32
-                        * self.fee_table.tx_blob_price_per_byte(),
-                    "blobs",
-                    true,
-                )
-            });
+        let result = self.attempt_apply_pre_execution_costs(transaction);
 
         match result {
             Ok(()) => Ok(self),
@@ -489,6 +455,53 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 error,
             }),
         }
+    }
+
+    fn attempt_apply_pre_execution_costs(
+        &mut self,
+        transaction: &Executable,
+    ) -> Result<Self, FeeReserveError> {
+        let encoded_instruction_length =
+            Self::to_u32_or_pre_error(scrypto_encode(&transaction.instructions).len())?;
+        let initial_proofs_count =
+            Self::to_u32_or_pre_error(transaction.auth_zone_params().initial_proofs.len())?;
+        let blobs_length =
+            Self::to_u32_or_pre_error(transaction.blobs().iter().map(|b| b.len()).sum::<usize>())?;
+
+        self.fee_reserve
+            .consume(self.fee_table.tx_base_fee(), "base_fee", true)
+            .and_then(|()| {
+                self.fee_reserve.consume(
+                    self.fee_table.tx_manifest_decoding_per_byte() * encoded_instruction_length,
+                    "decode_manifest",
+                    true,
+                )
+            })
+            .and_then(|()| {
+                self.fee_reserve.consume(
+                    self.fee_table.tx_manifest_verification_per_byte() * encoded_instruction_length,
+                    "verify_manifest",
+                    true,
+                )
+            })
+            .and_then(|()| {
+                self.fee_reserve.consume(
+                    self.fee_table.tx_signature_verification_per_sig() * initial_proofs_count,
+                    "verify_signatures",
+                    true,
+                )
+            })
+            .and_then(|()| {
+                self.fee_reserve.consume(
+                    self.fee_table.tx_blob_price_per_byte() * blobs_length,
+                    "blobs",
+                    true,
+                )
+            })
+    }
+
+    fn to_u32_or_pre_error(size: usize) -> Result<u32, FeeReserveError> {
+        size.try_into().map_err(|_| FeeReserveError::LimitExceeded)
     }
 
     pub fn finalize(self, invoke_result: Result<Vec<Vec<u8>>, RuntimeError>) -> TrackReceipt {
