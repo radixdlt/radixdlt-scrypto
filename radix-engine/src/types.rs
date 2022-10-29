@@ -69,8 +69,7 @@ pub enum ScryptoInvocation {
     Method(ScryptoMethodIdent, ScryptoValue),
 }
 
-impl Invocation<ScryptoValue> for ScryptoInvocation {
-}
+impl Invocation<ScryptoValue> for ScryptoInvocation {}
 
 impl ScryptoInvocation {
     pub fn args(&self) -> &ScryptoValue {
@@ -84,8 +83,7 @@ impl ScryptoInvocation {
 #[derive(Debug)]
 pub struct NativeFunctionInvocation(pub NativeFunction, pub ScryptoValue);
 
-impl Invocation<ScryptoValue> for NativeFunctionInvocation {
-}
+impl Invocation<ScryptoValue> for NativeFunctionInvocation {}
 
 impl NativeFunctionInvocation {
     pub fn args(&self) -> &ScryptoValue {
@@ -96,8 +94,7 @@ impl NativeFunctionInvocation {
 #[derive(Debug)]
 pub struct NativeMethodInvocation(pub NativeMethod, pub RENodeId, pub ScryptoValue);
 
-impl Invocation<ScryptoValue> for NativeMethodInvocation {
-}
+impl Invocation<ScryptoValue> for NativeMethodInvocation {}
 
 impl NativeMethodInvocation {
     pub fn args(&self) -> &ScryptoValue {

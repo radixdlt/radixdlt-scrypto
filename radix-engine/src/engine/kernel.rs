@@ -740,17 +740,14 @@ where
     R: FeeReserve,
     N: NativeFuncInvocation<O>,
 {
-    fn invoke(
-        &mut self,
-        invocation: N,
-    ) -> Result<O, RuntimeError> {
+    fn invoke(&mut self, invocation: N) -> Result<O, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    name: "test".to_string(),//format!("{:?}", invocation),
+                    name: "test".to_string(), //format!("{:?}", invocation),
                     input_size: 0,
                     value_count: 0,
                     depth: self.current_frame.depth,
@@ -763,7 +760,8 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let executor = invocation.create_executor();
+        let input = ScryptoValue::from_typed(&invocation);
+        let executor = NativeFuncExecutor(invocation, input, PhantomData);
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
             EpochManagerFunction::Create,
         )));
@@ -780,7 +778,7 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::Invoke {
-                    rtn: "test".to_string(),//format!("{:?}", rtn),
+                    rtn: "test".to_string(), //format!("{:?}", rtn),
                 },
             )
             .map_err(RuntimeError::ModuleError)?;

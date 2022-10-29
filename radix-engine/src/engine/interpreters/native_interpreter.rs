@@ -1,10 +1,10 @@
-use sbor::*;
-use sbor::rust::fmt::Debug;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance};
+use sbor::rust::fmt::Debug;
+use sbor::*;
 use transaction::model::Instruction;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
@@ -76,18 +76,18 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
-
-impl Invocation<SystemAddress> for EpochManagerCreateInput {}
-
 impl NativeFuncInvocation<SystemAddress> for EpochManagerCreateInput {
-    type Input = EpochManagerCreateInput;
-
-    fn create_executor(self) -> EpochManagerCreateExecutor<EpochManagerCreateInput, SystemAddress> {
-        let input = ScryptoValue::from_typed(&self);
-        EpochManagerCreateExecutor(self, input, PhantomData)
-    }
-
-    fn execute<'s, Y, R>(self, system_api: &mut Y) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError> where Y: SystemApi<'s, R> + Invokable<ScryptoInvocation, ScryptoValue> + Invokable<NativeFunctionInvocation, ScryptoValue> + Invokable<NativeMethodInvocation, ScryptoValue>, R: FeeReserve {
+    fn execute<'s, Y, R>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation, ScryptoValue>
+            + Invokable<NativeFunctionInvocation, ScryptoValue>
+            + Invokable<NativeMethodInvocation, ScryptoValue>,
+        R: FeeReserve,
+    {
         let node_id =
             system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
 
@@ -108,41 +108,36 @@ impl NativeFuncInvocation<SystemAddress> for EpochManagerCreateInput {
     }
 }
 
-pub trait NativeFuncInvocation<O>: Invocation<O> {
-    type Input: NativeFuncInvocation<O>;
+impl<O, N: NativeFuncInvocation<O>> Invocation<O> for N {}
 
-    fn create_executor(self) -> EpochManagerCreateExecutor<Self::Input, O>;
-
-    fn execute<'s, Y, R>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(O, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R>
+pub trait NativeFuncInvocation<O>: Invocation<O> + Encode {
+    fn execute<'s, Y, R>(self, system_api: &mut Y) -> Result<(O, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
             + Invokable<NativeFunctionInvocation, ScryptoValue>
             + Invokable<NativeMethodInvocation, ScryptoValue>,
-            R: FeeReserve;
+        R: FeeReserve;
 }
 
+pub struct NativeFuncExecutor<N: NativeFuncInvocation<O>, O>(
+    pub N,
+    pub ScryptoValue,
+    pub PhantomData<O>,
+);
 
-pub struct EpochManagerCreateExecutor<N: NativeFuncInvocation<O>, O>(N, ScryptoValue, PhantomData<O>);
-
-impl<O, N: NativeFuncInvocation<O>> Executor<O> for EpochManagerCreateExecutor<N, O> {
+impl<O, N: NativeFuncInvocation<O>> Executor<O> for NativeFuncExecutor<N, O> {
     fn args(&self) -> &ScryptoValue {
         &self.1
     }
 
-    fn execute<'s, Y, R>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(O, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R>
+    fn execute<'s, Y, R>(self, system_api: &mut Y) -> Result<(O, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
             + Invokable<NativeFunctionInvocation, ScryptoValue>
             + Invokable<NativeMethodInvocation, ScryptoValue>,
-            R: FeeReserve,
+        R: FeeReserve,
     {
         self.0.execute(system_api)
     }
@@ -150,9 +145,9 @@ impl<O, N: NativeFuncInvocation<O>> Executor<O> for EpochManagerCreateExecutor<N
 
 pub trait NativeFunctionActor<I, O, E> {
     fn run<'s, Y, R>(input: I, system_api: &mut Y) -> Result<O, InvokeError<E>>
-        where
-            Y: SystemApi<'s, R>,
-            R: FeeReserve;
+    where
+        Y: SystemApi<'s, R>,
+        R: FeeReserve;
 }
 
 pub struct NativeFunctionExecutor(pub NativeFunction, pub ScryptoValue);
@@ -212,7 +207,6 @@ impl Executor<ScryptoValue> for NativeFunctionExecutor {
         Ok((output, update))
     }
 }
-
 
 impl<'g, 's, W, I, R>
     InvocationResolver<NativeFunctionInvocation, NativeFunctionExecutor, ScryptoValue>
