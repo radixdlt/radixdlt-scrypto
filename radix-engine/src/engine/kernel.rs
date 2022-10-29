@@ -673,6 +673,7 @@ where
         invocation: V,
         executor: X,
         actor: REActor,
+        nodes_to_move: Vec<RENodeId>,
         mut node_refs: HashMap<RENodeId, RENodeLocation>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let depth = self.current_frame.depth;
@@ -697,11 +698,6 @@ where
                 KernelError::MaxCallDepthLimitReached,
             ));
         }
-
-
-        let mut nodes_to_pass_downstream = Vec::new();
-        nodes_to_pass_downstream.extend(invocation.args().node_ids());
-        // Internal state update to taken values
 
         // Check that global references are owned by this call frame
         let mut global_references = invocation.args().global_references();
@@ -772,7 +768,7 @@ where
             executor,
             actor,
             invocation.args().clone(), // TODO: Remove clone
-            nodes_to_pass_downstream,
+            nodes_to_move,
             node_refs,
         )?;
 
@@ -792,8 +788,6 @@ where
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
             self.drop_nodes_in_frame()?;
         }
-
-
 
         Ok(output)
     }
@@ -821,8 +815,8 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, node_refs) = self.resolve(&input)?;
-        let rtn = self.invoke_internal(input, executor, actor, node_refs)?;
+        let (executor, actor, nodes_to_move, node_refs) = self.resolve(&input)?;
+        let rtn = self.invoke_internal(input, executor, actor, nodes_to_move, node_refs)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
@@ -842,8 +836,8 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, node_refs) = self.resolve(&input)?;
-        let rtn = self.invoke_internal(input, executor, actor, node_refs)?;
+        let (executor, actor, nodes_to_move, node_refs) = self.resolve(&input)?;
+        let rtn = self.invoke_internal(input, executor, actor, nodes_to_move, node_refs)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
@@ -863,8 +857,8 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, node_refs) = self.resolve(&input)?;
-        let rtn = self.invoke_internal(input, executor, actor, node_refs)?;
+        let (executor, actor, nodes_to_move, node_refs) = self.resolve(&input)?;
+        let rtn = self.invoke_internal(input, executor, actor, nodes_to_move, node_refs)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
@@ -1389,7 +1383,7 @@ pub trait InvocationResolver<V: Invocation, X: Executor<I, O>, I, O> {
     fn resolve(
         &mut self,
         invocation: &V,
-    ) -> Result<(X, REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError>;
+    ) -> Result<(X, REActor, Vec<RENodeId>, HashMap<RENodeId, RENodeLocation>), RuntimeError>;
 }
 
 impl<'g, 's, W, I, R>
@@ -1407,6 +1401,7 @@ where
         (
             ScryptoExecutor<I>,
             REActor,
+            Vec<RENodeId>,
             HashMap<RENodeId, RENodeLocation>,
         ),
         RuntimeError,
@@ -1647,7 +1642,7 @@ where
             }
         };
 
-        Ok((executor, actor, additional_ref_copy))
+        Ok((executor, actor, invocation.args().node_ids().into_iter().collect(), additional_ref_copy))
     }
 }
 
@@ -1666,6 +1661,7 @@ where
         (
             NativeFunctionExecutor,
             REActor,
+            Vec<RENodeId>,
             HashMap<RENodeId, RENodeLocation>,
         ),
         RuntimeError,
@@ -1674,6 +1670,7 @@ where
         Ok((
             NativeFunctionExecutor(native_function.0),
             actor,
+            native_function.args().node_ids().into_iter().collect(),
             HashMap::new(),
         ))
     }
@@ -1694,6 +1691,7 @@ where
         (
             NativeMethodExecutor,
             REActor,
+            Vec<RENodeId>,
             HashMap<RENodeId, RENodeLocation>,
         ),
         RuntimeError,
@@ -1715,6 +1713,7 @@ where
         Ok((
             NativeMethodExecutor(native_method.0, resolved_receiver),
             actor,
+            native_method.args().node_ids().into_iter().collect(),
             additional_ref_copy,
         ))
     }
