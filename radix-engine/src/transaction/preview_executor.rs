@@ -11,7 +11,6 @@ use crate::fee::SystemLoanFeeReserve;
 use crate::ledger::*;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
-use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance};
 
 #[derive(Debug)]

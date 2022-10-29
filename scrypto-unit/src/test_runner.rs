@@ -348,9 +348,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         execute_transaction(
             &self.execution_stores.get_output_store(node_id),
             &self.scrypto_interpreter,
-            transaction,
             fee_reserve_config,
             execution_config,
+            transaction,
         )
     }
 
@@ -360,7 +360,6 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         network: &NetworkDefinition,
     ) -> Result<PreviewResult, PreviewError> {
         let node_id = self.create_child_node(0);
-        let substate_store = &mut self.execution_stores.get_output_store(node_id);
 
         execute_preview(
             &self.execution_stores.get_output_store(node_id),
