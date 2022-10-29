@@ -56,7 +56,7 @@ pub enum KernelError {
     // invocation
     WasmError(WasmError),
 
-    InvalidReferencePass(GlobalAddress),
+    InvalidReferencePass(RENodeId),
     InvalidReferenceReturn(GlobalAddress),
     InvalidReferenceWrite(GlobalAddress),
     GlobalAddressNotFound(GlobalAddress),

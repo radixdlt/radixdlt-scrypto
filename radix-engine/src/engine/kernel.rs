@@ -700,45 +700,53 @@ where
         }
 
         // Check that global references are owned by this call frame
+        node_refs.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)), RENodeLocation::Store);
+        node_refs.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)), RENodeLocation::Store);
+        node_refs.insert(RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)), RENodeLocation::Store);
+        node_refs.insert(RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)), RENodeLocation::Store);
+        node_refs.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)), RENodeLocation::Store);
+
+        /*
         let mut global_references = HashSet::new();
         global_references.insert(GlobalAddress::Resource(RADIX_TOKEN));
         global_references.insert(GlobalAddress::System(EPOCH_MANAGER));
         global_references.insert(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN));
         global_references.insert(GlobalAddress::Resource(EDDSA_ED25519_TOKEN));
         global_references.insert(GlobalAddress::Package(ACCOUNT_PACKAGE));
+         */
 
-        for global_address in global_references {
-            let node_id = RENodeId::Global(global_address);
-
+        for node_id in node_refs.keys() {
             // TODO: remove
-            if let Some(pointer) = self.current_frame.node_refs.get(&node_id) {
-                node_refs.insert(node_id.clone(), pointer.clone());
+            if let Ok(location) = self.current_frame.get_node_location(*node_id) {
+                //node_refs.insert(node_id.clone(), pointer.clone());
             } else {
-                if matches!(
-                    global_address,
-                    GlobalAddress::Component(ComponentAddress::EcdsaSecp256k1VirtualAccount(..))
-                ) || matches!(
-                    global_address,
-                    GlobalAddress::Component(ComponentAddress::EddsaEd25519VirtualAccount(..))
-                ) {
-                    node_refs.insert(node_id.clone(), RENodeLocation::Store);
-                    continue;
-                }
+                if let RENodeId::Global(global_address) = node_id {
+                    if matches!(
+                        global_address,
+                        GlobalAddress::Component(ComponentAddress::EcdsaSecp256k1VirtualAccount(..))
+                    ) || matches!(
+                        global_address,
+                        GlobalAddress::Component(ComponentAddress::EddsaEd25519VirtualAccount(..))
+                    ) {
+                        //node_refs.insert(node_id.clone(), RENodeLocation::Store);
+                        continue;
+                    }
 
-                if depth == 0 {
-                    let offset = SubstateOffset::Global(GlobalOffset::Global);
-                    self.track
-                        .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
-                        .map_err(|_| KernelError::GlobalAddressNotFound(global_address))?;
-                    self.track
-                        .release_lock(SubstateId(node_id, offset), false)
-                        .map_err(|_| KernelError::GlobalAddressNotFound(global_address))?;
-                    node_refs.insert(node_id.clone(), RENodeLocation::Store);
-                    continue;
+                    if depth == 0 {
+                        let offset = SubstateOffset::Global(GlobalOffset::Global);
+                        self.track
+                            .acquire_lock(SubstateId(*node_id, offset.clone()), LockFlags::read_only())
+                            .map_err(|_| KernelError::GlobalAddressNotFound(*global_address))?;
+                        self.track
+                            .release_lock(SubstateId(*node_id, offset), false)
+                            .map_err(|_| KernelError::GlobalAddressNotFound(*global_address))?;
+                        //node_refs.insert(node_id.clone(), RENodeLocation::Store);
+                        continue;
+                    }
                 }
 
                 return Err(RuntimeError::KernelError(
-                    KernelError::InvalidReferencePass(global_address),
+                    KernelError::InvalidReferencePass(*node_id),
                 ));
             }
         }
