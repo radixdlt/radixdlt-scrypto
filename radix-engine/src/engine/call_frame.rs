@@ -217,19 +217,25 @@ impl CallFrame {
         parent: &mut CallFrame,
         actor: REActor,
         nodes_to_move: Vec<RENodeId>,
-        node_refs: HashMap<RENodeId, RENodeLocation>,
+        node_refs: HashSet<RENodeId>,
     ) -> Result<Self, RuntimeError> {
         let mut owned_heap_nodes = HashSet::new();
+        let mut next_node_refs = HashMap::new();
 
         for node_id in nodes_to_move {
             parent.take_node_internal(node_id)?;
             owned_heap_nodes.insert(node_id);
         }
 
+        for node_id in node_refs {
+            let location = parent.get_node_location(node_id)?;
+            next_node_refs.insert(node_id, location);
+        }
+
         let frame = Self {
             depth: parent.depth + 1,
             actor,
-            node_refs,
+            node_refs: next_node_refs,
             owned_root_nodes: owned_heap_nodes,
             next_lock_handle: 0u32,
             locks: HashMap::new(),
