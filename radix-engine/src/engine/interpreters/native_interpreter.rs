@@ -76,15 +76,12 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
-pub trait NativeFuncInvocation: Debug + Encode {
+impl Invocation<SystemAddress> for EpochManagerCreateInput {
 }
 
-impl NativeFuncInvocation for EpochManagerCreateInput {
-}
+pub struct EpochManagerCreateExecutor(EpochManagerCreateInput, ScryptoValue);
 
-pub struct EpochManagerCreateExecutor<N: NativeFuncInvocation>(N, ScryptoValue);
-
-impl<N: NativeFuncInvocation> Executor<SystemAddress> for EpochManagerCreateExecutor<N> {
+impl Executor<SystemAddress> for EpochManagerCreateExecutor {
     fn args(&self) -> &ScryptoValue {
         &self.1
     }
@@ -120,19 +117,18 @@ impl<N: NativeFuncInvocation> Executor<SystemAddress> for EpochManagerCreateExec
     }
 }
 
-impl<'g, 's, W, I, R, N>
-InvocationResolver<N, EpochManagerCreateExecutor<N>, SystemAddress>
+impl<'g, 's, W, I, R>
+InvocationResolver<EpochManagerCreateInput, EpochManagerCreateExecutor, SystemAddress>
 for Kernel<'g, 's, W, I, R>
     where
         W: WasmEngine<I>,
         I: WasmInstance,
         R: FeeReserve,
-        N: NativeFuncInvocation,
 {
     fn resolve(
         &mut self,
-        invocation: N,
-    ) -> Result<(EpochManagerCreateExecutor<N>, REActor, CallFrameUpdate), RuntimeError> {
+        invocation: EpochManagerCreateInput,
+    ) -> Result<(EpochManagerCreateExecutor, REActor, CallFrameUpdate), RuntimeError> {
         let input = ScryptoValue::from_typed(&invocation);
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
             EpochManagerFunction::Create,

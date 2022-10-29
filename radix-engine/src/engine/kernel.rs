@@ -733,16 +733,15 @@ pub trait Executor<O> {
 }
 
 // TODO: remove redundant code and move this method to the interpreter
-impl<'g, 's, W, I, R, N> Invokable<N, SystemAddress> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, I, R> Invokable<EpochManagerCreateInput, SystemAddress> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
     R: FeeReserve,
-    N: NativeFuncInvocation,
 {
     fn invoke(
         &mut self,
-        invocation: N,
+        invocation: EpochManagerCreateInput,
     ) -> Result<SystemAddress, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
