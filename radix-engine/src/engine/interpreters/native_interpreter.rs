@@ -1,3 +1,5 @@
+use sbor::*;
+use sbor::rust::fmt::Debug;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
@@ -74,11 +76,80 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
+pub trait NativeFuncInvocation: Debug + Encode {
+}
+
+impl NativeFuncInvocation for EpochManagerCreateInput {
+}
+
+pub struct EpochManagerCreateExecutor<N: NativeFuncInvocation>(N, ScryptoValue);
+
+impl<N: NativeFuncInvocation> Executor<SystemAddress> for EpochManagerCreateExecutor<N> {
+    fn args(&self) -> &ScryptoValue {
+        &self.1
+    }
+
+    fn execute<'s, Y, R>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation, ScryptoValue>
+            + Invokable<NativeFunctionInvocation, ScryptoValue>
+            + Invokable<NativeMethodInvocation, ScryptoValue>,
+            R: FeeReserve,
+    {
+        let node_id =
+            system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
+
+        let global_node_id = system_api.create_node(RENode::Global(
+            GlobalAddressSubstate::System(node_id.into()),
+        ))?;
+
+        let system_address: SystemAddress = global_node_id.into();
+        let mut node_refs_to_copy = HashSet::new();
+        node_refs_to_copy.insert(global_node_id);
+
+        let update = CallFrameUpdate {
+            node_refs_to_copy,
+            nodes_to_move: vec![],
+        };
+
+        Ok((system_address, update))
+    }
+}
+
+impl<'g, 's, W, I, R, N>
+InvocationResolver<N, EpochManagerCreateExecutor<N>, SystemAddress>
+for Kernel<'g, 's, W, I, R>
+    where
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+        N: NativeFuncInvocation,
+{
+    fn resolve(
+        &mut self,
+        invocation: N,
+    ) -> Result<(EpochManagerCreateExecutor<N>, REActor, CallFrameUpdate), RuntimeError> {
+        let input = ScryptoValue::from_typed(&invocation);
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
+            EpochManagerFunction::Create,
+        )));
+        Ok((
+            EpochManagerCreateExecutor(invocation, input),
+            actor,
+            CallFrameUpdate::empty(),
+        ))
+    }
+}
+
 pub trait NativeFunctionActor<I, O, E> {
     fn run<'s, Y, R>(input: I, system_api: &mut Y) -> Result<O, InvokeError<E>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve;
+        where
+            Y: SystemApi<'s, R>,
+            R: FeeReserve;
 }
 
 pub struct NativeFunctionExecutor(pub NativeFunction, pub ScryptoValue);
@@ -139,66 +210,6 @@ impl Executor<ScryptoValue> for NativeFunctionExecutor {
     }
 }
 
-pub struct EpochManagerCreateExecutor(EpochManagerCreateInput, ScryptoValue);
-impl Executor<SystemAddress> for EpochManagerCreateExecutor {
-    fn args(&self) -> &ScryptoValue {
-        &self.1
-    }
-
-    fn execute<'s, Y, R>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation, ScryptoValue>
-            + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<NativeMethodInvocation, ScryptoValue>,
-        R: FeeReserve,
-    {
-        let node_id =
-            system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
-
-        let global_node_id = system_api.create_node(RENode::Global(
-            GlobalAddressSubstate::System(node_id.into()),
-        ))?;
-
-        let system_address: SystemAddress = global_node_id.into();
-        let mut node_refs_to_copy = HashSet::new();
-        node_refs_to_copy.insert(global_node_id);
-
-        let update = CallFrameUpdate {
-            node_refs_to_copy,
-            nodes_to_move: vec![],
-        };
-
-        Ok((system_address, update))
-    }
-}
-
-impl<'g, 's, W, I, R>
-    InvocationResolver<EpochManagerCreateInput, EpochManagerCreateExecutor, SystemAddress>
-    for Kernel<'g, 's, W, I, R>
-where
-    W: WasmEngine<I>,
-    I: WasmInstance,
-    R: FeeReserve,
-{
-    fn resolve(
-        &mut self,
-        invocation: EpochManagerCreateInput,
-    ) -> Result<(EpochManagerCreateExecutor, REActor, CallFrameUpdate), RuntimeError> {
-        let input = ScryptoValue::from_typed(&invocation);
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
-            EpochManagerFunction::Create,
-        )));
-        Ok((
-            EpochManagerCreateExecutor(invocation, input),
-            actor,
-            CallFrameUpdate::empty(),
-        ))
-    }
-}
 
 impl<'g, 's, W, I, R>
     InvocationResolver<NativeFunctionInvocation, NativeFunctionExecutor, ScryptoValue>
