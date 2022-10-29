@@ -711,23 +711,25 @@ where
 
         for node_id in &node_refs {
             // TODO: remove
+            /*
             if let Ok(location) = self.current_frame.get_node_location(*node_id) {
                 //node_refs.insert(node_id.clone(), pointer.clone());
             } else {
+             */
                 if let RENodeId::Global(global_address) = node_id {
-                    if matches!(
-                        global_address,
-                        GlobalAddress::Component(ComponentAddress::EcdsaSecp256k1VirtualAccount(..))
-                    ) || matches!(
-                        global_address,
-                        GlobalAddress::Component(ComponentAddress::EddsaEd25519VirtualAccount(..))
-                    ) {
-                        self.current_frame.node_refs.insert(*node_id, RENodeLocation::Store);
-                        //node_refs.insert(node_id.clone(), RENodeLocation::Store);
-                        continue;
-                    }
+                    if depth == 0 && self.current_frame.get_node_location(*node_id).is_err() {
+                        if matches!(
+                            global_address,
+                            GlobalAddress::Component(ComponentAddress::EcdsaSecp256k1VirtualAccount(..))
+                        ) || matches!(
+                            global_address,
+                            GlobalAddress::Component(ComponentAddress::EddsaEd25519VirtualAccount(..))
+                        ) {
+                            self.current_frame.node_refs.insert(*node_id, RENodeLocation::Store);
+                            //node_refs.insert(node_id.clone(), RENodeLocation::Store);
+                            continue;
+                        }
 
-                    if depth == 0 {
                         let offset = SubstateOffset::Global(GlobalOffset::Global);
                         self.track
                             .acquire_lock(SubstateId(*node_id, offset.clone()), LockFlags::read_only())
@@ -741,10 +743,12 @@ where
                     }
                 }
 
+            /*
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidReferencePass(*node_id),
                 ));
             }
+             */
         }
 
         let output = self.run(
