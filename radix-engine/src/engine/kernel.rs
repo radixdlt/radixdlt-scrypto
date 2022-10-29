@@ -704,8 +704,14 @@ where
             ));
         }
 
+        // Change to kernel mode
+        let saved_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
+
         let mut nodes_to_pass_downstream = Vec::new();
         let mut next_node_refs = HashMap::new();
+        let (executor, next_actor, additional_ref_copy) = resolver(self, &invocation)?;
+        next_node_refs.extend(additional_ref_copy);
 
         nodes_to_pass_downstream.extend(invocation.args().node_ids());
         // Internal state update to taken values
@@ -774,13 +780,6 @@ where
                 ));
             }
         }
-
-        // Change to kernel mode
-        let saved_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
-        let (executor, next_actor, additional_ref_copy) = resolver(self, &invocation)?;
-        next_node_refs.extend(additional_ref_copy);
 
         let output = self.run(
             executor,
