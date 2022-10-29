@@ -20,14 +20,22 @@ impl<R: FeeReserve> Module<R> for CostingModule {
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
-            SysCallInput::Invoke { depth, args, .. } => {
+            SysCallInput::Invoke {
+                depth,
+                input_size,
+                value_count,
+                ..
+            } => {
                 if depth > 0 {
                     track
                         .fee_reserve
                         .consume(
                             track
                                 .fee_table
-                                .system_api_cost(SystemApiCostingEntry::Invoke { args }),
+                                .system_api_cost(SystemApiCostingEntry::Invoke {
+                                    input_size,
+                                    value_count,
+                                }),
                             "invoke",
                             false,
                         )

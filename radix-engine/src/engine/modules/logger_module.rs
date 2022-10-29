@@ -31,13 +31,8 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
-            SysCallInput::Invoke { args, .. } => {
-                log!(
-                    self,
-                    "Invoking: buckets = {:?}, proofs = {:?}",
-                    args.bucket_ids,
-                    args.proof_ids
-                );
+            SysCallInput::Invoke { name, .. } => {
+                log!(self, "Invoking: {:?}", name);
 
                 self.depth = self.depth + 1;
             }

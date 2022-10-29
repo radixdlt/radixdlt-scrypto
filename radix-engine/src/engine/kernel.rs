@@ -745,8 +745,9 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    name: &invocation.name(),
-                    args: invocation.args(),
+                    name: format!("{:?}", invocation),
+                    input_size: invocation.args().raw.len() as u32,
+                    value_count: invocation.args().value_count() as u32,
                     depth: self.current_frame.depth,
                 },
             )
@@ -793,8 +794,9 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    name: &invocation.name(),
-                    args: invocation.args(),
+                    name: format!("{:?}", invocation),
+                    input_size: invocation.args().raw.len() as u32,
+                    value_count: invocation.args().value_count() as u32,
                     depth: self.current_frame.depth,
                 },
             )
@@ -838,8 +840,9 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    name: &invocation.name(),
-                    args: invocation.args(),
+                    name: format!("{:?}", invocation),
+                    input_size: invocation.args().raw.len() as u32,
+                    value_count: invocation.args().value_count() as u32,
                     depth: self.current_frame.depth,
                 },
             )
@@ -1382,7 +1385,7 @@ where
     }
 }
 
-pub trait InvocationResolver<V: Invocation, X: Executor<O>, O> {
+pub trait InvocationResolver<V, X: Executor<O>, O> {
     fn resolve(&mut self, invocation: V) -> Result<(X, REActor, CallFrameUpdate), RuntimeError>;
 }
 

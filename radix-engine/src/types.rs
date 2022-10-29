@@ -62,57 +62,36 @@ pub use scrypto::resource::{
 };
 pub use scrypto::{access_and_or, access_rule_node, args, dec, pdec, rule};
 
-pub trait Invocation {
-    fn args(&self) -> &ScryptoValue;
-    fn name(&self) -> String;
-}
-
 /// Scrypto function/method invocation.
+#[derive(Debug)]
 pub enum ScryptoInvocation {
     Function(ScryptoFunctionIdent, ScryptoValue),
     Method(ScryptoMethodIdent, ScryptoValue),
 }
 
-impl Invocation for ScryptoInvocation {
-    fn args(&self) -> &ScryptoValue {
+impl ScryptoInvocation {
+    pub fn args(&self) -> &ScryptoValue {
         match self {
             ScryptoInvocation::Function(_, args) => &args,
             ScryptoInvocation::Method(_, args) => &args,
         }
     }
-
-    fn name(&self) -> String {
-        match self {
-            ScryptoInvocation::Function(ident, ..) => {
-                format!("{:?}", ident)
-            }
-            ScryptoInvocation::Method(ident, ..) => {
-                format!("{:?}", ident)
-            }
-        }
-    }
 }
 
+#[derive(Debug)]
 pub struct NativeFunctionInvocation(pub NativeFunction, pub ScryptoValue);
 
-impl Invocation for NativeFunctionInvocation {
-    fn args(&self) -> &ScryptoValue {
+impl NativeFunctionInvocation {
+    pub fn args(&self) -> &ScryptoValue {
         &self.1
-    }
-
-    fn name(&self) -> String {
-        format!("{:?}", self.0)
     }
 }
 
+#[derive(Debug)]
 pub struct NativeMethodInvocation(pub NativeMethod, pub RENodeId, pub ScryptoValue);
 
-impl Invocation for NativeMethodInvocation {
-    fn args(&self) -> &ScryptoValue {
+impl NativeMethodInvocation {
+    pub fn args(&self) -> &ScryptoValue {
         &self.2
-    }
-
-    fn name(&self) -> String {
-        format!("{:?}", self.0)
     }
 }

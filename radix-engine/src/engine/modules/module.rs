@@ -6,8 +6,9 @@ use crate::types::*;
 
 pub enum SysCallInput<'a> {
     Invoke {
-        name: &'a str,
-        args: &'a ScryptoValue,
+        name: String,
+        input_size: u32,
+        value_count: u32,
         depth: usize,
     },
     ReadOwnedNodes,
