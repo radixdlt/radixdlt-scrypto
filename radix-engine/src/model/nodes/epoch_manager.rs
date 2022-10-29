@@ -1,4 +1,6 @@
-use crate::engine::{AuthModule, LockFlags, NativeFunctionActor, NativeFunctionExecutor, RENode, SystemApi};
+use crate::engine::{
+    AuthModule, LockFlags, NativeFunctionActor, NativeFunctionExecutor, RENode, SystemApi,
+};
 use crate::fee::FeeReserve;
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,

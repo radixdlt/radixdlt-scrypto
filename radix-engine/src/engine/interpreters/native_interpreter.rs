@@ -74,11 +74,10 @@ impl Into<ApplicationError> for EpochManagerError {
 
 pub trait NativeFunctionActor<I, O, E> {
     fn run<'s, Y, R>(input: I, system_api: &mut Y) -> Result<O, InvokeError<E>>
-        where
-            Y: SystemApi<'s, R>,
-            R: FeeReserve;
+    where
+        Y: SystemApi<'s, R>,
+        R: FeeReserve;
 }
-
 
 pub struct NativeFunctionExecutor(pub NativeFunction);
 
@@ -137,7 +136,6 @@ impl Executor<ScryptoValue, ScryptoValue> for NativeMethodExecutor {
             + Invokable<NativeMethodInvocation, ScryptoValue>,
         R: FeeReserve,
     {
-
         match (self.1.receiver, self.0) {
             (RENodeId::AuthZoneStack(auth_zone_id), NativeMethod::AuthZone(method)) => {
                 AuthZoneStack::main(auth_zone_id, method, input, system_api).map_err(|e| e.into())
@@ -173,4 +171,3 @@ impl Executor<ScryptoValue, ScryptoValue> for NativeMethodExecutor {
         }
     }
 }
-

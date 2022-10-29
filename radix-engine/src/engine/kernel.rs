@@ -107,6 +107,35 @@ where
             })
             .expect("AuthModule failed to initialize");
 
+        kernel.current_frame.node_refs.insert(
+            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
+            RENodeLocation::Store,
+        );
+        kernel.current_frame.node_refs.insert(
+            RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)),
+            RENodeLocation::Store,
+        );
+        kernel.current_frame.node_refs.insert(
+            RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)),
+            RENodeLocation::Store,
+        );
+        kernel.current_frame.node_refs.insert(
+            RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)),
+            RENodeLocation::Store,
+        );
+        kernel.current_frame.node_refs.insert(
+            RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+            RENodeLocation::Store,
+        );
+        kernel.current_frame.node_refs.insert(
+            RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)),
+            RENodeLocation::Store,
+        );
+        kernel.current_frame.node_refs.insert(
+            RENodeId::Global(GlobalAddress::Package(SYS_FAUCET_PACKAGE)),
+            RENodeLocation::Store,
+        );
+
         kernel
     }
 
@@ -681,21 +710,16 @@ where
         nodes_to_pass_downstream.extend(invocation.args().node_ids());
         // Internal state update to taken values
 
-        // Move this into higher layer, e.g. transaction processor
-        if self.current_frame.depth == 0 {
-            let mut static_refs = HashSet::new();
-            static_refs.insert(GlobalAddress::Resource(RADIX_TOKEN));
-            static_refs.insert(GlobalAddress::Resource(SYSTEM_TOKEN));
-            static_refs.insert(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN));
-            static_refs.insert(GlobalAddress::System(EPOCH_MANAGER));
-            static_refs.insert(GlobalAddress::Package(ACCOUNT_PACKAGE));
-            static_refs.insert(GlobalAddress::Package(SYS_FAUCET_PACKAGE));
+        // Check that global references are owned by this call frame
+        let mut global_references = invocation.args().global_references();
+        global_references.insert(GlobalAddress::Resource(RADIX_TOKEN));
+        global_references.insert(GlobalAddress::System(EPOCH_MANAGER));
+        global_references.insert(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN));
+        global_references.insert(GlobalAddress::Resource(EDDSA_ED25519_TOKEN));
+        global_references.insert(GlobalAddress::Package(ACCOUNT_PACKAGE));
 
-            // Make refs visible
-            let mut global_references = invocation.args().global_references();
-            global_references.extend(static_refs.clone());
-
-            // TODO: This can be refactored out once any type in sbor is implemented
+        // TODO: This can be refactored out once any type in sbor is implemented
+        if depth == 0 {
             let maybe_txn: Result<TransactionProcessorRunInput, DecodeError> =
                 scrypto_decode(&invocation.args().raw);
             if let Ok(input) = maybe_txn {
@@ -713,59 +737,41 @@ where
                     }
                 }
             }
+        }
 
-            // Check for existence
-            for global_address in global_references {
-                let node_id = RENodeId::Global(global_address);
-                let offset = SubstateOffset::Global(GlobalOffset::Global);
+        for global_address in global_references {
+            let node_id = RENodeId::Global(global_address);
 
-                // TODO: static check here is to support the current genesis transaction which
-                // TODO: requires references to dynamically created resources. Can remove
-                // TODO: when this is resolved.
-                if !static_refs.contains(&global_address)
-                    && !(matches!(
-                        global_address,
-                        GlobalAddress::Component(ComponentAddress::EcdsaSecp256k1VirtualAccount(
-                            ..
-                        ))
-                    ) || matches!(
-                        global_address,
-                        GlobalAddress::Component(ComponentAddress::EddsaEd25519VirtualAccount(..))
-                    ))
-                {
+            // TODO: remove
+            if let Some(pointer) = self.current_frame.node_refs.get(&node_id) {
+                next_node_refs.insert(node_id.clone(), pointer.clone());
+            } else {
+                if matches!(
+                    global_address,
+                    GlobalAddress::Component(ComponentAddress::EcdsaSecp256k1VirtualAccount(..))
+                ) || matches!(
+                    global_address,
+                    GlobalAddress::Component(ComponentAddress::EddsaEd25519VirtualAccount(..))
+                ) {
+                    next_node_refs.insert(node_id.clone(), RENodeLocation::Store);
+                    continue;
+                }
+
+                if depth == 0 {
+                    let offset = SubstateOffset::Global(GlobalOffset::Global);
                     self.track
                         .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
                         .map_err(|_| KernelError::GlobalAddressNotFound(global_address))?;
                     self.track
                         .release_lock(SubstateId(node_id, offset), false)
                         .map_err(|_| KernelError::GlobalAddressNotFound(global_address))?;
+                    next_node_refs.insert(node_id.clone(), RENodeLocation::Store);
+                    continue;
                 }
 
-                self.current_frame
-                    .node_refs
-                    .insert(node_id, RENodeLocation::Store);
-                next_node_refs.insert(node_id, RENodeLocation::Store);
-            }
-        } else {
-            // Check that global references are owned by this call frame
-            let mut global_references = invocation.args().global_references();
-            global_references.insert(GlobalAddress::Resource(RADIX_TOKEN));
-            global_references.insert(GlobalAddress::System(EPOCH_MANAGER));
-            for global_address in global_references {
-                let node_id = RENodeId::Global(global_address);
-
-                // As of now, once a component is made visible to the frame, client can directly
-                // read the substates of the component. This will cause "Substate was never locked" issue.
-                // We use the following temporary solution to work around this.
-                // A better solution is to create node representation before issuing any reference.
-                // TODO: remove
-                if let Some(pointer) = self.current_frame.node_refs.get(&node_id) {
-                    next_node_refs.insert(node_id.clone(), pointer.clone());
-                } else {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::InvalidReferencePass(global_address),
-                    ));
-                }
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvalidReferencePass(global_address),
+                ));
             }
         }
 
@@ -1669,7 +1675,14 @@ where
     fn resolve(
         &mut self,
         native_method: &NativeMethodInvocation,
-    ) -> Result<(NativeMethodExecutor, REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError> {
+    ) -> Result<
+        (
+            NativeMethodExecutor,
+            REActor,
+            HashMap<RENodeId, RENodeLocation>,
+        ),
+        RuntimeError,
+    > {
         let mut additional_ref_copy = HashMap::new();
 
         // Deref
@@ -1684,6 +1697,10 @@ where
         additional_ref_copy.insert(resolved_node_id, location);
 
         let actor = REActor::Method(ResolvedMethod::Native(native_method.0), resolved_receiver);
-        Ok((NativeMethodExecutor(native_method.0, resolved_receiver), actor, additional_ref_copy))
+        Ok((
+            NativeMethodExecutor(native_method.0, resolved_receiver),
+            actor,
+            additional_ref_copy,
+        ))
     }
 }
