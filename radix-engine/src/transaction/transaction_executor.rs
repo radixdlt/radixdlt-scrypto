@@ -7,6 +7,7 @@ use crate::model::*;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
+use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
 pub struct FeeReserveConfig {
@@ -169,8 +170,8 @@ where
                 .invoke_native(NativeInvocation::Function(
                     NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
                     ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                        intent_validation: transaction.intent_validation().clone(),
-                        instructions: instructions.to_vec(),
+                        intent_validation: Cow::Borrowed(transaction.intent_validation()),
+                        instructions: Cow::Borrowed(&instructions),
                     }),
                 ))
                 .map(|o| {

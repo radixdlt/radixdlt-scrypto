@@ -57,7 +57,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
     let public_key = EcdsaSecp256k1PrivateKey::from_u64(99).unwrap().public_key();
     let withdraw_auth = rule!(require(NonFungibleAddress::from_public_key(&public_key)));
     let account = test_runner.new_account_with_auth_rule(&withdraw_auth);
-    let (_, _, other_account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     let preview_flags = PreviewFlags {
         unlimited_loan: true,
