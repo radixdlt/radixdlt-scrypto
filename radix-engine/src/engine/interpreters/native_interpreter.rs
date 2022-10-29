@@ -79,14 +79,14 @@ pub trait NativeFunctionActor<I, O, E> {
         R: FeeReserve;
 }
 
-pub struct NativeFunctionExecutor(pub NativeFunction);
+pub struct NativeFunctionExecutor(pub NativeFunction, pub ScryptoValue);
 
 impl Executor<ScryptoValue, ScryptoValue> for NativeFunctionExecutor {
-    fn execute<'s, Y, R>(
-        &mut self,
-        input: ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<ScryptoValue, RuntimeError>
+    fn args(&self) -> &ScryptoValue {
+        &self.1
+    }
+
+    fn execute<'s, Y, R>(self, system_api: &mut Y) -> Result<ScryptoValue, RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
@@ -96,18 +96,18 @@ impl Executor<ScryptoValue, ScryptoValue> for NativeFunctionExecutor {
     {
         match self.0 {
             NativeFunction::TransactionProcessor(func) => {
-                TransactionProcessor::static_main(func, input, system_api).map_err(|e| e.into())
+                TransactionProcessor::static_main(func, self.1, system_api).map_err(|e| e.into())
             }
             NativeFunction::Package(func) => {
-                Package::static_main(func, input, system_api).map_err(|e| e.into())
+                Package::static_main(func, self.1, system_api).map_err(|e| e.into())
             }
             NativeFunction::ResourceManager(func) => {
-                ResourceManager::static_main(func, input, system_api).map_err(|e| e.into())
+                ResourceManager::static_main(func, self.1, system_api).map_err(|e| e.into())
             }
             NativeFunction::EpochManager(func) => match func {
                 EpochManagerFunction::Create => {
                     let input: EpochManagerCreateInput =
-                        scrypto_decode(&input.raw).map_err(|_| {
+                        scrypto_decode(&self.1.raw).map_err(|_| {
                             RuntimeError::InterpreterError(
                                 InterpreterError::InvalidNativeFunctionInput,
                             )
@@ -121,14 +121,14 @@ impl Executor<ScryptoValue, ScryptoValue> for NativeFunctionExecutor {
     }
 }
 
-pub struct NativeMethodExecutor(pub NativeMethod, pub ResolvedReceiver);
+pub struct NativeMethodExecutor(pub NativeMethod, pub ResolvedReceiver, pub ScryptoValue);
 
 impl Executor<ScryptoValue, ScryptoValue> for NativeMethodExecutor {
-    fn execute<'s, Y, R>(
-        &mut self,
-        input: ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<ScryptoValue, RuntimeError>
+    fn args(&self) -> &ScryptoValue {
+        &self.2
+    }
+
+    fn execute<'s, Y, R>(self, system_api: &mut Y) -> Result<ScryptoValue, RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
@@ -138,30 +138,30 @@ impl Executor<ScryptoValue, ScryptoValue> for NativeMethodExecutor {
     {
         match (self.1.receiver, self.0) {
             (RENodeId::AuthZoneStack(auth_zone_id), NativeMethod::AuthZone(method)) => {
-                AuthZoneStack::main(auth_zone_id, method, input, system_api).map_err(|e| e.into())
+                AuthZoneStack::main(auth_zone_id, method, self.2, system_api).map_err(|e| e.into())
             }
             (RENodeId::Bucket(bucket_id), NativeMethod::Bucket(method)) => {
-                Bucket::main(bucket_id, method, input, system_api).map_err(|e| e.into())
+                Bucket::main(bucket_id, method, self.2, system_api).map_err(|e| e.into())
             }
             (RENodeId::Proof(proof_id), NativeMethod::Proof(method)) => {
-                Proof::main(proof_id, method, input, system_api).map_err(|e| e.into())
+                Proof::main(proof_id, method, self.2, system_api).map_err(|e| e.into())
             }
             (RENodeId::Worktop, NativeMethod::Worktop(method)) => {
-                Worktop::main(method, input, system_api).map_err(|e| e.into())
+                Worktop::main(method, self.2, system_api).map_err(|e| e.into())
             }
             (RENodeId::Vault(vault_id), NativeMethod::Vault(method)) => {
-                Vault::main(vault_id, method, input, system_api).map_err(|e| e.into())
+                Vault::main(vault_id, method, self.2, system_api).map_err(|e| e.into())
             }
             (RENodeId::Component(component_id), NativeMethod::Component(method)) => {
-                Component::main(component_id, method, input, system_api).map_err(|e| e.into())
+                Component::main(component_id, method, self.2, system_api).map_err(|e| e.into())
             }
             (
                 RENodeId::ResourceManager(resource_address),
                 NativeMethod::ResourceManager(method),
-            ) => ResourceManager::main(resource_address, method, input, system_api)
+            ) => ResourceManager::main(resource_address, method, self.2, system_api)
                 .map_err(|e| e.into()),
             (RENodeId::EpochManager(component_id), NativeMethod::EpochManager(method)) => {
-                EpochManager::main(component_id, method, input, system_api).map_err(|e| e.into())
+                EpochManager::main(component_id, method, self.2, system_api).map_err(|e| e.into())
             }
             (receiver, native_method) => {
                 return Err(RuntimeError::KernelError(

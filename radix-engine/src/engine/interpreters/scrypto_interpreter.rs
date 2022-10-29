@@ -5,14 +5,15 @@ use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringParams
 
 pub struct ScryptoExecutor<I: WasmInstance> {
     instance: I,
+    args: ScryptoValue,
 }
 
 impl<I: WasmInstance> Executor<ScryptoValue, ScryptoValue> for ScryptoExecutor<I> {
-    fn execute<'s, Y, R>(
-        &mut self,
-        input: ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<ScryptoValue, RuntimeError>
+    fn args(&self) -> &ScryptoValue {
+        &self.args
+    }
+
+    fn execute<'s, Y, R>(mut self, system_api: &mut Y) -> Result<ScryptoValue, RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
@@ -61,7 +62,7 @@ impl<I: WasmInstance> Executor<ScryptoValue, ScryptoValue> for ScryptoExecutor<I
             let mut runtime: Box<dyn WasmRuntime> =
                 Box::new(RadixEngineWasmRuntime::new(scrypto_actor, system_api));
             self.instance
-                .invoke_export(&export_name, &input, &mut runtime)
+                .invoke_export(&export_name, &self.args, &mut runtime)
                 .map_err(|e| match e {
                     InvokeError::Error(e) => RuntimeError::KernelError(KernelError::WasmError(e)),
                     InvokeError::Downstream(runtime_error) => runtime_error,
@@ -90,11 +91,14 @@ pub struct ScryptoInterpreter<I: WasmInstance, W: WasmEngine<I>> {
 }
 
 impl<I: WasmInstance, W: WasmEngine<I>> ScryptoInterpreter<I, W> {
-    pub fn create_executor(&mut self, code: &[u8]) -> ScryptoExecutor<I> {
+    pub fn create_executor(&mut self, code: &[u8], args: ScryptoValue) -> ScryptoExecutor<I> {
         let instrumented_code = self
             .wasm_instrumenter
             .instrument(code, &self.wasm_metering_params);
         let instance = self.wasm_engine.instantiate(instrumented_code);
-        ScryptoExecutor { instance }
+        ScryptoExecutor {
+            instance,
+            args: args,
+        }
     }
 }

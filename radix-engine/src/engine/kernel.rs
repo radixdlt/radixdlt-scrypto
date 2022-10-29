@@ -515,14 +515,13 @@ where
 
     fn run<X: Executor<ScryptoValue, ScryptoValue>>(
         &mut self,
-        mut executor: X,
+        executor: X,
         actor: REActor,
-        input: ScryptoValue,
         nodes_to_pass: Vec<RENodeId>,
         mut node_refs: HashSet<RENodeId>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let new_refed_nodes = self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
-            AuthModule::on_before_frame_start(&actor, &input, system_api).map_err(|e| match e {
+            AuthModule::on_before_frame_start(&actor, &executor, system_api).map_err(|e| match e {
                 InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
                 InvokeError::Downstream(runtime_error) => runtime_error,
             })
@@ -538,7 +537,7 @@ where
         for m in &mut self.modules {
             m.on_run(
                 &actor,
-                &input,
+                executor.args(),
                 &mut self.current_frame,
                 &mut self.heap,
                 &mut self.track,
@@ -559,7 +558,7 @@ where
 
         // Execute
         let output = self.execute_in_mode(ExecutionMode::Application, |system_api| {
-            executor.execute(input, system_api)
+            executor.execute(system_api)
         })?;
 
         // Process return data
@@ -662,9 +661,8 @@ where
         }
     }
 
-    fn invoke_internal<V: Invocation, X: Executor<ScryptoValue, ScryptoValue>>(
+    fn invoke_internal<X: Executor<ScryptoValue, ScryptoValue>>(
         &mut self,
-        invocation: V,
         executor: X,
         actor: REActor,
         nodes_to_move: Vec<RENodeId>,
@@ -719,13 +717,7 @@ where
             }
         }
 
-        let output = self.run(
-            executor,
-            actor,
-            invocation.args().clone(), // TODO: Remove clone
-            nodes_to_move,
-            node_refs_to_copy,
-        )?;
+        let output = self.run(executor, actor, nodes_to_move, node_refs_to_copy)?;
 
         // TODO: Move to higher layer
         if depth == 0 {
@@ -739,7 +731,10 @@ where
 }
 
 pub trait Executor<I, O> {
-    fn execute<'s, Y, R>(&mut self, input: I, system_api: &mut Y) -> Result<O, RuntimeError>
+    // TODO: Remove
+    fn args(&self) -> &ScryptoValue;
+
+    fn execute<'s, Y, R>(self, system_api: &mut Y) -> Result<O, RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
@@ -775,13 +770,7 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         let (executor, actor, nodes_to_move, node_refs_to_copy) = self.resolve(&invocation)?;
-        let rtn = self.invoke_internal(
-            invocation,
-            executor,
-            actor,
-            nodes_to_move,
-            node_refs_to_copy,
-        )?;
+        let rtn = self.invoke_internal(executor, actor, nodes_to_move, node_refs_to_copy)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
@@ -829,13 +818,7 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         let (executor, actor, nodes_to_move, node_refs_to_copy) = self.resolve(&invocation)?;
-        let rtn = self.invoke_internal(
-            invocation,
-            executor,
-            actor,
-            nodes_to_move,
-            node_refs_to_copy,
-        )?;
+        let rtn = self.invoke_internal(executor, actor, nodes_to_move, node_refs_to_copy)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
@@ -880,13 +863,7 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         let (executor, actor, nodes_to_move, node_refs_to_copy) = self.resolve(&invocation)?;
-        let rtn = self.invoke_internal(
-            invocation,
-            executor,
-            actor,
-            nodes_to_move,
-            node_refs_to_copy,
-        )?;
+        let rtn = self.invoke_internal(executor, actor, nodes_to_move, node_refs_to_copy)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
@@ -1523,7 +1500,8 @@ where
                 }
 
                 (
-                    self.scrypto_interpreter.create_executor(&package.code),
+                    self.scrypto_interpreter
+                        .create_executor(&package.code, invocation.args().clone()),
                     REActor::Function(ResolvedFunction::Scrypto {
                         package_address: package_address,
                         package_id: package_node_id.into(),
@@ -1644,7 +1622,8 @@ where
                 }
 
                 (
-                    self.scrypto_interpreter.create_executor(&package.code),
+                    self.scrypto_interpreter
+                        .create_executor(&package.code, invocation.args().clone()),
                     REActor::Method(
                         ResolvedMethod::Scrypto {
                             package_address: component_info.package_address,
@@ -1741,7 +1720,7 @@ where
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
         Ok((
-            NativeFunctionExecutor(native_function.0),
+            NativeFunctionExecutor(native_function.0, native_function.1.clone()),
             actor,
             native_function.args().node_ids().into_iter().collect(),
             node_refs_to_copy,
@@ -1797,7 +1776,7 @@ where
 
         let actor = REActor::Method(ResolvedMethod::Native(native_method.0), resolved_receiver);
         Ok((
-            NativeMethodExecutor(native_method.0, resolved_receiver),
+            NativeMethodExecutor(native_method.0, resolved_receiver, native_method.2.clone()),
             actor,
             native_method.args().node_ids().into_iter().collect(),
             node_refs_to_copy,

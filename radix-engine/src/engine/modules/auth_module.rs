@@ -23,13 +23,15 @@ impl AuthModule {
         NonFungibleId::from_u32(1)
     }
 
-    pub fn on_before_frame_start<'s, Y, R>(
+    pub fn on_before_frame_start<'s, Y, R, X>(
         actor: &REActor,
-        input: &ScryptoValue, // TODO: Remove
+        executor: &X,
+        //input: &ScryptoValue, // TODO: Remove
         system_api: &mut Y,
     ) -> Result<HashSet<RENodeId>, InvokeError<AuthError>>
     where
         Y: SystemApi<'s, R>,
+        X: Executor<ScryptoValue, ScryptoValue>,
         R: FeeReserve,
     {
         let mut new_refs = HashSet::new();
@@ -63,7 +65,8 @@ impl AuthModule {
                             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
                         let substate_ref = system_api.get_ref(handle)?;
                         let resource_manager = substate_ref.resource_manager();
-                        let method_auth = resource_manager.get_auth(*method, &input).clone();
+                        let method_auth =
+                            resource_manager.get_auth(*method, executor.args()).clone();
                         system_api.drop_lock(handle)?;
                         let auth = vec![method_auth];
                         auth
