@@ -670,23 +670,8 @@ where
         nodes_to_move: Vec<RENodeId>,
         node_refs_to_copy: HashSet<RENodeId>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let depth = self.current_frame.depth;
-
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::Invoke {
-                    name: &invocation.name(),
-                    args: invocation.args(),
-                    depth,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
         // check call depth
+        let depth = self.current_frame.depth;
         if depth == self.max_depth {
             return Err(RuntimeError::KernelError(
                 KernelError::MaxCallDepthLimitReached,
@@ -742,16 +727,6 @@ where
             node_refs_to_copy,
         )?;
 
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::Invoke { output: &output },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
         // TODO: Move to higher layer
         if depth == 0 {
             self.current_frame
@@ -780,16 +755,46 @@ where
     I: WasmInstance,
     R: FeeReserve,
 {
-    fn invoke(&mut self, input: ScryptoInvocation) -> Result<ScryptoValue, RuntimeError> {
+    fn invoke(&mut self, invocation: ScryptoInvocation) -> Result<ScryptoValue, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallInput::Invoke {
+                    name: &invocation.name(),
+                    args: invocation.args(),
+                    depth: self.current_frame.depth,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
         // Change to kernel mode
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, nodes_to_move, node_refs_to_copy) = self.resolve(&input)?;
-        let rtn = self.invoke_internal(input, executor, actor, nodes_to_move, node_refs_to_copy)?;
+        let (executor, actor, nodes_to_move, node_refs_to_copy) = self.resolve(&invocation)?;
+        let rtn = self.invoke_internal(
+            invocation,
+            executor,
+            actor,
+            nodes_to_move,
+            node_refs_to_copy,
+        )?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallOutput::Invoke { output: &rtn },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
         Ok(rtn)
     }
@@ -801,16 +806,49 @@ where
     I: WasmInstance,
     R: FeeReserve,
 {
-    fn invoke(&mut self, input: NativeFunctionInvocation) -> Result<ScryptoValue, RuntimeError> {
+    fn invoke(
+        &mut self,
+        invocation: NativeFunctionInvocation,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallInput::Invoke {
+                    name: &invocation.name(),
+                    args: invocation.args(),
+                    depth: self.current_frame.depth,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
         // Change to kernel mode
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, nodes_to_move, node_refs_to_copy) = self.resolve(&input)?;
-        let rtn = self.invoke_internal(input, executor, actor, nodes_to_move, node_refs_to_copy)?;
+        let (executor, actor, nodes_to_move, node_refs_to_copy) = self.resolve(&invocation)?;
+        let rtn = self.invoke_internal(
+            invocation,
+            executor,
+            actor,
+            nodes_to_move,
+            node_refs_to_copy,
+        )?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallOutput::Invoke { output: &rtn },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
         Ok(rtn)
     }
@@ -822,16 +860,46 @@ where
     I: WasmInstance,
     R: FeeReserve,
 {
-    fn invoke(&mut self, input: NativeMethodInvocation) -> Result<ScryptoValue, RuntimeError> {
+    fn invoke(&mut self, invocation: NativeMethodInvocation) -> Result<ScryptoValue, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallInput::Invoke {
+                    name: &invocation.name(),
+                    args: invocation.args(),
+                    depth: self.current_frame.depth,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
         // Change to kernel mode
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, nodes_to_move, node_refs_to_copy) = self.resolve(&input)?;
-        let rtn = self.invoke_internal(input, executor, actor, nodes_to_move, node_refs_to_copy)?;
+        let (executor, actor, nodes_to_move, node_refs_to_copy) = self.resolve(&invocation)?;
+        let rtn = self.invoke_internal(
+            invocation,
+            executor,
+            actor,
+            nodes_to_move,
+            node_refs_to_copy,
+        )?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallOutput::Invoke { output: &rtn },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
         Ok(rtn)
     }
