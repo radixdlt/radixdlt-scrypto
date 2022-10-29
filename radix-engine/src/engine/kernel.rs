@@ -484,8 +484,9 @@ where
         })
     }
 
-    fn run(
+    fn run<X: Executor<ScryptoValue, ScryptoValue>>(
         &mut self,
+        mut executor: X,
         actor: REActor,
         input: ScryptoValue,
         nodes_to_pass: Vec<RENodeId>,
@@ -525,7 +526,7 @@ where
         // Call Frame Push
         let frame = CallFrame::new_child_from_parent(
             &mut self.current_frame,
-            actor.clone(), // TODO: Remove clone
+            actor,
             nodes_to_pass,
             refed_nodes,
         )?;
@@ -534,29 +535,9 @@ where
         self.prev_frame_stack.push(parent);
 
         // Execute
-        let output = match actor.clone() {
-            REActor::Function(ResolvedFunction::Native(native_fn)) => self
-                .execute_in_mode(ExecutionMode::Application, |system_api| {
-                    NativeInterpreter::run_function(native_fn, input, system_api)
-                }),
-            REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) => self
-                .execute_in_mode(ExecutionMode::Application, |system_api| {
-                    NativeInterpreter::run_method(
-                        native_method,
-                        resolved_receiver,
-                        input,
-                        system_api,
-                    )
-                }),
-            REActor::Function(ResolvedFunction::Scrypto { code, .. })
-            | REActor::Method(ResolvedMethod::Scrypto { code, .. }, ..) => {
-                let mut executor = self.scrypto_interpreter.create_executor(&code);
-
-                self.execute_in_mode(ExecutionMode::ScryptoInterpreter, |system_api| {
-                    executor.run(input, system_api)
-                })
-            }
-        }?;
+        let output = self.execute_in_mode(ExecutionMode::Application, |system_api| {
+            executor.execute(input, system_api)
+        })?;
 
         // Process return data
         let mut parent = self.prev_frame_stack.pop().unwrap();
@@ -658,7 +639,7 @@ where
         }
     }
 
-    fn invoke_internal<V, RV>(
+    fn invoke_internal<V, RV, X: Executor<ScryptoValue, ScryptoValue>>(
         &mut self,
         invocation: V,
         resolver: RV,
@@ -668,7 +649,8 @@ where
         RV: FnOnce(
             &mut Self,
             &V,
-        ) -> Result<(REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError>,
+        )
+            -> Result<(X, REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError>,
     {
         let depth = self.current_frame.depth;
 
@@ -791,10 +773,11 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (next_actor, additional_ref_copy) = resolver(self, &invocation)?;
+        let (executor, next_actor, additional_ref_copy) = resolver(self, &invocation)?;
         next_node_refs.extend(additional_ref_copy);
 
         let output = self.run(
+            executor,
             next_actor,
             invocation.args().clone(), // TODO: Remove clone
             nodes_to_pass_downstream,
@@ -823,6 +806,15 @@ where
 
         Ok(output)
     }
+}
+
+pub trait Executor<I, O> {
+    fn execute<'s, Y, R>(&mut self, input: I, system_api: &mut Y) -> Result<O, RuntimeError>
+    where
+        Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation, ScryptoValue>
+            + Invokable<NativeInvocation, ScryptoValue>,
+        R: FeeReserve;
 }
 
 // TODO: remove redundant code and move this method to the interpreter
@@ -1360,26 +1352,35 @@ where
     }
 }
 
-pub trait InvocationResolver<I: Invocation> {
+pub trait InvocationResolver<V: Invocation, X: Executor<I, O>, I, O> {
     fn resolve(
         &mut self,
-        invocation: &I,
-    ) -> Result<(REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError>;
+        invocation: &V,
+    ) -> Result<(X, REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError>;
 }
 
-impl<'g, 's, W, I, R> InvocationResolver<ScryptoInvocation> for Kernel<'g, 's, W, I, R>
-    where
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        R: FeeReserve,
+impl<'g, 's, W, I, R>
+    InvocationResolver<ScryptoInvocation, ScryptoExecutor<I>, ScryptoValue, ScryptoValue>
+    for Kernel<'g, 's, W, I, R>
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
 {
     fn resolve(
         &mut self,
         invocation: &ScryptoInvocation,
-    ) -> Result<(REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError> {
+    ) -> Result<
+        (
+            ScryptoExecutor<I>,
+            REActor,
+            HashMap<RENodeId, RENodeLocation>,
+        ),
+        RuntimeError,
+    > {
         let mut additional_ref_copy = HashMap::new();
 
-        let actor = match invocation {
+        let (executor, actor) = match invocation {
             ScryptoInvocation::Function(function_ident, args) => {
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
@@ -1462,18 +1463,20 @@ impl<'g, 's, W, I, R> InvocationResolver<ScryptoInvocation> for Kernel<'g, 's, W
                         &mut self.track,
                         package.code(),
                     )
-                        .map_err(RuntimeError::ModuleError)?;
+                    .map_err(RuntimeError::ModuleError)?;
                 }
 
-                REActor::Function(ResolvedFunction::Scrypto {
-                    package_address: package_address,
-                    package_id: package_node_id.into(),
-                    blueprint_name: function_ident.blueprint_name.clone(),
-                    ident: function_ident.function_name.clone(),
-                    export_name: fn_abi.export_name.clone(),
-                    return_type: fn_abi.output.clone(),
-                    code: package.code,
-                })
+                (
+                    self.scrypto_interpreter.create_executor(&package.code),
+                    REActor::Function(ResolvedFunction::Scrypto {
+                        package_address: package_address,
+                        package_id: package_node_id.into(),
+                        blueprint_name: function_ident.blueprint_name.clone(),
+                        ident: function_ident.function_name.clone(),
+                        export_name: fn_abi.export_name.clone(),
+                        return_type: fn_abi.output.clone(),
+                    }),
+                )
             }
             ScryptoInvocation::Method(method_ident, args) => {
                 let original_node_id = match method_ident.receiver {
@@ -1591,38 +1594,42 @@ impl<'g, 's, W, I, R> InvocationResolver<ScryptoInvocation> for Kernel<'g, 's, W
                         &mut self.track,
                         package.code(),
                     )
-                        .map_err(RuntimeError::ModuleError)?;
+                    .map_err(RuntimeError::ModuleError)?;
                 }
 
-                REActor::Method(
-                    ResolvedMethod::Scrypto {
-                        package_address: component_info.package_address,
-                        package_id: package_node_id.into(),
-                        blueprint_name: component_info.blueprint_name,
-                        ident: method_ident.method_name.clone(),
-                        export_name: fn_abi.export_name.clone(),
-                        return_type: fn_abi.output.clone(),
-                        code: package.code,
-                    },
-                    resolved_receiver,
+                (
+                    self.scrypto_interpreter.create_executor(&package.code),
+                    REActor::Method(
+                        ResolvedMethod::Scrypto {
+                            package_address: component_info.package_address,
+                            package_id: package_node_id.into(),
+                            blueprint_name: component_info.blueprint_name,
+                            ident: method_ident.method_name.clone(),
+                            export_name: fn_abi.export_name.clone(),
+                            return_type: fn_abi.output.clone(),
+                        },
+                        resolved_receiver,
+                    ),
                 )
             }
         };
 
-        Ok((actor, additional_ref_copy))
+        Ok((executor, actor, additional_ref_copy))
     }
 }
 
-impl<'g, 's, W, I, R> InvocationResolver<NativeInvocation> for Kernel<'g, 's, W, I, R>
-    where
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        R: FeeReserve,
+impl<'g, 's, W, I, R>
+    InvocationResolver<NativeInvocation, NativeExecutor, ScryptoValue, ScryptoValue>
+    for Kernel<'g, 's, W, I, R>
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
 {
     fn resolve(
         &mut self,
         invocation: &NativeInvocation,
-    ) -> Result<(REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError> {
+    ) -> Result<(NativeExecutor, REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError> {
         let mut additional_ref_copy = HashMap::new();
 
         let actor = match invocation {
@@ -1645,6 +1652,6 @@ impl<'g, 's, W, I, R> InvocationResolver<NativeInvocation> for Kernel<'g, 's, W,
             }
         };
 
-        Ok((actor, additional_ref_copy))
+        Ok((NativeExecutor(actor.clone()), actor, additional_ref_copy))
     }
 }

@@ -5,7 +5,7 @@ pub enum SystemApiCostingEntry<'s> {
      * Invocation
      */
     Invoke {
-        args: &'s ScryptoValue
+        args: &'s ScryptoValue,
     },
 
     /*
@@ -242,9 +242,7 @@ impl FeeTable {
     pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
         match entry {
             SystemApiCostingEntry::Invoke { args } => {
-                self.fixed_low
-                + (5 * args.raw.len() + 10 * args.value_count())
-                    as u32
+                self.fixed_low + (5 * args.raw.len() + 10 * args.value_count()) as u32
             }
 
             SystemApiCostingEntry::ReadOwnedNodes => self.fixed_low,

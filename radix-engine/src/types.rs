@@ -1,4 +1,3 @@
-use std::fmt::Debug;
 pub use sbor::rust::borrow::ToOwned;
 pub use sbor::rust::boxed::Box;
 pub use sbor::rust::cell::{Ref, RefCell, RefMut};
@@ -51,9 +50,10 @@ pub use scrypto::resource::{
     VaultLockFeeInput, VaultPutInput, VaultTakeInput, VaultTakeNonFungiblesInput, LOCKED, MUTABLE,
 };
 pub use scrypto::values::{ScryptoValue, ScryptoValueReplaceError};
+use std::fmt::Debug;
 
 // methods and macros
-use crate::engine::{Kernel, REActor, RENodeLocation, RuntimeError};
+use crate::engine::{REActor, RENodeLocation, RuntimeError};
 pub use sbor::decode_any;
 pub use scrypto::buffer::{scrypto_decode, scrypto_encode};
 pub use scrypto::crypto::hash;
@@ -85,7 +85,7 @@ impl Invocation for ScryptoInvocation {
         match self {
             ScryptoInvocation::Function(ident, ..) => {
                 format!("{:?}", ident)
-            },
+            }
             ScryptoInvocation::Method(ident, ..) => {
                 format!("{:?}", ident)
             }
@@ -111,7 +111,7 @@ impl Invocation for NativeInvocation {
         match self {
             NativeInvocation::Function(ident, ..) => {
                 format!("{:?}", ident)
-            },
+            }
             NativeInvocation::Method(ident, ..) => {
                 format!("{:?}", ident)
             }

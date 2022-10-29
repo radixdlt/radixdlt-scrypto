@@ -27,7 +27,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         .consume(
                             track
                                 .fee_table
-                                .system_api_cost(SystemApiCostingEntry::Invoke { args, }),
+                                .system_api_cost(SystemApiCostingEntry::Invoke { args }),
                             "invoke",
                             false,
                         )

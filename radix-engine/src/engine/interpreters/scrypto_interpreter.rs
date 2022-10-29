@@ -7,8 +7,8 @@ pub struct ScryptoExecutor<I: WasmInstance> {
     instance: I,
 }
 
-impl<I: WasmInstance> ScryptoExecutor<I> {
-    pub fn run<'s, Y, R>(
+impl<I: WasmInstance> Executor<ScryptoValue, ScryptoValue> for ScryptoExecutor<I> {
+    fn execute<'s, Y, R>(
         &mut self,
         input: ScryptoValue,
         system_api: &mut Y,
@@ -57,18 +57,14 @@ impl<I: WasmInstance> ScryptoExecutor<I> {
         };
 
         let output = {
-            system_api.execute_in_mode(ExecutionMode::Application, |system_api| {
-                let mut runtime: Box<dyn WasmRuntime> =
-                    Box::new(RadixEngineWasmRuntime::new(scrypto_actor, system_api));
-                self.instance
-                    .invoke_export(&export_name, &input, &mut runtime)
-                    .map_err(|e| match e {
-                        InvokeError::Error(e) => {
-                            RuntimeError::KernelError(KernelError::WasmError(e))
-                        }
-                        InvokeError::Downstream(runtime_error) => runtime_error,
-                    })
-            })?
+            let mut runtime: Box<dyn WasmRuntime> =
+                Box::new(RadixEngineWasmRuntime::new(scrypto_actor, system_api));
+            self.instance
+                .invoke_export(&export_name, &input, &mut runtime)
+                .map_err(|e| match e {
+                    InvokeError::Error(e) => RuntimeError::KernelError(KernelError::WasmError(e)),
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                })?
         };
 
         let rtn = if !return_type.matches(&output.dom) {

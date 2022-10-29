@@ -74,6 +74,33 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
+pub struct NativeExecutor(pub REActor);
+
+impl Executor<ScryptoValue, ScryptoValue> for NativeExecutor {
+    fn execute<'s, Y, R>(
+        &mut self,
+        input: ScryptoValue,
+        system_api: &mut Y,
+    ) -> Result<ScryptoValue, RuntimeError>
+        where
+            Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation, ScryptoValue>
+            + Invokable<NativeInvocation, ScryptoValue>,
+            R: FeeReserve,
+    {
+        match self.0.clone() {
+            REActor::Function(ResolvedFunction::Native(native_fn)) => {
+                NativeInterpreter::run_function(native_fn, input, system_api)
+            }
+            REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) => {
+                NativeInterpreter::run_method(native_method, resolved_receiver, input, system_api)
+            }
+            _ => panic!("Should not get here"),
+        }
+    }
+}
+
+
 pub trait NativeFunctionActor<I, O, E> {
     fn execute<'s, Y, R>(input: I, system_api: &mut Y) -> Result<O, InvokeError<E>>
     where

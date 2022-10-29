@@ -33,7 +33,6 @@ pub enum ResolvedFunction {
         ident: String,
         export_name: String,
         return_type: Type,
-        code: Vec<u8>,
     },
     Native(NativeFunction),
 }
@@ -47,7 +46,6 @@ pub enum ResolvedMethod {
         ident: String,
         export_name: String,
         return_type: Type,
-        code: Vec<u8>,
     },
     Native(NativeMethod),
 }
