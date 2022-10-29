@@ -13,7 +13,7 @@ impl<I: WasmInstance> Executor<ScryptoValue> for ScryptoExecutor<I> {
         &self.args
     }
 
-    fn execute<'s, Y, R>(mut self, system_api: &mut Y) -> Result<ScryptoValue, RuntimeError>
+    fn execute<'s, Y, R>(mut self, system_api: &mut Y) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
@@ -74,7 +74,11 @@ impl<I: WasmInstance> Executor<ScryptoValue> for ScryptoExecutor<I> {
                 KernelError::InvalidScryptoFnOutput,
             ))
         } else {
-            Ok(output)
+            let update = CallFrameUpdate {
+                node_refs_to_copy: output.global_references().into_iter().map(|a| RENodeId::Global(a)).collect(),
+                nodes_to_move: output.node_ids().into_iter().collect(),
+            };
+            Ok((output, update))
         };
 
         rtn

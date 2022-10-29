@@ -555,24 +555,18 @@ where
         self.prev_frame_stack.push(parent);
 
         // Execute
-        let output = self.execute_in_mode(ExecutionMode::Application, |system_api| {
+        let (output, update) = self.execute_in_mode(ExecutionMode::Application, |system_api| {
             executor.execute(system_api)
         })?;
 
         // Process return data
         let mut parent = self.prev_frame_stack.pop().unwrap();
 
-        let nodes_to_return = output.node_ids();
-        for node_id in &nodes_to_return {
+        for node_id in &update.nodes_to_move {
             self.prepare_move_upstream(*node_id)?;
         }
 
-        CallFrame::move_nodes_upstream(&mut self.current_frame, &mut parent, nodes_to_return)?;
-        CallFrame::copy_refs(
-            &mut self.current_frame,
-            &mut parent,
-            output.global_references(),
-        )?;
+        CallFrame::update_upstream(&mut self.current_frame, &mut parent, update)?;
 
         // Auto drop locks
         self.current_frame
@@ -731,7 +725,7 @@ pub trait Executor<O> {
     // TODO: Remove
     fn args(&self) -> &ScryptoValue;
 
-    fn execute<'s, Y, R>(self, system_api: &mut Y) -> Result<O, RuntimeError>
+    fn execute<'s, Y, R>(self, system_api: &mut Y) -> Result<(O, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>

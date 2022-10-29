@@ -251,33 +251,17 @@ impl CallFrame {
         Ok(frame)
     }
 
-    pub fn move_nodes_upstream(
-        from: &mut CallFrame,
-        to: &mut CallFrame,
-        node_ids: HashSet<RENodeId>,
-    ) -> Result<(), RuntimeError> {
-        for node_id in node_ids {
+    pub fn update_upstream(from: &mut CallFrame, to: &mut CallFrame, update: CallFrameUpdate) -> Result<(), RuntimeError> {
+        for node_id in update.nodes_to_move {
             // move re nodes to upstream call frame.
             from.take_node_internal(node_id)?;
             to.owned_root_nodes.insert(node_id);
         }
 
-        Ok(())
-    }
-
-    pub fn copy_refs(
-        from: &mut CallFrame,
-        to: &mut CallFrame,
-        global_addresses: HashSet<GlobalAddress>,
-    ) -> Result<(), RuntimeError> {
-        for global_address in global_addresses {
-            let node_id = RENodeId::Global(global_address);
-            if !from.node_refs.contains_key(&node_id) {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidReferenceReturn(global_address),
-                ));
-            }
-            to.node_refs.insert(node_id, RENodeLocation::Store);
+        for node_id in update.node_refs_to_copy {
+            // Make sure not to allow owned nodes to be passed as references upstream
+            let location = from.node_refs.get(&node_id).ok_or(CallFrameError::RENodeNotVisible(node_id))?;
+            to.node_refs.insert(node_id, location.clone());
         }
 
         Ok(())
