@@ -757,7 +757,7 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, call_frame_update) = self.resolve(&invocation)?;
+        let (executor, actor, call_frame_update) = self.resolve(invocation)?;
         let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 
         // Restore previous mode
@@ -805,7 +805,7 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, call_frame_update) = self.resolve(&invocation)?;
+        let (executor, actor, call_frame_update) = self.resolve(invocation)?;
         let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 
         // Restore previous mode
@@ -850,7 +850,7 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, call_frame_update) = self.resolve(&invocation)?;
+        let (executor, actor, call_frame_update) = self.resolve(invocation)?;
         let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 
         // Restore previous mode
@@ -1383,7 +1383,7 @@ where
 }
 
 pub trait InvocationResolver<V: Invocation, X: Executor<O>, O> {
-    fn resolve(&mut self, invocation: &V) -> Result<(X, REActor, CallFrameUpdate), RuntimeError>;
+    fn resolve(&mut self, invocation: V) -> Result<(X, REActor, CallFrameUpdate), RuntimeError>;
 }
 
 impl<'g, 's, W, I, R> InvocationResolver<ScryptoInvocation, ScryptoExecutor<I>, ScryptoValue>
@@ -1395,11 +1395,11 @@ where
 {
     fn resolve(
         &mut self,
-        invocation: &ScryptoInvocation,
+        invocation: ScryptoInvocation,
     ) -> Result<(ScryptoExecutor<I>, REActor, CallFrameUpdate), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
 
-        let (executor, actor) = match invocation {
+        let (executor, actor) = match &invocation {
             ScryptoInvocation::Function(function_ident, args) => {
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
@@ -1650,7 +1650,7 @@ where
 {
     fn resolve(
         &mut self,
-        native_function: &NativeFunctionInvocation,
+        native_function: NativeFunctionInvocation,
     ) -> Result<(NativeFunctionExecutor, REActor, CallFrameUpdate), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
         let actor = REActor::Function(ResolvedFunction::Native(native_function.0));
@@ -1709,7 +1709,7 @@ where
 {
     fn resolve(
         &mut self,
-        native_method: &NativeMethodInvocation,
+        native_method: NativeMethodInvocation,
     ) -> Result<(NativeMethodExecutor, REActor, CallFrameUpdate), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
 
