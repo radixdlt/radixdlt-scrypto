@@ -171,7 +171,7 @@ where
                     NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
                     ScryptoValue::from_typed(&TransactionProcessorRunInput {
                         intent_validation: Cow::Borrowed(transaction.intent_validation()),
-                        instructions: Cow::Borrowed(&instructions),
+                        instructions: Cow::Borrowed(instructions),
                     }),
                 ))
                 .map(|o| {

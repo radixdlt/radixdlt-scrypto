@@ -19,7 +19,7 @@ use crate::types::*;
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInput<'a> {
     pub intent_validation: Cow<'a, IntentValidation>,
-    pub instructions: Cow<'a, Vec<Instruction>>,
+    pub instructions: Cow<'a, [Instruction]>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -177,7 +177,7 @@ impl TransactionProcessor {
     }
 
     fn perform_intent_validation<'s, Y, R>(
-        intent_validation: IntentValidation,
+        intent_validation: &IntentValidation,
         system_api: &mut Y,
     ) -> Result<(), InvokeError<TransactionProcessorError>>
     where
@@ -202,18 +202,18 @@ impl TransactionProcessor {
                     InvokeError::Error(TransactionProcessorError::InvalidGetEpochResponseData(err))
                 })?;
 
-                if !skip_epoch_validation && current_epoch < start_epoch_inclusive {
+                if !*skip_epoch_validation && current_epoch < *start_epoch_inclusive {
                     return Err(InvokeError::Error(
                         TransactionProcessorError::TransactionEpochNotYetValid {
-                            valid_from: start_epoch_inclusive,
+                            valid_from: *start_epoch_inclusive,
                             current_epoch,
                         },
                     ));
                 }
-                if !skip_epoch_validation && current_epoch >= end_epoch_exclusive {
+                if !*skip_epoch_validation && current_epoch >= *end_epoch_exclusive {
                     return Err(InvokeError::Error(
                         TransactionProcessorError::TransactionEpochNoLongerValid {
-                            valid_until: end_epoch_exclusive - 1,
+                            valid_until: *end_epoch_exclusive - 1,
                             current_epoch,
                         },
                     ));
@@ -243,7 +243,7 @@ impl TransactionProcessor {
                         InvokeError::Error(TransactionProcessorError::InvalidRequestData(e))
                     })?;
 
-                Self::perform_intent_validation(input.intent_validation, system_api)?;
+                Self::perform_intent_validation(input.intent_validation.as_ref(), system_api)?;
 
                 let mut proof_id_mapping = HashMap::new();
                 let mut bucket_id_mapping = HashMap::new();

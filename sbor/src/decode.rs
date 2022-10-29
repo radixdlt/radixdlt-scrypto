@@ -295,7 +295,7 @@ impl<T: Decode> Decode for Option<T> {
 }
 
 impl<'a, B: ?Sized + 'a + ToOwned<Owned = O>, O: Decode + TypeId> Decode
-    for crate::rust::borrow::Cow<'a, B>
+    for Cow<'a, B>
 {
     #[inline]
     fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
@@ -303,7 +303,7 @@ impl<'a, B: ?Sized + 'a + ToOwned<Owned = O>, O: Decode + TypeId> Decode
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let v = O::decode_value(decoder)?;
-        Ok(crate::rust::borrow::Cow::Owned(v))
+        Ok(Cow::Owned(v))
     }
 }
 
