@@ -62,7 +62,6 @@ where
 {
     substate_store: &'s mut S,
     scrypto_interpreter: &'w mut ScryptoInterpreter<I, W>,
-    phantom: PhantomData<I>,
 }
 
 impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
@@ -78,7 +77,6 @@ where
         Self {
             substate_store,
             scrypto_interpreter,
-            phantom: PhantomData,
         }
     }
 
@@ -214,22 +212,28 @@ where
     }
 }
 
-impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
-where
+pub fn execute_and_commit_transaction<
     S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine<I>,
     I: WasmInstance,
-{
-    pub fn execute_and_commit(
-        &mut self,
-        transaction: &Executable,
-        fee_reserve_config: &FeeReserveConfig,
-        execution_config: &ExecutionConfig,
-    ) -> TransactionReceipt {
-        let receipt = self.execute(transaction, fee_reserve_config, execution_config);
-        if let TransactionResult::Commit(commit) = &receipt.result {
-            commit.state_updates.commit(self.substate_store);
-        }
-        receipt
+    W: WasmEngine<I>,
+>(
+    substate_store: &mut S,
+    scrypto_interpreter: &mut ScryptoInterpreter<I, W>,
+    fee_reserve_config: &FeeReserveConfig,
+    execution_config: &ExecutionConfig,
+    transaction: &Executable,
+) -> TransactionReceipt {
+    let receipt = execute_transaction(
+        substate_store,
+        scrypto_interpreter,
+        fee_reserve_config,
+        execution_config,
+        transaction,
+    );
+    if let TransactionResult::Commit(commit) = &receipt.result {
+        commit.state_updates.commit(substate_store);
     }
+    receipt
+}
+
 }

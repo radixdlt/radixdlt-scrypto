@@ -10,8 +10,8 @@ use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_abi};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
-    ExecutionConfig, FeeReserveConfig, PreviewError, PreviewExecutor, PreviewResult,
-    TransactionExecutor, TransactionReceipt, TransactionResult,
+    execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
+    PreviewExecutor, PreviewResult, TransactionExecutor, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{
@@ -394,18 +394,19 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         for (manifest, initial_proofs) in manifests {
             let transaction = TestTransaction::new(manifest, self.next_transaction_nonce);
             self.next_transaction_nonce += 1;
-            let receipt = TransactionExecutor::new(&mut store, &mut self.scrypto_interpreter)
-                .execute_and_commit(
-                    &transaction.get_executable(initial_proofs),
-                    &FeeReserveConfig {
-                        cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
-                        system_loan: DEFAULT_SYSTEM_LOAN,
-                    },
-                    &ExecutionConfig {
-                        max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                        trace: self.trace,
-                    },
-                );
+            let receipt = execute_and_commit_transaction(
+                &mut store,
+                &mut self.scrypto_interpreter,
+                &FeeReserveConfig {
+                    cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+                    system_loan: DEFAULT_SYSTEM_LOAN,
+                },
+                &ExecutionConfig {
+                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+                    trace: self.trace,
+                },
+                &transaction.get_executable(initial_proofs),
+            );
             receipts.push(receipt);
         }
 

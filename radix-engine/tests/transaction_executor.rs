@@ -2,7 +2,7 @@ use radix_engine::constants::DEFAULT_MAX_COST_UNIT_LIMIT;
 use radix_engine::engine::{ModuleError, RejectionError};
 use radix_engine::engine::{RuntimeError, ScryptoInterpreter};
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::transaction::TransactionExecutor;
+use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
@@ -153,10 +153,14 @@ fn test_normal_transaction_flow() {
         .validate(&transaction, &intent_hash_manager)
         .expect("Invalid transaction");
 
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut scrypto_interpreter);
-
     // Act
-    let receipt = executor.execute_and_commit(&executable, &fee_reserve_config, &execution_config);
+    let receipt = execute_and_commit_transaction(
+        &mut substate_store,
+        &mut scrypto_interpreter,
+        &fee_reserve_config,
+        &execution_config,
+        &executable,
+    );
 
     // Assert
     receipt.expect_commit_success();

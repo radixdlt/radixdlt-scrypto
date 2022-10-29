@@ -52,7 +52,7 @@ use clap::{Parser, Subcommand};
 use radix_engine::constants::*;
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::model::*;
-use radix_engine::transaction::TransactionExecutor;
+use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::transaction::TransactionResult;
@@ -180,9 +180,6 @@ pub fn handle_manifest<O: std::io::Write>(
                 phantom: PhantomData,
             };
 
-            let mut executor =
-                TransactionExecutor::new(&mut substate_store, &mut scrypto_interpreter);
-
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks
                 .into_iter()
@@ -191,8 +188,9 @@ pub fn handle_manifest<O: std::io::Write>(
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce);
 
-            let receipt = executor.execute_and_commit(
-                &transaction.get_executable(initial_proofs),
+            let receipt = execute_and_commit_transaction(
+                &mut substate_store,
+                &mut scrypto_interpreter,
                 &FeeReserveConfig {
                     cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                     system_loan: DEFAULT_SYSTEM_LOAN,
@@ -201,6 +199,7 @@ pub fn handle_manifest<O: std::io::Write>(
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     trace,
                 },
+                &transaction.get_executable(initial_proofs),
             );
 
             if output_receipt {
