@@ -73,17 +73,17 @@ where
             .validate_preview_intent(&preview_intent, self.intent_hash_manager)
             .map_err(PreviewError::TransactionValidationError)?;
 
-        let mut transaction_executor =
-            TransactionExecutor::new(self.substate_store, self.scrypto_interpreter);
-
         let mut fee_reserve = SystemLoanFeeReserve::default();
         if preview_intent.flags.unlimited_loan {
             fee_reserve.credit(PREVIEW_CREDIT);
         }
-        let receipt = transaction_executor.execute_with_fee_reserve(
-            &executable,
+
+        let receipt = execute_transaction_with_fee_reserve(
+            self.substate_store,
+            self.scrypto_interpreter,
             &ExecutionConfig::default(),
             SystemLoanFeeReserve::default(),
+            &executable,
         );
 
         Ok(PreviewResult {

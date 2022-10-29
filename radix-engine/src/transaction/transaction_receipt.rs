@@ -29,7 +29,7 @@ pub enum TransactionResult {
 }
 
 impl TransactionResult {
-    pub fn expect_commit(self) -> CommitResult {
+    pub fn expect_commit(&self) -> &CommitResult {
         match self {
             TransactionResult::Commit(c) => c,
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),

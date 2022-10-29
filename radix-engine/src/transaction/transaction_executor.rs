@@ -54,14 +54,16 @@ impl ExecutionConfig {
 }
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'s, 'w, S, W, I>
+/// This is no longer public -- it can be removed / merged into the exposed functions in a future small PR
+/// But I'm not doing it in this PR to avoid merge conflicts in the body of execute_with_fee_reserve
+struct TransactionExecutor<'s, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    substate_store: &'s mut S,
-    scrypto_interpreter: &'w mut ScryptoInterpreter<I, W>,
+    substate_store: &'s S,
+    scrypto_interpreter: &'w ScryptoInterpreter<I, W>,
 }
 
 impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
@@ -70,10 +72,7 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    pub fn new(
-        substate_store: &'s mut S,
-        scrypto_interpreter: &'w mut ScryptoInterpreter<I, W>,
-    ) -> Self {
+    pub fn new(substate_store: &'s S, scrypto_interpreter: &'w ScryptoInterpreter<I, W>) -> Self {
         Self {
             substate_store,
             scrypto_interpreter,
@@ -218,7 +217,7 @@ pub fn execute_and_commit_transaction<
     W: WasmEngine<I>,
 >(
     substate_store: &mut S,
-    scrypto_interpreter: &mut ScryptoInterpreter<I, W>,
+    scrypto_interpreter: &ScryptoInterpreter<I, W>,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
@@ -237,25 +236,16 @@ pub fn execute_and_commit_transaction<
 }
 
 pub fn execute_transaction<S: ReadableSubstateStore, I: WasmInstance, W: WasmEngine<I>>(
-    substate_store: &mut S,
-    scrypto_interpreter: &mut ScryptoInterpreter<I, W>,
+    substate_store: &S,
+    scrypto_interpreter: &ScryptoInterpreter<I, W>,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-    let fee_reserve = SystemLoanFeeReserve::new(
-        transaction.cost_unit_limit(),
-        transaction.tip_percentage(),
-        fee_reserve_config.cost_unit_price,
-        fee_reserve_config.system_loan,
-    );
-
-    execute_transaction_with_fee_reserve(
-        substate_store,
-        scrypto_interpreter,
-        fee_reserve,
-        execution_config,
+    TransactionExecutor::new(substate_store, scrypto_interpreter).execute(
         transaction,
+        fee_reserve_config,
+        execution_config,
     )
 }
 
@@ -264,8 +254,8 @@ pub fn execute_transaction_with_fee_reserve<
     I: WasmInstance,
     W: WasmEngine<I>,
 >(
-    substate_store: &mut S,
-    scrypto_interpreter: &mut ScryptoInterpreter<I, W>,
+    substate_store: &S,
+    scrypto_interpreter: &ScryptoInterpreter<I, W>,
     fee_reserve: impl FeeReserve,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
