@@ -460,13 +460,18 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     fn attempt_apply_pre_execution_costs(
         &mut self,
         transaction: &Executable,
-    ) -> Result<Self, FeeReserveError> {
+    ) -> Result<(), FeeReserveError> {
         let encoded_instruction_length =
-            Self::to_u32_or_pre_error(scrypto_encode(&transaction.instructions).len())?;
+            Self::to_u32_or_pre_error(scrypto_encode(transaction.instructions()).len())?;
         let initial_proofs_count =
             Self::to_u32_or_pre_error(transaction.auth_zone_params().initial_proofs.len())?;
-        let blobs_length =
-            Self::to_u32_or_pre_error(transaction.blobs().iter().map(|b| b.len()).sum::<usize>())?;
+        let blobs_length = Self::to_u32_or_pre_error(
+            transaction
+                .blobs()
+                .iter()
+                .map(|b| b.0 .0.len() + b.1.len())
+                .sum::<usize>(),
+        )?;
 
         self.fee_reserve
             .consume(self.fee_table.tx_base_fee(), "base_fee", true)

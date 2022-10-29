@@ -107,11 +107,7 @@ where
         let transaction_hash = transaction.transaction_hash();
         let auth_zone_params = transaction.auth_zone_params();
         let instructions = transaction.instructions();
-        let blobs: HashMap<Hash, Vec<u8>> = transaction
-            .blobs()
-            .iter()
-            .map(|b| (hash(b), b.clone()))
-            .collect();
+        let blobs = transaction.blobs();
 
         #[cfg(not(feature = "alloc"))]
         if execution_config.trace {
@@ -158,9 +154,9 @@ where
             modules.push(Box::new(ExecutionTraceModule::new()));
 
             let mut kernel = Kernel::new(
-                transaction_hash,
+                transaction_hash.clone(),
                 auth_zone_params.clone(),
-                &blobs,
+                blobs,
                 execution_config.max_call_depth,
                 &mut track,
                 self.scrypto_interpreter,

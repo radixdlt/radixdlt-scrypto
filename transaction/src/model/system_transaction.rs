@@ -3,7 +3,7 @@ use sbor::*;
 use scrypto::crypto::Hash;
 use std::collections::BTreeSet;
 
-use super::IntentValidation;
+use super::{ExecutionContext, FeePayment, IntentValidation, DEFAULT_COST_UNIT_LIMIT};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct SystemTransaction {
@@ -22,13 +22,17 @@ impl Into<Executable> for SystemTransaction {
         };
 
         Executable::new(
-            transaction_hash,
             instructions,
-            auth_zone_params,
-            10_000,
-            0,
-            blobs,
-            IntentValidation::None,
+            &blobs,
+            ExecutionContext {
+                transaction_hash,
+                auth_zone_params,
+                fee_payment: FeePayment {
+                    cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+                    tip_percentage: 0,
+                },
+                intent_validation: IntentValidation::None,
+            },
         )
     }
 }

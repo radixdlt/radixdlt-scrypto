@@ -1,6 +1,6 @@
+use sbor::rust::collections::{BTreeSet, HashSet};
 use sbor::Decode;
 use scrypto::core::NetworkDefinition;
-use std::collections::{BTreeSet, HashSet};
 
 use scrypto::buffer::scrypto_decode;
 use scrypto::constants::*;
@@ -93,17 +93,21 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
         };
 
         Ok(Executable::new(
-            transaction_hash,
             instructions,
-            auth_zone_params,
-            header.cost_unit_limit,
-            header.tip_percentage,
-            manifest.blobs,
-            IntentValidation::User {
-                intent_hash,
-                start_epoch_inclusive: header.start_epoch_inclusive,
-                end_epoch_exclusive: header.end_epoch_exclusive,
-                skip_epoch_assertions: false,
+            &manifest.blobs,
+            ExecutionContext {
+                auth_zone_params,
+                transaction_hash,
+                fee_payment: FeePayment {
+                    cost_unit_limit: header.cost_unit_limit,
+                    tip_percentage: header.tip_percentage,
+                },
+                intent_validation: IntentValidation::User {
+                    intent_hash,
+                    start_epoch_inclusive: header.start_epoch_inclusive,
+                    end_epoch_exclusive: header.end_epoch_exclusive,
+                    skip_epoch_assertions: false,
+                },
             },
         ))
     }
@@ -132,20 +136,24 @@ impl NotarizedTransactionValidator {
         }
 
         Ok(Executable::new(
-            transaction_hash,
             instructions,
-            AuthZoneParams {
-                initial_proofs,
-                virtualizable_proofs_resource_addresses,
-            },
-            intent.header.cost_unit_limit,
-            intent.header.tip_percentage,
-            intent.manifest.blobs,
-            IntentValidation::User {
-                intent_hash,
-                start_epoch_inclusive: intent.header.start_epoch_inclusive,
-                end_epoch_exclusive: intent.header.end_epoch_exclusive,
-                skip_epoch_assertions: !preview_intent.flags.permit_invalid_header_epoch,
+            &intent.manifest.blobs,
+            ExecutionContext {
+                transaction_hash,
+                auth_zone_params: AuthZoneParams {
+                    initial_proofs,
+                    virtualizable_proofs_resource_addresses,
+                },
+                fee_payment: FeePayment {
+                    cost_unit_limit: intent.header.cost_unit_limit,
+                    tip_percentage: intent.header.tip_percentage,
+                },
+                intent_validation: IntentValidation::User {
+                    intent_hash,
+                    start_epoch_inclusive: intent.header.start_epoch_inclusive,
+                    end_epoch_exclusive: intent.header.end_epoch_exclusive,
+                    skip_epoch_assertions: !preview_intent.flags.permit_invalid_header_epoch,
+                },
             },
         ))
     }
