@@ -171,9 +171,9 @@ pub fn handle_manifest<O: std::io::Write>(
             let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
             let mut scrypto_interpreter = ScryptoInterpreter {
-                wasm_engine: DefaultWasmEngine::new(),
-                wasm_instrumenter: WasmInstrumenter::new(),
-                wasm_metering_params: WasmMeteringParams::new(
+                wasm_engine: DefaultWasmEngine::default(),
+                wasm_instrumenter: WasmInstrumenter::default(),
+                wasm_metering_config: WasmMeteringConfig::new(
                     InstructionCostRules::tiered(1, 5, 10, 5000),
                     512,
                 ),

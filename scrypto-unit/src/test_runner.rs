@@ -16,7 +16,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::wasm::{
     DefaultWasmEngine, DefaultWasmInstance, InstructionCostRules, WasmInstrumenter,
-    WasmMeteringParams,
+    WasmMeteringConfig,
 };
 use sbor::describe::*;
 use scrypto::dec;
@@ -39,12 +39,12 @@ pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
 impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn new(trace: bool, substate_store: &'s mut S) -> Self {
         let scrypto_interpreter = ScryptoInterpreter {
-            wasm_metering_params: WasmMeteringParams::new(
+            wasm_metering_config: WasmMeteringConfig::new(
                 InstructionCostRules::tiered(1, 5, 10, 5000),
                 512,
             ),
-            wasm_engine: DefaultWasmEngine::new(),
-            wasm_instrumenter: WasmInstrumenter::new(),
+            wasm_engine: DefaultWasmEngine::default(),
+            wasm_instrumenter: WasmInstrumenter::default(),
             phantom: PhantomData,
         };
         Self {

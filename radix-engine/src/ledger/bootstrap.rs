@@ -5,7 +5,7 @@ use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::transaction::{ExecutionConfig, TransactionExecutor, TransactionReceipt};
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
-use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams};
+use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig};
 
 use scrypto::core::SystemAddress;
 use scrypto::resource::Bucket;
@@ -233,9 +233,9 @@ where
         .is_none()
     {
         let mut scrypto_interpreter = ScryptoInterpreter {
-            wasm_engine: DefaultWasmEngine::new(),
-            wasm_instrumenter: WasmInstrumenter::new(),
-            wasm_metering_params: WasmMeteringParams::new(
+            wasm_engine: DefaultWasmEngine::default(),
+            wasm_instrumenter: WasmInstrumenter::default(),
+            wasm_metering_config: WasmMeteringConfig::new(
                 InstructionCostRules::tiered(1, 5, 10, 5000),
                 512,
             ),
@@ -269,14 +269,14 @@ mod tests {
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {
-        let wasm_engine = DefaultWasmEngine::new();
-        let wasm_instrumenter = WasmInstrumenter::new();
-        let wasm_metering_params =
-            WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512);
+        let wasm_engine = DefaultWasmEngine::default();
+        let wasm_instrumenter = WasmInstrumenter::default();
+        let wasm_metering_config =
+            WasmMeteringConfig::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512);
         let mut scrypto_interpreter = ScryptoInterpreter {
             wasm_engine,
             wasm_instrumenter,
-            wasm_metering_params,
+            wasm_metering_config,
             phantom: PhantomData,
         };
         let mut substate_store = TypedInMemorySubstateStore::new();

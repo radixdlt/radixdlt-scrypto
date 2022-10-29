@@ -236,4 +236,43 @@ pub fn execute_and_commit_transaction<
     receipt
 }
 
+pub fn execute_transaction<S: ReadableSubstateStore, I: WasmInstance, W: WasmEngine<I>>(
+    substate_store: &mut S,
+    scrypto_interpreter: &mut ScryptoInterpreter<I, W>,
+    fee_reserve_config: &FeeReserveConfig,
+    execution_config: &ExecutionConfig,
+    transaction: &Executable,
+) -> TransactionReceipt {
+    let fee_reserve = SystemLoanFeeReserve::new(
+        transaction.cost_unit_limit(),
+        transaction.tip_percentage(),
+        fee_reserve_config.cost_unit_price,
+        fee_reserve_config.system_loan,
+    );
+
+    execute_transaction_with_fee_reserve(
+        substate_store,
+        scrypto_interpreter,
+        fee_reserve,
+        execution_config,
+        transaction,
+    )
+}
+
+pub fn execute_transaction_with_fee_reserve<
+    S: ReadableSubstateStore,
+    I: WasmInstance,
+    W: WasmEngine<I>,
+>(
+    substate_store: &mut S,
+    scrypto_interpreter: &mut ScryptoInterpreter<I, W>,
+    fee_reserve: impl FeeReserve,
+    execution_config: &ExecutionConfig,
+    transaction: &Executable,
+) -> TransactionReceipt {
+    TransactionExecutor::new(substate_store, scrypto_interpreter).execute_with_fee_reserve(
+        transaction,
+        execution_config,
+        fee_reserve,
+    )
 }

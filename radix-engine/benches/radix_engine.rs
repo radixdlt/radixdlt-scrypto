@@ -5,7 +5,7 @@ use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
-use radix_engine::wasm::{DefaultWasmEngine, InstructionCostRules, WasmMeteringParams};
+use radix_engine::wasm::{DefaultWasmEngine, InstructionCostRules, WasmMeteringConfig};
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
@@ -15,9 +15,9 @@ fn bench_transfer(c: &mut Criterion) {
     let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
 
     let mut scrypto_interpreter = ScryptoInterpreter {
-        wasm_engine: DefaultWasmEngine::new(),
-        wasm_instrumenter: WasmInstrumenter::new(),
-        wasm_metering_params: WasmMeteringParams::new(
+        wasm_engine: DefaultWasmEngine::default(),
+        wasm_instrumenter: WasmInstrumenter::default(),
+        wasm_metering_config: WasmMeteringConfig::new(
             InstructionCostRules::tiered(1, 5, 10, 5000),
             512,
         ),
