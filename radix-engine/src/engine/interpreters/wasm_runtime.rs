@@ -16,8 +16,9 @@ pub struct RadixEngineWasmRuntime<'y, 's, Y, R>
 where
     Y: SystemApi<'s, R>
         + Invokable<ScryptoInvocation, ScryptoValue>
-        + Invokable<NativeInvocation, ScryptoValue>,
-    R: FeeReserve,
+        + Invokable<NativeInvocation, ScryptoValue>
+        + Invokable<NativeFunctionInvocation, ScryptoValue>,
+R: FeeReserve,
 {
     actor: ScryptoActor,
     system_api: &'y mut Y,
@@ -30,6 +31,7 @@ impl<'y, 's, Y, R> RadixEngineWasmRuntime<'y, 's, Y, R>
 where
     Y: SystemApi<'s, R>
         + Invokable<ScryptoInvocation, ScryptoValue>
+        + Invokable<NativeFunctionInvocation, ScryptoValue>
         + Invokable<NativeInvocation, ScryptoValue>,
     R: FeeReserve,
 {
@@ -80,7 +82,7 @@ where
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
 
         self.system_api
-            .invoke(NativeInvocation::Function(NativeFunctionInvocation(native_function, args)))
+            .invoke(NativeFunctionInvocation(native_function, args))
     }
 
     fn handle_invoke_native_method(
@@ -216,6 +218,7 @@ impl<'y, 's, Y, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, Y, R>
 where
     Y: SystemApi<'s, R>
         + Invokable<ScryptoInvocation, ScryptoValue>
+        + Invokable<NativeFunctionInvocation, ScryptoValue>
         + Invokable<NativeInvocation, ScryptoValue>,
     R: FeeReserve,
 {

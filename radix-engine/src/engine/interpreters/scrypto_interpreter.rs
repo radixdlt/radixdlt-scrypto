@@ -16,6 +16,7 @@ impl<I: WasmInstance> Executor<ScryptoValue, ScryptoValue> for ScryptoExecutor<I
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
+            + Invokable<NativeFunctionInvocation, ScryptoValue>
             + Invokable<NativeInvocation, ScryptoValue>,
         R: FeeReserve,
     {

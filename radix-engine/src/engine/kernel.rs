@@ -813,6 +813,7 @@ pub trait Executor<I, O> {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
+            + Invokable<NativeFunctionInvocation, ScryptoValue>
             + Invokable<NativeInvocation, ScryptoValue>,
         R: FeeReserve;
 }
@@ -825,6 +826,17 @@ where
     R: FeeReserve,
 {
     fn invoke(&mut self, input: ScryptoInvocation) -> Result<ScryptoValue, RuntimeError> {
+        self.invoke_internal(input, Self::resolve)
+    }
+}
+
+impl<'g, 's, W, I, R> Invokable<NativeFunctionInvocation, ScryptoValue> for Kernel<'g, 's, W, I, R>
+    where
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+{
+    fn invoke(&mut self, input: NativeFunctionInvocation) -> Result<ScryptoValue, RuntimeError> {
         self.invoke_internal(input, Self::resolve)
     }
 }
@@ -1619,12 +1631,29 @@ where
 }
 
 impl<'g, 's, W, I, R>
-    InvocationResolver<NativeInvocation, NativeExecutor, ScryptoValue, ScryptoValue>
+    InvocationResolver<NativeFunctionInvocation, NativeFunctionExecutor, ScryptoValue, ScryptoValue>
     for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
     R: FeeReserve,
+{
+    fn resolve(
+        &mut self,
+        native_function: &NativeFunctionInvocation,
+    ) -> Result<(NativeFunctionExecutor, REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError> {
+        let actor = REActor::Function(ResolvedFunction::Native(native_function.0));
+        Ok((NativeFunctionExecutor(native_function.0), actor, HashMap::new()))
+    }
+}
+
+impl<'g, 's, W, I, R>
+InvocationResolver<NativeInvocation, NativeExecutor, ScryptoValue, ScryptoValue>
+for Kernel<'g, 's, W, I, R>
+    where
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
 {
     fn resolve(
         &mut self,
@@ -1655,3 +1684,4 @@ where
         Ok((NativeExecutor(actor.clone()), actor, additional_ref_copy))
     }
 }
+

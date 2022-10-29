@@ -74,6 +74,26 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
+
+pub struct NativeFunctionExecutor(pub NativeFunction);
+
+impl Executor<ScryptoValue, ScryptoValue> for NativeFunctionExecutor {
+    fn execute<'s, Y, R>(
+        &mut self,
+        input: ScryptoValue,
+        system_api: &mut Y,
+    ) -> Result<ScryptoValue, RuntimeError>
+        where
+            Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation, ScryptoValue>
+            + Invokable<NativeFunctionInvocation, ScryptoValue>
+            + Invokable<NativeInvocation, ScryptoValue>,
+            R: FeeReserve,
+    {
+        NativeInterpreter::run_function(self.0, input, system_api)
+    }
+}
+
 pub struct NativeExecutor(pub REActor);
 
 impl Executor<ScryptoValue, ScryptoValue> for NativeExecutor {
@@ -84,8 +104,9 @@ impl Executor<ScryptoValue, ScryptoValue> for NativeExecutor {
     ) -> Result<ScryptoValue, RuntimeError>
         where
             Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation, ScryptoValue>
-            + Invokable<NativeInvocation, ScryptoValue>,
+                + Invokable<ScryptoInvocation, ScryptoValue>
+                + Invokable<NativeFunctionInvocation, ScryptoValue>
+                + Invokable<NativeInvocation, ScryptoValue>,
             R: FeeReserve,
     {
         match self.0.clone() {
@@ -117,6 +138,7 @@ impl NativeInterpreter {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation, ScryptoValue>
+            + Invokable<NativeFunctionInvocation, ScryptoValue>
             + Invokable<NativeInvocation, ScryptoValue>,
         R: FeeReserve,
     {
