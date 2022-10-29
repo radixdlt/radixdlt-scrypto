@@ -1633,8 +1633,8 @@ where
         let mut additional_ref_copy = HashMap::new();
 
         let actor = match invocation {
-            NativeInvocation::Function(native_function, _) => {
-                REActor::Function(ResolvedFunction::Native(*native_function))
+            NativeInvocation::Function(native_function) => {
+                REActor::Function(ResolvedFunction::Native(native_function.0))
             }
             NativeInvocation::Method(native_method, node_id, _) => {
                 // Deref

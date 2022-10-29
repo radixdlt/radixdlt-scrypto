@@ -618,13 +618,13 @@ impl TransactionProcessor {
                             })
                         }
                         Instruction::PublishPackage { code, abi } => system_api
-                            .invoke(NativeInvocation::Function(
+                            .invoke(NativeInvocation::Function(NativeFunctionInvocation(
                                 NativeFunction::Package(PackageFunction::Publish),
                                 ScryptoValue::from_typed(&PackagePublishInput {
                                     code: code.clone(),
                                     abi: abi.clone(),
                                 }),
-                            ))
+                            )))
                             .map_err(InvokeError::Downstream),
                         Instruction::CallNativeFunction {
                             function_ident,
@@ -639,7 +639,7 @@ impl TransactionProcessor {
                             .and_then(|args| Self::process_expressions(args, system_api))
                             .and_then(|args| {
                                 system_api
-                                    .invoke(NativeInvocation::Function(
+                                    .invoke(NativeInvocation::Function(NativeFunctionInvocation(
                                         resolve_native_function(
                                             &function_ident.blueprint_name,
                                             &function_ident.function_name,
@@ -652,7 +652,7 @@ impl TransactionProcessor {
                                             ),
                                         )?,
                                         args,
-                                    ))
+                                    )))
                                     .map_err(InvokeError::Downstream)
                             })
                             .and_then(|result| {

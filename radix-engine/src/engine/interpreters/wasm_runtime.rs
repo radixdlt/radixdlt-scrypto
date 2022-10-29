@@ -80,7 +80,7 @@ where
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
 
         self.system_api
-            .invoke(NativeInvocation::Function(native_function, args))
+            .invoke(NativeInvocation::Function(NativeFunctionInvocation(native_function, args)))
     }
 
     fn handle_invoke_native_method(
