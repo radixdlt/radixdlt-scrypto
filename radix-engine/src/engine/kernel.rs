@@ -668,19 +668,13 @@ where
         }
     }
 
-    fn invoke_internal<V, RV, X: Executor<ScryptoValue, ScryptoValue>>(
+    fn invoke_internal<V: Invocation, X: Executor<ScryptoValue, ScryptoValue>>(
         &mut self,
         invocation: V,
-        resolver: RV,
-    ) -> Result<ScryptoValue, RuntimeError>
-    where
-        V: Invocation,
-        RV: FnOnce(
-            &mut Self,
-            &V,
-        )
-            -> Result<(X, REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError>,
-    {
+        executor: X,
+        actor: REActor,
+        mut node_refs: HashMap<RENodeId, RENodeLocation>,
+    ) -> Result<ScryptoValue, RuntimeError> {
         let depth = self.current_frame.depth;
 
         for m in &mut self.modules {
@@ -704,15 +698,8 @@ where
             ));
         }
 
-        // Change to kernel mode
-        let saved_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
 
         let mut nodes_to_pass_downstream = Vec::new();
-        let mut next_node_refs = HashMap::new();
-        let (executor, next_actor, additional_ref_copy) = resolver(self, &invocation)?;
-        next_node_refs.extend(additional_ref_copy);
-
         nodes_to_pass_downstream.extend(invocation.args().node_ids());
         // Internal state update to taken values
 
@@ -750,7 +737,7 @@ where
 
             // TODO: remove
             if let Some(pointer) = self.current_frame.node_refs.get(&node_id) {
-                next_node_refs.insert(node_id.clone(), pointer.clone());
+                node_refs.insert(node_id.clone(), pointer.clone());
             } else {
                 if matches!(
                     global_address,
@@ -759,7 +746,7 @@ where
                     global_address,
                     GlobalAddress::Component(ComponentAddress::EddsaEd25519VirtualAccount(..))
                 ) {
-                    next_node_refs.insert(node_id.clone(), RENodeLocation::Store);
+                    node_refs.insert(node_id.clone(), RENodeLocation::Store);
                     continue;
                 }
 
@@ -771,7 +758,7 @@ where
                     self.track
                         .release_lock(SubstateId(node_id, offset), false)
                         .map_err(|_| KernelError::GlobalAddressNotFound(global_address))?;
-                    next_node_refs.insert(node_id.clone(), RENodeLocation::Store);
+                    node_refs.insert(node_id.clone(), RENodeLocation::Store);
                     continue;
                 }
 
@@ -783,10 +770,10 @@ where
 
         let output = self.run(
             executor,
-            next_actor,
+            actor,
             invocation.args().clone(), // TODO: Remove clone
             nodes_to_pass_downstream,
-            next_node_refs,
+            node_refs,
         )?;
 
         for m in &mut self.modules {
@@ -806,8 +793,7 @@ where
             self.drop_nodes_in_frame()?;
         }
 
-        // Restore previous mode
-        self.execution_mode = saved_mode;
+
 
         Ok(output)
     }
@@ -831,7 +817,17 @@ where
     R: FeeReserve,
 {
     fn invoke(&mut self, input: ScryptoInvocation) -> Result<ScryptoValue, RuntimeError> {
-        self.invoke_internal(input, Self::resolve)
+        // Change to kernel mode
+        let saved_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
+
+        let (executor, actor, node_refs) = self.resolve(&input)?;
+        let rtn = self.invoke_internal(input, executor, actor, node_refs)?;
+
+        // Restore previous mode
+        self.execution_mode = saved_mode;
+
+        Ok(rtn)
     }
 }
 
@@ -842,7 +838,17 @@ where
     R: FeeReserve,
 {
     fn invoke(&mut self, input: NativeFunctionInvocation) -> Result<ScryptoValue, RuntimeError> {
-        self.invoke_internal(input, Self::resolve)
+        // Change to kernel mode
+        let saved_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
+
+        let (executor, actor, node_refs) = self.resolve(&input)?;
+        let rtn = self.invoke_internal(input, executor, actor, node_refs)?;
+
+        // Restore previous mode
+        self.execution_mode = saved_mode;
+
+        Ok(rtn)
     }
 }
 
@@ -853,7 +859,17 @@ where
     R: FeeReserve,
 {
     fn invoke(&mut self, input: NativeMethodInvocation) -> Result<ScryptoValue, RuntimeError> {
-        self.invoke_internal(input, Self::resolve)
+        // Change to kernel mode
+        let saved_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
+
+        let (executor, actor, node_refs) = self.resolve(&input)?;
+        let rtn = self.invoke_internal(input, executor, actor, node_refs)?;
+
+        // Restore previous mode
+        self.execution_mode = saved_mode;
+
+        Ok(rtn)
     }
 }
 
