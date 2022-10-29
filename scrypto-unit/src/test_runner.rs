@@ -10,8 +10,8 @@ use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_abi};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
-    execute_and_commit_transaction, execute_transaction, ExecutionConfig, FeeReserveConfig,
-    PreviewError, PreviewExecutor, PreviewResult, TransactionReceipt, TransactionResult,
+    execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
+    FeeReserveConfig, PreviewError, PreviewResult, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{
@@ -362,13 +362,13 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let node_id = self.create_child_node(0);
         let substate_store = &mut self.execution_stores.get_output_store(node_id);
 
-        PreviewExecutor::new(
-            substate_store,
+        execute_preview(
+            &self.execution_stores.get_output_store(node_id),
             &mut self.scrypto_interpreter,
             &self.intent_hash_manager,
             network,
+            preview_intent,
         )
-        .execute(preview_intent)
     }
 
     pub fn execute_batch(

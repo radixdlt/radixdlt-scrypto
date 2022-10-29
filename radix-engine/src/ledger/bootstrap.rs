@@ -251,9 +251,9 @@ where
         let transaction_receipt = execute_transaction_with_fee_reserve(
             substate_store,
             &scrypto_interpreter,
-            &genesis_transaction.get_executable(),
-            &ExecutionConfig::standard(),
             fee_reserve,
+            &ExecutionConfig::standard(),
+            &genesis_transaction.get_executable(),
         );
 
         let commit_result = transaction_receipt.expect_commit();
