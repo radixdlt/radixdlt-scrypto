@@ -668,7 +668,7 @@ where
         executor: X,
         actor: REActor,
         nodes_to_move: Vec<RENodeId>,
-        mut node_refs: HashSet<RENodeId>,
+        node_refs_to_copy: HashSet<RENodeId>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let depth = self.current_frame.depth;
 
@@ -693,62 +693,45 @@ where
             ));
         }
 
-        // Check that global references are owned by this call frame
-        node_refs.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        node_refs.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
-        node_refs.insert(RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)));
-        node_refs.insert(RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)));
-        node_refs.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
-
-        /*
-        let mut global_references = HashSet::new();
-        global_references.insert(GlobalAddress::Resource(RADIX_TOKEN));
-        global_references.insert(GlobalAddress::System(EPOCH_MANAGER));
-        global_references.insert(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN));
-        global_references.insert(GlobalAddress::Resource(EDDSA_ED25519_TOKEN));
-        global_references.insert(GlobalAddress::Package(ACCOUNT_PACKAGE));
-         */
-
-        for node_id in &node_refs {
-            // TODO: remove
-            /*
-            if let Ok(location) = self.current_frame.get_node_location(*node_id) {
-                //node_refs.insert(node_id.clone(), pointer.clone());
-            } else {
-             */
+        // TODO: Move to higher layer
+        if depth == 0 {
+            for node_id in &node_refs_to_copy {
                 if let RENodeId::Global(global_address) = node_id {
-                    if depth == 0 && self.current_frame.get_node_location(*node_id).is_err() {
+                    if self.current_frame.get_node_location(*node_id).is_err() {
                         if matches!(
                             global_address,
-                            GlobalAddress::Component(ComponentAddress::EcdsaSecp256k1VirtualAccount(..))
+                            GlobalAddress::Component(
+                                ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+                            )
                         ) || matches!(
                             global_address,
-                            GlobalAddress::Component(ComponentAddress::EddsaEd25519VirtualAccount(..))
+                            GlobalAddress::Component(ComponentAddress::EddsaEd25519VirtualAccount(
+                                ..
+                            ))
                         ) {
-                            self.current_frame.node_refs.insert(*node_id, RENodeLocation::Store);
-                            //node_refs.insert(node_id.clone(), RENodeLocation::Store);
+                            self.current_frame
+                                .node_refs
+                                .insert(*node_id, RENodeLocation::Store);
                             continue;
                         }
 
                         let offset = SubstateOffset::Global(GlobalOffset::Global);
                         self.track
-                            .acquire_lock(SubstateId(*node_id, offset.clone()), LockFlags::read_only())
+                            .acquire_lock(
+                                SubstateId(*node_id, offset.clone()),
+                                LockFlags::read_only(),
+                            )
                             .map_err(|_| KernelError::GlobalAddressNotFound(*global_address))?;
                         self.track
                             .release_lock(SubstateId(*node_id, offset), false)
                             .map_err(|_| KernelError::GlobalAddressNotFound(*global_address))?;
-                        self.current_frame.node_refs.insert(*node_id, RENodeLocation::Store);
-                        //node_refs.insert(node_id.clone(), RENodeLocation::Store);
+                        self.current_frame
+                            .node_refs
+                            .insert(*node_id, RENodeLocation::Store);
                         continue;
                     }
                 }
-
-            /*
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidReferencePass(*node_id),
-                ));
             }
-             */
         }
 
         let output = self.run(
@@ -756,7 +739,7 @@ where
             actor,
             invocation.args().clone(), // TODO: Remove clone
             nodes_to_move,
-            node_refs,
+            node_refs_to_copy,
         )?;
 
         for m in &mut self.modules {
@@ -769,8 +752,8 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        // TODO: Move this into higher layer, e.g. transaction processor
-        if self.current_frame.depth == 0 {
+        // TODO: Move to higher layer
+        if depth == 0 {
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
             self.drop_nodes_in_frame()?;
@@ -802,8 +785,8 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, nodes_to_move, node_refs) = self.resolve(&input)?;
-        let rtn = self.invoke_internal(input, executor, actor, nodes_to_move, node_refs)?;
+        let (executor, actor, nodes_to_move, node_refs_to_copy) = self.resolve(&input)?;
+        let rtn = self.invoke_internal(input, executor, actor, nodes_to_move, node_refs_to_copy)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
@@ -823,8 +806,8 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, nodes_to_move, node_refs) = self.resolve(&input)?;
-        let rtn = self.invoke_internal(input, executor, actor, nodes_to_move, node_refs)?;
+        let (executor, actor, nodes_to_move, node_refs_to_copy) = self.resolve(&input)?;
+        let rtn = self.invoke_internal(input, executor, actor, nodes_to_move, node_refs_to_copy)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
@@ -844,8 +827,8 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, nodes_to_move, node_refs) = self.resolve(&input)?;
-        let rtn = self.invoke_internal(input, executor, actor, nodes_to_move, node_refs)?;
+        let (executor, actor, nodes_to_move, node_refs_to_copy) = self.resolve(&input)?;
+        let rtn = self.invoke_internal(input, executor, actor, nodes_to_move, node_refs_to_copy)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;
@@ -1393,7 +1376,7 @@ where
         ),
         RuntimeError,
     > {
-        let mut node_refs = HashSet::new();
+        let mut node_refs_to_copy = HashSet::new();
 
         let (executor, actor) = match invocation {
             ScryptoInvocation::Function(function_ident, args) => {
@@ -1422,8 +1405,8 @@ where
 
                 // Pass the package ref
                 // TODO: remove? currently needed for `Runtime::package_address()` API.
-                node_refs.insert(global_node_id);
-                node_refs.insert(package_node_id);
+                node_refs_to_copy.insert(global_node_id);
+                node_refs_to_copy.insert(package_node_id);
 
                 // Find the abi
                 let abi = package
@@ -1542,8 +1525,8 @@ where
                 // TODO: remove? currently needed for `Runtime::package_address()` API.
                 let global_node_id =
                     RENodeId::Global(GlobalAddress::Package(component_info.package_address));
-                node_refs.insert(global_node_id);
-                node_refs.insert(component_node_id);
+                node_refs_to_copy.insert(global_node_id);
+                node_refs_to_copy.insert(component_node_id);
 
                 // Find the abi
                 let abi = package
@@ -1610,14 +1593,24 @@ where
         };
 
         for global_address in invocation.args().global_references() {
-            node_refs.insert(RENodeId::Global(global_address));
+            node_refs_to_copy.insert(RENodeId::Global(global_address));
         }
+
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            ECDSA_SECP256K1_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            EDDSA_ED25519_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
         Ok((
             executor,
             actor,
             invocation.args().node_ids().into_iter().collect(),
-            node_refs,
+            node_refs_to_copy,
         ))
     }
 }
@@ -1642,10 +1635,10 @@ where
         ),
         RuntimeError,
     > {
-        let mut node_refs = HashSet::new();
+        let mut node_refs_to_copy = HashSet::new();
         let actor = REActor::Function(ResolvedFunction::Native(native_function.0));
         for global_address in native_function.args().global_references() {
-            node_refs.insert(RENodeId::Global(global_address));
+            node_refs_to_copy.insert(RENodeId::Global(global_address));
         }
 
         // TODO: This can be refactored out once any type in sbor is implemented
@@ -1661,8 +1654,7 @@ where
                         let scrypto_value =
                             ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                         for global_address in scrypto_value.global_references() {
-                            node_refs
-                                .insert(RENodeId::Global(global_address));
+                            node_refs_to_copy.insert(RENodeId::Global(global_address));
                         }
                     }
                     _ => {}
@@ -1670,11 +1662,21 @@ where
             }
         }
 
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            ECDSA_SECP256K1_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            EDDSA_ED25519_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+
         Ok((
             NativeFunctionExecutor(native_function.0),
             actor,
             native_function.args().node_ids().into_iter().collect(),
-            node_refs,
+            node_refs_to_copy,
         ))
     }
 }
@@ -1699,7 +1701,7 @@ where
         ),
         RuntimeError,
     > {
-        let mut node_refs = HashSet::new();
+        let mut node_refs_to_copy = HashSet::new();
 
         // Deref
         let resolved_receiver = if let Some(derefed) = self.node_method_deref(native_method.1)? {
@@ -1709,18 +1711,28 @@ where
         };
 
         let resolved_node_id = resolved_receiver.receiver;
-        node_refs.insert(resolved_node_id);
+        node_refs_to_copy.insert(resolved_node_id);
 
         for global_address in native_method.args().global_references() {
-            node_refs.insert(RENodeId::Global(global_address));
+            node_refs_to_copy.insert(RENodeId::Global(global_address));
         }
+
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            ECDSA_SECP256K1_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            EDDSA_ED25519_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
         let actor = REActor::Method(ResolvedMethod::Native(native_method.0), resolved_receiver);
         Ok((
             NativeMethodExecutor(native_method.0, resolved_receiver),
             actor,
             native_method.args().node_ids().into_iter().collect(),
-            node_refs,
+            node_refs_to_copy,
         ))
     }
 }
