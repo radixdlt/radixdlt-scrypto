@@ -733,23 +733,24 @@ pub trait Executor<O> {
 }
 
 // TODO: remove redundant code and move this method to the interpreter
-impl<'g, 's, W, I, R> Invokable<EpochManagerCreateInput, SystemAddress> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, I, R, N, O> Invokable<N, O> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
     R: FeeReserve,
+    N: NativeFuncInvocation<O>,
 {
     fn invoke(
         &mut self,
-        invocation: EpochManagerCreateInput,
-    ) -> Result<SystemAddress, RuntimeError> {
+        invocation: N,
+    ) -> Result<O, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    name: format!("{:?}", invocation),
+                    name: "test".to_string(),//format!("{:?}", invocation),
                     input_size: 0,
                     value_count: 0,
                     depth: self.current_frame.depth,
@@ -762,7 +763,12 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (executor, actor, call_frame_update) = self.resolve(invocation)?;
+        let executor = invocation.create_executor();
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
+            EpochManagerFunction::Create,
+        )));
+        let call_frame_update = CallFrameUpdate::empty();
+
         let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 
         // Restore previous mode
@@ -774,7 +780,7 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::Invoke {
-                    rtn: format!("{:?}", rtn),
+                    rtn: "test".to_string(),//format!("{:?}", rtn),
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
