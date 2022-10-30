@@ -69,7 +69,10 @@ impl Bucket {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Bucket(BucketMethod::Take),
             RENodeId::Bucket(self.0),
-            scrypto_encode(&BucketTakeInput { bucket_id: self.0, amount }),
+            scrypto_encode(&BucketTakeInput {
+                bucket_id: self.0,
+                amount,
+            }),
         );
         call_engine(input)
     }

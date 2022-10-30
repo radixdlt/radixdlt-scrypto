@@ -1,6 +1,6 @@
 use crate::engine::{
-    AuthModule, CallFrameUpdate, Invokable, InvokableNativeFunction, LockFlags, NativeExecutable,
-    NativeFunctionInvocation, RENode, RuntimeError, SystemApi,
+    AuthModule, CallFrameUpdate, Invokable, InvokableNative, LockFlags, NativeExecutable,
+    NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
 use crate::model::{
@@ -29,7 +29,7 @@ impl NativeExecutable for EpochManagerCreateInput {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction<'a>
+            + InvokableNative<'a>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
@@ -53,13 +53,12 @@ impl NativeExecutable for EpochManagerCreateInput {
     }
 }
 
-impl NativeFunctionInvocation for EpochManagerCreateInput {
-    fn native_function() -> NativeFunction {
-        NativeFunction::EpochManager(EpochManagerFunction::Create)
-    }
-
-    fn call_frame_update(&self) -> CallFrameUpdate {
-        CallFrameUpdate::empty()
+impl NativeInvocation for EpochManagerCreateInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Function(
+            NativeFunction::EpochManager(EpochManagerFunction::Create),
+            CallFrameUpdate::empty(),
+        )
     }
 }
 

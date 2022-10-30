@@ -41,7 +41,7 @@ impl NativeExecutable for PackagePublishInput {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction<'a>
+            + InvokableNative<'a>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
@@ -69,12 +69,11 @@ impl NativeExecutable for PackagePublishInput {
     }
 }
 
-impl NativeFunctionInvocation for PackagePublishInput {
-    fn native_function() -> NativeFunction {
-        NativeFunction::Package(PackageFunction::Publish)
-    }
-
-    fn call_frame_update(&self) -> CallFrameUpdate {
-        CallFrameUpdate::empty()
+impl NativeInvocation for PackagePublishInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Function(
+            NativeFunction::Package(PackageFunction::Publish),
+            CallFrameUpdate::empty(),
+        )
     }
 }

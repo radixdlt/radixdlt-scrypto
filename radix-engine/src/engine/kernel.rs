@@ -737,7 +737,10 @@ where
 pub trait Resolver<I: Invocation> {
     type Exec: Executor<Output = <I as Invocation>::Output>;
 
-    fn resolve<D: MethodDeref>(invocation: I, deref: &mut D) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
+    fn resolve<D: MethodDeref>(
+        invocation: I,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
 }
 
 pub trait Executor {
@@ -753,12 +756,12 @@ pub trait Executor {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction<'a>
+            + InvokableNative<'a>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve;
 }
 
-impl<'g, 's, 'a, W, I, R> InvokableNativeFunction<'a> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, 'a, W, I, R> InvokableNative<'a> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -771,7 +774,7 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
     R: FeeReserve,
-    N: NativeFunctionInvocation,
+    N: NativeInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         for m in &mut self.modules {

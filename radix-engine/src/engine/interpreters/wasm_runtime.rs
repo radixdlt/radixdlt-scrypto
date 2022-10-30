@@ -16,7 +16,7 @@ pub struct RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
 where
     Y: SystemApi<'s, R>
         + Invokable<ScryptoInvocation>
-        + InvokableNativeFunction<'a>
+        + InvokableNative<'a>
         + Invokable<NativeMethodInvocation>,
     R: FeeReserve,
 {
@@ -32,7 +32,7 @@ impl<'y, 's, 'a, Y, R> RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
 where
     Y: SystemApi<'s, R>
         + Invokable<ScryptoInvocation>
-        + InvokableNativeFunction<'a>
+        + InvokableNative<'a>
         + Invokable<NativeMethodInvocation>,
     R: FeeReserve,
 {
@@ -125,17 +125,14 @@ where
         receiver: RENodeId,
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-
-
         match native_method {
-            /*
             NativeMethod::Bucket(BucketMethod::Take) => {
                 let invocation: BucketTakeInput = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                self.system_api.invoke(invocation)
+                self.system_api
+                    .invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
-             */
             _ => {
                 let args = ScryptoValue::from_slice(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
@@ -265,7 +262,7 @@ impl<'y, 's, 'a, Y, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
 where
     Y: SystemApi<'s, R>
         + Invokable<ScryptoInvocation>
-        + InvokableNativeFunction<'a>
+        + InvokableNative<'a>
         + Invokable<NativeMethodInvocation>,
     R: FeeReserve,
 {

@@ -42,7 +42,7 @@ impl<'b> NativeExecutable for TransactionProcessorRunInput<'b> {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction<'a>
+            + InvokableNative<'a>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
@@ -52,12 +52,8 @@ impl<'b> NativeExecutable for TransactionProcessorRunInput<'b> {
     }
 }
 
-impl<'a> NativeFunctionInvocation for TransactionProcessorRunInput<'a> {
-    fn native_function() -> NativeFunction {
-        NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run)
-    }
-
-    fn call_frame_update(&self) -> CallFrameUpdate {
+impl<'a> NativeInvocation for TransactionProcessorRunInput<'a> {
+    fn info(&self) -> NativeInvocationInfo {
         let mut node_refs_to_copy = HashSet::new();
         // TODO: Remove serialization
         let value = ScryptoValue::from_typed(self);
@@ -91,10 +87,13 @@ impl<'a> NativeFunctionInvocation for TransactionProcessorRunInput<'a> {
         )));
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
-        CallFrameUpdate {
-            nodes_to_move: vec![],
-            node_refs_to_copy,
-        }
+        NativeInvocationInfo::Function(
+            NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
+            CallFrameUpdate {
+                nodes_to_move: vec![],
+                node_refs_to_copy,
+            },
+        )
     }
 }
 
@@ -150,7 +149,7 @@ impl TransactionProcessor {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction<'a>
+            + InvokableNative<'a>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
@@ -242,7 +241,7 @@ impl TransactionProcessor {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction<'a>
+            + InvokableNative<'a>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {

@@ -22,7 +22,7 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction<'a>
+            + InvokableNative<'a>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {

@@ -1,6 +1,6 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, Invokable, InvokableNativeFunction, LockFlags,
-    NativeExecutable, NativeFunctionInvocation, RENode, RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, Invokable, InvokableNative, LockFlags,
+    NativeExecutable, NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
 use crate::model::{
@@ -46,7 +46,7 @@ impl NativeExecutable for ResourceManagerBurnInput {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction<'a>
+            + InvokableNative<'a>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
@@ -71,12 +71,8 @@ impl NativeExecutable for ResourceManagerBurnInput {
     }
 }
 
-impl NativeFunctionInvocation for ResourceManagerBurnInput {
-    fn native_function() -> NativeFunction {
-        NativeFunction::ResourceManager(ResourceManagerFunction::BurnBucket)
-    }
-
-    fn call_frame_update(&self) -> CallFrameUpdate {
+impl NativeInvocation for ResourceManagerBurnInput {
+    fn info(&self) -> NativeInvocationInfo {
         let bucket = RENodeId::Bucket(self.bucket.0);
         let mut node_refs_to_copy = HashSet::new();
 
@@ -90,10 +86,13 @@ impl NativeFunctionInvocation for ResourceManagerBurnInput {
         )));
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
-        CallFrameUpdate {
-            nodes_to_move: vec![bucket],
-            node_refs_to_copy,
-        }
+        NativeInvocationInfo::Function(
+            NativeFunction::ResourceManager(ResourceManagerFunction::BurnBucket),
+            CallFrameUpdate {
+                nodes_to_move: vec![bucket],
+                node_refs_to_copy,
+            },
+        )
     }
 }
 
@@ -113,7 +112,7 @@ impl NativeExecutable for ResourceManagerCreateInput {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction<'a>
+            + InvokableNative<'a>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
@@ -259,12 +258,8 @@ impl NativeExecutable for ResourceManagerCreateInput {
     }
 }
 
-impl NativeFunctionInvocation for ResourceManagerCreateInput {
-    fn native_function() -> NativeFunction {
-        NativeFunction::ResourceManager(ResourceManagerFunction::Create)
-    }
-
-    fn call_frame_update(&self) -> CallFrameUpdate {
+impl NativeInvocation for ResourceManagerCreateInput {
+    fn info(&self) -> NativeInvocationInfo {
         let mut node_refs_to_copy = HashSet::new();
 
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
@@ -277,10 +272,13 @@ impl NativeFunctionInvocation for ResourceManagerCreateInput {
         )));
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
-        CallFrameUpdate {
-            nodes_to_move: vec![],
-            node_refs_to_copy,
-        }
+        NativeInvocationInfo::Function(
+            NativeFunction::ResourceManager(ResourceManagerFunction::Create),
+            CallFrameUpdate {
+                nodes_to_move: vec![],
+                node_refs_to_copy,
+            },
+        )
     }
 }
 
