@@ -1,153 +1,271 @@
-use radix_engine::ledger::InMemorySubstateStore;
-use scrypto::core::Network;
-use scrypto::prelude::*;
-use scrypto::to_struct;
+use radix_engine::ledger::TypedInMemorySubstateStore;
+use radix_engine::types::*;
+use scrypto::misc::ContextualDisplay;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
 fn create_non_fungible_mutable() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let package = test_runner.extract_and_publish_package("non_fungible");
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package,
             "NonFungibleTest",
             "create_non_fungible_mutable",
-            to_struct!(),
+            args!(),
         )
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
 fn can_burn_non_fungible() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let package = test_runner.extract_and_publish_package("non_fungible");
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package,
             "NonFungibleTest",
             "create_burnable_non_fungible",
-            to_struct!(),
+            args!(),
         )
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_success();
-    let resource_address = receipt.new_resource_addresses[0];
+    receipt.expect_commit_success();
+    let resource_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_resource_addresses[0];
     let non_fungible_address =
         NonFungibleAddress::new(resource_address, NonFungibleId::from_u32(0));
     let mut ids = BTreeSet::new();
     ids.insert(NonFungibleId::from_u32(0));
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .withdraw_from_account(resource_address, account)
         .burn_non_fungible(non_fungible_address.clone())
         .call_function(
             package,
             "NonFungibleTest",
             "verify_does_not_exist",
-            to_struct!(non_fungible_address),
+            args!(non_fungible_address),
         )
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
 fn test_non_fungible() {
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("non_fungible");
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "NonFungibleTest",
             "create_non_fungible_fixed",
-            to_struct!(),
+            args!(),
         )
         .call_function(
             package_address,
             "NonFungibleTest",
             "update_and_get_non_fungible",
-            to_struct!(),
+            args!(),
         )
         .call_function(
             package_address,
             "NonFungibleTest",
             "non_fungible_exists",
-            to_struct!(),
+            args!(),
         )
         .call_function(
             package_address,
             "NonFungibleTest",
             "take_and_put_bucket",
-            to_struct!(),
+            args!(),
         )
         .call_function(
             package_address,
             "NonFungibleTest",
             "take_and_put_vault",
-            to_struct!(),
+            args!(),
         )
         .call_function(
             package_address,
             "NonFungibleTest",
             "get_non_fungible_ids_bucket",
-            to_struct!(),
+            args!(),
         )
         .call_function(
             package_address,
             "NonFungibleTest",
             "get_non_fungible_ids_vault",
-            to_struct!(),
+            args!(),
         )
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    receipt.expect_success();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
 }
 
 #[test]
 fn test_singleton_non_fungible() {
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("non_fungible");
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "NonFungibleTest",
             "singleton_non_fungible",
-            to_struct!(),
+            args!(),
         )
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    receipt.expect_success();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
+}
+
+// This test was introduced in Oct 2022 to protect a regression whereby resources locked
+// by a proof in a vault was accidentally committed/persisted, and locked in future transactions
+#[test]
+fn test_mint_update_and_withdraw() {
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let network = NetworkDefinition::simulator();
+    let bech32_encoder = Bech32Encoder::for_simulator();
+
+    // create non-fungible
+    let manifest = ManifestBuilder::new(&network)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "create_non_fungible_mutable",
+            args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
+    let badge_resource_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_resource_addresses[0];
+    let nft_resource_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_resource_addresses[1];
+
+    // update data (the NFT is referenced within a Proof)
+    let manifest = ManifestBuilder::new(&network)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .call_function_with_abi(
+            package_address,
+            "NonFungibleTest",
+            "update_nft",
+            vec![
+                format!("1,{}", badge_resource_address.display(&bech32_encoder)),
+                format!("1,{}", nft_resource_address.display(&bech32_encoder)),
+            ],
+            Some(account),
+            &test_runner.export_abi(package_address, "NonFungibleTest"),
+        )
+        .unwrap()
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
+
+    // transfer
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .withdraw_from_account(nft_resource_address, account)
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
 }

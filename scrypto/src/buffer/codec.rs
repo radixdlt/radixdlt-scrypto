@@ -5,12 +5,12 @@ use crate::buffer::*;
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
-    encode_with_type(v)
+    encode_with_static_info(v)
 }
 
 /// Decodes an instance of `T` from a slice.
 pub fn scrypto_decode<T: Decode>(buf: &[u8]) -> Result<T, DecodeError> {
-    decode_with_type(buf)
+    decode_with_static_info(buf)
 }
 
 /// Encodes a data structure into a Scrypto buffer.
@@ -27,6 +27,7 @@ pub fn scrypto_decode_from_buffer<T: Decode + ?Sized>(ptr: *mut u8) -> Result<T,
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sbor::rust::string::String;
 
     #[test]
     fn test_encode_for_radix_engine() {

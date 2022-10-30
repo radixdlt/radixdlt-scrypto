@@ -32,4 +32,4 @@ DROP_PROOF Proof("proof4");
 DROP_PROOF Proof("proof5");
 
 # Clean up - deposit resources
-CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress("${account}") "deposit_batch";
+CALL_METHOD ComponentAddress("${account}") "deposit_batch" Expression("ENTIRE_WORKTOP");

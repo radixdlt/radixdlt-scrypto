@@ -1,25 +1,25 @@
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::constants::EPOCH_MANAGER;
 
 use crate::buffer::scrypto_encode;
-use crate::bytes_vec_to_struct;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
-use crate::engine::types::RENodeId;
-use crate::engine::{api::*, call_engine};
+use crate::engine::{api::*, types::*, utils::*};
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct SystemGetCurrentEpochInput {}
+pub struct EpochManagerCreateInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct SystemSetEpochInput {
+pub struct EpochManagerGetCurrentEpochInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct EpochManagerSetEpochInput {
     pub epoch: u64,
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct SystemGetTransactionHashInput {}
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -50,16 +50,19 @@ impl Runtime {
     }
 
     /// Invokes a function on a blueprint.
-    pub fn call_function<S: AsRef<str>, T: Decode>(
+    pub fn call_function<S1: AsRef<str>, S2: AsRef<str>, T: Decode>(
         package_address: PackageAddress,
-        blueprint_name: S,
-        function: S,
-        args: Vec<Vec<u8>>,
+        blueprint_name: S1,
+        function_name: S2,
+        args: Vec<u8>,
     ) -> T {
-        let input = RadixEngineInput::InvokeFunction(
-            TypeName::Blueprint(package_address, blueprint_name.as_ref().to_owned()),
-            function.as_ref().to_string(),
-            bytes_vec_to_struct!(args),
+        let input = RadixEngineInput::InvokeScryptoFunction(
+            ScryptoFunctionIdent {
+                package: ScryptoPackage::Global(package_address),
+                blueprint_name: blueprint_name.as_ref().to_owned(),
+                function_name: function_name.as_ref().to_owned(),
+            },
+            args,
         );
         call_engine(input)
     }
@@ -68,32 +71,30 @@ impl Runtime {
     pub fn call_method<S: AsRef<str>, T: Decode>(
         component_address: ComponentAddress,
         method: S,
-        args: Vec<Vec<u8>>,
+        args: Vec<u8>,
     ) -> T {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Component(component_address),
-            method.as_ref().to_string(),
-            bytes_vec_to_struct!(args),
+        let input = RadixEngineInput::InvokeScryptoMethod(
+            ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(component_address),
+                method_name: method.as_ref().to_string(),
+            },
+            args,
         );
         call_engine(input)
     }
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::System),
-            "transaction_hash".to_string(),
-            scrypto_encode(&SystemGetTransactionHashInput {}),
-        );
+        let input = RadixEngineInput::GetTransactionHash();
         call_engine(input)
     }
 
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::System),
-            "get_epoch".to_string(),
-            scrypto_encode(&SystemGetCurrentEpochInput {}),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
+            RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+            scrypto_encode(&EpochManagerGetCurrentEpochInput {}),
         );
         call_engine(input)
     }

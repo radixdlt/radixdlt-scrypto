@@ -1,123 +1,318 @@
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::collections::*;
-use sbor::rust::vec;
-use sbor::*;
-use scrypto::buffer::*;
-use scrypto::constants::*;
-use scrypto::crypto::*;
-use scrypto::engine::types::*;
-use scrypto::resource::ResourceMethodAuthKey::Withdraw;
-use scrypto::resource::LOCKED;
-use scrypto::rule;
-
-use crate::engine::Track;
-use crate::engine::TrackReceipt;
+use crate::constants::GENESIS_CREATION_CREDIT;
+use crate::engine::ScryptoInterpreter;
+use crate::fee::SystemLoanFeeReserve;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::model::ValidatedPackage;
+use crate::transaction::{ExecutionConfig, TransactionExecutor, TransactionReceipt};
+use crate::types::ResourceMethodAuthKey::Withdraw;
+use crate::types::*;
+use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams};
 
-#[derive(TypeId, Encode, Decode)]
-struct SystemComponentState {
-    xrd: scrypto::resource::Vault,
-}
+use scrypto::core::SystemAddress;
+use scrypto::resource::Bucket;
+use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
+use transaction::validation::{IdAllocator, IdSpace};
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
 const XRD_DESCRIPTION: &str = "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.";
 const XRD_URL: &str = "https://tokens.radixdlt.com";
-const XRD_MAX_SUPPLY: i128 = 24_000_000_000i128;
-const XRD_VAULT_ID: VaultId = (Hash([0u8; 32]), 0);
-const XRD_VAULT: scrypto::resource::Vault = scrypto::resource::Vault(XRD_VAULT_ID);
+const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 
-const SYSTEM_COMPONENT_NAME: &str = "System";
-
-use crate::model::*;
-
-fn create_genesis(mut track: Track) -> TrackReceipt {
-    let system_package =
-        extract_package(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
-    let validated_system_package = ValidatedPackage::new(system_package).unwrap();
-    track.create_uuid_substate(
-        SubstateId::Package(SYSTEM_PACKAGE),
-        validated_system_package,
-    );
-
-    let account_package =
-        extract_package(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
-    let validated_account_package = ValidatedPackage::new(account_package).unwrap();
-    track.create_uuid_substate(
-        SubstateId::Package(ACCOUNT_PACKAGE),
-        validated_account_package,
-    );
-
-    // Radix token resource address
-    let mut metadata = HashMap::new();
-    metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
-    metadata.insert("name".to_owned(), XRD_NAME.to_owned());
-    metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
-    metadata.insert("url".to_owned(), XRD_URL.to_owned());
-
-    let mut resource_auth = HashMap::new();
-    resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
-
-    let mut xrd_resource_manager = ResourceManager::new(
-        ResourceType::Fungible { divisibility: 18 },
-        metadata,
-        resource_auth,
-    )
-    .unwrap();
-    let minted_xrd = xrd_resource_manager
-        .mint_fungible(XRD_MAX_SUPPLY.into(), RADIX_TOKEN.clone())
-        .unwrap();
-    track.create_uuid_substate(
-        SubstateId::ResourceManager(RADIX_TOKEN),
-        xrd_resource_manager,
-    );
-
-    let mut ecdsa_resource_auth = HashMap::new();
-    ecdsa_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
-    let ecdsa_token = ResourceManager::new(
-        ResourceType::NonFungible,
-        HashMap::new(),
-        ecdsa_resource_auth,
-    )
-    .unwrap();
-    track.create_uuid_substate(SubstateId::ResourceManager(ECDSA_TOKEN), ecdsa_token);
-
-    let system_token =
-        ResourceManager::new(ResourceType::NonFungible, HashMap::new(), HashMap::new()).unwrap();
-    track.create_uuid_substate(SubstateId::ResourceManager(SYSTEM_TOKEN), system_token);
-
-    let system_vault = Vault::new(minted_xrd);
-    track.create_uuid_substate(SubstateId::Vault(XRD_VAULT_ID), system_vault);
-
-    let system_component = Component::new(SYSTEM_PACKAGE, SYSTEM_COMPONENT_NAME.to_owned(), vec![]);
-    let system_component_state =
-        ComponentState::new(scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }));
-    track.create_uuid_substate(
-        SubstateId::ComponentInfo(SYSTEM_COMPONENT),
-        system_component,
-    );
-    track.create_uuid_substate(
-        SubstateId::ComponentState(SYSTEM_COMPONENT),
-        system_component_state,
-    );
-    track.create_uuid_substate(SubstateId::System, System { epoch: 0 });
-
-    track.commit();
-    track.to_receipt()
+pub struct GenesisReceipt {
+    pub faucet_package: PackageAddress,
+    pub account_package: PackageAddress,
+    pub ecdsa_secp256k1_token: ResourceAddress,
+    pub system_token: ResourceAddress,
+    pub xrd_token: ResourceAddress,
+    pub faucet_component: ComponentAddress,
+    pub epoch_manager: SystemAddress,
+    pub eddsa_ed25519_token: ResourceAddress,
 }
 
-pub fn bootstrap<S>(mut substate_store: S) -> S
+pub fn create_genesis() -> SystemTransaction {
+    let mut blobs = Vec::new();
+    let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
+    let create_faucet_package = {
+        let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
+        let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
+        let inst = Instruction::PublishPackage {
+            code: Blob(hash(&faucet_code)),
+            abi: Blob(hash(&faucet_abi)),
+        };
+
+        blobs.push(faucet_code);
+        blobs.push(faucet_abi);
+
+        inst
+    };
+    let create_account_package = {
+        let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
+        let account_abi = include_bytes!("../../../assets/account.abi").to_vec();
+        let inst = Instruction::PublishPackage {
+            code: Blob(hash(&account_code)),
+            abi: Blob(hash(&account_abi)),
+        };
+
+        blobs.push(account_code);
+        blobs.push(account_abi);
+
+        inst
+    };
+    let create_ecdsa_secp256k1_token = {
+        let metadata: HashMap<String, String> = HashMap::new();
+        let mut access_rules = HashMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        let initial_supply: Option<MintParams> = None;
+
+        // TODO: Create token at a specific address
+        Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
+            args: args!(
+                ResourceType::NonFungible,
+                metadata,
+                access_rules,
+                initial_supply
+            ),
+        }
+    };
+
+    // TODO: Perhaps combine with ecdsa token?
+    let create_system_token = {
+        let metadata: HashMap<String, String> = HashMap::new();
+        let mut access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> =
+            HashMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        let initial_supply: Option<MintParams> = None;
+
+        // TODO: Create token at a specific address
+        Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
+            args: args!(
+                ResourceType::NonFungible,
+                metadata,
+                access_rules,
+                initial_supply
+            ),
+        }
+    };
+
+    let create_xrd_token = {
+        let mut metadata = HashMap::new();
+        metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
+        metadata.insert("name".to_owned(), XRD_NAME.to_owned());
+        metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
+        metadata.insert("url".to_owned(), XRD_URL.to_owned());
+
+        let mut access_rules = HashMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+
+        let initial_supply: Option<MintParams> = Option::Some(MintParams::Fungible {
+            amount: XRD_MAX_SUPPLY.into(),
+        });
+
+        Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
+            args: args!(
+                ResourceType::Fungible { divisibility: 18 },
+                metadata,
+                access_rules,
+                initial_supply
+            ),
+        }
+    };
+
+    let take_xrd = Instruction::TakeFromWorktop {
+        resource_address: RADIX_TOKEN,
+    };
+
+    let create_xrd_faucet = {
+        let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
+        Instruction::CallFunction {
+            function_ident: ScryptoFunctionIdent {
+                package: ScryptoPackage::Global(SYS_FAUCET_PACKAGE),
+                blueprint_name: FAUCET_BLUEPRINT.to_string(),
+                function_name: "new".to_string(),
+            },
+            args: args!(bucket),
+        }
+    };
+
+    let create_epoch_manager = {
+        Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+                function_name: EpochManagerFunction::Create.to_string(),
+            },
+            args: args!(),
+        }
+    };
+
+    let create_eddsa_ed25519_token = {
+        let metadata: HashMap<String, String> = HashMap::new();
+        let mut access_rules = HashMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        let initial_supply: Option<MintParams> = None;
+
+        // TODO: Create token at a specific address
+        Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
+            args: args!(
+                ResourceType::NonFungible,
+                metadata,
+                access_rules,
+                initial_supply
+            ),
+        }
+    };
+
+    let manifest = TransactionManifest {
+        instructions: vec![
+            create_faucet_package,
+            create_account_package,
+            create_ecdsa_secp256k1_token,
+            create_system_token,
+            create_xrd_token,
+            take_xrd,
+            create_xrd_faucet,
+            create_epoch_manager,
+            create_eddsa_ed25519_token,
+        ],
+        blobs,
+    };
+
+    SystemTransaction { manifest }
+}
+
+pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
+    let faucet_package: PackageAddress = scrypto_decode(&invoke_result[0]).unwrap();
+    let account_package: PackageAddress = scrypto_decode(&invoke_result[1]).unwrap();
+    let (ecdsa_secp256k1_token, _bucket): (ResourceAddress, Option<Bucket>) =
+        scrypto_decode(&invoke_result[2]).unwrap();
+    let (system_token, _bucket): (ResourceAddress, Option<Bucket>) =
+        scrypto_decode(&invoke_result[3]).unwrap();
+    let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) =
+        scrypto_decode(&invoke_result[4]).unwrap();
+    let faucet_component: ComponentAddress = scrypto_decode(&invoke_result[6]).unwrap();
+    let epoch_manager: SystemAddress = scrypto_decode(&invoke_result[7]).unwrap();
+    let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) =
+        scrypto_decode(&invoke_result[8]).unwrap();
+
+    GenesisReceipt {
+        faucet_package,
+        account_package,
+        ecdsa_secp256k1_token,
+        system_token,
+        xrd_token,
+        faucet_component,
+        epoch_manager,
+        eddsa_ed25519_token,
+    }
+}
+
+pub fn bootstrap<S>(substate_store: &mut S) -> Option<TransactionReceipt>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore + 'static,
+    S: ReadableSubstateStore + WriteableSubstateStore,
 {
     if substate_store
-        .get_substate(&SubstateId::Package(SYSTEM_PACKAGE))
+        .get_substate(&SubstateId(
+            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+        ))
         .is_none()
     {
-        let track = Track::new(&substate_store);
-        let receipt = create_genesis(track);
-        receipt.state_updates.commit(&mut substate_store);
+        let mut scrypto_interpreter = ScryptoInterpreter {
+            wasm_engine: DefaultWasmEngine::new(),
+            wasm_instrumenter: WasmInstrumenter::new(),
+            wasm_metering_params: WasmMeteringParams::new(
+                InstructionCostRules::tiered(1, 5, 10, 5000),
+                512,
+            ),
+            phantom: PhantomData,
+        };
+
+        let mut executor = TransactionExecutor::new(substate_store, &mut scrypto_interpreter);
+        let genesis_transaction = create_genesis();
+        let executable: Executable = genesis_transaction.into();
+        let mut fee_reserve = SystemLoanFeeReserve::default();
+        fee_reserve.credit(GENESIS_CREATION_CREDIT);
+        let transaction_receipt = executor.execute_with_fee_reserve(
+            &executable,
+            &ExecutionConfig::standard(),
+            fee_reserve,
+        );
+        let commit_result = transaction_receipt.clone().result.expect_commit();
+        commit_result.outcome.expect_success();
+        commit_result.state_updates.commit(substate_store);
+
+        Some(transaction_receipt)
+    } else {
+        None
     }
-    substate_store
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::constants::GENESIS_CREATION_CREDIT;
+    use crate::engine::ScryptoInterpreter;
+    use crate::fee::SystemLoanFeeReserve;
+    use crate::ledger::bootstrap::{create_genesis, genesis_result};
+    use crate::ledger::TypedInMemorySubstateStore;
+    use crate::transaction::{ExecutionConfig, TransactionExecutor};
+    use crate::wasm::{
+        DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams,
+    };
+    use scrypto::constants::*;
+    use std::marker::PhantomData;
+    use transaction::model::Executable;
+
+    #[test]
+    fn bootstrap_receipt_should_match_constants() {
+        let wasm_engine = DefaultWasmEngine::new();
+        let wasm_instrumenter = WasmInstrumenter::new();
+        let wasm_metering_params =
+            WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512);
+        let mut scrypto_interpreter = ScryptoInterpreter {
+            wasm_engine,
+            wasm_instrumenter,
+            wasm_metering_params,
+            phantom: PhantomData,
+        };
+        let mut substate_store = TypedInMemorySubstateStore::new();
+        let genesis_transaction = create_genesis();
+        let mut executor = TransactionExecutor::new(&mut substate_store, &mut scrypto_interpreter);
+        let executable: Executable = genesis_transaction.into();
+        let mut fee_reserve = SystemLoanFeeReserve::default();
+        fee_reserve.credit(GENESIS_CREATION_CREDIT);
+
+        let transaction_receipt = executor.execute_with_fee_reserve(
+            &executable,
+            &ExecutionConfig::standard(),
+            fee_reserve,
+        );
+
+        let commit_result = transaction_receipt.result.expect_commit();
+        let invoke_result = commit_result.outcome.expect_success();
+        let genesis_receipt = genesis_result(&invoke_result);
+
+        assert_eq!(genesis_receipt.faucet_package, SYS_FAUCET_PACKAGE);
+        assert_eq!(genesis_receipt.account_package, ACCOUNT_PACKAGE);
+        assert_eq!(genesis_receipt.ecdsa_secp256k1_token, ECDSA_SECP256K1_TOKEN);
+        assert_eq!(genesis_receipt.system_token, SYSTEM_TOKEN);
+        assert_eq!(genesis_receipt.xrd_token, RADIX_TOKEN);
+        assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
+        assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
+        assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
+    }
 }

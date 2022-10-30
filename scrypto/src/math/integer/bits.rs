@@ -1,11 +1,9 @@
 use super::*;
-use crate::scrypto::{forward_ref_binop, forward_ref_op_assign};
-use paste::paste;
 
-pub trait PrimIntExt<T> {
+pub trait PrimIntExt {
     type Output;
-    fn rotate_left(self, other: T) -> Self;
-    fn rotate_right(self, other: T) -> Self;
+    fn rotate_left(self, other: Self) -> Self;
+    fn rotate_right(self, other: Self) -> Self;
 }
 
 macro_rules! checked_int_impl_large {
@@ -22,7 +20,7 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "let n = " $t "::tfrom(0b01001100u8);"]
+                    #[doc = "let n = " $t "::by(0b01001100u8);"]
                     ///
                     /// assert_eq!(n.count_ones(), 3);
                     /// ```
@@ -48,7 +46,7 @@ macro_rules! checked_int_impl_large {
                     #[doc = "use scrypto::prelude::*;"]
                     ///
                     #[doc = concat!("assert_eq!(", stringify!($t),
-                        "::tfrom(0i8).count_zeros(), ", stringify!(<$t>::BITS), ");")]
+                        "::by(0i8).count_zeros(), ", stringify!(<$t>::BITS), ");")]
                     /// ```
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
@@ -69,7 +67,7 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "let n = I8::tfrom(0b0101000u8);"]
+                    #[doc = "let n = I8::by(0b0101000u8);"]
                     ///
                     /// assert_eq!(n.trailing_zeros(), 3);
                     /// ```
@@ -100,13 +98,13 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "let n: I16  = I16::tfrom(0b0000000_01010101i16);"]
-                    #[doc = "assert_eq!(n, I16::tfrom(85));"]
+                    #[doc = "let n: I16  = I16::by(0b0000000_01010101i16);"]
+                    #[doc = "assert_eq!(n, I16::by(85));"]
                     ///
                     /// let m = n.swap_bytes();
                     ///
-                    #[doc = "assert_eq!(m, I16::tfrom(0b01010101_00000000i16));"]
-                    #[doc = "assert_eq!(m, I16::tfrom(21760i16));"]
+                    #[doc = "assert_eq!(m, I16::by(0b01010101_00000000i16));"]
+                    #[doc = "assert_eq!(m, I16::by(21760i16));"]
                     /// ```
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
@@ -127,13 +125,13 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "let n: I16  = I16::tfrom(0b0000000_01010101i16);"]
-                    #[doc = "assert_eq!(n, I16::tfrom(85i16));"]
+                    #[doc = "let n: I16  = I16::by(0b0000000_01010101i16);"]
+                    #[doc = "assert_eq!(n, I16::by(85i16));"]
                     ///
                     /// let m = n.reverse_bits();
                     ///
                     /// assert_eq!(m.0 as u16, 0b10101010_00000000);
-                    #[doc = "assert_eq!(m, I16::tfrom(-22016i16));"]
+                    #[doc = "assert_eq!(m, I16::by(-22016i16));"]
                     /// ```
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
@@ -179,7 +177,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n = " $t "::tfrom(0b01001100u8);"]
+                #[doc = "let n = " $t "::by(0b01001100u8);"]
                 ///
                 /// assert_eq!(n.count_ones(), 3);
                 /// ```
@@ -204,7 +202,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "assert_eq!(I8::tfrom(0i8).count_zeros(), 8);"]
+                #[doc = "assert_eq!(I8::by(0i8).count_zeros(), 8);"]
                 /// ```
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
@@ -225,7 +223,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n = I8::tfrom(0b0101000u8);"]
+                #[doc = "let n = I8::by(0b0101000u8);"]
                 ///
                 /// assert_eq!(n.trailing_zeros(), 3);
                 /// ```
@@ -248,13 +246,13 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n: I16  = I16::tfrom(0b0000000_01010101i16);"]
-                #[doc = "assert_eq!(n, I16::tfrom(85));"]
+                #[doc = "let n: I16  = I16::by(0b0000000_01010101i16);"]
+                #[doc = "assert_eq!(n, I16::by(85));"]
                 ///
                 /// let m = n.swap_bytes();
                 ///
-                #[doc = "assert_eq!(m, I16::tfrom(0b01010101_00000000i16));"]
-                #[doc = "assert_eq!(m, I16::tfrom(21760i16));"]
+                #[doc = "assert_eq!(m, I16::by(0b01010101_00000000i16));"]
+                #[doc = "assert_eq!(m, I16::by(21760i16));"]
                 /// ```
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
@@ -275,13 +273,13 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n: I16  = I16::tfrom(0b0000000_01010101i16);"]
-                #[doc = "assert_eq!(n, I16::tfrom(85i16));"]
+                #[doc = "let n: I16  = I16::by(0b0000000_01010101i16);"]
+                #[doc = "assert_eq!(n, I16::by(85i16));"]
                 ///
                 /// let m = n.reverse_bits();
                 ///
                 /// assert_eq!(m.0 as u16, 0b10101010_00000000);
-                #[doc = "assert_eq!(m, I16::tfrom(-22016i16));"]
+                #[doc = "assert_eq!(m, I16::by(-22016i16));"]
                 /// ```
                 #[must_use = "this returns the result of the operation, \
                 without modifying the original"]
@@ -305,7 +303,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n = " $t "::tfrom(0x1Ai8);"]
+                #[doc = "let n = " $t "::by(0x1Ai8);"]
                 ///
                 /// if cfg!(target_endian = "big") {
                 #[doc = "    assert_eq!(" $t "::from_be(n), n)"]
@@ -338,7 +336,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n = " $t "::tfrom(0x1Ai8);"]
+                #[doc = "let n = " $t "::by(0x1Ai8);"]
                 ///
                 /// if cfg!(target_endian = "little") {
                 #[doc = "    assert_eq!(" $t "::from_le(n), n)"]
@@ -371,7 +369,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n = " $t "::tfrom(0x1Ai8);"]
+                #[doc = "let n = " $t "::by(0x1Ai8);"]
                 ///
                 /// if cfg!(target_endian = "big") {
                 ///     assert_eq!(n.to_be(), n)
@@ -405,7 +403,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n = " $t "::tfrom(0x1Ai8);"]
+                #[doc = "let n = " $t "::by(0x1Ai8);"]
                 ///
                 /// if cfg!(target_endian = "little") {
                 ///     assert_eq!(n.to_le(), n)
@@ -441,68 +439,62 @@ macro_rules! checked_int_impl_small {
 checked_int_impl_small! { I8, I16, I32, I64, I128, U8, U16, U32, U64, U128 }
 
 macro_rules! checked_impl {
-        ($t:ty, ($($o:ty),*)) => {
+        ($($t:ty),*) => {
             paste! {
                 $(
-                    impl BitXor<$o> for $t {
-                        type Output = $t;
+                    impl BitXor for $t {
+                        type Output = Self;
 
                         #[inline]
-                        fn bitxor(self, other: $o) -> $t {
+                        fn bitxor(self, other: Self) -> $t {
                             BigInt::from(self).bitxor(&BigInt::from(other)).try_into().unwrap()
                         }
                     }
-                    forward_ref_binop! { impl BitXor, bitxor for $t, $o }
 
-                    impl BitXorAssign<$o> for $t {
+                    impl BitXorAssign for $t {
                         #[inline]
-                        fn bitxor_assign(&mut self, other: $o) {
+                        fn bitxor_assign(&mut self, other: Self) {
                             *self = (*self ^ other).try_into().unwrap();
                         }
                     }
-                    forward_ref_op_assign! { impl BitXorAssign, bitxor_assign for $t, $o }
 
-                    impl BitOr<$o> for $t {
-                        type Output = $t;
+                    impl BitOr for $t {
+                        type Output = Self;
 
                         #[inline]
-                        fn bitor(self, other: $o) -> $t {
+                        fn bitor(self, other: Self) -> $t {
                             BigInt::from(self).bitor(&BigInt::from(other)).try_into().unwrap()
                         }
                     }
-                    forward_ref_binop! { impl BitOr, bitor for $t, $o }
 
-                    impl BitOrAssign<$o> for $t {
+                    impl BitOrAssign for $t {
                         #[inline]
-                        fn bitor_assign(&mut self, other: $o) {
+                        fn bitor_assign(&mut self, other: Self) {
                             *self = (*self | other).try_into().unwrap();
                         }
                     }
-                    forward_ref_op_assign! { impl BitOrAssign, bitor_assign for $t, $o }
 
-                    impl BitAnd<$o> for $t {
-                        type Output = $t;
+                    impl BitAnd for $t {
+                        type Output = Self;
 
                         #[inline]
-                        fn bitand(self, other: $o) -> $t {
+                        fn bitand(self, other: Self) -> $t {
                             BigInt::from(self).bitand(&BigInt::from(other)).try_into().unwrap()
                         }
                     }
-                    forward_ref_binop! { impl BitAnd, bitand for $t, $o }
 
-                    impl BitAndAssign<$o> for $t {
+                    impl BitAndAssign for $t {
                         #[inline]
-                        fn bitand_assign(&mut self, other: $o) {
+                        fn bitand_assign(&mut self, other: Self) {
                             *self = (*self & other).try_into().unwrap();
                         }
                     }
-                    forward_ref_op_assign! { impl BitAndAssign, bitand_assign for $t, $o }
 
-                    impl Shl<$o> for $t {
-                        type Output = $t;
+                    impl Shl for $t {
+                        type Output = Self;
 
                         #[inline]
-                        fn shl(self, other: $o) -> $t {
+                        fn shl(self, other: Self) -> $t {
                             if other > <$t>::BITS.try_into().unwrap() {
                                 panic!("overflow");
                             }
@@ -544,21 +536,19 @@ macro_rules! checked_impl {
                         }
                     }
 
-                    forward_ref_binop! { impl Shl, shl for $t, $o }
 
-                    impl ShlAssign<$o> for $t {
+                    impl ShlAssign for $t {
                         #[inline]
-                        fn shl_assign(&mut self, other: $o) {
+                        fn shl_assign(&mut self, other: Self) {
                             *self = *self << other;
                         }
                     }
-                    forward_ref_op_assign! { impl ShlAssign, shl_assign for $t, $o }
 
-                    impl Shr<$o> for $t {
-                        type Output = $t;
+                    impl Shr for $t {
+                        type Output = Self;
 
                         #[inline]
-                        fn shr(self, other: $o) -> $t {
+                        fn shr(self, other: Self) -> $t {
                             if other > <$t>::BITS.try_into().unwrap() {
                                 panic!("overflow");
                             }
@@ -569,17 +559,15 @@ macro_rules! checked_impl {
                                 .unwrap()
                         }
                     }
-                    forward_ref_binop! { impl Shr, shr for $t, $o }
 
-                    impl ShrAssign<$o> for $t {
+                    impl ShrAssign for $t {
                         #[inline]
-                        fn shr_assign(&mut self, other: $o) {
+                        fn shr_assign(&mut self, other: Self) {
                             *self = *self >> other;
                         }
                     }
-            forward_ref_op_assign! { impl ShrAssign, shr_assign for $t, $o }
-                    impl PrimIntExt<$o> for $t {
-                        type Output = $t;
+                    impl PrimIntExt for $t {
+                        type Output = Self;
                         /// Shifts the bits to the left by a specified amount, `n`,
                         /// wrapping the truncated bits to the end of the resulting
                         /// integer.
@@ -593,7 +581,7 @@ macro_rules! checked_impl {
                         #[inline]
                         #[must_use = "this returns the result of the operation, \
                               without modifying the original"]
-                        fn rotate_left(self, other: $o) -> Self {
+                        fn rotate_left(self, other: Self) -> Self {
                             let rot: u32 = (BigInt::from(other) % Self::BITS).to_u32().unwrap();
                             let big: BigInt = BigInt::from(self);
                             let big_rot = big.clone().shl(rot);
@@ -610,7 +598,7 @@ macro_rules! checked_impl {
                         #[inline]
                         #[must_use = "this returns the result of the operation, \
                               without modifying the original"]
-                        fn rotate_right(self, other: $o) -> Self {
+                        fn rotate_right(self, other: Self) -> Self {
                             let rot: u32 = (BigInt::from(other) % Self::BITS).to_u32().unwrap();
                             let big: BigInt = BigInt::from(self);
                             let big_rot = big.clone().shr(rot);
@@ -626,7 +614,7 @@ macro_rules! checked_impl {
 macro_rules! checked_impl_all {
     ($($t:ident),*) => {
         $(
-            checked_impl! { $t, (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, U8, U16, U32, U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
+            checked_impl! { $t }
         )*
     }
 }

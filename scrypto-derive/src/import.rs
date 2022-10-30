@@ -64,7 +64,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
             fns.push(parse_quote! {
                 pub fn #func_indent(#(#func_args: #func_types),*) -> #func_output {
                     ::scrypto::core::Runtime::call_function(
-                        ::scrypto::component::PackageAddress::from_str(#package_address).unwrap(),
+                        ::scrypto::component::PackageAddress::try_from_hex(#package_address).unwrap(),
                         #blueprint_name,
                         #func_name,
                         ::scrypto::args!(#(#func_args),*)
@@ -168,7 +168,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                         #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                         pub struct #ident (
                             #( pub #types ),*
-                        )
+                        );
                     });
                 }
                 des::Fields::Unit => {
@@ -315,27 +315,16 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 ScryptoType::ComponentAddress => "::scrypto::component::ComponentAddress",
                 ScryptoType::Component => "::scrypto::component::Component",
                 ScryptoType::KeyValueStore => "::scrypto::component::KeyValueStore",
+                ScryptoType::SystemAddress => "::scrypto::core::SystemAddress",
                 ScryptoType::Hash => "::scrypto::crypto::Hash",
-                ScryptoType::EcdsaPublicKey => "::scrypto::crypto::EcdsaPublicKey",
-                ScryptoType::EcdsaSignature => "::scrypto::crypto::EcdsaSignature",
-                ScryptoType::Ed25519PublicKey => "::scrypto::crypto::Ed25519PublicKey",
-                ScryptoType::Ed25519Signature => "::scrypto::crypto::Ed25519Signature",
-                ScryptoType::U8 => "::scrypto::math::U8",
-                ScryptoType::U16 => "::scrypto::math::U16",
-                ScryptoType::U32 => "::scrypto::math::U32",
-                ScryptoType::U64 => "::scrypto::math::U64",
-                ScryptoType::U128 => "::scrypto::math::U128",
-                ScryptoType::U256 => "::scrypto::math::U256",
-                ScryptoType::U384 => "::scrypto::math::U384",
-                ScryptoType::U512 => "::scrypto::math::U512",
-                ScryptoType::I8 => "::scrypto::math::I8",
-                ScryptoType::I16 => "::scrypto::math::I16",
-                ScryptoType::I32 => "::scrypto::math::I32",
-                ScryptoType::I64 => "::scrypto::math::I64",
-                ScryptoType::I128 => "::scrypto::math::I128",
-                ScryptoType::I256 => "::scrypto::math::I256",
-                ScryptoType::I384 => "::scrypto::math::I384",
-                ScryptoType::I512 => "::scrypto::math::I512",
+                ScryptoType::EcdsaSecp256k1PublicKey => {
+                    "::scrypto::crypto::EcdsaSecp256k1PublicKey"
+                }
+                ScryptoType::EcdsaSecp256k1Signature => {
+                    "::scrypto::crypto::EcdsaSecp256k1Signature"
+                }
+                ScryptoType::EddsaEd25519PublicKey => "::scrypto::crypto::EddsaEd25519PublicKey",
+                ScryptoType::EddsaEd25519Signature => "::scrypto::crypto::EddsaEd25519Signature",
                 ScryptoType::Decimal => "::scrypto::math::Decimal",
                 ScryptoType::PreciseDecimal => "::scrypto::math::PreciseDecimal",
                 ScryptoType::Bucket => "::scrypto::resource::Bucket",
@@ -344,6 +333,8 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 ScryptoType::NonFungibleId => "::scrypto::resource::NonFungibleId",
                 ScryptoType::NonFungibleAddress => "::scrypto::resource::NonFungibleAddress",
                 ScryptoType::ResourceAddress => "::scrypto::resource::ResourceAddress",
+                ScryptoType::Expression => "::scrypto::core::Expression",
+                ScryptoType::Blob => "::scrypto::core::Blob",
             };
 
             let ty: Type = parse_str(canonical_name).unwrap();
@@ -447,7 +438,7 @@ mod tests {
                 impl Simple {
                     pub fn new() -> ::scrypto::component::ComponentAddress {
                         ::scrypto::core::Runtime::call_function(
-                            ::scrypto::component::PackageAddress::from_str("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7").unwrap(),
+                            ::scrypto::component::PackageAddress::try_from_hex("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7").unwrap(),
                             "Simple",
                             "new",
                             ::scrypto::args!()
@@ -475,5 +466,156 @@ mod tests {
                 }
             },
         );
+    }
+
+    #[test]
+    fn test_failing_import() {
+        let input = TokenStream::from_str(
+            r###"
+                r#"
+                {
+                    "package_address": "package_sim1q8m9uvrm78frmk8xt4pjc8nuqmsqrad982v7lwh443dq8nwh0j",
+                    "blueprint_name": "ComponentAddressRepo",
+                    "abi": {
+                      "structure": {
+                        "type": "Struct",
+                        "name": "ComponentAddressRepo",
+                        "fields": {
+                          "type": "Named",
+                          "named": [
+                            [
+                              "components_by_id",
+                              {
+                                "type": "HashMap",
+                                "key": {
+                                  "type": "Custom",
+                                  "type_id": 180,
+                                  "generics": []
+                                },
+                                "value": {
+                                  "type": "Custom",
+                                  "type_id": 129,
+                                  "generics": []
+                                }
+                              }
+                            ],
+                            [
+                              "ids_by_component",
+                              {
+                                "type": "HashMap",
+                                "key": {
+                                  "type": "Custom",
+                                  "type_id": 129,
+                                  "generics": []
+                                },
+                                "value": {
+                                  "type": "Custom",
+                                  "type_id": 180,
+                                  "generics": []
+                                }
+                              }
+                            ]
+                          ]
+                        }
+                      },
+                      "fns": [
+                        {
+                          "ident": "instantiate_global",
+                          "mutability": null,
+                          "input": {
+                            "type": "Struct",
+                            "name": "ComponentAddressRepo_instantiate_global_Input",
+                            "fields": {
+                              "type": "Named",
+                              "named": []
+                            }
+                          },
+                          "output": {
+                            "type": "Custom",
+                            "type_id": 129,
+                            "generics": []
+                          },
+                          "export_name": "ComponentAddressRepo_instantiate_global"
+                        },
+                        {
+                          "ident": "lookup_address",
+                          "mutability": "Immutable",
+                          "input": {
+                            "type": "Struct",
+                            "name": "ComponentAddressRepo_lookup_address_Input",
+                            "fields": {
+                              "type": "Named",
+                              "named": [
+                                [
+                                  "arg0",
+                                  {
+                                    "type": "Struct",
+                                    "name": "ComponentAddressLookup",
+                                    "fields": {
+                                      "type": "Unnamed",
+                                      "unnamed": [
+                                        {
+                                          "type": "Custom",
+                                          "type_id": 180,
+                                          "generics": []
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              ]
+                            }
+                          },
+                          "output": {
+                            "type": "Custom",
+                            "type_id": 129,
+                            "generics": []
+                          },
+                          "export_name": "ComponentAddressRepo_lookup_address"
+                        },
+                        {
+                          "ident": "create_lookup",
+                          "mutability": "Mutable",
+                          "input": {
+                            "type": "Struct",
+                            "name": "ComponentAddressRepo_create_lookup_Input",
+                            "fields": {
+                              "type": "Named",
+                              "named": [
+                                [
+                                  "arg0",
+                                  {
+                                    "type": "Custom",
+                                    "type_id": 129,
+                                    "generics": []
+                                  }
+                                ]
+                              ]
+                            }
+                          },
+                          "output": {
+                            "type": "Struct",
+                            "name": "ComponentAddressLookup",
+                            "fields": {
+                              "type": "Unnamed",
+                              "unnamed": [
+                                {
+                                  "type": "Custom",
+                                  "type_id": 180,
+                                  "generics": []
+                                }
+                              ]
+                            }
+                          },
+                          "export_name": "ComponentAddressRepo_create_lookup"
+                        }
+                      ]
+                    }
+                  }
+                "#
+            "###,
+        )
+        .unwrap();
+        handle_import(input).unwrap();
     }
 }

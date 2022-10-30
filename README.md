@@ -9,16 +9,23 @@ Documentation: https://docs.radixdlt.com/main/scrypto/introduction.html
 ## Installation
 
 1. Install Rust - this requires Rust 1.60+ (if rust is already installed, upgrade with `rustup update`)
-   * Windows:
-       * Download and install [`rustup-init.exe`](https://win.rustup.rs/x86_64)
-       * Install "Desktop development with C++" with [Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16)
-       * Install [LLVM 13.0.1](https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/LLVM-13.0.1-win64.exe) (make sure you tick the option that adds LLVM to the system PATH)
-   * Linux and macOS:
-       * Make sure a C++ compiler and LLVM is installed (`sudo apt install build-essential llvm` with Ubuntu)
-       * Install Rust compiler
-       ```
-       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-       ```
+    * Windows:
+        * Download and install [`rustup-init.exe`](https://win.rustup.rs/x86_64)
+        * Install "Desktop development with C++" with [Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16)
+        * Install [LLVM 13.0.1](https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/LLVM-13.0.1-win64.exe) (make sure you tick the option that adds LLVM to the system PATH)
+    *  macOS:
+        * Make sure you have the xcode command line tools: `xcode-select --install`.
+        * Install cmake: `brew install cmake`
+        * Install the Rust compiler: 
+        ```bash
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+        ```
+    * Linux:
+        * Make sure a C++ compiler and LLVM is installed (`sudo apt install build-essential llvm`).
+        * Install the Rust compiler:
+        ```bash
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+        ```
 2. Enable `cargo` in the current shell:
    * Windows:
        * Start a new PowerShell

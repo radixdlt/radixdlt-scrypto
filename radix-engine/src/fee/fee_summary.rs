@@ -1,11 +1,7 @@
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
-use scrypto::engine::types::*;
+use crate::model::Resource;
+use crate::types::*;
 
-use crate::model::ResourceContainer;
-
-#[derive(Debug)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct FeeSummary {
     /// Whether the system loan is fully repaid
     pub loan_fully_repaid: bool,
@@ -22,7 +18,7 @@ pub struct FeeSummary {
     /// The total amount of XRD tipped to validators.
     pub tipped: Decimal,
     /// The fee payments
-    pub payments: Vec<(VaultId, ResourceContainer, bool)>,
+    pub payments: Vec<(VaultId, Resource, bool)>,
     /// The cost breakdown
-    pub cost_breakdown: BTreeMap<String, u32>,
+    pub cost_breakdown: HashMap<String, u32>,
 }

@@ -24,6 +24,10 @@ pub use wasm_validator::*;
 
 #[cfg(feature = "wasmer")]
 pub type DefaultWasmEngine = WasmerEngine;
+#[cfg(feature = "wasmer")]
+pub type DefaultWasmInstance = WasmerInstance;
 
 #[cfg(not(feature = "wasmer"))]
 pub type DefaultWasmEngine = WasmiEngine;
+#[cfg(not(feature = "wasmer"))]
+pub type DefaultWasmInstance = WasmiInstance;

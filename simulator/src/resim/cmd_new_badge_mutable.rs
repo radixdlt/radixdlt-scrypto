@@ -1,7 +1,5 @@
 use clap::Parser;
-use sbor::rust::collections::*;
-use scrypto::core::Network;
-use scrypto::engine::types::*;
+use radix_engine::types::*;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -10,7 +8,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct NewBadgeMutable {
     /// The minter resource address
-    minter_resource_address: ResourceAddress,
+    minter_resource_address: SimulatorResourceAddress,
 
     /// The symbol
     #[clap(long)]
@@ -31,6 +29,10 @@ pub struct NewBadgeMutable {
     /// The ICON url
     #[clap(long)]
     icon_url: Option<String>,
+
+    /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
+    #[clap(short, long)]
+    network: Option<String>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
@@ -64,15 +66,15 @@ impl NewBadgeMutable {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
-            .new_badge_mutable(metadata, self.minter_resource_address)
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(100.into(), FAUCET_COMPONENT)
+            .new_badge_mutable(metadata, self.minter_resource_address.0)
             .build();
         handle_manifest(
             manifest,
             &self.signing_keys,
+            &self.network,
             &self.manifest,
-            false,
             self.trace,
             true,
             out,

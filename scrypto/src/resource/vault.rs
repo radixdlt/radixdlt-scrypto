@@ -3,20 +3,18 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::engine::types::GlobalAddress;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::core::Receiver;
 use crate::crypto::*;
-use crate::engine::types::RENodeId;
-use crate::engine::{api::*, call_engine, types::VaultId};
+use crate::engine::{api::*, types::*, utils::*};
 use crate::math::*;
 use crate::misc::*;
+use crate::native_methods;
 use crate::resource::*;
-use crate::sfunctions;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultPutInput {
@@ -67,9 +65,9 @@ pub struct Vault(pub VaultId);
 impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(resource_address)),
-            "create_vault".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault),
+            RENodeId::Global(GlobalAddress::Resource(resource_address)),
             scrypto_encode(&ResourceManagerCreateVaultInput {}),
         );
         call_engine(input)
@@ -83,67 +81,75 @@ impl Vault {
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Bucket {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::Vault(self.0)),
-            "take".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::Vault(VaultMethod::Take),
+            RENodeId::Vault(self.0),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
     }
 
     fn lock_fee_internal(&mut self, amount: Decimal) {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::Vault(self.0)),
-            "lock_fee".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::Vault(VaultMethod::LockFee),
+            RENodeId::Vault(self.0),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
     }
 
     fn lock_contingent_fee_internal(&mut self, amount: Decimal) {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::Vault(self.0)),
-            "lock_contingent_fee".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::Vault(VaultMethod::LockContingentFee),
+            RENodeId::Vault(self.0),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
     }
 
-    sfunctions! {
-        Receiver::NativeRENodeRef(RENodeId::Vault(self.0)) => {
+    native_methods! {
+        RENodeId::Vault(self.0), NativeMethod::Vault => {
             pub fn put(&mut self, bucket: Bucket) -> () {
+                VaultMethod::Put,
                 VaultPutInput {
                     bucket
                 }
             }
 
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
+                VaultMethod::TakeNonFungibles,
                 VaultTakeNonFungiblesInput {
                     non_fungible_ids: non_fungible_ids.clone(),
                 }
             }
 
             pub fn amount(&self) -> Decimal {
+                VaultMethod::GetAmount,
                 VaultGetAmountInput {}
             }
 
             pub fn resource_address(&self) -> ResourceAddress {
+                VaultMethod::GetResourceAddress,
                 VaultGetResourceAddressInput {}
             }
 
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+                VaultMethod::GetNonFungibleIds,
                 VaultGetNonFungibleIdsInput {}
             }
 
             pub fn create_proof(&self) -> Proof {
+                VaultMethod::CreateProof,
                 VaultCreateProofInput {}
             }
 
             pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
+                VaultMethod::CreateProofByAmount,
                 VaultCreateProofByAmountInput { amount }
             }
 
             pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
+                VaultMethod::CreateProofByIds,
                 VaultCreateProofByIdsInput { ids: ids.clone() }
             }
         }
@@ -205,6 +211,18 @@ impl Vault {
             .iter()
             .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
             .collect()
+    }
+
+    /// Returns a singleton non-fungible id
+    ///
+    /// # Panics
+    /// Panics if this is not a singleton bucket
+    pub fn non_fungible_id(&self) -> NonFungibleId {
+        let non_fungible_ids = self.non_fungible_ids();
+        if non_fungible_ids.len() != 1 {
+            panic!("Expecting singleton NFT vault");
+        }
+        self.non_fungible_ids().into_iter().next().unwrap()
     }
 
     /// Returns a singleton non-fungible.

@@ -1,13 +1,12 @@
+use crate::abi::BlueprintAbi;
 use crate::buffer::*;
-use crate::component::package::Package;
 use crate::component::*;
-use crate::core::{Runtime, TypeName};
-use crate::engine::types::RENodeId;
-use crate::engine::{api::*, call_engine};
-use crate::prelude::ScryptoRENode;
-use sbor::rust::borrow::ToOwned;
+use crate::core::Runtime;
+use crate::engine::{api::*, types::*, utils::*};
 use sbor::rust::collections::*;
+use sbor::rust::string::String;
 use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 
 /// Represents the Radix Engine component subsystem.
 ///
@@ -19,7 +18,7 @@ use sbor::rust::string::ToString;
 /// TODO: add mutex/lock for non-WebAssembly target
 pub struct ComponentSystem {
     packages: HashMap<PackageAddress, BorrowedPackage>,
-    components: HashMap<ComponentAddress, Component>,
+    components: HashMap<ComponentAddress, BorrowedGlobalComponent>,
 }
 
 impl ComponentSystem {
@@ -39,20 +38,22 @@ impl ComponentSystem {
     }
 
     /// Returns a reference to a component.
-    pub fn get_component(&mut self, component_address: ComponentAddress) -> &Component {
+    pub fn get_component(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> &BorrowedGlobalComponent {
         self.components
             .entry(component_address)
-            .or_insert(Component(component_address))
+            .or_insert(BorrowedGlobalComponent(component_address))
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, package: Package) -> PackageAddress {
-        let input = RadixEngineInput::InvokeFunction(
-            TypeName::Package,
-            "publish".to_string(),
-            scrypto_encode(&PackagePublishInput { package }),
-        );
-        call_engine(input)
+    pub fn publish_package(
+        &mut self,
+        _code: Vec<u8>,
+        _abi: HashMap<String, BlueprintAbi>,
+    ) -> PackageAddress {
+        todo!("Not supported yet due to lack of dynamic blob creation")
     }
 
     /// Instantiates a component.
@@ -61,9 +62,9 @@ impl ComponentSystem {
         blueprint_name: &str,
         state: T,
     ) -> Component {
-        let input = RadixEngineInput::RENodeCreate(ScryptoRENode::Component(
+        let input = RadixEngineInput::CreateNode(ScryptoRENode::Component(
             Runtime::package_address(),
-            blueprint_name.to_owned(),
+            blueprint_name.to_string(),
             scrypto_encode(&state),
         ));
         let node_id: RENodeId = call_engine(input);
@@ -110,25 +111,28 @@ mod tests {
     fn test_component_macro() {
         init_component_system(ComponentSystem::new());
 
-        let component = borrow_component!(ComponentAddress([0u8; 27]));
-        let component_same_id = borrow_component!(ComponentAddress([0u8; 27]));
-        let component_different_id = borrow_component!(ComponentAddress([1u8; 27]));
+        let component = borrow_component!(ComponentAddress::Normal([0u8; 26]));
+        let component_same_id = borrow_component!(ComponentAddress::Normal([0u8; 26]));
+        let component_different_id = borrow_component!(ComponentAddress::Normal([1u8; 26]));
 
-        assert_eq!(ComponentAddress([0u8; 27]), component.0);
-        assert_eq!(ComponentAddress([0u8; 27]), component_same_id.0);
-        assert_eq!(ComponentAddress([1u8; 27]), component_different_id.0);
+        assert_eq!(ComponentAddress::Normal([0u8; 26]), component.0);
+        assert_eq!(ComponentAddress::Normal([0u8; 26]), component_same_id.0);
+        assert_eq!(
+            ComponentAddress::Normal([1u8; 26]),
+            component_different_id.0
+        );
     }
 
     #[test]
     fn test_package_macro() {
         init_component_system(ComponentSystem::new());
 
-        let package = borrow_package!(PackageAddress([0u8; 27]));
-        let package_same_id = borrow_package!(PackageAddress([0u8; 27]));
-        let package_different_id = borrow_package!(PackageAddress([1u8; 27]));
+        let package = borrow_package!(PackageAddress::Normal([0u8; 26]));
+        let package_same_id = borrow_package!(PackageAddress::Normal([0u8; 26]));
+        let package_different_id = borrow_package!(PackageAddress::Normal([1u8; 26]));
 
-        assert_eq!(PackageAddress([0u8; 27]), package.0);
-        assert_eq!(PackageAddress([0u8; 27]), package_same_id.0);
-        assert_eq!(PackageAddress([1u8; 27]), package_different_id.0);
+        assert_eq!(PackageAddress::Normal([0u8; 26]), package.0);
+        assert_eq!(PackageAddress::Normal([0u8; 26]), package_same_id.0);
+        assert_eq!(PackageAddress::Normal([1u8; 26]), package_different_id.0);
     }
 }

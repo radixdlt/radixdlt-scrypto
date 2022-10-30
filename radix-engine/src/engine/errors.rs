@@ -1,164 +1,197 @@
-use crate::engine::REActor;
-use sbor::rust::boxed::Box;
-use sbor::rust::fmt;
-use sbor::rust::string::String;
-use sbor::{DecodeError, Value};
-use scrypto::engine::types::*;
+use sbor::*;
 use transaction::errors::*;
 
-use crate::fee::FeeReserveError;
+use crate::engine::{ExecutionMode, LockFlags, REActor};
 use crate::model::*;
-use crate::wasm::InvokeError;
+use crate::types::*;
+use crate::wasm::WasmError;
+
+use super::AuthError;
+use super::CostingError;
+use super::ExecutionTraceError;
+use super::TrackError;
+
+/// Represents an error which causes a tranasction to be rejected.
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+pub enum RejectionError {
+    SuccessButFeeLoanNotRepaid,
+    ErrorBeforeFeeLoanRepaid(RuntimeError),
+}
+
+impl fmt::Display for RejectionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 
 /// Represents an error when executing a transaction.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum RuntimeError {
-    /// Error when invoking a blueprint or component (recursive).
-    InvokeError(Box<InvokeError>),
+    /// An error occurred within the kernel.
+    KernelError(KernelError),
 
-    /// The data is not a valid SBOR value.
-    DecodeError(DecodeError),
+    /// An error occurred within call frame.
+    CallFrameError(CallFrameError),
 
-    AuthZoneDoesNotExist,
+    /// An error occurred within an interpreter
+    InterpreterError(InterpreterError),
 
-    WorktopDoesNotExist,
+    /// An error occurred within a kernel module.
+    ModuleError(ModuleError),
 
-    /// Failed to allocate an ID.
+    /// An error occurred within application logic, like the RE models.
+    ApplicationError(ApplicationError),
+}
+
+impl From<KernelError> for RuntimeError {
+    fn from(error: KernelError) -> Self {
+        RuntimeError::KernelError(error)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum KernelError {
+    InvalidModeTransition(ExecutionMode, ExecutionMode),
+
+    // invocation
+    WasmError(WasmError),
+
+    InvalidReferencePass(GlobalAddress),
+    InvalidReferenceReturn(GlobalAddress),
+    InvalidReferenceWrite(GlobalAddress),
+    GlobalAddressNotFound(GlobalAddress),
+
+    MaxCallDepthLimitReached,
+    InvalidScryptoFnOutput,
+    MethodReceiverNotMatch(NativeMethod, RENodeId),
+
+    // ID allocation
     IdAllocationError(IdAllocationError),
 
-    /// Invalid request code.
-    MethodDoesNotExist(String),
-    InvalidFnInput {
-        fn_ident: String,
-    },
-    InvalidFnOutput {
-        fn_ident: String,
-        output: Value,
-    },
+    // SBOR decoding
+    DecodeError(DecodeError),
 
-    /// Package does not exist.
-    PackageNotFound(PackageAddress),
-    InvalidPackage(DecodeError),
+    // RENode
+    StoredNodeRemoved(RENodeId),
+    RENodeGlobalizeTypeNotAllowed(RENodeId),
+    TrackError(TrackError),
+    LockDoesNotExist(LockHandle),
+    LockNotMutable(LockHandle),
+    BlobNotFound(Hash),
+    DropNodeFailure(RENodeId),
+
+    // Substate Constraints
+    InvalidOffset(SubstateOffset),
+    InvalidOwnership(SubstateOffset, RENodeId),
+    InvalidOverwrite,
+
+    // Actor Constraints
+    InvalidDropNodeVisibility {
+        mode: ExecutionMode,
+        actor: REActor,
+        node_id: RENodeId,
+    },
+    InvalidCreateNodeVisibility {
+        mode: ExecutionMode,
+        actor: REActor,
+    },
+    InvalidSubstateVisibility {
+        mode: ExecutionMode,
+        actor: REActor,
+        node_id: RENodeId,
+        offset: SubstateOffset,
+        flags: LockFlags,
+    },
+    CantMoveDownstream(RENodeId),
+    CantMoveUpstream(RENodeId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum CallFrameError {
+    OffsetDoesNotExist(RENodeId, SubstateOffset),
+    RENodeNotVisible(RENodeId),
+    RENodeNotOwned(RENodeId),
+    MovingLockedRENode(RENodeId),
+}
+
+impl From<CallFrameError> for RuntimeError {
+    fn from(error: CallFrameError) -> Self {
+        RuntimeError::CallFrameError(error)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum ScryptoFnResolvingError {
+    BlueprintNotFound,
+    FunctionNotFound,
+    MethodNotFound,
+    InvalidInput,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum InterpreterError {
+    InvalidScryptoFunctionInvocation(ScryptoFunctionIdent, ScryptoFnResolvingError),
+    InvalidScryptoMethodInvocation(ScryptoMethodIdent, ScryptoFnResolvingError),
+    InvalidNativeFunctionIdent(NativeFunctionIdent),
+    InvalidNativeMethodIdent(NativeMethodIdent),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum ModuleError {
+    AuthError(AuthError),
+    CostingError(CostingError),
+    ExecutionTraceError(ExecutionTraceError),
+}
+
+impl Into<ModuleError> for AuthError {
+    fn into(self) -> ModuleError {
+        ModuleError::AuthError(self)
+    }
+}
+
+#[derive(Debug)]
+pub enum InvokeError<E> {
+    Error(E),
+    Downstream(RuntimeError),
+}
+
+impl<E> From<RuntimeError> for InvokeError<E> {
+    fn from(runtime_error: RuntimeError) -> Self {
+        InvokeError::Downstream(runtime_error)
+    }
+}
+
+impl<E> InvokeError<E> {
+    pub fn error(error: E) -> Self {
+        InvokeError::Error(error)
+    }
+
+    pub fn downstream(runtime_error: RuntimeError) -> Self {
+        InvokeError::Downstream(runtime_error)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+pub enum ApplicationError {
+    TransactionProcessorError(TransactionProcessorError),
 
     PackageError(PackageError),
 
-    SystemError(SystemError),
+    EpochManagerError(EpochManagerError),
 
-    /// Blueprint does not exist.
-    BlueprintNotFound(PackageAddress, String),
-
-    Reentrancy(SubstateId),
-    ComponentReentrancy(ComponentAddress),
-    PackageReentrancy,
-
-    /// Component does not exist.
-    ComponentNotFound(ComponentAddress),
-
-    ComponentDecodeError(DecodeError),
-
-    /// Resource manager does not exist.
-    ResourceManagerNotFound(ResourceAddress),
-
-    SubstateReadNotReadable(REActor, SubstateId),
-    SubstateWriteNotWriteable(REActor, SubstateId),
-    SubstateReadSubstateNotFound(SubstateId),
-    RENodeNotFound(RENodeId),
-
-    MovingInvalidType,
-    StoredNodeRemoved(RENodeId),
-    StoredNodeChangedChildren,
-
-    /// Bucket does not exist.
-    BucketNotFound(BucketId),
-
-    /// Proof does not exist.
-    ProofNotFound(ProofId),
-
-    /// Resource manager access error.
     ResourceManagerError(ResourceManagerError),
+
     ComponentError(ComponentError),
 
-    /// Bucket access error.
     BucketError(BucketError),
 
-    /// Vault access error.
-    VaultError(VaultError),
-
-    /// Worktop access error.
-    WorktopError(WorktopError),
-
-    /// Error when generating or accessing proof.
     ProofError(ProofError),
 
-    ValueNotAllowed,
+    VaultError(VaultError),
 
-    /// Bucket is not allowed.
-    BucketNotAllowed,
+    WorktopError(WorktopError),
 
-    /// Proof is not allowed.
-    ProofNotAllowed,
-
-    /// Vault is not allowed
-    VaultNotAllowed,
-
-    /// Key Value store is not allowed
-    KeyValueStoreNotAllowed,
-
-    /// Resource check failure.
-    DropFailure(DropFailure),
-
-    /// AuthZone error
     AuthZoneError(AuthZoneError),
-
-    /// System Authorization Failure
-    AuthorizationError {
-        function: String,
-        authorization: MethodAuthorization,
-        error: MethodAuthorizationError,
-    },
-
-    /// Can't move a locked bucket.
-    CantMoveLockedBucket,
-
-    /// Can't move restricted proof.
-    CantMoveRestrictedProof,
-
-    RENodeGlobalizeTypeNotAllowed(RENodeId),
-    RENodeCreateInvalidPermission,
-    RENodeCreateNodeNotFound(RENodeId),
-
-    InvokeMethodInvalidReceiver(RENodeId),
-    InvokeMethodInvalidReferencePass(RENodeId),
-    InvokeMethodInvalidReferenceReturn(RENodeId),
-
-    NotSupported,
-
-    CostingError(FeeReserveError),
-
-    MaxCallDepthLimitReached,
-
-    LockFeeError(LockFeeError),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum LockFeeError {
-    RENodeNotInTrack,
-    RENodeAlreadyTouched,
-    RENodeNotFound,
-    NotRadixToken,
-    InsufficientBalance,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum DropFailure {
-    System,
-    Resource,
-    Component,
-    Bucket,
-    Worktop,
-    Vault,
-    Package,
-    KeyValueStore,
 }
 
 impl fmt::Display for RuntimeError {

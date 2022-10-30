@@ -1,37 +1,39 @@
 use crate::ExpectedResult::{InvalidInput, InvalidOutput, Success};
-use radix_engine::engine::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::engine::{
+    ApplicationError, InterpreterError, KernelError, RuntimeError, ScryptoFnResolvingError,
+};
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::ComponentError;
-use scrypto::core::Network;
-use scrypto::prelude::*;
-use scrypto::to_struct;
+use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
 fn test_invalid_access_rule_methods() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("abi");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "AbiComponent",
             "create_invalid_abi_component",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ComponentError(ComponentError::BlueprintFunctionDoesNotExist(..))
+            RuntimeError::ApplicationError(ApplicationError::ComponentError(
+                ComponentError::BlueprintFunctionNotFound(..)
+            ))
         )
     })
 }
@@ -42,29 +44,44 @@ enum ExpectedResult {
     InvalidOutput,
 }
 
-fn test_arg(method_name: &str, arg: Vec<u8>, expected_result: ExpectedResult) {
+fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("abi");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "AbiComponent2", method_name, arg)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .call_function(package_address, "AbiComponent2", method_name, args)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     match expected_result {
-        ExpectedResult::Success => {
-            receipt.expect_success();
+        Success => {
+            receipt.expect_commit_success();
         }
-        ExpectedResult::InvalidInput => {
-            receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidFnInput { .. }));
+        InvalidInput => {
+            receipt.expect_specific_failure(|e| {
+                matches!(
+                    e,
+                    RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoFunctionInvocation(
+                            _,
+                            ScryptoFnResolvingError::InvalidInput
+                        )
+                    )
+                )
+            });
         }
-        ExpectedResult::InvalidOutput => {
-            receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidFnOutput { .. }));
+        InvalidOutput => {
+            receipt.expect_specific_failure(|e| {
+                matches!(
+                    e,
+                    RuntimeError::KernelError(KernelError::InvalidScryptoFnOutput { .. })
+                )
+            });
         }
     }
 }

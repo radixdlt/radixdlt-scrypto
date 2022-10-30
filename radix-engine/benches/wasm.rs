@@ -1,15 +1,15 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::model::extract_package;
+use radix_engine::model::extract_abi;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmEngine;
 use radix_engine::wasm::WasmValidator;
 
 fn bench_wasm_validation(c: &mut Criterion) {
     let code = include_bytes!("../../assets/account.wasm");
-    let package = extract_package(code.to_vec()).unwrap();
+    let abi = extract_abi(code).unwrap();
 
     c.bench_function("WASM validation", |b| {
-        b.iter(|| WasmValidator::default().validate(&package.code, &package.blueprints))
+        b.iter(|| WasmValidator::default().validate(code, &abi))
     });
 }
 

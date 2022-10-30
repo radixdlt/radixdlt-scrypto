@@ -1,7 +1,6 @@
 use clap::Parser;
-use sbor::rust::collections::*;
-use scrypto::core::Network;
-use scrypto::engine::types::*;
+use radix_engine::types::*;
+use scrypto::prelude::Expression;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -31,6 +30,10 @@ pub struct NewBadgeFixed {
     /// The ICON url
     #[clap(long)]
     icon_url: Option<String>,
+
+    /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
+    #[clap(short, long)]
+    network: Option<String>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
@@ -65,16 +68,20 @@ impl NewBadgeFixed {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(100.into(), FAUCET_COMPONENT)
             .new_badge_fixed(metadata, self.total_supply)
-            .call_method_with_all_resources(default_account, "deposit_batch")
+            .call_method(
+                default_account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
             .build();
         handle_manifest(
             manifest,
             &self.signing_keys,
+            &self.network,
             &self.manifest,
-            false,
             self.trace,
             true,
             out,

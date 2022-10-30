@@ -1,15 +1,18 @@
-use radix_engine::ledger::InMemorySubstateStore;
-use scrypto::core::Network;
-use scrypto::prelude::*;
+use radix_engine::ledger::TypedInMemorySubstateStore;
+use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
 
 fn self_transfer_txn(account: ComponentAddress, amount: Decimal) -> TransactionManifest {
-    ManifestBuilder::new(Network::LocalSimulator)
+    ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account)
         .withdraw_from_account_by_amount(amount, RADIX_TOKEN, account)
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build()
 }
 
@@ -17,34 +20,37 @@ fn self_transfer_txn(account: ComponentAddress, amount: Decimal) -> TransactionM
 fn batched_executions_should_result_in_the_same_result() {
     // Arrange
     // These runners should mirror each other
-    let mut store0 = InMemorySubstateStore::with_bootstrap();
+    let mut store0 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner0 = TestRunner::new(true, &mut store0);
-    let (public_key, _, account) = test_runner0.new_account();
-    let mut manifests = Vec::new();
-    for amount in 0..10 {
+    let (public_key, _, account) = test_runner0.new_allocated_account();
+    let mut manifests = Vec::<(TransactionManifest, Vec<NonFungibleAddress>)>::new();
+    for amount in 0u32..10u32 {
         let manifest = self_transfer_txn(account, Decimal::from(amount));
-        manifests.push((manifest, vec![public_key]));
+        manifests.push((
+            manifest,
+            vec![NonFungibleAddress::from_public_key(&public_key)],
+        ));
     }
 
-    let mut store1 = InMemorySubstateStore::with_bootstrap();
+    let mut store1 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner1 = TestRunner::new(true, &mut store1);
-    let _ = test_runner1.new_account();
-    let mut store2 = InMemorySubstateStore::with_bootstrap();
+    let _ = test_runner1.new_allocated_account();
+    let mut store2 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner2 = TestRunner::new(true, &mut store2);
-    let _ = test_runner2.new_account();
-    let mut store3 = InMemorySubstateStore::with_bootstrap();
+    let _ = test_runner2.new_allocated_account();
+    let mut store3 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner3 = TestRunner::new(true, &mut store3);
-    let _ = test_runner3.new_account();
-    let mut store4 = InMemorySubstateStore::with_bootstrap();
+    let _ = test_runner3.new_allocated_account();
+    let mut store4 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner4 = TestRunner::new(true, &mut store4);
-    let _ = test_runner4.new_account();
+    let _ = test_runner4.new_allocated_account();
 
     // Act
 
     // Test Runner 0: One by One
     for (manifest, signers) in &manifests {
         let receipt = test_runner0.execute_manifest(manifest.clone(), signers.clone());
-        receipt.expect_success();
+        receipt.expect_commit_success();
     }
 
     // Test Runner 1: Batch

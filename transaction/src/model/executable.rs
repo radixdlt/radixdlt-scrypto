@@ -1,105 +1,72 @@
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::*;
-use scrypto::core::Network;
+use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::*;
-use scrypto::engine::types::*;
+use scrypto::resource::{NonFungibleAddress, ResourceAddress};
+pub use std::collections::BTreeSet;
 
-/// Represents an instruction that can be executed by Radix Engine.
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum ExecutableInstruction {
-    TakeFromWorktop {
-        resource_address: ResourceAddress,
-    },
-    TakeFromWorktopByAmount {
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    },
-    TakeFromWorktopByIds {
-        ids: BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    },
-    ReturnToWorktop {
-        bucket_id: BucketId,
-    },
-    AssertWorktopContains {
-        resource_address: ResourceAddress,
-    },
-    AssertWorktopContainsByAmount {
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    },
-    AssertWorktopContainsByIds {
-        ids: BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    },
-    PopFromAuthZone,
-    PushToAuthZone {
-        proof_id: ProofId,
-    },
-    ClearAuthZone,
-    CreateProofFromAuthZone {
-        resource_address: ResourceAddress,
-    },
-    CreateProofFromAuthZoneByAmount {
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    },
-    CreateProofFromAuthZoneByIds {
-        ids: BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    },
-    CreateProofFromBucket {
-        bucket_id: BucketId,
-    },
-    CloneProof {
-        proof_id: ProofId,
-    },
-    DropProof {
-        proof_id: ProofId,
-    },
-    DropAllProofs,
-    CallFunction {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        method_name: String,
-        arg: Vec<u8>,
-    },
-    CallMethod {
-        component_address: ComponentAddress,
-        method_name: String,
-        arg: Vec<u8>,
-    },
-    CallMethodWithAllResources {
-        component_address: ComponentAddress,
-        method: String,
-    },
-    PublishPackage {
-        package: Vec<u8>,
-    },
+use crate::model::*;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AuthZoneParams {
+    pub initial_proofs: Vec<NonFungibleAddress>,
+    pub virtualizable_proofs_resource_addresses: BTreeSet<ResourceAddress>,
 }
 
-/// A common trait for all transactions that can be executed by Radix Engine.
-pub trait ExecutableTransaction {
-    /// Returns the transaction hash, which must be globally unique.
-    fn transaction_hash(&self) -> Hash;
+/// Represents a validated transaction
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Executable {
+    pub transaction_hash: Hash,
+    pub instructions: Vec<Instruction>,
+    pub auth_zone_params: AuthZoneParams,
+    pub cost_unit_limit: u32,
+    pub tip_percentage: u32,
+    pub blobs: Vec<Vec<u8>>,
+}
 
-    /// Returns the transaction network
-    fn transaction_network(&self) -> Network;
+impl Executable {
+    pub fn new(
+        transaction_hash: Hash,
+        instructions: Vec<Instruction>,
+        auth_zone_params: AuthZoneParams,
+        cost_unit_limit: u32,
+        tip_percentage: u32,
+        blobs: Vec<Vec<u8>>,
+    ) -> Self {
+        Self {
+            transaction_hash,
+            instructions,
+            auth_zone_params,
+            cost_unit_limit,
+            tip_percentage,
+            blobs,
+        }
+    }
 
-    /// Returns the transaction payload size.
-    fn transaction_payload_size(&self) -> u32;
+    pub fn transaction_hash(&self) -> Hash {
+        self.transaction_hash
+    }
 
-    /// Returns the limit of cost units consumable
-    fn cost_unit_limit(&self) -> u32;
+    pub fn manifest_instructions_size(&self) -> u32 {
+        scrypto_encode(&self.instructions).len() as u32
+    }
 
-    /// Returns the tip percentage
-    fn tip_percentage(&self) -> u32;
+    pub fn cost_unit_limit(&self) -> u32 {
+        self.cost_unit_limit
+    }
 
-    /// Returns the instructions to execute.
-    fn instructions(&self) -> &[ExecutableInstruction];
+    pub fn tip_percentage(&self) -> u32 {
+        self.tip_percentage
+    }
 
-    /// Returns the public key of signers.
-    fn signer_public_keys(&self) -> &[EcdsaPublicKey];
+    pub fn instructions(&self) -> &[Instruction] {
+        &self.instructions
+    }
+
+    pub fn auth_zone_params(&self) -> AuthZoneParams {
+        self.auth_zone_params.clone()
+    }
+
+    pub fn blobs(&self) -> &[Vec<u8>] {
+        &self.blobs
+    }
 }

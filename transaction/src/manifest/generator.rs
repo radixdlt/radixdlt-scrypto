@@ -5,9 +5,19 @@ use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
+use scrypto::buffer::{scrypto_decode, scrypto_encode};
+use scrypto::component::ComponentAddress;
+use scrypto::component::PackageAddress;
+use scrypto::core::{Blob, Expression, SystemAddress};
+use scrypto::crypto::*;
 use scrypto::engine::types::*;
+use scrypto::math::*;
+use scrypto::resource::{
+    MintParams, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerBurnInput,
+    ResourceManagerCreateInput, ResourceManagerMintInput,
+};
 use scrypto::values::*;
-use scrypto::vec_to_struct;
+use scrypto::{args, args_from_value_vec};
 
 use crate::errors::*;
 use crate::manifest::ast;
@@ -25,17 +35,27 @@ pub enum GeneratorError {
         actual: ast::Value,
     },
     InvalidPackageAddress(String),
+    InvalidSystemAddress(String),
     InvalidComponentAddress(String),
     InvalidResourceAddress(String),
     InvalidDecimal(String),
+    InvalidPreciseDecimal(String),
     InvalidHash(String),
+    InvalidNodeId(String),
     InvalidKeyValueStoreId(String),
     InvalidVaultId(String),
     InvalidNonFungibleId(String),
     InvalidNonFungibleAddress(String),
+    InvalidExpression(String),
+    BlobNotFound(String),
     OddNumberOfElements(usize),
     NameResolverError(NameResolverError),
     IdValidationError(IdValidationError),
+    InvalidBlobHash,
+    ArgumentsDoNotMatchAbi,
+    UnknownNativeFunction(String, String),
+    UnknownMethod(String),
+    InvalidGlobal(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -102,6 +122,7 @@ impl NameResolver {
 pub fn generate_manifest(
     instructions: &[ast::Instruction],
     bech32_decoder: &Bech32Decoder,
+    blobs: HashMap<Hash, Vec<u8>>,
 ) -> Result<TransactionManifest, GeneratorError> {
     let mut id_validator = IdValidator::new();
     let mut name_resolver = NameResolver::new();
@@ -113,11 +134,13 @@ pub fn generate_manifest(
             &mut id_validator,
             &mut name_resolver,
             bech32_decoder,
+            &blobs,
         )?);
     }
 
     Ok(TransactionManifest {
         instructions: output,
+        blobs: blobs.into_values().collect(),
     })
 }
 
@@ -126,6 +149,7 @@ pub fn generate_instruction(
     id_validator: &mut IdValidator,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
+    blobs: &HashMap<Hash, Vec<u8>>,
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
@@ -294,10 +318,13 @@ pub fn generate_instruction(
         ast::Instruction::CallFunction {
             package_address,
             blueprint_name,
-            function,
+            function_name,
             args,
         } => {
-            let args = generate_args(args, resolver, bech32_decoder)?;
+            let package_address = generate_package_address(package_address, bech32_decoder)?;
+            let blueprint_name = generate_string(&blueprint_name)?;
+            let function_name = generate_string(&function_name)?;
+            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             let mut fields = Vec::new();
             for arg in &args {
                 let validated_arg = ScryptoValue::from_slice(arg).unwrap();
@@ -308,18 +335,22 @@ pub fn generate_instruction(
             }
 
             Instruction::CallFunction {
-                package_address: generate_package_address(package_address, bech32_decoder)?,
-                blueprint_name: generate_string(blueprint_name)?,
-                method_name: generate_string(function)?,
-                arg: vec_to_struct!(fields),
+                function_ident: ScryptoFunctionIdent {
+                    package: ScryptoPackage::Global(package_address),
+                    blueprint_name,
+                    function_name,
+                },
+                args: args_from_value_vec!(fields),
             }
         }
         ast::Instruction::CallMethod {
-            component_address,
+            receiver,
             method,
             args,
         } => {
-            let args = generate_args(args, resolver, bech32_decoder)?;
+            let receiver = generate_scrypto_receiver(receiver, bech32_decoder)?;
+            let method_name = generate_string(&method)?;
+            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             let mut fields = Vec::new();
             for arg in &args {
                 let validated_arg = ScryptoValue::from_slice(arg).unwrap();
@@ -330,26 +361,135 @@ pub fn generate_instruction(
             }
 
             Instruction::CallMethod {
-                component_address: generate_component_address(component_address, bech32_decoder)?,
-                method_name: generate_string(method)?,
-                arg: vec_to_struct!(fields),
+                method_ident: ScryptoMethodIdent {
+                    receiver,
+                    method_name,
+                },
+                args: args_from_value_vec!(fields),
             }
         }
-        ast::Instruction::CallMethodWithAllResources {
-            component_address,
-            method,
+        ast::Instruction::CallNativeFunction {
+            blueprint_name,
+            function_name,
+            args,
         } => {
-            id_validator
-                .move_all_buckets()
-                .map_err(GeneratorError::IdValidationError)?;
-            Instruction::CallMethodWithAllResources {
-                component_address: generate_component_address(component_address, bech32_decoder)?,
-                method: generate_string(method)?,
+            let blueprint_name = generate_string(&blueprint_name)?;
+            let function_name = generate_string(&function_name)?;
+            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
+            let mut fields = Vec::new();
+            for arg in &args {
+                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
+                id_validator
+                    .move_resources(&validated_arg)
+                    .map_err(GeneratorError::IdValidationError)?;
+                fields.push(validated_arg.dom);
+            }
+
+            Instruction::CallNativeFunction {
+                function_ident: NativeFunctionIdent {
+                    blueprint_name,
+                    function_name,
+                },
+                args: args_from_value_vec!(fields),
             }
         }
-        ast::Instruction::PublishPackage { package } => Instruction::PublishPackage {
-            package: generate_bytes(package)?,
+        ast::Instruction::CallNativeMethod {
+            receiver,
+            method,
+            args,
+        } => {
+            let receiver = generate_receiver(receiver, bech32_decoder, resolver)?;
+            let method_name = generate_string(&method)?;
+            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
+            let mut fields = Vec::new();
+            for arg in &args {
+                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
+                id_validator
+                    .move_resources(&validated_arg)
+                    .map_err(GeneratorError::IdValidationError)?;
+                fields.push(validated_arg.dom);
+            }
+
+            Instruction::CallNativeMethod {
+                method_ident: NativeMethodIdent {
+                    receiver,
+                    method_name,
+                },
+                args: args_from_value_vec!(fields),
+            }
+        }
+
+        ast::Instruction::PublishPackage { code, abi } => Instruction::PublishPackage {
+            code: generate_blob(code, blobs)?,
+            abi: generate_blob(abi, blobs)?,
         },
+        ast::Instruction::CreateResource {
+            resource_type,
+            metadata,
+            access_rules,
+            mint_params,
+        } => {
+            // Generates call data
+            let mut args = Vec::new();
+            for arg in [
+                generate_value(resource_type, None, resolver, bech32_decoder, blobs)?,
+                generate_value(metadata, None, resolver, bech32_decoder, blobs)?,
+                generate_value(access_rules, None, resolver, bech32_decoder, blobs)?,
+                generate_value(mint_params, None, resolver, bech32_decoder, blobs)?,
+            ] {
+                let validated_arg = ScryptoValue::from_value(arg)
+                    .expect("Failed to convert value into ScryptoValue");
+                id_validator
+                    .move_resources(&validated_arg)
+                    .map_err(GeneratorError::IdValidationError)?;
+                args.push(validated_arg.dom);
+            }
+            let args = args_from_value_vec!(args);
+
+            // Check if call data matches ABI
+            if scrypto_decode::<ResourceManagerCreateInput>(&args).is_err() {
+                return Err(GeneratorError::ArgumentsDoNotMatchAbi);
+            }
+
+            Instruction::CallNativeFunction {
+                function_ident: NativeFunctionIdent {
+                    blueprint_name: "ResourceManager".to_owned(),
+                    function_name: ResourceManagerFunction::Create.to_string(),
+                },
+                args,
+            }
+        }
+        ast::Instruction::BurnBucket { bucket } => {
+            let bucket_id = generate_bucket(bucket, resolver)?;
+            Instruction::CallNativeFunction {
+                function_ident: NativeFunctionIdent {
+                    blueprint_name: "ResourceManager".to_owned(),
+                    function_name: ResourceManagerFunction::BurnBucket.to_string(),
+                },
+                args: scrypto_encode(&ResourceManagerBurnInput {
+                    bucket: scrypto::resource::Bucket(bucket_id),
+                }),
+            }
+        }
+        ast::Instruction::MintFungible {
+            resource_address,
+            amount,
+        } => {
+            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
+            let input = ResourceManagerMintInput {
+                mint_params: MintParams::Fungible {
+                    amount: generate_decimal(amount)?,
+                },
+            };
+
+            Instruction::CallNativeMethod {
+                method_ident: NativeMethodIdent {
+                    receiver: RENodeId::Global(GlobalAddress::Resource(resource_address)),
+                    method_name: ResourceManagerMethod::Mint.to_string(),
+                },
+                args: args!(input),
+            }
+        }
     })
 }
 
@@ -367,10 +507,11 @@ fn generate_args(
     values: &Vec<ast::Value>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
+    blobs: &HashMap<Hash, Vec<u8>>,
 ) -> Result<Vec<Vec<u8>>, GeneratorError> {
     let mut result = Vec::new();
     for v in values {
-        let value = generate_value(v, None, resolver, bech32_decoder)?;
+        let value = generate_value(v, None, resolver, bech32_decoder, blobs)?;
 
         result.push(encode_any(&value));
     }
@@ -380,38 +521,7 @@ fn generate_args(
 fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
     match value {
         ast::Value::String(s) => Ok(s.into()),
-        v @ _ => invalid_type!(v, ast::Type::String),
-    }
-}
-
-fn generate_bytes(value: &ast::Value) -> Result<Vec<u8>, GeneratorError> {
-    match value {
-        ast::Value::Bytes(bytes) => Ok(bytes.clone()),
-        ast::Value::List(ty, values) => {
-            if ty == &ast::Type::U8 {
-                let mut result = Vec::new();
-                for v in values {
-                    match v {
-                        ast::Value::U8(num) => {
-                            result.push(*num);
-                        }
-                        _ => {
-                            return Err(GeneratorError::InvalidValue {
-                                expected_type: vec![ast::Type::U8],
-                                actual: v.clone(),
-                            })
-                        }
-                    }
-                }
-                Ok(result)
-            } else {
-                Err(GeneratorError::InvalidType {
-                    expected_type: ast::Type::U8,
-                    actual: *ty,
-                })
-            }
-        }
-        v @ _ => invalid_type!(v, ast::Type::List, ast::Type::Bytes),
+        v => invalid_type!(v, ast::Type::String),
     }
 }
 
@@ -421,9 +531,20 @@ fn generate_decimal(value: &ast::Value) -> Result<Decimal, GeneratorError> {
             ast::Value::String(s) => {
                 Decimal::from_str(s).map_err(|_| GeneratorError::InvalidDecimal(s.into()))
             }
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Decimal),
+        v => invalid_type!(v, ast::Type::Decimal),
+    }
+}
+
+fn generate_precise_decimal(value: &ast::Value) -> Result<PreciseDecimal, GeneratorError> {
+    match value {
+        ast::Value::PreciseDecimal(inner) => match &**inner {
+            ast::Value::String(s) => PreciseDecimal::from_str(s)
+                .map_err(|_| GeneratorError::InvalidPreciseDecimal(s.into())),
+            v => invalid_type!(v, ast::Type::String),
+        },
+        v => invalid_type!(v, ast::Type::Decimal),
     }
 }
 
@@ -436,9 +557,24 @@ fn generate_package_address(
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_package_address(s)
                 .map_err(|_| GeneratorError::InvalidPackageAddress(s.into())),
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::PackageAddress),
+        v => invalid_type!(v, ast::Type::PackageAddress),
+    }
+}
+
+fn generate_system_address(
+    value: &ast::Value,
+    bech32_decoder: &Bech32Decoder,
+) -> Result<SystemAddress, GeneratorError> {
+    match value {
+        ast::Value::SystemAddress(inner) => match &**inner {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_system_address(s)
+                .map_err(|_| GeneratorError::InvalidSystemAddress(s.into())),
+            v => invalid_type!(v, ast::Type::String),
+        },
+        v => invalid_type!(v, ast::Type::SystemAddress),
     }
 }
 
@@ -451,9 +587,9 @@ fn generate_component_address(
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_component_address(s)
                 .map_err(|_| GeneratorError::InvalidComponentAddress(s.into())),
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::ComponentAddress),
+        v => invalid_type!(v, ast::Type::ComponentAddress),
     }
 }
 
@@ -466,9 +602,123 @@ fn generate_resource_address(
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_resource_address(s)
                 .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::ResourceAddress),
+        v => invalid_type!(v, ast::Type::ResourceAddress),
+    }
+}
+
+fn generate_scrypto_receiver(
+    receiver: &ast::ScryptoReceiver,
+    bech32_decoder: &Bech32Decoder,
+) -> Result<ScryptoReceiver, GeneratorError> {
+    match receiver {
+        ast::ScryptoReceiver::Global(v) => match v {
+            ast::Value::String(s) => Ok(ScryptoReceiver::Global(
+                bech32_decoder
+                    .validate_and_decode_component_address(&s)
+                    .map_err(|_| GeneratorError::InvalidResourceAddress(s.to_owned()))?,
+            )),
+            v => invalid_type!(v, ast::Type::String),
+        },
+        ast::ScryptoReceiver::Component(v) => Ok(ScryptoReceiver::Component(generate_node_id(v)?)),
+    }
+}
+
+fn generate_receiver(
+    receiver: &ast::Receiver,
+    bech32_decoder: &Bech32Decoder,
+    resolver: &mut NameResolver,
+) -> Result<RENodeId, GeneratorError> {
+    match receiver {
+        ast::Receiver::Ref(re_node) => Ok(generate_re_node_id(re_node, bech32_decoder, resolver)?),
+    }
+}
+
+fn generate_re_node_id(
+    re_node: &ast::RENode,
+    bech32_decoder: &Bech32Decoder,
+    resolver: &mut NameResolver,
+) -> Result<RENodeId, GeneratorError> {
+    match re_node {
+        ast::RENode::Bucket(value) => {
+            let bucket_id = match value {
+                ast::Value::U32(n) => Ok(*n),
+                ast::Value::String(s) => resolver
+                    .resolve_bucket(&s)
+                    .map_err(GeneratorError::NameResolverError),
+                v => invalid_type!(v, ast::Type::U32, ast::Type::String),
+            }?;
+
+            Ok(RENodeId::Bucket(bucket_id))
+        }
+        ast::RENode::Proof(value) => {
+            let bucket_id = match value {
+                ast::Value::U32(n) => Ok(*n),
+                ast::Value::String(s) => resolver
+                    .resolve_proof(&s)
+                    .map_err(GeneratorError::NameResolverError),
+                v => invalid_type!(v, ast::Type::U32, ast::Type::String),
+            }?;
+
+            Ok(RENodeId::Bucket(bucket_id))
+        }
+        ast::RENode::AuthZoneStack(value) => {
+            let auth_zone_id = match value {
+                ast::Value::U32(v) => Ok(*v),
+                v => invalid_type!(v, ast::Type::U32),
+            }?;
+            Ok(RENodeId::AuthZoneStack(auth_zone_id))
+        }
+        ast::RENode::Worktop => Ok(RENodeId::Worktop),
+        ast::RENode::KeyValueStore(node_id) => {
+            Ok(RENodeId::KeyValueStore(generate_node_id(node_id)?))
+        }
+        ast::RENode::NonFungibleStore(node_id) => {
+            Ok(RENodeId::NonFungibleStore(generate_node_id(node_id)?))
+        }
+        ast::RENode::Component(node_id) => Ok(RENodeId::Component(generate_node_id(node_id)?)),
+        ast::RENode::EpochManager(node_id) => {
+            Ok(RENodeId::EpochManager(generate_node_id(node_id)?))
+        }
+        ast::RENode::Vault(node_id) => Ok(RENodeId::Vault(generate_node_id(node_id)?)),
+        ast::RENode::ResourceManager(node_id) => {
+            Ok(RENodeId::ResourceManager(generate_node_id(node_id)?))
+        }
+        ast::RENode::Package(node_id) => Ok(RENodeId::Package(generate_node_id(node_id)?)),
+        ast::RENode::Global(value) => match value {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_package_address(s)
+                .map(|a| RENodeId::Global(GlobalAddress::Package(a)))
+                .or_else(|_| {
+                    bech32_decoder
+                        .validate_and_decode_component_address(s)
+                        .map(|a| RENodeId::Global(GlobalAddress::Component(a)))
+                })
+                .or_else(|_| {
+                    bech32_decoder
+                        .validate_and_decode_resource_address(s)
+                        .map(|a| RENodeId::Global(GlobalAddress::Resource(a)))
+                })
+                .map_err(|_| GeneratorError::InvalidGlobal(s.into())),
+            v => return invalid_type!(v, ast::Type::String),
+        },
+    }
+}
+
+fn generate_node_id(node_id: &ast::Value) -> Result<(Hash, u32), GeneratorError> {
+    match node_id {
+        ast::Value::String(s) => {
+            if s.len() != 2 * (Hash::LENGTH + 4) {
+                return Err(GeneratorError::InvalidNodeId(s.into()));
+            }
+            let hash = Hash::from_str(&s[0..Hash::LENGTH * 2])
+                .map_err(|_| GeneratorError::InvalidNodeId(s.into()))?;
+            let index = u32::from_str_radix(&s[Hash::LENGTH * 2..], 16)
+                .map_err(|_| GeneratorError::InvalidNodeId(s.into()))?;
+            Ok((hash, index))
+        }
+        v => invalid_type!(v, ast::Type::String),
     }
 }
 
@@ -478,9 +728,9 @@ fn generate_hash(value: &ast::Value) -> Result<Hash, GeneratorError> {
             ast::Value::String(s) => {
                 Hash::from_str(s).map_err(|_| GeneratorError::InvalidHash(s.into()))
             }
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Hash),
+        v => invalid_type!(v, ast::Type::Hash),
     }
 }
 
@@ -494,9 +744,9 @@ fn declare_bucket(
             ast::Value::String(name) => resolver
                 .insert_bucket(name.to_string(), bucket_id)
                 .map_err(GeneratorError::NameResolverError),
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Bucket),
+        v => invalid_type!(v, ast::Type::Bucket),
     }
 }
 
@@ -510,9 +760,9 @@ fn generate_bucket(
             ast::Value::String(s) => resolver
                 .resolve_bucket(&s)
                 .map_err(GeneratorError::NameResolverError),
-            v @ _ => invalid_type!(v, ast::Type::U32, ast::Type::String),
+            v => invalid_type!(v, ast::Type::U32, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Bucket),
+        v => invalid_type!(v, ast::Type::Bucket),
     }
 }
 
@@ -526,9 +776,9 @@ fn declare_proof(
             ast::Value::String(name) => resolver
                 .insert_proof(name.to_string(), proof_id)
                 .map_err(GeneratorError::NameResolverError),
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Proof),
+        v => invalid_type!(v, ast::Type::Proof),
     }
 }
 
@@ -542,9 +792,9 @@ fn generate_proof(
             ast::Value::String(s) => resolver
                 .resolve_proof(&s)
                 .map_err(GeneratorError::NameResolverError),
-            v @ _ => invalid_type!(v, ast::Type::U32, ast::Type::String),
+            v => invalid_type!(v, ast::Type::U32, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Proof),
+        v => invalid_type!(v, ast::Type::Proof),
     }
 }
 
@@ -553,9 +803,9 @@ fn generate_non_fungible_id(value: &ast::Value) -> Result<NonFungibleId, Generat
         ast::Value::NonFungibleId(inner) => match &**inner {
             ast::Value::String(s) => NonFungibleId::from_str(s)
                 .map_err(|_| GeneratorError::InvalidNonFungibleId(s.into())),
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::NonFungibleId),
+        v => invalid_type!(v, ast::Type::NonFungibleId),
     }
 }
 
@@ -564,9 +814,40 @@ fn generate_non_fungible_address(value: &ast::Value) -> Result<NonFungibleAddres
         ast::Value::NonFungibleAddress(inner) => match &**inner {
             ast::Value::String(s) => NonFungibleAddress::from_str(s)
                 .map_err(|_| GeneratorError::InvalidNonFungibleAddress(s.into())),
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::NonFungibleAddress),
+        v => invalid_type!(v, ast::Type::NonFungibleAddress),
+    }
+}
+
+fn generate_expression(value: &ast::Value) -> Result<Expression, GeneratorError> {
+    match value {
+        ast::Value::Expression(inner) => match &**inner {
+            ast::Value::String(s) => {
+                Expression::from_str(s).map_err(|_| GeneratorError::InvalidExpression(s.into()))
+            }
+            v => invalid_type!(v, ast::Type::String),
+        },
+        v => invalid_type!(v, ast::Type::Expression),
+    }
+}
+
+fn generate_blob(
+    value: &ast::Value,
+    blobs: &HashMap<Hash, Vec<u8>>,
+) -> Result<Blob, GeneratorError> {
+    match value {
+        ast::Value::Blob(inner) => match &**inner {
+            ast::Value::String(s) => {
+                let hash = Hash::from_str(s).map_err(|_| GeneratorError::InvalidBlobHash)?;
+                blobs
+                    .get(&hash)
+                    .ok_or(GeneratorError::BlobNotFound(s.clone()))?;
+                Ok(Blob(hash))
+            }
+            v => invalid_type!(v, ast::Type::String),
+        },
+        v => invalid_type!(v, ast::Type::Blob),
     }
 }
 
@@ -584,7 +865,7 @@ fn generate_non_fungible_ids(
 
             values.iter().map(|v| generate_non_fungible_id(v)).collect()
         }
-        v @ _ => invalid_type!(v, ast::Type::Set),
+        v => invalid_type!(v, ast::Type::Set),
     }
 }
 
@@ -593,6 +874,7 @@ fn generate_value(
     expected: Option<ast::Type>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
+    blobs: &HashMap<Hash, Vec<u8>>,
 ) -> Result<Value, GeneratorError> {
     if let Some(ty) = expected {
         if ty != value.kind() {
@@ -620,53 +902,109 @@ fn generate_value(
             value: value.clone(),
         }),
         ast::Value::Struct(fields) => Ok(Value::Struct {
-            fields: generate_singletons(fields, None, resolver, bech32_decoder)?,
+            fields: generate_singletons(fields, None, resolver, bech32_decoder, blobs)?,
         }),
         ast::Value::Enum(name, fields) => Ok(Value::Enum {
             name: name.clone(),
-            fields: generate_singletons(fields, None, resolver, bech32_decoder)?,
+            fields: generate_singletons(fields, None, resolver, bech32_decoder, blobs)?,
         }),
         ast::Value::Option(value) => match &**value {
             Some(inner) => Ok(Value::Option {
-                value: Some(generate_value(inner, None, resolver, bech32_decoder)?).into(),
+                value: Some(generate_value(
+                    inner,
+                    None,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?)
+                .into(),
             }),
             None => Ok(Value::Option { value: None.into() }),
         },
         ast::Value::Array(element_type, elements) => Ok(Value::Array {
             element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver, bech32_decoder)?,
+            elements: generate_singletons(
+                elements,
+                Some(*element_type),
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?,
         }),
         ast::Value::Tuple(elements) => Ok(Value::Tuple {
-            elements: generate_singletons(elements, None, resolver, bech32_decoder)?,
+            elements: generate_singletons(elements, None, resolver, bech32_decoder, blobs)?,
         }),
         ast::Value::Result(value) => match &**value {
             Ok(inner) => Ok(Value::Result {
-                value: Ok(generate_value(inner, None, resolver, bech32_decoder)?).into(),
+                value: Ok(generate_value(
+                    inner,
+                    None,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?)
+                .into(),
             }),
             Err(inner) => Ok(Value::Result {
-                value: Err(generate_value(inner, None, resolver, bech32_decoder)?).into(),
+                value: Err(generate_value(
+                    inner,
+                    None,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?)
+                .into(),
             }),
         },
         ast::Value::List(element_type, elements) => Ok(Value::List {
             element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver, bech32_decoder)?,
+            elements: generate_singletons(
+                elements,
+                Some(*element_type),
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?,
         }),
         ast::Value::Set(element_type, elements) => Ok(Value::Set {
             element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver, bech32_decoder)?,
+            elements: generate_singletons(
+                elements,
+                Some(*element_type),
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?,
         }),
         ast::Value::Map(key_type, value_type, elements) => Ok(Value::Map {
             key_type_id: generate_type_id(key_type),
             value_type_id: generate_type_id(value_type),
-            elements: generate_pairs(elements, *key_type, *value_type, resolver, bech32_decoder)?,
+            elements: generate_pairs(
+                elements,
+                *key_type,
+                *value_type,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?,
         }),
         ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
             type_id: ScryptoType::Decimal.id(),
             bytes: v.to_vec(),
         }),
+        ast::Value::PreciseDecimal(_) => generate_precise_decimal(value).map(|v| Value::Custom {
+            type_id: ScryptoType::PreciseDecimal.id(),
+            bytes: v.to_vec(),
+        }),
         ast::Value::PackageAddress(_) => {
             generate_package_address(value, bech32_decoder).map(|v| Value::Custom {
                 type_id: ScryptoType::PackageAddress.id(),
+                bytes: v.to_vec(),
+            })
+        }
+        ast::Value::SystemAddress(_) => {
+            generate_system_address(value, bech32_decoder).map(|v| Value::Custom {
+                type_id: ScryptoType::SystemAddress.id(),
                 bytes: v.to_vec(),
             })
         }
@@ -704,19 +1042,14 @@ fn generate_value(
                 bytes: v.to_vec(),
             })
         }
-        ast::Value::Bytes(_) => match value {
-            ast::Value::Bytes(bytes) => {
-                let mut elements = Vec::new();
-                for b in bytes {
-                    elements.push(Value::U8 { value: *b });
-                }
-                Ok(Value::List {
-                    element_type_id: TYPE_U8,
-                    elements,
-                })
-            }
-            v @ _ => invalid_type!(v, ast::Type::Bytes),
-        },
+        ast::Value::Expression(_) => generate_expression(value).map(|v| Value::Custom {
+            type_id: ScryptoType::Expression.id(),
+            bytes: v.to_vec(),
+        }),
+        ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| Value::Custom {
+            type_id: ScryptoType::Blob.id(),
+            bytes: v.to_vec(),
+        }),
     }
 }
 
@@ -725,10 +1058,17 @@ fn generate_singletons(
     ty: Option<ast::Type>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
+    blobs: &HashMap<Hash, Vec<u8>>,
 ) -> Result<Vec<Value>, GeneratorError> {
     let mut result = vec![];
     for element in elements {
-        result.push(generate_value(element, ty, resolver, bech32_decoder)?);
+        result.push(generate_value(
+            element,
+            ty,
+            resolver,
+            bech32_decoder,
+            blobs,
+        )?);
     }
     Ok(result)
 }
@@ -739,6 +1079,7 @@ fn generate_pairs(
     value_type: ast::Type,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
+    blobs: &HashMap<Hash, Vec<u8>>,
 ) -> Result<Vec<Value>, GeneratorError> {
     if elements.len() % 2 != 0 {
         return Err(GeneratorError::OddNumberOfElements(elements.len()));
@@ -750,12 +1091,14 @@ fn generate_pairs(
             Some(key_type),
             resolver,
             bech32_decoder,
+            blobs,
         )?);
         result.push(generate_value(
             &elements[2 * i + 1],
             Some(value_type),
             resolver,
             bech32_decoder,
+            blobs,
         )?);
     }
     Ok(result)
@@ -786,7 +1129,9 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::Set => TYPE_SET,
         ast::Type::Map => TYPE_MAP,
         ast::Type::Decimal => ScryptoType::Decimal.id(),
+        ast::Type::PreciseDecimal => ScryptoType::PreciseDecimal.id(),
         ast::Type::PackageAddress => ScryptoType::PackageAddress.id(),
+        ast::Type::SystemAddress => ScryptoType::SystemAddress.id(),
         ast::Type::ComponentAddress => ScryptoType::ComponentAddress.id(),
         ast::Type::ResourceAddress => ScryptoType::ResourceAddress.id(),
         ast::Type::Hash => ScryptoType::Hash.id(),
@@ -794,7 +1139,8 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::Proof => ScryptoType::Proof.id(),
         ast::Type::NonFungibleId => ScryptoType::NonFungibleId.id(),
         ast::Type::NonFungibleAddress => ScryptoType::NonFungibleAddress.id(),
-        ast::Type::Bytes => TYPE_LIST,
+        ast::Type::Expression => ScryptoType::Expression.id(),
+        ast::Type::Blob => ScryptoType::Blob.id(),
     }
 }
 
@@ -804,14 +1150,12 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use scrypto::address::Bech32Decoder;
-    use scrypto::buffer::scrypto_encode;
-    use scrypto::core::Network;
-    use scrypto::prelude::Package;
-    use scrypto::to_struct;
+    use scrypto::core::NetworkDefinition;
+    use scrypto::{args, pdec};
 
     #[macro_export]
     macro_rules! generate_value_ok {
-        ( $s:expr, $expected:expr ) => {{
+        ( $s:expr,   $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
             let mut resolver = NameResolver::new();
             assert_eq!(
@@ -819,7 +1163,8 @@ mod tests {
                     &value,
                     None,
                     &mut resolver,
-                    &Bech32Decoder::new_from_network(&Network::LocalSimulator)
+                    &Bech32Decoder::new(&NetworkDefinition::simulator()),
+                    &mut HashMap::new()
                 ),
                 Ok($expected)
             );
@@ -839,7 +1184,8 @@ mod tests {
                     &instruction,
                     &mut id_validator,
                     &mut resolver,
-                    &Bech32Decoder::new_from_network(&Network::LocalSimulator)
+                    &Bech32Decoder::new(&NetworkDefinition::simulator()),
+                    &mut HashMap::new()
                 ),
                 Ok($expected)
             );
@@ -854,7 +1200,8 @@ mod tests {
                 &value,
                 None,
                 &mut NameResolver::new(),
-                &Bech32Decoder::new_from_network(&Network::LocalSimulator),
+                &Bech32Decoder::new(&NetworkDefinition::simulator()),
+                &mut HashMap::new(),
             ) {
                 Ok(_) => {
                     panic!("Expected {:?} but no error is thrown", $expected);
@@ -988,6 +1335,13 @@ mod tests {
                 ]
             }
         );
+        generate_value_ok!(
+            r#"Expression("ENTIRE_WORKTOP")"#,
+            Value::Custom {
+                type_id: ScryptoType::Expression.id(),
+                bytes: scrypto::core::Expression("ENTIRE_WORKTOP".to_owned()).to_vec()
+            }
+        );
     }
 
     #[test]
@@ -1015,191 +1369,72 @@ mod tests {
 
     #[test]
     fn test_instructions() {
+        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
+        let component1 = bech32_decoder
+            .validate_and_decode_component_address(
+                "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum",
+            )
+            .unwrap();
+
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
-                resource_address: ResourceAddress::from_str(
-                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
-                )
-                .unwrap(),
+                resource_address: Bech32Decoder::for_simulator()
+                    .validate_and_decode_resource_address(
+                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
+                    )
+                    .unwrap(),
             }
         );
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
-                resource_address: ResourceAddress::from_str(
-                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
-                )
-                .unwrap(),
+                resource_address: Bech32Decoder::for_simulator()
+                    .validate_and_decode_resource_address(
+                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
+                    )
+                    .unwrap(),
             }
         );
         generate_instruction_ok!(
             r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
             Instruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
-                resource_address: ResourceAddress::from_str(
-                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
-                )
-                .unwrap(),
+                resource_address: Bech32Decoder::for_simulator()
+                    .validate_and_decode_resource_address(
+                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
+                    )
+                    .unwrap(),
             }
         );
         generate_instruction_ok!(
-            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8);"#,
+            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8)  PreciseDecimal("120");"#,
             Instruction::CallFunction {
-                package_address: PackageAddress::from_str(
-                    "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
-                )
-                .unwrap(),
-                blueprint_name: "Airdrop".into(),
-                method_name: "new".to_string(),
-                arg: to_struct!(500u32, HashMap::from([("key", 1u8),]))
+                function_ident: ScryptoFunctionIdent {
+                    package: ScryptoPackage::Global(
+                        Bech32Decoder::for_simulator()
+                            .validate_and_decode_package_address(
+                                "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7"
+                                    .into()
+                            )
+                            .unwrap()
+                    ),
+                    blueprint_name: "Airdrop".into(),
+                    function_name: "new".to_string(),
+                },
+                args: args!(500u32, HashMap::from([("key", 1u8),]), pdec!("120"))
             }
         );
         generate_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
             Instruction::CallMethod {
-                component_address: ComponentAddress::from_str(
-                    "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum".into()
-                )
-                .unwrap(),
-                method_name: "refill".to_string(),
-                arg: to_struct!()
+                method_ident: ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Global(component1),
+                    method_name: "refill".to_string(),
+                },
+                args: args!()
             }
-        );
-        generate_instruction_ok!(
-            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch";"#,
-            Instruction::CallMethodWithAllResources {
-                component_address: ComponentAddress::from_str(
-                    "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
-                )
-                .unwrap(),
-                method: "deposit_batch".into(),
-            }
-        );
-    }
-
-    #[test]
-    fn test_transaction() {
-        let tx = include_str!("../../examples/complex.rtm");
-        let code = vec![
-            0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x04, 0x05, 0x01, 0x70, 0x01, 0x01,
-            0x01, 0x05, 0x03, 0x01, 0x00, 0x10, 0x06, 0x19, 0x03, 0x7f, 0x01, 0x41, 0x80, 0x80,
-            0xc0, 0x00, 0x0b, 0x7f, 0x00, 0x41, 0x80, 0x80, 0xc0, 0x00, 0x0b, 0x7f, 0x00, 0x41,
-            0x80, 0x80, 0xc0, 0x00, 0x0b, 0x07, 0x25, 0x03, 0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72,
-            0x79, 0x02, 0x00, 0x0a, 0x5f, 0x5f, 0x64, 0x61, 0x74, 0x61, 0x5f, 0x65, 0x6e, 0x64,
-            0x03, 0x01, 0x0b, 0x5f, 0x5f, 0x68, 0x65, 0x61, 0x70, 0x5f, 0x62, 0x61, 0x73, 0x65,
-            0x03, 0x02, 0x00, 0x19, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x07, 0x12, 0x01, 0x00, 0x0f,
-            0x5f, 0x5f, 0x73, 0x74, 0x61, 0x63, 0x6b, 0x5f, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x65,
-            0x72, 0x00, 0x4d, 0x09, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x73, 0x02,
-            0x08, 0x6c, 0x61, 0x6e, 0x67, 0x75, 0x61, 0x67, 0x65, 0x01, 0x04, 0x52, 0x75, 0x73,
-            0x74, 0x00, 0x0c, 0x70, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x65, 0x64, 0x2d, 0x62,
-            0x79, 0x01, 0x05, 0x72, 0x75, 0x73, 0x74, 0x63, 0x1d, 0x31, 0x2e, 0x35, 0x39, 0x2e,
-            0x30, 0x20, 0x28, 0x39, 0x64, 0x31, 0x62, 0x32, 0x31, 0x30, 0x36, 0x65, 0x20, 0x32,
-            0x30, 0x32, 0x32, 0x2d, 0x30, 0x32, 0x2d, 0x32, 0x33, 0x29,
-        ];
-        let package = Package {
-            code,
-            blueprints: HashMap::new(),
-        };
-        let encoded_package = scrypto_encode(&package);
-
-        assert_eq!(
-            crate::manifest::compile(tx, &Network::LocalSimulator)
-                .unwrap()
-                .instructions,
-            vec![
-                Instruction::CallMethod {
-                    component_address: ComponentAddress::from_str(
-                        "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
-                    )
-                    .unwrap(),
-                    method_name: "withdraw_by_amount".to_string(),
-                    arg: to_struct!(
-                        Decimal::from(5u32),
-                        ResourceAddress::from_str(
-                            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                        )
-                        .unwrap()
-                    )
-                },
-                Instruction::TakeFromWorktopByAmount {
-                    amount: Decimal::from(2),
-                    resource_address: ResourceAddress::from_str(
-                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                    )
-                    .unwrap(),
-                },
-                Instruction::CallMethod {
-                    component_address: ComponentAddress::from_str(
-                        "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum".into()
-                    )
-                    .unwrap(),
-                    method_name: "buy_gumball".to_string(),
-                    arg: to_struct!(scrypto::resource::Bucket(512))
-                },
-                Instruction::AssertWorktopContainsByAmount {
-                    amount: Decimal::from(3),
-                    resource_address: ResourceAddress::from_str(
-                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                    )
-                    .unwrap(),
-                },
-                Instruction::AssertWorktopContains {
-                    resource_address: ResourceAddress::from_str(
-                        "resource_sim1qzhdk7tq68u8msj38r6v6yqa5myc64ejx3ud20zlh9gseqtux6"
-                    )
-                    .unwrap(),
-                },
-                Instruction::TakeFromWorktop {
-                    resource_address: ResourceAddress::from_str(
-                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                    )
-                    .unwrap(),
-                },
-                Instruction::CreateProofFromBucket { bucket_id: 513 },
-                Instruction::CloneProof { proof_id: 514 },
-                Instruction::DropProof { proof_id: 514 },
-                Instruction::DropProof { proof_id: 515 },
-                Instruction::CallMethod {
-                    component_address: ComponentAddress::from_str(
-                        "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
-                    )
-                    .unwrap(),
-                    method_name: "create_proof_by_amount".to_string(),
-                    arg: to_struct!(
-                        Decimal::from(5u32),
-                        ResourceAddress::from_str(
-                            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                        )
-                        .unwrap()
-                    )
-                },
-                Instruction::PopFromAuthZone,
-                Instruction::DropProof { proof_id: 516 },
-                Instruction::ReturnToWorktop { bucket_id: 513 },
-                Instruction::TakeFromWorktopByIds {
-                    ids: BTreeSet::from([
-                        NonFungibleId::from_str("0905000000").unwrap(),
-                        NonFungibleId::from_str("0907000000").unwrap(),
-                    ]),
-                    resource_address: ResourceAddress::from_str(
-                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                    )
-                    .unwrap()
-                },
-                Instruction::CallMethodWithAllResources {
-                    component_address: ComponentAddress::from_str(
-                        "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
-                    )
-                    .unwrap(),
-                    method: "deposit_batch".into(),
-                },
-                Instruction::DropAllProofs,
-                Instruction::PublishPackage {
-                    package: encoded_package.clone()
-                },
-            ]
         );
     }
 }

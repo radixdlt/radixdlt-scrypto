@@ -1,21 +1,17 @@
 use sbor::rust::collections::HashMap;
 use sbor::rust::fmt;
-use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::engine::types::RENodeId;
 
 use crate::abi::*;
-use crate::address::{AddressError, BECH32_DECODER, BECH32_ENCODER};
+use crate::address::*;
 use crate::buffer::scrypto_encode;
-use crate::core::Receiver;
-use crate::engine::{api::*, call_engine};
+use crate::engine::{api::*, types::*, utils::*};
 use crate::math::*;
 use crate::misc::*;
+use crate::native_methods;
 use crate::resource::*;
-use crate::sfunctions;
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
@@ -41,6 +37,11 @@ pub struct ResourceManagerCreateInput {
     pub metadata: HashMap<String, String>,
     pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
     pub mint_params: Option<MintParams>,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerBurnInput {
+    pub bucket: Bucket,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -80,6 +81,11 @@ pub struct ResourceManagerUpdateMetadataInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerSetResourceAddressInput {
+    pub address: ResourceAddress,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateNonFungibleDataInput {
     pub id: NonFungibleId,
     pub data: Vec<u8>,
@@ -97,9 +103,9 @@ pub struct ResourceManagerGetNonFungibleInput {
 
 /// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct ResourceAddress(pub [u8; 27]);
-
-impl ResourceAddress {}
+pub enum ResourceAddress {
+    Normal([u8; 26]),
+}
 
 /// Represents a resource manager.
 #[derive(Debug)]
@@ -107,9 +113,9 @@ pub struct ResourceManager(pub(crate) ResourceAddress);
 
 impl ResourceManager {
     pub fn set_mintable(&mut self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)),
-            "update_auth".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
+            RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
                 method: ResourceMethodAuthKey::Mint,
                 access_rule,
@@ -119,9 +125,9 @@ impl ResourceManager {
     }
 
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)),
-            "update_auth".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
+            RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
                 method: ResourceMethodAuthKey::Burn,
                 access_rule,
@@ -131,9 +137,9 @@ impl ResourceManager {
     }
 
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)),
-            "update_auth".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
+            RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
                 method: ResourceMethodAuthKey::Withdraw,
                 access_rule,
@@ -143,9 +149,9 @@ impl ResourceManager {
     }
 
     pub fn set_depositable(&mut self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)),
-            "update_auth".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
+            RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
                 method: ResourceMethodAuthKey::Deposit,
                 access_rule,
@@ -155,9 +161,9 @@ impl ResourceManager {
     }
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)),
-            "update_auth".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
+            RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
                 method: ResourceMethodAuthKey::UpdateMetadata,
                 access_rule,
@@ -167,9 +173,9 @@ impl ResourceManager {
     }
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)),
-            "update_auth".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
+            RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
                 method: ResourceMethodAuthKey::UpdateNonFungibleData,
                 access_rule,
@@ -179,9 +185,9 @@ impl ResourceManager {
     }
 
     pub fn lock_mintable(&mut self) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)),
-            "lock_auth".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
+            RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerLockAuthInput {
                 method: ResourceMethodAuthKey::Mint,
             }),
@@ -190,9 +196,9 @@ impl ResourceManager {
     }
 
     pub fn lock_burnable(&mut self) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)),
-            "lock_auth".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
+            RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerLockAuthInput {
                 method: ResourceMethodAuthKey::Burn,
             }),
@@ -201,9 +207,9 @@ impl ResourceManager {
     }
 
     pub fn lock_withdrawable(&mut self) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)),
-            "lock_auth".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
+            RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerLockAuthInput {
                 method: ResourceMethodAuthKey::Withdraw,
             }),
@@ -212,9 +218,9 @@ impl ResourceManager {
     }
 
     pub fn lock_depositable(&mut self) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)),
-            "lock_auth".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
+            RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerLockAuthInput {
                 method: ResourceMethodAuthKey::Deposit,
             }),
@@ -223,9 +229,9 @@ impl ResourceManager {
     }
 
     pub fn lock_updateable_metadata(&mut self) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)),
-            "lock_auth".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
+            RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerLockAuthInput {
                 method: ResourceMethodAuthKey::UpdateMetadata,
             }),
@@ -234,9 +240,9 @@ impl ResourceManager {
     }
 
     pub fn lock_updateable_non_fungible_data(&mut self) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)),
-            "lock_auth".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
+            RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerLockAuthInput {
                 method: ResourceMethodAuthKey::UpdateNonFungibleData,
             }),
@@ -245,51 +251,62 @@ impl ResourceManager {
     }
 
     fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)),
-            "mint".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
+            RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerMintInput { mint_params }),
         );
         call_engine(input)
     }
 
     fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)),
-            "update_non_fungible_data".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData),
+            RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput { id, data }),
         );
         call_engine(input)
     }
 
     fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)),
-            "non_fungible_data".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible),
+            RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerGetNonFungibleInput { id }),
         );
         call_engine(input)
     }
 
-    sfunctions! {
-        Receiver::NativeRENodeRef(RENodeId::ResourceManager(self.0)) => {
+    native_methods! {
+        RENodeId::Global(GlobalAddress::Resource(self.0)), NativeMethod::ResourceManager => {
             pub fn metadata(&self) -> HashMap<String, String> {
+                ResourceManagerMethod::GetMetadata,
                 ResourceManagerGetMetadataInput {}
             }
             pub fn resource_type(&self) -> ResourceType {
+                ResourceManagerMethod::GetResourceType,
                 ResourceManagerGetResourceTypeInput {}
             }
             pub fn total_supply(&self) -> Decimal {
+                ResourceManagerMethod::GetTotalSupply,
                 ResourceManagerGetTotalSupplyInput {}
             }
             pub fn update_metadata(&mut self, metadata: HashMap<String, String>) -> () {
+                ResourceManagerMethod::UpdateMetadata,
                 ResourceManagerUpdateMetadataInput {
                     metadata
                 }
             }
             pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
+                ResourceManagerMethod::NonFungibleExists,
                 ResourceManagerNonFungibleExistsInput {
                     id: id.clone()
+                }
+            }
+            pub fn burn(&mut self, bucket: Bucket) -> () {
+                ResourceManagerMethod::Burn,
+                ResourceManagerBurnInput {
+                    bucket
                 }
             }
         }
@@ -307,11 +324,6 @@ impl ResourceManager {
         let mut entries = HashMap::new();
         entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
         self.mint_internal(MintParams::NonFungible { entries })
-    }
-
-    /// Burns a bucket of resources.
-    pub fn burn(&self, bucket: Bucket) {
-        bucket.burn()
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
@@ -345,7 +357,12 @@ impl TryFrom<&[u8]> for ResourceAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            27 => Ok(Self(copy_u8_array(slice))),
+            27 => match EntityType::try_from(slice[0])
+                .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
+            {
+                EntityType::Resource => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
+                _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
+            },
             _ => Err(AddressError::InvalidLength(slice.len())),
         }
     }
@@ -353,7 +370,22 @@ impl TryFrom<&[u8]> for ResourceAddress {
 
 impl ResourceAddress {
     pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_vec()
+        let mut buf = Vec::new();
+        buf.push(EntityType::resource(self).id());
+        match self {
+            Self::Normal(v) => buf.extend(v),
+        }
+        buf
+    }
+
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.to_vec())
+    }
+
+    pub fn try_from_hex(hex_str: &str) -> Result<Self, AddressError> {
+        let bytes = hex::decode(hex_str).map_err(|_| AddressError::HexDecodingError)?;
+
+        Self::try_from(bytes.as_ref())
     }
 }
 
@@ -363,26 +395,30 @@ scrypto_type!(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
 // text
 //======
 
-impl FromStr for ResourceAddress {
-    type Err = AddressError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        BECH32_DECODER.validate_and_decode_resource_address(s)
-    }
-}
-
-impl fmt::Display for ResourceAddress {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(
-            f,
-            "{}",
-            BECH32_ENCODER.encode_resource_address(self).unwrap()
-        )
-    }
-}
-
 impl fmt::Debug for ResourceAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
+        write!(f, "{}", self.display(NO_NETWORK))
+    }
+}
+
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ResourceAddress {
+    type Error = AddressError;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        if let Some(encoder) = context.encoder {
+            return encoder.encode_resource_address_to_fmt(f, self);
+        }
+
+        // This could be made more performant by streaming the hex into the formatter
+        match self {
+            ResourceAddress::Normal(_) => {
+                write!(f, "NormalResource[{}]", self.to_hex())
+            }
+        }
+        .map_err(|err| AddressError::FormatError(err))
     }
 }

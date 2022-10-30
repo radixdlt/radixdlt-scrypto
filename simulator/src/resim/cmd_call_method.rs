@@ -1,8 +1,8 @@
 #![allow(unused_must_use)]
 
 use clap::Parser;
-use scrypto::core::Network;
-use scrypto::engine::types::*;
+use radix_engine::types::*;
+use scrypto::prelude::Expression;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -11,7 +11,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct CallMethod {
     /// The component that the method belongs to
-    component_address: ComponentAddress,
+    component_address: SimulatorComponentAddress,
 
     /// The method name
     method_name: String,
@@ -22,6 +22,10 @@ pub struct CallMethod {
     /// The proofs to add to the auth zone
     #[clap(short, long, multiple = true)]
     proofs: Option<Vec<String>>,
+
+    /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
+    #[clap(short, long)]
+    network: Option<String>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
@@ -41,7 +45,7 @@ impl CallMethod {
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
 
-        let mut manifest_builder = &mut ManifestBuilder::new(Network::LocalSimulator);
+        let mut manifest_builder = &mut ManifestBuilder::new(&NetworkDefinition::simulator());
         for resource_specifier in proofs {
             manifest_builder = manifest_builder
                 .create_proof_from_account_by_resource_specifier(
@@ -52,22 +56,26 @@ impl CallMethod {
         }
 
         let manifest = manifest_builder
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(100.into(), FAUCET_COMPONENT)
             .call_method_with_abi(
-                self.component_address,
+                self.component_address.0,
                 &self.method_name,
                 self.arguments.clone(),
                 Some(default_account),
-                &export_abi_by_component(self.component_address)?,
+                &export_abi_by_component(self.component_address.0)?,
             )
             .map_err(Error::TransactionConstructionError)?
-            .call_method_with_all_resources(default_account, "deposit_batch")
+            .call_method(
+                default_account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
             .build();
         handle_manifest(
             manifest,
             &self.signing_keys,
+            &self.network,
             &self.manifest,
-            false,
             self.trace,
             true,
             out,

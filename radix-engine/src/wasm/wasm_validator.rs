@@ -1,7 +1,4 @@
-use sbor::rust::collections::HashMap;
-use sbor::rust::string::String;
-use scrypto::abi::BlueprintAbi;
-
+use crate::types::*;
 use crate::wasm::*;
 
 pub struct WasmValidator {

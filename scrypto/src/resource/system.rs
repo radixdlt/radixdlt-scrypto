@@ -1,10 +1,8 @@
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 
 use crate::buffer::scrypto_encode;
-use crate::core::TypeName;
-use crate::engine::{api::*, call_engine};
+use crate::engine::{api::*, types::*, utils::*};
 use crate::resource::*;
 
 /// Represents the Radix Engine resource subsystem.
@@ -48,9 +46,8 @@ impl ResourceSystem {
         access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
-        let input = RadixEngineInput::InvokeFunction(
-            TypeName::ResourceManager,
-            "create".to_string(),
+        let input = RadixEngineInput::InvokeNativeFunction(
+            NativeFunction::ResourceManager(ResourceManagerFunction::Create),
             scrypto_encode(&ResourceManagerCreateInput {
                 resource_type,
                 metadata,
@@ -90,12 +87,19 @@ mod tests {
     fn test_resource_manager_macro() {
         init_resource_system(ResourceSystem::new());
 
-        let resource_manager = borrow_resource_manager!(ResourceAddress([0u8; 27]));
-        let resource_manager_same_id = borrow_resource_manager!(ResourceAddress([0u8; 27]));
-        let resource_manager_different_id = borrow_resource_manager!(ResourceAddress([1u8; 27]));
+        let resource_manager = borrow_resource_manager!(ResourceAddress::Normal([0u8; 26]));
+        let resource_manager_same_id = borrow_resource_manager!(ResourceAddress::Normal([0u8; 26]));
+        let resource_manager_different_id =
+            borrow_resource_manager!(ResourceAddress::Normal([1u8; 26]));
 
-        assert_eq!(ResourceAddress([0u8; 27]), resource_manager.0);
-        assert_eq!(ResourceAddress([0u8; 27]), resource_manager_same_id.0);
-        assert_eq!(ResourceAddress([1u8; 27]), resource_manager_different_id.0);
+        assert_eq!(ResourceAddress::Normal([0u8; 26]), resource_manager.0);
+        assert_eq!(
+            ResourceAddress::Normal([0u8; 26]),
+            resource_manager_same_id.0
+        );
+        assert_eq!(
+            ResourceAddress::Normal([1u8; 26]),
+            resource_manager_different_id.0
+        );
     }
 }

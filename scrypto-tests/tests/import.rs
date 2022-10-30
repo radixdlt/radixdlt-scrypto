@@ -1,7 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use sbor::rust::borrow::ToOwned;
-use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -273,7 +272,7 @@ blueprint! {
 #[test]
 #[should_panic] // asserts it compiles
 fn test_import_from_abi() {
-    let instance = Simple::from(ComponentAddress::from_str("").unwrap());
+    let instance = Simple::from(ComponentAddress::Normal([0; 26]));
 
     let arg1 = Floor { x: 5, y: 12 };
     let arg2 = (1u8, 2u16);

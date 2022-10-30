@@ -81,24 +81,75 @@ pub enum Instruction {
     CallFunction {
         package_address: Value,
         blueprint_name: Value,
-        function: Value,
+        function_name: Value,
         args: Vec<Value>,
     },
 
     CallMethod {
-        component_address: Value,
+        receiver: ScryptoReceiver,
         method: Value,
         args: Vec<Value>,
     },
 
-    CallMethodWithAllResources {
-        component_address: Value,
+    CallNativeFunction {
+        blueprint_name: Value,
+        function_name: Value,
+        args: Vec<Value>,
+    },
+
+    CallNativeMethod {
+        receiver: Receiver,
         method: Value,
+        args: Vec<Value>,
     },
 
     PublishPackage {
-        package: Value,
+        code: Value,
+        abi: Value,
     },
+
+    CreateResource {
+        resource_type: Value,
+        metadata: Value,
+        access_rules: Value,
+        mint_params: Value,
+    },
+
+    BurnBucket {
+        bucket: Value,
+    },
+
+    MintFungible {
+        resource_address: Value,
+        amount: Value,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ScryptoReceiver {
+    Global(Value),
+    Component(Value),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Receiver {
+    Ref(RENode),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RENode {
+    Bucket(Value),
+    Proof(Value),
+    AuthZoneStack(Value),
+    Worktop,
+    Global(Value),
+    KeyValueStore(Value),
+    NonFungibleStore(Value),
+    Component(Value),
+    Vault(Value),
+    ResourceManager(Value),
+    Package(Value),
+    EpochManager(Value),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -135,7 +186,9 @@ pub enum Type {
 
     /* Custom types */
     Decimal,
+    PreciseDecimal,
     PackageAddress,
+    SystemAddress,
     ComponentAddress,
     ResourceAddress,
     Hash,
@@ -143,9 +196,8 @@ pub enum Type {
     Proof,
     NonFungibleId,
     NonFungibleAddress,
-
-    /* Bytes is a convenient way of producing `Vec<u8>` */
-    Bytes,
+    Expression,
+    Blob,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -177,7 +229,9 @@ pub enum Value {
     Map(Type, Type, Vec<Value>),
 
     Decimal(Box<Value>),
+    PreciseDecimal(Box<Value>),
     PackageAddress(Box<Value>),
+    SystemAddress(Box<Value>),
     ComponentAddress(Box<Value>),
     ResourceAddress(Box<Value>),
     Hash(Box<Value>),
@@ -185,8 +239,8 @@ pub enum Value {
     Proof(Box<Value>),
     NonFungibleId(Box<Value>),
     NonFungibleAddress(Box<Value>),
-
-    Bytes(Vec<u8>),
+    Expression(Box<Value>),
+    Blob(Box<Value>),
 }
 
 impl Value {
@@ -215,7 +269,9 @@ impl Value {
             Value::Set(_, _) => Type::Set,
             Value::Map(_, _, _) => Type::Map,
             Value::Decimal(_) => Type::Decimal,
+            Value::PreciseDecimal(_) => Type::PreciseDecimal,
             Value::PackageAddress(_) => Type::PackageAddress,
+            Value::SystemAddress(_) => Type::SystemAddress,
             Value::ComponentAddress(_) => Type::ComponentAddress,
             Value::ResourceAddress(_) => Type::ResourceAddress,
             Value::Hash(_) => Type::Hash,
@@ -223,7 +279,8 @@ impl Value {
             Value::Proof(_) => Type::Proof,
             Value::NonFungibleId(_) => Type::NonFungibleId,
             Value::NonFungibleAddress(_) => Type::NonFungibleAddress,
-            Value::Bytes(_) => Type::List,
+            Value::Expression(_) => Type::Expression,
+            Value::Blob(_) => Type::Blob,
         }
     }
 }

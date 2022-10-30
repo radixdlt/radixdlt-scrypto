@@ -1,8 +1,10 @@
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::core::Blob;
 use scrypto::engine::types::*;
+use scrypto::math::*;
+use scrypto::resource::{NonFungibleId, ResourceAddress};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Instruction {
@@ -76,31 +78,38 @@ pub enum Instruction {
     /// Drops all of the proofs in the transaction.
     DropAllProofs,
 
-    /// Calls a blueprint function.
+    /// Calls a scrypto function.
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        method_name: String,
-        arg: Vec<u8>,
+        function_ident: ScryptoFunctionIdent,
+        args: Vec<u8>,
     },
 
-    /// Calls a component method.
+    /// Calls a scrypto method.
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
-        component_address: ComponentAddress,
-        method_name: String,
-        arg: Vec<u8>,
+        method_ident: ScryptoMethodIdent,
+        args: Vec<u8>,
     },
 
-    /// Calls a component method with all resources owned by the transaction.
-    CallMethodWithAllResources {
-        component_address: ComponentAddress,
-        method: String,
+    /// Calls a native function.
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallNativeFunction {
+        function_ident: NativeFunctionIdent,
+        args: Vec<u8>,
+    },
+
+    /// Calls a native method.
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallNativeMethod {
+        method_ident: NativeMethodIdent,
+        args: Vec<u8>,
     },
 
     /// Publishes a package.
-    PublishPackage { package: Vec<u8> },
+    PublishPackage { code: Blob, abi: Blob },
 }

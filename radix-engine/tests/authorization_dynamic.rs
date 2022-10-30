@@ -1,10 +1,8 @@
-use radix_engine::ledger::InMemorySubstateStore;
-use scrypto::core::Network;
-use scrypto::prelude::*;
-use scrypto::to_struct;
+use radix_engine::ledger::TypedInMemorySubstateStore;
+use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::signing::EcdsaPrivateKey;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 fn test_dynamic_auth(
     num_keys: usize,
@@ -14,61 +12,67 @@ fn test_dynamic_auth(
     should_succeed: bool,
 ) {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let key_and_addresses: Vec<(EcdsaPublicKey, EcdsaPrivateKey, NonFungibleAddress)> = (0
-        ..num_keys)
+    let key_and_addresses: Vec<(
+        EcdsaSecp256k1PublicKey,
+        EcdsaSecp256k1PrivateKey,
+        NonFungibleAddress,
+    )> = (0..num_keys)
         .map(|_| test_runner.new_key_pair_with_auth_address())
         .collect();
     let addresses: Vec<NonFungibleAddress> = key_and_addresses
         .iter()
         .map(|(_, _, addr)| addr.clone())
         .collect();
-    let public_keys: Vec<EcdsaPublicKey> = signer_public_keys
+    let initial_proofs: Vec<NonFungibleAddress> = signer_public_keys
         .iter()
-        .map(|index| key_and_addresses.get(*index).unwrap().0)
+        .map(|index| NonFungibleAddress::from_public_key(&key_and_addresses.get(*index).unwrap().0))
         .collect();
 
-    let package = test_runner.extract_and_publish_package("component");
-    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+    let package = test_runner.compile_and_publish("./tests/blueprints/component");
+    let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package,
             "AuthComponent",
             "create_component",
-            to_struct!(addresses.get(initial_auth).unwrap().clone()),
+            args!(addresses.get(initial_auth).unwrap().clone()),
         )
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.expect_success();
-    let component = receipt1.new_component_addresses[0];
+    receipt1.expect_commit_success();
+    let component = receipt1
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     if let Some(next_auth) = update_auth {
-        let update_manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+        let update_manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(10.into(), FAUCET_COMPONENT)
             .call_method(
                 component,
                 "update_auth",
-                to_struct!(addresses.get(next_auth).unwrap().clone()),
+                args!(addresses.get(next_auth).unwrap().clone()),
             )
             .build();
         test_runner
             .execute_manifest(update_manifest, vec![])
-            .expect_success();
+            .expect_commit_success();
     }
 
     // Act
-    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component, "get_secret", to_struct!())
+    let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10u32.into(), FAUCET_COMPONENT)
+        .call_method(component, "get_secret", args!())
         .build();
-    let receipt2 = test_runner.execute_manifest(manifest2, public_keys.to_vec());
+    let receipt2 = test_runner.execute_manifest(manifest2, initial_proofs.to_vec());
 
     // Assert
     if should_succeed {
-        receipt2.expect_success();
+        receipt2.expect_commit_success();
     } else {
-        receipt2.expect_failure(is_auth_error);
+        receipt2.expect_specific_failure(is_auth_error);
     }
 }
 
@@ -78,49 +82,55 @@ fn test_dynamic_authlist(
     signer_public_keys: &[usize],
     should_succeed: bool,
 ) {
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let key_and_addresses: Vec<(EcdsaPublicKey, EcdsaPrivateKey, NonFungibleAddress)> = (0
-        ..list_size)
+    let key_and_addresses: Vec<(
+        EcdsaSecp256k1PublicKey,
+        EcdsaSecp256k1PrivateKey,
+        NonFungibleAddress,
+    )> = (0..list_size)
         .map(|_| test_runner.new_key_pair_with_auth_address())
         .collect();
     let list: Vec<NonFungibleAddress> = key_and_addresses
         .iter()
         .map(|(_, _, addr)| addr.clone())
         .collect();
-    let public_keys: Vec<EcdsaPublicKey> = signer_public_keys
+    let initial_proofs: Vec<NonFungibleAddress> = signer_public_keys
         .iter()
-        .map(|index| key_and_addresses.get(*index).unwrap().0)
+        .map(|index| NonFungibleAddress::from_public_key(&key_and_addresses.get(*index).unwrap().0))
         .collect();
     let authorization = AccessRules::new().method("get_secret", auth_rule);
 
     // Arrange
-    let package = test_runner.extract_and_publish_package("component");
-    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+    let package = test_runner.compile_and_publish("./tests/blueprints/component");
+    let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10u32.into(), FAUCET_COMPONENT)
         .call_function(
             package,
             "AuthListComponent",
             "create_component",
-            to_struct!(2u8, list, authorization),
+            args!(2u8, list, authorization),
         )
         .build();
     let receipt0 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt0.expect_success();
-    let component = receipt0.new_component_addresses[0];
+    receipt0.expect_commit_success();
+    let component = receipt0
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     // Act
-    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component, "get_secret", to_struct!())
+    let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10u32.into(), FAUCET_COMPONENT)
+        .call_method(component, "get_secret", args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest2, public_keys.to_vec());
+    let receipt = test_runner.execute_manifest(manifest2, initial_proofs);
 
     // Assert
     if should_succeed {
-        receipt.expect_success();
+        receipt.expect_commit_success();
     } else {
-        receipt.expect_failure(is_auth_error);
+        receipt.expect_specific_failure(is_auth_error);
     }
 }
 
@@ -211,70 +221,81 @@ fn dynamic_any_of_should_fail_if_path_does_not_exist() {
 #[test]
 fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (pk, _, _) = test_runner.new_account();
-    let (other_public_key, _, _) = test_runner.new_account();
-    let package = test_runner.extract_and_publish_package("component");
-    let non_fungible_address =
-        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(pk.to_vec()));
+    let (pk, _, _) = test_runner.new_allocated_account();
+    let (other_public_key, _, _) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/component");
+    let non_fungible_address = NonFungibleAddress::new(
+        ECDSA_SECP256K1_TOKEN,
+        NonFungibleId::from_bytes(pk.to_vec()),
+    );
     let other_non_fungible_address = NonFungibleAddress::new(
-        ECDSA_TOKEN,
+        ECDSA_SECP256K1_TOKEN,
         NonFungibleId::from_bytes(other_public_key.to_vec()),
     );
-    let players = [non_fungible_address, other_non_fungible_address];
-    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package, "Chess", "create_game", to_struct!(players))
+    let players = [non_fungible_address, other_non_fungible_address.clone()];
+    let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .call_function(package, "Chess", "create_game", args!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.expect_success();
-    let component = receipt1.new_component_addresses[0];
+    receipt1.expect_commit_success();
+    let component = receipt1
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     // Act
-    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component, "make_move", to_struct!())
+    let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .call_method(component, "make_move", args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest2, vec![other_public_key]);
+    let receipt = test_runner.execute_manifest(manifest2, vec![other_non_fungible_address]);
 
     // Assert
-    receipt.expect_failure(is_auth_error);
+    receipt.expect_specific_failure(is_auth_error);
 }
 
 #[test]
 fn chess_should_allow_second_player_to_move_after_first_player() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, _) = test_runner.new_account();
-    let (other_public_key, _, _) = test_runner.new_account();
-    let package = test_runner.extract_and_publish_package("component");
+    let (public_key, _, _) = test_runner.new_allocated_account();
+    let (other_public_key, _, _) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/component");
     let non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
     let other_non_fungible_address = NonFungibleAddress::from_public_key(&other_public_key);
-    let players = [non_fungible_address, other_non_fungible_address];
-    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package, "Chess", "create_game", to_struct!(players))
+    let players = [
+        non_fungible_address.clone(),
+        other_non_fungible_address.clone(),
+    ];
+    let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10u32.into(), FAUCET_COMPONENT)
+        .call_function(package, "Chess", "create_game", args!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.expect_success();
-    let component = receipt1.new_component_addresses[0];
-    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component, "make_move", to_struct!())
+    receipt1.expect_commit_success();
+    let component = receipt1
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
+    let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10u32.into(), FAUCET_COMPONENT)
+        .call_method(component, "make_move", args!())
         .build();
     test_runner
-        .execute_manifest(manifest2, vec![public_key])
-        .expect_success();
+        .execute_manifest(manifest2, vec![non_fungible_address])
+        .expect_commit_success();
 
     // Act
-    let manifest3 = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component, "make_move", to_struct!())
+    let manifest3 = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10u32.into(), FAUCET_COMPONENT)
+        .call_method(component, "make_move", args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest3, vec![other_public_key]);
+    let receipt = test_runner.execute_manifest(manifest3, vec![other_non_fungible_address]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }

@@ -1,24 +1,42 @@
-use sbor::rust::borrow::ToOwned;
 use scrypto::abi;
-use scrypto::engine::types::*;
 
-use crate::engine::*;
 use crate::ledger::*;
+use crate::model::*;
+use crate::types::*;
+
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum ExportError {
+    ComponentNotFound(ComponentAddress),
+    PackageNotFound(PackageAddress),
+    BlueprintNotFound(PackageAddress, String),
+}
 
 pub fn export_abi<S: ReadableSubstateStore>(
     substate_store: &S,
     package_address: PackageAddress,
     blueprint_name: &str,
-) -> Result<abi::BlueprintAbi, RuntimeError> {
-    let package_value: Substate = substate_store
-        .get_substate(&SubstateId::Package(package_address))
-        .map(|s| s.substate)
-        .ok_or(RuntimeError::PackageNotFound(package_address))?;
+) -> Result<abi::BlueprintAbi, ExportError> {
+    let global_substate: RuntimeSubstate = substate_store
+        .get_substate(&SubstateId(
+            RENodeId::Global(GlobalAddress::Package(package_address)),
+            SubstateOffset::Global(GlobalOffset::Global),
+        ))
+        .map(|s| s.substate.to_runtime())
+        .ok_or(ExportError::PackageNotFound(package_address))?;
+
+    let package_value: RuntimeSubstate = substate_store
+        .get_substate(&SubstateId(
+            global_substate.global().node_deref(),
+            SubstateOffset::Package(PackageOffset::Package),
+        ))
+        .map(|s| s.substate.to_runtime())
+        .ok_or(ExportError::PackageNotFound(package_address))?;
 
     let abi = package_value
         .package()
-        .blueprint_abi(blueprint_name)
-        .ok_or(RuntimeError::BlueprintNotFound(
+        .blueprint_abis
+        .get(blueprint_name)
+        .ok_or(ExportError::BlueprintNotFound(
             package_address,
             blueprint_name.to_owned(),
         ))?
@@ -29,15 +47,30 @@ pub fn export_abi<S: ReadableSubstateStore>(
 pub fn export_abi_by_component<S: ReadableSubstateStore>(
     substate_store: &S,
     component_address: ComponentAddress,
-) -> Result<abi::BlueprintAbi, RuntimeError> {
-    let component_value: Substate = substate_store
-        .get_substate(&SubstateId::ComponentInfo(component_address))
-        .map(|s| s.substate)
-        .ok_or(RuntimeError::ComponentNotFound(component_address))?;
-    let component = component_value.component();
+) -> Result<abi::BlueprintAbi, ExportError> {
+    let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+    let global = substate_store
+        .get_substate(&SubstateId(
+            node_id,
+            SubstateOffset::Global(GlobalOffset::Global),
+        ))
+        .map(|s| s.substate.to_runtime())
+        .ok_or(ExportError::ComponentNotFound(component_address))?;
+    let component_id = global.global().node_deref();
+
+    let component_value: RuntimeSubstate = substate_store
+        .get_substate(&SubstateId(
+            component_id,
+            SubstateOffset::Component(ComponentOffset::Info),
+        ))
+        .map(|s| s.substate.to_runtime())
+        .ok_or(ExportError::ComponentNotFound(component_address))?;
+
+    let component_ref = component_value.to_ref();
+    let component_info = component_ref.component_info();
     export_abi(
         substate_store,
-        component.package_address(),
-        component.blueprint_name(),
+        component_info.package_address,
+        &component_info.blueprint_name,
     )
 }

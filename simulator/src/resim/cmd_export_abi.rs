@@ -1,5 +1,6 @@
 use clap::Parser;
-use scrypto::engine::types::*;
+use radix_engine::types::*;
+use scrypto::abi;
 
 use crate::resim::*;
 
@@ -7,7 +8,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct ExportAbi {
     /// The package ID
-    package_address: PackageAddress,
+    package_address: SimulatorPackageAddress,
 
     /// The blueprint name
     blueprint_name: String,
@@ -19,12 +20,17 @@ pub struct ExportAbi {
 
 impl ExportAbi {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        match export_abi(self.package_address, &self.blueprint_name) {
+        match export_abi(self.package_address.0, &self.blueprint_name) {
             Ok(a) => {
+                let blueprint = abi::Blueprint {
+                    package_address: self.package_address.0.to_hex(),
+                    blueprint_name: self.blueprint_name.clone(),
+                    abi: a,
+                };
                 writeln!(
                     out,
                     "{}",
-                    serde_json::to_string_pretty(&a).map_err(Error::JSONError)?
+                    serde_json::to_string_pretty(&blueprint).map_err(Error::JSONError)?
                 )
                 .map_err(Error::IOError)?;
                 Ok(())

@@ -1,165 +1,48 @@
 use sbor::rust::vec::Vec;
-use sbor::*;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
+use scrypto::resource::NonFungibleAddress;
+use std::collections::BTreeSet;
 
+use crate::builder::TransactionBuilder;
 use crate::model::*;
 
-/// Represents a test transaction, for testing/simulation purpose only.
-pub struct TestTransaction {
-    pub manifest: TransactionManifest,
-    pub instructions: Vec<ExecutableInstruction>,
-    pub nonce: u64,
-    pub signer_public_keys: Vec<EcdsaPublicKey>,
-}
+pub struct TestTransaction {}
 
 impl TestTransaction {
     pub fn new(
         manifest: TransactionManifest,
         nonce: u64,
-        signer_public_keys: Vec<EcdsaPublicKey>,
-    ) -> Self {
-        let instructions = manifest
-            .instructions
-            .iter()
-            .map(|i| match i.clone() {
-                Instruction::TakeFromWorktop { resource_address } => {
-                    ExecutableInstruction::TakeFromWorktop { resource_address }
-                }
-                Instruction::TakeFromWorktopByAmount {
-                    amount,
-                    resource_address,
-                } => ExecutableInstruction::TakeFromWorktopByAmount {
-                    amount,
-                    resource_address,
-                },
-                Instruction::TakeFromWorktopByIds {
-                    ids,
-                    resource_address,
-                } => ExecutableInstruction::TakeFromWorktopByIds {
-                    ids,
-                    resource_address,
-                },
-                Instruction::ReturnToWorktop { bucket_id } => {
-                    ExecutableInstruction::ReturnToWorktop { bucket_id }
-                }
-                Instruction::AssertWorktopContains { resource_address } => {
-                    ExecutableInstruction::AssertWorktopContains { resource_address }
-                }
-                Instruction::AssertWorktopContainsByAmount {
-                    amount,
-                    resource_address,
-                } => ExecutableInstruction::AssertWorktopContainsByAmount {
-                    amount,
-                    resource_address,
-                },
-                Instruction::AssertWorktopContainsByIds {
-                    ids,
-                    resource_address,
-                } => ExecutableInstruction::AssertWorktopContainsByIds {
-                    ids,
-                    resource_address,
-                },
-                Instruction::PopFromAuthZone => ExecutableInstruction::PopFromAuthZone,
-                Instruction::PushToAuthZone { proof_id } => {
-                    ExecutableInstruction::PushToAuthZone { proof_id }
-                }
-                Instruction::ClearAuthZone => ExecutableInstruction::ClearAuthZone,
-                Instruction::CreateProofFromAuthZone { resource_address } => {
-                    ExecutableInstruction::CreateProofFromAuthZone { resource_address }
-                }
-                Instruction::CreateProofFromAuthZoneByAmount {
-                    amount,
-                    resource_address,
-                } => ExecutableInstruction::CreateProofFromAuthZoneByAmount {
-                    amount,
-                    resource_address,
-                },
-                Instruction::CreateProofFromAuthZoneByIds {
-                    ids,
-                    resource_address,
-                } => ExecutableInstruction::CreateProofFromAuthZoneByIds {
-                    ids,
-                    resource_address,
-                },
-                Instruction::CreateProofFromBucket { bucket_id } => {
-                    ExecutableInstruction::CreateProofFromBucket { bucket_id }
-                }
-                Instruction::CloneProof { proof_id } => {
-                    ExecutableInstruction::CloneProof { proof_id }
-                }
-                Instruction::DropProof { proof_id } => {
-                    ExecutableInstruction::DropProof { proof_id }
-                }
-                Instruction::DropAllProofs => ExecutableInstruction::DropAllProofs,
-                Instruction::CallFunction {
-                    package_address,
-                    blueprint_name,
-                    method_name,
-                    arg,
-                } => ExecutableInstruction::CallFunction {
-                    package_address,
-                    blueprint_name,
-                    method_name,
-                    arg,
-                },
-                Instruction::CallMethod {
-                    component_address,
-                    method_name,
-                    arg,
-                } => ExecutableInstruction::CallMethod {
-                    component_address,
-                    method_name,
-                    arg,
-                },
-                Instruction::CallMethodWithAllResources {
-                    component_address,
-                    method,
-                } => ExecutableInstruction::CallMethodWithAllResources {
-                    component_address,
-                    method,
-                },
-                Instruction::PublishPackage { package } => {
-                    ExecutableInstruction::PublishPackage { package }
-                }
+        initial_proofs: Vec<NonFungibleAddress>,
+    ) -> Executable {
+        let transaction = TransactionBuilder::new()
+            .header(TransactionHeader {
+                version: TRANSACTION_VERSION_V1,
+                network_id: NetworkDefinition::simulator().id,
+                start_epoch_inclusive: 0,
+                end_epoch_exclusive: 100,
+                nonce,
+                notary_public_key: EcdsaSecp256k1PublicKey([0u8; 33]).into(),
+                notary_as_signatory: false,
+                cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+                tip_percentage: 5,
             })
-            .collect();
+            .manifest(manifest)
+            .notary_signature(EcdsaSecp256k1Signature([0u8; 65]).into())
+            .build();
 
-        Self {
-            manifest,
-            instructions,
-            nonce,
-            signer_public_keys,
+        let transaction_hash = transaction.hash();
+
+        Executable {
+            transaction_hash,
+            instructions: transaction.signed_intent.intent.manifest.instructions,
+            auth_zone_params: AuthZoneParams {
+                initial_proofs,
+                virtualizable_proofs_resource_addresses: BTreeSet::new(),
+            },
+            cost_unit_limit: transaction.signed_intent.intent.header.cost_unit_limit,
+            tip_percentage: transaction.signed_intent.intent.header.tip_percentage,
+            blobs: transaction.signed_intent.intent.manifest.blobs,
         }
-    }
-}
-
-impl ExecutableTransaction for TestTransaction {
-    fn transaction_hash(&self) -> Hash {
-        hash(self.nonce.to_string())
-    }
-
-    fn transaction_network(&self) -> Network {
-        Network::LocalSimulator
-    }
-
-    fn transaction_payload_size(&self) -> u32 {
-        1
-    }
-
-    fn instructions(&self) -> &[ExecutableInstruction] {
-        &self.instructions
-    }
-
-    fn signer_public_keys(&self) -> &[EcdsaPublicKey] {
-        &self.signer_public_keys
-    }
-
-    fn cost_unit_limit(&self) -> u32 {
-        10_000_000
-    }
-
-    fn tip_percentage(&self) -> u32 {
-        1
     }
 }

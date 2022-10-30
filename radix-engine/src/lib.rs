@@ -24,3 +24,6 @@ pub mod state_manager;
 
 /// Wasm validation, instrumentation and execution.
 pub mod wasm;
+
+/// Scrypto/SBOR types required by Radix Engine.
+pub mod types;

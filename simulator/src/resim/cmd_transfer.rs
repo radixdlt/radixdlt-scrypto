@@ -1,6 +1,6 @@
 use clap::Parser;
-use scrypto::core::Network;
-use scrypto::engine::types::*;
+use radix_engine::types::*;
+use scrypto::prelude::Expression;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -12,14 +12,18 @@ pub struct Transfer {
     amount: Decimal,
 
     /// The resource address.
-    resource_address: ResourceAddress,
+    resource_address: SimulatorResourceAddress,
 
     /// The recipient component address.
-    recipient: ComponentAddress,
+    recipient: SimulatorComponentAddress,
 
     /// The proofs to add to the auth zone
     #[clap(short, long, multiple = true)]
     proofs: Option<Vec<String>>,
+
+    /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
+    #[clap(short, long)]
+    network: Option<String>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
@@ -39,7 +43,7 @@ impl Transfer {
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
 
-        let mut manifest_builder = &mut ManifestBuilder::new(Network::LocalSimulator);
+        let mut manifest_builder = &mut ManifestBuilder::new(&NetworkDefinition::simulator());
         for resource_specifier in proofs {
             manifest_builder = manifest_builder
                 .create_proof_from_account_by_resource_specifier(
@@ -50,15 +54,19 @@ impl Transfer {
         }
 
         let manifest = manifest_builder
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
-            .withdraw_from_account_by_amount(self.amount, self.resource_address, default_account)
-            .call_method_with_all_resources(self.recipient, "deposit_batch")
+            .lock_fee(100.into(), FAUCET_COMPONENT)
+            .withdraw_from_account_by_amount(self.amount, self.resource_address.0, default_account)
+            .call_method(
+                self.recipient.0,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
             .build();
         handle_manifest(
             manifest,
             &self.signing_keys,
+            &self.network,
             &self.manifest,
-            false,
             self.trace,
             true,
             out,

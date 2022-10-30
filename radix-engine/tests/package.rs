@@ -1,19 +1,31 @@
-use radix_engine::engine::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::engine::{ApplicationError, KernelError, RuntimeError};
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::PackageError;
+use radix_engine::types::*;
 use radix_engine::wasm::*;
 use sbor::Type;
-use scrypto::abi::*;
-use scrypto::core::Network;
-use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+
+#[ignore] // TODO: enable this after allowing dynamic creation of blobs
+#[test]
+fn test_publish_package_from_scrypto() {
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let package = test_runner.compile_and_publish("./tests/blueprints/package");
+
+    let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .call_function(package, "PackageTest", "publish", args!())
+        .build();
+    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
+    receipt1.expect_commit_success();
+}
 
 #[test]
 fn missing_memory_should_cause_error() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
@@ -26,23 +38,21 @@ fn missing_memory_should_cause_error() {
             )
             "#,
     );
-    let package = Package {
-        code,
-        blueprints: HashMap::new(),
-    };
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .publish_package(package)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .publish_package(code, HashMap::new())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            &RuntimeError::PackageError(PackageError::InvalidWasm(PrepareError::InvalidMemory(
-                InvalidMemory::NoMemorySection
-            )))
+            &RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidWasm(PrepareError::InvalidMemory(
+                    InvalidMemory::NoMemorySection
+                ))
+            ))
         )
     });
 }
@@ -50,21 +60,21 @@ fn missing_memory_should_cause_error() {
 #[test]
 fn large_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package = test_runner.extract_and_publish_package("package");
+    let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package, "LargeReturnSize", "f", to_struct!())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .call_function(package, "LargeReturnSize", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
-        if let RuntimeError::InvokeError(b) = e {
-            matches!(**b, InvokeError::MemoryAccessError)
+    receipt.expect_specific_failure(|e| {
+        if let RuntimeError::KernelError(KernelError::WasmError(b)) = e {
+            matches!(*b, WasmError::MemoryAccessError)
         } else {
             false
         }
@@ -74,21 +84,21 @@ fn large_return_len_should_cause_memory_access_error() {
 #[test]
 fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package = test_runner.extract_and_publish_package("package");
+    let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package, "MaxReturnSize", "f", to_struct!())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .call_function(package, "MaxReturnSize", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
-        if let RuntimeError::InvokeError(b) = e {
-            matches!(**b, InvokeError::MemoryAccessError)
+    receipt.expect_specific_failure(|e| {
+        if let RuntimeError::KernelError(KernelError::WasmError(b)) = e {
+            matches!(*b, WasmError::MemoryAccessError)
         } else {
             false
         }
@@ -98,48 +108,46 @@ fn overflow_return_len_should_cause_memory_access_error() {
 #[test]
 fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package = test_runner.extract_and_publish_package("package");
+    let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package, "ZeroReturnSize", "f", to_struct!())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .call_function(package, "ZeroReturnSize", "f", args!())
         .build();
 
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::InvokeError(_)));
+    receipt.expect_specific_failure(|e| {
+        matches!(e, RuntimeError::KernelError(KernelError::WasmError(..)))
+    });
 }
 
 #[test]
 fn test_basic_package() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let package = Package {
-        code,
-        blueprints: HashMap::new(),
-    };
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .publish_package(package)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .publish_package(code, HashMap::new())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
 fn test_basic_package_missing_export() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let mut blueprints = HashMap::new();
     blueprints.insert(
@@ -158,19 +166,18 @@ fn test_basic_package_missing_export() {
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let package = Package { code, blueprints };
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .publish_package(package)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .publish_package(code, blueprints)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::PackageError(PackageError::InvalidWasm(
-                PrepareError::MissingExport { .. }
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidWasm(PrepareError::MissingExport { .. })
             ))
         )
     });

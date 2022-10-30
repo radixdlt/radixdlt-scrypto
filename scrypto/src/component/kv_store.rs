@@ -2,18 +2,16 @@ use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
+use sbor::rust::string::*;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::ScryptoRENode;
 
 use crate::abi::*;
 use crate::buffer::*;
 use crate::core::{DataRef, DataRefMut};
 use crate::crypto::*;
-use crate::engine::types::{RENodeId, SubstateId};
-use crate::engine::{api::*, call_engine, types::KeyValueStoreId};
+use crate::engine::{api::*, types::*, utils::*};
 use crate::misc::*;
 
 /// A scalable key-value map which loads entries on demand.
@@ -23,10 +21,14 @@ pub struct KeyValueStore<K: Encode + Decode, V: 'static + Encode + Decode + Type
     pub value: PhantomData<V>,
 }
 
+// TODO: de-duplication
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct KeyValueStoreEntrySubstate(pub Option<Vec<u8>>);
+
 impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K, V> {
     /// Creates a new key value store.
     pub fn new() -> Self {
-        let input = RadixEngineInput::RENodeCreate(ScryptoRENode::KeyValueStore);
+        let input = RadixEngineInput::CreateNode(ScryptoRENode::KeyValueStore);
         let output: RENodeId = call_engine(input);
 
         Self {
@@ -38,24 +40,60 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
 
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<DataRef<V>> {
-        let substate_id = SubstateId::KeyValueStoreEntry(self.id, scrypto_encode(key));
-        let input = RadixEngineInput::SubstateRead(substate_id.clone());
-        let value: Option<V> = call_engine(input);
-        value.map(|value| DataRef::new(value))
+        let input = RadixEngineInput::LockSubstate(
+            RENodeId::KeyValueStore(self.id),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key))),
+            false,
+        );
+        let lock_handle: LockHandle = call_engine(input);
+
+        let input = RadixEngineInput::Read(lock_handle);
+        let value: KeyValueStoreEntrySubstate = call_engine(input);
+
+        if value.0.is_none() {
+            let input = RadixEngineInput::DropLock(lock_handle);
+            let _: () = call_engine(input);
+        }
+
+        value
+            .0
+            .map(|raw| DataRef::new(lock_handle, scrypto_decode(&raw).unwrap()))
     }
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
-        let substate_id = SubstateId::KeyValueStoreEntry(self.id, scrypto_encode(key));
-        let input = RadixEngineInput::SubstateRead(substate_id.clone());
-        let value: Option<V> = call_engine(input);
-        value.map(|value| DataRefMut::new(substate_id, value))
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key)));
+        let input =
+            RadixEngineInput::LockSubstate(RENodeId::KeyValueStore(self.id), offset.clone(), true);
+        let lock_handle: LockHandle = call_engine(input);
+
+        let input = RadixEngineInput::Read(lock_handle);
+        let value: KeyValueStoreEntrySubstate = call_engine(input);
+
+        if value.0.is_none() {
+            let input = RadixEngineInput::DropLock(lock_handle);
+            let _: () = call_engine(input);
+        }
+
+        value
+            .0
+            .map(|raw| DataRefMut::new(lock_handle, offset, scrypto_decode(&raw).unwrap()))
     }
 
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
-        let substate_id = SubstateId::KeyValueStoreEntry(self.id, scrypto_encode(&key));
-        let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&value));
-        call_engine(input)
+        let input = RadixEngineInput::LockSubstate(
+            RENodeId::KeyValueStore(self.id),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&key))),
+            true,
+        );
+        let lock_handle: LockHandle = call_engine(input);
+
+        let substate = KeyValueStoreEntrySubstate(Some(scrypto_encode(&value)));
+        let input = RadixEngineInput::Write(lock_handle, scrypto_encode(&substate));
+        let _: () = call_engine(input);
+
+        let input = RadixEngineInput::DropLock(lock_handle);
+        let _: () = call_engine(input);
     }
 }
 
@@ -121,25 +159,25 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> TypeId for KeyVa
 
 impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> Encode for KeyValueStore<K, V> {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_type_id(encoder: &mut Encoder) {
+        encoder.write_type_id(Self::type_id());
     }
 
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes = self.to_vec();
-        encoder.write_len(bytes.len());
+        encoder.write_dynamic_size(bytes.len());
         encoder.write_slice(&bytes);
     }
 }
 
 impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> Decode for KeyValueStore<K, V> {
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
-        decoder.check_type(Self::type_id())
+    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+        decoder.check_type_id(Self::type_id())
     }
 
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let len = decoder.read_len()?;
+        let len = decoder.read_dynamic_size()?;
         let slice = decoder.read_bytes(len)?;
         Self::try_from(slice)
             .map_err(|_| DecodeError::CustomError("Failed to decode KeyValueStore".to_string()))

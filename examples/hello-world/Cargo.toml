@@ -10,6 +10,7 @@ scrypto = { path = "../../scrypto" }
 [dev-dependencies]
 transaction = { path = "../../transaction" }
 radix-engine = { path = "../../radix-engine" }
+scrypto-unit = { path = "../../scrypto-unit" }
 
 [profile.release]
 opt-level = 's'     # Optimize for size.
@@ -20,3 +21,6 @@ strip = "debuginfo" # Strip debug info.
 
 [lib]
 crate-type = ["cdylib", "lib"]
+
+[workspace]
+# Empty to hide it from the root workspace

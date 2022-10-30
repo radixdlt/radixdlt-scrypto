@@ -1,9 +1,7 @@
 extern crate core;
 
-use radix_engine::ledger::InMemorySubstateStore;
-use scrypto::core::Network;
-use scrypto::prelude::*;
-use scrypto::to_struct;
+use radix_engine::ledger::TypedInMemorySubstateStore;
+use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -16,9 +14,9 @@ enum Action {
 
 fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, expect_err: bool) {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
     let (token_address, mint_auth, burn_auth, withdraw_auth, admin_auth) =
         test_runner.create_restricted_token(account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
@@ -52,22 +50,34 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     };
 
     // Act
-    let mut builder = ManifestBuilder::new(Network::LocalSimulator);
-    builder.lock_fee(10.into(), SYSTEM_COMPONENT);
+    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    builder.lock_fee(10.into(), FAUCET_COMPONENT);
     builder.create_proof_from_account_by_amount(Decimal::one(), auth_to_use, account);
 
     match action {
         Action::Mint => builder
             .mint(Decimal::from("1.0"), token_address)
-            .call_method_with_all_resources(account, "deposit_batch"),
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            ),
         Action::Burn => builder
             .create_proof_from_account(withdraw_auth, account)
             .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
             .burn(Decimal::from("1.0"), token_address)
-            .call_method_with_all_resources(account, "deposit_batch"),
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            ),
         Action::Withdraw => builder
             .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
-            .call_method_with_all_resources(account, "deposit_batch"),
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            ),
         Action::Deposit => builder
             .create_proof_from_account(withdraw_auth, account)
             .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
@@ -75,20 +85,27 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 builder.call_method(
                     account,
                     "deposit",
-                    to_struct!(scrypto::resource::Bucket(bucket_id)),
+                    args!(scrypto::resource::Bucket(bucket_id)),
                 )
             })
-            .call_method_with_all_resources(account, "deposit_batch"),
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            ),
     };
 
     let manifest = builder.build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     if expect_err {
-        receipt.expect_failure(is_auth_error);
+        receipt.expect_specific_failure(is_auth_error);
     } else {
-        receipt.expect_success();
+        receipt.expect_commit_success();
     }
 }
 

@@ -1,6 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::Encode;
@@ -35,7 +34,7 @@ fn test_encode_struct() {
     let c = TestStructUnit {};
 
     let mut bytes = Vec::with_capacity(512);
-    let mut encoder = Encoder::with_type(&mut bytes);
+    let mut encoder = Encoder::with_static_info(&mut bytes);
     a.encode(&mut encoder);
     b.encode(&mut encoder);
     c.encode(&mut encoder);
@@ -65,7 +64,7 @@ fn test_encode_enum() {
     let c = TestEnum::C;
 
     let mut bytes = Vec::with_capacity(512);
-    let mut encoder = Encoder::with_type(&mut bytes);
+    let mut encoder = Encoder::with_static_info(&mut bytes);
     a.encode(&mut encoder);
     b.encode(&mut encoder);
     c.encode(&mut encoder);

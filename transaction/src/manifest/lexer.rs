@@ -12,16 +12,19 @@ pub struct Span {
 pub enum TokenKind {
     /* Literals */
     BoolLiteral(bool),
+
     I8Literal(i8),
     I16Literal(i16),
     I32Literal(i32),
     I64Literal(i64),
     I128Literal(i128),
+
     U8Literal(u8),
     U16Literal(u16),
     U32Literal(u32),
     U64Literal(u64),
     U128Literal(u128),
+
     StringLiteral(String),
 
     /* Types */
@@ -58,14 +61,30 @@ pub enum TokenKind {
     Map,
 
     Decimal,
-    PackageAddress,
-    ComponentAddress,
-    ResourceAddress,
+    PreciseDecimal,
     Hash,
-    Bucket,
-    Proof,
     NonFungibleId,
     NonFungibleAddress,
+    PackageAddress,
+    SystemAddress,
+    ComponentAddress,
+    ResourceAddress,
+    Expression,
+    Blob,
+
+    /* RE Nodes */
+    Global,
+    Bucket,
+    Proof,
+    AuthZoneStack,
+    Worktop,
+    KeyValueStore,
+    NonFungibleStore,
+    Component,
+    EpochManager,
+    Vault,
+    ResourceManager,
+    Package,
 
     /* Punctuations */
     OpenParenthesis,
@@ -74,9 +93,6 @@ pub enum TokenKind {
     GreaterThan,
     Comma,
     Semicolon,
-
-    /* Bytes is a convenient way of producing `Vec<u8>` */
-    Bytes,
 
     /* Instructions */
     TakeFromWorktop,
@@ -98,8 +114,12 @@ pub enum TokenKind {
     DropAllProofs,
     CallFunction,
     CallMethod,
-    CallMethodWithAllResources,
+    CallNativeFunction,
+    CallNativeMethod,
     PublishPackage,
+    CreateResource,
+    BurnBucket,
+    MintFungible,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -196,7 +216,7 @@ impl Lexer {
             '-' | '0'..='9' => self.tokenize_number(),
             '"' => self.tokenize_string(),
             'a'..='z' | 'A'..='Z' => self.tokenize_identifier(),
-            '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' => self.tokenize_punctuation(),
+            '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' | '&' => self.tokenize_punctuation(),
             _ => Err(LexerError::UnexpectedChar(
                 self.text[self.current],
                 self.current,
@@ -381,21 +401,34 @@ impl Lexer {
             "Set" => Ok(TokenKind::Set),
             "Map" => Ok(TokenKind::Map),
             "Decimal" => Ok(TokenKind::Decimal),
-            "PackageAddress" => Ok(TokenKind::PackageAddress),
-            "ComponentAddress" => Ok(TokenKind::ComponentAddress),
-            "ResourceAddress" => Ok(TokenKind::ResourceAddress),
+            "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
             "Hash" => Ok(TokenKind::Hash),
-            "Bucket" => Ok(TokenKind::Bucket),
-            "Proof" => Ok(TokenKind::Proof),
             "NonFungibleId" => Ok(TokenKind::NonFungibleId),
             "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
+            "PackageAddress" => Ok(TokenKind::PackageAddress),
+            "SystemAddress" => Ok(TokenKind::SystemAddress),
+            "ComponentAddress" => Ok(TokenKind::ComponentAddress),
+            "ResourceAddress" => Ok(TokenKind::ResourceAddress),
+            "Expression" => Ok(TokenKind::Expression),
+            "Blob" => Ok(TokenKind::Blob),
 
             "Some" => Ok(TokenKind::Some),
             "None" => Ok(TokenKind::None),
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
 
-            "Bytes" => Ok(TokenKind::Bytes),
+            "Global" => Ok(TokenKind::Global),
+            "Bucket" => Ok(TokenKind::Bucket),
+            "Proof" => Ok(TokenKind::Proof),
+            "AuthZoneStack" => Ok(TokenKind::AuthZoneStack),
+            "Worktop" => Ok(TokenKind::Worktop),
+            "KeyValueStore" => Ok(TokenKind::KeyValueStore),
+            "NonFungibleStore" => Ok(TokenKind::NonFungibleStore),
+            "Component" => Ok(TokenKind::Component),
+            "EpochManager" => Ok(TokenKind::EpochManager),
+            "Vault" => Ok(TokenKind::Vault),
+            "ResourceManager" => Ok(TokenKind::ResourceManager),
+            "Package" => Ok(TokenKind::Package),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),
@@ -418,8 +451,12 @@ impl Lexer {
             "DROP_ALL_PROOFS" => Ok(TokenKind::DropAllProofs),
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
-            "CALL_METHOD_WITH_ALL_RESOURCES" => Ok(TokenKind::CallMethodWithAllResources),
+            "CALL_NATIVE_FUNCTION" => Ok(TokenKind::CallNativeFunction),
+            "CALL_NATIVE_METHOD" => Ok(TokenKind::CallNativeMethod),
             "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
+            "CREATE_RESOURCE" => Ok(TokenKind::CreateResource),
+            "BURN_BUCKET" => Ok(TokenKind::BurnBucket),
+            "MINT_FUNGIBLE" => Ok(TokenKind::MintFungible),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }
@@ -593,6 +630,48 @@ mod tests {
                 TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
                 TokenKind::Semicolon,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_precise_decimal() {
+        lex_ok!(
+            "PreciseDecimal(\"12\")",
+            vec![
+                TokenKind::PreciseDecimal,
+                TokenKind::OpenParenthesis,
+                TokenKind::StringLiteral("12".into()),
+                TokenKind::CloseParenthesis,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_precise_decimal_colletion() {
+        lex_ok!(
+            "List<PreciseDecimal>(PreciseDecimal(\"12\"), PreciseDecimal(\"212\"), PreciseDecimal(\"1984\"))",
+            vec![
+                TokenKind::List,
+                TokenKind::LessThan,
+                TokenKind::PreciseDecimal,
+                TokenKind::GreaterThan,
+                TokenKind::OpenParenthesis,
+                TokenKind::PreciseDecimal,
+                TokenKind::OpenParenthesis,
+                TokenKind::StringLiteral("12".into()),
+                TokenKind::CloseParenthesis,
+                TokenKind::Comma,
+                TokenKind::PreciseDecimal,
+                TokenKind::OpenParenthesis,
+                TokenKind::StringLiteral("212".into()),
+                TokenKind::CloseParenthesis,
+                TokenKind::Comma,
+                TokenKind::PreciseDecimal,
+                TokenKind::OpenParenthesis,
+                TokenKind::StringLiteral("1984".into()),
+                TokenKind::CloseParenthesis,
+                TokenKind::CloseParenthesis,
             ]
         );
     }

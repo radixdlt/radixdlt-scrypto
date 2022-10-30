@@ -3,8 +3,6 @@ extern crate alloc;
 #[cfg(feature = "alloc")]
 use alloc::string::String;
 #[cfg(feature = "alloc")]
-use alloc::string::ToString;
-#[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
 use sbor::describe::*;

@@ -43,7 +43,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     }
 
     let module_ident = format_ident!("{}_impl", bp_ident);
-    let value_ident = format_ident!("{}_Component", bp_ident);
+    let value_ident = format_ident!("{}Component", bp_ident);
 
     let output_mod = quote! {
         #[allow(non_snake_case)]
@@ -81,25 +81,30 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
     trace!("Generated dispatcher: \n{}", quote! { #output_dispatcher });
 
-    let abi_ident = format_ident!("{}_abi", bp_ident);
-    let abi_functions = generate_abi(bp_ident, bp_items)?;
-    let output_abi = quote! {
-        #[no_mangle]
-        pub extern "C" fn #abi_ident(input: *mut u8) -> *mut u8 {
-            use ::sbor::{Describe, Type};
-            use ::scrypto::abi::{BlueprintAbi, Fn};
-            use ::sbor::rust::borrow::ToOwned;
-            use ::sbor::rust::vec;
-            use ::sbor::rust::vec::Vec;
+    #[cfg(feature = "no-abi-gen")]
+    let output_abi = quote! {};
+    #[cfg(not(feature = "no-abi-gen"))]
+    let output_abi = {
+        let abi_ident = format_ident!("{}_abi", bp_ident);
+        let abi_functions = generate_abi(bp_ident, bp_items)?;
+        quote! {
+            #[no_mangle]
+            pub extern "C" fn #abi_ident(input: *mut u8) -> *mut u8 {
+                use ::sbor::{Describe, Type};
+                use ::scrypto::abi::{BlueprintAbi, Fn};
+                use ::sbor::rust::borrow::ToOwned;
+                use ::sbor::rust::vec;
+                use ::sbor::rust::vec::Vec;
 
-            let fns: Vec<Fn> = vec![ #(#abi_functions),* ];
-            let structure: Type = #module_ident::#bp_ident::describe();
-            let output = BlueprintAbi {
-                structure,
-                fns,
-            };
+                let fns: Vec<Fn> = vec![ #(#abi_functions),* ];
+                let structure: Type = #module_ident::#bp_ident::describe();
+                let output = BlueprintAbi {
+                    structure,
+                    fns,
+                };
 
-            ::scrypto::buffer::scrypto_encode_to_buffer(&output)
+                ::scrypto::buffer::scrypto_encode_to_buffer(&output)
+            }
         }
     };
     trace!(
@@ -226,7 +231,7 @@ fn generate_dispatcher(
                 // parse input
                 let input_struct_name = format_ident!("{}_{}_Input", bp_ident, ident);
                 stmts.push(parse_quote!{
-                    let input: #input_struct_name = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
+                    let input: #input_struct_name = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
                 });
 
                 // load state if needed
@@ -236,10 +241,13 @@ fn generate_dispatcher(
                         let actor = ::scrypto::core::Runtime::actor();
                     });
                     stmts.push(parse_quote! {
-                        let (component_address, ..) = actor.as_component();
+                        let (component_id, ..) = actor.as_component();
                     });
-                    stmts.push(parse_quote!{
-                        let mut component_data = ::scrypto::core::DataPointer::new(::scrypto::engine::types::SubstateId::ComponentState(component_address));
+                    stmts.push(parse_quote! {
+                        let mut component_data = ::scrypto::core::DataPointer::new(
+                            ::scrypto::engine::types::RENodeId::Component(component_id),
+                            ::scrypto::engine::types::SubstateOffset::Component(::scrypto::engine::types::ComponentOffset::State),
+                        );
                     });
                     stmts.push(stmt);
                 }
@@ -259,7 +267,7 @@ fn generate_dispatcher(
                 let fn_ident = format_ident!("{}_{}", bp_ident, ident);
                 let extern_function = quote! {
                     #[no_mangle]
-                    pub extern "C" fn #fn_ident(method_arg: *mut u8) -> *mut u8 {
+                    pub extern "C" fn #fn_ident(args: *mut u8) -> *mut u8 {
                         use ::sbor::rust::ops::{Deref, DerefMut};
 
                         // Set up panic hook
@@ -281,6 +289,7 @@ fn generate_dispatcher(
 }
 
 // Parses function items of an `Impl` and returns ABI of functions.
+#[allow(dead_code)]
 fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
     let mut fns = Vec::<Expr>::new();
 
@@ -435,11 +444,11 @@ fn generate_stubs(
                     } else {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
-                                self.component.call(#name, vec![
+                                self.component.call(#name, ::scrypto::args!(
                                     #(
-                                        scrypto_encode(&#input_args)
+                                       #input_args
                                     ),*
-                                ])
+                                ))
                             }
                         });
                     }
@@ -550,13 +559,13 @@ mod tests {
                         }
                     }
 
-                    impl ::scrypto::component::ComponentState<Test_Component> for Test {
-                        fn instantiate(self) -> Test_Component {
+                    impl ::scrypto::component::ComponentState<TestComponent> for Test {
+                        fn instantiate(self) -> TestComponent {
                             let component = ::scrypto::component::component_system().create_component(
                                 "Test",
                                 self
                             );
-                            Test_Component {
+                            TestComponent {
                                 component
                             }
                         }
@@ -572,7 +581,7 @@ mod tests {
                 pub struct Test_y_Input { arg0 : u32 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_x(method_arg: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_x(args: *mut u8) -> *mut u8 {
                     use ::sbor::rust::ops::{Deref, DerefMut};
 
                     // Set up panic hook
@@ -582,10 +591,13 @@ mod tests {
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                    let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
+                    let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
                     let actor = ::scrypto::core::Runtime::actor();
-                    let (component_address, ..) = actor.as_component();
-                    let mut component_data = ::scrypto::core::DataPointer::new(::scrypto::engine::types::SubstateId::ComponentState(component_address));
+                    let (component_id, ..) = actor.as_component();
+                    let mut component_data = ::scrypto::core::DataPointer::new(
+                        ::scrypto::engine::types::RENodeId::Component(component_id),
+                        ::scrypto::engine::types::SubstateOffset::Component(::scrypto::engine::types::ComponentOffset::State),
+                    );
                     let state: DataRef<Test_impl::Test> = component_data.get();
 
                     let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(state.deref(), input.arg0));
@@ -593,7 +605,7 @@ mod tests {
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_y(method_arg: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_y(args: *mut u8) -> *mut u8 {
                     use ::sbor::rust::ops::{Deref, DerefMut};
 
                     // Set up panic hook
@@ -603,7 +615,7 @@ mod tests {
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                    let input: Test_y_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
+                    let input: Test_y_Input = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
                     let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::y(input.arg0));
                     rtn
                 }
@@ -641,11 +653,11 @@ mod tests {
 
                 #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                pub struct Test_Component {
+                pub struct TestComponent {
                     pub component: ::scrypto::component::Component,
                 }
 
-                impl ::scrypto::component::LocalComponent for Test_Component {
+                impl ::scrypto::component::LocalComponent for TestComponent {
                     fn package_address(&self) -> PackageAddress {
                         self.component.package_address()
                     }
@@ -661,12 +673,12 @@ mod tests {
                     }
                 }
 
-                impl Test_Component {
+                impl TestComponent {
                     pub fn y(arg0: u32) -> u32 {
                         ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", ::scrypto::args!(arg0))
                     }
                     pub fn x(&self, arg0: u32) -> u32 {
-                        self.component.call("x", vec![scrypto_encode(&arg0)])
+                        self.component.call("x", ::scrypto::args!(arg0))
                     }
                 }
             },
@@ -692,13 +704,13 @@ mod tests {
                     impl Test {
                     }
 
-                    impl ::scrypto::component::ComponentState<Test_Component> for Test {
-                        fn instantiate(self) -> Test_Component {
+                    impl ::scrypto::component::ComponentState<TestComponent> for Test {
+                        fn instantiate(self) -> TestComponent {
                             let component = ::scrypto::component::component_system().create_component(
                                 "Test",
                                 self
                             );
-                            Test_Component {
+                            TestComponent {
                                 component
                             }
                         }
@@ -723,11 +735,11 @@ mod tests {
 
                 #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                pub struct Test_Component {
+                pub struct TestComponent {
                     pub component: ::scrypto::component::Component,
                 }
 
-                impl ::scrypto::component::LocalComponent for Test_Component {
+                impl ::scrypto::component::LocalComponent for TestComponent {
                     fn package_address(&self) -> PackageAddress {
                         self.component.package_address()
                     }
@@ -743,7 +755,7 @@ mod tests {
                     }
                 }
 
-                impl Test_Component {
+                impl TestComponent {
                 }
             },
         );

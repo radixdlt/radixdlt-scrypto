@@ -22,8 +22,9 @@ impl Build {
         build_package(
             self.path.clone().unwrap_or(current_dir().unwrap()),
             self.trace,
+            false,
         )
         .map(|_| ())
-        .map_err(Error::CargoError)
+        .map_err(Error::BuildError)
     }
 }

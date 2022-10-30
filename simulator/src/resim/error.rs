@@ -1,9 +1,12 @@
 use std::io;
+use std::path::PathBuf;
 
 use radix_engine::engine::*;
-use radix_engine::model::ExtractAbiError;
+use radix_engine::model::{ExportError, ExtractAbiError};
+use radix_engine::wasm::PrepareError;
 use sbor::*;
 use scrypto::address::AddressError;
+use scrypto::prelude::ParseNetworkError;
 use transaction::errors::*;
 
 use crate::ledger::*;
@@ -20,13 +23,19 @@ pub enum Error {
 
     IOError(io::Error),
 
+    IOErrorAtPath(io::Error, PathBuf),
+
     DataError(DecodeError),
 
     JSONError(serde_json::Error),
 
-    CargoError(CargoExecutionError),
+    BuildError(BuildError),
 
-    PackageError(ExtractAbiError),
+    PackageAddressNotFound,
+
+    ExtractAbiError(ExtractAbiError),
+
+    InvalidPackage(PrepareError),
 
     TransactionConstructionError(BuildCallWithAbiError),
 
@@ -34,9 +43,9 @@ pub enum Error {
 
     TransactionExecutionError(RuntimeError),
 
-    TransactionRejected,
+    TransactionRejected(RejectionError),
 
-    AbiExportError(RuntimeError),
+    AbiExportError(ExportError),
 
     LedgerDumpError(DisplayError),
 
@@ -51,4 +60,6 @@ pub enum Error {
     AddressError(AddressError),
 
     FailedToBuildArgs(BuildArgsError),
+
+    ParseNetworkError(ParseNetworkError),
 }

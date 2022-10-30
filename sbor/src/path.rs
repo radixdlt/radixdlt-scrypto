@@ -26,7 +26,7 @@ impl From<MutableSborPath> for SborPath {
 }
 
 /// A series of indexes which describes some value in the sbor tree
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub struct SborPath(Vec<usize>);
 
 impl SborPath {

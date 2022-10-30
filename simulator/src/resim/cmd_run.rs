@@ -1,6 +1,6 @@
 use clap::Parser;
 use regex::{Captures, Regex};
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use std::env;
 use std::path::PathBuf;
 
@@ -11,6 +11,14 @@ use crate::resim::*;
 pub struct Run {
     /// The path to a transaction manifest file
     path: PathBuf,
+
+    /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
+    #[clap(short, long)]
+    network: Option<String>,
+
+    /// The paths to blobs
+    #[clap(short, long, multiple = true)]
+    blobs: Option<Vec<String>>,
 
     /// The private keys used for signing, separated by comma
     #[clap(short, long)]
@@ -33,14 +41,24 @@ impl Run {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;
         let pre_processed_manifest = Self::pre_process_manifest(&manifest);
+        let network = match &self.network {
+            Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
+            None => NetworkDefinition::simulator(),
+        };
+        let mut blobs = Vec::new();
+        if let Some(paths) = &self.blobs {
+            for path in paths {
+                blobs.push(std::fs::read(path).map_err(Error::IOError)?);
+            }
+        }
         let compiled_manifest =
-            transaction::manifest::compile(&pre_processed_manifest, &Network::LocalSimulator)
+            transaction::manifest::compile(&pre_processed_manifest, &network, blobs)
                 .map_err(Error::CompileError)?;
         handle_manifest(
             compiled_manifest,
             &self.signing_keys,
+            &self.network,
             &None,
-            false,
             self.trace,
             true,
             out,
@@ -58,7 +76,7 @@ mod tests {
         temp_env::with_vars(
             vec![
                 (
-                    "system",
+                    "faucet",
                     Some("system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpql4sktx"),
                 ),
                 (
@@ -67,8 +85,8 @@ mod tests {
                 ),
             ],
             || {
-                let manifest = r#"CALL_METHOD ComponentAddress("${  system  }") "free_xrd";\nTAKE_FROM_WORKTOP ResourceAddress("${xrd}") Bucket("bucket1");\n"#;
-                let after = r#"CALL_METHOD ComponentAddress("system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpql4sktx") "free_xrd";\nTAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");\n"#;
+                let manifest = r#"CALL_METHOD ComponentAddress("${  faucet  }") "free";\nTAKE_FROM_WORKTOP ResourceAddress("${xrd}") Bucket("bucket1");\n"#;
+                let after = r#"CALL_METHOD ComponentAddress("system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpql4sktx") "free";\nTAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");\n"#;
                 assert_eq!(Run::pre_process_manifest(manifest), after);
             },
         );

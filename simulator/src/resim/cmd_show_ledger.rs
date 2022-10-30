@@ -1,8 +1,9 @@
 use clap::Parser;
 use colored::*;
+use radix_engine_stores::rocks_db::RadixEngineDB;
 use scrypto::address::Bech32Encoder;
+use scrypto::misc::ContextualDisplay;
 
-use crate::ledger::*;
 use crate::resim::*;
 use crate::utils::*;
 
@@ -14,7 +15,7 @@ impl ShowLedger {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
-        let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
         writeln!(out, "{}:", "Packages".green().bold()).map_err(Error::IOError)?;
         for (last, package_address) in ledger.list_packages().iter().identify_last() {
@@ -22,9 +23,7 @@ impl ShowLedger {
                 out,
                 "{} {}",
                 list_item_prefix(last),
-                bech32_encoder
-                    .encode_package_address(package_address)
-                    .map_err(|err| Error::AddressError(err))?
+                package_address.display(&bech32_encoder)
             )
             .map_err(Error::IOError)?;
         }
@@ -35,9 +34,7 @@ impl ShowLedger {
                 out,
                 "{} {}",
                 list_item_prefix(last),
-                bech32_encoder
-                    .encode_component_address(component_address)
-                    .map_err(|err| Error::AddressError(err))?
+                component_address.display(&bech32_encoder)
             )
             .map_err(Error::IOError)?;
         }
@@ -48,9 +45,7 @@ impl ShowLedger {
                 out,
                 "{} {}",
                 list_item_prefix(last),
-                bech32_encoder
-                    .encode_resource_address(resource_address)
-                    .map_err(|err| Error::AddressError(err))?
+                resource_address.display(&bech32_encoder)
             )
             .map_err(Error::IOError)?;
         }

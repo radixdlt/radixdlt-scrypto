@@ -1,19 +1,46 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - docs
+      - alphanet
+      - release/*
+  pull_request:
+    branches:
+      - main
+      - develop
+      - docs
+      - alphanet
+      - release/*
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  cancel_running_workflows:
+    name: Cancel running workflows
+    runs-on: ubuntu-20.04
+    steps:
+      - name: cancel running workflows
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+
   check-code-format:
     name: Check code format
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v2
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang -y
+      if: matrix.os == 'linux'
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -30,7 +57,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
@@ -50,7 +77,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
@@ -70,7 +97,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
@@ -80,7 +107,7 @@ jobs:
       run: cargo test
       working-directory: scrypto
     - name: Run tests (no_std)
-      run: cargo test --no-default-features --features alloc
+      run: cargo test --no-default-features --features alloc,prelude
       working-directory: scrypto
     - name: Run abi tests
       run: cargo test
@@ -93,7 +120,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
@@ -110,9 +137,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v2
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake -y
+      if: matrix.os == 'linux'
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -122,24 +153,28 @@ jobs:
       run: rustup +nightly target add wasm32-unknown-unknown
     - name: Build account
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: assets/account
-    - name: Build system
+      working-directory: assets/blueprints/account
+    - name: Build faucet
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: assets/system
+      working-directory: assets/blueprints/faucet
+    - name: Build no-std
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/no-std
     - name: Build and test hello-world
       run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/hello-world
-    - name: Build and test no-std
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
-      working-directory: examples/no-std
   radix-engine:
     name: Run Radix Engine tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v2
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake -y
+      if: matrix.os == 'linux'
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -157,9 +192,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v2
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake -y
+      if: matrix.os == 'linux'
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -177,9 +216,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v2
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake -y
+      if: matrix.os == 'linux'
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -197,7 +240,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
@@ -211,9 +254,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v2
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake -y
+      if: matrix.os == 'linux'
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable

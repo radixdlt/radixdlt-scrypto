@@ -14,28 +14,29 @@ macro_rules! scrypto_type {
 
         impl Encode for $t {
             #[inline]
-            fn encode_type(&self, encoder: &mut Encoder) {
-                encoder.write_type(Self::type_id());
+            fn encode_type_id(encoder: &mut Encoder) {
+                encoder.write_type_id(Self::type_id());
             }
             #[inline]
             fn encode_value(&self, encoder: &mut Encoder) {
                 let bytes = self.to_vec();
-                encoder.write_len(bytes.len());
+                encoder.write_dynamic_size(bytes.len());
                 encoder.write_slice(&bytes);
             }
         }
 
         impl Decode for $t {
-            fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
-                decoder.check_type(Self::type_id())
+            fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+                decoder.check_type_id(Self::type_id())
             }
             fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-                let len = decoder.read_len()?;
+                let len = decoder.read_dynamic_size()?;
                 let slice = decoder.read_bytes(len)?;
-                Self::try_from(slice).map_err(|_| {
+                Self::try_from(slice).map_err(|err| {
                     DecodeError::CustomError(::sbor::rust::format!(
-                        "Failed to decode {}",
-                        stringify!($t)
+                        "Failed to decode {}: {:?}",
+                        stringify!($t),
+                        err
                     ))
                 })
             }
@@ -62,31 +63,16 @@ pub enum ScryptoType {
     ComponentAddress,
     Component,
     KeyValueStore,
+    SystemAddress,
 
     // crypto
     Hash,
-    EcdsaPublicKey,
-    EcdsaSignature,
-    Ed25519PublicKey,
-    Ed25519Signature,
+    EcdsaSecp256k1PublicKey,
+    EcdsaSecp256k1Signature,
+    EddsaEd25519PublicKey,
+    EddsaEd25519Signature,
 
     // math
-    U8,
-    U16,
-    U32,
-    U64,
-    U128,
-    U256,
-    U384,
-    U512,
-    I8,
-    I16,
-    I32,
-    I64,
-    I128,
-    I256,
-    I384,
-    I512,
     Decimal,
     PreciseDecimal,
 
@@ -97,19 +83,39 @@ pub enum ScryptoType {
     NonFungibleId,
     NonFungibleAddress,
     ResourceAddress,
+
+    Expression,
+    Blob,
 }
 
 // Need to update `scrypto-derive/src/import.rs` after changing the table below
-const MAPPING: [(ScryptoType, u8, &str); 33] = [
+const MAPPING: [(ScryptoType, u8, &str); 20] = [
     (ScryptoType::PackageAddress, 0x80, "PackageAddress"), // 128
     (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"), // 129
     (ScryptoType::Component, 0x82, "ComponentAddress"),    // 130
     (ScryptoType::KeyValueStore, 0x83, "KeyValueStore"),   // 131
+    (ScryptoType::SystemAddress, 0x84, "SystemAddress"),   // 132
     (ScryptoType::Hash, 0x90, "Hash"),                     // 144
-    (ScryptoType::EcdsaPublicKey, 0x91, "EcdsaPublicKey"), // 145
-    (ScryptoType::EcdsaSignature, 0x92, "EcdsaSignature"), // 146
-    (ScryptoType::Ed25519PublicKey, 0x93, "Ed25519PublicKey"), // 147
-    (ScryptoType::Ed25519Signature, 0x94, "Ed25519Signature"), // 148
+    (
+        ScryptoType::EcdsaSecp256k1PublicKey,
+        0x91,
+        "EcdsaSecp256k1PublicKey",
+    ), // 145
+    (
+        ScryptoType::EcdsaSecp256k1Signature,
+        0x92,
+        "EcdsaSecp256k1Signature",
+    ), // 146
+    (
+        ScryptoType::EddsaEd25519PublicKey,
+        0x93,
+        "EddsaEd25519PublicKey",
+    ), // 147
+    (
+        ScryptoType::EddsaEd25519Signature,
+        0x94,
+        "EddsaEd25519Signature",
+    ), // 148
     (ScryptoType::Decimal, 0xa1, "Decimal"),               // 161
     (ScryptoType::PreciseDecimal, 0xa2, "PreciseDecimal"), // 162
     (ScryptoType::Bucket, 0xb1, "Bucket"),                 // 177
@@ -118,22 +124,8 @@ const MAPPING: [(ScryptoType, u8, &str); 33] = [
     (ScryptoType::NonFungibleId, 0xb4, "NonFungibleId"),   // 180
     (ScryptoType::NonFungibleAddress, 0xb5, "NonFungibleAddress"), // 181
     (ScryptoType::ResourceAddress, 0xb6, "ResourceAddress"), // 182
-    (ScryptoType::U8, 0xc0, "U8"),                         // 192
-    (ScryptoType::U16, 0xc1, "U16"),                       // 193
-    (ScryptoType::U32, 0xc2, "U32"),                       // 194
-    (ScryptoType::U64, 0xc3, "U64"),                       // 195
-    (ScryptoType::U128, 0xc4, "U128"),                     // 196
-    (ScryptoType::U256, 0xc5, "U256"),                     // 197
-    (ScryptoType::U384, 0xc6, "U384"),                     // 198
-    (ScryptoType::U512, 0xc7, "U512"),                     // 199
-    (ScryptoType::I8, 0xc8, "I8"),                         // 200
-    (ScryptoType::I16, 0xc9, "I16"),                       // 201
-    (ScryptoType::I32, 0xca, "I32"),                       // 202
-    (ScryptoType::I64, 0xcb, "I64"),                       // 203
-    (ScryptoType::I128, 0xcc, "I128"),                     // 204
-    (ScryptoType::I256, 0xcd, "I256"),                     // 205
-    (ScryptoType::I384, 0xce, "I384"),                     // 206
-    (ScryptoType::I512, 0xcf, "I512"),                     // 207
+    (ScryptoType::Expression, 0xc1, "Expression"),         // 193
+    (ScryptoType::Blob, 0xc2, "Blob"),                     // 194
 ];
 
 impl ScryptoType {

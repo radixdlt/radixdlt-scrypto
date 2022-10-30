@@ -1,21 +1,15 @@
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::core::Receiver;
-use crate::engine::types::RENodeId;
-use crate::engine::{api::*, call_engine, types::ProofId};
+use crate::engine::{api::*, types::*, utils::*};
 use crate::math::*;
 use crate::misc::*;
+use crate::native_methods;
 use crate::resource::*;
-use crate::sfunctions;
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ConsumingProofDropInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ProofGetAmountInput {}
@@ -67,9 +61,10 @@ impl From<NonFungibleAddress> for ProofValidationMode {
 }
 
 impl Clone for Proof {
-    sfunctions! {
-        Receiver::NativeRENodeRef(RENodeId::Proof(self.0)) => {
+    native_methods! {
+        RENodeId::Proof(self.0), NativeMethod::Proof => {
             fn clone(&self) -> Self {
+                ProofMethod::Clone,
                 ProofCloneInput {}
             }
         }
@@ -219,26 +214,26 @@ impl Proof {
         }
     }
 
-    sfunctions! {
-        Receiver::NativeRENodeRef(RENodeId::Proof(self.0)) => {
+    native_methods! {
+        RENodeId::Proof(self.0), NativeMethod::Proof => {
             fn amount(&self) -> Decimal {
+                ProofMethod::GetAmount,
                 ProofGetAmountInput {}
             }
             fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+                ProofMethod::GetNonFungibleIds,
                 ProofGetNonFungibleIdsInput {}
             }
             fn resource_address(&self) -> ResourceAddress {
+                ProofMethod::GetResourceAddress,
                 ProofGetResourceAddressInput {}
             }
         }
     }
 
-    sfunctions! {
-        Receiver::Consumed(RENodeId::Proof(self.0)) => {
-            pub fn drop(self) -> () {
-                ConsumingProofDropInput {}
-            }
-        }
+    pub fn drop(self) {
+        let input = RadixEngineInput::DropNode(RENodeId::Proof(self.0));
+        let _: () = call_engine(input);
     }
 }
 
@@ -253,15 +248,18 @@ impl Clone for ValidatedProof {
 }
 
 impl ValidatedProof {
-    sfunctions! {
-        Receiver::NativeRENodeRef(RENodeId::Proof(self.proof_id())) => {
+    native_methods! {
+        RENodeId::Proof(self.proof_id()), NativeMethod::Proof => {
             pub fn amount(&self) -> Decimal {
+                ProofMethod::GetAmount,
                 ProofGetAmountInput {}
             }
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+                ProofMethod::GetNonFungibleIds,
                 ProofGetNonFungibleIdsInput {}
             }
             pub fn resource_address(&self) -> ResourceAddress {
+                ProofMethod::GetResourceAddress,
                 ProofGetResourceAddressInput {}
             }
         }
@@ -302,6 +300,18 @@ impl ValidatedProof {
             .iter()
             .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
             .collect()
+    }
+
+    /// Returns a singleton non-fungible id
+    ///
+    /// # Panics
+    /// Panics if this is not a singleton bucket
+    pub fn non_fungible_id(&self) -> NonFungibleId {
+        let non_fungible_ids = self.non_fungible_ids();
+        if non_fungible_ids.len() != 1 {
+            panic!("Expecting singleton NFT vault");
+        }
+        self.non_fungible_ids().into_iter().next().unwrap()
     }
 
     /// Returns a singleton non-fungible.

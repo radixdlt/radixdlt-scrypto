@@ -1,6 +1,6 @@
 use clap::Parser;
-use scrypto::core::Network;
-use scrypto::engine::types::*;
+use radix_engine::types::*;
+use scrypto::prelude::Expression;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -9,7 +9,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct CallFunction {
     /// The package which the function belongs to
-    package_address: PackageAddress,
+    package_address: SimulatorPackageAddress,
 
     /// The name of the blueprint which the function belongs to
     blueprint_name: String,
@@ -23,6 +23,10 @@ pub struct CallFunction {
     /// The proofs to add to the auth zone
     #[clap(short, long, multiple = true)]
     proofs: Option<Vec<String>>,
+
+    /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
+    #[clap(short, long)]
+    network: Option<String>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
@@ -42,7 +46,7 @@ impl CallFunction {
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
 
-        let mut manifest_builder = &mut ManifestBuilder::new(Network::LocalSimulator);
+        let mut manifest_builder = &mut ManifestBuilder::new(&NetworkDefinition::simulator());
         for resource_specifier in proofs {
             manifest_builder = manifest_builder
                 .create_proof_from_account_by_resource_specifier(
@@ -53,23 +57,27 @@ impl CallFunction {
         }
 
         let manifest = manifest_builder
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(100.into(), FAUCET_COMPONENT)
             .call_function_with_abi(
-                self.package_address,
+                self.package_address.0,
                 &self.blueprint_name,
                 &self.function_name,
                 self.arguments.clone(),
                 Some(default_account),
-                &export_abi(self.package_address, &self.blueprint_name)?,
+                &export_abi(self.package_address.0, &self.blueprint_name)?,
             )
             .map_err(Error::TransactionConstructionError)?
-            .call_method_with_all_resources(default_account, "deposit_batch")
+            .call_method(
+                default_account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
             .build();
         handle_manifest(
             manifest,
             &self.signing_keys,
+            &self.network,
             &self.manifest,
-            false,
             self.trace,
             true,
             out,

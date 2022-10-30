@@ -1,22 +1,17 @@
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::engine::types::GlobalAddress;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::core::Receiver;
-use crate::engine::types::RENodeId;
-use crate::engine::{api::*, call_engine, types::BucketId};
+use crate::engine::{api::*, types::*, utils::*};
 use crate::math::*;
 use crate::misc::*;
+use crate::native_methods;
 use crate::resource::*;
-use crate::sfunctions;
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ConsumingBucketBurnInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketTakeInput {
@@ -52,56 +47,63 @@ pub struct Bucket(pub BucketId);
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(resource_address)),
-            "create_bucket".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
+            RENodeId::Global(GlobalAddress::Resource(resource_address)),
             scrypto_encode(&ResourceManagerCreateBucketInput {}),
         );
         call_engine(input)
     }
 
-    sfunctions! {
-        Receiver::Consumed(RENodeId::Bucket(self.0)) => {
-           pub fn burn(self) -> () {
-                ConsumingBucketBurnInput {}
-            }
-        }
+    pub fn burn(self) -> () {
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
+            RENodeId::Global(GlobalAddress::Resource(self.resource_address())),
+            scrypto_encode(&ResourceManagerBurnInput { bucket: self }),
+        );
+        call_engine(input)
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Self {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::Bucket(self.0)),
-            "take".to_string(),
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::Bucket(BucketMethod::Take),
+            RENodeId::Bucket(self.0),
             scrypto_encode(&BucketTakeInput { amount }),
         );
         call_engine(input)
     }
 
-    sfunctions! {
-        Receiver::NativeRENodeRef(RENodeId::Bucket(self.0)) => {
+    native_methods! {
+        RENodeId::Bucket(self.0), NativeMethod::Bucket => {
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
+                BucketMethod::TakeNonFungibles,
                 BucketTakeNonFungiblesInput {
                     ids: non_fungible_ids.clone()
                 }
             }
             pub fn put(&mut self, other: Self) -> () {
+                BucketMethod::Put,
                 BucketPutInput {
                     bucket: other
                 }
             }
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+                BucketMethod::GetNonFungibleIds,
                 BucketGetNonFungibleIdsInput {
                 }
             }
             pub fn amount(&self) -> Decimal {
+                BucketMethod::GetAmount,
                 BucketGetAmountInput {
                 }
             }
             pub fn resource_address(&self) -> ResourceAddress {
+                BucketMethod::GetResourceAddress,
                 BucketGetResourceAddressInput {
                 }
             }
             pub fn create_proof(&self) -> scrypto::resource::Proof {
+                BucketMethod::CreateProof,
                 BucketCreateProofInput {
                 }
             }
@@ -144,6 +146,18 @@ impl Bucket {
             .iter()
             .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
             .collect()
+    }
+
+    /// Returns a singleton non-fungible id
+    ///
+    /// # Panics
+    /// Panics if this is not a singleton bucket
+    pub fn non_fungible_id(&self) -> NonFungibleId {
+        let non_fungible_ids = self.non_fungible_ids();
+        if non_fungible_ids.len() != 1 {
+            panic!("Expecting singleton NFT vault");
+        }
+        self.non_fungible_ids().into_iter().next().unwrap()
     }
 
     /// Returns a singleton non-fungible.

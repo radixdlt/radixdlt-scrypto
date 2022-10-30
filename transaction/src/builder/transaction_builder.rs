@@ -5,8 +5,8 @@ use crate::{model::*, signing::Signer};
 pub struct TransactionBuilder {
     manifest: Option<TransactionManifest>,
     header: Option<TransactionHeader>,
-    intent_signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>,
-    notary_signature: Option<EcdsaSignature>,
+    intent_signatures: Vec<SignatureWithPublicKey>,
+    notary_signature: Option<Signature>,
 }
 
 impl TransactionBuilder {
@@ -14,7 +14,7 @@ impl TransactionBuilder {
         Self {
             manifest: None,
             header: None,
-            intent_signatures: Vec::new(),
+            intent_signatures: vec![],
             notary_signature: None,
         }
     }
@@ -32,15 +32,24 @@ impl TransactionBuilder {
     pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
         let intent = self.transaction_intent();
         let intent_payload = scrypto_encode(&intent);
-        self.intent_signatures
-            .push((signer.public_key(), signer.sign(&intent_payload)));
+        self.intent_signatures.push(signer.sign(&intent_payload));
+        self
+    }
+
+    pub fn signer_signatures(mut self, sigs: Vec<SignatureWithPublicKey>) -> Self {
+        self.intent_signatures.extend(sigs);
         self
     }
 
     pub fn notarize<S: Signer>(mut self, signer: &S) -> Self {
         let signed_intent = self.signed_transaction_intent();
         let signed_intent_payload = scrypto_encode(&signed_intent);
-        self.notary_signature = Some(signer.sign(&signed_intent_payload));
+        self.notary_signature = Some(signer.sign(&signed_intent_payload).signature());
+        self
+    }
+
+    pub fn notary_signature(mut self, signature: Signature) -> Self {
+        self.notary_signature = Some(signature);
         self
     }
 
@@ -69,7 +78,7 @@ impl TransactionBuilder {
 
 #[cfg(test)]
 mod tests {
-    use scrypto::core::Network;
+    use scrypto::core::NetworkDefinition;
 
     use super::*;
     use crate::builder::*;
@@ -77,22 +86,22 @@ mod tests {
 
     #[test]
     fn notary_as_signatory() {
-        let private_key = EcdsaPrivateKey::from_u64(1).unwrap();
+        let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
 
         let transaction = TransactionBuilder::new()
             .header(TransactionHeader {
                 version: 1,
-                network: Network::LocalSimulator,
+                network_id: NetworkDefinition::simulator().id,
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce: 5,
-                notary_public_key: private_key.public_key(),
+                notary_public_key: private_key.public_key().into(),
                 notary_as_signatory: true,
                 cost_unit_limit: 1_000_000,
                 tip_percentage: 5,
             })
             .manifest(
-                ManifestBuilder::new(Network::LocalSimulator)
+                ManifestBuilder::new(&NetworkDefinition::simulator())
                     .clear_auth_zone()
                     .build(),
             )

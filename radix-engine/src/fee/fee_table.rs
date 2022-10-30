@@ -1,92 +1,120 @@
-use scrypto::engine::types::*;
-use scrypto::prelude::TypeName;
-use scrypto::{core::Receiver, values::ScryptoValue};
-
-use crate::wasm::{InstructionCostRules, WasmMeteringParams};
+use crate::types::*;
 
 pub enum SystemApiCostingEntry<'a> {
-    /// Invokes a function, native or wasm.
-    InvokeFunction {
-        type_name: TypeName,
-        input: &'a ScryptoValue,
+    /*
+     * Invocation
+     */
+    InvokeScrypto {
+        invocation: &'a ScryptoInvocation,
+    },
+    InvokeNative {
+        invocation: &'a NativeInvocation,
     },
 
-    /// Invokes a method, native or wasm.
-    InvokeMethod {
-        receiver: Receiver,
-        input: &'a ScryptoValue,
+    /*
+     * RENode
+     */
+    ReadOwnedNodes,
+    /// Creates a RENode.
+    CreateNode {
+        size: u32,
+    },
+    /// Drops a RENode
+    DropNode {
+        size: u32,
+    },
+    /// Globalizes a RENode.
+    GlobalizeNode {
+        size: u32,
+    },
+    /// Borrows a RENode.
+    BorrowNode {
+        loaded: bool,
+        size: u32,
     },
 
-    /// Globalizes a RE value.
-    Globalize { size: u32 },
+    /*
+     * Substate
+     */
+    /// Borrows a substate
+    BorrowSubstate {
+        loaded: bool,
+        size: u32,
+    },
+    /// Returns a substate.
+    ReturnSubstate {
+        size: u32,
+    },
+    /// Takes a substate
+    TakeSubstate {
+        size: u32,
+    },
+    LockSubstate {
+        size: u32,
+    },
+    /// Reads the data of a Substate
+    ReadSubstate {
+        size: u32,
+    },
+    /// Updates the data of a Substate
+    WriteSubstate {
+        size: u32,
+    },
 
-    /// Borrows a globalized value.
-    BorrowGlobal { loaded: bool, size: u32 },
+    DropLock,
 
-    /// Borrows a local value.
-    BorrowLocal,
-
-    /// Returns a borrowed value.
-    ReturnGlobal { size: u32 },
-
-    /// Returns a borrowed value.
-    ReturnLocal,
-
-    /// Creates a RE value.
-    Create { size: u32 },
-
-    /// Reads the data of a RE value.
-    Read { size: u32 },
-
-    /// Updates the data of a RE Value.
-    Write { size: u32 },
-
+    /*
+     * Misc
+     */
     /// Reads the current epoch.
     ReadEpoch,
-
-    /// Read the transaction hash.
+    /// Reads the transaction hash.
     ReadTransactionHash,
-
-    /// Read the transaction network.
-    ReadTransactionNetwork,
-
+    /// Reads blob in transaction
+    ReadBlob {
+        size: u32,
+    },
     /// Generates a UUID.
     GenerateUuid,
-
     /// Emits a log.
-    EmitLog { size: u32 },
-
-    /// Checks if an access rule can be satisfied by the given proofs.
-    CheckAccessRule,
+    EmitLog {
+        size: u32,
+    },
 }
 
 pub struct FeeTable {
-    tx_decoding_per_byte: u32,
+    tx_base_fee: u32,
+    tx_manifest_decoding_per_byte: u32,
     tx_manifest_verification_per_byte: u32,
     tx_signature_verification_per_sig: u32,
+    tx_blob_price_per_byte: u32,
     fixed_low: u32,
     fixed_medium: u32,
     fixed_high: u32,
     wasm_instantiation_per_byte: u32,
-    wasm_metering_params: WasmMeteringParams,
 }
 
 impl FeeTable {
     pub fn new() -> Self {
         Self {
-            tx_decoding_per_byte: 4,
+            tx_base_fee: 10_000,
+            tx_manifest_decoding_per_byte: 3,
             tx_manifest_verification_per_byte: 1,
             tx_signature_verification_per_sig: 3750,
-            wasm_instantiation_per_byte: 500,
-            fixed_low: 1000,
-            fixed_medium: 5_000,
-            fixed_high: 10_000,
-            wasm_metering_params: WasmMeteringParams::new(InstructionCostRules::tiered(50000), 512),
+            tx_blob_price_per_byte: 1,
+            wasm_instantiation_per_byte: 0, // TODO: Re-enable WASM instantiation cost if it's unavoidable
+            fixed_low: 100,
+            fixed_medium: 500,
+            fixed_high: 1000,
         }
     }
 
-    pub fn tx_decoding_per_byte(&self) -> u32 {
-        self.tx_decoding_per_byte
+    pub fn tx_base_fee(&self) -> u32 {
+        self.tx_base_fee
+    }
+
+    pub fn tx_manifest_decoding_per_byte(&self) -> u32 {
+        self.tx_manifest_decoding_per_byte
     }
 
     pub fn tx_manifest_verification_per_byte(&self) -> u32 {
@@ -97,141 +125,118 @@ impl FeeTable {
         self.tx_signature_verification_per_sig
     }
 
+    pub fn tx_blob_price_per_byte(&self) -> u32 {
+        self.tx_blob_price_per_byte
+    }
+
     pub fn wasm_instantiation_per_byte(&self) -> u32 {
         self.wasm_instantiation_per_byte
     }
 
-    pub fn wasm_metering_params(&self) -> WasmMeteringParams {
-        self.wasm_metering_params.clone()
-    }
-
-    pub fn run_function_cost(
+    pub fn run_native_function_cost(
         &self,
-        type_name: &TypeName,
-        fn_ident: &str,
+        native_function: &NativeFunction,
         input: &ScryptoValue,
     ) -> u32 {
-        match type_name {
-            TypeName::Package => match fn_ident {
-                "publish" => self.fixed_low + input.raw.len() as u32 * 2,
-                _ => self.fixed_high,
+        match native_function {
+            NativeFunction::TransactionProcessor(transaction_processor_fn) => {
+                match transaction_processor_fn {
+                    TransactionProcessorFunction::Run => self.fixed_high,
+                }
+            }
+            NativeFunction::Package(package_fn) => match package_fn {
+                PackageFunction::Publish => self.fixed_low + input.raw.len() as u32 * 2,
             },
-            TypeName::ResourceManager => match fn_ident {
-                "create" => self.fixed_high, // TODO: more investigation about fungibility
-                _ => self.fixed_high,
+            NativeFunction::EpochManager(system_ident) => match system_ident {
+                EpochManagerFunction::Create => self.fixed_low,
             },
-            TypeName::TransactionProcessor => match fn_ident {
-                "run" => self.fixed_high, // TODO: per manifest instruction
-                _ => self.fixed_high,
-            },
-            TypeName::Blueprint(_, _) => {
-                0 // Costing is through instrumentation
+            NativeFunction::ResourceManager(resource_manager_ident) => {
+                match resource_manager_ident {
+                    ResourceManagerFunction::Create => self.fixed_high, // TODO: more investigation about fungibility
+                    ResourceManagerFunction::BurnBucket => self.fixed_low,
+                }
             }
         }
     }
 
-    pub fn run_method_cost(
+    pub fn run_native_method_cost(
         &self,
-        receiver: &Receiver,
-        fn_ident: &str,
+        native_method: &NativeMethod,
         _input: &ScryptoValue,
     ) -> u32 {
-        match receiver {
-            Receiver::AuthZoneRef => match fn_ident {
-                "pop" => self.fixed_low,
-                "push" => self.fixed_low,
-                "create_proof" => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
-                "create_proof_by_amount" => self.fixed_high,
-                "create_proof_by_ids" => self.fixed_high,
-                "clear" => self.fixed_high,
-                _ => self.fixed_high,
-            },
-            Receiver::Component(_) => {
-                0 // Costing is through instrumentation
+        match native_method {
+            NativeMethod::AuthZone(auth_zone_ident) => {
+                match auth_zone_ident {
+                    AuthZoneMethod::Pop => self.fixed_low,
+                    AuthZoneMethod::Push => self.fixed_low,
+                    AuthZoneMethod::CreateProof => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
+                    AuthZoneMethod::CreateProofByAmount => self.fixed_high,
+                    AuthZoneMethod::CreateProofByIds => self.fixed_high,
+                    AuthZoneMethod::Clear => self.fixed_high,
+                    AuthZoneMethod::Drain => self.fixed_high,
+                }
             }
-            // TODO: I suspect there is a bug with invoking consumed within call frame. Add tests to verify
-            Receiver::Consumed(node_id) => match node_id {
-                RENodeId::Bucket(_) => self.fixed_medium,
-                RENodeId::Proof(_) => self.fixed_medium,
-                RENodeId::Worktop => self.fixed_medium,
-                RENodeId::KeyValueStore(_) => self.fixed_medium,
-                RENodeId::Component(_) => self.fixed_medium,
-                RENodeId::Vault(_) => self.fixed_medium,
-                RENodeId::ResourceManager(_) => self.fixed_medium,
-                RENodeId::Package(_) => self.fixed_high,
-                RENodeId::System => self.fixed_high,
+            NativeMethod::EpochManager(system_ident) => match system_ident {
+                EpochManagerMethod::GetCurrentEpoch => self.fixed_low,
+                EpochManagerMethod::SetEpoch => self.fixed_low,
             },
-            Receiver::NativeRENodeRef(node_id) => {
-                match node_id {
-                    RENodeId::System => match fn_ident {
-                        "current_epoch" => self.fixed_low,
-                        "transaction_hash" => self.fixed_low,
-                        _ => self.fixed_high,
-                    },
-                    RENodeId::Bucket(..) => match fn_ident {
-                        "take" => self.fixed_medium,
-                        "take_non_fungibles" => self.fixed_medium,
-                        "non_fungible_ids" => self.fixed_medium,
-                        "put" => self.fixed_medium,
-                        "amount" => self.fixed_low,
-                        "resource_address" => self.fixed_low,
-                        "create_proof" => self.fixed_low,
-                        _ => self.fixed_high,
-                    },
-                    RENodeId::Proof(..) => match fn_ident {
-                        "amount" => self.fixed_low,
-                        "non_fungible_ids" => self.fixed_low,
-                        "resource_address" => self.fixed_low,
-                        "clone" => self.fixed_high,
-                        _ => self.fixed_high,
-                    },
-                    RENodeId::ResourceManager(..) => {
-                        match fn_ident {
-                            "update_auth" => self.fixed_medium,
-                            "lock_auth" => self.fixed_medium,
-                            "create_vault" => self.fixed_medium,
-                            "create_bucket" => self.fixed_medium,
-                            "mint" => self.fixed_high,
-                            "metadata" => self.fixed_low,
-                            "resource_type" => self.fixed_low,
-                            "total_supply" => self.fixed_low, // TODO: revisit this after substate refactoring
-                            "update_metadata" => self.fixed_medium,
-                            "update_non_fungible_data" => self.fixed_medium,
-                            "non_fungible_exists" => self.fixed_low,
-                            "non_fungible_data" => self.fixed_medium,
-                            _ => self.fixed_high,
-                        }
-                    }
-                    RENodeId::Worktop => match fn_ident {
-                        "put" => self.fixed_medium,
-                        "take_amount" => self.fixed_medium,
-                        "take_all" => self.fixed_medium,
-                        "take_non_fungibles" => self.fixed_medium,
-                        "assert_contains" => self.fixed_low,
-                        "assert_contains_amount" => self.fixed_low,
-                        "assert_contains_non_fungibles" => self.fixed_low,
-                        "drain" => self.fixed_medium,
-                        _ => self.fixed_high,
-                    },
-                    RENodeId::Component(..) => match fn_ident {
-                        "add_access_check" => self.fixed_medium,
-                        _ => self.fixed_high,
-                    },
-                    RENodeId::Vault(..) => match fn_ident {
-                        "put" => self.fixed_medium,
-                        "take" => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
-                        "take_non_fungibles" => self.fixed_medium,
-                        "amount" => self.fixed_low,
-                        "resource_address" => self.fixed_low,
-                        "non_fungible_ids" => self.fixed_medium,
-                        "create_proof" => self.fixed_high, // TODO: fungibility
-                        "create_proof_by_amount" => self.fixed_high,
-                        "create_proof_by_ids" => self.fixed_high,
-                        "lock_fee" => self.fixed_medium,
-                        "lock_contingent_fee" => self.fixed_medium,
-                        _ => self.fixed_high,
-                    },
-                    _ => self.fixed_high, // TODO: Clean this up
+            NativeMethod::Bucket(bucket_ident) => match bucket_ident {
+                BucketMethod::Take => self.fixed_medium,
+                BucketMethod::TakeNonFungibles => self.fixed_medium,
+                BucketMethod::GetNonFungibleIds => self.fixed_medium,
+                BucketMethod::Put => self.fixed_medium,
+                BucketMethod::GetAmount => self.fixed_low,
+                BucketMethod::GetResourceAddress => self.fixed_low,
+                BucketMethod::CreateProof => self.fixed_low,
+            },
+            NativeMethod::Proof(proof_ident) => match proof_ident {
+                ProofMethod::GetAmount => self.fixed_low,
+                ProofMethod::GetNonFungibleIds => self.fixed_low,
+                ProofMethod::GetResourceAddress => self.fixed_low,
+                ProofMethod::Clone => self.fixed_low,
+            },
+            NativeMethod::ResourceManager(resource_manager_ident) => match resource_manager_ident {
+                ResourceManagerMethod::UpdateAuth => self.fixed_medium,
+                ResourceManagerMethod::LockAuth => self.fixed_medium,
+                ResourceManagerMethod::CreateVault => self.fixed_medium,
+                ResourceManagerMethod::CreateBucket => self.fixed_medium,
+                ResourceManagerMethod::Mint => self.fixed_high,
+                ResourceManagerMethod::GetMetadata => self.fixed_low,
+                ResourceManagerMethod::GetResourceType => self.fixed_low,
+                ResourceManagerMethod::GetTotalSupply => self.fixed_low,
+                ResourceManagerMethod::UpdateMetadata => self.fixed_medium,
+                ResourceManagerMethod::UpdateNonFungibleData => self.fixed_medium,
+                ResourceManagerMethod::NonFungibleExists => self.fixed_low,
+                ResourceManagerMethod::GetNonFungible => self.fixed_medium,
+                ResourceManagerMethod::Burn => self.fixed_medium,
+                ResourceManagerMethod::SetResourceAddress => self.fixed_medium,
+            },
+            NativeMethod::Worktop(worktop_ident) => match worktop_ident {
+                WorktopMethod::Put => self.fixed_medium,
+                WorktopMethod::TakeAmount => self.fixed_medium,
+                WorktopMethod::TakeAll => self.fixed_medium,
+                WorktopMethod::TakeNonFungibles => self.fixed_medium,
+                WorktopMethod::AssertContains => self.fixed_low,
+                WorktopMethod::AssertContainsAmount => self.fixed_low,
+                WorktopMethod::AssertContainsNonFungibles => self.fixed_low,
+                WorktopMethod::Drain => self.fixed_low,
+            },
+            NativeMethod::Component(component_ident) => match component_ident {
+                ComponentMethod::AddAccessCheck => self.fixed_medium,
+            },
+            NativeMethod::Vault(vault_ident) => {
+                match vault_ident {
+                    VaultMethod::Put => self.fixed_medium,
+                    VaultMethod::Take => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
+                    VaultMethod::TakeNonFungibles => self.fixed_medium,
+                    VaultMethod::GetAmount => self.fixed_low,
+                    VaultMethod::GetResourceAddress => self.fixed_low,
+                    VaultMethod::GetNonFungibleIds => self.fixed_medium,
+                    VaultMethod::CreateProof => self.fixed_high,
+                    VaultMethod::CreateProofByAmount => self.fixed_high,
+                    VaultMethod::CreateProofByIds => self.fixed_high,
+                    VaultMethod::LockFee => self.fixed_medium,
+                    VaultMethod::LockContingentFee => self.fixed_medium,
                 }
             }
         }
@@ -239,32 +244,49 @@ impl FeeTable {
 
     pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
         match entry {
-            SystemApiCostingEntry::InvokeFunction { input, .. } => {
-                self.fixed_low + (5 * input.raw.len() + 10 * input.value_count()) as u32
+            SystemApiCostingEntry::InvokeScrypto { invocation, .. } => {
+                self.fixed_low
+                    + (5 * invocation.args().raw.len() + 10 * invocation.args().value_count())
+                        as u32
             }
-            SystemApiCostingEntry::InvokeMethod { input, .. } => {
-                self.fixed_low + (5 * input.raw.len() + 10 * input.value_count()) as u32
+            SystemApiCostingEntry::InvokeNative { invocation, .. } => {
+                self.fixed_low
+                    + (5 * invocation.args().raw.len() + 10 * invocation.args().value_count())
+                        as u32
             }
-            SystemApiCostingEntry::Globalize { size } => self.fixed_high + 200 * size,
-            SystemApiCostingEntry::BorrowGlobal { loaded, size } => {
+
+            SystemApiCostingEntry::ReadOwnedNodes => self.fixed_low,
+            SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,
+            SystemApiCostingEntry::DropNode { .. } => self.fixed_medium,
+            SystemApiCostingEntry::GlobalizeNode { size } => self.fixed_high + 200 * size,
+            SystemApiCostingEntry::BorrowNode { loaded, size } => {
                 if loaded {
                     self.fixed_high
                 } else {
                     self.fixed_low + 100 * size
                 }
             }
-            SystemApiCostingEntry::BorrowLocal => self.fixed_medium,
-            SystemApiCostingEntry::ReturnGlobal { size } => self.fixed_low + 100 * size,
-            SystemApiCostingEntry::ReturnLocal => self.fixed_medium,
-            SystemApiCostingEntry::Create { .. } => self.fixed_high,
-            SystemApiCostingEntry::Read { .. } => self.fixed_medium,
-            SystemApiCostingEntry::Write { .. } => self.fixed_medium,
+
+            SystemApiCostingEntry::BorrowSubstate { loaded, size } => {
+                if loaded {
+                    self.fixed_high
+                } else {
+                    self.fixed_low + 100 * size
+                }
+            }
+            SystemApiCostingEntry::ReturnSubstate { size } => self.fixed_low + 100 * size,
+
+            SystemApiCostingEntry::LockSubstate { .. } => self.fixed_low,
+            SystemApiCostingEntry::TakeSubstate { .. } => self.fixed_medium,
+            SystemApiCostingEntry::ReadSubstate { .. } => self.fixed_medium,
+            SystemApiCostingEntry::WriteSubstate { .. } => self.fixed_medium,
+            SystemApiCostingEntry::DropLock => self.fixed_low,
+
             SystemApiCostingEntry::ReadEpoch => self.fixed_low,
             SystemApiCostingEntry::ReadTransactionHash => self.fixed_low,
-            SystemApiCostingEntry::ReadTransactionNetwork => self.fixed_low,
+            SystemApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
             SystemApiCostingEntry::GenerateUuid => self.fixed_low,
             SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
-            SystemApiCostingEntry::CheckAccessRule => self.fixed_medium,
         }
     }
 }

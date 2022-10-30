@@ -1,10 +1,8 @@
 use std::fs;
 use std::path::PathBuf;
 
-use sbor::*;
-use scrypto::buffer::*;
-use scrypto::engine::types::*;
-use transaction::signing::EcdsaPrivateKey;
+use radix_engine::types::*;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 use crate::resim::*;
 use std::env;
@@ -58,10 +56,10 @@ pub fn get_default_account() -> Result<ComponentAddress, Error> {
         .ok_or(Error::NoDefaultAccount)
 }
 
-pub fn get_default_private_key() -> Result<EcdsaPrivateKey, Error> {
+pub fn get_default_private_key() -> Result<EcdsaSecp256k1PrivateKey, Error> {
     get_configs()?
         .default_account
-        .map(|pair| EcdsaPrivateKey::from_bytes(&hex::decode(&pair.1).unwrap()).unwrap())
+        .map(|pair| EcdsaSecp256k1PrivateKey::from_bytes(&hex::decode(&pair.1).unwrap()).unwrap())
         .ok_or(Error::NoDefaultAccount)
 }
 

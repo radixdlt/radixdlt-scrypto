@@ -3,14 +3,18 @@ pub use crate::component::*;
 pub use crate::constants::*;
 pub use crate::core::*;
 pub use crate::crypto::*;
+pub use crate::math::integer::{
+    CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedPow, CheckedRem, CheckedSub,
+};
 pub use crate::math::*;
 pub use crate::misc::*;
 pub use crate::resource::*;
 pub use crate::{
-    access_and_or, access_rule_node, args, blueprint, borrow_component, borrow_package,
-    borrow_resource_manager, compile_package, debug, dec, error, external_blueprint,
-    external_component, import, include_package, info, pdec, resource_list, rule, trace, warn,
-    Decode, Describe, Encode, NonFungibleData, TypeId,
+    access_and_or, access_rule_node, args, args_from_bytes_vec, args_from_value_vec, blueprint,
+    borrow_component, borrow_package, borrow_resource_manager, debug, dec, error,
+    external_blueprint, external_component, i, import, include_abi, include_code, info, pdec,
+    resource_list, rule, this_package, trace, warn, Decode, Describe, Encode, NonFungibleData,
+    TypeId,
 };
 pub use num_traits::{
     cast::FromPrimitive, cast::ToPrimitive, identities::One, identities::Zero, pow::Pow,

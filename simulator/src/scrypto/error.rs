@@ -6,7 +6,11 @@ use crate::utils::*;
 pub enum Error {
     IOError(io::Error),
 
-    CargoError(CargoExecutionError),
+    BuildError(BuildError),
+
+    TestError(TestError),
+
+    FormatError(FormatError),
 
     PackageAlreadyExists,
 }

@@ -1,3 +1,4 @@
+mod addressing;
 mod cmd_call_function;
 mod cmd_call_method;
 mod cmd_export_abi;
@@ -20,6 +21,7 @@ mod cmd_transfer;
 mod config;
 mod error;
 
+pub use addressing::*;
 pub use cmd_call_function::*;
 pub use cmd_call_method::*;
 pub use cmd_export_abi::*;
@@ -48,18 +50,18 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
 use radix_engine::constants::*;
+use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::model::*;
-use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
+use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine::transaction::TransactionStatus;
+use radix_engine::transaction::TransactionResult;
+use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
+use radix_engine::types::*;
 use radix_engine::wasm::*;
+use radix_engine_stores::rocks_db::RadixEngineDB;
 use scrypto::abi;
-use scrypto::address::Bech32Encoder;
-use scrypto::core::Network;
-use scrypto::crypto::*;
-use scrypto::prelude::ComponentAddress;
-use scrypto::prelude::PackageAddress;
+use scrypto::misc::ContextualDisplay;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -67,9 +69,7 @@ use transaction::builder::ManifestBuilder;
 use transaction::manifest::decompile;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
-use transaction::signing::EcdsaPrivateKey;
-
-use crate::ledger::*;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 /// Build fast, reward everyone, and scale without friction
 #[derive(Parser, Debug)]
@@ -139,71 +139,102 @@ pub fn run() -> Result<(), Error> {
 pub fn handle_manifest<O: std::io::Write>(
     manifest: TransactionManifest,
     signing_keys: &Option<String>,
+    network: &Option<String>,
     manifest_path: &Option<PathBuf>,
-    is_system: bool,
     trace: bool,
     output_receipt: bool,
     out: &mut O,
 ) -> Result<Option<TransactionReceipt>, Error> {
+    let network = match network {
+        Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
+        None => NetworkDefinition::simulator(),
+    };
     match manifest_path {
         Some(path) => {
             if !env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
-                let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
-
-                let manifest =
-                    decompile(&manifest, &bech32_encoder).map_err(Error::DecompileError)?;
-                fs::write(path, manifest).map_err(Error::IOError)?;
+                let manifest_str =
+                    decompile(&manifest.instructions, &network).map_err(Error::DecompileError)?;
+                fs::write(path, manifest_str).map_err(Error::IOError)?;
+                for blob in manifest.blobs {
+                    let blob_hash = hash(&blob);
+                    let mut blob_path = path
+                        .parent()
+                        .expect("Manifest file parent not found")
+                        .to_owned();
+                    blob_path.push(format!("{}.blob", blob_hash));
+                    fs::write(blob_path, blob).map_err(Error::IOError)?;
+                }
             }
             Ok(None)
         }
         None => {
             let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
-            let mut wasm_engine = DefaultWasmEngine::new();
-            let mut wasm_instrumenter = WasmInstrumenter::new();
-            let mut executor = TransactionExecutor::new(
-                &mut substate_store,
-                &mut wasm_engine,
-                &mut wasm_instrumenter,
-            );
+
+            let mut scrypto_interpreter = ScryptoInterpreter {
+                wasm_engine: DefaultWasmEngine::new(),
+                wasm_instrumenter: WasmInstrumenter::new(),
+                wasm_metering_params: WasmMeteringParams::new(
+                    InstructionCostRules::tiered(1, 5, 10, 5000),
+                    512,
+                ),
+                phantom: PhantomData,
+            };
+
+            let mut executor =
+                TransactionExecutor::new(&mut substate_store, &mut scrypto_interpreter);
 
             let sks = get_signing_keys(signing_keys)?;
-            let pks = sks
-                .iter()
-                .map(|e| e.public_key())
-                .collect::<Vec<EcdsaPublicKey>>();
+            let initial_proofs = sks
+                .into_iter()
+                .map(|e| NonFungibleAddress::from_public_key(&e.public_key()))
+                .collect::<Vec<NonFungibleAddress>>();
             let nonce = get_nonce()?;
-            let transaction = TestTransaction::new(manifest, nonce, pks);
+            let transaction = TestTransaction::new(manifest, nonce, initial_proofs);
 
             let receipt = executor.execute_and_commit(
                 &transaction,
-                &ExecutionConfig {
+                &FeeReserveConfig {
                     cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
-                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     system_loan: DEFAULT_SYSTEM_LOAN,
-                    is_system,
+                },
+                &ExecutionConfig {
+                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     trace,
                 },
             );
 
             if output_receipt {
-                writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
+                writeln!(out, "{}", receipt.display(&Bech32Encoder::new(&network)))
+                    .map_err(Error::IOError)?;
             }
 
-            match receipt.status {
-                TransactionStatus::Failed(error) => Err(Error::TransactionExecutionError(error)),
-                TransactionStatus::Succeeded(_) => {
-                    let mut configs = get_configs()?;
-                    configs.nonce = nonce + 1;
-                    set_configs(&configs)?;
-                    Ok(Some(receipt))
+            if receipt.is_commit() {
+                let mut configs = get_configs()?;
+                configs.nonce = nonce + 1;
+                set_configs(&configs)?;
+                return Ok(Some(receipt));
+            }
+
+            match receipt.result {
+                TransactionResult::Commit(commit) => match commit.outcome {
+                    TransactionOutcome::Failure(error) => {
+                        Err(Error::TransactionExecutionError(error))
+                    }
+                    TransactionOutcome::Success(..) => {
+                        panic!("Success case handled above to appease borrowing rules")
+                    }
+                },
+                TransactionResult::Reject(rejection) => {
+                    Err(Error::TransactionRejected(rejection.error))
                 }
-                TransactionStatus::Rejected => Err(Error::TransactionRejected),
             }
         }
     }
 }
 
-pub fn get_signing_keys(signing_keys: &Option<String>) -> Result<Vec<EcdsaPrivateKey>, Error> {
+pub fn get_signing_keys(
+    signing_keys: &Option<String>,
+) -> Result<Vec<EcdsaSecp256k1PrivateKey>, Error> {
     let private_keys = if let Some(keys) = signing_keys {
         keys.split(",")
             .map(str::trim)
@@ -212,10 +243,11 @@ pub fn get_signing_keys(signing_keys: &Option<String>) -> Result<Vec<EcdsaPrivat
                 hex::decode(key)
                     .map_err(|_| Error::InvalidPrivateKey)
                     .and_then(|bytes| {
-                        EcdsaPrivateKey::from_bytes(&bytes).map_err(|_| Error::InvalidPrivateKey)
+                        EcdsaSecp256k1PrivateKey::from_bytes(&bytes)
+                            .map_err(|_| Error::InvalidPrivateKey)
                     })
             })
-            .collect::<Result<Vec<EcdsaPrivateKey>, Error>>()?
+            .collect::<Result<Vec<EcdsaSecp256k1PrivateKey>, Error>>()?
     } else {
         vec![get_default_private_key()?]
     };

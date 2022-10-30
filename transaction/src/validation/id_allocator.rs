@@ -1,12 +1,12 @@
 use sbor::rust::ops::Range;
-use scrypto::address::EntityType;
-use scrypto::crypto::hash;
+use scrypto::component::{ComponentAddress, PackageAddress};
+use scrypto::constants::*;
+use scrypto::core::SystemAddress;
+use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::misc::{combine, copy_u8_array};
+use scrypto::resource::ResourceAddress;
 
 use crate::errors::*;
-
-pub const ECDSA_TOKEN_BUCKET_ID: BucketId = 0;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdSpace {
@@ -26,9 +26,9 @@ impl IdAllocator {
     pub fn new(kind: IdSpace) -> Self {
         Self {
             available: match kind {
-                IdSpace::System => (0..512),
-                IdSpace::Transaction => (512..1024),
-                IdSpace::Application => (1024..u32::MAX),
+                IdSpace::System => 0..512,
+                IdSpace::Transaction => 512..1024,
+                IdSpace::Application => 1024..u32::MAX,
             },
         }
     }
@@ -48,39 +48,44 @@ impl IdAllocator {
         &mut self,
         transaction_hash: Hash,
     ) -> Result<PackageAddress, IdAllocationError> {
-        let entity_type = EntityType::Package;
-        let entity_type_id = entity_type.id();
-
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        Ok(PackageAddress(copy_u8_array(&combine(
-            entity_type_id,
-            &hash(data).lower_26_bytes(),
-        ))))
+        // println!("Genesis package {:?}", hash(&data).lower_26_bytes());
+
+        Ok(PackageAddress::Normal(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new component address.
     pub fn new_component_address(
         &mut self,
         transaction_hash: Hash,
-        package_address: &PackageAddress,
+        package_address: PackageAddress,
         blueprint_name: &str,
     ) -> Result<ComponentAddress, IdAllocationError> {
-        let entity_type = match (*package_address, blueprint_name) {
-            (ACCOUNT_PACKAGE, "Account") => EntityType::AccountComponent,
-            (SYSTEM_PACKAGE, "System") => EntityType::SystemComponent,
-            _ => EntityType::Component,
-        };
-        let entity_type_id = entity_type.id();
-
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        Ok(ComponentAddress(copy_u8_array(&combine(
-            entity_type_id,
-            &hash(data).lower_26_bytes(),
-        ))))
+        // println!("Genesis component {:?}", hash(&data).lower_26_bytes());
+
+        match (package_address, blueprint_name) {
+            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => {
+                Ok(ComponentAddress::Account(hash(data).lower_26_bytes()))
+            }
+            _ => Ok(ComponentAddress::Normal(hash(data).lower_26_bytes())),
+        }
+    }
+
+    pub fn new_system_address(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<SystemAddress, IdAllocationError> {
+        let mut data = transaction_hash.to_vec();
+        data.extend(self.next()?.to_le_bytes());
+
+        // println!("Genesis system {:?}", hash(&data).lower_26_bytes());
+
+        Ok(SystemAddress::EpochManager(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new resource address.
@@ -88,16 +93,12 @@ impl IdAllocator {
         &mut self,
         transaction_hash: Hash,
     ) -> Result<ResourceAddress, IdAllocationError> {
-        let entity_type = EntityType::Resource;
-        let entity_type_id = entity_type.id();
-
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        Ok(ResourceAddress(copy_u8_array(&combine(
-            entity_type_id,
-            &hash(data).lower_26_bytes(),
-        ))))
+        // println!("Genesis resource {:?}", hash(&data).lower_26_bytes());
+
+        Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new UUID.
@@ -105,6 +106,10 @@ impl IdAllocator {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
         Ok(u128::from_le_bytes(hash(data).lower_16_bytes()))
+    }
+
+    pub fn new_auth_zone_id(&mut self) -> Result<AuthZoneId, IdAllocationError> {
+        Ok(self.next()?)
     }
 
     /// Creates a new bucket ID.
@@ -122,11 +127,40 @@ impl IdAllocator {
         Ok((transaction_hash, self.next()?))
     }
 
+    pub fn new_component_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<ComponentId, IdAllocationError> {
+        Ok((transaction_hash, self.next()?))
+    }
+
     /// Creates a new key value store ID.
     pub fn new_kv_store_id(
         &mut self,
         transaction_hash: Hash,
     ) -> Result<KeyValueStoreId, IdAllocationError> {
+        Ok((transaction_hash, self.next()?))
+    }
+
+    /// Creates a new non-fungible store ID.
+    pub fn new_nf_store_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<NonFungibleStoreId, IdAllocationError> {
+        Ok((transaction_hash, self.next()?))
+    }
+
+    pub fn new_resource_manager_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<ResourceManagerId, IdAllocationError> {
+        Ok((transaction_hash, self.next()?))
+    }
+
+    pub fn new_package_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<PackageId, IdAllocationError> {
         Ok((transaction_hash, self.next()?))
     }
 }

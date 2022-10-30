@@ -4,4 +4,4 @@ CALL_METHOD ComponentAddress("${account}") "lock_fee" Decimal("10");
 CALL_FUNCTION PackageAddress("${package}") "Hello" "instantiate_hello";
 
 # Clean up - deposit resources
-CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress("${account}") "deposit_batch";
+CALL_METHOD ComponentAddress("${account}") "deposit_batch" Expression("ENTIRE_WORKTOP");

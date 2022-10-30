@@ -1,5 +1,6 @@
 use clap::Parser;
 use colored::*;
+use scrypto::prelude::ContextualDisplay;
 
 use crate::resim::*;
 
@@ -12,18 +13,20 @@ impl ShowConfigs {
         let configs = get_configs()?;
         writeln!(
             out,
-            "{}: {:?}",
+            "{}: {}",
             "Default Account".green().bold(),
-            configs.default_account
+            match configs.default_account {
+                Some((component, str)) => format!(
+                    "({}, {})",
+                    component.display(&Bech32Encoder::for_simulator()),
+                    str
+                ),
+                None => "None".to_owned(),
+            }
         )
         .map_err(Error::IOError)?;
-        writeln!(
-            out,
-            "{}: {:?}",
-            "Current Nonce".green().bold(),
-            configs.nonce
-        )
-        .map_err(Error::IOError)?;
+        writeln!(out, "{}: {}", "Current Nonce".green().bold(), configs.nonce)
+            .map_err(Error::IOError)?;
         Ok(())
     }
 }

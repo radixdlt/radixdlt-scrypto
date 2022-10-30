@@ -1,13 +1,11 @@
 use clap::Parser;
 use radix_engine::constants::*;
 use radix_engine::engine::Track;
-use radix_engine::engine::{CallFrame, SystemApi};
+use radix_engine::engine::{Kernel, SystemApi};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
-use scrypto::core::{Receiver, SystemSetEpochInput};
-use scrypto::crypto::hash;
-use scrypto::engine::types::RENodeId;
-use scrypto::values::ScryptoValue;
-use transaction::validation::{IdAllocator, IdSpace};
+use radix_engine::types::*;
+use radix_engine_stores::rocks_db::RadixEngineDB;
+use transaction::model::{AuthModule, AuthZoneParams};
 
 use crate::resim::*;
 
@@ -23,43 +21,52 @@ impl SetCurrentEpoch {
         // TODO: can we construct a proper transaction to do the following?
 
         let tx_hash = hash(get_nonce()?.to_string());
+        let blobs = HashMap::new();
         let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        let mut wasm_engine = DefaultWasmEngine::new();
-        let mut wasm_instrumenter = WasmInstrumenter::new();
-        let mut id_allocator = IdAllocator::new(IdSpace::Application);
-        let mut track = Track::new(&substate_store);
-        let mut fee_reserve = SystemLoanFeeReserve::default();
-        let fee_table = FeeTable::new();
 
-        // Create root call frame.
-        let mut root_frame = CallFrame::new_root(
-            false,
+        let mut scrypto_interpreter = ScryptoInterpreter {
+            wasm_engine: DefaultWasmEngine::new(),
+            wasm_instrumenter: WasmInstrumenter::new(),
+            wasm_metering_params: WasmMeteringParams::new(
+                InstructionCostRules::tiered(1, 5, 10, 5000),
+                512,
+            ),
+            phantom: PhantomData,
+        };
+        let mut track = Track::new(
+            &substate_store,
+            SystemLoanFeeReserve::default(),
+            FeeTable::new(),
+        );
+
+        let mut kernel = Kernel::new(
             tx_hash,
-            vec![],
-            true,
+            AuthZoneParams {
+                initial_proofs: vec![AuthModule::validator_role_nf_address()],
+                virtualizable_proofs_resource_addresses: BTreeSet::new(),
+            },
+            &blobs,
             DEFAULT_MAX_CALL_DEPTH,
-            &mut id_allocator,
             &mut track,
-            &mut wasm_engine,
-            &mut wasm_instrumenter,
-            &mut fee_reserve,
-            &fee_table,
+            &mut scrypto_interpreter,
+            Vec::new(),
         );
 
         // Invoke the system
-        root_frame
-            .invoke_method(
-                Receiver::NativeRENodeRef(RENodeId::System),
-                "set_epoch".to_string(),
-                ScryptoValue::from_typed(&SystemSetEpochInput { epoch: self.epoch }),
-            )
+        kernel
+            .invoke_native(NativeInvocation::Method(
+                NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
+                RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+                ScryptoValue::from_typed(&EpochManagerSetEpochInput { epoch: self.epoch }),
+            ))
             .map(|_| ())
             .map_err(Error::TransactionExecutionError)?;
 
         // Commit
-        track.commit();
-        let receipt = track.to_receipt();
-        receipt.state_updates.commit(&mut substate_store);
+        let receipt = track.finalize(Ok(Vec::new()));
+        if let TransactionResult::Commit(c) = receipt.result {
+            c.state_updates.commit(&mut substate_store);
+        }
 
         Ok(())
     }

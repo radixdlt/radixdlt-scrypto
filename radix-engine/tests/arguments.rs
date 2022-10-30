@@ -1,29 +1,26 @@
+use radix_engine::ledger::TypedInMemorySubstateStore;
+use radix_engine::types::*;
+use scrypto::resource::Bucket;
 use scrypto_unit::*;
-
-use scrypto::core::Network;
 use transaction::builder::ManifestBuilder;
-
-use radix_engine::ledger::InMemorySubstateStore;
-use scrypto::prelude::*;
-use scrypto::to_struct;
 
 #[test]
 fn vector_of_buckets_argument_should_succeed() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("arguments");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 builder.call_function(
                     package_address,
                     "Arguments",
                     "vector_argument",
-                    to_struct!(vec![Bucket(bucket_id1), Bucket(bucket_id2),]),
+                    args!(vec![Bucket(bucket_id1), Bucket(bucket_id2),]),
                 )
             })
         })
@@ -31,26 +28,26 @@ fn vector_of_buckets_argument_should_succeed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
 fn tuple_of_buckets_argument_should_succeed() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("arguments");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 builder.call_function(
                     package_address,
                     "Arguments",
                     "tuple_argument",
-                    to_struct!((Bucket(bucket_id1), Bucket(bucket_id2),)),
+                    args!((Bucket(bucket_id1), Bucket(bucket_id2),)),
                 )
             })
         })
@@ -58,115 +55,105 @@ fn tuple_of_buckets_argument_should_succeed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
 fn treemap_of_strings_and_buckets_argument_should_succeed() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("arguments");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 let mut map = BTreeMap::new();
                 map.insert("first".to_string(), Bucket(bucket_id1));
                 map.insert("second".to_string(), Bucket(bucket_id2));
 
-                builder.call_function(
-                    package_address,
-                    "Arguments",
-                    "treemap_argument",
-                    to_struct!(map),
-                )
+                builder.call_function(package_address, "Arguments", "treemap_argument", args!(map))
             })
         })
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
 fn hashmap_of_strings_and_buckets_argument_should_succeed() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("arguments");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 let mut map = HashMap::new();
                 map.insert("first".to_string(), Bucket(bucket_id1));
                 map.insert("second".to_string(), Bucket(bucket_id2));
 
-                builder.call_function(
-                    package_address,
-                    "Arguments",
-                    "hashmap_argument",
-                    to_struct!(map),
-                )
+                builder.call_function(package_address, "Arguments", "hashmap_argument", args!(map))
             })
         })
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
 fn some_optional_bucket_argument_should_succeed() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("arguments");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
                 "Arguments",
                 "option_argument",
-                to_struct!(Some(Bucket(bucket_id))),
+                args!(Some(Bucket(bucket_id))),
             )
         })
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
 fn none_optional_bucket_argument_should_succeed() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("arguments");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "Arguments",
             "option_argument",
-            to_struct!(Option::<Bucket>::None),
+            args!(Option::<Bucket>::None),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }

@@ -39,16 +39,19 @@ $resim show $account2
 $resim show $token_address
 
 # Test - output manifest
+mkdir -p target
 $resim new-badge-fixed 1 --name 'MintBadge' --manifest ./target/temp.rtm
 cat ./target/temp.rtm
 $resim publish ../examples/hello-world --manifest ./target/temp2.rtm
-$resim run ./target/temp2.rtm
+files=`ls target/*.blob`
+blobs=`echo $files | sed 's/ / --blobs /g'`
+$resim run ./target/temp2.rtm --blobs $blobs
 $resim new-account --manifest ./target/temp3.rtm
 $resim run ./target/temp3.rtm
 
 # Test - run manifest with a given set of signing keys
 $resim generate-key-pair
-$resim run ./target/temp2.rtm --signing-keys 4fc0db017bf9b80743b7151fee3f04bad817f2d8d7e34ae96c022fe7451b0ea3,329a27258d7e9496c42a110571e6ba0d47f2bda8bd610e9777d16853ab145b0c
+$resim run ./target/temp2.rtm --blobs $blobs
 
 # Test - nft
 package=`$resim publish ./tests/blueprints | awk '/Package:/ {print $NF}'`
@@ -69,3 +72,9 @@ token=`echo $resources | cut -d " " -f4`
 $resim call-method $component organizational_authenticated_method --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
 $resim transfer 2 $token $account2 --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
 $resim mint 100000 $token --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
+
+# Test - publishing a large package
+$resim publish ./tests/large_package.wasm
+
+# Test - math types and numbers
+$resim call-function $package "Numbers" test_input 1 2

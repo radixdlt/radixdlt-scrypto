@@ -23,6 +23,6 @@ impl Test {
             self.arguments.clone(),
         )
         .map(|_| ())
-        .map_err(Error::CargoError)
+        .map_err(Error::TestError)
     }
 }

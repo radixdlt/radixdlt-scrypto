@@ -1,81 +1,95 @@
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
-use scrypto::core::Receiver;
-use scrypto::engine::types::*;
-use scrypto::prelude::TypeName;
-use scrypto::resource::AccessRule;
-use scrypto::values::*;
-
-use crate::engine::values::*;
+use crate::engine::node::*;
 use crate::engine::*;
-use crate::fee::*;
-use crate::wasm::*;
+use crate::fee::FeeReserve;
+use crate::model::{Resource, SubstateRef, SubstateRefMut};
+use crate::types::*;
+use bitflags::bitflags;
 
-use super::call_frame::RENodeRef;
+bitflags! {
+    #[derive(Encode, Decode, TypeId)]
+    pub struct LockFlags: u32 {
+        /// Allows the locked substate to be mutated
+        const MUTABLE = 0b00000001;
+        /// Checks that the substate locked is unmodified from the beginning of
+        /// the transaction. This is used mainly for locking fees in vaults which
+        /// requires this in order to be able to support rollbacks
+        const UNMODIFIED_BASE = 0b00000010;
+        /// Forces a write of a substate even on a transaction failure
+        /// Currently used for vault fees.
+        const FORCE_WRITE = 0b00000100;
+    }
+}
 
-pub trait SystemApi<'p, 's, W, I, C>
+impl LockFlags {
+    pub fn read_only() -> Self {
+        LockFlags::empty()
+    }
+}
+
+pub trait SystemApi<'s, R>
 where
-    W: WasmEngine<I>,
-    I: WasmInstance,
-    C: FeeReserve,
+    R: FeeReserve,
 {
-    fn fee_reserve(&mut self) -> &mut C;
-
-    fn fee_table(&self) -> &FeeTable;
-
-    fn invoke_function(
+    fn execute_in_mode<X, RTN, E>(
         &mut self,
-        type_name: TypeName,
-        fn_ident: String,
-        input: ScryptoValue,
+        execution_mode: ExecutionMode,
+        execute: X,
+    ) -> Result<RTN, RuntimeError>
+    where
+        RuntimeError: From<E>,
+        X: FnOnce(&mut Self) -> Result<RTN, E>;
+
+    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
+
+    fn lock_fee(
+        &mut self,
+        vault_id: VaultId,
+        fee: Resource,
+        contingent: bool,
+    ) -> Result<Resource, RuntimeError>;
+
+    /// Retrieve the running actor for the current frame
+    fn get_actor(&self) -> &REActor;
+
+    /// Retrieves all nodes referenceable by the current frame
+    fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
+
+    fn invoke_scrypto(
+        &mut self,
+        invocation: ScryptoInvocation,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn invoke_method(
-        &mut self,
-        receiver: Receiver,
-        fn_ident: String,
-        input: ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError>;
-
-    // TODO: Convert to substate_borrow
-    fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's>, FeeReserveError>;
+    fn invoke_native(&mut self, invocation: NativeInvocation)
+        -> Result<ScryptoValue, RuntimeError>;
 
     /// Removes an RENode and all of it's children from the Heap
-    fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, FeeReserveError>;
+    fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;
 
-    /// Creates a new RENode and places it in the Heap
-    fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError>;
+    /// Creates a new RENode
+    fn create_node(&mut self, re_node: RENode) -> Result<RENodeId, RuntimeError>;
 
-    /// Moves an RENode from Heap to Store
-    fn node_globalize(&mut self, node_id: RENodeId) -> Result<(), RuntimeError>;
-
-    /// Borrow a mutable substate
-    fn substate_borrow_mut(
+    /// Locks a visible substate
+    fn lock_substate(
         &mut self,
-        substate_id: &SubstateId,
-    ) -> Result<NativeSubstateRef, FeeReserveError>;
+        node_id: RENodeId,
+        offset: SubstateOffset,
+        flags: LockFlags,
+    ) -> Result<LockHandle, RuntimeError>;
 
-    /// Return a mutable substate
-    fn substate_return_mut(&mut self, val_ref: NativeSubstateRef) -> Result<(), FeeReserveError>;
+    /// Drops a lock
+    fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
 
-    // TODO: Convert use substate_borrow interface
-    fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
-    fn substate_write(
-        &mut self,
-        substate_id: SubstateId,
-        value: ScryptoValue,
-    ) -> Result<(), RuntimeError>;
-    fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
+    /// Get a non-mutable reference to a locked substate
+    fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError>;
 
-    fn transaction_hash(&mut self) -> Result<Hash, FeeReserveError>;
+    /// Get a mutable reference to a locked substate
+    fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError>;
 
-    fn generate_uuid(&mut self) -> Result<u128, FeeReserveError>;
+    fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError>;
 
-    fn emit_log(&mut self, level: Level, message: String) -> Result<(), FeeReserveError>;
+    fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError>;
 
-    fn check_access_rule(
-        &mut self,
-        access_rule: AccessRule,
-        proof_ids: Vec<ProofId>,
-    ) -> Result<bool, RuntimeError>;
+    fn generate_uuid(&mut self) -> Result<u128, RuntimeError>;
+
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError>;
 }

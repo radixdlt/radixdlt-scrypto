@@ -1,10 +1,7 @@
-use sbor::rust::boxed::Box;
-use sbor::rust::collections::HashMap;
-use sbor::rust::format;
-use scrypto::crypto::{hash, Hash};
-use scrypto::values::ScryptoValue;
 use wasmi::*;
 
+use crate::model::InvokeError;
+use crate::types::{format, hash, Box, Hash, HashMap, ScryptoValue};
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
@@ -64,6 +61,19 @@ impl ModuleImportResolver for WasmiEnvModule {
     }
 }
 
+impl From<Error> for InvokeError<WasmError> {
+    fn from(error: Error) -> Self {
+        let e_str = format!("{:?}", error);
+        match error.into_host_error() {
+            // Pass-through invoke errors
+            Some(host_error) => *host_error
+                .downcast::<InvokeError<WasmError>>()
+                .expect("Failed to downcast error into InvokeError<WasmError>"),
+            None => InvokeError::Error(WasmError::WasmError(e_str)),
+        }
+    }
+}
+
 impl WasmiModule {
     fn instantiate(&self) -> WasmiInstance {
         // link with env module
@@ -71,7 +81,7 @@ impl WasmiModule {
             &self.module,
             &ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
         )
-        .expect("Failed to instantiate wasm module")
+        .expect("Failed to instantiate WASM module")
         .assert_no_start();
 
         // find memory ref
@@ -88,46 +98,54 @@ impl WasmiModule {
 }
 
 impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
-    pub fn send_value(&mut self, value: &ScryptoValue) -> Result<RuntimeValue, InvokeError> {
+    pub fn send_value(
+        &mut self,
+        value: &ScryptoValue,
+    ) -> Result<RuntimeValue, InvokeError<WasmError>> {
         let result = self.instance.module_ref.clone().invoke_export(
             EXPORT_SCRYPTO_ALLOC,
             &[RuntimeValue::I32((value.raw.len()) as i32)],
             self,
         );
 
-        if let Ok(Some(RuntimeValue::I32(ptr))) = result {
-            if self
-                .instance
-                .memory_ref
-                .set((ptr + 4) as u32, &value.raw)
-                .is_ok()
-            {
-                return Ok(RuntimeValue::I32(ptr));
+        match result {
+            Ok(rtn) => {
+                if let Some(RuntimeValue::I32(ptr)) = rtn {
+                    if self
+                        .instance
+                        .memory_ref
+                        .set((ptr + 4) as u32, &value.raw)
+                        .is_ok()
+                    {
+                        return Ok(RuntimeValue::I32(ptr));
+                    }
+                }
+
+                return Err(InvokeError::Error(WasmError::MemoryAllocError));
+            }
+            Err(e) => {
+                return Err(e.into());
             }
         }
-
-        Err(InvokeError::MemoryAllocError)
     }
 
-    pub fn read_value(&self, ptr: usize) -> Result<ScryptoValue, InvokeError> {
+    pub fn read_value(&self, ptr: usize) -> Result<ScryptoValue, WasmError> {
         let len = self
             .instance
             .memory_ref
             .get_value::<u32>(ptr as u32)
-            .map_err(|_| InvokeError::MemoryAccessError)? as usize;
+            .map_err(|_| WasmError::MemoryAccessError)? as usize;
 
-        let start = ptr.checked_add(4).ok_or(InvokeError::MemoryAccessError)?;
-        let end = start
-            .checked_add(len)
-            .ok_or(InvokeError::MemoryAccessError)?;
+        let start = ptr.checked_add(4).ok_or(WasmError::MemoryAccessError)?;
+        let end = start.checked_add(len).ok_or(WasmError::MemoryAccessError)?;
 
         let direct = self.instance.memory_ref.direct_access();
         let buffer = direct.as_ref();
-        if end > buffer.len().try_into().unwrap() {
-            return Err(InvokeError::MemoryAccessError);
+        if end > buffer.len() {
+            return Err(WasmError::MemoryAccessError);
         }
 
-        ScryptoValue::from_slice(&buffer[start..end]).map_err(InvokeError::InvalidScryptoValue)
+        ScryptoValue::from_slice(&buffer[start..end]).map_err(WasmError::InvalidScryptoValue)
     }
 }
 
@@ -153,7 +171,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                     .map(|_| Option::None)
                     .map_err(|e| e.into())
             }
-            _ => Err(InvokeError::FunctionNotFound.into()),
+            _ => Err(WasmError::FunctionNotFound.into()),
         }
     }
 }
@@ -162,15 +180,15 @@ impl WasmInstance for WasmiInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        arg: &ScryptoValue,
+        args: &ScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<ScryptoValue, InvokeError> {
+    ) -> Result<ScryptoValue, InvokeError<WasmError>> {
         let mut externals = WasmiExternals {
             instance: self,
             runtime,
         };
 
-        let pointer = externals.send_value(arg)?;
+        let pointer = externals.send_value(args)?;
         let result = self
             .module_ref
             .clone()
@@ -178,17 +196,15 @@ impl WasmInstance for WasmiInstance {
 
         let rtn = result
             .map_err(|e| {
-                let e_str = format!("{:?}", e);
-                match e.into_host_error() {
-                    // Pass-through invoke errors
-                    Some(host_error) => *host_error.downcast::<InvokeError>().unwrap(),
-                    None => InvokeError::WasmError(e_str),
-                }
+                let err: InvokeError<WasmError> = e.into();
+                err
             })?
-            .ok_or(InvokeError::MissingReturnData)?;
+            .ok_or(InvokeError::Error(WasmError::MissingReturnData))?;
         match rtn {
-            RuntimeValue::I32(ptr) => externals.read_value(ptr as usize),
-            _ => Err(InvokeError::InvalidReturnData),
+            RuntimeValue::I32(ptr) => externals
+                .read_value(ptr as usize)
+                .map_err(InvokeError::Error),
+            _ => Err(InvokeError::Error(WasmError::InvalidReturnData)),
         }
     }
 }
@@ -204,14 +220,11 @@ impl WasmiEngine {
 impl WasmEngine<WasmiInstance> for WasmiEngine {
     fn instantiate(&mut self, code: &[u8]) -> WasmiInstance {
         let code_hash = hash(code);
-        if !self.modules.contains_key(&code_hash) {
-            let module = WasmiModule {
-                module: Module::from_buffer(code).expect("Failed to parse wasm code"),
-            };
-
-            self.modules.insert(code_hash, module);
-        }
-        let module = self.modules.get(&code_hash).unwrap();
-        module.instantiate()
+        self.modules
+            .entry(code_hash)
+            .or_insert_with(|| WasmiModule {
+                module: Module::from_buffer(code).expect("Failed to parse WASM module"),
+            })
+            .instantiate()
     }
 }
