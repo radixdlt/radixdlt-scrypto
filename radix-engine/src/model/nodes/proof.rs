@@ -1,4 +1,4 @@
-use crate::engine::{CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable, NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi};
+use crate::engine::{ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable, NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
@@ -53,6 +53,46 @@ impl NativeInvocation for ProofGetAmountInput {
     }
 }
 
+impl NativeExecutable for ProofGetNonFungibleIdsInput {
+    type Output = BTreeSet<NonFungibleId>;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Bucket(input.proof_id);
+        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let substate_ref = system_api.get_ref(handle)?;
+        let proof = substate_ref.proof();
+        let ids = proof.total_ids().map_err(|e| {
+            match e {
+                InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ProofError(e)),
+                InvokeError::Downstream(runtime_error) => runtime_error,
+            }
+        })?;
+
+        Ok((
+            ids,
+            CallFrameUpdate::empty(),
+        ))
+    }
+}
+
+impl NativeInvocation for ProofGetNonFungibleIdsInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Proof(ProofMethod::GetNonFungibleIds),
+            RENodeId::Proof(self.proof_id),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
 
 pub struct Proof;
 
@@ -78,9 +118,7 @@ impl Proof {
                 panic!("Unexpected")
             }
             ProofMethod::GetNonFungibleIds => {
-                let _: ProofGetNonFungibleIdsInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
-                ScryptoValue::from_typed(&proof.total_ids()?)
+                panic!("Unexpected")
             }
             ProofMethod::GetResourceAddress => {
                 let _: ProofGetResourceAddressInput = scrypto_decode(&args.raw)

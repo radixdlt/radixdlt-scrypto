@@ -17,7 +17,9 @@ pub struct ProofGetAmountInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofGetNonFungibleIdsInput {}
+pub struct ProofGetNonFungibleIdsInput {
+    pub proof_id: ProofId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ProofGetResourceAddressInput {}
@@ -226,7 +228,9 @@ impl Proof {
             }
             fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
                 ProofMethod::GetNonFungibleIds,
-                ProofGetNonFungibleIdsInput {}
+                ProofGetNonFungibleIdsInput {
+                    proof_id: self.0
+                }
             }
             fn resource_address(&self) -> ResourceAddress {
                 ProofMethod::GetResourceAddress,
@@ -262,7 +266,9 @@ impl ValidatedProof {
             }
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
                 ProofMethod::GetNonFungibleIds,
-                ProofGetNonFungibleIdsInput {}
+                ProofGetNonFungibleIdsInput {
+                    proof_id: self.proof_id(),
+                }
             }
             pub fn resource_address(&self) -> ResourceAddress {
                 ProofMethod::GetResourceAddress,
