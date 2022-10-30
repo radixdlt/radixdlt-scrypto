@@ -180,6 +180,41 @@ impl NativeInvocation for BucketGetNonFungibleIdsInput {
     }
 }
 
+impl NativeExecutable for BucketGetAmountInput {
+    type Output = Decimal;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Bucket(input.bucket_id);
+        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
+        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+
+        let substate = system_api.get_ref(bucket_handle)?;
+        let bucket = substate.bucket();
+        Ok((
+            bucket.total_amount(),
+            CallFrameUpdate::empty()
+        ))
+    }
+}
+
+impl NativeInvocation for BucketGetAmountInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Bucket(BucketMethod::GetAmount),
+            RENodeId::Bucket(self.bucket_id),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+
 
 
 pub struct Bucket;
@@ -193,26 +228,6 @@ trait BucketMethodActor<I, O, E> {
     where
         Y: SystemApi<'s, R>,
         R: FeeReserve;
-}
-
-impl BucketMethodActor<BucketGetAmountInput, Decimal, BucketError> for Bucket {
-    fn execute<'s, Y, R>(
-        bucket_id: BucketId,
-        _input: BucketGetAmountInput,
-        system_api: &mut Y,
-    ) -> Result<Decimal, InvokeError<BucketError>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve,
-    {
-        let node_id = RENodeId::Bucket(bucket_id);
-        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
-
-        let substate = system_api.get_ref(bucket_handle)?;
-        let bucket = substate.bucket();
-        Ok(bucket.total_amount())
-    }
 }
 
 impl BucketMethodActor<BucketPutInput, (), BucketError> for Bucket {
@@ -292,10 +307,7 @@ impl Bucket {
                     .map(|rtn| ScryptoValue::from_typed(&rtn))
             }
             BucketMethod::GetAmount => {
-                let input: BucketGetAmountInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
-                Self::execute(bucket_id, input, system_api)
-                    .map(|rtn| ScryptoValue::from_typed(&rtn))
+                panic!("Unexpected")
             }
             BucketMethod::GetResourceAddress => {
                 let input: BucketGetResourceAddressInput = scrypto_decode(&args.raw)

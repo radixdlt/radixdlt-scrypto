@@ -21,6 +21,7 @@ pub struct BucketTakeInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketPutInput {
+    pub bucket_id: BucketId,
     pub bucket: scrypto::resource::Bucket,
 }
 
@@ -36,10 +37,14 @@ pub struct BucketGetNonFungibleIdsInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketGetAmountInput {}
+pub struct BucketGetAmountInput {
+    pub bucket_id: BucketId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketGetResourceAddressInput {}
+pub struct BucketGetResourceAddressInput {
+    pub bucket_id: BucketId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketCreateProofInput {
@@ -94,7 +99,8 @@ impl Bucket {
             pub fn put(&mut self, other: Self) -> () {
                 BucketMethod::Put,
                 BucketPutInput {
-                    bucket: other
+                    bucket_id: self.0,
+                    bucket: other,
                 }
             }
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
@@ -106,11 +112,13 @@ impl Bucket {
             pub fn amount(&self) -> Decimal {
                 BucketMethod::GetAmount,
                 BucketGetAmountInput {
+                    bucket_id: self.0,
                 }
             }
             pub fn resource_address(&self) -> ResourceAddress {
                 BucketMethod::GetResourceAddress,
                 BucketGetResourceAddressInput {
+                    bucket_id: self.0,
                 }
             }
             pub fn create_proof(&self) -> scrypto::resource::Proof {
