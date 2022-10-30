@@ -20,6 +20,7 @@ pub struct AuthZonePushInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofInput {
+    pub auth_zone_id: AuthZoneId,
     pub resource_address: ResourceAddress,
 }
 
@@ -69,19 +70,33 @@ impl ComponentAuthZone {
         call_engine(input)
     }
 
+    pub fn create_proof(resource_address: ResourceAddress) -> Proof {
+        let input = RadixEngineInput::GetVisibleNodeIds();
+        let owned_node_ids: Vec<RENodeId> = call_engine(input);
+        let node_id = owned_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+            .expect("AuthZone does not exist");
+
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::AuthZone(AuthZoneMethod::CreateProof),
+            node_id,
+            scrypto::buffer::scrypto_encode(
+                &(AuthZoneCreateProofInput {
+                    auth_zone_id: node_id.into(),
+                    resource_address,
+                }),
+            ),
+        );
+        call_engine(input)
+    }
+
     native_methods! {
         {
             let input = RadixEngineInput::GetVisibleNodeIds();
             let owned_node_ids: Vec<RENodeId> = call_engine(input);
             owned_node_ids.into_iter().find(|n| matches!(n, RENodeId::AuthZoneStack(..))).expect("AuthZone does not exist")
         }, NativeMethod::AuthZone => {
-            pub fn create_proof(resource_address: ResourceAddress) -> Proof {
-                AuthZoneMethod::CreateProof,
-                AuthZoneCreateProofInput {
-                    resource_address
-                }
-            }
-
             pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
                 AuthZoneMethod::CreateProofByAmount,
                 AuthZoneCreateProofByAmountInput {

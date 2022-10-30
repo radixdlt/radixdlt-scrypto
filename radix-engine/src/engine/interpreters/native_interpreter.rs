@@ -89,6 +89,7 @@ pub trait InvokableNative<'a>:
     + Invokable<BucketGetResourceAddressInput>
     + Invokable<AuthZonePopInput>
     + Invokable<AuthZonePushInput>
+    + Invokable<AuthZoneCreateProofInput>
 {
 }
 

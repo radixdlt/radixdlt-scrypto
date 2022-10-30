@@ -434,18 +434,14 @@ impl TransactionProcessor {
                     })
                     .and_then(|new_id| {
                         system_api
-                            .invoke(NativeMethodInvocation(
-                                NativeMethod::AuthZone(AuthZoneMethod::CreateProof),
-                                auth_zone_ref,
-                                ScryptoValue::from_typed(&AuthZoneCreateProofInput {
+                            .invoke(AuthZoneCreateProofInput {
                                     resource_address: *resource_address,
-                                }),
-                            ))
+                                auth_zone_id,
+                                })
                             .map_err(InvokeError::Downstream)
-                            .map(|rtn| {
-                                let proof_id = Self::first_proof(&rtn);
-                                proof_id_mapping.insert(new_id, proof_id);
-                                ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
+                            .map(|proof| {
+                                proof_id_mapping.insert(new_id, proof.0);
+                                ScryptoValue::from_typed(&proof)
                             })
                     }),
                 Instruction::CreateProofFromAuthZoneByAmount {

@@ -109,6 +109,65 @@ impl NativeInvocation for AuthZonePushInput {
     }
 }
 
+impl NativeExecutable for AuthZoneCreateProofInput {
+    type Output = scrypto::resource::Proof;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::AuthZoneStack(input.auth_zone_id);
+        let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+        let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let resource_type = {
+            let resource_id =
+                RENodeId::Global(GlobalAddress::Resource(input.resource_address));
+            let offset =
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+            let resource_handle =
+                system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
+            let substate_ref = system_api.get_ref(resource_handle)?;
+            substate_ref.resource_manager().resource_type
+        };
+
+        let proof = {
+            let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
+            let auth_zone = substate_mut.auth_zone();
+            let proof = auth_zone
+                .cur_auth_zone()
+                .create_proof(input.resource_address, resource_type)
+                .map_err(|e| match e {
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
+                    }
+                })?;
+            proof
+        };
+
+        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+
+
+        Ok((scrypto::resource::Proof(proof_id), CallFrameUpdate::move_node(RENodeId::Proof(proof_id))))
+    }
+}
+
+impl NativeInvocation for AuthZoneCreateProofInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::AuthZone(AuthZoneMethod::CreateProof),
+            RENodeId::AuthZoneStack(self.auth_zone_id),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+
 pub struct AuthZoneStack;
 
 impl AuthZoneStack {
@@ -147,31 +206,7 @@ impl AuthZoneStack {
                 panic!("Unexpected")
             }
             AuthZoneMethod::CreateProof => {
-                let input: AuthZoneCreateProofInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
-
-                let resource_type = {
-                    let resource_id =
-                        RENodeId::Global(GlobalAddress::Resource(input.resource_address));
-                    let offset =
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                    let resource_handle =
-                        system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
-                    let substate_ref = system_api.get_ref(resource_handle)?;
-                    substate_ref.resource_manager().resource_type
-                };
-
-                let proof = {
-                    let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
-                    let auth_zone = substate_mut.auth_zone();
-                    let proof = auth_zone
-                        .cur_auth_zone()
-                        .create_proof(input.resource_address, resource_type)?;
-                    proof
-                };
-
-                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
-                ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
+                panic!("Unexpected")
             }
             AuthZoneMethod::CreateProofByAmount => {
                 let input: AuthZoneCreateProofByAmountInput = scrypto_decode(&args.raw)
