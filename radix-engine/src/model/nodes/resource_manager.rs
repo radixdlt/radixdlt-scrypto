@@ -1,6 +1,6 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, Invokable, InvokableNativeFunction, LockFlags,
-    NativeFunctionInvocation, RENode, RuntimeError, SystemApi,
+    NativeExecutable, NativeFunctionInvocation, RENode, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
 use crate::model::{
@@ -36,32 +36,8 @@ pub enum ResourceManagerError {
     ResourceAddressAlreadySet,
 }
 
-impl NativeFunctionInvocation for ResourceManagerBurnInput {
-    type NativeOutput = ();
-
-    fn native_function() -> NativeFunction {
-        NativeFunction::ResourceManager(ResourceManagerFunction::BurnBucket)
-    }
-
-    fn call_frame_update(&self) -> CallFrameUpdate {
-        let bucket = RENodeId::Bucket(self.bucket.0);
-        let mut node_refs_to_copy = HashSet::new();
-
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            ECDSA_SECP256K1_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            EDDSA_ED25519_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
-
-        CallFrameUpdate {
-            nodes_to_move: vec![bucket],
-            node_refs_to_copy,
-        }
-    }
+impl NativeExecutable for ResourceManagerBurnInput {
+    type Output = ();
 
     fn execute<'s, 'a, Y, R>(
         invocation: Self,
@@ -95,14 +71,13 @@ impl NativeFunctionInvocation for ResourceManagerBurnInput {
     }
 }
 
-impl NativeFunctionInvocation for ResourceManagerCreateInput {
-    type NativeOutput = (ResourceAddress, Option<scrypto::resource::Bucket>);
-
+impl NativeFunctionInvocation for ResourceManagerBurnInput {
     fn native_function() -> NativeFunction {
-        NativeFunction::ResourceManager(ResourceManagerFunction::Create)
+        NativeFunction::ResourceManager(ResourceManagerFunction::BurnBucket)
     }
 
     fn call_frame_update(&self) -> CallFrameUpdate {
+        let bucket = RENodeId::Bucket(self.bucket.0);
         let mut node_refs_to_copy = HashSet::new();
 
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
@@ -116,10 +91,14 @@ impl NativeFunctionInvocation for ResourceManagerCreateInput {
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
         CallFrameUpdate {
-            nodes_to_move: vec![],
+            nodes_to_move: vec![bucket],
             node_refs_to_copy,
         }
     }
+}
+
+impl NativeExecutable for ResourceManagerCreateInput {
+    type Output = (ResourceAddress, Option<scrypto::resource::Bucket>);
 
     fn execute<'s, 'a, Y, R>(
         invocation: Self,
@@ -277,6 +256,31 @@ impl NativeFunctionInvocation for ResourceManagerCreateInput {
                 node_refs_to_copy,
             },
         ))
+    }
+}
+
+impl NativeFunctionInvocation for ResourceManagerCreateInput {
+    fn native_function() -> NativeFunction {
+        NativeFunction::ResourceManager(ResourceManagerFunction::Create)
+    }
+
+    fn call_frame_update(&self) -> CallFrameUpdate {
+        let mut node_refs_to_copy = HashSet::new();
+
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            ECDSA_SECP256K1_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            EDDSA_ED25519_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+
+        CallFrameUpdate {
+            nodes_to_move: vec![],
+            node_refs_to_copy,
+        }
     }
 }
 

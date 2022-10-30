@@ -31,16 +31,8 @@ impl Package {
     }
 }
 
-impl NativeFunctionInvocation for PackagePublishInput {
-    type NativeOutput = PackageAddress;
-
-    fn native_function() -> NativeFunction {
-        NativeFunction::Package(PackageFunction::Publish)
-    }
-
-    fn call_frame_update(&self) -> CallFrameUpdate {
-        CallFrameUpdate::empty()
-    }
+impl NativeExecutable for PackagePublishInput {
+    type Output = PackageAddress;
 
     fn execute<'s, 'a, Y, R>(
         invocation: Self,
@@ -74,5 +66,15 @@ impl NativeFunctionInvocation for PackagePublishInput {
 
         let package_address: PackageAddress = global_node_id.into();
         Ok((package_address, CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeFunctionInvocation for PackagePublishInput {
+    fn native_function() -> NativeFunction {
+        NativeFunction::Package(PackageFunction::Publish)
+    }
+
+    fn call_frame_update(&self) -> CallFrameUpdate {
+        CallFrameUpdate::empty()
     }
 }

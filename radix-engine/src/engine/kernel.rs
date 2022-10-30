@@ -774,7 +774,7 @@ where
     R: FeeReserve,
     N: NativeFunctionInvocation,
 {
-    fn invoke(&mut self, invocation: N) -> Result<N::Output, RuntimeError> {
+    fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,

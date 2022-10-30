@@ -83,14 +83,14 @@ pub trait InvokableNativeFunction<'a>:
 {
 }
 
-impl<N: NativeFunctionInvocation> Invocation for N {
-    type Output = N::NativeOutput;
+impl<N: NativeExecutable> Invocation for N {
+    type Output = <N as NativeExecutable>::Output;
 }
 
 pub struct NativeResolver;
 
 impl<N: NativeFunctionInvocation> Resolver<N> for NativeResolver {
-    type Exec = NativeFuncExecutor<N>;
+    type Exec = NativeExecutor<N>;
 
     fn resolve<D: MethodDeref>(
         invocation: N,
@@ -100,22 +100,18 @@ impl<N: NativeFunctionInvocation> Resolver<N> for NativeResolver {
         let call_frame_update = invocation.call_frame_update();
         let actor = REActor::Function(ResolvedFunction::Native(native_function));
         let input = ScryptoValue::from_typed(&invocation);
-        let executor = NativeFuncExecutor(invocation, input);
+        let executor = NativeExecutor(invocation, input);
         (actor, call_frame_update, executor)
     }
 }
 
-pub trait NativeFunctionInvocation: Invocation + Encode + Debug {
-    type NativeOutput: Debug;
-
-    fn native_function() -> NativeFunction;
-
-    fn call_frame_update(&self) -> CallFrameUpdate;
+pub trait NativeExecutable: Invocation {
+    type Output: Debug;
 
     fn execute<'s, 'a, Y, R>(
         invocation: Self,
         system_api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
@@ -124,10 +120,16 @@ pub trait NativeFunctionInvocation: Invocation + Encode + Debug {
         R: FeeReserve;
 }
 
-pub struct NativeFuncExecutor<N: NativeFunctionInvocation>(pub N, pub ScryptoValue);
+pub trait NativeFunctionInvocation: NativeExecutable + Encode + Debug {
+    fn native_function() -> NativeFunction;
 
-impl<N: NativeFunctionInvocation> Executor for NativeFuncExecutor<N> {
-    type Output = N::Output;
+    fn call_frame_update(&self) -> CallFrameUpdate;
+}
+
+pub struct NativeExecutor<N: NativeExecutable>(pub N, pub ScryptoValue);
+
+impl<N: NativeExecutable> Executor for NativeExecutor<N> {
+    type Output = <N as Invocation>::Output;
 
     fn args(&self) -> &ScryptoValue {
         &self.1

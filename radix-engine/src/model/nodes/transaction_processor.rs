@@ -32,9 +32,27 @@ pub enum TransactionProcessorError {
     IdAllocationError(IdAllocationError),
 }
 
-impl<'a> NativeFunctionInvocation for TransactionProcessorRunInput<'a> {
-    type NativeOutput = Vec<Vec<u8>>;
+impl<'b> NativeExecutable for TransactionProcessorRunInput<'b> {
+    type Output = Vec<Vec<u8>>;
 
+    fn execute<'s, 'a, Y, R>(
+        invocation: Self,
+        system_api: &mut Y,
+    ) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation>
+            + InvokableNativeFunction<'a>
+            + Invokable<NativeMethodInvocation>,
+        R: FeeReserve,
+    {
+        TransactionProcessor::static_main(invocation, system_api)
+            .map(|rtn| (rtn, CallFrameUpdate::empty()))
+            .map_err(|e| e.into())
+    }
+}
+
+impl<'a> NativeFunctionInvocation for TransactionProcessorRunInput<'a> {
     fn native_function() -> NativeFunction {
         NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run)
     }
@@ -77,22 +95,6 @@ impl<'a> NativeFunctionInvocation for TransactionProcessorRunInput<'a> {
             nodes_to_move: vec![],
             node_refs_to_copy,
         }
-    }
-
-    fn execute<'s, 'b, Y, R>(
-        invocation: Self,
-        system_api: &mut Y,
-    ) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction<'b>
-            + Invokable<NativeMethodInvocation>,
-        R: FeeReserve,
-    {
-        TransactionProcessor::static_main(invocation, system_api)
-            .map(|rtn| (rtn, CallFrameUpdate::empty()))
-            .map_err(|e| e.into())
     }
 }
 
