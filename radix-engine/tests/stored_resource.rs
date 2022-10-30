@@ -8,7 +8,7 @@ fn stored_resource_is_invokeable() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package = test_runner.compile_and_publish("./tests/stored_resource");
+    let package = test_runner.compile_and_publish("./tests/blueprints/stored_resource");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package, "StoredResource", "create", args!())

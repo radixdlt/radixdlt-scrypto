@@ -17,10 +17,10 @@ where
     // Basic setup
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package and instantiate component
-    let package_address = test_runner.compile_and_publish("./tests/fee");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/fee");
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(10.into(), account)
@@ -213,8 +213,8 @@ fn test_fee_accounting_success() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account1) = test_runner.new_account();
-    let (_, _, account2) = test_runner.new_account();
+    let (public_key, _, account1) = test_runner.new_allocated_account();
+    let (_, _, account2) = test_runner.new_allocated_account();
     let account1_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
     let account2_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
 
@@ -253,8 +253,8 @@ fn test_fee_accounting_failure() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account1) = test_runner.new_account();
-    let (_, _, account2) = test_runner.new_account();
+    let (public_key, _, account1) = test_runner.new_allocated_account();
+    let (_, _, account2) = test_runner.new_allocated_account();
     let account1_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
     let account2_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
 
@@ -300,7 +300,7 @@ fn test_fee_accounting_rejection() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account1) = test_runner.new_account();
+    let (public_key, _, account1) = test_runner.new_allocated_account();
     let account1_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
 
     // Act
@@ -323,8 +323,8 @@ fn test_contingent_fee_accounting_success() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key1, _, account1) = test_runner.new_account();
-    let (public_key2, _, account2) = test_runner.new_account();
+    let (public_key1, _, account1) = test_runner.new_allocated_account();
+    let (public_key2, _, account2) = test_runner.new_allocated_account();
     let account1_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
     let account2_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
 
@@ -362,8 +362,8 @@ fn test_contingent_fee_accounting_failure() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key1, _, account1) = test_runner.new_account();
-    let (public_key2, _, account2) = test_runner.new_account();
+    let (public_key1, _, account1) = test_runner.new_allocated_account();
+    let (public_key2, _, account2) = test_runner.new_allocated_account();
     let account1_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
     let account2_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
 

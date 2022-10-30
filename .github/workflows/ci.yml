@@ -122,10 +122,10 @@ jobs:
       run: rustup +nightly target add wasm32-unknown-unknown
     - name: Build account
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: assets/account
+      working-directory: assets/blueprints/account
     - name: Build faucet
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: assets/faucet
+      working-directory: assets/blueprints/faucet
     - name: Build no-std
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/no-std
