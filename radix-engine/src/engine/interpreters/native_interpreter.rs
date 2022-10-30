@@ -4,7 +4,6 @@ use crate::model::*;
 use crate::types::*;
 use sbor::rust::fmt::Debug;
 use sbor::*;
-use transaction::model::Instruction;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
     fn into(self) -> RuntimeError {

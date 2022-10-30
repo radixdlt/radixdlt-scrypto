@@ -53,7 +53,7 @@ pub use scrypto::values::{ScryptoValue, ScryptoValueReplaceError};
 use std::fmt::Debug;
 
 // methods and macros
-use crate::engine::{Invocation, REActor, RENodeLocation, RuntimeError};
+use crate::engine::Invocation;
 pub use sbor::decode_any;
 pub use scrypto::buffer::{scrypto_decode, scrypto_encode};
 pub use scrypto::crypto::hash;
@@ -79,19 +79,6 @@ impl ScryptoInvocation {
             ScryptoInvocation::Function(_, args) => &args,
             ScryptoInvocation::Method(_, args) => &args,
         }
-    }
-}
-
-#[derive(Debug)]
-pub struct NativeFunctionInvocation(pub NativeFunction, pub ScryptoValue);
-
-impl Invocation for NativeFunctionInvocation {
-    type Output = ScryptoValue;
-}
-
-impl NativeFunctionInvocation {
-    pub fn args(&self) -> &ScryptoValue {
-        &self.1
     }
 }
 

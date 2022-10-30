@@ -1,6 +1,6 @@
 use std::mem;
 use transaction::errors::IdAllocationError;
-use transaction::model::{AuthZoneParams, Instruction};
+use transaction::model::AuthZoneParams;
 use transaction::validation::*;
 
 use crate::engine::call_frame::RENodeLocation;
