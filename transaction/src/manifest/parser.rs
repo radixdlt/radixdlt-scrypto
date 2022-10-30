@@ -298,7 +298,7 @@ impl Parser {
             TokenKind::Blob |
             TokenKind:: NonFungibleAddress |
             /* Uninterpreted */
-            TokenKind:: Hash|
+            TokenKind:: Hash |
             TokenKind::EcdsaSecp256k1PublicKey |
             TokenKind::EcdsaSecp256k1Signature |
             TokenKind::EddsaEd25519PublicKey |
