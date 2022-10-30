@@ -2,8 +2,6 @@ use sbor::path::MutableSborPath;
 
 use crate::decode::*;
 use crate::encode::*;
-use crate::rust::borrow::Borrow;
-use crate::rust::boxed::Box;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
@@ -61,32 +59,11 @@ pub enum Value {
         name: String,
         fields: Vec<Value>,
     },
-    Option {
-        value: Box<Option<Value>>,
-    },
-    Result {
-        value: Box<Result<Value, Value>>,
-    },
-
     Array {
         element_type_id: u8,
         elements: Vec<Value>,
     },
     Tuple {
-        elements: Vec<Value>,
-    },
-
-    List {
-        element_type_id: u8,
-        elements: Vec<Value>,
-    },
-    Set {
-        element_type_id: u8,
-        elements: Vec<Value>,
-    },
-    Map {
-        key_type_id: u8,
-        value_type_id: u8,
         elements: Vec<Value>,
     },
 
@@ -113,7 +90,6 @@ pub fn encode_any_with_buffer(value: &Value, buffer: &mut Vec<u8>) {
 
 fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
     match value {
-        // primitive types
         Value::Unit => encode_basic(ty_ctx, TYPE_UNIT, &(), enc),
         Value::Bool { value } => encode_basic(ty_ctx, TYPE_BOOL, value, enc),
         Value::I8 { value } => encode_basic(ty_ctx, TYPE_I8, value, enc),
@@ -127,7 +103,6 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
         Value::U64 { value } => encode_basic(ty_ctx, TYPE_U64, value, enc),
         Value::U128 { value } => encode_basic(ty_ctx, TYPE_U128, value, enc),
         Value::String { value } => encode_basic(ty_ctx, TYPE_STRING, value, enc),
-        // struct & enum
         Value::Struct { fields } => {
             if ty_ctx.is_none() {
                 enc.write_type_id(TYPE_STRUCT);
@@ -147,36 +122,6 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                 encode_any_internal(None, field, enc);
             }
         }
-        Value::Option { value } => {
-            if ty_ctx.is_none() {
-                enc.write_type_id(TYPE_OPTION);
-            }
-            match value.borrow() {
-                Some(x) => {
-                    enc.write_discriminator(OPTION_VARIANT_SOME);
-                    encode_any_internal(None, x, enc);
-                }
-                None => {
-                    enc.write_discriminator(OPTION_VARIANT_NONE);
-                }
-            }
-        }
-        Value::Result { value } => {
-            if ty_ctx.is_none() {
-                enc.write_type_id(TYPE_RESULT);
-            }
-            match value.borrow() {
-                Ok(x) => {
-                    enc.write_discriminator(RESULT_VARIANT_OK);
-                    encode_any_internal(None, x, enc);
-                }
-                Err(x) => {
-                    enc.write_discriminator(RESULT_VARIANT_ERR);
-                    encode_any_internal(None, x, enc);
-                }
-            }
-        }
-        // composite types
         Value::Array {
             element_type_id,
             elements,
@@ -197,49 +142,6 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             enc.write_size(elements.len());
             for e in elements {
                 encode_any_internal(None, e, enc);
-            }
-        }
-        // collections
-        Value::List {
-            element_type_id,
-            elements,
-        } => {
-            if ty_ctx.is_none() {
-                enc.write_type_id(TYPE_LIST);
-            }
-            enc.write_type_id(*element_type_id);
-            enc.write_size(elements.len());
-            for e in elements {
-                encode_any_internal(Some(*element_type_id), e, enc);
-            }
-        }
-        Value::Set {
-            element_type_id,
-            elements,
-        } => {
-            if ty_ctx.is_none() {
-                enc.write_type_id(TYPE_SET);
-            }
-            enc.write_type_id(*element_type_id);
-            enc.write_size(elements.len());
-            for e in elements {
-                encode_any_internal(Some(*element_type_id), e, enc);
-            }
-        }
-        Value::Map {
-            key_type_id,
-            value_type_id,
-            elements,
-        } => {
-            if ty_ctx.is_none() {
-                enc.write_type_id(TYPE_MAP);
-            }
-            enc.write_type_id(*key_type_id);
-            enc.write_type_id(*value_type_id);
-            enc.write_size(elements.len() / 2);
-            for pair in elements.chunks(2) {
-                encode_any_internal(Some(*key_type_id), &pair[0], enc);
-                encode_any_internal(Some(*value_type_id), &pair[1], enc);
             }
         }
         // custom
@@ -273,6 +175,8 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
         Some(t) => t,
         None => dec.read_type_id()?,
     };
+
+    println!("{}", ty);
 
     match ty {
         // primitive types
@@ -339,34 +243,6 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             }
             Ok(Value::Enum { name, fields })
         }
-        TYPE_OPTION => {
-            // discriminator
-            let discriminator = dec.read_discriminator()?;
-            // optional value
-            match discriminator.as_ref() {
-                OPTION_VARIANT_SOME => Ok(Value::Option {
-                    value: Box::new(Some(decode_next(None, dec)?)),
-                }),
-                OPTION_VARIANT_NONE => Ok(Value::Option {
-                    value: Box::new(None),
-                }),
-                _ => Err(DecodeError::InvalidDiscriminator(discriminator)),
-            }
-        }
-        TYPE_RESULT => {
-            // discriminator
-            let discriminator = dec.read_discriminator()?;
-            // result value
-            match discriminator.as_ref() {
-                RESULT_VARIANT_OK => Ok(Value::Result {
-                    value: Box::new(Ok(decode_next(None, dec)?)),
-                }),
-                RESULT_VARIANT_ERR => Ok(Value::Result {
-                    value: Box::new(Err(decode_next(None, dec)?)),
-                }),
-                _ => Err(DecodeError::InvalidDiscriminator(discriminator)),
-            }
-        }
         // composite types
         TYPE_ARRAY => {
             // element type
@@ -392,56 +268,6 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
                 elements.push(decode_next(None, dec)?);
             }
             Ok(Value::Tuple { elements })
-        }
-        // collections
-        TYPE_LIST => {
-            // element type
-            let element_type_id = dec.read_type_id()?;
-            // length
-            let len = dec.read_size()?;
-            // values
-            let mut elements = Vec::new();
-            for _ in 0..len {
-                elements.push(decode_next(Some(element_type_id), dec)?);
-            }
-            Ok(Value::List {
-                element_type_id,
-                elements,
-            })
-        }
-        TYPE_SET => {
-            // element type
-            let element_type_id = dec.read_type_id()?;
-            // length
-            let len = dec.read_size()?;
-            // values
-            let mut elements = Vec::new();
-            for _ in 0..len {
-                elements.push(decode_next(Some(element_type_id), dec)?);
-            }
-            Ok(Value::Set {
-                element_type_id,
-                elements,
-            })
-        }
-        TYPE_MAP => {
-            // key type
-            let key_type_id = dec.read_type_id()?;
-            // value type
-            let value_type_id = dec.read_type_id()?;
-            // length
-            let len = dec.read_size()?;
-            // elements
-            let mut elements = Vec::new();
-            for _ in 0..len {
-                elements.push(decode_next(Some(key_type_id), dec)?);
-                elements.push(decode_next(Some(value_type_id), dec)?);
-            }
-            Ok(Value::Map {
-                key_type_id,
-                value_type_id,
-                elements,
-            })
         }
         _ => {
             if ty >= TYPE_CUSTOM_START {
@@ -493,21 +319,6 @@ where
                 path.pop();
             }
         }
-        Value::Option { value } => match value.borrow() {
-            Some(x) => {
-                path.push(0);
-                traverse_any(path, x, visitor)?;
-                path.pop();
-            }
-            None => {}
-        },
-        Value::Result { value } => match value.borrow() {
-            Ok(x) | Err(x) => {
-                path.push(0);
-                traverse_any(path, x, visitor)?;
-                path.pop();
-            }
-        },
         // composite types
         Value::Array { elements, .. } => {
             for (i, e) in elements.iter().enumerate() {
@@ -517,16 +328,6 @@ where
             }
         }
         Value::Tuple { elements } => {
-            for (i, e) in elements.iter().enumerate() {
-                path.push(i);
-                traverse_any(path, e, visitor)?;
-                path.pop();
-            }
-        }
-        // collections
-        Value::List { elements, .. }
-        | Value::Set { elements, .. }
-        | Value::Map { elements, .. } => {
             for (i, e) in elements.iter().enumerate() {
                 path.push(i);
                 traverse_any(path, e, visitor)?;
@@ -555,7 +356,6 @@ pub trait CustomValueVisitor {
 
 #[cfg(test)]
 mod tests {
-    use crate::rust::boxed::Box;
     use crate::rust::collections::*;
     use crate::rust::string::String;
     use crate::rust::string::ToString;
@@ -667,11 +467,13 @@ mod tests {
                     Value::String {
                         value: String::from("abc")
                     },
-                    Value::Option {
-                        value: Box::new(Some(Value::U32 { value: 1 }))
+                    Value::Enum {
+                        name: "Some".to_string(),
+                        fields: vec![Value::U32 { value: 1 }]
                     },
-                    Value::Result {
-                        value: Box::new(Ok(Value::U32 { value: 2 }))
+                    Value::Enum {
+                        name: "Ok".to_string(),
+                        fields: vec![Value::U32 { value: 2 }]
                     },
                     Value::Array {
                         element_type_id: TYPE_U32,
@@ -699,27 +501,29 @@ mod tests {
                         name: "C".to_string(),
                         fields: vec![]
                     },
-                    Value::List {
+                    Value::Array {
                         element_type_id: TYPE_U32,
                         elements: vec![Value::U32 { value: 1 }, Value::U32 { value: 2 },]
                     },
-                    Value::Set {
+                    Value::Array {
                         element_type_id: TYPE_U32,
                         elements: vec![Value::U32 { value: 1 }]
                     },
-                    Value::Set {
+                    Value::Array {
                         element_type_id: TYPE_U32,
                         elements: vec![Value::U32 { value: 2 }]
                     },
-                    Value::Map {
-                        key_type_id: TYPE_U32,
-                        value_type_id: TYPE_U32,
-                        elements: vec![Value::U32 { value: 1 }, Value::U32 { value: 2 }]
+                    Value::Array {
+                        element_type_id: TYPE_TUPLE,
+                        elements: vec![Value::Tuple {
+                            elements: vec![Value::U32 { value: 1 }, Value::U32 { value: 2 }]
+                        }]
                     },
-                    Value::Map {
-                        key_type_id: TYPE_U32,
-                        value_type_id: TYPE_U32,
-                        elements: vec![Value::U32 { value: 3 }, Value::U32 { value: 4 }]
+                    Value::Array {
+                        element_type_id: TYPE_TUPLE,
+                        elements: vec![Value::Tuple {
+                            elements: vec![Value::U32 { value: 3 }, Value::U32 { value: 4 }]
+                        }]
                     }
                 ]
             },

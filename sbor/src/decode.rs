@@ -8,7 +8,6 @@ use crate::rust::mem::MaybeUninit;
 use crate::rust::ptr::copy;
 use crate::rust::rc::Rc;
 use crate::rust::string::String;
-use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
 use sbor::*;
@@ -247,22 +246,6 @@ impl Decode for String {
     }
 }
 
-impl<T: Decode> Decode for Option<T> {
-    #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
-        decoder.check_type_id(Self::type_id())
-    }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let discriminator = decoder.read_discriminator()?;
-
-        match discriminator.as_ref() {
-            OPTION_VARIANT_SOME => Ok(Some(T::decode(decoder)?)),
-            OPTION_VARIANT_NONE => Ok(None),
-            _ => Err(DecodeError::InvalidDiscriminator(discriminator)),
-        }
-    }
-}
-
 impl<'a, B: ?Sized + 'a + ToOwned<Owned = O>, O: Decode + TypeId> Decode for Cow<'a, B> {
     #[inline]
     fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
@@ -365,6 +348,28 @@ decode_tuple! { 8 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H }
 decode_tuple! { 9 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I }
 decode_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 
+impl<T: Decode> Decode for Option<T> {
+    #[inline]
+    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+        decoder.check_type_id(Self::type_id())
+    }
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        let discriminator = decoder.read_discriminator()?;
+
+        match discriminator.as_ref() {
+            OPTION_VARIANT_SOME => {
+                decoder.check_size(1)?;
+                Ok(Some(T::decode(decoder)?))
+            }
+            OPTION_VARIANT_NONE => {
+                decoder.check_size(0)?;
+                Ok(None)
+            }
+            _ => Err(DecodeError::InvalidDiscriminator(discriminator)),
+        }
+    }
+}
+
 impl<T: Decode + TypeId, E: Decode + TypeId> Decode for Result<T, E> {
     #[inline]
     fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
@@ -373,8 +378,14 @@ impl<T: Decode + TypeId, E: Decode + TypeId> Decode for Result<T, E> {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let discriminator = decoder.read_discriminator()?;
         match discriminator.as_ref() {
-            RESULT_VARIANT_OK => Ok(Ok(T::decode(decoder)?)),
-            RESULT_VARIANT_ERR => Ok(Err(E::decode(decoder)?)),
+            RESULT_VARIANT_OK => {
+                decoder.check_size(1)?;
+                Ok(Ok(T::decode(decoder)?))
+            }
+            RESULT_VARIANT_ERR => {
+                decoder.check_size(1)?;
+                Ok(Err(E::decode(decoder)?))
+            }
             _ => Err(DecodeError::InvalidDiscriminator(discriminator)),
         }
     }
@@ -413,44 +424,8 @@ impl<T: Decode + TypeId + Ord> Decode for BTreeSet<T> {
         decoder.check_type_id(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        decoder.check_type_id(T::type_id())?;
-        let len = decoder.read_size()?;
-
-        let mut result = BTreeSet::new();
-        for _ in 0..len {
-            if !result.insert(T::decode_value(decoder)?) {
-                // This is a custom error because key duplication logic is defined by the application
-                return Err(DecodeError::CustomError(
-                    "Duplicate BTreeSet entries".to_string(),
-                ));
-            }
-        }
-        Ok(result)
-    }
-}
-
-impl<K: Decode + TypeId + Ord, V: Decode + TypeId> Decode for BTreeMap<K, V> {
-    #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
-        decoder.check_type_id(Self::type_id())
-    }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        decoder.check_type_id(K::type_id())?;
-        decoder.check_type_id(V::type_id())?;
-        let len = decoder.read_size()?;
-        let mut map = BTreeMap::new();
-        for _ in 0..len {
-            if map
-                .insert(K::decode_value(decoder)?, V::decode_value(decoder)?)
-                .is_some()
-            {
-                // This is a custom error because key duplication logic is defined by the application
-                return Err(DecodeError::CustomError(
-                    "Duplicate BTreeMap entries".to_string(),
-                ));
-            }
-        }
-        Ok(map)
+        let elements: Vec<T> = Vec::<T>::decode_value(decoder)?;
+        Ok(elements.into_iter().collect())
     }
 }
 
@@ -460,19 +435,19 @@ impl<T: Decode + TypeId + Hash + Eq> Decode for HashSet<T> {
         decoder.check_type_id(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        decoder.check_type_id(T::type_id())?;
-        let len = decoder.read_size()?;
+        let elements: Vec<T> = Vec::<T>::decode_value(decoder)?;
+        Ok(elements.into_iter().collect())
+    }
+}
 
-        let mut result = HashSet::new();
-        for _ in 0..len {
-            if !result.insert(T::decode_value(decoder)?) {
-                // This is a custom error because key duplication logic is defined by the application
-                return Err(DecodeError::CustomError(
-                    "Duplicate HashSet entries".to_string(),
-                ));
-            }
-        }
-        Ok(result)
+impl<K: Decode + TypeId + Ord, V: Decode + TypeId> Decode for BTreeMap<K, V> {
+    #[inline]
+    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+        decoder.check_type_id(Self::type_id())
+    }
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        let elements = Vec::<(K, V)>::decode_value(decoder)?;
+        Ok(elements.into_iter().collect())
     }
 }
 
@@ -482,22 +457,8 @@ impl<K: Decode + TypeId + Hash + Eq, V: Decode + TypeId> Decode for HashMap<K, V
         decoder.check_type_id(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        decoder.check_type_id(K::type_id())?;
-        decoder.check_type_id(V::type_id())?;
-        let len = decoder.read_size()?;
-        let mut map = HashMap::new();
-        for _ in 0..len {
-            if map
-                .insert(K::decode_value(decoder)?, V::decode_value(decoder)?)
-                .is_some()
-            {
-                // This is a custom error because key duplication logic is defined by the application
-                return Err(DecodeError::CustomError(
-                    "Duplicate HashMap entries".to_string(),
-                ));
-            }
-        }
-        Ok(map)
+        let elements: Vec<(K, V)> = Vec::<(K, V)>::decode_value(decoder)?;
+        Ok(elements.into_iter().collect())
     }
 }
 
@@ -524,14 +485,6 @@ mod tests {
         assert_eq!(1, <u128>::decode(dec).unwrap());
         assert_eq!("hello", <String>::decode(dec).unwrap());
 
-        assert_eq!(Some(1u32), <Option<u32>>::decode(dec).unwrap());
-        assert_eq!(None, <Option<u32>>::decode(dec).unwrap());
-        assert_eq!(Ok(1u32), <Result<u32, String>>::decode(dec).unwrap());
-        assert_eq!(
-            Err("hello".to_owned()),
-            <Result<u32, String>>::decode(dec).unwrap()
-        );
-
         assert_eq!([1u32, 2u32, 3u32], <[u32; 3]>::decode(dec).unwrap());
         assert_eq!((1u32, 2u32), <(u32, u32)>::decode(dec).unwrap());
 
@@ -544,6 +497,14 @@ mod tests {
         map.insert(1, 2);
         map.insert(3, 4);
         assert_eq!(map, <BTreeMap<u8, u8>>::decode(dec).unwrap());
+
+        assert_eq!(Some(1u32), <Option<u32>>::decode(dec).unwrap());
+        assert_eq!(None, <Option<u32>>::decode(dec).unwrap());
+        assert_eq!(Ok(1u32), <Result<u32, String>>::decode(dec).unwrap());
+        assert_eq!(
+            Err("hello".to_owned()),
+            <Result<u32, String>>::decode(dec).unwrap()
+        );
     }
 
     #[test]
@@ -562,15 +523,16 @@ mod tests {
             10, 1, 0, 0, 0, 0, 0, 0, 0, // u64
             11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
             12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // string
-            18, 4, 0, 0, 0, 83, 111, 109, 101, 9, 1, 0, 0, 0, // option
-            18, 4, 0, 0, 0, 78, 111, 110, 101, // option
-            19, 2, 0, 0, 0, 79, 107, 9, 1, 0, 0, 0, // result
-            19, 3, 0, 0, 0, 69, 114, 114, 12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // result
             32, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
             33, 2, 0, 0, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
-            48, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // list
-            49, 7, 2, 0, 0, 0, 1, 2, // set
-            50, 7, 7, 2, 0, 0, 0, 1, 2, 3, 4, // map
+            32, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
+            32, 7, 2, 0, 0, 0, 1, 2, // set
+            32, 33, 2, 0, 0, 0, 2, 0, 0, 0, 7, 1, 7, 2, 2, 0, 0, 0, 7, 3, 7, 4, // map
+            17, 4, 0, 0, 0, 83, 111, 109, 101, 1, 0, 0, 0, 9, 1, 0, 0, 0, // Some<T>
+            17, 4, 0, 0, 0, 78, 111, 110, 101, 0, 0, 0, 0, // None
+            17, 2, 0, 0, 0, 79, 107, 1, 0, 0, 0, 9, 1, 0, 0, 0, // Ok<T>
+            17, 3, 0, 0, 0, 69, 114, 114, 1, 0, 0, 0, 12, 5, 0, 0, 0, 104, 101, 108, 108,
+            111, // Err<T>
         ];
         let mut dec = Decoder::new(&bytes);
         assert_decoding(&mut dec);

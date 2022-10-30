@@ -59,7 +59,7 @@ fn test_encode_as_json() {
                                     "value": 4
                                 }
                             ],
-                            "type": "List"
+                            "type": "Array"
                         }
                     ],
                     "type": "Tuple"

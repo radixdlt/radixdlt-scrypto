@@ -21,26 +21,17 @@ pub const TYPE_U32: u8 = 0x09;
 pub const TYPE_U64: u8 = 0x0a;
 pub const TYPE_U128: u8 = 0x0b;
 pub const TYPE_STRING: u8 = 0x0c;
-
-// struct and enum
+// struct & enum
 pub const TYPE_STRUCT: u8 = 0x10;
 pub const TYPE_ENUM: u8 = 0x11;
-pub const TYPE_OPTION: u8 = 0x12; // enum Option<T> { Some(T), None }
-pub const TYPE_RESULT: u8 = 0x13; // enum Result<T, E> { Ok(T), Err(E) }
-
 // composite types
 pub const TYPE_ARRAY: u8 = 0x20; // [T; N]
-pub const TYPE_TUPLE: u8 = 0x21; // (A, B, C)
+pub const TYPE_TUPLE: u8 = 0x21; // (T1, T2, T3)
 
-// collections
-pub const TYPE_LIST: u8 = 0x30;
-pub const TYPE_SET: u8 = 0x31;
-pub const TYPE_MAP: u8 = 0x32;
-
-// custom types start from 0x80 and values are encoded as `len + data`
+/// A custom type is an application defined type with special semantics.
+/// Values of a custom type must be encoded a `size + data`
 pub const TYPE_CUSTOM_START: u8 = 0x80;
 
-// enum variant indices
 pub const OPTION_VARIANT_SOME: &str = "Some";
 pub const OPTION_VARIANT_NONE: &str = "None";
 pub const RESULT_VARIANT_OK: &str = "Ok";
@@ -136,7 +127,7 @@ impl TypeId for String {
 impl<T> TypeId for Option<T> {
     #[inline]
     fn type_id() -> u8 {
-        TYPE_OPTION
+        TYPE_ENUM
     }
 }
 
@@ -198,48 +189,48 @@ type_id_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 impl<T, E> TypeId for Result<T, E> {
     #[inline]
     fn type_id() -> u8 {
-        TYPE_RESULT
+        TYPE_ENUM
     }
 }
 
 impl<T> TypeId for Vec<T> {
     #[inline]
     fn type_id() -> u8 {
-        TYPE_LIST
+        TYPE_ARRAY
     }
 }
 
 impl<T> TypeId for [T] {
     #[inline]
     fn type_id() -> u8 {
-        TYPE_LIST
+        TYPE_ARRAY
     }
 }
 
 impl<T> TypeId for BTreeSet<T> {
     #[inline]
     fn type_id() -> u8 {
-        TYPE_SET
+        TYPE_ARRAY
     }
 }
 
 impl<K, V> TypeId for BTreeMap<K, V> {
     #[inline]
     fn type_id() -> u8 {
-        TYPE_MAP
+        TYPE_ARRAY
     }
 }
 
 impl<T> TypeId for HashSet<T> {
     #[inline]
     fn type_id() -> u8 {
-        TYPE_SET
+        TYPE_ARRAY
     }
 }
 
 impl<K, V> TypeId for HashMap<K, V> {
     #[inline]
     fn type_id() -> u8 {
-        TYPE_MAP
+        TYPE_ARRAY
     }
 }

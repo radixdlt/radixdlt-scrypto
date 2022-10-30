@@ -182,25 +182,6 @@ impl Encode for String {
     }
 }
 
-impl<T: Encode + TypeId> Encode for Option<T> {
-    #[inline]
-    fn encode_type_id(encoder: &mut Encoder) {
-        encoder.write_type_id(Self::type_id());
-    }
-    #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        match self {
-            Some(v) => {
-                encoder.write_discriminator(OPTION_VARIANT_SOME);
-                v.encode(encoder);
-            }
-            None => {
-                encoder.write_discriminator(OPTION_VARIANT_NONE);
-            }
-        }
-    }
-}
-
 impl<'a, B: ?Sized + 'a + ToOwned + Encode> Encode for Cow<'a, B> {
     #[inline]
     fn encode_type_id(encoder: &mut Encoder) {
@@ -234,7 +215,7 @@ impl<T: Encode> Encode for RefCell<T> {
     }
 }
 
-impl<T: Encode + TypeId, const N: usize> Encode for [T; N] {
+impl<T: Encode + TypeId> Encode for [T] {
     #[inline]
     fn encode_type_id(encoder: &mut Encoder) {
         encoder.write_type_id(Self::type_id());
@@ -243,9 +224,29 @@ impl<T: Encode + TypeId, const N: usize> Encode for [T; N] {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type_id(T::type_id());
         encoder.write_size(self.len());
-        for v in self {
-            v.encode_value(encoder);
+        if T::type_id() == TYPE_U8 || T::type_id() == TYPE_I8 {
+            let mut buf = Vec::<u8>::with_capacity(self.len());
+            unsafe {
+                copy(self.as_ptr() as *mut u8, buf.as_mut_ptr(), self.len());
+                buf.set_len(self.len());
+            }
+            encoder.write_slice(&buf);
+        } else {
+            for v in self {
+                v.encode_value(encoder);
+            }
         }
+    }
+}
+
+impl<T: Encode + TypeId, const N: usize> Encode for [T; N] {
+    #[inline]
+    fn encode_type_id(encoder: &mut Encoder) {
+        encoder.write_type_id(Self::type_id());
+    }
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.as_slice().encode_value(encoder);
     }
 }
 
@@ -276,6 +277,27 @@ encode_tuple! { 8 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H }
 encode_tuple! { 9 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I }
 encode_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 
+impl<T: Encode + TypeId> Encode for Option<T> {
+    #[inline]
+    fn encode_type_id(encoder: &mut Encoder) {
+        encoder.write_type_id(Self::type_id());
+    }
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        match self {
+            Some(v) => {
+                encoder.write_discriminator(OPTION_VARIANT_SOME);
+                encoder.write_size(1);
+                v.encode(encoder);
+            }
+            None => {
+                encoder.write_discriminator(OPTION_VARIANT_NONE);
+                encoder.write_size(0);
+            }
+        }
+    }
+}
+
 impl<T: Encode, E: Encode> Encode for Result<T, E> {
     #[inline]
     fn encode_type_id(encoder: &mut Encoder) {
@@ -286,10 +308,12 @@ impl<T: Encode, E: Encode> Encode for Result<T, E> {
         match self {
             Ok(o) => {
                 encoder.write_discriminator(RESULT_VARIANT_OK);
+                encoder.write_size(1);
                 o.encode(encoder);
             }
             Err(e) => {
                 encoder.write_discriminator(RESULT_VARIANT_ERR);
+                encoder.write_size(1);
                 e.encode(encoder);
             }
         }
@@ -307,7 +331,7 @@ impl<T: Encode + TypeId> Encode for Vec<T> {
     }
 }
 
-impl<T: Encode + TypeId> Encode for [T] {
+impl<T: Encode + TypeId> Encode for BTreeSet<T> {
     #[inline]
     fn encode_type_id(encoder: &mut Encoder) {
         encoder.write_type_id(Self::type_id());
@@ -316,22 +340,13 @@ impl<T: Encode + TypeId> Encode for [T] {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type_id(T::type_id());
         encoder.write_size(self.len());
-        if T::type_id() == TYPE_U8 || T::type_id() == TYPE_I8 {
-            let mut buf = Vec::<u8>::with_capacity(self.len());
-            unsafe {
-                copy(self.as_ptr() as *mut u8, buf.as_mut_ptr(), self.len());
-                buf.set_len(self.len());
-            }
-            encoder.write_slice(&buf);
-        } else {
-            for v in self {
-                v.encode_value(encoder);
-            }
+        for v in self {
+            v.encode_value(encoder);
         }
     }
 }
 
-impl<T: Encode + TypeId> Encode for BTreeSet<T> {
+impl<T: Encode + TypeId + Ord + Hash> Encode for HashSet<T> {
     #[inline]
     fn encode_type_id(encoder: &mut Encoder) {
         encoder.write_type_id(Self::type_id());
@@ -353,29 +368,12 @@ impl<K: Encode + TypeId, V: Encode + TypeId> Encode for BTreeMap<K, V> {
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_type_id(K::type_id());
-        encoder.write_type_id(V::type_id());
+        encoder.write_type_id(<(K, V)>::type_id());
         encoder.write_size(self.len());
         for (k, v) in self {
-            k.encode_value(encoder);
-            v.encode_value(encoder);
-        }
-    }
-}
-
-impl<T: Encode + TypeId + Ord + Hash> Encode for HashSet<T> {
-    #[inline]
-    fn encode_type_id(encoder: &mut Encoder) {
-        encoder.write_type_id(Self::type_id());
-    }
-    #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_type_id(T::type_id());
-        encoder.write_size(self.len());
-        // Encode elements based on the order defined on the key type to generate deterministic bytes.
-        let values: BTreeSet<&T> = self.iter().collect();
-        for v in values {
-            v.encode_value(encoder);
+            encoder.write_size(2);
+            k.encode(encoder);
+            v.encode(encoder);
         }
     }
 }
@@ -387,14 +385,13 @@ impl<K: Encode + TypeId + Ord + Hash, V: Encode + TypeId> Encode for HashMap<K, 
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_type_id(K::type_id());
-        encoder.write_type_id(V::type_id());
+        encoder.write_type_id(<(K, V)>::type_id());
         encoder.write_size(self.len());
-        // Encode elements based on the order defined on the key type to generate deterministic bytes.
         let keys: BTreeSet<&K> = self.keys().collect();
         for key in keys {
-            key.encode_value(encoder);
-            self.get(key).unwrap().encode_value(encoder);
+            encoder.write_size(2);
+            key.encode(encoder);
+            self.get(key).unwrap().encode(encoder);
         }
     }
 }
@@ -420,11 +417,6 @@ mod tests {
         1u128.encode(enc);
         "hello".encode(enc);
 
-        Some(1u32).encode(enc);
-        Option::<u32>::None.encode(enc);
-        Result::<u32, String>::Ok(1u32).encode(enc);
-        Result::<u32, String>::Err("hello".to_owned()).encode(enc);
-
         [1u32, 2u32, 3u32].encode(enc);
         (1u32, 2u32).encode(enc);
 
@@ -437,6 +429,11 @@ mod tests {
         map.insert(1, 2);
         map.insert(3, 4);
         map.encode(enc);
+
+        Some(1u32).encode(enc);
+        Option::<u32>::None.encode(enc);
+        Result::<u32, String>::Ok(1u32).encode(enc);
+        Result::<u32, String>::Err("hello".to_owned()).encode(enc);
     }
 
     #[test]
@@ -460,16 +457,16 @@ mod tests {
                 10, 1, 0, 0, 0, 0, 0, 0, 0, // u64
                 11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
                 12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // string
-                18, 4, 0, 0, 0, 83, 111, 109, 101, 9, 1, 0, 0, 0, // option
-                18, 4, 0, 0, 0, 78, 111, 110, 101, // option
-                19, 2, 0, 0, 0, 79, 107, 9, 1, 0, 0, 0, // result
-                19, 3, 0, 0, 0, 69, 114, 114, 12, 5, 0, 0, 0, 104, 101, 108, 108,
-                111, // result
                 32, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
                 33, 2, 0, 0, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
-                48, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // list
-                49, 7, 2, 0, 0, 0, 1, 2, // set
-                50, 7, 7, 2, 0, 0, 0, 1, 2, 3, 4 // map
+                32, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
+                32, 7, 2, 0, 0, 0, 1, 2, // set
+                32, 33, 2, 0, 0, 0, 2, 0, 0, 0, 7, 1, 7, 2, 2, 0, 0, 0, 7, 3, 7, 4, // map
+                17, 4, 0, 0, 0, 83, 111, 109, 101, 1, 0, 0, 0, 9, 1, 0, 0, 0, // Some<T>
+                17, 4, 0, 0, 0, 78, 111, 110, 101, 0, 0, 0, 0, // None
+                17, 2, 0, 0, 0, 79, 107, 1, 0, 0, 0, 9, 1, 0, 0, 0, // Ok<T>
+                17, 3, 0, 0, 0, 69, 114, 114, 1, 0, 0, 0, 12, 5, 0, 0, 0, 104, 101, 108, 108,
+                111, // Err<T>
             ],
             bytes
         );

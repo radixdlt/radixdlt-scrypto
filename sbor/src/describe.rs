@@ -4,6 +4,7 @@ use crate::rust::string::String;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::sbor::{Decode, Encode, TypeId};
+use crate::type_id::*;
 use sbor::Value;
 
 /// Represents a SBOR type.
@@ -103,10 +104,11 @@ impl Type {
             Type::U128 => matches!(value, Value::U128 { .. }),
             Type::String => matches!(value, Value::String { .. }),
             Type::Option { value: type_value } => {
-                if let Value::Option { value } = value {
-                    match &**value {
-                        None => true,
-                        Some(value) => type_value.matches(value),
+                if let Value::Enum { name, fields } = value {
+                    match name.as_str() {
+                        OPTION_VARIANT_SOME => fields.len() == 1 && type_value.matches(&fields[0]),
+                        OPTION_VARIANT_NONE => fields.len() == 0,
+                        _ => false,
                     }
                 } else {
                     false
@@ -141,19 +143,27 @@ impl Type {
                 }
             }
             Type::Result { okay, error } => {
-                if let Value::Result { value } = value {
-                    match &**value {
-                        Result::Ok(v) => okay.matches(v),
-                        Result::Err(e) => error.matches(e),
+                if let Value::Enum { name, fields } = value {
+                    match name.as_str() {
+                        RESULT_VARIANT_OK => fields.len() == 1 && okay.matches(&fields[0]),
+                        RESULT_VARIANT_ERR => fields.len() == 1 && error.matches(&fields[0]),
+                        _ => false,
                     }
                 } else {
                     false
                 }
             }
-            Type::TreeSet {
+
+            Type::Vec {
+                element: type_element,
+            }
+            | Type::HashSet {
+                element: type_element,
+            }
+            | Type::TreeSet {
                 element: type_element,
             } => {
-                if let Value::Set {
+                if let Value::Array {
                     element_type_id: _,
                     elements,
                 } = value
@@ -166,57 +176,13 @@ impl Type {
             Type::TreeMap {
                 key: type_key,
                 value: type_value,
-            } => {
-                if let Value::Map {
-                    key_type_id: _,
-                    value_type_id: _,
-                    elements,
-                } = value
-                {
-                    elements.iter().enumerate().all(|(i, e)| {
-                        if i % 2 == 0 {
-                            type_key.matches(e)
-                        } else {
-                            type_value.matches(e)
-                        }
-                    })
-                } else {
-                    false
-                }
             }
-            Type::Vec {
-                element: type_element,
-            } => {
-                if let Value::List {
-                    element_type_id: _,
-                    elements,
-                } = value
-                {
-                    elements.iter().all(|v| type_element.matches(v))
-                } else {
-                    false
-                }
-            }
-            Type::HashSet {
-                element: type_element,
-            } => {
-                if let Value::Set {
-                    element_type_id: _,
-                    elements,
-                } = value
-                {
-                    elements.iter().all(|v| type_element.matches(v))
-                } else {
-                    false
-                }
-            }
-            Type::HashMap {
+            | Type::HashMap {
                 key: type_key,
                 value: type_value,
             } => {
-                if let Value::Map {
-                    key_type_id: _,
-                    value_type_id: _,
+                if let Value::Array {
+                    element_type_id: TYPE_TUPLE,
                     elements,
                 } = value
                 {
