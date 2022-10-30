@@ -4,7 +4,7 @@ use std::process::Command;
 
 use radix_engine::constants::*;
 use radix_engine::engine::{Invokable, Kernel, KernelError, ModuleError, ScryptoInterpreter};
-use radix_engine::engine::{RuntimeError, SystemApi, Track};
+use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_abi};

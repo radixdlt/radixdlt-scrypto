@@ -77,46 +77,6 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
-impl NativeFuncInvocation for EpochManagerCreateInput {
-    type NativeOutput = SystemAddress;
-
-    fn prepare(&self) -> (NativeFunction, CallFrameUpdate) {
-        (
-            NativeFunction::EpochManager(EpochManagerFunction::Create),
-            CallFrameUpdate::empty(),
-        )
-    }
-
-    fn execute<'s, Y, R>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation>
-            + Invokable<NativeFunctionInvocation>
-            + Invokable<NativeMethodInvocation>,
-        R: FeeReserve,
-    {
-        let node_id =
-            system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
-
-        let global_node_id = system_api.create_node(RENode::Global(
-            GlobalAddressSubstate::System(node_id.into()),
-        ))?;
-
-        let system_address: SystemAddress = global_node_id.into();
-        let mut node_refs_to_copy = HashSet::new();
-        node_refs_to_copy.insert(global_node_id);
-
-        let update = CallFrameUpdate {
-            node_refs_to_copy,
-            nodes_to_move: vec![],
-        };
-
-        Ok((system_address, update))
-    }
-}
 
 impl<N: NativeFuncInvocation> Invocation for N {
     type Output = N::NativeOutput;
@@ -163,13 +123,6 @@ impl<N: NativeFuncInvocation> Executor for NativeFuncExecutor<N> {
     }
 }
 
-pub trait NativeFunctionActor<I, O, E> {
-    fn run<'s, Y, R>(input: I, system_api: &mut Y) -> Result<O, InvokeError<E>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve;
-}
-
 pub struct NativeFunctionExecutor(pub NativeFunction, pub ScryptoValue);
 
 impl Executor for NativeFunctionExecutor {
@@ -203,17 +156,7 @@ impl Executor for NativeFunctionExecutor {
                     .map_err::<RuntimeError, _>(|e| e.into())
             }
             NativeFunction::EpochManager(func) => match func {
-                EpochManagerFunction::Create => {
-                    let input: EpochManagerCreateInput =
-                        scrypto_decode(&self.1.raw).map_err(|_| {
-                            RuntimeError::InterpreterError(
-                                InterpreterError::InvalidNativeFunctionInput,
-                            )
-                        })?;
-                    Self::run(input, system_api)
-                        .map(|rtn| ScryptoValue::from_typed(&rtn))
-                        .map_err::<RuntimeError, _>(|e| e.into())
-                }
+                _ => panic!("Unexpected")
             },
         }?;
 

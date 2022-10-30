@@ -1,6 +1,4 @@
-use crate::engine::{
-    AuthModule, LockFlags, NativeFunctionActor, NativeFunctionExecutor, RENode, SystemApi,
-};
+use crate::engine::{AuthModule, CallFrameUpdate, Invokable, LockFlags, NativeFuncInvocation, NativeFunctionExecutor, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
@@ -18,16 +16,27 @@ pub struct EpochManager {
     pub info: EpochManagerSubstate,
 }
 
-impl NativeFunctionActor<EpochManagerCreateInput, SystemAddress, EpochManagerError>
-    for NativeFunctionExecutor
-{
-    fn run<'s, Y, R>(
-        _input: EpochManagerCreateInput,
+
+impl NativeFuncInvocation for EpochManagerCreateInput {
+    type NativeOutput = SystemAddress;
+
+    fn prepare(&self) -> (NativeFunction, CallFrameUpdate) {
+        (
+            NativeFunction::EpochManager(EpochManagerFunction::Create),
+            CallFrameUpdate::empty(),
+        )
+    }
+
+    fn execute<'s, Y, R>(
+        self,
         system_api: &mut Y,
-    ) -> Result<SystemAddress, InvokeError<EpochManagerError>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve,
+    ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation>
+            + Invokable<NativeFunctionInvocation>
+            + Invokable<NativeMethodInvocation>,
+            R: FeeReserve,
     {
         let node_id =
             system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
@@ -36,7 +45,16 @@ impl NativeFunctionActor<EpochManagerCreateInput, SystemAddress, EpochManagerErr
             GlobalAddressSubstate::System(node_id.into()),
         ))?;
 
-        Ok(global_node_id.into())
+        let system_address: SystemAddress = global_node_id.into();
+        let mut node_refs_to_copy = HashSet::new();
+        node_refs_to_copy.insert(global_node_id);
+
+        let update = CallFrameUpdate {
+            node_refs_to_copy,
+            nodes_to_move: vec![],
+        };
+
+        Ok((system_address, update))
     }
 }
 
