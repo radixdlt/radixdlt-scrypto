@@ -174,10 +174,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: Swatinem/rust-cache@master
-      with:
-        cache-directories: tests/**/target
-        workspaces: radix-engine
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake -y
@@ -198,10 +194,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: Swatinem/rust-cache@master
-      with:
-        cache-directories: tests/**/target
-        workspaces: radix-engine
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake -y
@@ -222,10 +214,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: Swatinem/rust-cache@master
-      with:
-        cache-directories: tests/**/target
-        workspaces: radix-engine
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake -y
