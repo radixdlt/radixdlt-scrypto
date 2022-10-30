@@ -84,38 +84,40 @@ pub enum Type {
         generics: Vec<Type>,
     },
 
+    // TODO: remove
+    // Currently used by `ProofRule` because recursion is not supported
     Any,
 }
 
 impl Type {
-    pub fn id(&self) -> u8 {
+    pub fn id(&self) -> Option<u8> {
         match self {
-            Type::Unit => TYPE_UNIT,
-            Type::Bool => TYPE_BOOL,
-            Type::I8 => TYPE_I8,
-            Type::I16 => TYPE_I16,
-            Type::I32 => TYPE_I32,
-            Type::I64 => TYPE_I64,
-            Type::I128 => TYPE_I128,
-            Type::U8 => TYPE_U8,
-            Type::U16 => TYPE_U16,
-            Type::U32 => TYPE_U32,
-            Type::U64 => TYPE_U64,
-            Type::U128 => TYPE_U128,
-            Type::String => TYPE_STRING,
-            Type::Array { .. } => TYPE_ARRAY,
-            Type::Tuple { .. } => TYPE_TUPLE,
-            Type::Struct { .. } => TYPE_STRUCT,
-            Type::Enum { .. } => TYPE_ENUM,
-            Type::Option { .. } => TYPE_ENUM,
-            Type::Result { .. } => TYPE_ENUM,
-            Type::Vec { .. } => TYPE_ARRAY,
-            Type::TreeSet { .. } => TYPE_ARRAY,
-            Type::TreeMap { .. } => TYPE_ARRAY,
-            Type::HashSet { .. } => TYPE_ARRAY,
-            Type::HashMap { .. } => TYPE_ARRAY,
-            Type::Custom { type_id, .. } => *type_id,
-            Type::Any => 0xff, // FIXME incorrect abstraction
+            Type::Unit => Some(TYPE_UNIT),
+            Type::Bool => Some(TYPE_BOOL),
+            Type::I8 => Some(TYPE_I8),
+            Type::I16 => Some(TYPE_I16),
+            Type::I32 => Some(TYPE_I32),
+            Type::I64 => Some(TYPE_I64),
+            Type::I128 => Some(TYPE_I128),
+            Type::U8 => Some(TYPE_U8),
+            Type::U16 => Some(TYPE_U16),
+            Type::U32 => Some(TYPE_U32),
+            Type::U64 => Some(TYPE_U64),
+            Type::U128 => Some(TYPE_U128),
+            Type::String => Some(TYPE_STRING),
+            Type::Array { .. } => Some(TYPE_ARRAY),
+            Type::Tuple { .. } => Some(TYPE_TUPLE),
+            Type::Struct { .. } => Some(TYPE_STRUCT),
+            Type::Enum { .. } => Some(TYPE_ENUM),
+            Type::Option { .. } => Some(TYPE_ENUM),
+            Type::Result { .. } => Some(TYPE_ENUM),
+            Type::Vec { .. } => Some(TYPE_ARRAY),
+            Type::TreeSet { .. } => Some(TYPE_ARRAY),
+            Type::TreeMap { .. } => Some(TYPE_ARRAY),
+            Type::HashSet { .. } => Some(TYPE_ARRAY),
+            Type::HashMap { .. } => Some(TYPE_ARRAY),
+            Type::Custom { type_id, .. } => Some(*type_id),
+            Type::Any => None,
         }
     }
 
@@ -140,7 +142,11 @@ impl Type {
                     elements,
                 } = value
                 {
-                    *element_type_id == element.id()
+                    let element_type_matches = match element.id() {
+                        Some(id) => id == *element_type_id,
+                        None => true,
+                    };
+                    element_type_matches
                         && usize::from(*length) == elements.len()
                         && elements.iter().all(|v| element.matches(v))
                 } else {
@@ -196,7 +202,11 @@ impl Type {
                     elements,
                 } = value
                 {
-                    *element_type_id == element.id() && elements.iter().all(|v| element.matches(v))
+                    let element_type_matches = match element.id() {
+                        Some(id) => id == *element_type_id,
+                        None => true,
+                    };
+                    element_type_matches && elements.iter().all(|v| element.matches(v))
                 } else {
                     false
                 }
@@ -215,11 +225,13 @@ impl Type {
                 } = value
                 {
                     *element_type_id == TYPE_TUPLE
-                        && elements.iter().enumerate().all(|(i, e)| {
-                            if i % 2 == 0 {
-                                key_type.matches(e)
+                        && elements.iter().all(|e| {
+                            if let Value::Tuple { elements } = e {
+                                elements.len() == 2
+                                    && key_type.matches(&elements[0])
+                                    && value_type.matches(&elements[1])
                             } else {
-                                value_type.matches(e)
+                                false
                             }
                         })
                 } else {

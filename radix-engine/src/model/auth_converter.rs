@@ -69,7 +69,7 @@ fn soft_to_hard_resource_list(
         SoftResourceOrNonFungibleList::Dynamic(schema_path) => {
             if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
                 match sbor_path.get_from_value(&value.dom) {
-                    Some(Value::List {
+                    Some(Value::Array {
                         element_type_id,
                         elements,
                     }) => match ScryptoType::from_id(*element_type_id).expect("ScryptoValue contains invalid SBOR type ID") {

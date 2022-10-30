@@ -57,7 +57,6 @@ pub enum GeneratorError {
     InvalidEddsaEd25519PublicKey(String),
     InvalidEddsaEd25519Signature(String),
     BlobNotFound(String),
-    OddNumberOfElements(usize),
     NameResolverError(NameResolverError),
     IdValidationError(IdValidationError),
     InvalidBlobHash,
@@ -951,7 +950,7 @@ fn generate_non_fungible_ids(
     value: &ast::Value,
 ) -> Result<BTreeSet<NonFungibleId>, GeneratorError> {
     match value {
-        ast::Value::Set(kind, values) => {
+        ast::Value::Array(kind, values) => {
             if kind != &ast::Type::NonFungibleId {
                 return Err(GeneratorError::InvalidType {
                     expected_type: ast::Type::String,
@@ -961,7 +960,7 @@ fn generate_non_fungible_ids(
 
             values.iter().map(|v| generate_non_fungible_id(v)).collect()
         }
-        v => invalid_type!(v, ast::Type::Set),
+        v => invalid_type!(v, ast::Type::Array),
     }
 }
 
@@ -1000,23 +999,10 @@ fn generate_value(
         ast::Value::Struct(fields) => Ok(Value::Struct {
             fields: generate_singletons(fields, None, resolver, bech32_decoder, blobs)?,
         }),
-        ast::Value::Enum(name, fields) => Ok(Value::Enum {
-            name: name.clone(),
+        ast::Value::Enum(discriminator, fields) => Ok(Value::Enum {
+            discriminator: discriminator.clone(),
             fields: generate_singletons(fields, None, resolver, bech32_decoder, blobs)?,
         }),
-        ast::Value::Option(value) => match &**value {
-            Some(inner) => Ok(Value::Option {
-                value: Some(generate_value(
-                    inner,
-                    None,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?)
-                .into(),
-            }),
-            None => Ok(Value::Option { value: None.into() }),
-        },
         ast::Value::Array(element_type, elements) => Ok(Value::Array {
             element_type_id: generate_type_id(element_type),
             elements: generate_singletons(
@@ -1029,60 +1015,6 @@ fn generate_value(
         }),
         ast::Value::Tuple(elements) => Ok(Value::Tuple {
             elements: generate_singletons(elements, None, resolver, bech32_decoder, blobs)?,
-        }),
-        ast::Value::Result(value) => match &**value {
-            Ok(inner) => Ok(Value::Result {
-                value: Ok(generate_value(
-                    inner,
-                    None,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?)
-                .into(),
-            }),
-            Err(inner) => Ok(Value::Result {
-                value: Err(generate_value(
-                    inner,
-                    None,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?)
-                .into(),
-            }),
-        },
-        ast::Value::List(element_type, elements) => Ok(Value::List {
-            element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(
-                elements,
-                Some(*element_type),
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
-        }),
-        ast::Value::Set(element_type, elements) => Ok(Value::Set {
-            element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(
-                elements,
-                Some(*element_type),
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
-        }),
-        ast::Value::Map(key_type, value_type, elements) => Ok(Value::Map {
-            key_type_id: generate_type_id(key_type),
-            value_type_id: generate_type_id(value_type),
-            elements: generate_pairs(
-                elements,
-                *key_type,
-                *value_type,
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
         }),
         ast::Value::PackageAddress(_) => {
             generate_package_address(value, bech32_decoder).map(|v| Value::Custom {
@@ -1208,37 +1140,6 @@ fn generate_singletons(
     Ok(result)
 }
 
-fn generate_pairs(
-    elements: &Vec<ast::Value>,
-    key_type: ast::Type,
-    value_type: ast::Type,
-    resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
-    blobs: &HashMap<Hash, Vec<u8>>,
-) -> Result<Vec<Value>, GeneratorError> {
-    if elements.len() % 2 != 0 {
-        return Err(GeneratorError::OddNumberOfElements(elements.len()));
-    }
-    let mut result = vec![];
-    for i in 0..elements.len() / 2 {
-        result.push(generate_value(
-            &elements[2 * i],
-            Some(key_type),
-            resolver,
-            bech32_decoder,
-            blobs,
-        )?);
-        result.push(generate_value(
-            &elements[2 * i + 1],
-            Some(value_type),
-            resolver,
-            bech32_decoder,
-            blobs,
-        )?);
-    }
-    Ok(result)
-}
-
 fn generate_type_id(ty: &ast::Type) -> u8 {
     match ty {
         ast::Type::Unit => TYPE_UNIT,
@@ -1256,13 +1157,8 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::String => TYPE_STRING,
         ast::Type::Struct => TYPE_STRUCT,
         ast::Type::Enum => TYPE_ENUM,
-        ast::Type::Option => TYPE_OPTION,
         ast::Type::Array => TYPE_ARRAY,
         ast::Type::Tuple => TYPE_TUPLE,
-        ast::Type::Result => TYPE_RESULT,
-        ast::Type::List => TYPE_LIST,
-        ast::Type::Set => TYPE_SET,
-        ast::Type::Map => TYPE_MAP,
 
         // Globals
         ast::Type::PackageAddress => ScryptoType::PackageAddress.id(),
@@ -1413,7 +1309,7 @@ mod tests {
         generate_value_ok!(
             r#"Enum("Variant", "abc")"#,
             Value::Enum {
-                name: "Variant".to_string(),
+                discriminator: "Variant".to_string(),
                 fields: vec![Value::String {
                     value: "abc".to_owned()
                 }]
@@ -1422,67 +1318,8 @@ mod tests {
         generate_value_ok!(
             r#"Enum("Variant")"#,
             Value::Enum {
-                name: "Variant".to_string(),
+                discriminator: "Variant".to_string(),
                 fields: vec![]
-            }
-        );
-        generate_value_ok!(
-            r#"Array<Option>(Some(1u64), None)"#,
-            Value::Array {
-                element_type_id: TYPE_OPTION,
-                elements: vec![
-                    Value::Option {
-                        value: Some(Value::U64 { value: 1 }).into()
-                    },
-                    Value::Option { value: None.into() }
-                ]
-            }
-        );
-        generate_value_ok!(
-            r#"Tuple(Ok(1u64), Err(2u64))"#,
-            Value::Tuple {
-                elements: vec![
-                    Value::Result {
-                        value: Ok(Value::U64 { value: 1 }).into()
-                    },
-                    Value::Result {
-                        value: Err(Value::U64 { value: 2 }).into()
-                    },
-                ]
-            }
-        );
-        generate_value_ok!(
-            r#"Map<Set, List>(Set<U8>(1u8), List<U8>(2u8))"#,
-            Value::Map {
-                key_type_id: TYPE_SET,
-                value_type_id: TYPE_LIST,
-                elements: vec![
-                    Value::Set {
-                        element_type_id: TYPE_U8,
-                        elements: vec![Value::U8 { value: 1 }]
-                    },
-                    Value::List {
-                        element_type_id: TYPE_U8,
-                        elements: vec![Value::U8 { value: 2 }]
-                    },
-                ]
-            }
-        );
-        generate_value_ok!(
-            r#"Map<Set, List>(Set<U8>(1u8), List<U8>(2u8))"#,
-            Value::Map {
-                key_type_id: TYPE_SET,
-                value_type_id: TYPE_LIST,
-                elements: vec![
-                    Value::Set {
-                        element_type_id: TYPE_U8,
-                        elements: vec![Value::U8 { value: 1 }]
-                    },
-                    Value::List {
-                        element_type_id: TYPE_U8,
-                        elements: vec![Value::U8 { value: 2 }]
-                    }
-                ]
             }
         );
         generate_value_ok!(
@@ -1510,10 +1347,6 @@ mod tests {
         generate_value_error!(
             r#"Decimal("invalid_decimal")"#,
             GeneratorError::InvalidDecimal("invalid_decimal".into())
-        );
-        generate_value_error!(
-            r#"Map<String, String>("abc")"#,
-            GeneratorError::OddNumberOfElements(1)
         );
     }
 
@@ -1559,7 +1392,7 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8)  PreciseDecimal("120");"#,
+            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
             Instruction::CallFunction {
                 function_ident: ScryptoFunctionIdent {
                     package: ScryptoPackage::Global(
@@ -1573,7 +1406,7 @@ mod tests {
                     blueprint_name: "Airdrop".into(),
                     function_name: "new".to_string(),
                 },
-                args: args!(500u32, HashMap::from([("key", 1u8),]), pdec!("120"))
+                args: args!(500u32, pdec!("120"))
             }
         );
         generate_instruction_ok!(

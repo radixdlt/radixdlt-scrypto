@@ -1,5 +1,4 @@
 use sbor::path::{MutableSborPath, SborPath};
-use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::HashMap;
 use sbor::rust::collections::HashSet;
 use sbor::rust::fmt;
@@ -565,9 +564,12 @@ impl ScryptoValueFormatter {
                 Self::format_elements(f, fields, context)?;
                 f.write_str(")")?;
             }
-            Value::Enum { name, fields } => {
+            Value::Enum {
+                discriminator,
+                fields,
+            } => {
                 f.write_str("Enum(\"")?;
-                f.write_str(name)?;
+                f.write_str(discriminator)?;
                 f.write_str("\"")?;
                 if !fields.is_empty() {
                     f.write_str(", ")?;
@@ -576,14 +578,6 @@ impl ScryptoValueFormatter {
                 f.write_str(")")?;
             }
             // rust types
-            Value::Option { value } => match value.borrow() {
-                Some(x) => {
-                    f.write_str("Some(")?;
-                    Self::format_value(f, x, context)?;
-                    f.write_str(")")?;
-                }
-                None => write!(f, "None")?,
-            },
             Value::Array {
                 element_type_id,
                 elements,
@@ -596,52 +590,6 @@ impl ScryptoValueFormatter {
             }
             Value::Tuple { elements } => {
                 f.write_str("Tuple(")?;
-                Self::format_elements(f, elements, context)?;
-                f.write_str(")")?;
-            }
-            Value::Result { value } => match value.borrow() {
-                Ok(x) => {
-                    f.write_str("Ok(")?;
-                    Self::format_value(f, x, context)?;
-                    f.write_str(")")?
-                }
-                Err(x) => {
-                    f.write_str("Err(")?;
-                    Self::format_value(f, x, context)?;
-                    f.write_str(")")?;
-                }
-            },
-            // collections
-            Value::List {
-                element_type_id,
-                elements,
-            } => {
-                f.write_str("Vec<")?;
-                Self::format_type_id(f, *element_type_id)?;
-                f.write_str(">(")?;
-                Self::format_elements(f, elements, context)?;
-                f.write_str(")")?;
-            }
-            Value::Set {
-                element_type_id,
-                elements,
-            } => {
-                f.write_str("Set<")?;
-                Self::format_type_id(f, *element_type_id)?;
-                f.write_str(">(")?;
-                Self::format_elements(f, elements, context)?;
-                f.write_str(")")?;
-            }
-            Value::Map {
-                key_type_id,
-                value_type_id,
-                elements,
-            } => {
-                f.write_str("Map<")?;
-                Self::format_type_id(f, *key_type_id)?;
-                f.write_str(", ")?;
-                Self::format_type_id(f, *value_type_id)?;
-                f.write_str(">(")?;
                 Self::format_elements(f, elements, context)?;
                 f.write_str(")")?;
             }
@@ -677,19 +625,10 @@ impl ScryptoValueFormatter {
             TYPE_U64 => f.write_str("U64")?,
             TYPE_U128 => f.write_str("U128")?,
             TYPE_STRING => f.write_str("String")?,
-            // struct & enum
             TYPE_STRUCT => f.write_str("Struct")?,
             TYPE_ENUM => f.write_str("Enum")?,
-            TYPE_OPTION => f.write_str("Option")?,
-            TYPE_RESULT => f.write_str("Result")?,
-            // composite
             TYPE_ARRAY => f.write_str("Array")?,
             TYPE_TUPLE => f.write_str("Tuple")?,
-            // collections
-            TYPE_LIST => f.write_str("List")?,
-            TYPE_SET => f.write_str("Set")?,
-            TYPE_MAP => f.write_str("Map")?,
-            //
             _ => Err(ScryptoValueFormatterError::InvalidTypeId(type_id))?,
         };
 
