@@ -21,6 +21,8 @@ pub mod rust;
 pub mod type_id;
 mod utils;
 
+pub mod v1;
+
 pub use any::{decode_any, encode_any, encode_any_with_buffer, Value};
 pub use decode::{Decode, DecodeError, Decoder};
 pub use describe::{Describe, Type};
