@@ -520,16 +520,13 @@ impl TransactionProcessor {
                     })
                     .and_then(|(new_id, real_bucket_id)| {
                         system_api
-                            .invoke(NativeMethodInvocation(
-                                NativeMethod::Bucket(BucketMethod::CreateProof),
-                                RENodeId::Bucket(real_bucket_id),
-                                ScryptoValue::from_typed(&BucketCreateProofInput {}),
-                            ))
+                            .invoke(BucketCreateProofInput {
+                                bucket_id: real_bucket_id,
+                            })
                             .map_err(InvokeError::Downstream)
-                            .map(|rtn| {
-                                let proof_id = Self::first_proof(&rtn);
-                                proof_id_mapping.insert(new_id, proof_id);
-                                ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
+                            .map(|proof| {
+                                proof_id_mapping.insert(new_id, proof.0);
+                                ScryptoValue::from_typed(&proof)
                             })
                     }),
                 Instruction::CloneProof { proof_id } => id_allocator

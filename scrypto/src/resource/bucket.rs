@@ -39,7 +39,9 @@ pub struct BucketGetAmountInput {}
 pub struct BucketGetResourceAddressInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketCreateProofInput {}
+pub struct BucketCreateProofInput {
+    pub bucket_id: BucketId,
+}
 
 /// Represents a transient resource container.
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -109,6 +111,7 @@ impl Bucket {
             pub fn create_proof(&self) -> scrypto::resource::Proof {
                 BucketMethod::CreateProof,
                 BucketCreateProofInput {
+                    bucket_id: self.0
                 }
             }
         }

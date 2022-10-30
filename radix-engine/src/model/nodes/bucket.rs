@@ -1,11 +1,10 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, Invokable, InvokableNative, LockFlags,
-    NativeExecutable, NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, Invokable, InvokableNative, LockFlags, NativeExecutable,
+    NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
 use crate::model::{BucketSubstate, InvokeError, ProofError, ResourceOperationError};
 use crate::types::*;
-use scrypto::resource::Proof;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum BucketError {
@@ -64,6 +63,50 @@ impl NativeInvocation for BucketTakeInput {
     }
 }
 
+impl NativeExecutable for BucketCreateProofInput {
+    type Output = scrypto::resource::Proof;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation>
+            + InvokableNative<'a>
+            + Invokable<NativeMethodInvocation>,
+        R: FeeReserve,
+    {
+        let node_id = RENodeId::Bucket(input.bucket_id);
+        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
+        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
+        let bucket = substate_mut.bucket();
+        let proof = bucket.create_proof(input.bucket_id).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
+                e,
+            )))
+        })?;
+
+        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+        Ok((
+            scrypto::resource::Proof(proof_id),
+            CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
+        ))
+    }
+}
+
+impl NativeInvocation for BucketCreateProofInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Bucket(BucketMethod::CreateProof),
+            RENodeId::Bucket(self.bucket_id),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
 pub struct Bucket;
 
 trait BucketMethodActor<I, O, E> {
@@ -75,32 +118,6 @@ trait BucketMethodActor<I, O, E> {
     where
         Y: SystemApi<'s, R>,
         R: FeeReserve;
-}
-
-impl BucketMethodActor<BucketTakeInput, scrypto::resource::Bucket, BucketError> for Bucket {
-    fn execute<'s, Y, R>(
-        bucket_id: BucketId,
-        input: BucketTakeInput,
-        system_api: &mut Y,
-    ) -> Result<scrypto::resource::Bucket, InvokeError<BucketError>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve,
-    {
-        let node_id = RENodeId::Bucket(bucket_id);
-        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-
-        let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
-        let container = bucket
-            .take(input.amount)
-            .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
-        let bucket_id = system_api
-            .create_node(RENode::Bucket(BucketSubstate::new(container)))?
-            .into();
-        Ok(scrypto::resource::Bucket(bucket_id))
-    }
 }
 
 impl BucketMethodActor<BucketTakeNonFungiblesInput, scrypto::resource::Bucket, BucketError>
@@ -221,31 +238,6 @@ impl BucketMethodActor<BucketGetResourceAddressInput, ResourceAddress, BucketErr
     }
 }
 
-impl BucketMethodActor<BucketCreateProofInput, scrypto::resource::Proof, BucketError> for Bucket {
-    fn execute<'s, Y, R>(
-        bucket_id: BucketId,
-        _input: BucketCreateProofInput,
-        system_api: &mut Y,
-    ) -> Result<Proof, InvokeError<BucketError>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve,
-    {
-        let node_id = RENodeId::Bucket(bucket_id);
-        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-
-        let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
-        let proof = bucket
-            .create_proof(bucket_id)
-            .map_err(|e| InvokeError::Error(BucketError::ProofError(e)))?;
-
-        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
-        Ok(scrypto::resource::Proof(proof_id))
-    }
-}
-
 impl Bucket {
     pub fn main<'s, Y, R>(
         bucket_id: BucketId,
@@ -259,10 +251,10 @@ impl Bucket {
     {
         let rtn = match method {
             BucketMethod::Take => {
-                let input: BucketTakeInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
-                Self::execute(bucket_id, input, system_api)
-                    .map(|rtn| ScryptoValue::from_typed(&rtn))
+                panic!("Unexpected")
+            }
+            BucketMethod::CreateProof => {
+                panic!("Unexpected")
             }
             BucketMethod::TakeNonFungibles => {
                 let input: BucketTakeNonFungiblesInput = scrypto_decode(&args.raw)
@@ -290,12 +282,6 @@ impl Bucket {
             }
             BucketMethod::GetResourceAddress => {
                 let input: BucketGetResourceAddressInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
-                Self::execute(bucket_id, input, system_api)
-                    .map(|rtn| ScryptoValue::from_typed(&rtn))
-            }
-            BucketMethod::CreateProof => {
-                let input: BucketCreateProofInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 Self::execute(bucket_id, input, system_api)
                     .map(|rtn| ScryptoValue::from_typed(&rtn))

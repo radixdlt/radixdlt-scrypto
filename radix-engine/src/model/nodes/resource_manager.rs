@@ -1,6 +1,6 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, Invokable, InvokableNative, LockFlags,
-    NativeExecutable, NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, Invokable, InvokableNative, LockFlags, NativeExecutable,
+    NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
 use crate::model::{

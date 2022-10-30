@@ -126,13 +126,28 @@ where
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         match native_method {
-            NativeMethod::Bucket(BucketMethod::Take) => {
-                let invocation: BucketTakeInput = scrypto_decode(&args)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                self.system_api
-                    .invoke(invocation)
-                    .map(|a| ScryptoValue::from_typed(&a))
-            }
+            NativeMethod::Bucket(bucket_method) => match bucket_method {
+                BucketMethod::Take => {
+                    let invocation: BucketTakeInput = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                    self.system_api
+                        .invoke(invocation)
+                        .map(|a| ScryptoValue::from_typed(&a))
+                }
+                BucketMethod::CreateProof => {
+                    let invocation: BucketCreateProofInput = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                    self.system_api
+                        .invoke(invocation)
+                        .map(|a| ScryptoValue::from_typed(&a))
+                }
+                _ => {
+                    let args = ScryptoValue::from_slice(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                    self.system_api
+                        .invoke(NativeMethodInvocation(native_method, receiver, args))
+                }
+            },
             _ => {
                 let args = ScryptoValue::from_slice(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
