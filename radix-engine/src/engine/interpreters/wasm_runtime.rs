@@ -1,10 +1,7 @@
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::fee::*;
-use crate::model::{
-    ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, InvokeError,
-    KeyValueStore, RuntimeSubstate,
-};
+use crate::model::{ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, InvokeError, KeyValueStore, RuntimeSubstate, TransactionProcessorRunInput};
 use crate::types::*;
 use crate::wasm::*;
 
@@ -12,10 +9,11 @@ use crate::wasm::*;
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, 's, Y, R>
+pub struct RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
 where
     Y: SystemApi<'s, R>
         + Invokable<ScryptoInvocation>
+        + InvokableNativeFunction<'a>
         + Invokable<NativeMethodInvocation>
         + Invokable<NativeFunctionInvocation>,
     R: FeeReserve,
@@ -25,12 +23,14 @@ where
     lock_types: HashMap<LockHandle, SubstateOffset>,
     phantom1: PhantomData<R>,
     phantom2: PhantomData<&'s ()>,
+    phantom3: PhantomData<&'a ()>,
 }
 
-impl<'y, 's, Y, R> RadixEngineWasmRuntime<'y, 's, Y, R>
+impl<'y, 's, 'a, Y, R> RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
 where
     Y: SystemApi<'s, R>
         + Invokable<ScryptoInvocation>
+        + InvokableNativeFunction<'a>
         + Invokable<NativeFunctionInvocation>
         + Invokable<NativeMethodInvocation>,
     R: FeeReserve,
@@ -48,6 +48,7 @@ where
             lock_types: HashMap::new(),
             phantom1: PhantomData,
             phantom2: PhantomData,
+            phantom3: PhantomData,
         }
     }
 
@@ -78,11 +79,52 @@ where
         native_function: NativeFunction,
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let args = ScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-
-        self.system_api
-            .invoke(NativeFunctionInvocation(native_function, args))
+        match native_function {
+            NativeFunction::EpochManager(EpochManagerFunction::Create) => {
+                let invocation: EpochManagerCreateInput = scrypto_decode(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                self.system_api
+                    .invoke(invocation)
+                    .map(|a| ScryptoValue::from_typed(&a))
+            }
+            NativeFunction::ResourceManager(
+                ResourceManagerFunction::BurnBucket,
+            ) => {
+                let invocation: ResourceManagerBurnInput =
+                    scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                self.system_api
+                    .invoke(invocation)
+                    .map(|a| ScryptoValue::from_typed(&a))
+            }
+            NativeFunction::ResourceManager(
+                ResourceManagerFunction::Create,
+            ) => {
+                let invocation: ResourceManagerCreateInput =
+                    scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                self.system_api
+                    .invoke(invocation)
+                    .map(|a| ScryptoValue::from_typed(&a))
+            }
+            NativeFunction::TransactionProcessor(
+                TransactionProcessorFunction::Run,
+            ) => {
+                let invocation: TransactionProcessorRunInput =
+                    scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                self.system_api
+                    .invoke(invocation)
+                    .map(|a| ScryptoValue::from_typed(&a))
+            }
+            NativeFunction::Package(PackageFunction::Publish) => {
+                let invocation: PackagePublishInput = scrypto_decode(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                self.system_api
+                    .invoke(invocation)
+                    .map(|a| ScryptoValue::from_typed(&a))
+            }
+        }
     }
 
     fn handle_invoke_native_method(
@@ -214,10 +256,11 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'y, 's, Y, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, Y, R>
+impl<'y, 's, 'a, Y, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
 where
     Y: SystemApi<'s, R>
         + Invokable<ScryptoInvocation>
+        + InvokableNativeFunction<'a>
         + Invokable<NativeFunctionInvocation>
         + Invokable<NativeMethodInvocation>,
     R: FeeReserve,
