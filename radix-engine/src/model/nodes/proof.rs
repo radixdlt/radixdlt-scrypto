@@ -1,4 +1,4 @@
-use crate::engine::{LockFlags, RENode, SystemApi};
+use crate::engine::{CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable, NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
@@ -18,6 +18,41 @@ pub enum ProofError {
     CouldNotCreateProof,
     InvalidRequestData(DecodeError),
 }
+
+impl NativeExecutable for ProofGetAmountInput {
+    type Output = Decimal;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Bucket(input.proof_id);
+        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let substate_ref = system_api.get_ref(handle)?;
+        let proof = substate_ref.proof();
+
+        Ok((
+            proof.total_amount(),
+            CallFrameUpdate::empty(),
+        ))
+    }
+}
+
+impl NativeInvocation for ProofGetAmountInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Proof(ProofMethod::GetAmount),
+            RENodeId::Proof(self.proof_id),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
 
 pub struct Proof;
 
@@ -40,9 +75,7 @@ impl Proof {
 
         let rtn = match method {
             ProofMethod::GetAmount => {
-                let _: ProofGetAmountInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
-                ScryptoValue::from_typed(&proof.total_amount())
+                panic!("Unexpected")
             }
             ProofMethod::GetNonFungibleIds => {
                 let _: ProofGetNonFungibleIdsInput = scrypto_decode(&args.raw)

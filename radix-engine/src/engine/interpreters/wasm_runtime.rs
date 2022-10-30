@@ -229,6 +229,21 @@ where
                         .map(|a| ScryptoValue::from_typed(&a))
                 }
             },
+            NativeMethod::Proof(proof_method) => match proof_method {
+                ProofMethod::GetAmount => {
+                    let invocation: ProofGetAmountInput = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                    self.system_api
+                        .invoke(invocation)
+                        .map(|a| ScryptoValue::from_typed(&a))
+                }
+                _ => {
+                    let args = ScryptoValue::from_slice(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                    self.system_api
+                        .invoke(NativeMethodInvocation(native_method, receiver, args))
+                }
+            }
             _ => {
                 let args = ScryptoValue::from_slice(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;

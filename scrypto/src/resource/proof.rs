@@ -12,7 +12,9 @@ use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofGetAmountInput {}
+pub struct ProofGetAmountInput {
+    pub proof_id: ProofId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ProofGetNonFungibleIdsInput {}
@@ -218,7 +220,9 @@ impl Proof {
         RENodeId::Proof(self.0), NativeMethod::Proof => {
             fn amount(&self) -> Decimal {
                 ProofMethod::GetAmount,
-                ProofGetAmountInput {}
+                ProofGetAmountInput {
+                    proof_id: self.0
+                }
             }
             fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
                 ProofMethod::GetNonFungibleIds,
@@ -252,7 +256,9 @@ impl ValidatedProof {
         RENodeId::Proof(self.proof_id()), NativeMethod::Proof => {
             pub fn amount(&self) -> Decimal {
                 ProofMethod::GetAmount,
-                ProofGetAmountInput {}
+                ProofGetAmountInput {
+                    proof_id: self.proof_id(),
+                }
             }
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
                 ProofMethod::GetNonFungibleIds,
