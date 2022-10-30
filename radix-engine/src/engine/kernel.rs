@@ -737,10 +737,12 @@ pub trait Executor {
         R: FeeReserve;
 }
 
-impl<'g, 's, W, I, R> InvokableNativeFunction for Kernel<'g, 's, W, I, R> where
+impl<'g, 's, W, I, R> InvokableNativeFunction for Kernel<'g, 's, W, I, R>
+where
     W: WasmEngine<I>,
     I: WasmInstance,
-    R: FeeReserve {
+    R: FeeReserve,
+{
 }
 
 // TODO: remove redundant code and move this method to the interpreter

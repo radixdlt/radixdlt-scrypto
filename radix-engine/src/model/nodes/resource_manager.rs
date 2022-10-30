@@ -1,4 +1,6 @@
-use crate::engine::{Invokable, LockFlags, RENode, SystemApi};
+use crate::engine::{
+    CallFrameUpdate, Invokable, LockFlags, NativeFuncInvocation, RENode, RuntimeError, SystemApi,
+};
 use crate::fee::FeeReserve;
 use crate::model::{
     BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
@@ -31,6 +33,51 @@ pub enum ResourceManagerError {
     NotNonFungible,
     MismatchingBucketResource,
     ResourceAddressAlreadySet,
+}
+
+impl NativeFuncInvocation for ResourceManagerBurnInput {
+    type NativeOutput = ();
+
+    fn prepare(&self) -> (NativeFunction, CallFrameUpdate) {
+        let bucket = RENodeId::Bucket(self.bucket.0);
+
+        (
+            NativeFunction::Package(PackageFunction::Publish),
+            CallFrameUpdate {
+                nodes_to_move: vec![bucket],
+                node_refs_to_copy: HashSet::new(),
+            },
+        )
+    }
+
+    fn execute<'s, Y, R>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation>
+            + Invokable<EpochManagerCreateInput>
+            + Invokable<NativeFunctionInvocation>
+            + Invokable<NativeMethodInvocation>,
+        R: FeeReserve,
+    {
+        let node_id = RENodeId::Bucket(self.bucket.0);
+        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
+
+        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let substate_ref = system_api.get_ref(bucket_handle)?;
+        let resource_address = substate_ref.bucket().resource_address();
+
+        system_api.drop_lock(bucket_handle)?;
+
+        system_api.invoke(NativeMethodInvocation(
+            NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
+            RENodeId::Global(GlobalAddress::Resource(resource_address)),
+            ScryptoValue::from_typed(&ResourceManagerBurnInput {
+                bucket: self.bucket,
+            }),
+        ))?;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
 }
 
 pub struct ResourceManager;
@@ -226,30 +273,7 @@ impl ResourceManager {
                 Ok(ScryptoValue::from_typed(&(resource_address, bucket_id)))
             }
             ResourceManagerFunction::BurnBucket => {
-                let input: ResourceManagerBurnInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let node_id = RENodeId::Bucket(input.bucket.0);
-                let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-
-                let bucket_handle =
-                    system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
-                let substate_ref = system_api.get_ref(bucket_handle)?;
-                let resource_address = substate_ref.bucket().resource_address();
-                let bucket_id = match node_id {
-                    RENodeId::Bucket(bucket_id) => bucket_id,
-                    _ => panic!("Unexpected"),
-                };
-                system_api.drop_lock(bucket_handle)?;
-
-                system_api
-                    .invoke(NativeMethodInvocation(
-                        NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
-                        RENodeId::Global(GlobalAddress::Resource(resource_address)),
-                        ScryptoValue::from_typed(&ResourceManagerBurnInput {
-                            bucket: scrypto::resource::Bucket(bucket_id),
-                        }),
-                    ))
-                    .map_err(InvokeError::Downstream)
+                panic!("Unexpected")
             }
         }
     }

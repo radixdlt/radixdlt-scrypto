@@ -45,26 +45,32 @@ impl NativeFuncInvocation for PackagePublishInput {
         self,
         system_api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R>
+    where
+        Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
             + Invokable<EpochManagerCreateInput>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
-            R: FeeReserve,
+        R: FeeReserve,
     {
         let code = system_api.read_blob(&self.code.0)?.to_vec();
         let blob = system_api.read_blob(&self.abi.0)?;
-        let abi = scrypto_decode::<HashMap<String, BlueprintAbi>>(blob)
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(PackageError::InvalidAbi(e))))?;
-        let package = Package::new(code, abi)
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(PackageError::InvalidWasm(e))))?;
+        let abi = scrypto_decode::<HashMap<String, BlueprintAbi>>(blob).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidAbi(e),
+            ))
+        })?;
+        let package = Package::new(code, abi).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidWasm(e),
+            ))
+        })?;
 
         let node_id = system_api.create_node(RENode::Package(package))?;
         let package_id: PackageId = node_id.into();
 
-        let global_node_id = system_api
-            .create_node(RENode::Global(GlobalAddressSubstate::Package(package_id)))?;
+        let global_node_id =
+            system_api.create_node(RENode::Global(GlobalAddressSubstate::Package(package_id)))?;
 
         let package_address: PackageAddress = global_node_id.into();
         Ok((package_address, CallFrameUpdate::empty()))

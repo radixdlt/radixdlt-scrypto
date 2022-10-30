@@ -77,7 +77,11 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
-pub trait InvokableNativeFunction: Invokable<EpochManagerCreateInput> + Invokable<PackagePublishInput> {
+pub trait InvokableNativeFunction:
+    Invokable<EpochManagerCreateInput>
+    + Invokable<PackagePublishInput>
+    + Invokable<ResourceManagerBurnInput>
+{
 }
 
 impl<N: NativeFuncInvocation> Invocation for N {
