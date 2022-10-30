@@ -80,6 +80,13 @@ impl Into<ApplicationError> for EpochManagerError {
 impl NativeFuncInvocation for EpochManagerCreateInput {
     type NativeOutput = SystemAddress;
 
+    fn prepare(&self) -> (NativeFunction, CallFrameUpdate) {
+        (
+            NativeFunction::EpochManager(EpochManagerFunction::Create),
+            CallFrameUpdate::empty(),
+        )
+    }
+
     fn execute<'s, Y, R>(
         self,
         system_api: &mut Y,
@@ -115,8 +122,10 @@ impl<N: NativeFuncInvocation> Invocation for N {
     type Output = N::NativeOutput;
 }
 
-pub trait NativeFuncInvocation: Invocation + Encode {
-    type NativeOutput;
+pub trait NativeFuncInvocation: Invocation + Encode + Debug {
+    type NativeOutput: Debug;
+
+    fn prepare(&self) -> (NativeFunction, CallFrameUpdate);
 
     fn execute<'s, Y, R>(
         self,

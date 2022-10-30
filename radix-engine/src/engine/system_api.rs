@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use crate::engine::node::*;
 use crate::engine::*;
 use crate::fee::FeeReserve;
@@ -27,7 +28,7 @@ impl LockFlags {
 }
 
 pub trait Invocation {
-    type Output;
+    type Output: Debug;
 }
 
 pub trait Invokable<I>

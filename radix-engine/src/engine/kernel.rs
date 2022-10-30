@@ -752,7 +752,7 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    name: "test".to_string(), //format!("{:?}", invocation),
+                    name: format!("{:?}", invocation),
                     input_size: 0,
                     value_count: 0,
                     depth: self.current_frame.depth,
@@ -765,12 +765,10 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
+        let (function, call_frame_update) = invocation.prepare();
+        let actor = REActor::Function(ResolvedFunction::Native(function));
         let input = ScryptoValue::from_typed(&invocation);
         let executor = NativeFuncExecutor(invocation, input);
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
-            EpochManagerFunction::Create,
-        )));
-        let call_frame_update = CallFrameUpdate::empty();
 
         let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 
@@ -783,7 +781,7 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::Invoke {
-                    rtn: "test".to_string(), //format!("{:?}", rtn),
+                    rtn: format!("{:?}", rtn),
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
