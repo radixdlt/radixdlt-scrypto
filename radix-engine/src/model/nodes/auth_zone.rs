@@ -285,6 +285,38 @@ impl NativeInvocation for AuthZoneCreateProofByIdsInput {
     }
 }
 
+impl NativeExecutable for AuthZoneClearInput {
+    type Output = ();
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
+    {
+        let node_id = RENodeId::AuthZoneStack(input.auth_zone_id);
+        let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+        let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
+        let auth_zone = substate_mut.auth_zone();
+        auth_zone.cur_auth_zone_mut().clear();
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for AuthZoneClearInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::AuthZone(AuthZoneMethod::Clear),
+            RENodeId::AuthZoneStack(self.auth_zone_id),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
 pub struct AuthZoneStack;
 
 impl AuthZoneStack {
@@ -332,12 +364,7 @@ impl AuthZoneStack {
                 panic!("Unexpected")
             }
             AuthZoneMethod::Clear => {
-                let _: AuthZoneClearInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
-                let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
-                let auth_zone = substate_mut.auth_zone();
-                auth_zone.cur_auth_zone_mut().clear();
-                ScryptoValue::from_typed(&())
+                panic!("Unexpected")
             }
             AuthZoneMethod::Drain => {
                 let _: AuthZoneDrainInput = scrypto_decode(&args.raw)

@@ -38,7 +38,9 @@ pub struct AuthZoneCreateProofByIdsInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneClearInput {}
+pub struct AuthZoneClearInput {
+    pub auth_zone_id: AuthZoneId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZoneDrainInput {}

@@ -92,6 +92,7 @@ pub trait InvokableNative<'a>:
     + Invokable<AuthZoneCreateProofInput>
     + Invokable<AuthZoneCreateProofByAmountInput>
     + Invokable<AuthZoneCreateProofByIdsInput>
+    + Invokable<AuthZoneClearInput>
 {
 }
 

@@ -406,11 +406,8 @@ impl TransactionProcessor {
                 Instruction::ClearAuthZone => {
                     proof_id_mapping.clear();
                     system_api
-                        .invoke(NativeMethodInvocation(
-                            NativeMethod::AuthZone(AuthZoneMethod::Clear),
-                            auth_zone_ref,
-                            ScryptoValue::from_typed(&AuthZoneClearInput {}),
-                        ))
+                        .invoke(AuthZoneClearInput { auth_zone_id })
+                        .map(|rtn| ScryptoValue::from_typed(&rtn))
                         .map_err(InvokeError::Downstream)
                 }
                 Instruction::PushToAuthZone { proof_id } => proof_id_mapping
@@ -556,11 +553,8 @@ impl TransactionProcessor {
                             .map_err(InvokeError::Downstream)?;
                     }
                     system_api
-                        .invoke(NativeMethodInvocation(
-                            NativeMethod::AuthZone(AuthZoneMethod::Clear),
-                            auth_zone_ref,
-                            ScryptoValue::from_typed(&AuthZoneClearInput {}),
-                        ))
+                        .invoke(AuthZoneClearInput { auth_zone_id })
+                        .map(|rtn| ScryptoValue::from_typed(&rtn))
                         .map_err(InvokeError::Downstream)
                 }
                 Instruction::CallFunction {
