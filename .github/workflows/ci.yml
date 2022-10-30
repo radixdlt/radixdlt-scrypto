@@ -36,18 +36,18 @@ jobs:
       matrix:
         os: [linux]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: Swatinem/rust-cache@master
+      with:
+        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+        workspaces: simulator
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang -y
       if: matrix.os == 'linux'
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - uses: bmwill/rust-cache@v1
-      with:
-        path: ~/.cargo/registry/src/**/librocksdb-sys-*
-        working-directory: simulator
     - name: Install Scrypto toolchain
       run: cargo install --path ./simulator
     - name: Check format
@@ -59,7 +59,7 @@ jobs:
       matrix:
         os: [linux, windows-latest]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -79,7 +79,7 @@ jobs:
       matrix:
         os: [linux, windows-latest]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -99,7 +99,7 @@ jobs:
       matrix:
         os: [linux, windows-latest]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -122,7 +122,7 @@ jobs:
       matrix:
         os: [linux, windows-latest]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -139,14 +139,14 @@ jobs:
       matrix:
         os: [linux, windows-latest]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake -y
       if: matrix.os == 'linux'
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Add wasm target (nightly)
@@ -170,18 +170,14 @@ jobs:
       matrix:
         os: [linux]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake -y
       if: matrix.os == 'linux'
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - uses: bmwill/rust-cache@v1
-      with:
-        path: tests/**/target
-        working-directory: radix-engine
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
@@ -194,18 +190,14 @@ jobs:
       matrix:
         os: [linux]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake -y
       if: matrix.os == 'linux'
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - uses: bmwill/rust-cache@v1
-      with:
-        path: tests/**/target
-        working-directory: radix-engine
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
@@ -218,18 +210,14 @@ jobs:
       matrix:
         os: [linux]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake -y
       if: matrix.os == 'linux'
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - uses: bmwill/rust-cache@v1
-      with:
-        path: tests/**/target
-        working-directory: radix-engine
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run bench
@@ -242,7 +230,7 @@ jobs:
       matrix:
         os: [linux, windows-latest]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -256,18 +244,18 @@ jobs:
       matrix:
         os: [linux, windows-latest]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: Swatinem/rust-cache@master
+      with:
+        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+        workspaces: simulator
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake -y
       if: matrix.os == 'linux'
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - uses: bmwill/rust-cache@v1
-      with:
-        path: ~/.cargo/registry/src/**/librocksdb-sys-*
-        working-directory: simulator
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
