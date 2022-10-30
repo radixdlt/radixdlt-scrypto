@@ -475,19 +475,15 @@ impl TransactionProcessor {
                     })
                     .and_then(|new_id| {
                         system_api
-                            .invoke(NativeMethodInvocation(
-                                NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds),
-                                auth_zone_ref,
-                                ScryptoValue::from_typed(&AuthZoneCreateProofByIdsInput {
-                                    ids: ids.clone(),
-                                    resource_address: *resource_address,
-                                }),
-                            ))
+                            .invoke(AuthZoneCreateProofByIdsInput {
+                                auth_zone_id,
+                                ids: ids.clone(),
+                                resource_address: *resource_address,
+                            })
                             .map_err(InvokeError::Downstream)
-                            .map(|rtn| {
-                                let proof_id = Self::first_proof(&rtn);
-                                proof_id_mapping.insert(new_id, proof_id);
-                                ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
+                            .map(|proof| {
+                                proof_id_mapping.insert(new_id, proof.0);
+                                ScryptoValue::from_typed(&proof)
                             })
                     }),
                 Instruction::CreateProofFromBucket { bucket_id } => id_allocator

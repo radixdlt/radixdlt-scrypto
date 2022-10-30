@@ -4,7 +4,6 @@ use sbor::*;
 
 use crate::engine::{api::*, types::*, utils::*};
 use crate::math::Decimal;
-use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -33,6 +32,7 @@ pub struct AuthZoneCreateProofByAmountInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByIdsInput {
+    pub auth_zone_id: AuthZoneId,
     pub ids: BTreeSet<NonFungibleId>,
     pub resource_address: ResourceAddress,
 }
@@ -114,20 +114,29 @@ impl ComponentAuthZone {
         call_engine(input)
     }
 
-    native_methods! {
-        {
-            let input = RadixEngineInput::GetVisibleNodeIds();
-            let owned_node_ids: Vec<RENodeId> = call_engine(input);
-            owned_node_ids.into_iter().find(|n| matches!(n, RENodeId::AuthZoneStack(..))).expect("AuthZone does not exist")
-        }, NativeMethod::AuthZone => {
-            pub fn create_proof_by_ids(ids: &BTreeSet<NonFungibleId>, resource_address: ResourceAddress) -> Proof {
-                AuthZoneMethod::CreateProofByIds,
-                AuthZoneCreateProofByIdsInput {
+    pub fn create_proof_by_ids(
+        ids: &BTreeSet<NonFungibleId>,
+        resource_address: ResourceAddress,
+    ) -> Proof {
+        let input = RadixEngineInput::GetVisibleNodeIds();
+        let owned_node_ids: Vec<RENodeId> = call_engine(input);
+        let node_id = owned_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+            .expect("AuthZone does not exist");
+
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds),
+            node_id,
+            scrypto::buffer::scrypto_encode(
+                &(AuthZoneCreateProofByIdsInput {
                     ids: ids.clone(),
-                    resource_address
-                }
-            }
-        }
+                    auth_zone_id: node_id.into(),
+                    resource_address,
+                }),
+            ),
+        );
+        call_engine(input)
     }
 
     pub fn push<P: Into<Proof>>(proof: P) {
