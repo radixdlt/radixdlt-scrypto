@@ -94,16 +94,58 @@ impl<N: NativeFunctionInvocation> Resolver<N> for NativeResolver {
 
     fn resolve<D: MethodDeref>(
         invocation: N,
-        _deref: &D,
-    ) -> (REActor, CallFrameUpdate, Self::Exec) {
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let native_function = N::native_function();
         let call_frame_update = invocation.call_frame_update();
         let actor = REActor::Function(ResolvedFunction::Native(native_function));
         let input = ScryptoValue::from_typed(&invocation);
         let executor = NativeExecutor(invocation, input);
-        (actor, call_frame_update, executor)
+        Ok((actor, call_frame_update, executor))
     }
 }
+
+pub trait NativeFunctionInvocation: NativeExecutable + Encode + Debug {
+    fn native_function() -> NativeFunction;
+
+    fn call_frame_update(&self) -> CallFrameUpdate;
+}
+
+
+pub struct NativeMethodResolver;
+
+impl<N: NativeMethInvocation> Resolver<N> for NativeMethodResolver {
+    type Exec = NativeExecutor<N>;
+
+    fn resolve<D: MethodDeref>(
+        invocation: N,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let native_method = N::native_method();
+        let (receiver, mut call_frame_update) = invocation.call_frame_update();
+
+        // TODO: Move this logic into kernel
+        let resolved_receiver = if let Some(derefed) = deref.deref(receiver)? {
+            ResolvedReceiver::derefed(derefed, receiver)
+        } else {
+            ResolvedReceiver::new(receiver)
+        };
+        let resolved_node_id = resolved_receiver.receiver;
+        call_frame_update.node_refs_to_copy.insert(resolved_node_id);
+
+        let actor = REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver);
+        let input = ScryptoValue::from_typed(&invocation);
+        let executor = NativeExecutor(invocation, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+pub trait NativeMethInvocation: NativeExecutable + Encode + Debug {
+    fn native_method() -> NativeMethod;
+
+    fn call_frame_update(&self) -> (RENodeId, CallFrameUpdate);
+}
+
 
 pub trait NativeExecutable: Invocation {
     type Output: Debug;
@@ -112,18 +154,12 @@ pub trait NativeExecutable: Invocation {
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi<'s, R>
+        where
+            Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
             + InvokableNativeFunction<'a>
             + Invokable<NativeMethodInvocation>,
-        R: FeeReserve;
-}
-
-pub trait NativeFunctionInvocation: NativeExecutable + Encode + Debug {
-    fn native_function() -> NativeFunction;
-
-    fn call_frame_update(&self) -> CallFrameUpdate;
+            R: FeeReserve;
 }
 
 pub struct NativeExecutor<N: NativeExecutable>(pub N, pub ScryptoValue);

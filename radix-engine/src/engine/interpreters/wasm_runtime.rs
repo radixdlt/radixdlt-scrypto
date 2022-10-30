@@ -125,11 +125,24 @@ where
         receiver: RENodeId,
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let args = ScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
 
-        self.system_api
-            .invoke(NativeMethodInvocation(native_method, receiver, args))
+
+        match native_method {
+            /*
+            NativeMethod::Bucket(BucketMethod::Take) => {
+                let invocation: BucketTakeInput = scrypto_decode(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                self.system_api.invoke(invocation)
+                    .map(|a| ScryptoValue::from_typed(&a))
+            }
+             */
+            _ => {
+                let args = ScryptoValue::from_slice(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                self.system_api
+                    .invoke(NativeMethodInvocation(native_method, receiver, args))
+            }
+        }
     }
 
     fn handle_node_create(

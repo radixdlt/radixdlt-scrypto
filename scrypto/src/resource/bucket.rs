@@ -15,6 +15,7 @@ use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketTakeInput {
+    pub bucket_id: BucketId,
     pub amount: Decimal,
 }
 
@@ -68,7 +69,7 @@ impl Bucket {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Bucket(BucketMethod::Take),
             RENodeId::Bucket(self.0),
-            scrypto_encode(&BucketTakeInput { amount }),
+            scrypto_encode(&BucketTakeInput { bucket_id: self.0, amount }),
         );
         call_engine(input)
     }

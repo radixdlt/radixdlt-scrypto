@@ -1,4 +1,5 @@
-use crate::engine::{LockFlags, RENode, SystemApi};
+use sbor::Encoder;
+use crate::engine::{ApplicationError, CallFrameUpdate, Invocation, Invokable, InvokableNativeFunction, LockFlags, NativeExecutable, NativeMethInvocation, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{BucketSubstate, InvokeError, ProofError, ResourceOperationError};
 use crate::types::*;
@@ -14,6 +15,42 @@ pub enum BucketError {
     ProofError(ProofError),
     CouldNotCreateProof,
     MethodNotFound(BucketMethod),
+}
+
+impl NativeExecutable for BucketTakeInput {
+    type Output = scrypto::resource::Bucket;
+
+    fn execute<'s, 'a, Y, R>(input: Self, system_api: &mut Y) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError> where Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNativeFunction<'a> + Invokable<NativeMethodInvocation>, R: FeeReserve {
+        let node_id = RENodeId::Bucket(input.bucket_id);
+        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
+        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
+        let bucket = substate_mut.bucket();
+        let container = bucket
+            .take(input.amount)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ResourceOperationError(e))))?;
+        let bucket_id = system_api
+            .create_node(RENode::Bucket(BucketSubstate::new(container)))?
+            .into();
+        Ok((
+            scrypto::resource::Bucket(bucket_id),
+            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
+        ))
+    }
+}
+
+impl NativeMethInvocation for BucketTakeInput {
+    fn native_method() -> NativeMethod {
+        NativeMethod::Bucket(BucketMethod::Take)
+    }
+
+    fn call_frame_update(&self) -> (RENodeId, CallFrameUpdate) {
+        (
+            RENodeId::Bucket(self.bucket_id),
+            CallFrameUpdate::empty(),
+        )
+    }
 }
 
 pub struct Bucket;

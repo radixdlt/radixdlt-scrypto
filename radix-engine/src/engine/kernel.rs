@@ -737,7 +737,7 @@ where
 pub trait Resolver<I: Invocation> {
     type Exec: Executor<Output = <I as Invocation>::Output>;
 
-    fn resolve<D: MethodDeref>(invocation: I, deref: &D) -> (REActor, CallFrameUpdate, Self::Exec);
+    fn resolve<D: MethodDeref>(invocation: I, deref: &mut D) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
 }
 
 pub trait Executor {
@@ -766,7 +766,6 @@ where
 {
 }
 
-// TODO: remove redundant code and move this method to the interpreter
 impl<'g, 's, W, I, R, N> Invokable<N> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
@@ -794,7 +793,7 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (actor, call_frame_update, executor) = NativeResolver::resolve(invocation, self);
+        let (actor, call_frame_update, executor) = NativeResolver::resolve(invocation, self)?;
 
         let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 
