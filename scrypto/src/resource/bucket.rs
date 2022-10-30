@@ -26,6 +26,7 @@ pub struct BucketPutInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketTakeNonFungiblesInput {
+    pub bucket_id: BucketId,
     pub ids: BTreeSet<NonFungibleId>,
 }
 
@@ -84,6 +85,7 @@ impl Bucket {
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
                 BucketMethod::TakeNonFungibles,
                 BucketTakeNonFungiblesInput {
+                    bucket_id: self.0,
                     ids: non_fungible_ids.clone()
                 }
             }

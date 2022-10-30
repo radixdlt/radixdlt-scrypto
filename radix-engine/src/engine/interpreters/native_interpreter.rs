@@ -82,6 +82,7 @@ pub trait InvokableNative<'a>:
     + Invokable<TransactionProcessorRunInput<'a>>
     + Invokable<BucketTakeInput>
     + Invokable<BucketCreateProofInput>
+    + Invokable<BucketTakeNonFungiblesInput>
 {
 }
 
