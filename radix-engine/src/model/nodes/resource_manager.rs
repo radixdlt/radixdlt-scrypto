@@ -1,6 +1,4 @@
-use crate::engine::{
-    CallFrameUpdate, Invokable, LockFlags, NativeFuncInvocation, RENode, RuntimeError, SystemApi,
-};
+use crate::engine::{ApplicationError, CallFrameUpdate, Invokable, InvokableNativeFunction, LockFlags, NativeFuncInvocation, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
@@ -42,7 +40,7 @@ impl NativeFuncInvocation for ResourceManagerBurnInput {
         let bucket = RENodeId::Bucket(self.bucket.0);
 
         (
-            NativeFunction::Package(PackageFunction::Publish),
+            NativeFunction::ResourceManager(ResourceManagerFunction::BurnBucket),
             CallFrameUpdate {
                 nodes_to_move: vec![bucket],
                 node_refs_to_copy: HashSet::new(),
@@ -54,7 +52,7 @@ impl NativeFuncInvocation for ResourceManagerBurnInput {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + Invokable<EpochManagerCreateInput>
+            + InvokableNativeFunction
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
@@ -79,6 +77,159 @@ impl NativeFuncInvocation for ResourceManagerBurnInput {
         Ok(((), CallFrameUpdate::empty()))
     }
 }
+
+impl NativeFuncInvocation for ResourceManagerCreateInput {
+    type NativeOutput = (ResourceAddress, Option<scrypto::resource::Bucket>);
+
+    fn prepare(&self) -> (NativeFunction, CallFrameUpdate) {
+        (
+            NativeFunction::ResourceManager(ResourceManagerFunction::Create),
+            CallFrameUpdate::empty(),
+        )
+    }
+
+    fn execute<'s, Y, R>(self, system_api: &mut Y) -> Result<((ResourceAddress, Option<scrypto::resource::Bucket>), CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation>
+            + InvokableNativeFunction
+            + Invokable<NativeFunctionInvocation>
+            + Invokable<NativeMethodInvocation>,
+            R: FeeReserve,
+    {
+
+        let node_id = if matches!(self.resource_type, ResourceType::NonFungible) {
+            let nf_store_node_id = system_api
+                .create_node(RENode::NonFungibleStore(NonFungibleStore::new()))?;
+            let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
+
+            let mut resource_manager = ResourceManager::new(
+                self.resource_type,
+                self.metadata,
+                self.access_rules,
+                Some(nf_store_id),
+            ).map_err(|e| {
+                match e {
+                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
+                    InvokeError::Downstream(e) => e,
+                }
+            })?;
+
+            if let Some(mint_params) = &self.mint_params {
+                if let MintParams::NonFungible { entries } = mint_params {
+                    for (non_fungible_id, data) in entries {
+                        let offset = SubstateOffset::NonFungibleStore(
+                            NonFungibleStoreOffset::Entry(non_fungible_id.clone()),
+                        );
+                        let non_fungible_handle = system_api.lock_substate(
+                            nf_store_node_id,
+                            offset,
+                            LockFlags::MUTABLE,
+                        )?;
+                        let mut substate_mut =
+                            system_api.get_ref_mut(non_fungible_handle)?;
+                        let non_fungible_mut = substate_mut.non_fungible();
+                        *non_fungible_mut = NonFungibleSubstate(Some(
+                            NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
+                        ));
+                        system_api.drop_lock(non_fungible_handle)?;
+                    }
+                    resource_manager.total_supply = entries.len().into();
+                } else {
+                    return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+                        ResourceManagerError::ResourceTypeDoesNotMatch,
+                    )));
+                }
+            }
+            system_api.create_node(RENode::ResourceManager(resource_manager))?
+        } else {
+            let mut resource_manager = ResourceManager::new(
+                self.resource_type,
+                self.metadata,
+                self.access_rules,
+                None,
+            ).map_err(|e| {
+                match e {
+                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
+                    InvokeError::Downstream(e) => e,
+                }
+            })?;
+
+            if let Some(mint_params) = &self.mint_params {
+                if let MintParams::Fungible { amount } = mint_params {
+                    resource_manager.check_amount(*amount)
+                        .map_err(|e| {
+                            match e {
+                                InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
+                                InvokeError::Downstream(e) => e,
+                            }
+                        })?;
+                    // TODO: refactor this into mint function
+                    if *amount > dec!("1000000000000000000") {
+                        return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+                            ResourceManagerError::MaxMintAmountExceeded,
+                        )));
+                    }
+                    resource_manager.total_supply = amount.clone();
+                } else {
+                    return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+                        ResourceManagerError::ResourceTypeDoesNotMatch,
+                    )));
+                }
+            }
+            system_api.create_node(RENode::ResourceManager(resource_manager))?
+        };
+        let global_node_id = system_api.create_node(RENode::Global(
+            GlobalAddressSubstate::Resource(node_id.into()),
+        ))?;
+        let resource_address: ResourceAddress = global_node_id.into();
+
+        // FIXME this is temporary workaround for the resource address resolution problem
+        system_api
+            .invoke(NativeMethodInvocation(
+                NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
+                RENodeId::Global(GlobalAddress::Resource(resource_address)),
+                ScryptoValue::from_typed(&ResourceManagerSetResourceAddressInput {
+                    address: resource_address,
+                }),
+            ))?;
+
+        // Mint
+        let bucket = if let Some(mint_params) = self.mint_params {
+            let container = match mint_params {
+                MintParams::NonFungible { entries } => {
+                    let ids = entries.into_keys().collect();
+                    Resource::new_non_fungible(resource_address, ids)
+                }
+                MintParams::Fungible { amount } => Resource::new_fungible(
+                    resource_address,
+                    self.resource_type.divisibility(),
+                    amount,
+                ),
+            };
+            let bucket_id = system_api
+                .create_node(RENode::Bucket(BucketSubstate::new(container)))?
+                .into();
+            Some(scrypto::resource::Bucket(bucket_id))
+        } else {
+            None
+        };
+
+        let mut nodes_to_move = vec![];
+        if let Some(bucket) = &bucket {
+            nodes_to_move.push(RENodeId::Bucket(bucket.0));
+        }
+
+        let mut node_refs_to_copy = HashSet::new();
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(resource_address)));
+
+        Ok(((resource_address, bucket), CallFrameUpdate {
+            nodes_to_move,
+            node_refs_to_copy
+        }))
+    }
+}
+
 
 pub struct ResourceManager;
 
@@ -152,130 +303,6 @@ impl ResourceManager {
         };
 
         Ok(resource_manager)
-    }
-
-    pub fn static_main<'s, Y, R>(
-        func: ResourceManagerFunction,
-        args: ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<ScryptoValue, InvokeError<ResourceManagerError>>
-    where
-        Y: SystemApi<'s, R> + Invokable<NativeMethodInvocation>,
-        R: FeeReserve,
-    {
-        match func {
-            ResourceManagerFunction::Create => {
-                let input: ResourceManagerCreateInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-
-                let node_id = if matches!(input.resource_type, ResourceType::NonFungible) {
-                    let nf_store_node_id = system_api
-                        .create_node(RENode::NonFungibleStore(NonFungibleStore::new()))?;
-                    let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
-
-                    let mut resource_manager = ResourceManager::new(
-                        input.resource_type,
-                        input.metadata,
-                        input.access_rules,
-                        Some(nf_store_id),
-                    )?;
-
-                    if let Some(mint_params) = &input.mint_params {
-                        if let MintParams::NonFungible { entries } = mint_params {
-                            for (non_fungible_id, data) in entries {
-                                let offset = SubstateOffset::NonFungibleStore(
-                                    NonFungibleStoreOffset::Entry(non_fungible_id.clone()),
-                                );
-                                let non_fungible_handle = system_api.lock_substate(
-                                    nf_store_node_id,
-                                    offset,
-                                    LockFlags::MUTABLE,
-                                )?;
-                                let mut substate_mut =
-                                    system_api.get_ref_mut(non_fungible_handle)?;
-                                let non_fungible_mut = substate_mut.non_fungible();
-                                *non_fungible_mut = NonFungibleSubstate(Some(
-                                    NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
-                                ));
-                                system_api.drop_lock(non_fungible_handle)?;
-                            }
-                            resource_manager.total_supply = entries.len().into();
-                        } else {
-                            return Err(InvokeError::Error(
-                                ResourceManagerError::ResourceTypeDoesNotMatch,
-                            ));
-                        }
-                    }
-                    system_api.create_node(RENode::ResourceManager(resource_manager))?
-                } else {
-                    let mut resource_manager = ResourceManager::new(
-                        input.resource_type,
-                        input.metadata,
-                        input.access_rules,
-                        None,
-                    )?;
-
-                    if let Some(mint_params) = &input.mint_params {
-                        if let MintParams::Fungible { amount } = mint_params {
-                            resource_manager.check_amount(*amount)?;
-                            // TODO: refactor this into mint function
-                            if *amount > dec!("1000000000000000000") {
-                                return Err(InvokeError::Error(
-                                    ResourceManagerError::MaxMintAmountExceeded,
-                                ));
-                            }
-                            resource_manager.total_supply = amount.clone();
-                        } else {
-                            return Err(InvokeError::Error(
-                                ResourceManagerError::ResourceTypeDoesNotMatch,
-                            ));
-                        }
-                    }
-                    system_api.create_node(RENode::ResourceManager(resource_manager))?
-                };
-                let global_node_id = system_api.create_node(RENode::Global(
-                    GlobalAddressSubstate::Resource(node_id.into()),
-                ))?;
-                let resource_address: ResourceAddress = global_node_id.into();
-
-                // FIXME this is temporary workaround for the resource address resolution problem
-                system_api
-                    .invoke(NativeMethodInvocation(
-                        NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
-                        RENodeId::Global(GlobalAddress::Resource(resource_address)),
-                        ScryptoValue::from_typed(&ResourceManagerSetResourceAddressInput {
-                            address: resource_address,
-                        }),
-                    ))
-                    .map_err(InvokeError::Downstream)?;
-
-                // Mint
-                let bucket_id = if let Some(mint_params) = input.mint_params {
-                    let container = match mint_params {
-                        MintParams::NonFungible { entries } => {
-                            let ids = entries.into_keys().collect();
-                            Resource::new_non_fungible(resource_address, ids)
-                        }
-                        MintParams::Fungible { amount } => Resource::new_fungible(
-                            resource_address,
-                            input.resource_type.divisibility(),
-                            amount,
-                        ),
-                    };
-                    let bucket_id = system_api
-                        .create_node(RENode::Bucket(BucketSubstate::new(container)))?
-                        .into();
-                    Some(scrypto::resource::Bucket(bucket_id))
-                } else {
-                    None
-                };
-
-                Ok(ScryptoValue::from_typed(&(resource_address, bucket_id)))
-            }
-            ResourceManagerFunction::BurnBucket => {
-                panic!("Unexpected")
-            }
-        }
     }
 
     fn method_lock_flags(method: ResourceManagerMethod) -> LockFlags {

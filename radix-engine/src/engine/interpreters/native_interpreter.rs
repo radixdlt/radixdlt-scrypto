@@ -152,32 +152,7 @@ impl Executor for NativeFunctionExecutor {
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
-        let output = match self.0 {
-            NativeFunction::ResourceManager(func) => {
-                ResourceManager::static_main(func, self.1, system_api)
-                    .map_err::<RuntimeError, _>(|e| e.into())
-            }
-            NativeFunction::TransactionProcessor(..) => {
-                panic!("Unexpected")
-            }
-            NativeFunction::Package(..) => {
-                panic!("Unexpected")
-            }
-            NativeFunction::EpochManager(func) => match func {
-                _ => panic!("Unexpected"),
-            },
-        }?;
-
-        let update = CallFrameUpdate {
-            node_refs_to_copy: output
-                .global_references()
-                .into_iter()
-                .map(|a| RENodeId::Global(a))
-                .collect(),
-            nodes_to_move: output.node_ids().into_iter().collect(),
-        };
-
-        Ok((output, update))
+        panic!("unexpected")
     }
 }
 
