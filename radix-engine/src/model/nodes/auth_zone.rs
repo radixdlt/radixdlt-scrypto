@@ -1,4 +1,7 @@
-use crate::engine::{ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable, NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi};
+use crate::engine::{
+    ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
+    NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
+};
 use crate::fee::FeeReserve;
 use crate::model::{InvokeError, ProofError};
 use crate::types::*;
@@ -22,23 +25,23 @@ impl NativeExecutable for AuthZonePopInput {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         let node_id = RENodeId::AuthZoneStack(input.auth_zone_id);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
-        let auth_zone_handle =
-            system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let proof = {
             let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
             let auth_zone = substate_mut.auth_zone();
-            let proof = auth_zone.cur_auth_zone_mut().pop()
-                .map_err(|e| match e {
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e)),
-                })?;
+            let proof = auth_zone.cur_auth_zone_mut().pop().map_err(|e| match e {
+                InvokeError::Downstream(runtime_error) => runtime_error,
+                InvokeError::Error(e) => {
+                    RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
+                }
+            })?;
             proof
         };
 
@@ -57,6 +60,51 @@ impl NativeInvocation for AuthZonePopInput {
             NativeMethod::AuthZone(AuthZoneMethod::Pop),
             RENodeId::AuthZoneStack(self.auth_zone_id),
             CallFrameUpdate::empty(),
+        )
+    }
+}
+
+impl NativeExecutable for AuthZonePushInput {
+    type Output = ();
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
+    {
+        let node_id = RENodeId::AuthZoneStack(input.auth_zone_id);
+        let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+        let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let node_id = RENodeId::Proof(input.proof.0);
+        let handle = system_api.lock_substate(
+            node_id,
+            SubstateOffset::Proof(ProofOffset::Proof),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref = system_api.get_ref(handle)?;
+        let proof = substate_ref.proof();
+        // Take control of the proof lock as the proof in the call frame will lose it's lock once dropped
+        let mut cloned_proof = proof.clone();
+        cloned_proof.change_to_unrestricted();
+
+        let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
+        let auth_zone = substate_mut.auth_zone();
+        auth_zone.cur_auth_zone_mut().push(cloned_proof);
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for AuthZonePushInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::AuthZone(AuthZoneMethod::Push),
+            RENodeId::AuthZoneStack(self.auth_zone_id),
+            CallFrameUpdate::move_node(RENodeId::Proof(self.proof.0)),
         )
     }
 }
@@ -96,26 +144,7 @@ impl AuthZoneStack {
                 panic!("Unexpected")
             }
             AuthZoneMethod::Push => {
-                let input: AuthZonePushInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
-
-                let node_id = RENodeId::Proof(input.proof.0);
-                let handle = system_api.lock_substate(
-                    node_id,
-                    SubstateOffset::Proof(ProofOffset::Proof),
-                    LockFlags::read_only(),
-                )?;
-                let substate_ref = system_api.get_ref(handle)?;
-                let proof = substate_ref.proof();
-                // Take control of the proof lock as the proof in the call frame will lose it's lock once dropped
-                let mut cloned_proof = proof.clone();
-                cloned_proof.change_to_unrestricted();
-
-                let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
-                let auth_zone = substate_mut.auth_zone();
-                auth_zone.cur_auth_zone_mut().push(cloned_proof);
-
-                ScryptoValue::from_typed(&())
+                panic!("Unexpected")
             }
             AuthZoneMethod::CreateProof => {
                 let input: AuthZoneCreateProofInput = scrypto_decode(&args.raw)

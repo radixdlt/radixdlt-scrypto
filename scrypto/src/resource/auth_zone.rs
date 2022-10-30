@@ -14,6 +14,7 @@ pub struct AuthZonePopInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZonePushInput {
+    pub auth_zone_id: AuthZoneId,
     pub proof: Proof,
 }
 
@@ -59,7 +60,11 @@ impl ComponentAuthZone {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::AuthZone(AuthZoneMethod::Pop),
             node_id,
-            scrypto::buffer::scrypto_encode(&(AuthZonePopInput { auth_zone_id: node_id.into() })),
+            scrypto::buffer::scrypto_encode(
+                &(AuthZonePopInput {
+                    auth_zone_id: node_id.into(),
+                }),
+            ),
         );
         call_engine(input)
     }
@@ -106,7 +111,12 @@ impl ComponentAuthZone {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::AuthZone(AuthZoneMethod::Push),
             node_id,
-            scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
+            scrypto::buffer::scrypto_encode(
+                &(AuthZonePushInput {
+                    proof,
+                    auth_zone_id: node_id.into(),
+                }),
+            ),
         );
         call_engine(input)
     }
