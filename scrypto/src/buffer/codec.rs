@@ -5,12 +5,12 @@ use crate::buffer::*;
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
-    encode_with_static_info(v)
+    encode(v)
 }
 
 /// Decodes an instance of `T` from a slice.
 pub fn scrypto_decode<T: Decode>(buf: &[u8]) -> Result<T, DecodeError> {
-    decode_with_static_info(buf)
+    decode(buf)
 }
 
 /// Encodes a data structure into a Scrypto buffer.

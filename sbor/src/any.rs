@@ -100,14 +100,14 @@ pub enum Value {
 /// Encodes any SBOR value into byte array.
 pub fn encode_any(value: &Value) -> Vec<u8> {
     let mut bytes = Vec::new();
-    let mut enc = ::sbor::Encoder::with_static_info(&mut bytes);
+    let mut enc = ::sbor::Encoder::new(&mut bytes);
     encode_any_internal(None, value, &mut enc);
     bytes
 }
 
 /// Encodes any SBOR value with a given buffer
 pub fn encode_any_with_buffer(value: &Value, buffer: &mut Vec<u8>) {
-    let mut enc = ::sbor::Encoder::with_static_info(buffer);
+    let mut enc = ::sbor::Encoder::new(buffer);
     encode_any_internal(None, value, &mut enc);
 }
 
@@ -132,7 +132,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             if ty_ctx.is_none() {
                 enc.write_type_id(TYPE_STRUCT);
             }
-            enc.write_static_size(fields.len());
+            enc.write_size(fields.len());
             for field in fields {
                 encode_any_internal(None, field, enc);
             }
@@ -142,7 +142,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                 enc.write_type_id(TYPE_ENUM);
             }
             name.encode_value(enc);
-            enc.write_static_size(fields.len());
+            enc.write_size(fields.len());
             for field in fields {
                 encode_any_internal(None, field, enc);
             }
@@ -153,11 +153,11 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
             match value.borrow() {
                 Some(x) => {
-                    enc.write_variant_index(OPTION_VARIANT_SOME);
+                    enc.write_discriminator(OPTION_VARIANT_SOME);
                     encode_any_internal(None, x, enc);
                 }
                 None => {
-                    enc.write_variant_index(OPTION_VARIANT_NONE);
+                    enc.write_discriminator(OPTION_VARIANT_NONE);
                 }
             }
         }
@@ -167,11 +167,11 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
             match value.borrow() {
                 Ok(x) => {
-                    enc.write_variant_index(RESULT_VARIANT_OK);
+                    enc.write_discriminator(RESULT_VARIANT_OK);
                     encode_any_internal(None, x, enc);
                 }
                 Err(x) => {
-                    enc.write_variant_index(RESULT_VARIANT_ERR);
+                    enc.write_discriminator(RESULT_VARIANT_ERR);
                     encode_any_internal(None, x, enc);
                 }
             }
@@ -185,7 +185,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                 enc.write_type_id(TYPE_ARRAY);
             }
             enc.write_type_id(*element_type_id);
-            enc.write_dynamic_size(elements.len());
+            enc.write_size(elements.len());
             for e in elements {
                 encode_any_internal(Some(*element_type_id), e, enc);
             }
@@ -194,7 +194,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             if ty_ctx.is_none() {
                 enc.write_type_id(TYPE_TUPLE);
             }
-            enc.write_dynamic_size(elements.len());
+            enc.write_size(elements.len());
             for e in elements {
                 encode_any_internal(None, e, enc);
             }
@@ -208,7 +208,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                 enc.write_type_id(TYPE_LIST);
             }
             enc.write_type_id(*element_type_id);
-            enc.write_dynamic_size(elements.len());
+            enc.write_size(elements.len());
             for e in elements {
                 encode_any_internal(Some(*element_type_id), e, enc);
             }
@@ -221,7 +221,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                 enc.write_type_id(TYPE_SET);
             }
             enc.write_type_id(*element_type_id);
-            enc.write_dynamic_size(elements.len());
+            enc.write_size(elements.len());
             for e in elements {
                 encode_any_internal(Some(*element_type_id), e, enc);
             }
@@ -236,7 +236,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
             enc.write_type_id(*key_type_id);
             enc.write_type_id(*value_type_id);
-            enc.write_dynamic_size(elements.len() / 2);
+            enc.write_size(elements.len() / 2);
             for pair in elements.chunks(2) {
                 encode_any_internal(Some(*key_type_id), &pair[0], enc);
                 encode_any_internal(Some(*value_type_id), &pair[1], enc);
@@ -247,7 +247,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             if ty_ctx.is_none() {
                 enc.write_type_id(*type_id);
             }
-            enc.write_dynamic_size(bytes.len());
+            enc.write_size(bytes.len());
             enc.write_slice(bytes);
         }
     }
@@ -262,7 +262,7 @@ fn encode_basic<T: Encode>(ty_ctx: Option<u8>, t: u8, v: &T, enc: &mut Encoder) 
 
 /// Decode any SBOR data.
 pub fn decode_any(data: &[u8]) -> Result<Value, DecodeError> {
-    let mut decoder = Decoder::with_static_info(data);
+    let mut decoder = Decoder::new(data);
     let result = decode_next(None, &mut decoder);
     decoder.check_end()?;
     result
@@ -271,7 +271,7 @@ pub fn decode_any(data: &[u8]) -> Result<Value, DecodeError> {
 fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError> {
     let ty = match ty_ctx {
         Some(t) => t,
-        None => dec.read_type()?,
+        None => dec.read_type_id()?,
     };
 
     match ty {
@@ -319,7 +319,7 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
         // struct & enum
         TYPE_STRUCT => {
             // number of fields
-            let len = dec.read_dynamic_size()?;
+            let len = dec.read_size()?;
             // fields
             let mut fields = Vec::new();
             for _ in 0..len {
@@ -331,7 +331,7 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             // name
             let name = <String>::decode_value(dec)?;
             // number of fields
-            let len = dec.read_dynamic_size()?;
+            let len = dec.read_size()?;
             // fields
             let mut fields = Vec::new();
             for _ in 0..len {
@@ -340,39 +340,39 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             Ok(Value::Enum { name, fields })
         }
         TYPE_OPTION => {
-            // index
-            let index = dec.read_variant_index()?;
+            // discriminator
+            let discriminator = dec.read_discriminator()?;
             // optional value
-            match index {
+            match discriminator.as_ref() {
                 OPTION_VARIANT_SOME => Ok(Value::Option {
                     value: Box::new(Some(decode_next(None, dec)?)),
                 }),
                 OPTION_VARIANT_NONE => Ok(Value::Option {
                     value: Box::new(None),
                 }),
-                _ => Err(DecodeError::InvalidVariantIndex(index)),
+                _ => Err(DecodeError::InvalidDiscriminator(discriminator)),
             }
         }
         TYPE_RESULT => {
-            // index
-            let index = dec.read_variant_index()?;
+            // discriminator
+            let discriminator = dec.read_discriminator()?;
             // result value
-            match index {
+            match discriminator.as_ref() {
                 RESULT_VARIANT_OK => Ok(Value::Result {
                     value: Box::new(Ok(decode_next(None, dec)?)),
                 }),
                 RESULT_VARIANT_ERR => Ok(Value::Result {
                     value: Box::new(Err(decode_next(None, dec)?)),
                 }),
-                _ => Err(DecodeError::InvalidVariantIndex(index)),
+                _ => Err(DecodeError::InvalidDiscriminator(discriminator)),
             }
         }
         // composite types
         TYPE_ARRAY => {
             // element type
-            let element_type_id = dec.read_type()?;
+            let element_type_id = dec.read_type_id()?;
             // length
-            let len = dec.read_dynamic_size()?;
+            let len = dec.read_size()?;
             // values
             let mut elements = Vec::new();
             for _ in 0..len {
@@ -385,7 +385,7 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
         }
         TYPE_TUPLE => {
             //length
-            let len = dec.read_dynamic_size()?;
+            let len = dec.read_size()?;
             // values
             let mut elements = Vec::new();
             for _ in 0..len {
@@ -396,9 +396,9 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
         // collections
         TYPE_LIST => {
             // element type
-            let element_type_id = dec.read_type()?;
+            let element_type_id = dec.read_type_id()?;
             // length
-            let len = dec.read_dynamic_size()?;
+            let len = dec.read_size()?;
             // values
             let mut elements = Vec::new();
             for _ in 0..len {
@@ -411,9 +411,9 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
         }
         TYPE_SET => {
             // element type
-            let element_type_id = dec.read_type()?;
+            let element_type_id = dec.read_type_id()?;
             // length
-            let len = dec.read_dynamic_size()?;
+            let len = dec.read_size()?;
             // values
             let mut elements = Vec::new();
             for _ in 0..len {
@@ -426,11 +426,11 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
         }
         TYPE_MAP => {
             // key type
-            let key_type_id = dec.read_type()?;
+            let key_type_id = dec.read_type_id()?;
             // value type
-            let value_type_id = dec.read_type()?;
+            let value_type_id = dec.read_type_id()?;
             // length
-            let len = dec.read_dynamic_size()?;
+            let len = dec.read_size()?;
             // elements
             let mut elements = Vec::new();
             for _ in 0..len {
@@ -446,8 +446,8 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
         _ => {
             if ty >= TYPE_CUSTOM_START {
                 // length
-                let len = dec.read_dynamic_size()?;
-                let slice = dec.read_bytes(len)?;
+                let len = dec.read_size()?;
+                let slice = dec.read_slice(len)?;
                 Ok(Value::Custom {
                     type_id: ty,
                     bytes: slice.to_vec(),
@@ -646,7 +646,7 @@ mod tests {
             y: map1,
             z: map2,
         };
-        let bytes = encode_with_static_info(&data);
+        let bytes = encode(&data);
         let value = decode_any(&bytes).unwrap();
 
         assert_eq!(
@@ -727,7 +727,7 @@ mod tests {
         );
 
         let mut bytes2 = Vec::new();
-        let mut enc = Encoder::with_static_info(&mut bytes2);
+        let mut enc = Encoder::new(&mut bytes2);
         encode_any_internal(None, &value, &mut enc);
         assert_eq!(bytes2, bytes);
     }

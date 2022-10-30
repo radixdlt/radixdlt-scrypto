@@ -39,7 +39,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                             use ::sbor::{self, Encode};
-                            encoder.write_static_size(#ns_len);
+                            encoder.write_size(#ns_len);
                             #(self.#ns_ids.encode(encoder);)*
                         }
                     }
@@ -62,7 +62,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                             use ::sbor::{self, Encode};
-                            encoder.write_static_size(#ns_len);
+                            encoder.write_size(#ns_len);
                             #(self.#ns_indices.encode(encoder);)*
                         }
                     }
@@ -77,7 +77,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         }
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_static_size(0);
+                            encoder.write_size(0);
                         }
                     }
                 }
@@ -97,8 +97,8 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         let ns_len = Index::from(ns.len());
                         quote! {
                             Self::#v_id {#(#ns_ids,)* ..} => {
-                                encoder.write_variant_label(#name);
-                                encoder.write_static_size(#ns_len);
+                                encoder.write_discriminator(#name);
+                                encoder.write_size(#ns_len);
                                 #(#ns_ids2.encode(encoder);)*
                             }
                         }
@@ -114,8 +114,8 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         let ns_len = Index::from(ns_args.len());
                         quote! {
                             Self::#v_id (#(#args),*) => {
-                                encoder.write_variant_label(#name);
-                                encoder.write_static_size(#ns_len);
+                                encoder.write_discriminator(#name);
+                                encoder.write_size(#ns_len);
                                 #(#ns_args.encode(encoder);)*
                             }
                         }
@@ -123,8 +123,8 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     syn::Fields::Unit => {
                         quote! {
                             Self::#v_id => {
-                                encoder.write_variant_label(#name);
-                                encoder.write_static_size(0);
+                                encoder.write_discriminator(#name);
+                                encoder.write_size(0);
                             }
                         }
                     }
@@ -201,7 +201,7 @@ mod tests {
                     #[inline]
                     fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                         use ::sbor::{self, Encode};
-                        encoder.write_static_size(1);
+                        encoder.write_size(1);
                         self.a.encode(encoder);
                     }
                 }
@@ -227,17 +227,17 @@ mod tests {
                         use ::sbor::{self, Encode};
                         match self {
                             Self::A => {
-                                encoder.write_variant_label("A");
-                                encoder.write_static_size(0);
+                                encoder.write_discriminator("A");
+                                encoder.write_size(0);
                             }
                             Self::B(a0) => {
-                                encoder.write_variant_label("B");
-                                encoder.write_static_size(1);
+                                encoder.write_discriminator("B");
+                                encoder.write_size(1);
                                 a0.encode(encoder);
                             }
                             Self::C { x, .. } => {
-                                encoder.write_variant_label("C");
-                                encoder.write_static_size(1);
+                                encoder.write_discriminator("C");
+                                encoder.write_size(1);
                                 x.encode(encoder);
                             }
                         }

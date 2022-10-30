@@ -34,7 +34,7 @@ fn test_encode_struct() {
     let c = TestStructUnit {};
 
     let mut bytes = Vec::with_capacity(512);
-    let mut encoder = Encoder::with_static_info(&mut bytes);
+    let mut encoder = Encoder::new(&mut bytes);
     a.encode(&mut encoder);
     b.encode(&mut encoder);
     c.encode(&mut encoder);
@@ -64,7 +64,7 @@ fn test_encode_enum() {
     let c = TestEnum::C;
 
     let mut bytes = Vec::with_capacity(512);
-    let mut encoder = Encoder::with_static_info(&mut bytes);
+    let mut encoder = Encoder::new(&mut bytes);
     a.encode(&mut encoder);
     b.encode(&mut encoder);
     c.encode(&mut encoder);

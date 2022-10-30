@@ -48,7 +48,7 @@ pub enum Type {
 
     Enum {
         name: String,
-        variants: Vec<Variant>, // Order matters as it decides of the variant index
+        variants: Vec<Variant>, // Order matters as it decides of the variant discriminator
     },
 
     Result {

@@ -41,10 +41,10 @@ pub const TYPE_MAP: u8 = 0x32;
 pub const TYPE_CUSTOM_START: u8 = 0x80;
 
 // enum variant indices
-pub const OPTION_VARIANT_SOME: u8 = 0x00;
-pub const OPTION_VARIANT_NONE: u8 = 0x01;
-pub const RESULT_VARIANT_OK: u8 = 0x00;
-pub const RESULT_VARIANT_ERR: u8 = 0x01;
+pub const OPTION_VARIANT_SOME: &str = "Some";
+pub const OPTION_VARIANT_NONE: &str = "None";
+pub const RESULT_VARIANT_OK: &str = "Ok";
+pub const RESULT_VARIANT_ERR: &str = "Err";
 
 /// A SBOR type ID.
 pub trait TypeId {

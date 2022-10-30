@@ -24,9 +24,7 @@ pub enum DecodeError {
 
     InvalidSize { expected: usize, actual: usize },
 
-    InvalidVariantIndex(u8),
-
-    InvalidVariantLabel(String),
+    InvalidDiscriminator(String),
 
     InvalidUnit(u8),
 
@@ -53,24 +51,11 @@ pub trait Decode: Sized {
 pub struct Decoder<'de> {
     input: &'de [u8],
     offset: usize,
-    with_static_info: bool,
 }
 
 impl<'de> Decoder<'de> {
-    pub fn new(input: &'de [u8], with_static_info: bool) -> Self {
-        Self {
-            input,
-            offset: 0,
-            with_static_info,
-        }
-    }
-
-    pub fn with_static_info(input: &'de [u8]) -> Self {
-        Self::new(input, true)
-    }
-
-    pub fn no_static_info(input: &'de [u8]) -> Self {
-        Self::new(input, false)
+    pub fn new(input: &'de [u8]) -> Self {
+        Self { input, offset: 0 }
     }
 
     #[inline]
@@ -89,29 +74,19 @@ impl<'de> Decoder<'de> {
         }
     }
 
-    pub fn read_type(&mut self) -> Result<u8, DecodeError> {
+    pub fn read_type_id(&mut self) -> Result<u8, DecodeError> {
         self.read_byte()
     }
 
-    pub fn read_variant_index(&mut self) -> Result<u8, DecodeError> {
-        self.read_byte()
-    }
-
-    pub fn read_variant_label(&mut self) -> Result<String, DecodeError> {
-        let n = self.read_dynamic_size()?;
-        let slice = self.read_bytes(n)?;
+    pub fn read_discriminator(&mut self) -> Result<String, DecodeError> {
+        let n = self.read_size()?;
+        let slice = self.read_slice(n)?;
         String::from_utf8(slice.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
     }
 
-    pub fn read_static_size(&mut self) -> Result<usize, DecodeError> {
+    pub fn read_size(&mut self) -> Result<usize, DecodeError> {
         let mut bytes = [0u8; 4];
-        bytes.copy_from_slice(self.read_bytes(4)?);
-        Ok(u32::from_le_bytes(bytes) as usize)
-    }
-
-    pub fn read_dynamic_size(&mut self) -> Result<usize, DecodeError> {
-        let mut bytes = [0u8; 4];
-        bytes.copy_from_slice(self.read_bytes(4)?);
+        bytes.copy_from_slice(self.read_slice(4)?);
         Ok(u32::from_le_bytes(bytes) as usize)
     }
 
@@ -122,7 +97,7 @@ impl<'de> Decoder<'de> {
         Ok(result)
     }
 
-    pub fn read_bytes(&mut self, n: usize) -> Result<&'de [u8], DecodeError> {
+    pub fn read_slice(&mut self, n: usize) -> Result<&'de [u8], DecodeError> {
         self.require(n)?;
         let slice = &self.input[self.offset..self.offset + n];
         self.offset += n;
@@ -130,28 +105,24 @@ impl<'de> Decoder<'de> {
     }
 
     pub fn check_type_id(&mut self, expected: u8) -> Result<(), DecodeError> {
-        if self.with_static_info {
-            let ty = self.read_type()?;
-            if ty != expected {
-                return Err(DecodeError::InvalidType {
-                    expected: Some(expected),
-                    actual: ty,
-                });
-            }
+        let ty = self.read_type_id()?;
+        if ty != expected {
+            return Err(DecodeError::InvalidType {
+                expected: Some(expected),
+                actual: ty,
+            });
         }
 
         Ok(())
     }
 
-    pub fn check_static_size(&mut self, expected: usize) -> Result<(), DecodeError> {
-        if self.with_static_info {
-            let len = self.read_static_size()?;
-            if len != expected {
-                return Err(DecodeError::InvalidSize {
-                    expected,
-                    actual: len,
-                });
-            }
+    pub fn check_size(&mut self, expected: usize) -> Result<(), DecodeError> {
+        let len = self.read_size()?;
+        if len != expected {
+            return Err(DecodeError::InvalidSize {
+                expected,
+                actual: len,
+            });
         }
 
         Ok(())
@@ -226,7 +197,7 @@ macro_rules! decode_int {
                 decoder.check_type_id(Self::type_id())
             }
             fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-                let slice = decoder.read_bytes($n)?;
+                let slice = decoder.read_slice($n)?;
                 let mut bytes = [0u8; $n];
                 bytes.copy_from_slice(&slice[..]);
                 Ok(<$type>::from_le_bytes(bytes))
@@ -270,8 +241,8 @@ impl Decode for String {
         decoder.check_type_id(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let len = decoder.read_dynamic_size()?;
-        let slice = decoder.read_bytes(len)?;
+        let len = decoder.read_size()?;
+        let slice = decoder.read_slice(len)?;
         String::from_utf8(slice.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
     }
 }
@@ -282,12 +253,12 @@ impl<T: Decode> Decode for Option<T> {
         decoder.check_type_id(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let index = decoder.read_variant_index()?;
+        let discriminator = decoder.read_discriminator()?;
 
-        match index {
+        match discriminator.as_ref() {
             OPTION_VARIANT_SOME => Ok(Some(T::decode(decoder)?)),
             OPTION_VARIANT_NONE => Ok(None),
-            _ => Err(DecodeError::InvalidVariantIndex(index)),
+            _ => Err(DecodeError::InvalidDiscriminator(discriminator)),
         }
     }
 }
@@ -343,7 +314,7 @@ impl<T: Decode + TypeId, const N: usize> Decode for [T; N] {
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         decoder.check_type_id(T::type_id())?;
-        decoder.check_static_size(N)?;
+        decoder.check_size(N)?;
 
         // Please read:
         // * https://doc.rust-lang.org/stable/std/mem/union.MaybeUninit.html#initializing-an-array-element-by-element
@@ -376,7 +347,7 @@ macro_rules! decode_tuple {
                 decoder.check_type_id(Self::type_id())
             }
             fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-                decoder.check_static_size($n)?;
+                decoder.check_size($n)?;
 
                 Ok(($($name::decode(decoder)?),+))
             }
@@ -400,11 +371,11 @@ impl<T: Decode + TypeId, E: Decode + TypeId> Decode for Result<T, E> {
         decoder.check_type_id(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let index = decoder.read_variant_index()?;
-        match index {
+        let discriminator = decoder.read_discriminator()?;
+        match discriminator.as_ref() {
             RESULT_VARIANT_OK => Ok(Ok(T::decode(decoder)?)),
             RESULT_VARIANT_ERR => Ok(Err(E::decode(decoder)?)),
-            _ => Err(DecodeError::InvalidVariantIndex(index)),
+            _ => Err(DecodeError::InvalidDiscriminator(discriminator)),
         }
     }
 }
@@ -416,10 +387,10 @@ impl<T: Decode + TypeId> Decode for Vec<T> {
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         decoder.check_type_id(T::type_id())?;
-        let len = decoder.read_dynamic_size()?;
+        let len = decoder.read_size()?;
 
         if T::type_id() == TYPE_U8 || T::type_id() == TYPE_I8 {
-            let slice = decoder.read_bytes(len)?; // length is checked here
+            let slice = decoder.read_slice(len)?; // length is checked here
             let mut result = Vec::<T>::with_capacity(len);
             unsafe {
                 copy(slice.as_ptr(), result.as_mut_ptr() as *mut u8, slice.len());
@@ -443,7 +414,7 @@ impl<T: Decode + TypeId + Ord> Decode for BTreeSet<T> {
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         decoder.check_type_id(T::type_id())?;
-        let len = decoder.read_dynamic_size()?;
+        let len = decoder.read_size()?;
 
         let mut result = BTreeSet::new();
         for _ in 0..len {
@@ -466,7 +437,7 @@ impl<K: Decode + TypeId + Ord, V: Decode + TypeId> Decode for BTreeMap<K, V> {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         decoder.check_type_id(K::type_id())?;
         decoder.check_type_id(V::type_id())?;
-        let len = decoder.read_dynamic_size()?;
+        let len = decoder.read_size()?;
         let mut map = BTreeMap::new();
         for _ in 0..len {
             if map
@@ -490,7 +461,7 @@ impl<T: Decode + TypeId + Hash + Eq> Decode for HashSet<T> {
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         decoder.check_type_id(T::type_id())?;
-        let len = decoder.read_dynamic_size()?;
+        let len = decoder.read_size()?;
 
         let mut result = HashSet::new();
         for _ in 0..len {
@@ -513,7 +484,7 @@ impl<K: Decode + TypeId + Hash + Eq, V: Decode + TypeId> Decode for HashMap<K, V
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         decoder.check_type_id(K::type_id())?;
         decoder.check_type_id(V::type_id())?;
-        let len = decoder.read_dynamic_size()?;
+        let len = decoder.read_size()?;
         let mut map = HashMap::new();
         for _ in 0..len {
             if map
@@ -591,54 +562,24 @@ mod tests {
             10, 1, 0, 0, 0, 0, 0, 0, 0, // u64
             11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
             12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // string
-            18, 0, 9, 1, 0, 0, 0, // option
-            18, 1, // option
-            19, 0, 9, 1, 0, 0, 0, // result
-            19, 1, 12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // result
+            18, 4, 0, 0, 0, 83, 111, 109, 101, 9, 1, 0, 0, 0, // option
+            18, 4, 0, 0, 0, 78, 111, 110, 101, // option
+            19, 2, 0, 0, 0, 79, 107, 9, 1, 0, 0, 0, // result
+            19, 3, 0, 0, 0, 69, 114, 114, 12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // result
             32, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
             33, 2, 0, 0, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
             48, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // list
             49, 7, 2, 0, 0, 0, 1, 2, // set
             50, 7, 7, 2, 0, 0, 0, 1, 2, 3, 4, // map
         ];
-        let mut dec = Decoder::with_static_info(&bytes);
-        assert_decoding(&mut dec);
-    }
-
-    #[test]
-    pub fn test_decoding_no_static_info() {
-        let bytes = vec![
-            0, // unit
-            1, // bool
-            1, // i8
-            1, 0, // i16
-            1, 0, 0, 0, // i32
-            1, 0, 0, 0, 0, 0, 0, 0, // i64
-            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // i128
-            1, // u8
-            1, 0, // u16
-            1, 0, 0, 0, // u32
-            1, 0, 0, 0, 0, 0, 0, 0, // u64
-            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
-            5, 0, 0, 0, 104, 101, 108, 108, 111, // string
-            0, 1, 0, 0, 0, // option
-            1, // option
-            0, 1, 0, 0, 0, // result
-            1, 5, 0, 0, 0, 104, 101, 108, 108, 111, // result
-            1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
-            1, 0, 0, 0, 2, 0, 0, 0, // tuple
-            3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // list
-            2, 0, 0, 0, 1, 2, // set
-            2, 0, 0, 0, 1, 2, 3, 4, // map
-        ];
-        let mut dec = Decoder::no_static_info(&bytes);
+        let mut dec = Decoder::new(&bytes);
         assert_decoding(&mut dec);
     }
 
     #[test]
     pub fn test_decode_box() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = Decoder::with_static_info(&bytes);
+        let mut dec = Decoder::new(&bytes);
         let x = <Box<u8>>::decode(&mut dec).unwrap();
         assert_eq!(Box::new(5u8), x);
     }
@@ -646,7 +587,7 @@ mod tests {
     #[test]
     pub fn test_decode_rc() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = Decoder::with_static_info(&bytes);
+        let mut dec = Decoder::new(&bytes);
         let x = <Rc<u8>>::decode(&mut dec).unwrap();
         assert_eq!(Rc::new(5u8), x);
     }
@@ -654,7 +595,7 @@ mod tests {
     #[test]
     pub fn test_decode_ref_cell() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = Decoder::with_static_info(&bytes);
+        let mut dec = Decoder::new(&bytes);
         let x = <RefCell<u8>>::decode(&mut dec).unwrap();
         assert_eq!(RefCell::new(5u8), x);
     }
@@ -680,10 +621,10 @@ mod tests {
 
         // Encode
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_static_info(&mut bytes);
+        let mut enc = Encoder::new(&mut bytes);
         value1.encode(&mut enc);
 
-        let mut dec = Decoder::with_static_info(&bytes);
+        let mut dec = Decoder::new(&bytes);
         let value2 = <[NFA; 2]>::decode(&mut dec).unwrap();
         assert_eq!(value1, value2);
     }

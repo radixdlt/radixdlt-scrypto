@@ -166,7 +166,7 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> Encode for KeyVa
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes = self.to_vec();
-        encoder.write_dynamic_size(bytes.len());
+        encoder.write_size(bytes.len());
         encoder.write_slice(&bytes);
     }
 }
@@ -177,8 +177,8 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> Decode for KeyVa
     }
 
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let len = decoder.read_dynamic_size()?;
-        let slice = decoder.read_bytes(len)?;
+        let len = decoder.read_size()?;
+        let slice = decoder.read_slice(len)?;
         Self::try_from(slice)
             .map_err(|_| DecodeError::CustomError("Failed to decode KeyValueStore".to_string()))
     }

@@ -59,13 +59,13 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                     impl ::scrypto::resource::NonFungibleData for #ident {
                         fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{type_id::*, *};
-                            let mut decoder_nm = Decoder::new(immutable_data, true);
+                            let mut decoder_nm = Decoder::new(immutable_data);
                             decoder_nm.check_type_id(TYPE_STRUCT)?;
-                            decoder_nm.check_static_size(#im_n)?;
+                            decoder_nm.check_size(#im_n)?;
 
-                            let mut decoder_m = Decoder::new(mutable_data, true);
+                            let mut decoder_m = Decoder::new(mutable_data);
                             decoder_m.check_type_id(TYPE_STRUCT)?;
-                            decoder_m.check_static_size(#m_n)?;
+                            decoder_m.check_size(#m_n)?;
 
                             let decoded = Self {
                                 #(#im_ids: <#im_types>::decode(&mut decoder_nm)?,)*
@@ -82,9 +82,9 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                             use ::sbor::{type_id::*, *};
 
                             let mut bytes = Vec::with_capacity(512);
-                        let mut encoder = Encoder::new(&mut bytes, true);
+                            let mut encoder = Encoder::new(&mut bytes);
                             encoder.write_type_id(TYPE_STRUCT);
-                            encoder.write_static_size(#im_n);
+                            encoder.write_size(#im_n);
                             #(
                                 self.#im_ids2.encode(&mut encoder);
                             )*
@@ -97,9 +97,9 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                             use ::sbor::rust::vec::Vec;
 
                             let mut bytes = Vec::with_capacity(512);
-                        let mut encoder = Encoder::new(&mut bytes, true);
+                            let mut encoder = Encoder::new(&mut bytes);
                             encoder.write_type_id(TYPE_STRUCT);
-                            encoder.write_static_size(#m_n);
+                            encoder.write_size(#m_n);
                             #(
                                 self.#m_ids2.encode(&mut encoder);
                             )*
@@ -185,12 +185,12 @@ mod tests {
                 impl ::scrypto::resource::NonFungibleData for AwesomeNonFungibleData {
                     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{type_id::*, *};
-                        let mut decoder_nm = Decoder::new(immutable_data, true);
+                        let mut decoder_nm = Decoder::new(immutable_data);
                         decoder_nm.check_type_id(TYPE_STRUCT)?;
-                        decoder_nm.check_static_size(1)?;
-                        let mut decoder_m = Decoder::new(mutable_data, true);
+                        decoder_nm.check_size(1)?;
+                        let mut decoder_m = Decoder::new(mutable_data);
                         decoder_m.check_type_id(TYPE_STRUCT)?;
-                        decoder_m.check_static_size(1)?;
+                        decoder_m.check_size(1)?;
                         let decoded = Self {
                             field_1: <u32>::decode(&mut decoder_nm)?,
                             field_2: <String>::decode(&mut decoder_m)?,
@@ -202,9 +202,9 @@ mod tests {
                     fn immutable_data(&self) -> ::sbor::rust::vec::Vec<u8> {
                         use ::sbor::{type_id::*, *};
                         let mut bytes = Vec::with_capacity(512);
-                        let mut encoder = Encoder::new(&mut bytes, true);
+                        let mut encoder = Encoder::new(&mut bytes);
                         encoder.write_type_id(TYPE_STRUCT);
-                        encoder.write_static_size(1);
+                        encoder.write_size(1);
                         self.field_1.encode(&mut encoder);
                         bytes
                     }
@@ -212,9 +212,9 @@ mod tests {
                         use ::sbor::{type_id::*, *};
                         use ::sbor::rust::vec::Vec;
                         let mut bytes = Vec::with_capacity(512);
-                        let mut encoder = Encoder::new(&mut bytes, true);
+                        let mut encoder = Encoder::new(&mut bytes);
                         encoder.write_type_id(TYPE_STRUCT);
-                        encoder.write_static_size(1);
+                        encoder.write_size(1);
                         self.field_2.encode(&mut encoder);
                         bytes
                     }

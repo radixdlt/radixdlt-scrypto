@@ -24,49 +24,23 @@ pub trait Encode {
 /// An `Encoder` abstracts the logic for writing core types into a byte buffer.
 pub struct Encoder<'a> {
     buf: &'a mut Vec<u8>,
-    with_static_info: bool,
 }
 
 impl<'a> Encoder<'a> {
-    pub fn new(buf: &'a mut Vec<u8>, with_static_info: bool) -> Self {
-        Self {
-            buf,
-            with_static_info,
-        }
-    }
-
-    pub fn with_static_info(buf: &'a mut Vec<u8>) -> Self {
-        Self::new(buf, true)
-    }
-
-    pub fn no_static_info(buf: &'a mut Vec<u8>) -> Self {
-        Self::new(buf, false)
+    pub fn new(buf: &'a mut Vec<u8>) -> Self {
+        Self { buf }
     }
 
     pub fn write_type_id(&mut self, ty: u8) {
-        // May use compile-time feature flag, instead of runtime check, for performance.
-        if self.with_static_info {
-            self.buf.push(ty);
-        }
+        self.buf.push(ty);
     }
 
-    pub fn write_variant_index(&mut self, index: u8) {
-        self.write_byte(index);
+    pub fn write_discriminator(&mut self, discriminator: &str) {
+        self.write_size(discriminator.len());
+        self.write_slice(discriminator.as_bytes());
     }
 
-    pub fn write_variant_label(&mut self, label: &str) {
-        self.write_dynamic_size(label.len());
-        self.write_slice(label.as_bytes());
-    }
-
-    pub fn write_static_size(&mut self, len: usize) {
-        // May use compile-time feature flag, instead of runtime check, for performance.
-        if self.with_static_info {
-            self.buf.extend(&(len as u32).to_le_bytes());
-        }
-    }
-
-    pub fn write_dynamic_size(&mut self, len: usize) {
+    pub fn write_size(&mut self, len: usize) {
         self.buf.extend(&(len as u32).to_le_bytes());
     }
 
@@ -180,7 +154,7 @@ impl Encode for str {
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_dynamic_size(self.len());
+        encoder.write_size(self.len());
         encoder.write_slice(self.as_bytes());
     }
 }
@@ -192,7 +166,7 @@ impl Encode for &str {
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_dynamic_size(self.len());
+        encoder.write_size(self.len());
         encoder.write_slice(self.as_bytes());
     }
 }
@@ -217,11 +191,11 @@ impl<T: Encode + TypeId> Encode for Option<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         match self {
             Some(v) => {
-                encoder.write_variant_index(OPTION_VARIANT_SOME);
+                encoder.write_discriminator(OPTION_VARIANT_SOME);
                 v.encode(encoder);
             }
             None => {
-                encoder.write_variant_index(OPTION_VARIANT_NONE);
+                encoder.write_discriminator(OPTION_VARIANT_NONE);
             }
         }
     }
@@ -268,7 +242,7 @@ impl<T: Encode + TypeId, const N: usize> Encode for [T; N] {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type_id(T::type_id());
-        encoder.write_static_size(self.len());
+        encoder.write_size(self.len());
         for v in self {
             v.encode_value(encoder);
         }
@@ -284,7 +258,7 @@ macro_rules! encode_tuple {
             }
             #[inline]
             fn encode_value(&self, encoder: &mut Encoder) {
-                encoder.write_static_size($n);
+                encoder.write_size($n);
 
                 $(self.$idx.encode(encoder);)+
             }
@@ -311,11 +285,11 @@ impl<T: Encode, E: Encode> Encode for Result<T, E> {
     fn encode_value(&self, encoder: &mut Encoder) {
         match self {
             Ok(o) => {
-                encoder.write_variant_index(RESULT_VARIANT_OK);
+                encoder.write_discriminator(RESULT_VARIANT_OK);
                 o.encode(encoder);
             }
             Err(e) => {
-                encoder.write_variant_index(RESULT_VARIANT_ERR);
+                encoder.write_discriminator(RESULT_VARIANT_ERR);
                 e.encode(encoder);
             }
         }
@@ -341,7 +315,7 @@ impl<T: Encode + TypeId> Encode for [T] {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type_id(T::type_id());
-        encoder.write_dynamic_size(self.len());
+        encoder.write_size(self.len());
         if T::type_id() == TYPE_U8 || T::type_id() == TYPE_I8 {
             let mut buf = Vec::<u8>::with_capacity(self.len());
             unsafe {
@@ -365,7 +339,7 @@ impl<T: Encode + TypeId> Encode for BTreeSet<T> {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type_id(T::type_id());
-        encoder.write_dynamic_size(self.len());
+        encoder.write_size(self.len());
         for v in self {
             v.encode_value(encoder);
         }
@@ -381,7 +355,7 @@ impl<K: Encode + TypeId, V: Encode + TypeId> Encode for BTreeMap<K, V> {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type_id(K::type_id());
         encoder.write_type_id(V::type_id());
-        encoder.write_dynamic_size(self.len());
+        encoder.write_size(self.len());
         for (k, v) in self {
             k.encode_value(encoder);
             v.encode_value(encoder);
@@ -397,7 +371,7 @@ impl<T: Encode + TypeId + Ord + Hash> Encode for HashSet<T> {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type_id(T::type_id());
-        encoder.write_dynamic_size(self.len());
+        encoder.write_size(self.len());
         // Encode elements based on the order defined on the key type to generate deterministic bytes.
         let values: BTreeSet<&T> = self.iter().collect();
         for v in values {
@@ -415,7 +389,7 @@ impl<K: Encode + TypeId + Ord + Hash, V: Encode + TypeId> Encode for HashMap<K, 
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type_id(K::type_id());
         encoder.write_type_id(V::type_id());
-        encoder.write_dynamic_size(self.len());
+        encoder.write_size(self.len());
         // Encode elements based on the order defined on the key type to generate deterministic bytes.
         let keys: BTreeSet<&K> = self.keys().collect();
         for key in keys {
@@ -468,7 +442,7 @@ mod tests {
     #[test]
     pub fn test_encoding() {
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_static_info(&mut bytes);
+        let mut enc = Encoder::new(&mut bytes);
         do_encoding(&mut enc);
 
         assert_eq!(
@@ -486,10 +460,11 @@ mod tests {
                 10, 1, 0, 0, 0, 0, 0, 0, 0, // u64
                 11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
                 12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // string
-                18, 0, 9, 1, 0, 0, 0, // option
-                18, 1, // option
-                19, 0, 9, 1, 0, 0, 0, // result
-                19, 1, 12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // result
+                18, 4, 0, 0, 0, 83, 111, 109, 101, 9, 1, 0, 0, 0, // option
+                18, 4, 0, 0, 0, 78, 111, 110, 101, // option
+                19, 2, 0, 0, 0, 79, 107, 9, 1, 0, 0, 0, // result
+                19, 3, 0, 0, 0, 69, 114, 114, 12, 5, 0, 0, 0, 104, 101, 108, 108,
+                111, // result
                 32, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
                 33, 2, 0, 0, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
                 48, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // list
@@ -501,45 +476,10 @@ mod tests {
     }
 
     #[test]
-    pub fn test_encoding_no_static_info() {
-        let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::no_static_info(&mut bytes);
-        do_encoding(&mut enc);
-
-        assert_eq!(
-            vec![
-                0, // unit
-                1, // bool
-                1, // i8
-                1, 0, // i16
-                1, 0, 0, 0, // i32
-                1, 0, 0, 0, 0, 0, 0, 0, // i64
-                1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // i128
-                1, // u8
-                1, 0, // u16
-                1, 0, 0, 0, // u32
-                1, 0, 0, 0, 0, 0, 0, 0, // u64
-                1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
-                5, 0, 0, 0, 104, 101, 108, 108, 111, // string
-                0, 1, 0, 0, 0, // option
-                1, // option
-                0, 1, 0, 0, 0, // result
-                1, 5, 0, 0, 0, 104, 101, 108, 108, 111, // result
-                1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
-                1, 0, 0, 0, 2, 0, 0, 0, // tuple
-                3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // list
-                2, 0, 0, 0, 1, 2, // set
-                2, 0, 0, 0, 1, 2, 3, 4 // map
-            ],
-            bytes
-        );
-    }
-
-    #[test]
     pub fn test_encode_box() {
         let x = Box::new(5u8);
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_static_info(&mut bytes);
+        let mut enc = Encoder::new(&mut bytes);
         x.encode(&mut enc);
         assert_eq!(bytes, vec![7, 5])
     }
@@ -548,7 +488,7 @@ mod tests {
     pub fn test_encode_rc() {
         let x = crate::rust::rc::Rc::new(5u8);
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_static_info(&mut bytes);
+        let mut enc = Encoder::new(&mut bytes);
         x.encode(&mut enc);
         assert_eq!(bytes, vec![7, 5])
     }
@@ -557,7 +497,7 @@ mod tests {
     pub fn test_encode_ref_cell() {
         let x = crate::rust::cell::RefCell::new(5u8);
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_static_info(&mut bytes);
+        let mut enc = Encoder::new(&mut bytes);
         x.encode(&mut enc);
         assert_eq!(bytes, vec![7, 5])
     }

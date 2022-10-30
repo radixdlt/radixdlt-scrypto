@@ -307,7 +307,7 @@ macro_rules! sbor_codec {
                 decoder.check_type_id(Self::type_id())
             }
             fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-                let slice = decoder.read_bytes((Self::BITS / 8) as usize)?;
+                let slice = decoder.read_slice((Self::BITS / 8) as usize)?;
                 let mut bytes = [0u8; (Self::BITS / 8) as usize];
                 bytes.copy_from_slice(&slice[..]);
                 Ok(Self::from_le_bytes(bytes))
@@ -934,7 +934,7 @@ mod tests {
     #[test]
     fn test_integer_encoding() {
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_static_info(&mut bytes);
+        let mut enc = Encoder::new(&mut bytes);
         encode_integers(&mut enc);
 
         assert_eq!(
@@ -957,10 +957,10 @@ mod tests {
     #[test]
     fn test_integer_decoding() {
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_static_info(&mut bytes);
+        let mut enc = Encoder::new(&mut bytes);
         encode_integers(&mut enc);
 
-        let mut dec = Decoder::with_static_info(&bytes);
+        let mut dec = Decoder::new(&bytes);
         assert_eq!(I8::by(1i8), <I8>::decode(&mut dec).unwrap());
         assert_eq!(I16::by(1i8), <I16>::decode(&mut dec).unwrap());
         assert_eq!(I32::by(1i8), <I32>::decode(&mut dec).unwrap());

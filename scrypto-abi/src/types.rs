@@ -20,7 +20,7 @@ macro_rules! scrypto_type {
             #[inline]
             fn encode_value(&self, encoder: &mut Encoder) {
                 let bytes = self.to_vec();
-                encoder.write_dynamic_size(bytes.len());
+                encoder.write_size(bytes.len());
                 encoder.write_slice(&bytes);
             }
         }
@@ -30,8 +30,8 @@ macro_rules! scrypto_type {
                 decoder.check_type_id(Self::type_id())
             }
             fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-                let len = decoder.read_dynamic_size()?;
-                let slice = decoder.read_bytes(len)?;
+                let len = decoder.read_size()?;
+                let slice = decoder.read_slice(len)?;
                 Self::try_from(slice).map_err(|err| {
                     DecodeError::CustomError(::sbor::rust::format!(
                         "Failed to decode {}: {:?}",
