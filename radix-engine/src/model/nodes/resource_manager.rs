@@ -1,6 +1,6 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, Invokable, InvokableNativeFunction, LockFlags,
-    NativeFuncInvocation, RENode, RuntimeError, SystemApi,
+    NativeFunctionInvocation, RENode, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
 use crate::model::{
@@ -36,7 +36,7 @@ pub enum ResourceManagerError {
     ResourceAddressAlreadySet,
 }
 
-impl NativeFuncInvocation for ResourceManagerBurnInput {
+impl NativeFunctionInvocation for ResourceManagerBurnInput {
     type NativeOutput = ();
 
     fn native_function() -> NativeFunction {
@@ -95,7 +95,7 @@ impl NativeFuncInvocation for ResourceManagerBurnInput {
     }
 }
 
-impl NativeFuncInvocation for ResourceManagerCreateInput {
+impl NativeFunctionInvocation for ResourceManagerCreateInput {
     type NativeOutput = (ResourceAddress, Option<scrypto::resource::Bucket>);
 
     fn native_function() -> NativeFunction {
@@ -185,14 +185,18 @@ impl NativeFuncInvocation for ResourceManagerCreateInput {
             }
             system_api.create_node(RENode::ResourceManager(resource_manager))?
         } else {
-            let mut resource_manager =
-                ResourceManager::new(invocation.resource_type, invocation.metadata, invocation.access_rules, None)
-                    .map_err(|e| match e {
-                        InvokeError::Error(e) => RuntimeError::ApplicationError(
-                            ApplicationError::ResourceManagerError(e),
-                        ),
-                        InvokeError::Downstream(e) => e,
-                    })?;
+            let mut resource_manager = ResourceManager::new(
+                invocation.resource_type,
+                invocation.metadata,
+                invocation.access_rules,
+                None,
+            )
+            .map_err(|e| match e {
+                InvokeError::Error(e) => {
+                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+                }
+                InvokeError::Downstream(e) => e,
+            })?;
 
             if let Some(mint_params) = &invocation.mint_params {
                 if let MintParams::Fungible { amount } = mint_params {

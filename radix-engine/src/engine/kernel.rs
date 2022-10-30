@@ -719,6 +719,27 @@ where
     }
 }
 
+pub trait MethodDeref {
+    fn deref(&mut self, node_id: RENodeId) -> Result<Option<RENodeId>, RuntimeError>;
+}
+
+impl<'g, 's, W, I, R> MethodDeref for Kernel<'g, 's, W, I, R>
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
+{
+    fn deref(&mut self, node_id: RENodeId) -> Result<Option<RENodeId>, RuntimeError> {
+        self.node_method_deref(node_id)
+    }
+}
+
+pub trait Resolver<I: Invocation> {
+    type Exec: Executor<Output = <I as Invocation>::Output>;
+
+    fn resolve<D: MethodDeref>(invocation: I, deref: &D) -> (REActor, CallFrameUpdate, Self::Exec);
+}
+
 pub trait Executor {
     type Output: Debug;
 
@@ -751,7 +772,7 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
     R: FeeReserve,
-    N: NativeFuncInvocation,
+    N: NativeFunctionInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<N::Output, RuntimeError> {
         for m in &mut self.modules {
@@ -773,7 +794,7 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (actor, call_frame_update, executor) = NativeResolver::resolve(invocation);
+        let (actor, call_frame_update, executor) = NativeResolver::resolve(invocation, self);
 
         let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 

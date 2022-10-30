@@ -32,7 +32,7 @@ pub enum TransactionProcessorError {
     IdAllocationError(IdAllocationError),
 }
 
-impl<'a> NativeFuncInvocation for TransactionProcessorRunInput<'a> {
+impl<'a> NativeFunctionInvocation for TransactionProcessorRunInput<'a> {
     type NativeOutput = Vec<Vec<u8>>;
 
     fn native_function() -> NativeFunction {

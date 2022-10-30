@@ -83,14 +83,19 @@ pub trait InvokableNativeFunction<'a>:
 {
 }
 
-impl<N: NativeFuncInvocation> Invocation for N {
+impl<N: NativeFunctionInvocation> Invocation for N {
     type Output = N::NativeOutput;
 }
 
 pub struct NativeResolver;
 
-impl NativeResolver {
-    pub fn resolve<N: NativeFuncInvocation>(invocation: N) -> (REActor, CallFrameUpdate, NativeFuncExecutor<N>) {
+impl<N: NativeFunctionInvocation> Resolver<N> for NativeResolver {
+    type Exec = NativeFuncExecutor<N>;
+
+    fn resolve<D: MethodDeref>(
+        invocation: N,
+        _deref: &D,
+    ) -> (REActor, CallFrameUpdate, Self::Exec) {
         let native_function = N::native_function();
         let call_frame_update = invocation.call_frame_update();
         let actor = REActor::Function(ResolvedFunction::Native(native_function));
@@ -100,7 +105,7 @@ impl NativeResolver {
     }
 }
 
-pub trait NativeFuncInvocation: Invocation + Encode + Debug {
+pub trait NativeFunctionInvocation: Invocation + Encode + Debug {
     type NativeOutput: Debug;
 
     fn native_function() -> NativeFunction;
@@ -119,9 +124,9 @@ pub trait NativeFuncInvocation: Invocation + Encode + Debug {
         R: FeeReserve;
 }
 
-pub struct NativeFuncExecutor<N: NativeFuncInvocation>(pub N, pub ScryptoValue);
+pub struct NativeFuncExecutor<N: NativeFunctionInvocation>(pub N, pub ScryptoValue);
 
-impl<N: NativeFuncInvocation> Executor for NativeFuncExecutor<N> {
+impl<N: NativeFunctionInvocation> Executor for NativeFuncExecutor<N> {
     type Output = N::Output;
 
     fn args(&self) -> &ScryptoValue {

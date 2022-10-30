@@ -1,6 +1,6 @@
 use crate::engine::{
     AuthModule, CallFrameUpdate, Invokable, InvokableNativeFunction, LockFlags,
-    NativeFuncInvocation, RENode, RuntimeError, SystemApi,
+    NativeFunctionInvocation, RENode, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
 use crate::model::{
@@ -19,7 +19,7 @@ pub struct EpochManager {
     pub info: EpochManagerSubstate,
 }
 
-impl NativeFuncInvocation for EpochManagerCreateInput {
+impl NativeFunctionInvocation for EpochManagerCreateInput {
     type NativeOutput = SystemAddress;
 
     fn native_function() -> NativeFunction {

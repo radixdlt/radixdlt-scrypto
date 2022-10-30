@@ -31,7 +31,7 @@ impl Package {
     }
 }
 
-impl NativeFuncInvocation for PackagePublishInput {
+impl NativeFunctionInvocation for PackagePublishInput {
     type NativeOutput = PackageAddress;
 
     fn native_function() -> NativeFunction {
