@@ -87,13 +87,28 @@ impl<N: NativeFuncInvocation> Invocation for N {
     type Output = N::NativeOutput;
 }
 
+pub struct NativeResolver;
+
+impl NativeResolver {
+    pub fn resolve<N: NativeFuncInvocation>(invocation: N) -> (REActor, CallFrameUpdate, NativeFuncExecutor<N>) {
+        let native_function = N::native_function();
+        let call_frame_update = invocation.call_frame_update();
+        let actor = REActor::Function(ResolvedFunction::Native(native_function));
+        let input = ScryptoValue::from_typed(&invocation);
+        let executor = NativeFuncExecutor(invocation, input);
+        (actor, call_frame_update, executor)
+    }
+}
+
 pub trait NativeFuncInvocation: Invocation + Encode + Debug {
     type NativeOutput: Debug;
 
-    fn prepare(invocation: &Self) -> (NativeFunction, CallFrameUpdate);
+    fn native_function() -> NativeFunction;
+
+    fn call_frame_update(&self) -> CallFrameUpdate;
 
     fn execute<'s, 'a, Y, R>(
-        self,
+        invocation: Self,
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
@@ -124,7 +139,7 @@ impl<N: NativeFuncInvocation> Executor for NativeFuncExecutor<N> {
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
-        self.0.execute(system_api)
+        N::execute(self.0, system_api)
     }
 }
 

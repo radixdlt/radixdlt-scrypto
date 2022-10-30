@@ -34,15 +34,16 @@ impl Package {
 impl NativeFuncInvocation for PackagePublishInput {
     type NativeOutput = PackageAddress;
 
-    fn prepare(_invocation: &PackagePublishInput) -> (NativeFunction, CallFrameUpdate) {
-        (
-            NativeFunction::Package(PackageFunction::Publish),
-            CallFrameUpdate::empty(),
-        )
+    fn native_function() -> NativeFunction {
+        NativeFunction::Package(PackageFunction::Publish)
+    }
+
+    fn call_frame_update(&self) -> CallFrameUpdate {
+        CallFrameUpdate::empty()
     }
 
     fn execute<'s, 'a, Y, R>(
-        self,
+        invocation: Self,
         system_api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
@@ -52,8 +53,8 @@ impl NativeFuncInvocation for PackagePublishInput {
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
-        let code = system_api.read_blob(&self.code.0)?.to_vec();
-        let blob = system_api.read_blob(&self.abi.0)?;
+        let code = system_api.read_blob(&invocation.code.0)?.to_vec();
+        let blob = system_api.read_blob(&invocation.abi.0)?;
         let abi = scrypto_decode::<HashMap<String, BlueprintAbi>>(blob).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidAbi(e),

@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::mem;
 use transaction::errors::IdAllocationError;
 use transaction::model::AuthZoneParams;
@@ -719,7 +720,7 @@ where
 }
 
 pub trait Executor {
-    type Output;
+    type Output: Debug;
 
     // TODO: Remove
     fn args(&self) -> &ScryptoValue;
@@ -772,10 +773,7 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (function, call_frame_update) = N::prepare(&invocation);
-        let actor = REActor::Function(ResolvedFunction::Native(function));
-        let input = ScryptoValue::from_typed(&invocation);
-        let executor = NativeFuncExecutor(invocation, input);
+        let (actor, call_frame_update, executor) = NativeResolver::resolve(invocation);
 
         let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 

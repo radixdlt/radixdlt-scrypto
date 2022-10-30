@@ -35,16 +35,20 @@ pub enum TransactionProcessorError {
 impl<'a> NativeFuncInvocation for TransactionProcessorRunInput<'a> {
     type NativeOutput = Vec<Vec<u8>>;
 
-    fn prepare(invocation: &TransactionProcessorRunInput) -> (NativeFunction, CallFrameUpdate) {
+    fn native_function() -> NativeFunction {
+        NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run)
+    }
+
+    fn call_frame_update(&self) -> CallFrameUpdate {
         let mut node_refs_to_copy = HashSet::new();
         // TODO: Remove serialization
-        let value = ScryptoValue::from_typed(invocation);
+        let value = ScryptoValue::from_typed(self);
         for global_address in value.global_references() {
             node_refs_to_copy.insert(RENodeId::Global(global_address));
         }
 
         // TODO: This can be refactored out once any type in sbor is implemented
-        for instruction in invocation.instructions.as_ref() {
+        for instruction in self.instructions.as_ref() {
             match instruction {
                 Instruction::CallFunction { args, .. }
                 | Instruction::CallMethod { args, .. }
@@ -69,17 +73,14 @@ impl<'a> NativeFuncInvocation for TransactionProcessorRunInput<'a> {
         )));
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
-        (
-            NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
-            CallFrameUpdate {
-                nodes_to_move: vec![],
-                node_refs_to_copy,
-            },
-        )
+        CallFrameUpdate {
+            nodes_to_move: vec![],
+            node_refs_to_copy,
+        }
     }
 
     fn execute<'s, 'b, Y, R>(
-        self,
+        invocation: Self,
         system_api: &mut Y,
     ) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
     where
@@ -89,7 +90,7 @@ impl<'a> NativeFuncInvocation for TransactionProcessorRunInput<'a> {
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
-        TransactionProcessor::static_main(self, system_api)
+        TransactionProcessor::static_main(invocation, system_api)
             .map(|rtn| (rtn, CallFrameUpdate::empty()))
             .map_err(|e| e.into())
     }

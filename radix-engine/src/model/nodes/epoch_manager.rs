@@ -22,15 +22,16 @@ pub struct EpochManager {
 impl NativeFuncInvocation for EpochManagerCreateInput {
     type NativeOutput = SystemAddress;
 
-    fn prepare(_invocation: &EpochManagerCreateInput) -> (NativeFunction, CallFrameUpdate) {
-        (
-            NativeFunction::EpochManager(EpochManagerFunction::Create),
-            CallFrameUpdate::empty(),
-        )
+    fn native_function() -> NativeFunction {
+        NativeFunction::EpochManager(EpochManagerFunction::Create)
+    }
+
+    fn call_frame_update(&self) -> CallFrameUpdate {
+        CallFrameUpdate::empty()
     }
 
     fn execute<'s, 'a, Y, R>(
-        self,
+        _invocation: Self,
         system_api: &mut Y,
     ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
     where

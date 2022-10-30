@@ -39,8 +39,12 @@ pub enum ResourceManagerError {
 impl NativeFuncInvocation for ResourceManagerBurnInput {
     type NativeOutput = ();
 
-    fn prepare(invocation: &ResourceManagerBurnInput) -> (NativeFunction, CallFrameUpdate) {
-        let bucket = RENodeId::Bucket(invocation.bucket.0);
+    fn native_function() -> NativeFunction {
+        NativeFunction::ResourceManager(ResourceManagerFunction::BurnBucket)
+    }
+
+    fn call_frame_update(&self) -> CallFrameUpdate {
+        let bucket = RENodeId::Bucket(self.bucket.0);
         let mut node_refs_to_copy = HashSet::new();
 
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
@@ -53,17 +57,14 @@ impl NativeFuncInvocation for ResourceManagerBurnInput {
         )));
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
-        (
-            NativeFunction::ResourceManager(ResourceManagerFunction::BurnBucket),
-            CallFrameUpdate {
-                nodes_to_move: vec![bucket],
-                node_refs_to_copy,
-            },
-        )
+        CallFrameUpdate {
+            nodes_to_move: vec![bucket],
+            node_refs_to_copy,
+        }
     }
 
     fn execute<'s, 'a, Y, R>(
-        self,
+        invocation: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
@@ -73,7 +74,7 @@ impl NativeFuncInvocation for ResourceManagerBurnInput {
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
-        let node_id = RENodeId::Bucket(self.bucket.0);
+        let node_id = RENodeId::Bucket(invocation.bucket.0);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
 
         let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
@@ -86,7 +87,7 @@ impl NativeFuncInvocation for ResourceManagerBurnInput {
             NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
             RENodeId::Global(GlobalAddress::Resource(resource_address)),
             ScryptoValue::from_typed(&ResourceManagerBurnInput {
-                bucket: self.bucket,
+                bucket: invocation.bucket,
             }),
         ))?;
 
@@ -97,7 +98,11 @@ impl NativeFuncInvocation for ResourceManagerBurnInput {
 impl NativeFuncInvocation for ResourceManagerCreateInput {
     type NativeOutput = (ResourceAddress, Option<scrypto::resource::Bucket>);
 
-    fn prepare(_: &ResourceManagerCreateInput) -> (NativeFunction, CallFrameUpdate) {
+    fn native_function() -> NativeFunction {
+        NativeFunction::ResourceManager(ResourceManagerFunction::Create)
+    }
+
+    fn call_frame_update(&self) -> CallFrameUpdate {
         let mut node_refs_to_copy = HashSet::new();
 
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
@@ -110,17 +115,14 @@ impl NativeFuncInvocation for ResourceManagerCreateInput {
         )));
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
-        (
-            NativeFunction::ResourceManager(ResourceManagerFunction::Create),
-            CallFrameUpdate {
-                nodes_to_move: vec![],
-                node_refs_to_copy,
-            },
-        )
+        CallFrameUpdate {
+            nodes_to_move: vec![],
+            node_refs_to_copy,
+        }
     }
 
     fn execute<'s, 'a, Y, R>(
-        self,
+        invocation: Self,
         system_api: &mut Y,
     ) -> Result<
         (
@@ -136,15 +138,15 @@ impl NativeFuncInvocation for ResourceManagerCreateInput {
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
-        let node_id = if matches!(self.resource_type, ResourceType::NonFungible) {
+        let node_id = if matches!(invocation.resource_type, ResourceType::NonFungible) {
             let nf_store_node_id =
                 system_api.create_node(RENode::NonFungibleStore(NonFungibleStore::new()))?;
             let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
 
             let mut resource_manager = ResourceManager::new(
-                self.resource_type,
-                self.metadata,
-                self.access_rules,
+                invocation.resource_type,
+                invocation.metadata,
+                invocation.access_rules,
                 Some(nf_store_id),
             )
             .map_err(|e| match e {
@@ -154,7 +156,7 @@ impl NativeFuncInvocation for ResourceManagerCreateInput {
                 InvokeError::Downstream(e) => e,
             })?;
 
-            if let Some(mint_params) = &self.mint_params {
+            if let Some(mint_params) = &invocation.mint_params {
                 if let MintParams::NonFungible { entries } = mint_params {
                     for (non_fungible_id, data) in entries {
                         let offset = SubstateOffset::NonFungibleStore(
@@ -184,7 +186,7 @@ impl NativeFuncInvocation for ResourceManagerCreateInput {
             system_api.create_node(RENode::ResourceManager(resource_manager))?
         } else {
             let mut resource_manager =
-                ResourceManager::new(self.resource_type, self.metadata, self.access_rules, None)
+                ResourceManager::new(invocation.resource_type, invocation.metadata, invocation.access_rules, None)
                     .map_err(|e| match e {
                         InvokeError::Error(e) => RuntimeError::ApplicationError(
                             ApplicationError::ResourceManagerError(e),
@@ -192,7 +194,7 @@ impl NativeFuncInvocation for ResourceManagerCreateInput {
                         InvokeError::Downstream(e) => e,
                     })?;
 
-            if let Some(mint_params) = &self.mint_params {
+            if let Some(mint_params) = &invocation.mint_params {
                 if let MintParams::Fungible { amount } = mint_params {
                     resource_manager
                         .check_amount(*amount)
@@ -236,7 +238,7 @@ impl NativeFuncInvocation for ResourceManagerCreateInput {
         ))?;
 
         // Mint
-        let bucket = if let Some(mint_params) = self.mint_params {
+        let bucket = if let Some(mint_params) = invocation.mint_params {
             let container = match mint_params {
                 MintParams::NonFungible { entries } => {
                     let ids = entries.into_keys().collect();
@@ -244,7 +246,7 @@ impl NativeFuncInvocation for ResourceManagerCreateInput {
                 }
                 MintParams::Fungible { amount } => Resource::new_fungible(
                     resource_address,
-                    self.resource_type.divisibility(),
+                    invocation.resource_type.divisibility(),
                     amount,
                 ),
             };
