@@ -15,9 +15,9 @@ use crate::wasm::*;
 pub struct RadixEngineWasmRuntime<'y, 's, Y, R>
 where
     Y: SystemApi<'s, R>
-        + Invokable<ScryptoInvocation, ScryptoValue>
-        + Invokable<NativeMethodInvocation, ScryptoValue>
-        + Invokable<NativeFunctionInvocation, ScryptoValue>,
+        + Invokable<ScryptoInvocation>
+        + Invokable<NativeMethodInvocation>
+        + Invokable<NativeFunctionInvocation>,
     R: FeeReserve,
 {
     actor: ScryptoActor,
@@ -30,9 +30,9 @@ where
 impl<'y, 's, Y, R> RadixEngineWasmRuntime<'y, 's, Y, R>
 where
     Y: SystemApi<'s, R>
-        + Invokable<ScryptoInvocation, ScryptoValue>
-        + Invokable<NativeFunctionInvocation, ScryptoValue>
-        + Invokable<NativeMethodInvocation, ScryptoValue>,
+        + Invokable<ScryptoInvocation>
+        + Invokable<NativeFunctionInvocation>
+        + Invokable<NativeMethodInvocation>,
     R: FeeReserve,
 {
     // TODO: expose API for reading blobs
@@ -217,9 +217,9 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
 impl<'y, 's, Y, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, Y, R>
 where
     Y: SystemApi<'s, R>
-        + Invokable<ScryptoInvocation, ScryptoValue>
-        + Invokable<NativeFunctionInvocation, ScryptoValue>
-        + Invokable<NativeMethodInvocation, ScryptoValue>,
+        + Invokable<ScryptoInvocation>
+        + Invokable<NativeFunctionInvocation>
+        + Invokable<NativeMethodInvocation>,
     R: FeeReserve,
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {

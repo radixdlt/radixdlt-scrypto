@@ -83,9 +83,9 @@ impl TransactionProcessor {
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
     where
         Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation, ScryptoValue>
-            + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<NativeMethodInvocation, ScryptoValue>,
+            + Invokable<ScryptoInvocation>
+            + Invokable<NativeFunctionInvocation>
+            + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
         let mut value = args.dom;
@@ -176,10 +176,10 @@ impl TransactionProcessor {
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
     where
         Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation, ScryptoValue>
-            + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<EpochManagerCreateInput, SystemAddress>
-            + Invokable<NativeMethodInvocation, ScryptoValue>,
+            + Invokable<ScryptoInvocation>
+            + Invokable<NativeFunctionInvocation>
+            + Invokable<EpochManagerCreateInput>
+            + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
         match func {

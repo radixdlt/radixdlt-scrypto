@@ -513,12 +513,12 @@ where
         })
     }
 
-    fn run<O, X: Executor<O>>(
+    fn run<X: Executor>(
         &mut self,
         executor: X,
         actor: REActor,
         mut call_frame_update: CallFrameUpdate,
-    ) -> Result<O, RuntimeError> {
+    ) -> Result<X::Output, RuntimeError> {
         let new_refed_nodes = self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
             AuthModule::on_before_frame_start(&actor, &executor, system_api).map_err(|e| match e {
                 InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
@@ -650,12 +650,12 @@ where
         }
     }
 
-    fn invoke_internal<O, X: Executor<O>>(
+    fn invoke_internal<X: Executor>(
         &mut self,
         executor: X,
         actor: REActor,
         call_frame_update: CallFrameUpdate,
-    ) -> Result<O, RuntimeError> {
+    ) -> Result<X::Output, RuntimeError> {
         // check call depth
         let depth = self.current_frame.depth;
         if depth == self.max_depth {
@@ -718,29 +718,34 @@ where
     }
 }
 
-pub trait Executor<O> {
+pub trait Executor {
+    type Output;
+
     // TODO: Remove
     fn args(&self) -> &ScryptoValue;
 
-    fn execute<'s, Y, R>(self, system_api: &mut Y) -> Result<(O, CallFrameUpdate), RuntimeError>
+    fn execute<'s, Y, R>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation, ScryptoValue>
-            + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<EpochManagerCreateInput, SystemAddress>
-            + Invokable<NativeMethodInvocation, ScryptoValue>,
+            + Invokable<ScryptoInvocation>
+            + Invokable<NativeFunctionInvocation>
+            + Invokable<EpochManagerCreateInput>
+            + Invokable<NativeMethodInvocation>,
         R: FeeReserve;
 }
 
 // TODO: remove redundant code and move this method to the interpreter
-impl<'g, 's, W, I, R, N, O> Invokable<N, O> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, I, R, N> Invokable<N> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
     R: FeeReserve,
-    N: NativeFuncInvocation<O>,
+    N: NativeFuncInvocation,
 {
-    fn invoke(&mut self, invocation: N) -> Result<O, RuntimeError> {
+    fn invoke(&mut self, invocation: N) -> Result<N::Output, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,
@@ -761,7 +766,7 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         let input = ScryptoValue::from_typed(&invocation);
-        let executor = NativeFuncExecutor(invocation, input, PhantomData);
+        let executor = NativeFuncExecutor(invocation, input);
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
             EpochManagerFunction::Create,
         )));
@@ -789,7 +794,7 @@ where
 }
 
 // TODO: remove redundant code and move this method to the interpreter
-impl<'g, 's, W, I, R> Invokable<ScryptoInvocation, ScryptoValue> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, I, R> Invokable<ScryptoInvocation> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -837,7 +842,7 @@ where
     }
 }
 
-impl<'g, 's, W, I, R> Invokable<NativeFunctionInvocation, ScryptoValue> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, I, R> Invokable<NativeFunctionInvocation> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -888,7 +893,7 @@ where
     }
 }
 
-impl<'g, 's, W, I, R> Invokable<NativeMethodInvocation, ScryptoValue> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, I, R> Invokable<NativeMethodInvocation> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -1448,11 +1453,11 @@ where
     }
 }
 
-pub trait InvocationResolver<V, X: Executor<O>, O> {
+pub trait InvocationResolver<V, X: Executor> {
     fn resolve(&mut self, invocation: V) -> Result<(X, REActor, CallFrameUpdate), RuntimeError>;
 }
 
-impl<'g, 's, W, I, R> InvocationResolver<ScryptoInvocation, ScryptoExecutor<I>, ScryptoValue>
+impl<'g, 's, W, I, R> InvocationResolver<ScryptoInvocation, ScryptoExecutor<I>>
     for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
@@ -1706,7 +1711,7 @@ where
     }
 }
 
-impl<'g, 's, W, I, R> InvocationResolver<NativeMethodInvocation, NativeMethodExecutor, ScryptoValue>
+impl<'g, 's, W, I, R> InvocationResolver<NativeMethodInvocation, NativeMethodExecutor>
     for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,

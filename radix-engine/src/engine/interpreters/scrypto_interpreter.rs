@@ -8,7 +8,9 @@ pub struct ScryptoExecutor<I: WasmInstance> {
     args: ScryptoValue,
 }
 
-impl<I: WasmInstance> Executor<ScryptoValue> for ScryptoExecutor<I> {
+impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
+    type Output = ScryptoValue;
+
     fn args(&self) -> &ScryptoValue {
         &self.args
     }
@@ -19,9 +21,9 @@ impl<I: WasmInstance> Executor<ScryptoValue> for ScryptoExecutor<I> {
     ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation, ScryptoValue>
-            + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<NativeMethodInvocation, ScryptoValue>,
+            + Invokable<ScryptoInvocation>
+            + Invokable<NativeFunctionInvocation>
+            + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
         let (export_name, return_type, scrypto_actor) = match system_api.get_actor() {

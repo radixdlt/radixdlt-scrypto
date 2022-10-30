@@ -26,13 +26,15 @@ impl LockFlags {
     }
 }
 
-pub trait Invocation<O> {}
+pub trait Invocation {
+    type Output;
+}
 
-pub trait Invokable<I, O>
+pub trait Invokable<I>
 where
-    I: Invocation<O>,
+    I: Invocation,
 {
-    fn invoke(&mut self, input: I) -> Result<O, RuntimeError>;
+    fn invoke(&mut self, input: I) -> Result<I::Output, RuntimeError>;
 }
 
 pub trait SystemApi<'s, R>

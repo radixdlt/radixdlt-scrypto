@@ -23,14 +23,14 @@ impl AuthModule {
         NonFungibleId::from_u32(1)
     }
 
-    pub fn on_before_frame_start<'s, Y, R, O, X>(
+    pub fn on_before_frame_start<'s, Y, R, X>(
         actor: &REActor,
         executor: &X,
         system_api: &mut Y,
     ) -> Result<HashSet<RENodeId>, InvokeError<AuthError>>
     where
         Y: SystemApi<'s, R>,
-        X: Executor<O>,
+        X: Executor,
         R: FeeReserve,
     {
         let mut new_refs = HashSet::new();

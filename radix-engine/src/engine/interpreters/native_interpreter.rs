@@ -5,6 +5,7 @@ use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance};
 use sbor::rust::fmt::Debug;
 use sbor::*;
+use std::process::Output;
 use transaction::model::Instruction;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
@@ -76,16 +77,18 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
-impl NativeFuncInvocation<SystemAddress> for EpochManagerCreateInput {
+impl NativeFuncInvocation for EpochManagerCreateInput {
+    type NativeOutput = SystemAddress;
+
     fn execute<'s, Y, R>(
         self,
         system_api: &mut Y,
     ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation, ScryptoValue>
-            + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<NativeMethodInvocation, ScryptoValue>,
+            + Invokable<ScryptoInvocation>
+            + Invokable<NativeFunctionInvocation>
+            + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
         let node_id =
@@ -108,35 +111,43 @@ impl NativeFuncInvocation<SystemAddress> for EpochManagerCreateInput {
     }
 }
 
-impl<O, N: NativeFuncInvocation<O>> Invocation<O> for N {}
+impl<N: NativeFuncInvocation> Invocation for N {
+    type Output = N::NativeOutput;
+}
 
-pub trait NativeFuncInvocation<O>: Invocation<O> + Encode {
-    fn execute<'s, Y, R>(self, system_api: &mut Y) -> Result<(O, CallFrameUpdate), RuntimeError>
+pub trait NativeFuncInvocation: Invocation + Encode {
+    type NativeOutput;
+
+    fn execute<'s, Y, R>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation, ScryptoValue>
-            + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<NativeMethodInvocation, ScryptoValue>,
+            + Invokable<ScryptoInvocation>
+            + Invokable<NativeFunctionInvocation>
+            + Invokable<NativeMethodInvocation>,
         R: FeeReserve;
 }
 
-pub struct NativeFuncExecutor<N: NativeFuncInvocation<O>, O>(
-    pub N,
-    pub ScryptoValue,
-    pub PhantomData<O>,
-);
+pub struct NativeFuncExecutor<N: NativeFuncInvocation>(pub N, pub ScryptoValue);
 
-impl<O, N: NativeFuncInvocation<O>> Executor<O> for NativeFuncExecutor<N, O> {
+impl<N: NativeFuncInvocation> Executor for NativeFuncExecutor<N> {
+    type Output = N::Output;
+
     fn args(&self) -> &ScryptoValue {
         &self.1
     }
 
-    fn execute<'s, Y, R>(self, system_api: &mut Y) -> Result<(O, CallFrameUpdate), RuntimeError>
+    fn execute<'s, Y, R>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation, ScryptoValue>
-            + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<NativeMethodInvocation, ScryptoValue>,
+            + Invokable<ScryptoInvocation>
+            + Invokable<NativeFunctionInvocation>
+            + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
         self.0.execute(system_api)
@@ -152,7 +163,9 @@ pub trait NativeFunctionActor<I, O, E> {
 
 pub struct NativeFunctionExecutor(pub NativeFunction, pub ScryptoValue);
 
-impl Executor<ScryptoValue> for NativeFunctionExecutor {
+impl Executor for NativeFunctionExecutor {
+    type Output = ScryptoValue;
+
     fn args(&self) -> &ScryptoValue {
         &self.1
     }
@@ -163,10 +176,10 @@ impl Executor<ScryptoValue> for NativeFunctionExecutor {
     ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation, ScryptoValue>
-            + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<EpochManagerCreateInput, SystemAddress>
-            + Invokable<NativeMethodInvocation, ScryptoValue>,
+            + Invokable<ScryptoInvocation>
+            + Invokable<NativeFunctionInvocation>
+            + Invokable<EpochManagerCreateInput>
+            + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
         let output = match self.0 {
@@ -208,8 +221,7 @@ impl Executor<ScryptoValue> for NativeFunctionExecutor {
     }
 }
 
-impl<'g, 's, W, I, R>
-    InvocationResolver<NativeFunctionInvocation, NativeFunctionExecutor, ScryptoValue>
+impl<'g, 's, W, I, R> InvocationResolver<NativeFunctionInvocation, NativeFunctionExecutor>
     for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
@@ -270,7 +282,9 @@ where
 
 pub struct NativeMethodExecutor(pub NativeMethod, pub ResolvedReceiver, pub ScryptoValue);
 
-impl Executor<ScryptoValue> for NativeMethodExecutor {
+impl Executor for NativeMethodExecutor {
+    type Output = ScryptoValue;
+
     fn args(&self) -> &ScryptoValue {
         &self.2
     }
@@ -281,9 +295,9 @@ impl Executor<ScryptoValue> for NativeMethodExecutor {
     ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation, ScryptoValue>
-            + Invokable<NativeFunctionInvocation, ScryptoValue>
-            + Invokable<NativeMethodInvocation, ScryptoValue>,
+            + Invokable<ScryptoInvocation>
+            + Invokable<NativeFunctionInvocation>
+            + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
         let output = match (self.1.receiver, self.0) {
