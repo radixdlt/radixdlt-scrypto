@@ -162,7 +162,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         let name = decoder.read_variant_label()?;
                         match name.as_str() {
                             #(#match_arms,)*
-                            _ => Err(::sbor::DecodeError::InvalidEnumVariant(name))
+                            _ => Err(::sbor::DecodeError::InvalidVariantLabel(name))
                         }
                     }
                 }
@@ -273,7 +273,7 @@ mod tests {
                                     x: <u8>::decode(decoder)?,
                                 })
                             },
-                            _ => Err(::sbor::DecodeError::InvalidEnumVariant(name))
+                            _ => Err(::sbor::DecodeError::InvalidVariantLabel(name))
                         }
                     }
                 }
