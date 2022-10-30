@@ -12,12 +12,12 @@ use transaction::builder::ManifestBuilder;
 fn test_component() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let package = test_runner.compile_and_publish("./tests/component");
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/component");
 
     // Create component
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package, "ComponentTest", "create_component", args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -31,7 +31,7 @@ fn test_component() {
 
     // Call functions & methods
     let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package,
             "ComponentTest",
@@ -58,11 +58,11 @@ fn invalid_blueprint_name_should_cause_error() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_addr = test_runner.compile_and_publish("./tests/component");
+    let package_addr = test_runner.compile_and_publish("./tests/blueprints/component");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_addr,
             "NonExistentBlueprint",
@@ -76,7 +76,7 @@ fn invalid_blueprint_name_should_cause_error() {
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::InterpreterError(InterpreterError::InvalidScryptoFunctionInvocation(
             ScryptoFunctionIdent {
-                package_address,
+                package: ScryptoPackage::Global(package_address),
                 blueprint_name,
                 ..
             },
@@ -95,9 +95,9 @@ fn mut_reentrancy_should_not_be_possible() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/component");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10u32.into(), FAUCET_COMPONENT)
         .call_function(package_address, "ReentrantComponent", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -109,7 +109,7 @@ fn mut_reentrancy_should_not_be_possible() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10u32.into(), FAUCET_COMPONENT)
         .call_method(component_address, "call_mut_self", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -134,9 +134,9 @@ fn read_reentrancy_should_be_possible() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/component");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10u32.into(), FAUCET_COMPONENT)
         .call_function(package_address, "ReentrantComponent", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -148,7 +148,7 @@ fn read_reentrancy_should_be_possible() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10u32.into(), FAUCET_COMPONENT)
         .call_method(component_address, "call_self", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -162,9 +162,9 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/component");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10u32.into(), FAUCET_COMPONENT)
         .call_function(package_address, "ReentrantComponent", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -176,7 +176,7 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10u32.into(), FAUCET_COMPONENT)
         .call_method(component_address, "call_mut_self_2", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -201,7 +201,7 @@ fn missing_component_address_in_manifest_should_cause_rejection() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let _ = test_runner.compile_and_publish("./tests/component");
+    let _ = test_runner.compile_and_publish("./tests/blueprints/component");
     let component_address = Bech32Decoder::new(&NetworkDefinition::simulator())
         .validate_and_decode_component_address(
             "component_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqph4dhmhs42ee03",
@@ -210,7 +210,7 @@ fn missing_component_address_in_manifest_should_cause_rejection() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_method(component_address, "get_component_state", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

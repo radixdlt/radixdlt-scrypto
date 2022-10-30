@@ -1,43 +1,98 @@
 use crate::engine::{
-    ExecutionMode, KernelError, LockFlags, REActor, ResolvedFunction, ResolvedMethod,
+    ExecutionMode, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
     ResolvedReceiver, RuntimeError,
 };
+use crate::model::GlobalAddressSubstate;
 use crate::types::*;
 
-pub struct NodeProperties;
+pub struct VisibilityProperties;
 
-pub struct SubstateProperties;
+impl VisibilityProperties {
+    pub fn check_drop_node_visibility(
+        mode: ExecutionMode,
+        actor: &REActor,
+        node_id: RENodeId,
+    ) -> bool {
+        if !mode.eq(&ExecutionMode::Application) {
+            return false;
+        }
 
-impl SubstateProperties {
-    pub fn verify_can_own(offset: &SubstateOffset, node_id: RENodeId) -> Result<(), RuntimeError> {
-        match offset {
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))
-            | SubstateOffset::Component(ComponentOffset::State) => match node_id {
-                RENodeId::KeyValueStore(..) | RENodeId::Component { .. } | RENodeId::Vault(..) => {
-                    Ok(())
-                }
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
+        // TODO: Cleanup and reduce to least privilege
+        match node_id {
+            RENodeId::Worktop => match actor {
+                REActor::Function(
+                    ResolvedFunction::Native(NativeFunction::TransactionProcessor(..)),
+                    ..,
+                ) => true,
+                _ => false,
             },
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
-                match node_id {
-                    RENodeId::NonFungibleStore(..) => Ok(()),
-                    _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                        offset.clone(),
-                        node_id,
-                    ))),
-                }
-            }
-            _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                offset.clone(),
-                node_id,
-            ))),
+            RENodeId::AuthZoneStack(..) => match actor {
+                REActor::Function(
+                    ResolvedFunction::Native(NativeFunction::TransactionProcessor(..)),
+                    ..,
+                ) => true,
+                _ => false,
+            },
+            RENodeId::Bucket(..) => match actor {
+                REActor::Method(ResolvedMethod::Native(NativeMethod::Bucket(..)), ..)
+                | REActor::Method(ResolvedMethod::Native(NativeMethod::Worktop(..)), ..)
+                | REActor::Method(ResolvedMethod::Native(NativeMethod::ResourceManager(..)), ..)
+                | REActor::Method(ResolvedMethod::Native(NativeMethod::Vault(..)), ..) => true,
+                _ => false,
+            },
+            RENodeId::Proof(..) => match actor {
+                REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..) => true,
+                REActor::Method(ResolvedMethod::Native(NativeMethod::Proof(..)), ..) => true,
+                REActor::Function(ResolvedFunction::Native(
+                    NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
+                )) => true,
+                REActor::Method(ResolvedMethod::Scrypto { .. }, ..) => true,
+                REActor::Function(ResolvedFunction::Scrypto { .. }) => true,
+                _ => false,
+            },
+            _ => false,
         }
     }
 
-    pub fn check_substate_access(
+    pub fn check_create_node_visibility(
+        mode: ExecutionMode,
+        actor: &REActor,
+        node: &RENode,
+    ) -> bool {
+        // TODO: Cleanup and reduce to least privilege
+        match (mode, actor) {
+            (
+                ExecutionMode::Application,
+                REActor::Method(
+                    ResolvedMethod::Scrypto {
+                        package_address,
+                        blueprint_name,
+                        ..
+                    },
+                    ..,
+                )
+                | REActor::Function(
+                    ResolvedFunction::Scrypto {
+                        package_address,
+                        blueprint_name,
+                        ..
+                    },
+                    ..,
+                ),
+            ) => match node {
+                RENode::Component(info, ..) => {
+                    blueprint_name.eq(&info.blueprint_name)
+                        && package_address.eq(&info.package_address)
+                }
+                RENode::KeyValueStore(..) => true,
+                RENode::Global(GlobalAddressSubstate::Component(..)) => true,
+                _ => false,
+            },
+            _ => true,
+        }
+    }
+
+    pub fn check_substate_visibility(
         mode: ExecutionMode,
         actor: &REActor,
         node_id: RENodeId,
@@ -49,6 +104,26 @@ impl SubstateProperties {
             (ExecutionMode::Kernel, ..) => false, // Protect ourselves!
             (ExecutionMode::Deref, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => flags == LockFlags::read_only(),
+                _ => false,
+            },
+            (ExecutionMode::Globalize, offset) => match offset {
+                SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
+                _ => false,
+            },
+            (ExecutionMode::MoveDownstream, offset) => match offset {
+                SubstateOffset::Bucket(BucketOffset::Bucket) => flags == LockFlags::read_only(),
+                SubstateOffset::Proof(ProofOffset::Proof) => true,
+                _ => false,
+            },
+            (ExecutionMode::MoveUpstream, offset) => match offset {
+                SubstateOffset::Bucket(BucketOffset::Bucket) => flags == LockFlags::read_only(),
+                _ => false,
+            },
+            (ExecutionMode::DropNode, offset) => match offset {
+                SubstateOffset::Bucket(BucketOffset::Bucket) => true,
+                SubstateOffset::Proof(ProofOffset::Proof) => true,
+                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => true,
+                SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
                 _ => false,
             },
             (ExecutionMode::AuthModule, offset) => match offset {
@@ -96,7 +171,7 @@ impl SubstateProperties {
                         REActor::Method(
                             ResolvedMethod::Scrypto { .. },
                             ResolvedReceiver {
-                                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                                receiver: RENodeId::Component(component_address),
                                 ..
                             },
                         ) => match (node_id, offset) {
@@ -135,7 +210,7 @@ impl SubstateProperties {
                         REActor::Method(
                             ResolvedMethod::Scrypto { .. },
                             ResolvedReceiver {
-                                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                                receiver: RENodeId::Component(component_address),
                                 ..
                             },
                         ) => match (node_id, offset) {
@@ -153,6 +228,38 @@ impl SubstateProperties {
                     }
                 }
             }
+        }
+    }
+}
+
+pub struct SubstateProperties;
+
+impl SubstateProperties {
+    pub fn verify_can_own(offset: &SubstateOffset, node_id: RENodeId) -> Result<(), RuntimeError> {
+        match offset {
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))
+            | SubstateOffset::Component(ComponentOffset::State) => match node_id {
+                RENodeId::KeyValueStore(..) | RENodeId::Component { .. } | RENodeId::Vault(..) => {
+                    Ok(())
+                }
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
+            },
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
+                match node_id {
+                    RENodeId::NonFungibleStore(..) => Ok(()),
+                    _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                        offset.clone(),
+                        node_id,
+                    ))),
+                }
+            }
+            _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                offset.clone(),
+                node_id,
+            ))),
         }
     }
 }

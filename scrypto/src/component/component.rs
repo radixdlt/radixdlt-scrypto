@@ -9,7 +9,7 @@ use crate::address::*;
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
-use crate::crypto::Hash;
+use crate::crypto::{hash, Hash, PublicKey};
 use crate::engine::{api::*, types::*, utils::*};
 use crate::misc::*;
 use crate::resource::AccessRules;
@@ -86,7 +86,7 @@ impl Component {
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Component(ComponentMethod::AddAccessCheck),
-            Receiver::Ref(RENodeId::Component(self.0)),
+            RENodeId::Component(self.0),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
         );
         let _: () = call_engine(input);
@@ -95,9 +95,9 @@ impl Component {
     }
 
     pub fn globalize(self) -> ComponentAddress {
-        let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(self.0));
-        let global_address: GlobalAddress = call_engine(input);
-        global_address.into()
+        let input = RadixEngineInput::CreateNode(ScryptoRENode::GlobalComponent(self.0));
+        let node_id: RENodeId = call_engine(input);
+        node_id.into()
     }
 }
 
@@ -140,7 +140,7 @@ impl BorrowedGlobalComponent {
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Component(ComponentMethod::AddAccessCheck),
-            Receiver::Ref(RENodeId::Global(GlobalAddress::Component(self.0))),
+            RENodeId::Global(GlobalAddress::Component(self.0)),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
         );
         let _: () = call_engine(input);
@@ -205,10 +205,9 @@ impl fmt::Debug for Component {
 pub enum ComponentAddress {
     Normal([u8; 26]),
     Account([u8; 26]),
-    System([u8; 26]),
+    EcdsaSecp256k1VirtualAccount([u8; 26]),
+    EddsaEd25519VirtualAccount([u8; 26]),
 }
-
-impl ComponentAddress {}
 
 //========
 // binary
@@ -224,7 +223,12 @@ impl TryFrom<&[u8]> for ComponentAddress {
             {
                 EntityType::NormalComponent => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
                 EntityType::AccountComponent => Ok(Self::Account(copy_u8_array(&slice[1..]))),
-                EntityType::SystemComponent => Ok(Self::System(copy_u8_array(&slice[1..]))),
+                EntityType::EcdsaSecp256k1VirtualAccountComponent => Ok(
+                    Self::EcdsaSecp256k1VirtualAccount(copy_u8_array(&slice[1..])),
+                ),
+                EntityType::EddsaEd25519VirtualAccountComponent => {
+                    Ok(Self::EddsaEd25519VirtualAccount(copy_u8_array(&slice[1..])))
+                }
                 _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
             },
             _ => Err(AddressError::InvalidLength(slice.len())),
@@ -233,11 +237,27 @@ impl TryFrom<&[u8]> for ComponentAddress {
 }
 
 impl ComponentAddress {
+    pub fn virtual_account_from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self {
+        match public_key.clone().into() {
+            PublicKey::EcdsaSecp256k1(public_key) => {
+                ComponentAddress::EcdsaSecp256k1VirtualAccount(
+                    hash(public_key.to_vec()).lower_26_bytes(),
+                )
+            }
+            PublicKey::EddsaEd25519(public_key) => ComponentAddress::EddsaEd25519VirtualAccount(
+                hash(public_key.to_vec()).lower_26_bytes(),
+            ),
+        }
+    }
+
     pub fn to_vec(&self) -> Vec<u8> {
         let mut buf = Vec::new();
         buf.push(EntityType::component(self).id());
         match self {
-            Self::Normal(v) | Self::Account(v) | Self::System(v) => buf.extend(v),
+            Self::Normal(v)
+            | Self::Account(v)
+            | Self::EddsaEd25519VirtualAccount(v)
+            | Self::EcdsaSecp256k1VirtualAccount(v) => buf.extend(v),
         }
         buf
     }
@@ -285,8 +305,15 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
             ComponentAddress::Account(_) => {
                 write!(f, "AccountComponent[{}]", self.to_hex())
             }
-            ComponentAddress::System(_) => {
-                write!(f, "SystemComponent[{}]", self.to_hex())
+            ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => {
+                write!(
+                    f,
+                    "EcdsaSecp256k1VirtualAccountComponent[{}]",
+                    self.to_hex()
+                )
+            }
+            ComponentAddress::EddsaEd25519VirtualAccount(_) => {
+                write!(f, "EddsaEd25519VirtualAccountComponent[{}]", self.to_hex())
             }
         }
         .map_err(|err| AddressError::FormatError(err))

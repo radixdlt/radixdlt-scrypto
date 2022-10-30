@@ -9,12 +9,12 @@ fn should_not_be_able_to_read_global_substate() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (_, _, account) = test_runner.new_account();
-    let package_address = test_runner.compile_and_publish("./tests/kernel");
+    let (_, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/kernel");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "Read",
@@ -28,7 +28,7 @@ fn should_not_be_able_to_read_global_substate() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidSubstateLock {
+            RuntimeError::KernelError(KernelError::InvalidSubstateVisibility {
                 actor: REActor::Function(..),
                 node_id: RENodeId::Global(GlobalAddress::Component(..)),
                 offset: SubstateOffset::Global(GlobalOffset::Global),

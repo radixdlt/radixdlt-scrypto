@@ -5,30 +5,22 @@ use crate::types::*;
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub struct ResolvedReceiver {
     pub derefed_from: Option<RENodeId>,
-    pub receiver: Receiver,
+    pub receiver: RENodeId,
 }
 
 impl ResolvedReceiver {
-    pub fn derefed(receiver: Receiver, from: RENodeId) -> Self {
+    pub fn derefed(receiver: RENodeId, from: RENodeId) -> Self {
         Self {
             receiver,
             derefed_from: Some(from),
         }
     }
 
-    pub fn new(receiver: Receiver) -> Self {
+    pub fn new(receiver: RENodeId) -> Self {
         Self {
             receiver,
             derefed_from: None,
         }
-    }
-
-    pub fn receiver(&self) -> Receiver {
-        self.receiver
-    }
-
-    pub fn node_id(&self) -> RENodeId {
-        self.receiver.node_id()
     }
 }
 
@@ -36,6 +28,7 @@ impl ResolvedReceiver {
 pub enum ResolvedFunction {
     Scrypto {
         package_address: PackageAddress,
+        package_id: PackageId,
         blueprint_name: String,
         ident: String,
         export_name: String,
@@ -49,6 +42,7 @@ pub enum ResolvedFunction {
 pub enum ResolvedMethod {
     Scrypto {
         package_address: PackageAddress,
+        package_id: PackageId,
         blueprint_name: String,
         ident: String,
         export_name: String,
@@ -119,8 +113,12 @@ impl fmt::Debug for ResolvedMethod {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum ExecutionMode {
     Kernel,
+    Globalize,
+    MoveDownstream,
+    MoveUpstream,
     Deref,
     ScryptoInterpreter,
     AuthModule,
     Application,
+    DropNode,
 }

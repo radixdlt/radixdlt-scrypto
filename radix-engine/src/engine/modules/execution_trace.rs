@@ -34,8 +34,9 @@ pub struct ExecutionTraceModule {}
 impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     fn pre_sys_call(
         &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         _input: SysCallInput,
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -43,8 +44,9 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
     fn post_sys_call(
         &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         _output: SysCallOutput,
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -52,19 +54,21 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
     fn on_run(
         &mut self,
-        track: &mut Track<R>,
-        call_frames: &mut Vec<CallFrame>,
         actor: &REActor,
         input: &ScryptoValue,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
+        track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
-        Self::trace_run(track, call_frames, actor, input);
+        Self::trace_run(call_frame, heap, track, actor, input);
         Ok(())
     }
 
     fn on_wasm_instantiation(
         &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         _code: &[u8],
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -72,8 +76,9 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
     fn on_wasm_costing(
         &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         _units: u32,
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -81,8 +86,9 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
     fn on_lock_fee(
         &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         _vault_id: VaultId,
         fee: Resource,
         _contingent: bool,
@@ -97,33 +103,28 @@ impl ExecutionTraceModule {
     }
 
     fn trace_run<'s, R: FeeReserve>(
+        call_frame: &CallFrame,
+        heap: &mut Heap,
         track: &mut Track<'s, R>,
-        call_frames: &Vec<CallFrame>,
         actor: &REActor,
         input: &ScryptoValue,
     ) {
         if let REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) = actor {
-            let caller = &call_frames
-                .get(call_frames.len() - 2)
-                .expect("Caller frame is missing")
-                .actor;
+            let caller = &call_frame.actor;
 
             match (native_method, resolved_receiver.receiver) {
-                (
-                    NativeMethod::Vault(VaultMethod::Put),
-                    Receiver::Ref(RENodeId::Vault(vault_id)),
-                ) => Self::handle_vault_put(track, caller, &vault_id, input, call_frames),
-                (
-                    NativeMethod::Vault(VaultMethod::Take),
-                    Receiver::Ref(RENodeId::Vault(vault_id)),
-                ) => Self::handle_vault_take(track, caller, &vault_id, input),
-                (
-                    NativeMethod::Vault(VaultMethod::LockFee),
-                    Receiver::Ref(RENodeId::Vault(vault_id)),
-                ) => Self::handle_vault_lock_fee(track, caller, &vault_id),
+                (NativeMethod::Vault(VaultMethod::Put), RENodeId::Vault(vault_id)) => {
+                    Self::handle_vault_put(heap, track, caller, &vault_id, input)
+                }
+                (NativeMethod::Vault(VaultMethod::Take), RENodeId::Vault(vault_id)) => {
+                    Self::handle_vault_take(track, caller, &vault_id, input)
+                }
+                (NativeMethod::Vault(VaultMethod::LockFee), RENodeId::Vault(vault_id)) => {
+                    Self::handle_vault_lock_fee(track, caller, &vault_id)
+                }
                 (
                     NativeMethod::Vault(VaultMethod::LockContingentFee),
-                    Receiver::Ref(RENodeId::Vault(vault_id)),
+                    RENodeId::Vault(vault_id),
                 ) => Self::handle_vault_lock_contingent_fee(track, caller, &vault_id),
                 _ => {}
             }
@@ -131,25 +132,23 @@ impl ExecutionTraceModule {
     }
 
     fn handle_vault_put<'s, R: FeeReserve>(
+        heap: &mut Heap,
         track: &mut Track<'s, R>,
         actor: &REActor,
         vault_id: &VaultId,
         input: &ScryptoValue,
-        call_frames: &Vec<CallFrame>,
     ) {
         if let Ok(call_data) = scrypto_decode::<VaultPutInput>(&input.raw) {
             let bucket_id = call_data.bucket.0;
-
-            let frame = call_frames.last().expect("Current call frame not found");
-
-            if let Ok(tree) = frame.get_owned_heap_node(RENodeId::Bucket(bucket_id)) {
-                if let HeapRENode::Bucket(bucket_node) = &tree.root {
-                    track.vault_ops.push((
-                        actor.clone(),
-                        vault_id.clone(),
-                        VaultOp::Put(bucket_node.total_amount()),
-                    ));
-                }
+            if let Ok(bucket_substate) = heap.get_substate(
+                RENodeId::Bucket(bucket_id),
+                &SubstateOffset::Bucket(BucketOffset::Bucket),
+            ) {
+                track.vault_ops.push((
+                    actor.clone(),
+                    vault_id.clone(),
+                    VaultOp::Put(bucket_substate.bucket().total_amount()),
+                ));
             }
         }
     }
@@ -197,15 +196,14 @@ impl ExecutionTraceReceipt {
     pub fn new(
         ops: Vec<(REActor, VaultId, VaultOp)>,
         actual_fee_payments: HashMap<VaultId, Decimal>,
-        state_track: &mut StateTrack,
+        to_persist: &mut HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
         is_commit_success: bool,
     ) -> Self {
         let mut vault_changes = HashMap::<ComponentId, HashMap<VaultId, Decimal>>::new();
         let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
         for (actor, vault_id, vault_op) in ops {
             if let REActor::Method(_, resolved_receiver) = actor {
-                if let Receiver::Ref(RENodeId::Component(component_id)) = resolved_receiver.receiver
-                {
+                if let RENodeId::Component(component_id) = resolved_receiver.receiver {
                     match vault_op {
                         VaultOp::Create(_) => todo!("Not supported yet!"),
                         VaultOp::Put(amount) => {
@@ -256,7 +254,7 @@ impl ExecutionTraceReceipt {
 
                 // Add a resource change log if non-zero
                 if !amount.is_zero() {
-                    let resource_address = Self::get_vault_resource_address(vault_id, state_track);
+                    let resource_address = Self::get_vault_resource_address(vault_id, to_persist);
                     resource_changes.push(ResourceChange {
                         resource_address,
                         component_id,
@@ -272,16 +270,14 @@ impl ExecutionTraceReceipt {
 
     fn get_vault_resource_address(
         vault_id: VaultId,
-        state_track: &mut StateTrack,
+        to_persist: &mut HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
     ) -> ResourceAddress {
-        state_track
-            .get_substate(&SubstateId(
+        let (substate, _) = to_persist
+            .get(&SubstateId(
                 RENodeId::Vault(vault_id),
                 SubstateOffset::Vault(VaultOffset::Vault),
             ))
-            .expect("Failed to find the vault substate")
-            .to_runtime()
-            .vault()
-            .resource_address()
+            .expect("Failed to find the vault substate");
+        substate.vault().resource_address()
     }
 }

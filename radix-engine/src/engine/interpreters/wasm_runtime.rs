@@ -2,8 +2,8 @@ use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::{
-    Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore,
-    RuntimeSubstate,
+    ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, InvokeError,
+    KeyValueStore, RuntimeSubstate,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -19,6 +19,7 @@ where
 {
     actor: ScryptoActor,
     system_api: &'y mut Y,
+    lock_types: HashMap<LockHandle, SubstateOffset>,
     phantom1: PhantomData<R>,
     phantom2: PhantomData<&'s ()>,
 }
@@ -38,6 +39,7 @@ where
         RadixEngineWasmRuntime {
             actor,
             system_api,
+            lock_types: HashMap::new(),
             phantom1: PhantomData,
             phantom2: PhantomData,
         }
@@ -80,7 +82,7 @@ where
     fn handle_invoke_native_method(
         &mut self,
         native_method: NativeMethod,
-        receiver: Receiver,
+        receiver: RENodeId,
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)
@@ -95,31 +97,20 @@ where
         scrypto_node: ScryptoRENode,
     ) -> Result<ScryptoValue, RuntimeError> {
         let node = match scrypto_node {
+            ScryptoRENode::GlobalComponent(component_id) => RENode::Global(
+                GlobalAddressSubstate::Component(scrypto::component::Component(component_id)),
+            ),
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
-                // TODO: Move these two checks into kernel
-                if !blueprint_name.eq(self.actor.blueprint_name()) {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::RENodeCreateInvalidPermission,
-                    ));
-                }
-                if !package_address.eq(self.actor.package_address()) {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::RENodeCreateInvalidPermission,
-                    ));
-                }
-
-                // TODO: Check state against blueprint schema
-
                 // Create component
-                HeapRENode::Component(Component {
-                    info: ComponentInfoSubstate::new(package_address, blueprint_name, Vec::new()),
-                    state: Some(ComponentStateSubstate::new(state)),
-                })
+                RENode::Component(
+                    ComponentInfoSubstate::new(package_address, blueprint_name, Vec::new()),
+                    ComponentStateSubstate::new(state),
+                )
             }
-            ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(KeyValueStore::new()),
+            ScryptoRENode::KeyValueStore => RENode::KeyValueStore(KeyValueStore::new()),
         };
 
-        let id = self.system_api.node_create(node)?;
+        let id = self.system_api.create_node(node)?;
         Ok(ScryptoValue::from_typed(&id))
     }
 
@@ -128,9 +119,9 @@ where
         Ok(ScryptoValue::from_typed(&node_ids))
     }
 
-    fn handle_node_globalize(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
-        let global_address = self.system_api.node_globalize(node_id)?;
-        Ok(ScryptoValue::from_typed(&global_address))
+    fn handle_drop_node(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api.drop_node(node_id)?;
+        Ok(ScryptoValue::from_typed(&()))
     }
 
     fn handle_lock_substate(
@@ -146,9 +137,13 @@ where
             LockFlags::read_only()
         };
 
-        self.system_api
-            .lock_substate(node_id, offset, flags)
-            .map(|handle| ScryptoValue::from_typed(&handle))
+        let handle = self
+            .system_api
+            .lock_substate(node_id, offset.clone(), flags)?;
+
+        self.lock_types.insert(handle, offset);
+
+        Ok(ScryptoValue::from_typed(&handle))
     }
 
     fn handle_read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
@@ -162,27 +157,31 @@ where
         lock_handle: LockHandle,
         buffer: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
+        let offset = self
+            .lock_types
+            .get(&lock_handle)
+            .ok_or(RuntimeError::KernelError(KernelError::LockDoesNotExist(
+                lock_handle,
+            )))?;
+        let substate = RuntimeSubstate::decode_from_buffer(offset, &buffer)?;
         let mut substate_mut = self.system_api.get_ref_mut(lock_handle)?;
-        let substate = RuntimeSubstate::decode_from_buffer(substate_mut.offset(), &buffer)?;
-        let mut raw_mut = substate_mut.get_raw_mut();
 
         match substate {
-            RuntimeSubstate::ComponentState(next) => *raw_mut.component_state() = next,
+            RuntimeSubstate::ComponentState(next) => *substate_mut.component_state() = next,
             RuntimeSubstate::KeyValueStoreEntry(next) => {
-                *raw_mut.kv_store_entry() = next;
+                *substate_mut.kv_store_entry() = next;
             }
             RuntimeSubstate::NonFungible(next) => {
-                *raw_mut.non_fungible() = next;
+                *substate_mut.non_fungible() = next;
             }
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
         }
-
-        substate_mut.flush()?;
 
         Ok(ScryptoValue::unit())
     }
 
     fn handle_drop_lock(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+        self.lock_types.remove(&lock_handle);
         self.system_api
             .drop_lock(lock_handle)
             .map(|unit| ScryptoValue::from_typed(&unit))
@@ -190,6 +189,10 @@ where
 
     fn handle_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {
         return Ok(self.actor.clone());
+    }
+
+    fn handle_get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
+        self.system_api.read_transaction_hash()
     }
 
     fn handle_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
@@ -226,10 +229,9 @@ where
             RadixEngineInput::InvokeNativeMethod(native_method, receiver, args) => {
                 self.handle_invoke_native_method(native_method, receiver, args)?
             }
-            RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id)?,
-            RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node)?,
+            RadixEngineInput::CreateNode(node) => self.handle_node_create(node)?,
             RadixEngineInput::GetVisibleNodeIds() => self.handle_get_visible_node_ids()?,
-
+            RadixEngineInput::DropNode(node_id) => self.handle_drop_node(node_id)?,
             RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
                 self.handle_lock_substate(node_id, offset, mutable)?
             }
@@ -238,6 +240,9 @@ where
             RadixEngineInput::DropLock(lock_handle) => self.handle_drop_lock(lock_handle)?,
 
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode)?,
+            RadixEngineInput::GetTransactionHash() => {
+                self.handle_get_transaction_hash().map(encode)?
+            }
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode)?,
             RadixEngineInput::EmitLog(level, message) => {
                 self.handle_emit_log(level, message).map(encode)?

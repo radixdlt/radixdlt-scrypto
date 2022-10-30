@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, InvokeError, LockFlags, SystemApi};
+use crate::engine::{InvokeError, LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
@@ -54,6 +54,7 @@ pub enum WorktopError {
     CouldNotCreateBucket,
     CouldNotTakeBucket,
     AssertionFailed,
+    CouldNotDrop,
 }
 
 pub struct Worktop;
@@ -91,15 +92,13 @@ impl Worktop {
                 let input: WorktopPutInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let bucket = system_api
-                    .node_drop(RENodeId::Bucket(input.bucket.0))?
+                    .drop_node(RENodeId::Bucket(input.bucket.0))?
                     .into();
                 let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                let worktop = raw_mut.worktop();
+                let worktop = substate_mut.worktop();
                 worktop
                     .put(bucket)
                     .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
-                substate_mut.flush()?;
 
                 Ok(ScryptoValue::from_typed(&()))
             }
@@ -109,12 +108,10 @@ impl Worktop {
 
                 let maybe_resource = {
                     let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let worktop = raw_mut.worktop();
+                    let worktop = substate_mut.worktop();
                     let maybe_resource = worktop
                         .take(input.amount, input.resource_address)
                         .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
-                    substate_mut.flush()?;
                     maybe_resource
                 };
 
@@ -126,8 +123,11 @@ impl Worktop {
                             RENodeId::Global(GlobalAddress::Resource(input.resource_address));
                         let offset =
                             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                        let resource_handle =
-                            system_api.lock_substate(resource_id, offset, LockFlags::empty())?;
+                        let resource_handle = system_api.lock_substate(
+                            resource_id,
+                            offset,
+                            LockFlags::read_only(),
+                        )?;
                         let substate_ref = system_api.get_ref(resource_handle)?;
                         substate_ref.resource_manager().resource_type
                     };
@@ -135,7 +135,7 @@ impl Worktop {
                     Resource::new_empty(input.resource_address, resource_type)
                 };
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(resource_resource)))?
+                    .create_node(RENode::Bucket(BucketSubstate::new(resource_resource)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -147,12 +147,10 @@ impl Worktop {
 
                 let maybe_resource = {
                     let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let worktop = raw_mut.worktop();
+                    let worktop = substate_mut.worktop();
                     let maybe_resource = worktop
                         .take_all(input.resource_address)
                         .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
-                    substate_mut.flush()?;
                     maybe_resource
                 };
 
@@ -164,8 +162,11 @@ impl Worktop {
                             RENodeId::Global(GlobalAddress::Resource(input.resource_address));
                         let offset =
                             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                        let resource_handle =
-                            system_api.lock_substate(resource_id, offset, LockFlags::empty())?;
+                        let resource_handle = system_api.lock_substate(
+                            resource_id,
+                            offset,
+                            LockFlags::read_only(),
+                        )?;
                         let substate_ref = system_api.get_ref(resource_handle)?;
                         substate_ref.resource_manager().resource_type
                     };
@@ -174,7 +175,7 @@ impl Worktop {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(resource_resource)))?
+                    .create_node(RENode::Bucket(BucketSubstate::new(resource_resource)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -185,12 +186,10 @@ impl Worktop {
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let maybe_resource = {
                     let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let worktop = raw_mut.worktop();
+                    let worktop = substate_mut.worktop();
                     let maybe_resource = worktop
                         .take_non_fungibles(&input.ids, input.resource_address)
                         .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
-                    substate_mut.flush()?;
                     maybe_resource
                 };
 
@@ -202,8 +201,11 @@ impl Worktop {
                             RENodeId::Global(GlobalAddress::Resource(input.resource_address));
                         let offset =
                             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                        let resource_handle =
-                            system_api.lock_substate(resource_id, offset, LockFlags::empty())?;
+                        let resource_handle = system_api.lock_substate(
+                            resource_id,
+                            offset,
+                            LockFlags::read_only(),
+                        )?;
                         let substate_ref = system_api.get_ref(resource_handle)?;
                         substate_ref.resource_manager().resource_type
                     };
@@ -212,7 +214,7 @@ impl Worktop {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(resource_resource)))?
+                    .create_node(RENode::Bucket(BucketSubstate::new(resource_resource)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -261,8 +263,7 @@ impl Worktop {
                 let mut resources = Vec::new();
                 {
                     let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let worktop = raw_mut.worktop();
+                    let worktop = substate_mut.worktop();
                     for (_, resource) in worktop.resources.drain() {
                         let taken = resource.borrow_mut().take_all_liquid().map_err(|e| {
                             InvokeError::Error(WorktopError::ResourceOperationError(e))
@@ -276,7 +277,7 @@ impl Worktop {
                 let mut buckets = Vec::new();
                 for resource in resources {
                     let bucket_id = system_api
-                        .node_create(HeapRENode::Bucket(BucketSubstate::new(resource)))?
+                        .create_node(RENode::Bucket(BucketSubstate::new(resource)))?
                         .into();
                     buckets.push(scrypto::resource::Bucket(bucket_id))
                 }

@@ -10,7 +10,7 @@ fn test_max_call_depth_success() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/recursion");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
 
     // Act
     // ============================
@@ -21,7 +21,7 @@ fn test_max_call_depth_success() {
     // ============================
     let num_calls = u32::try_from(DEFAULT_MAX_CALL_DEPTH).unwrap() - 1u32;
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "Caller", "recursive", args!(num_calls))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -35,11 +35,11 @@ fn test_max_call_depth_failure() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/recursion");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "Caller", "recursive", args!(16u32))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

@@ -16,7 +16,7 @@ fn test_transaction_preview_cost_estimate() {
     let mut test_runner = TestRunner::new(true, &mut substate_store);
     let network = NetworkDefinition::simulator();
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .clear_auth_zone()
         .build();
     let preview_flags = PreviewFlags {
@@ -56,7 +56,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
     let public_key = EcdsaSecp256k1PrivateKey::from_u64(99).unwrap().public_key();
     let withdraw_auth = rule!(require(NonFungibleAddress::from_public_key(&public_key)));
     let account = test_runner.new_account_with_auth_rule(&withdraw_auth);
-    let (_, _, other_account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     let preview_flags = PreviewFlags {
         unlimited_loan: true,

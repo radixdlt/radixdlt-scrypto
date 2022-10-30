@@ -6,17 +6,16 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
 
-#[test]
-fn can_withdraw_from_my_account() {
+fn can_withdraw_from_my_account_internal(use_virtual: bool) {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let (_, _, other_account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account(use_virtual);
+    let (_, _, other_account) = test_runner.new_account(use_virtual);
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method(
             other_account,
@@ -47,12 +46,21 @@ fn can_withdraw_from_my_account() {
 }
 
 #[test]
-fn can_withdraw_non_fungible_from_my_account() {
+fn can_withdraw_from_my_allocated_account() {
+    can_withdraw_from_my_account_internal(false);
+}
+
+#[test]
+fn can_withdraw_from_my_virtual_account() {
+    can_withdraw_from_my_account_internal(true);
+}
+
+fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let (_, _, other_account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account(use_virtual);
+    let (_, _, other_account) = test_runner.new_account(use_virtual);
     let resource_address = test_runner.create_non_fungible_resource(account);
 
     // Act
@@ -75,12 +83,21 @@ fn can_withdraw_non_fungible_from_my_account() {
 }
 
 #[test]
-fn cannot_withdraw_from_other_account() {
+fn can_withdraw_non_fungible_from_my_allocated_account() {
+    can_withdraw_non_fungible_from_my_account_internal(false)
+}
+
+#[test]
+fn can_withdraw_non_fungible_from_my_virtual_account() {
+    can_withdraw_non_fungible_from_my_account_internal(true)
+}
+
+fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let (_, _, other_account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account(is_virtual);
+    let (_, _, other_account) = test_runner.new_account(is_virtual);
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10u32.into(), account)
         .withdraw_from_account(RADIX_TOKEN, other_account)
@@ -102,11 +119,20 @@ fn cannot_withdraw_from_other_account() {
 }
 
 #[test]
-fn account_to_bucket_to_account() {
+fn cannot_withdraw_from_other_allocated_account() {
+    cannot_withdraw_from_other_account_internal(false);
+}
+
+#[test]
+fn cannot_withdraw_from_other_virtual_account() {
+    cannot_withdraw_from_other_account_internal(true);
+}
+
+fn account_to_bucket_to_account_internal(use_virtual: bool) {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account(use_virtual);
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
@@ -135,12 +161,21 @@ fn account_to_bucket_to_account() {
 }
 
 #[test]
-fn test_account_balance() {
+fn account_to_bucket_to_allocated_account() {
+    account_to_bucket_to_account_internal(false);
+}
+
+#[test]
+fn account_to_bucket_to_virtual_account() {
+    account_to_bucket_to_account_internal(true);
+}
+
+fn test_account_balance_internal(use_virtual: bool) {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account1) = test_runner.new_account();
-    let (_, _, account2) = test_runner.new_account();
+    let (public_key, _, account1) = test_runner.new_account(use_virtual);
+    let (_, _, account2) = test_runner.new_account(use_virtual);
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account1)
         .call_method(account2, "balance", args!(RADIX_TOKEN))
@@ -161,6 +196,16 @@ fn test_account_balance() {
     );
 }
 
+#[test]
+fn test_allocated_account_balance() {
+    test_account_balance_internal(false)
+}
+
+#[test]
+fn test_virtual_account_balance() {
+    test_account_balance_internal(true)
+}
+
 fn assert_resource_changes_for_transfer(
     resource_changes: &Vec<ResourceChange>,
     resource_address: ResourceAddress,
@@ -168,6 +213,8 @@ fn assert_resource_changes_for_transfer(
     target_account: ComponentId,
     transfer_amount: Decimal,
 ) {
+    println!("transfer: {:?}", transfer_amount);
+    println!("{:?}", resource_changes);
     assert_eq!(3, resource_changes.len()); // Two transfers (withdrawal, deposit) + fee payment
     assert!(resource_changes
         .iter()

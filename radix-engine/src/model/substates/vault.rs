@@ -8,6 +8,12 @@ use std::ops::Deref;
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct VaultSubstate(pub Resource);
 
+impl VaultSubstate {
+    pub fn resource_address(&self) -> ResourceAddress {
+        self.0.resource_address()
+    }
+}
+
 #[derive(Debug)]
 pub struct VaultRuntimeSubstate {
     resource: Rc<RefCell<LockableResource>>,

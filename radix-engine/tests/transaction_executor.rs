@@ -120,7 +120,7 @@ fn create_notarized_transaction(cost_unit_limit: u32) -> NotarizedTransaction {
         })
         .manifest(
             ManifestBuilder::new(&NetworkDefinition::simulator())
-                .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+                .lock_fee(10.into(), FAUCET_COMPONENT)
                 .clear_auth_zone()
                 .build(),
         )

@@ -26,31 +26,37 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
-    let package: Option<PackageSubstate> = substate_store
+    let global: Option<GlobalAddressSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Package(package_address),
-            SubstateOffset::Package(PackageOffset::Package),
+            RENodeId::Global(GlobalAddress::Package(package_address)),
+            SubstateOffset::Global(GlobalOffset::Global),
         ))
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
-    match package {
-        Some(b) => {
-            writeln!(
-                output,
-                "{}: {}",
-                "Package".green().bold(),
-                package_address.display(&bech32_encoder)
-            );
-            writeln!(
-                output,
-                "{}: {} bytes",
-                "Code size".green().bold(),
-                b.code.len()
-            );
-            Ok(())
-        }
-        None => Err(DisplayError::PackageNotFound),
-    }
+    let package: Option<PackageSubstate> = global.and_then(|global| {
+        substate_store
+            .get_substate(&SubstateId(
+                global.node_deref(),
+                SubstateOffset::Package(PackageOffset::Package),
+            ))
+            .map(|s| s.substate)
+            .map(|s| s.to_runtime().into())
+    });
+    let package = package.ok_or(DisplayError::PackageNotFound)?;
+
+    writeln!(
+        output,
+        "{}: {}",
+        "Package".green().bold(),
+        package_address.display(&bech32_encoder)
+    );
+    writeln!(
+        output,
+        "{}: {} bytes",
+        "Code size".green().bold(),
+        package.code.len()
+    );
+    Ok(())
 }
 
 /// Dump a component into console.
@@ -68,7 +74,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             SubstateOffset::Global(GlobalOffset::Global),
         ))
         .map(|s| s.substate)
-        .map(|s| s.to_runtime().global_re_node().node_deref())
+        .map(|s| s.to_runtime().global().node_deref())
         .ok_or(DisplayError::ComponentNotFound)?;
 
     let component_info: Option<ComponentInfoSubstate> = substate_store
@@ -198,14 +204,23 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .unwrap();
         let amount = vault.0.amount();
         let resource_address = vault.0.resource_address();
-        let resource_manager: ResourceManagerSubstate = substate_store
+        let global: Option<GlobalAddressSubstate> = substate_store
             .get_substate(&SubstateId(
-                RENodeId::ResourceManager(resource_address),
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                RENodeId::Global(GlobalAddress::Resource(resource_address)),
+                SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|s| s.substate)
-            .map(|s| s.to_runtime().into())
-            .unwrap();
+            .map(|s| s.to_runtime().into());
+        let resource_manager: Option<ResourceManagerSubstate> = global.and_then(|global| {
+            substate_store
+                .get_substate(&SubstateId(
+                    global.node_deref(),
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().into())
+        });
+        let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
         writeln!(
             output,
             "{} {{ amount: {}, resource address: {}{}{} }}",
@@ -228,7 +243,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungibleSubstate = substate_store
                     .get_substate(&SubstateId(
-                        RENodeId::NonFungibleStore(resource_manager.non_fungible_store_id.unwrap()),
+                        RENodeId::NonFungibleStore(resource_manager.nf_store_id.unwrap()),
                         SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone())),
                     ))
                     .map(|s| s.substate.to_runtime())
@@ -264,44 +279,50 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let resource_manager: Option<ResourceManagerSubstate> = substate_store
+    let global: Option<GlobalAddressSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::ResourceManager(resource_address),
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            RENodeId::Global(GlobalAddress::Resource(resource_address)),
+            SubstateOffset::Global(GlobalOffset::Global),
         ))
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
-    match resource_manager {
-        Some(r) => {
-            writeln!(
-                output,
-                "{}: {:?}",
-                "Resource Type".green().bold(),
-                r.resource_type
-            );
-            writeln!(
-                output,
-                "{}: {}",
-                "Metadata".green().bold(),
-                r.metadata.len()
-            );
-            for (last, e) in r.metadata.iter().identify_last() {
-                writeln!(
-                    output,
-                    "{} {}: {}",
-                    list_item_prefix(last),
-                    e.0.green().bold(),
-                    e.1
-                );
-            }
-            writeln!(
-                output,
-                "{}: {}",
-                "Total Supply".green().bold(),
-                r.total_supply
-            );
-            Ok(())
-        }
-        None => Err(DisplayError::ResourceManagerNotFound),
+    let resource_manager: Option<ResourceManagerSubstate> = global.and_then(|global| {
+        substate_store
+            .get_substate(&SubstateId(
+                global.node_deref(),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            ))
+            .map(|s| s.substate)
+            .map(|s| s.to_runtime().into())
+    });
+    let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
+
+    writeln!(
+        output,
+        "{}: {:?}",
+        "Resource Type".green().bold(),
+        resource_manager.resource_type
+    );
+    writeln!(
+        output,
+        "{}: {}",
+        "Metadata".green().bold(),
+        resource_manager.metadata.len()
+    );
+    for (last, e) in resource_manager.metadata.iter().identify_last() {
+        writeln!(
+            output,
+            "{} {}: {}",
+            list_item_prefix(last),
+            e.0.green().bold(),
+            e.1
+        );
     }
+    writeln!(
+        output,
+        "{}: {}",
+        "Total Supply".green().bold(),
+        resource_manager.total_supply
+    );
+    Ok(())
 }

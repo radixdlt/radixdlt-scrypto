@@ -9,8 +9,8 @@ fn test_state_track_success() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let (_, _, other_account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -41,8 +41,8 @@ fn test_state_track_failure() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let (_, _, other_account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

@@ -1,6 +1,6 @@
 use crate::engine::{LockFlags, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::{ComponentInfoSubstate, ComponentStateSubstate, InvokeError};
+use crate::model::InvokeError;
 use crate::types::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
@@ -9,37 +9,9 @@ pub enum ComponentError {
     BlueprintFunctionNotFound(String),
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct Component {
-    pub info: ComponentInfoSubstate,
-    pub state: Option<ComponentStateSubstate>,
-}
+pub struct Component;
 
 impl Component {
-    pub fn new(
-        package_address: PackageAddress,
-        blueprint_name: String,
-        access_rules: Vec<AccessRules>,
-        state: Vec<u8>,
-    ) -> Self {
-        Self {
-            info: ComponentInfoSubstate {
-                package_address,
-                blueprint_name,
-                access_rules,
-            },
-            state: Some(ComponentStateSubstate { raw: state }),
-        }
-    }
-
-    pub fn get_state(&self) -> Option<&ComponentStateSubstate> {
-        self.state.as_ref()
-    }
-
-    pub fn put_state(&mut self, state: ComponentStateSubstate) {
-        self.state = Some(state);
-    }
-
     fn method_lock_flags(method: ComponentMethod) -> LockFlags {
         match method {
             ComponentMethod::AddAccessCheck => LockFlags::MUTABLE,
@@ -103,12 +75,10 @@ impl Component {
                 }
 
                 let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-                let mut raw_mut = substate_ref_mut.get_raw_mut();
-                raw_mut
+                substate_ref_mut
                     .component_info()
                     .access_rules
                     .push(input.access_rules);
-                substate_ref_mut.flush()?;
 
                 ScryptoValue::from_typed(&())
             }

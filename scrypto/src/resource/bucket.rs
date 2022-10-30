@@ -14,9 +14,6 @@ use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ConsumingBucketBurnInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketTakeInput {
     pub amount: Decimal,
 }
@@ -52,32 +49,32 @@ impl Bucket {
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
-            Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(resource_address))),
+            RENodeId::Global(GlobalAddress::Resource(resource_address)),
             scrypto_encode(&ResourceManagerCreateBucketInput {}),
         );
         call_engine(input)
     }
 
-    native_methods! {
-        Receiver::Consumed(RENodeId::Bucket(self.0)), NativeMethod::Bucket => {
-           pub fn burn(self) -> () {
-                BucketMethod::Burn,
-                ConsumingBucketBurnInput {}
-            }
-        }
+    pub fn burn(self) -> () {
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
+            RENodeId::Global(GlobalAddress::Resource(self.resource_address())),
+            scrypto_encode(&ResourceManagerBurnInput { bucket: self }),
+        );
+        call_engine(input)
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Self {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Bucket(BucketMethod::Take),
-            Receiver::Ref(RENodeId::Bucket(self.0)),
+            RENodeId::Bucket(self.0),
             scrypto_encode(&BucketTakeInput { amount }),
         );
         call_engine(input)
     }
 
     native_methods! {
-        Receiver::Ref(RENodeId::Bucket(self.0)), NativeMethod::Bucket => {
+        RENodeId::Bucket(self.0), NativeMethod::Bucket => {
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
                 BucketMethod::TakeNonFungibles,
                 BucketTakeNonFungiblesInput {

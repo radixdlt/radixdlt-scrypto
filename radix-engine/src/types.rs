@@ -21,8 +21,8 @@ pub use scrypto::component::{
 };
 pub use scrypto::constants::*;
 pub use scrypto::core::{
-    Blob, Expression, NetworkDefinition, ScryptoActor, SystemCreateInput,
-    SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput,
+    Blob, EpochManagerCreateInput, EpochManagerGetCurrentEpochInput, EpochManagerSetEpochInput,
+    Expression, NetworkDefinition, ScryptoActor, SystemAddress,
 };
 pub use scrypto::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
@@ -35,13 +35,13 @@ pub use scrypto::resource::{
     AuthZoneCreateProofByIdsInput, AuthZoneCreateProofInput, AuthZonePopInput, AuthZonePushInput,
     BucketCreateProofInput, BucketGetAmountInput, BucketGetNonFungibleIdsInput,
     BucketGetResourceAddressInput, BucketPutInput, BucketTakeInput, BucketTakeNonFungiblesInput,
-    ConsumingBucketBurnInput, ConsumingProofDropInput, MintParams, Mutability, NonFungibleAddress,
-    NonFungibleId, ProofCloneInput, ProofGetAmountInput, ProofGetNonFungibleIdsInput,
-    ProofGetResourceAddressInput, ProofRule, ResourceAddress, ResourceManagerBurnInput,
-    ResourceManagerCreateBucketInput, ResourceManagerCreateInput, ResourceManagerCreateVaultInput,
-    ResourceManagerGetMetadataInput, ResourceManagerGetNonFungibleInput,
-    ResourceManagerGetResourceTypeInput, ResourceManagerGetTotalSupplyInput,
-    ResourceManagerLockAuthInput, ResourceManagerMintInput, ResourceManagerNonFungibleExistsInput,
+    MintParams, Mutability, NonFungibleAddress, NonFungibleId, ProofCloneInput,
+    ProofGetAmountInput, ProofGetNonFungibleIdsInput, ProofGetResourceAddressInput, ProofRule,
+    ResourceAddress, ResourceManagerBurnInput, ResourceManagerCreateBucketInput,
+    ResourceManagerCreateInput, ResourceManagerCreateVaultInput, ResourceManagerGetMetadataInput,
+    ResourceManagerGetNonFungibleInput, ResourceManagerGetResourceTypeInput,
+    ResourceManagerGetTotalSupplyInput, ResourceManagerLockAuthInput, ResourceManagerMintInput,
+    ResourceManagerNonFungibleExistsInput, ResourceManagerSetResourceAddressInput,
     ResourceManagerUpdateAuthInput, ResourceManagerUpdateMetadataInput,
     ResourceManagerUpdateNonFungibleDataInput, ResourceMethodAuthKey, ResourceType, SoftCount,
     SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
@@ -74,7 +74,7 @@ pub enum ScryptoInvocation {
 /// Native function/method invocation.
 pub enum NativeInvocation {
     Function(NativeFunction, ScryptoValue),
-    Method(NativeMethod, Receiver, ScryptoValue),
+    Method(NativeMethod, RENodeId, ScryptoValue),
 }
 
 impl Invocation {

@@ -1,14 +1,13 @@
 use crate::ledger::*;
 use crate::types::*;
 
-use indexmap::IndexMap;
 use scrypto::engine::types::SubstateId;
 
 /// Nodes form an acyclic graph towards the parent
 struct StagedSubstateStoreNode {
     parent_id: u64,
     locked: bool,
-    outputs: IndexMap<SubstateId, OutputValue>,
+    outputs: BTreeMap<SubstateId, OutputValue>,
 }
 
 impl StagedSubstateStoreNode {
@@ -16,7 +15,7 @@ impl StagedSubstateStoreNode {
         StagedSubstateStoreNode {
             parent_id,
             locked: false,
-            outputs: IndexMap::new(),
+            outputs: BTreeMap::new(),
         }
     }
 }

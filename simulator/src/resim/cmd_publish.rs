@@ -17,7 +17,7 @@ pub struct Publish {
     /// the path to a Scrypto package or a .wasm file
     path: PathBuf,
 
-    /// The package ID, for overwriting
+    /// The address of an existing package to overwrite
     #[clap(long)]
     package_address: Option<SimulatorPackageAddress>,
 
@@ -37,24 +37,35 @@ pub struct Publish {
 impl Publish {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         // Load wasm code
-        let code_path = if self.path.extension() != Some(OsStr::new("wasm")) {
-            build_package(&self.path, false).map_err(Error::BuildError)?
+        let (code_path, abi_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
+            build_package(&self.path, false, false).map_err(Error::BuildError)?
         } else {
-            self.path.clone()
+            let code_path = self.path.clone();
+            let abi_path = code_path.with_extension("abi");
+            (code_path, abi_path)
         };
-        let abi_path = code_path.with_extension("abi");
 
         let code = fs::read(&code_path).map_err(Error::IOError)?;
-        let abi = scrypto_decode(&fs::read(&abi_path).map_err(Error::IOError)?)
-            .map_err(Error::DataError)?;
+        let abi = scrypto_decode(
+            &fs::read(&abi_path).map_err(|err| Error::IOErrorAtPath(err, abi_path))?,
+        )
+        .map_err(Error::DataError)?;
 
         if let Some(package_address) = self.package_address.clone() {
+            let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+
+            let global: GlobalAddressSubstate = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::Global(GlobalAddress::Package(package_address.0)),
+                    SubstateOffset::Global(GlobalOffset::Global),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().into())
+                .ok_or(Error::PackageAddressNotFound)?;
             let substate_id = SubstateId(
-                RENodeId::Package(package_address.0),
+                global.node_deref(),
                 SubstateOffset::Package(PackageOffset::Package),
             );
-
-            let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
             let previous_version = substate_store
                 .get_substate(&substate_id)
@@ -73,7 +84,7 @@ impl Publish {
             // TODO: implement real package overwrite
             substate_store.put_substate(
                 SubstateId(
-                    RENodeId::Package(package_address.0),
+                    global.node_deref(),
                     SubstateOffset::Package(PackageOffset::Package),
                 ),
                 output_value,
@@ -81,7 +92,7 @@ impl Publish {
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
             let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-                .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+                .lock_fee(100u32.into(), FAUCET_COMPONENT)
                 .publish_package(code, abi)
                 .build();
 

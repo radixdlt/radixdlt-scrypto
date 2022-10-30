@@ -8,8 +8,8 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let (_, _, other_account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
     let (_, token_resource_address) = test_runner.create_restricted_transfer_token(account);
 
     // Act
@@ -36,8 +36,8 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let (_, _, other_account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
     let (auth_resource_address, token_resource_address) =
         test_runner.create_restricted_transfer_token(account);
 

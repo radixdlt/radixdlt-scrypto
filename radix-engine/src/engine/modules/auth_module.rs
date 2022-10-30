@@ -42,8 +42,8 @@ impl AuthModule {
 
         let method_auths = match actor.clone() {
             REActor::Function(function_ident) => match function_ident {
-                ResolvedFunction::Native(NativeFunction::System(system_func)) => {
-                    System::function_auth(&system_func)
+                ResolvedFunction::Native(NativeFunction::EpochManager(system_func)) => {
+                    EpochManager::function_auth(&system_func)
                 }
                 _ => vec![],
             },
@@ -52,7 +52,7 @@ impl AuthModule {
                     (
                         ResolvedMethod::Native(NativeMethod::ResourceManager(ref method)),
                         ResolvedReceiver {
-                            receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                            receiver: RENodeId::ResourceManager(resource_address),
                             ..
                         },
                     ) => {
@@ -69,25 +69,25 @@ impl AuthModule {
                         auth
                     }
                     (
-                        ResolvedMethod::Native(NativeMethod::System(ref method)),
+                        ResolvedMethod::Native(NativeMethod::EpochManager(ref method)),
                         ResolvedReceiver {
-                            receiver: Receiver::Ref(RENodeId::System(..)),
+                            receiver: RENodeId::EpochManager(..),
                             ..
                         },
-                    ) => System::method_auth(method),
+                    ) => EpochManager::method_auth(method),
                     (
                         ResolvedMethod::Scrypto {
-                            package_address,
+                            package_id,
                             blueprint_name,
                             ident,
                             ..
                         },
                         ResolvedReceiver {
-                            receiver: Receiver::Ref(RENodeId::Component(component_id)),
+                            receiver: RENodeId::Component(component_id),
                             ..
                         },
                     ) => {
-                        let node_id = RENodeId::Package(package_address);
+                        let node_id = RENodeId::Package(package_id);
                         let offset = SubstateOffset::Package(PackageOffset::Package);
                         let handle =
                             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
@@ -133,7 +133,7 @@ impl AuthModule {
                     (
                         ResolvedMethod::Native(NativeMethod::Vault(ref vault_fn)),
                         ResolvedReceiver {
-                            receiver: Receiver::Ref(RENodeId::Vault(vault_id)),
+                            receiver: RENodeId::Vault(vault_id),
                             ..
                         },
                     ) => {
@@ -179,8 +179,7 @@ impl AuthModule {
             LockFlags::MUTABLE,
         )?;
         let mut substate_mut_ref = system_api.get_ref_mut(handle)?;
-        let mut raw_mut = substate_mut_ref.get_raw_mut();
-        let auth_zone_ref_mut = raw_mut.auth_zone();
+        let auth_zone_ref_mut = substate_mut_ref.auth_zone();
 
         // Authorization check
         auth_zone_ref_mut
@@ -197,7 +196,6 @@ impl AuthModule {
         auth_zone_ref_mut.new_frame(actor);
         new_refs.insert(auth_zone_id);
 
-        substate_mut_ref.flush()?;
         system_api.drop_lock(handle)?;
 
         Ok(new_refs)
@@ -227,10 +225,8 @@ impl AuthModule {
         )?;
         {
             let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-            let mut raw_mut = substate_ref_mut.get_raw_mut();
-            let auth_zone = raw_mut.auth_zone();
+            let auth_zone = substate_ref_mut.auth_zone();
             auth_zone.pop_frame();
-            substate_ref_mut.flush()?;
         }
         system_api.drop_lock(handle)?;
 

@@ -1,0 +1,14 @@
+[package]
+name = "stored_external_component"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sbor = { path = "../../../../sbor" }
+scrypto = { path = "../../../../scrypto" }
+
+[dev-dependencies]
+radix-engine = { path = "../../../../radix-engine" }
+
+[lib]
+crate-type = ["cdylib", "lib"]

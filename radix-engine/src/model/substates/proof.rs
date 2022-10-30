@@ -271,8 +271,8 @@ impl ProofSubstate {
         }
     }
 
-    pub fn drop(self) {
-        for (_, (container, locked_amount_or_ids)) in self.evidence {
+    pub fn drop(&mut self) {
+        for (_, (container, locked_amount_or_ids)) in &mut self.evidence {
             container.borrow_mut().unlock(locked_amount_or_ids);
         }
     }

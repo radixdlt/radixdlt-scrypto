@@ -66,6 +66,7 @@ pub enum TokenKind {
     NonFungibleId,
     NonFungibleAddress,
     PackageAddress,
+    SystemAddress,
     ComponentAddress,
     ResourceAddress,
     Expression,
@@ -80,7 +81,7 @@ pub enum TokenKind {
     KeyValueStore,
     NonFungibleStore,
     Component,
-    System,
+    EpochManager,
     Vault,
     ResourceManager,
     Package,
@@ -92,7 +93,6 @@ pub enum TokenKind {
     GreaterThan,
     Comma,
     Semicolon,
-    And,
 
     /* Instructions */
     TakeFromWorktop,
@@ -406,6 +406,7 @@ impl Lexer {
             "NonFungibleId" => Ok(TokenKind::NonFungibleId),
             "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
             "PackageAddress" => Ok(TokenKind::PackageAddress),
+            "SystemAddress" => Ok(TokenKind::SystemAddress),
             "ComponentAddress" => Ok(TokenKind::ComponentAddress),
             "ResourceAddress" => Ok(TokenKind::ResourceAddress),
             "Expression" => Ok(TokenKind::Expression),
@@ -424,7 +425,7 @@ impl Lexer {
             "KeyValueStore" => Ok(TokenKind::KeyValueStore),
             "NonFungibleStore" => Ok(TokenKind::NonFungibleStore),
             "Component" => Ok(TokenKind::Component),
-            "System" => Ok(TokenKind::System),
+            "EpochManager" => Ok(TokenKind::EpochManager),
             "Vault" => Ok(TokenKind::Vault),
             "ResourceManager" => Ok(TokenKind::ResourceManager),
             "Package" => Ok(TokenKind::Package),
@@ -472,7 +473,6 @@ impl Lexer {
             '>' => TokenKind::GreaterThan,
             ',' => TokenKind::Comma,
             ';' => TokenKind::Semicolon,
-            '&' => TokenKind::And,
             _ => {
                 return Err(self.unexpected_char());
             }

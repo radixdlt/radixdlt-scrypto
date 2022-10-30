@@ -25,8 +25,9 @@ macro_rules! log {
 impl<R: FeeReserve> Module<R> for LoggerModule {
     fn pre_sys_call(
         &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
@@ -69,9 +70,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             }
             SysCallInput::CreateNode { node } => {
                 log!(self, "Creating node: node = {:?}", node);
-            }
-            SysCallInput::GlobalizeNode { node_id } => {
-                log!(self, "Globalizing node: node_id = {:?}", node_id);
             }
             SysCallInput::LockSubstate {
                 node_id,
@@ -117,8 +115,9 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
 
     fn post_sys_call(
         &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         output: SysCallOutput,
     ) -> Result<(), ModuleError> {
         match output {
@@ -133,12 +132,10 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallOutput::BorrowNode { .. } => {}
             SysCallOutput::DropNode { .. } => {}
             SysCallOutput::CreateNode { .. } => {}
-            SysCallOutput::GlobalizeNode { .. } => {}
             SysCallOutput::LockSubstate { .. } => {}
             SysCallOutput::GetRef { .. } => {}
             SysCallOutput::GetRefMut { .. } => {}
             SysCallOutput::DropLock { .. } => {}
-            SysCallOutput::TakeSubstate { .. } => {}
             SysCallOutput::ReadTransactionHash { .. } => {}
             SysCallOutput::ReadBlob { .. } => {}
             SysCallOutput::GenerateUuid { .. } => {}
@@ -150,18 +147,20 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
 
     fn on_run(
         &mut self,
-        track: &mut Track<R>,
-        call_frames: &mut Vec<CallFrame>,
-        actor: &REActor,
-        input: &ScryptoValue,
+        _actor: &REActor,
+        _input: &ScryptoValue,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         Ok(())
     }
 
     fn on_wasm_instantiation(
         &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         _code: &[u8],
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -169,8 +168,9 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
 
     fn on_wasm_costing(
         &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         _units: u32,
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -178,8 +178,9 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
 
     fn on_lock_fee(
         &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
-        _call_frames: &mut Vec<CallFrame>,
         _vault_id: VaultId,
         fee: Resource,
         _contingent: bool,

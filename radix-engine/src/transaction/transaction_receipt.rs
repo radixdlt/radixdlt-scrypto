@@ -1,5 +1,6 @@
 use colored::*;
 use scrypto::address::{AddressDisplayContext, NO_NETWORK};
+use scrypto::core::SystemAddress;
 use scrypto::misc::ContextualDisplay;
 use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
 use transaction::model::*;
@@ -9,19 +10,19 @@ use crate::fee::FeeSummary;
 use crate::state_manager::StateDiff;
 use crate::types::*;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TransactionContents {
     pub instructions: Vec<Instruction>,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
 }
 
 /// Captures whether a transaction should be committed, and its other results
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum TransactionResult {
     Commit(CommitResult),
     Reject(RejectResult),
@@ -36,7 +37,7 @@ impl TransactionResult {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CommitResult {
     pub outcome: TransactionOutcome,
     pub state_updates: StateDiff,
@@ -45,7 +46,7 @@ pub struct CommitResult {
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum TransactionOutcome {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
@@ -67,11 +68,12 @@ impl TransactionOutcome {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
     pub new_resource_addresses: Vec<ResourceAddress>,
+    pub new_system_addresses: Vec<SystemAddress>,
 }
 
 impl EntityChanges {
@@ -80,6 +82,7 @@ impl EntityChanges {
             new_package_addresses: Vec::new(),
             new_component_addresses: Vec::new(),
             new_resource_addresses: Vec::new(),
+            new_system_addresses: Vec::new(),
         };
 
         for new_global_address in new_global_addresses {
@@ -93,6 +96,9 @@ impl EntityChanges {
                 GlobalAddress::Resource(resource_address) => {
                     entity_changes.new_resource_addresses.push(resource_address)
                 }
+                GlobalAddress::System(system_address) => {
+                    entity_changes.new_system_addresses.push(system_address)
+                }
             }
         }
 
@@ -100,13 +106,13 @@ impl EntityChanges {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct RejectResult {
     pub error: RejectionError,
 }
 
 /// Represents a transaction receipt.
-#[derive(TypeId, Encode, Decode)]
+#[derive(Clone, TypeId, Encode, Decode)]
 pub struct TransactionReceipt {
     pub contents: TransactionContents,
     pub execution: TransactionExecution, // THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
@@ -221,6 +227,11 @@ impl TransactionReceipt {
     pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
         let commit = self.expect_commit();
         &commit.entity_changes.new_resource_addresses
+    }
+
+    pub fn new_system_addresses(&self) -> &Vec<SystemAddress> {
+        let commit = self.expect_commit();
+        &commit.entity_changes.new_system_addresses
     }
 }
 

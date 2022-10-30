@@ -8,7 +8,7 @@ use scrypto::crypto::Hash;
 use scrypto::engine::types::*;
 use scrypto::misc::ContextualDisplay;
 use scrypto::resource::{
-    ConsumingBucketBurnInput, MintParams, ResourceManagerCreateInput, ResourceManagerMintInput,
+    MintParams, ResourceManagerBurnInput, ResourceManagerCreateInput, ResourceManagerMintInput,
 };
 use scrypto::values::*;
 
@@ -339,9 +339,10 @@ pub fn decompile_call_function<F: fmt::Write>(
     write!(
         f,
         "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-        function_ident
-            .package_address
-            .display(context.bech32_encoder),
+        match &function_ident.package {
+            ScryptoPackage::Global(package_address) =>
+                package_address.display(context.bech32_encoder),
+        },
         function_ident.blueprint_name,
         function_ident.function_name,
     )?;
@@ -360,6 +361,20 @@ pub fn decompile_call_native_function<F: fmt::Write>(
     let blueprint_name = &function_ident.blueprint_name;
     let function_name = &function_ident.function_name;
     match (blueprint_name.as_str(), function_name.as_ref()) {
+        ("ResourceManager", "burn") => {
+            if let Ok(input) = scrypto_decode::<ResourceManagerBurnInput>(&args) {
+                write!(
+                    f,
+                    "BURN_BUCKET Bucket({});",
+                    context
+                        .bucket_names
+                        .get(&input.bucket.0)
+                        .map(|name| format!("\"{}\"", name))
+                        .unwrap_or(format!("{}u32", input.bucket.0)),
+                )?;
+                return Ok(());
+            }
+        }
         ("ResourceManager", "create") => {
             if let Ok(input) = scrypto_decode::<ResourceManagerCreateInput>(&args) {
                 f.write_str(&format!(
@@ -421,21 +436,7 @@ pub fn decompile_call_native_method<F: fmt::Write>(
 ) -> Result<(), DecompileError> {
     // Try to recognize the invocation
     match (method_ident.receiver, method_ident.method_name.as_ref()) {
-        (Receiver::Consumed(RENodeId::Bucket(bucket_id)), "burn") => {
-            if let Ok(_input) = scrypto_decode::<ConsumingBucketBurnInput>(&args) {
-                write!(
-                    f,
-                    "BURN_BUCKET Bucket({});",
-                    context
-                        .bucket_names
-                        .get(&bucket_id)
-                        .map(|name| format!("\"{}\"", name))
-                        .unwrap_or(format!("{}u32", bucket_id)),
-                )?;
-                return Ok(());
-            }
-        }
-        (Receiver::Ref(RENodeId::ResourceManager(resource_address)), "mint") => {
+        (RENodeId::Global(GlobalAddress::Resource(resource_address)), "mint") => {
             if let Ok(input) = scrypto_decode::<ResourceManagerMintInput>(&args) {
                 if let MintParams::Fungible { amount } = input.mint_params {
                     write!(
@@ -452,10 +453,7 @@ pub fn decompile_call_native_method<F: fmt::Write>(
     }
 
     // Fall back to generic representation
-    let receiver = match method_ident.receiver {
-        Receiver::Ref(node_id) => format!("&{}", format_node_id(&node_id, context)),
-        Receiver::Consumed(node_id) => format_node_id(&node_id, context),
-    };
+    let receiver = format_node_id(&method_ident.receiver, context);
     f.write_str(&format!(
         "CALL_NATIVE_METHOD {} \"{}\"",
         receiver, method_ident.method_name
@@ -498,6 +496,9 @@ fn format_node_id(node_id: &RENodeId, context: &mut DecompilationContext) -> Str
             GlobalAddress::Resource(address) => {
                 format!("Global(\"{}\")", address.display(context.bech32_encoder))
             }
+            GlobalAddress::System(address) => {
+                format!("Global(\"{}\")", address.display(context.bech32_encoder))
+            }
         },
         RENodeId::Bucket(id) => match context.bucket_names.get(id) {
             Some(name) => format!("Bucket(\"{}\")", name),
@@ -512,15 +513,10 @@ fn format_node_id(node_id: &RENodeId, context: &mut DecompilationContext) -> Str
         RENodeId::KeyValueStore(id) => format!("KeyValueStore(\"{}\")", format_id(id)),
         RENodeId::NonFungibleStore(id) => format!("NonFungibleStore(\"{}\")", format_id(id)),
         RENodeId::Component(id) => format!("Component(\"{}\")", format_id(id)),
-        RENodeId::System(id) => format!("System(\"{}\")", format_id(id)),
+        RENodeId::EpochManager(id) => format!("EpochManager(\"{}\")", format_id(id)),
         RENodeId::Vault(id) => format!("Vault(\"{}\")", format_id(id)),
-        RENodeId::ResourceManager(address) => format!(
-            "ResourceManager(\"{}\")",
-            address.display(context.bech32_encoder)
-        ),
-        RENodeId::Package(address) => {
-            format!("Package(\"{}\")", address.display(context.bech32_encoder))
-        }
+        RENodeId::ResourceManager(id) => format!("ResourceManager(\"{}\")", format_id(id)),
+        RENodeId::Package(id) => format!("Package(\"{}\")", format_id(id)),
     }
 }
 
@@ -621,7 +617,7 @@ PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02
         assert_eq!(
             manifest2,
             r#"CALL_FUNCTION PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "Blueprint" "function";
-CALL_NATIVE_FUNCTION "System" "create";
+CALL_NATIVE_FUNCTION "EpochManager" "create";
 CALL_NATIVE_FUNCTION "ResourceManager" "create";
 CALL_NATIVE_FUNCTION "Package" "publish";
 CALL_NATIVE_FUNCTION "TransactionProcessor" "run";
@@ -639,26 +635,13 @@ CALL_NATIVE_FUNCTION "TransactionProcessor" "run";
         )
         .unwrap();
         let manifest2 = decompile(&manifest.instructions, &network).unwrap();
+        println!("{}", manifest2);
         assert_eq!(
             manifest2,
             r#"CALL_METHOD ComponentAddress("component_sim1qgvyxt5rrjhwctw7krgmgkrhv82zuamcqkq75tkkrwgs00m736") "free_xrd";
 CALL_METHOD Component("000000000000000000000000000000000000000000000000000000000000000000000005") "free_xrd";
 TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");
 CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Proof("proof1");
-CALL_NATIVE_METHOD &Bucket("bucket1") "get_resource_address";
-CALL_NATIVE_METHOD &Bucket(1u32) "get_resource_address";
-CALL_NATIVE_METHOD &Bucket(513u32) "get_resource_address";
-CALL_NATIVE_METHOD &Bucket(1u32) "get_resource_address";
-CALL_NATIVE_METHOD &AuthZoneStack(1u32) "drain";
-CALL_NATIVE_METHOD &Worktop "drain";
-CALL_NATIVE_METHOD &KeyValueStore("000000000000000000000000000000000000000000000000000000000000000000000005") "method";
-CALL_NATIVE_METHOD &NonFungibleStore("000000000000000000000000000000000000000000000000000000000000000000000005") "method";
-CALL_NATIVE_METHOD &Component("000000000000000000000000000000000000000000000000000000000000000000000005") "add_access_check";
-CALL_NATIVE_METHOD &System("000000000000000000000000000000000000000000000000000000000000000000000005") "get_transaction_hash";
-CALL_NATIVE_METHOD &Vault("000000000000000000000000000000000000000000000000000000000000000000000005") "get_resource_address";
-CALL_NATIVE_METHOD &ResourceManager("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
-CALL_NATIVE_METHOD &Package("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "method";
-CALL_NATIVE_METHOD &Global("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
 CALL_NATIVE_METHOD Bucket("bucket1") "get_resource_address";
 CALL_NATIVE_METHOD Bucket(1u32) "get_resource_address";
 CALL_NATIVE_METHOD Bucket(513u32) "get_resource_address";
@@ -668,10 +651,10 @@ CALL_NATIVE_METHOD Worktop "drain";
 CALL_NATIVE_METHOD KeyValueStore("000000000000000000000000000000000000000000000000000000000000000000000005") "method";
 CALL_NATIVE_METHOD NonFungibleStore("000000000000000000000000000000000000000000000000000000000000000000000005") "method";
 CALL_NATIVE_METHOD Component("000000000000000000000000000000000000000000000000000000000000000000000005") "add_access_check";
-CALL_NATIVE_METHOD System("000000000000000000000000000000000000000000000000000000000000000000000005") "get_transaction_hash";
+CALL_NATIVE_METHOD EpochManager("000000000000000000000000000000000000000000000000000000000000000000000005") "get_transaction_hash";
 CALL_NATIVE_METHOD Vault("000000000000000000000000000000000000000000000000000000000000000000000005") "get_resource_address";
-CALL_NATIVE_METHOD ResourceManager("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
-CALL_NATIVE_METHOD Package("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "method";
+CALL_NATIVE_METHOD ResourceManager("000000000000000000000000000000000000000000000000000000000000000005000000") "burn";
+CALL_NATIVE_METHOD Package("000000000000000000000000000000000000000000000000000000000000000005000000") "method";
 CALL_NATIVE_METHOD Global("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "method";
 "#
         )

@@ -1,0 +1,16 @@
+[package]
+name = "faucet"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sbor = { path = "../../../sbor" }
+scrypto = { path = "../../../scrypto" }
+
+[dev-dependencies]
+transaction = { path = "../../../transaction" }
+radix-engine = { path = "../../../radix-engine" }
+scrypto-unit = { path = "../../../scrypto-unit" }
+
+[lib]
+crate-type = ["cdylib", "lib"]

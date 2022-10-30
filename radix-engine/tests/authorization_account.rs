@@ -16,11 +16,11 @@ fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
 ) {
     // Arrange
     let account = test_runner.new_account_with_auth_rule(auth_rule);
-    let (_, _, other_account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method(
             other_account,
@@ -234,12 +234,12 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let xrd_auth = rule!(require(RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
-    let (_, _, other_account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
@@ -269,12 +269,12 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let xrd_auth = rule!(require_amount(Decimal(I256::from(1)), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
-    let (_, _, other_account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
@@ -304,12 +304,12 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     let mut test_runner = TestRunner::new(true, &mut store);
     let xrd_auth = rule!(require_amount(Decimal::from(1), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
-    let (_, _, other_account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop_by_amount(Decimal::from("0.9"), RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);

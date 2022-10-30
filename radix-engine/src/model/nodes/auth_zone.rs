@@ -1,6 +1,6 @@
-use crate::engine::{HeapRENode, LockFlags, SystemApi};
+use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::{InvokeError, ProofError, ProofSubstate};
+use crate::model::{InvokeError, ProofError};
 use crate::types::*;
 use scrypto::resource::AuthZoneDrainInput;
 
@@ -52,28 +52,33 @@ impl AuthZoneStack {
 
                 let proof = {
                     let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let auth_zone = raw_mut.auth_zone();
+                    let auth_zone = substate_mut.auth_zone();
                     let proof = auth_zone.cur_auth_zone_mut().pop()?;
-                    substate_mut.flush()?;
                     proof
                 };
 
-                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             AuthZoneMethod::Push => {
                 let input: AuthZonePushInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
-                let mut proof: ProofSubstate =
-                    system_api.node_drop(RENodeId::Proof(input.proof.0))?.into();
-                proof.change_to_unrestricted();
+
+                let node_id = RENodeId::Proof(input.proof.0);
+                let handle = system_api.lock_substate(
+                    node_id,
+                    SubstateOffset::Proof(ProofOffset::Proof),
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = system_api.get_ref(handle)?;
+                let proof = substate_ref.proof();
+                // Take control of the proof lock as the proof in the call frame will lose it's lock once dropped
+                let mut cloned_proof = proof.clone();
+                cloned_proof.change_to_unrestricted();
 
                 let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                let auth_zone = raw_mut.auth_zone();
-                auth_zone.cur_auth_zone_mut().push(proof);
-                substate_mut.flush()?;
+                let auth_zone = substate_mut.auth_zone();
+                auth_zone.cur_auth_zone_mut().push(cloned_proof);
 
                 ScryptoValue::from_typed(&())
             }
@@ -87,23 +92,21 @@ impl AuthZoneStack {
                     let offset =
                         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                     let resource_handle =
-                        system_api.lock_substate(resource_id, offset, LockFlags::empty())?;
+                        system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
                     let substate_ref = system_api.get_ref(resource_handle)?;
                     substate_ref.resource_manager().resource_type
                 };
 
                 let proof = {
                     let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let auth_zone = raw_mut.auth_zone();
+                    let auth_zone = substate_mut.auth_zone();
                     let proof = auth_zone
                         .cur_auth_zone()
                         .create_proof(input.resource_address, resource_type)?;
-                    substate_mut.flush()?;
                     proof
                 };
 
-                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             AuthZoneMethod::CreateProofByAmount => {
@@ -116,25 +119,23 @@ impl AuthZoneStack {
                     let offset =
                         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                     let resource_handle =
-                        system_api.lock_substate(resource_id, offset, LockFlags::empty())?;
+                        system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
                     let substate_ref = system_api.get_ref(resource_handle)?;
                     substate_ref.resource_manager().resource_type
                 };
 
                 let proof = {
                     let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let auth_zone = raw_mut.auth_zone();
+                    let auth_zone = substate_mut.auth_zone();
                     let proof = auth_zone.cur_auth_zone().create_proof_by_amount(
                         input.amount,
                         input.resource_address,
                         resource_type,
                     )?;
-                    substate_mut.flush()?;
                     proof
                 };
 
-                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             AuthZoneMethod::CreateProofByIds => {
@@ -163,17 +164,15 @@ impl AuthZoneStack {
                     proof
                 };
 
-                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             AuthZoneMethod::Clear => {
                 let _: AuthZoneClearInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                let auth_zone = raw_mut.auth_zone();
+                let auth_zone = substate_mut.auth_zone();
                 auth_zone.cur_auth_zone_mut().clear();
-                substate_mut.flush()?;
                 ScryptoValue::from_typed(&())
             }
             AuthZoneMethod::Drain => {
@@ -182,17 +181,14 @@ impl AuthZoneStack {
 
                 let proofs = {
                     let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let auth_zone = raw_mut.auth_zone();
+                    let auth_zone = substate_mut.auth_zone();
                     let proofs = auth_zone.cur_auth_zone_mut().drain();
-                    substate_mut.flush()?;
                     proofs
                 };
 
                 let mut proof_ids: Vec<scrypto::resource::Proof> = Vec::new();
                 for proof in proofs {
-                    let proof_id: ProofId =
-                        system_api.node_create(HeapRENode::Proof(proof))?.into();
+                    let proof_id: ProofId = system_api.create_node(RENode::Proof(proof))?.into();
                     proof_ids.push(scrypto::resource::Proof(proof_id));
                 }
 

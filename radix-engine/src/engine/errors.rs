@@ -55,7 +55,6 @@ pub enum KernelError {
 
     // invocation
     WasmError(WasmError),
-    RENodeNotVisible(RENodeId),
 
     InvalidReferencePass(GlobalAddress),
     InvalidReferenceReturn(GlobalAddress),
@@ -64,7 +63,7 @@ pub enum KernelError {
 
     MaxCallDepthLimitReached,
     InvalidScryptoFnOutput,
-    MethodReceiverNotMatch(NativeMethod, Receiver),
+    MethodReceiverNotMatch(NativeMethod, RENodeId),
 
     // ID allocation
     IdAllocationError(IdAllocationError),
@@ -75,13 +74,11 @@ pub enum KernelError {
     // RENode
     StoredNodeRemoved(RENodeId),
     RENodeGlobalizeTypeNotAllowed(RENodeId),
-    RENodeCreateInvalidPermission,
-
     TrackError(TrackError),
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
-    DropFailure(DropFailure),
     BlobNotFound(Hash),
+    DropNodeFailure(RENodeId),
 
     // Substate Constraints
     InvalidOffset(SubstateOffset),
@@ -89,7 +86,16 @@ pub enum KernelError {
     InvalidOverwrite,
 
     // Actor Constraints
-    InvalidSubstateLock {
+    InvalidDropNodeVisibility {
+        mode: ExecutionMode,
+        actor: REActor,
+        node_id: RENodeId,
+    },
+    InvalidCreateNodeVisibility {
+        mode: ExecutionMode,
+        actor: REActor,
+    },
+    InvalidSubstateVisibility {
         mode: ExecutionMode,
         actor: REActor,
         node_id: RENodeId,
@@ -102,6 +108,7 @@ pub enum KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum CallFrameError {
+    OffsetDoesNotExist(RENodeId, SubstateOffset),
     RENodeNotVisible(RENodeId),
     RENodeNotOwned(RENodeId),
     MovingLockedRENode(RENodeId),
@@ -170,7 +177,7 @@ pub enum ApplicationError {
 
     PackageError(PackageError),
 
-    SystemError(SystemError),
+    EpochManagerError(EpochManagerError),
 
     ResourceManagerError(ResourceManagerError),
 
@@ -185,19 +192,6 @@ pub enum ApplicationError {
     WorktopError(WorktopError),
 
     AuthZoneError(AuthZoneError),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum DropFailure {
-    System,
-    Resource,
-    Component,
-    Bucket,
-    Worktop,
-    Vault,
-    Package,
-    KeyValueStore,
-    NonFungibleStore,
 }
 
 impl fmt::Display for RuntimeError {

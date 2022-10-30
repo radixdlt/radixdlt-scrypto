@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, LockFlags, SystemApi};
+use crate::engine::{LockFlags, RENode, SystemApi};
 use crate::fee::{FeeReserve, FeeReserveError};
 use crate::model::{
     BucketSubstate, InvokeError, ProofError, ResourceContainerId, ResourceOperationError,
@@ -27,7 +27,9 @@ impl Vault {
             VaultMethod::LockFee => {
                 LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE
             }
-            VaultMethod::LockContingentFee => LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE,
+            VaultMethod::LockContingentFee => {
+                LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE
+            }
             VaultMethod::Put => LockFlags::MUTABLE,
             VaultMethod::TakeNonFungibles => LockFlags::MUTABLE,
             VaultMethod::GetAmount => LockFlags::read_only(),
@@ -58,12 +60,11 @@ impl Vault {
                 let input: VaultPutInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
                 let bucket = system_api
-                    .node_drop(RENodeId::Bucket(input.bucket.0))?
+                    .drop_node(RENodeId::Bucket(input.bucket.0))?
                     .into();
 
                 let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                let vault = raw_mut.vault();
+                let vault = substate_mut.vault();
                 vault
                     .put(bucket)
                     .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
@@ -75,13 +76,12 @@ impl Vault {
 
                 let container = {
                     let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let vault = raw_mut.vault();
+                    let vault = substate_mut.vault();
                     vault.take(input.amount)?
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
+                    .create_node(RENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
             }
@@ -91,8 +91,7 @@ impl Vault {
 
                 let fee = {
                     let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let vault = raw_mut.vault();
+                    let vault = substate_mut.vault();
 
                     // Check resource and take amount
                     if vault.resource_address() != RADIX_TOKEN {
@@ -115,8 +114,7 @@ impl Vault {
                 // Return changes
                 {
                     let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let vault = raw_mut.vault();
+                    let vault = substate_mut.vault();
                     vault
                         .borrow_resource_mut()
                         .put(changes)
@@ -131,13 +129,12 @@ impl Vault {
 
                 let container = {
                     let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let vault = raw_mut.vault();
+                    let vault = substate_mut.vault();
                     vault.take_non_fungibles(&input.non_fungible_ids)?
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
+                    .create_node(RENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
             }
@@ -173,13 +170,12 @@ impl Vault {
 
                 let proof = {
                     let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let vault = raw_mut.vault();
+                    let vault = substate_mut.vault();
                     vault
                         .create_proof(ResourceContainerId::Vault(vault_id))
                         .map_err(|e| InvokeError::Error(VaultError::ProofError(e)))?
                 };
-                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             VaultMethod::CreateProofByAmount => {
@@ -188,14 +184,13 @@ impl Vault {
 
                 let proof = {
                     let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let vault = raw_mut.vault();
+                    let vault = substate_mut.vault();
                     vault
                         .create_proof_by_amount(input.amount, ResourceContainerId::Vault(vault_id))
                         .map_err(|e| InvokeError::Error(VaultError::ProofError(e)))?
                 };
 
-                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             VaultMethod::CreateProofByIds => {
@@ -204,14 +199,13 @@ impl Vault {
 
                 let proof = {
                     let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let mut raw_mut = substate_mut.get_raw_mut();
-                    let vault = raw_mut.vault();
+                    let vault = substate_mut.vault();
                     vault
                         .create_proof_by_ids(&input.ids, ResourceContainerId::Vault(vault_id))
                         .map_err(|e| InvokeError::Error(VaultError::ProofError(e)))?
                 };
 
-                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
+                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
         };

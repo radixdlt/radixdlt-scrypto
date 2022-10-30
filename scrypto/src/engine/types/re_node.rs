@@ -3,6 +3,7 @@ use super::*;
 // TODO: Remove and replace with real HeapRENodes
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum ScryptoRENode {
+    GlobalComponent(ComponentId),
     Component(PackageAddress, String, Vec<u8>),
     KeyValueStore,
 }
@@ -18,10 +19,10 @@ pub enum RENodeId {
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
     Component(ComponentId),
-    System(ComponentId),
     Vault(VaultId),
-    ResourceManager(ResourceAddress), // TODO: Convert this into id
-    Package(PackageAddress),          // TODO: Convert this into id
+    ResourceManager(ResourceManagerId),
+    Package(PackageId),
+    EpochManager(EpochManagerId),
 }
 
 impl Into<(Hash, u32)> for RENodeId {
@@ -31,7 +32,9 @@ impl Into<(Hash, u32)> for RENodeId {
             RENodeId::NonFungibleStore(id) => id,
             RENodeId::Vault(id) => id,
             RENodeId::Component(id) => id,
-            RENodeId::System(id) => id,
+            RENodeId::EpochManager(id) => id,
+            RENodeId::ResourceManager(id) => id,
+            RENodeId::Package(id) => id,
             _ => panic!("Not a stored id"),
         }
     }
@@ -42,7 +45,17 @@ impl Into<u32> for RENodeId {
         match self {
             RENodeId::Bucket(id) => id,
             RENodeId::Proof(id) => id,
+            RENodeId::AuthZoneStack(id) => id,
             _ => panic!("Not a transient id"),
+        }
+    }
+}
+
+impl Into<ComponentAddress> for RENodeId {
+    fn into(self) -> ComponentAddress {
+        match self {
+            RENodeId::Global(GlobalAddress::Component(address)) => address,
+            _ => panic!("Not a component address"),
         }
     }
 }
@@ -50,7 +63,7 @@ impl Into<u32> for RENodeId {
 impl Into<PackageAddress> for RENodeId {
     fn into(self) -> PackageAddress {
         match self {
-            RENodeId::Package(package_address) => package_address,
+            RENodeId::Global(GlobalAddress::Package(package_address)) => package_address,
             _ => panic!("Not a package address"),
         }
     }
@@ -59,8 +72,17 @@ impl Into<PackageAddress> for RENodeId {
 impl Into<ResourceAddress> for RENodeId {
     fn into(self) -> ResourceAddress {
         match self {
-            RENodeId::ResourceManager(resource_address) => resource_address,
+            RENodeId::Global(GlobalAddress::Resource(resource_address)) => resource_address,
             _ => panic!("Not a resource address"),
+        }
+    }
+}
+
+impl Into<SystemAddress> for RENodeId {
+    fn into(self) -> SystemAddress {
+        match self {
+            RENodeId::Global(GlobalAddress::System(system_address)) => system_address,
+            _ => panic!("Not a system address"),
         }
     }
 }
@@ -70,6 +92,7 @@ pub enum GlobalAddress {
     Component(ComponentAddress),
     Package(PackageAddress),
     Resource(ResourceAddress),
+    System(SystemAddress),
 }
 
 impl Into<ComponentAddress> for GlobalAddress {
@@ -127,13 +150,11 @@ pub enum ResourceManagerOffset {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum KeyValueStoreOffset {
-    Space,
     Entry(Vec<u8>),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum NonFungibleStoreOffset {
-    Space,
     Entry(NonFungibleId),
 }
 
@@ -143,8 +164,8 @@ pub enum VaultOffset {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum SystemOffset {
-    System,
+pub enum EpochManagerOffset {
+    EpochManager,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -173,7 +194,7 @@ pub enum SubstateOffset {
     KeyValueStore(KeyValueStoreOffset),
     NonFungibleStore(NonFungibleStoreOffset),
     Vault(VaultOffset),
-    System(SystemOffset),
+    EpochManager(EpochManagerOffset),
     Bucket(BucketOffset),
     Proof(ProofOffset),
     Worktop(WorktopOffset),

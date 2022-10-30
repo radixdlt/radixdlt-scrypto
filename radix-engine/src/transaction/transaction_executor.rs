@@ -167,7 +167,7 @@ where
                 .invoke_native(NativeInvocation::Function(
                     NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
                     ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                        instructions: instructions.clone(),
+                        instructions: sbor::rust::borrow::Cow::Borrowed(&instructions),
                     }),
                 ))
                 .map(|o| {
