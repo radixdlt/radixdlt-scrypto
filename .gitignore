@@ -12,7 +12,7 @@ target/
 # TYPE 1:
 # - The root workspace of libraries. As per docs in below link, libraries shouldn't have Cargo.lock source controlled.
 #   The Cargo.lock of packages is ignored anyway by crates pulling them in.
-#   http://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries
+#   https://doc.rust-lang.org/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries
 Cargo.lock
 
 # TYPE 2:
