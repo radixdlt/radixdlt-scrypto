@@ -22,7 +22,9 @@ pub struct ProofGetNonFungibleIdsInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofGetResourceAddressInput {}
+pub struct ProofGetResourceAddressInput {
+    pub proof_id: ProofId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ProofCloneInput {}
@@ -234,7 +236,9 @@ impl Proof {
             }
             fn resource_address(&self) -> ResourceAddress {
                 ProofMethod::GetResourceAddress,
-                ProofGetResourceAddressInput {}
+                ProofGetResourceAddressInput {
+                    proof_id: self.0
+                }
             }
         }
     }
@@ -272,7 +276,9 @@ impl ValidatedProof {
             }
             pub fn resource_address(&self) -> ResourceAddress {
                 ProofMethod::GetResourceAddress,
-                ProofGetResourceAddressInput {}
+                ProofGetResourceAddressInput {
+                    proof_id: self.proof_id(),
+                }
             }
         }
     }

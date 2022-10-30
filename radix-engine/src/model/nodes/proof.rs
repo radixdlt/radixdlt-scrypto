@@ -93,6 +93,40 @@ impl NativeInvocation for ProofGetNonFungibleIdsInput {
     }
 }
 
+impl NativeExecutable for ProofGetResourceAddressInput {
+    type Output = ResourceAddress;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Bucket(input.proof_id);
+        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let substate_ref = system_api.get_ref(handle)?;
+        let proof = substate_ref.proof();
+
+        Ok((
+            proof.resource_address,
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(proof.resource_address))),
+        ))
+    }
+}
+
+impl NativeInvocation for ProofGetResourceAddressInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Proof(ProofMethod::GetResourceAddress),
+            RENodeId::Proof(self.proof_id),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
 
 pub struct Proof;
 
@@ -121,9 +155,7 @@ impl Proof {
                 panic!("Unexpected")
             }
             ProofMethod::GetResourceAddress => {
-                let _: ProofGetResourceAddressInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
-                ScryptoValue::from_typed(&proof.resource_address)
+                panic!("Unexpected")
             }
             ProofMethod::Clone => {
                 let _: ProofCloneInput = scrypto_decode(&args.raw)
