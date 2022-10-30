@@ -1,4 +1,4 @@
-use crate::engine::{LockFlags, RENode, SystemApi};
+use crate::engine::{ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable, NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{InvokeError, ProofError};
 use crate::types::*;
@@ -13,6 +13,52 @@ pub enum AuthZoneError {
     CouldNotGetProof,
     CouldNotGetResource,
     NoMethodSpecified,
+}
+
+impl NativeExecutable for AuthZonePopInput {
+    type Output = scrypto::resource::Proof;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::AuthZoneStack(input.auth_zone_id);
+        let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+        let auth_zone_handle =
+            system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let proof = {
+            let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
+            let auth_zone = substate_mut.auth_zone();
+            let proof = auth_zone.cur_auth_zone_mut().pop()
+                .map_err(|e| match e {
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e)),
+                })?;
+            proof
+        };
+
+        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+
+        Ok((
+            scrypto::resource::Proof(proof_id),
+            CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
+        ))
+    }
+}
+
+impl NativeInvocation for AuthZonePopInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::AuthZone(AuthZoneMethod::Pop),
+            RENodeId::AuthZoneStack(self.auth_zone_id),
+            CallFrameUpdate::empty(),
+        )
+    }
 }
 
 pub struct AuthZoneStack;
@@ -47,18 +93,7 @@ impl AuthZoneStack {
 
         let rtn = match method {
             AuthZoneMethod::Pop => {
-                let _: AuthZonePopInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
-
-                let proof = {
-                    let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
-                    let auth_zone = substate_mut.auth_zone();
-                    let proof = auth_zone.cur_auth_zone_mut().pop()?;
-                    proof
-                };
-
-                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
-                ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
+                panic!("Unexpected")
             }
             AuthZoneMethod::Push => {
                 let input: AuthZonePushInput = scrypto_decode(&args.raw)

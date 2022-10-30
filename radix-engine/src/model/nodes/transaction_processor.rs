@@ -262,6 +262,7 @@ impl TransactionProcessor {
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
         let auth_zone_ref = auth_zone_node_id;
+        let auth_zone_id: AuthZoneId = auth_zone_ref.into();
 
         for inst in input.instructions.as_ref() {
             let result = match inst {
@@ -395,16 +396,13 @@ impl TransactionProcessor {
                     })
                     .and_then(|new_id| {
                         system_api
-                            .invoke(NativeMethodInvocation(
-                                NativeMethod::AuthZone(AuthZoneMethod::Pop),
-                                auth_zone_ref,
-                                ScryptoValue::from_typed(&AuthZonePopInput {}),
-                            ))
+                            .invoke(AuthZonePopInput {
+                                auth_zone_id
+                            })
                             .map_err(InvokeError::Downstream)
-                            .map(|rtn| {
-                                let proof_id = Self::first_proof(&rtn);
-                                proof_id_mapping.insert(new_id, proof_id);
-                                ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
+                            .map(|proof| {
+                                proof_id_mapping.insert(new_id, proof.0);
+                                ScryptoValue::from_typed(&proof)
                             })
                     }),
                 Instruction::ClearAuthZone => {

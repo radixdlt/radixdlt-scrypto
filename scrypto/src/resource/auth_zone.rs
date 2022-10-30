@@ -8,7 +8,9 @@ use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZonePopInput {}
+pub struct AuthZonePopInput {
+    pub auth_zone_id: AuthZoneId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZonePushInput {
@@ -46,17 +48,28 @@ pub struct AuthZoneDrainInput {}
 pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
+    pub fn pop() -> Proof {
+        let input = RadixEngineInput::GetVisibleNodeIds();
+        let owned_node_ids: Vec<RENodeId> = call_engine(input);
+        let node_id = owned_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+            .expect("AuthZone does not exist");
+
+        let input = RadixEngineInput::InvokeNativeMethod(
+            NativeMethod::AuthZone(AuthZoneMethod::Pop),
+            node_id,
+            scrypto::buffer::scrypto_encode(&(AuthZonePopInput { auth_zone_id: node_id.into() })),
+        );
+        call_engine(input)
+    }
+
     native_methods! {
         {
             let input = RadixEngineInput::GetVisibleNodeIds();
             let owned_node_ids: Vec<RENodeId> = call_engine(input);
             owned_node_ids.into_iter().find(|n| matches!(n, RENodeId::AuthZoneStack(..))).expect("AuthZone does not exist")
         }, NativeMethod::AuthZone => {
-            pub fn pop() -> Proof {
-                AuthZoneMethod::Pop,
-                AuthZonePopInput {}
-            }
-
             pub fn create_proof(resource_address: ResourceAddress) -> Proof {
                 AuthZoneMethod::CreateProof,
                 AuthZoneCreateProofInput {
