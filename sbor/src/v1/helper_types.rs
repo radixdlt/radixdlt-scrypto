@@ -2,9 +2,11 @@ use super::*;
 
 pub struct EnumDiscriminatorString(String);
 
-impl Encode for EnumDiscriminatorString {
+impl ConstInterpretation for EnumDiscriminatorString {
     const INTERPRETATION: u8 = DefaultInterpretations::UTF8_STRING_DISCRIMINATOR;
+}
 
+impl Encode for EnumDiscriminatorString {
     fn encode_value(&self, encoder: &mut Encoder) {
         self.0.encode_value(encoder);
     }

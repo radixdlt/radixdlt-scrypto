@@ -171,7 +171,7 @@ impl<'a> Decoder<'a> {
     }
 
     #[inline]
-    pub fn read_sum_type_any_discriminator(&mut self) -> Result<T, DecodeError> {
+    pub fn read_sum_type_any_discriminator<T: Decodable>(&mut self) -> Result<T, DecodeError> {
         self.decode()
     }
 
