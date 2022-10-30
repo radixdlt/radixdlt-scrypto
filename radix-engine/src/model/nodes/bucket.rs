@@ -3,7 +3,7 @@ use crate::engine::{
     NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
-use crate::model::{BucketSubstate, InvokeError, ProofError, ResourceOperationError};
+use crate::model::{BucketSubstate, ProofError, ResourceOperationError};
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -101,7 +101,6 @@ impl NativeInvocation for BucketCreateProofInput {
     }
 }
 
-
 impl NativeExecutable for BucketTakeNonFungiblesInput {
     type Output = scrypto::resource::Bucket;
 
@@ -109,9 +108,9 @@ impl NativeExecutable for BucketTakeNonFungiblesInput {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         let node_id = RENodeId::Bucket(input.bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -119,15 +118,17 @@ impl NativeExecutable for BucketTakeNonFungiblesInput {
 
         let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
-        let container = bucket
-            .take_non_fungibles(&input.ids)
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ResourceOperationError(e))))?;
+        let container = bucket.take_non_fungibles(&input.ids).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::ResourceOperationError(e),
+            ))
+        })?;
         let bucket_id = system_api
             .create_node(RENode::Bucket(BucketSubstate::new(container)))?
             .into();
         Ok((
-               scrypto::resource::Bucket(bucket_id),
-               CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
+            scrypto::resource::Bucket(bucket_id),
+            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }
 }
@@ -149,9 +150,9 @@ impl NativeExecutable for BucketGetNonFungibleIdsInput {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         let node_id = RENodeId::Bucket(input.bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -159,14 +160,13 @@ impl NativeExecutable for BucketGetNonFungibleIdsInput {
 
         let substate_ref = system_api.get_ref(bucket_handle)?;
         let bucket = substate_ref.bucket();
-        let ids = bucket
-            .total_ids()
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ResourceOperationError(e))))?;
+        let ids = bucket.total_ids().map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::ResourceOperationError(e),
+            ))
+        })?;
 
-        Ok((
-            ids,
-            CallFrameUpdate::empty()
-        ))
+        Ok((ids, CallFrameUpdate::empty()))
     }
 }
 
@@ -187,9 +187,9 @@ impl NativeExecutable for BucketGetAmountInput {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         let node_id = RENodeId::Bucket(input.bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -197,10 +197,7 @@ impl NativeExecutable for BucketGetAmountInput {
 
         let substate = system_api.get_ref(bucket_handle)?;
         let bucket = substate.bucket();
-        Ok((
-            bucket.total_amount(),
-            CallFrameUpdate::empty()
-        ))
+        Ok((bucket.total_amount(), CallFrameUpdate::empty()))
     }
 }
 
@@ -214,33 +211,18 @@ impl NativeInvocation for BucketGetAmountInput {
     }
 }
 
+impl NativeExecutable for BucketPutInput {
+    type Output = ();
 
-
-
-pub struct Bucket;
-
-trait BucketMethodActor<I, O, E> {
-    fn execute<'s, Y, R>(
-        bucket_id: BucketId,
-        input: I,
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
         system_api: &mut Y,
-    ) -> Result<O, InvokeError<E>>
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve;
-}
-
-impl BucketMethodActor<BucketPutInput, (), BucketError> for Bucket {
-    fn execute<'s, Y, R>(
-        bucket_id: BucketId,
-        input: BucketPutInput,
-        system_api: &mut Y,
-    ) -> Result<(), InvokeError<BucketError>>
-    where
-        Y: SystemApi<'s, R>,
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
         R: FeeReserve,
     {
-        let node_id = RENodeId::Bucket(bucket_id);
+        let node_id = RENodeId::Bucket(input.bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
@@ -249,74 +231,58 @@ impl BucketMethodActor<BucketPutInput, (), BucketError> for Bucket {
             .into();
         let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
-        bucket
-            .put(other_bucket)
-            .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
-        Ok(())
+        bucket.put(other_bucket).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::ResourceOperationError(e),
+            ))
+        })?;
+
+        Ok(((), CallFrameUpdate::empty()))
     }
 }
 
-impl BucketMethodActor<BucketGetResourceAddressInput, ResourceAddress, BucketError> for Bucket {
-    fn execute<'s, Y, R>(
-        bucket_id: BucketId,
-        _input: BucketGetResourceAddressInput,
+impl NativeInvocation for BucketPutInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Bucket(BucketMethod::Put),
+            RENodeId::Bucket(self.bucket_id),
+            CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0)),
+        )
+    }
+}
+
+impl NativeExecutable for BucketGetResourceAddressInput {
+    type Output = ResourceAddress;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
         system_api: &mut Y,
-    ) -> Result<ResourceAddress, InvokeError<BucketError>>
+    ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R>,
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
         R: FeeReserve,
     {
-        let node_id = RENodeId::Bucket(bucket_id);
+        let node_id = RENodeId::Bucket(input.bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
 
         let substate = system_api.get_ref(bucket_handle)?;
         let bucket = substate.bucket();
-        Ok(bucket.resource_address())
+        Ok((
+            bucket.resource_address(),
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
+                bucket.resource_address(),
+            ))),
+        ))
     }
 }
 
-impl Bucket {
-    pub fn main<'s, Y, R>(
-        bucket_id: BucketId,
-        method: BucketMethod,
-        args: ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<ScryptoValue, InvokeError<BucketError>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve,
-    {
-        let rtn = match method {
-            BucketMethod::Take => {
-                panic!("Unexpected")
-            }
-            BucketMethod::CreateProof => {
-                panic!("Unexpected")
-            }
-            BucketMethod::TakeNonFungibles => {
-                panic!("Unexpected")
-            }
-            BucketMethod::GetNonFungibleIds => {
-                panic!("Unexpected")
-            }
-            BucketMethod::Put => {
-                let input: BucketPutInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
-                Self::execute(bucket_id, input, system_api)
-                    .map(|rtn| ScryptoValue::from_typed(&rtn))
-            }
-            BucketMethod::GetAmount => {
-                panic!("Unexpected")
-            }
-            BucketMethod::GetResourceAddress => {
-                let input: BucketGetResourceAddressInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
-                Self::execute(bucket_id, input, system_api)
-                    .map(|rtn| ScryptoValue::from_typed(&rtn))
-            }
-        }?;
-
-        Ok(rtn)
+impl NativeInvocation for BucketGetResourceAddressInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Bucket(BucketMethod::GetResourceAddress),
+            RENodeId::Bucket(self.bucket_id),
+            CallFrameUpdate::empty(),
+        )
     }
 }

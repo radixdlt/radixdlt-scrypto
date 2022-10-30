@@ -162,11 +162,19 @@ where
                         .invoke(invocation)
                         .map(|a| ScryptoValue::from_typed(&a))
                 }
-                _ => {
-                    let args = ScryptoValue::from_slice(&args)
+                BucketMethod::Put => {
+                    let invocation: BucketPutInput = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                     self.system_api
-                        .invoke(NativeMethodInvocation(native_method, receiver, args))
+                        .invoke(invocation)
+                        .map(|a| ScryptoValue::from_typed(&a))
+                }
+                BucketMethod::GetResourceAddress => {
+                    let invocation: BucketGetResourceAddressInput = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                    self.system_api
+                        .invoke(invocation)
+                        .map(|a| ScryptoValue::from_typed(&a))
                 }
             },
             _ => {

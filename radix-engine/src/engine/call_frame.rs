@@ -23,6 +23,15 @@ impl CallFrameUpdate {
             node_refs_to_copy: HashSet::new(),
         }
     }
+
+    pub fn copy_ref(node_id: RENodeId) -> Self {
+        let mut node_refs_to_copy = HashSet::new();
+        node_refs_to_copy.insert(node_id);
+        CallFrameUpdate {
+            nodes_to_move: vec![],
+            node_refs_to_copy,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

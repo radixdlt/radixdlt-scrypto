@@ -85,6 +85,8 @@ pub trait InvokableNative<'a>:
     + Invokable<BucketTakeNonFungiblesInput>
     + Invokable<BucketGetNonFungibleIdsInput>
     + Invokable<BucketGetAmountInput>
+    + Invokable<BucketPutInput>
+    + Invokable<BucketGetResourceAddressInput>
 {
 }
 
@@ -202,9 +204,8 @@ impl Executor for NativeMethodExecutor {
                 AuthZoneStack::main(auth_zone_id, method, self.2, system_api)
                     .map_err::<RuntimeError, _>(|e| e.into())
             }
-            (RENodeId::Bucket(bucket_id), NativeMethod::Bucket(method)) => {
-                Bucket::main(bucket_id, method, self.2, system_api)
-                    .map_err::<RuntimeError, _>(|e| e.into())
+            (RENodeId::Bucket(..), NativeMethod::Bucket(..)) => {
+                panic!("Unexpected")
             }
             (RENodeId::Proof(proof_id), NativeMethod::Proof(method)) => {
                 Proof::main(proof_id, method, self.2, system_api)

@@ -784,8 +784,8 @@ where
                 &mut self.track,
                 SysCallInput::Invoke {
                     name: format!("{:?}", invocation),
-                    input_size: 0,
-                    value_count: 0,
+                    input_size: 0,  // TODO: Fix this
+                    value_count: 0, // TODO: Fix this
                     depth: self.current_frame.depth,
                 },
             )
