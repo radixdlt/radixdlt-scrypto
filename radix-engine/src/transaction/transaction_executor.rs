@@ -163,17 +163,9 @@ where
                 self.scrypto_interpreter,
                 modules,
             );
-            kernel
-                .invoke(NativeFunctionInvocation(
-                    NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
-                    ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                        instructions: sbor::rust::borrow::Cow::Borrowed(&instructions),
-                    }),
-                ))
-                .map(|o| {
-                    scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
-                        .expect("TransactionProcessor returned data of unexpected type")
-                })
+            kernel.invoke(TransactionProcessorRunInput {
+                instructions: sbor::rust::borrow::Cow::Borrowed(&instructions),
+            })
         };
 
         // Produce the final transaction receipt

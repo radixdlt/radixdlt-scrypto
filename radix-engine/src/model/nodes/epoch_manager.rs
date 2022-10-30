@@ -1,4 +1,7 @@
-use crate::engine::{AuthModule, CallFrameUpdate, Invokable, LockFlags, NativeFuncInvocation, NativeFunctionExecutor, RENode, RuntimeError, SystemApi};
+use crate::engine::{
+    AuthModule, CallFrameUpdate, Invokable, LockFlags, NativeFuncInvocation,
+    NativeFunctionExecutor, RENode, RuntimeError, SystemApi,
+};
 use crate::fee::FeeReserve;
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
@@ -16,7 +19,6 @@ pub struct EpochManager {
     pub info: EpochManagerSubstate,
 }
 
-
 impl NativeFuncInvocation for EpochManagerCreateInput {
     type NativeOutput = SystemAddress;
 
@@ -31,12 +33,12 @@ impl NativeFuncInvocation for EpochManagerCreateInput {
         self,
         system_api: &mut Y,
     ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R>
+    where
+        Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
-            R: FeeReserve,
+        R: FeeReserve,
     {
         let node_id =
             system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;

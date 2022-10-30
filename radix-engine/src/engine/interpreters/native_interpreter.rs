@@ -77,7 +77,6 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
-
 impl<N: NativeFuncInvocation> Invocation for N {
     type Output = N::NativeOutput;
 }
@@ -94,6 +93,7 @@ pub trait NativeFuncInvocation: Invocation + Encode + Debug {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
+            + Invokable<EpochManagerCreateInput>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve;
@@ -115,6 +115,7 @@ impl<N: NativeFuncInvocation> Executor for NativeFuncExecutor<N> {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
+            + Invokable<EpochManagerCreateInput>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
@@ -145,9 +146,8 @@ impl Executor for NativeFunctionExecutor {
         R: FeeReserve,
     {
         let output = match self.0 {
-            NativeFunction::TransactionProcessor(func) => {
-                TransactionProcessor::static_main(func, self.1, system_api)
-                    .map_err::<RuntimeError, _>(|e| e.into())
+            NativeFunction::TransactionProcessor(..) => {
+                panic!("Unexpected")
             }
             NativeFunction::Package(func) => Package::static_main(func, self.1, system_api)
                 .map_err::<RuntimeError, _>(|e| e.into()),
@@ -156,7 +156,7 @@ impl Executor for NativeFunctionExecutor {
                     .map_err::<RuntimeError, _>(|e| e.into())
             }
             NativeFunction::EpochManager(func) => match func {
-                _ => panic!("Unexpected")
+                _ => panic!("Unexpected"),
             },
         }?;
 

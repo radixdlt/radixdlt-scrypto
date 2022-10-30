@@ -731,8 +731,8 @@ pub trait Executor {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + Invokable<NativeFunctionInvocation>
             + Invokable<EpochManagerCreateInput>
+            + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve;
 }

@@ -1,10 +1,10 @@
-use std::fmt::Debug;
 use crate::engine::node::*;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use bitflags::bitflags;
+use std::fmt::Debug;
 
 bitflags! {
     #[derive(Encode, Decode, TypeId)]
