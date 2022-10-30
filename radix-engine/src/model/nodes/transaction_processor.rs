@@ -86,6 +86,7 @@ impl<'a> NativeFuncInvocation for TransactionProcessorRunInput<'a> {
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
             + Invokable<EpochManagerCreateInput>
+            + Invokable<PackagePublishInput>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
@@ -149,6 +150,7 @@ impl TransactionProcessor {
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
             + Invokable<EpochManagerCreateInput>
+            + Invokable<PackagePublishInput>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
@@ -243,6 +245,7 @@ impl TransactionProcessor {
             + Invokable<ScryptoInvocation>
             + Invokable<NativeFunctionInvocation>
             + Invokable<EpochManagerCreateInput>
+            + Invokable<PackagePublishInput>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
@@ -669,13 +672,11 @@ impl TransactionProcessor {
                     })
                 }
                 Instruction::PublishPackage { code, abi } => system_api
-                    .invoke(NativeFunctionInvocation(
-                        NativeFunction::Package(PackageFunction::Publish),
-                        ScryptoValue::from_typed(&PackagePublishInput {
+                    .invoke(PackagePublishInput {
                             code: code.clone(),
                             abi: abi.clone(),
-                        }),
-                    ))
+                        })
+                    .map(|address| ScryptoValue::from_typed(&address))
                     .map_err(InvokeError::Downstream),
                 Instruction::CallNativeFunction {
                     function_ident,
@@ -701,6 +702,17 @@ impl TransactionProcessor {
                         match native_function {
                             NativeFunction::EpochManager(EpochManagerFunction::Create) => {
                                 let invocation: EpochManagerCreateInput = scrypto_decode(&args.raw)
+                                    .map_err(|e| {
+                                        InvokeError::Error(
+                                            TransactionProcessorError::InvalidRequestData(e),
+                                        )
+                                    })?;
+                                system_api
+                                    .invoke(invocation)
+                                    .map(|a| ScryptoValue::from_typed(&a))
+                            }
+                            NativeFunction::Package(PackageFunction::Publish) => {
+                                let invocation: PackagePublishInput = scrypto_decode(&args.raw)
                                     .map_err(|e| {
                                         InvokeError::Error(
                                             TransactionProcessorError::InvalidRequestData(e),

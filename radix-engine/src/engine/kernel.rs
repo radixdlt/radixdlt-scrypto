@@ -731,10 +731,16 @@ pub trait Executor {
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + Invokable<EpochManagerCreateInput>
+            + InvokableNativeFunction
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve;
+}
+
+impl<'g, 's, W, I, R> InvokableNativeFunction for Kernel<'g, 's, W, I, R> where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve {
 }
 
 // TODO: remove redundant code and move this method to the interpreter
