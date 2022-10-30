@@ -323,76 +323,52 @@ impl NativeInvocation for AuthZoneClearInput {
     }
 }
 
-pub struct AuthZoneStack;
+impl NativeExecutable for AuthZoneDrainInput {
+    type Output = Vec<scrypto::resource::Proof>;
 
-impl AuthZoneStack {
-    pub fn method_locks(method: AuthZoneMethod) -> LockFlags {
-        match method {
-            AuthZoneMethod::Pop => LockFlags::MUTABLE,
-            AuthZoneMethod::Push => LockFlags::MUTABLE,
-            AuthZoneMethod::CreateProof => LockFlags::MUTABLE,
-            AuthZoneMethod::CreateProofByAmount => LockFlags::MUTABLE,
-            AuthZoneMethod::CreateProofByIds => LockFlags::MUTABLE,
-            AuthZoneMethod::Clear => LockFlags::MUTABLE,
-            AuthZoneMethod::Drain => LockFlags::MUTABLE,
-        }
-    }
-
-    pub fn main<'s, Y, R>(
-        auth_zone_id: AuthZoneId,
-        method: AuthZoneMethod,
-        args: ScryptoValue,
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, InvokeError<AuthZoneError>>
+    ) -> Result<(Vec<scrypto::resource::Proof>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R>,
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
         R: FeeReserve,
     {
-        let node_id = RENodeId::AuthZoneStack(auth_zone_id);
+        let node_id = RENodeId::AuthZoneStack(input.auth_zone_id);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
-        let auth_zone_handle =
-            system_api.lock_substate(node_id, offset, Self::method_locks(method))?;
+        let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        let rtn = match method {
-            AuthZoneMethod::Pop => {
-                panic!("Unexpected")
-            }
-            AuthZoneMethod::Push => {
-                panic!("Unexpected")
-            }
-            AuthZoneMethod::CreateProof => {
-                panic!("Unexpected")
-            }
-            AuthZoneMethod::CreateProofByAmount => {
-                panic!("Unexpected")
-            }
-            AuthZoneMethod::CreateProofByIds => {
-                panic!("Unexpected")
-            }
-            AuthZoneMethod::Clear => {
-                panic!("Unexpected")
-            }
-            AuthZoneMethod::Drain => {
-                let _: AuthZoneDrainInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
-
-                let proofs = {
-                    let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
-                    let auth_zone = substate_mut.auth_zone();
-                    let proofs = auth_zone.cur_auth_zone_mut().drain();
-                    proofs
-                };
-
-                let mut proof_ids: Vec<scrypto::resource::Proof> = Vec::new();
-                for proof in proofs {
-                    let proof_id: ProofId = system_api.create_node(RENode::Proof(proof))?.into();
-                    proof_ids.push(scrypto::resource::Proof(proof_id));
-                }
-
-                ScryptoValue::from_typed(&proof_ids)
-            }
+        let proofs = {
+            let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
+            let auth_zone = substate_mut.auth_zone();
+            let proofs = auth_zone.cur_auth_zone_mut().drain();
+            proofs
         };
 
-        Ok(rtn)
+        let mut proof_ids: Vec<scrypto::resource::Proof> = Vec::new();
+        let mut nodes_to_move = Vec::new();
+        for proof in proofs {
+            let proof_id: ProofId = system_api.create_node(RENode::Proof(proof))?.into();
+            proof_ids.push(scrypto::resource::Proof(proof_id));
+            nodes_to_move.push(RENodeId::Proof(proof_id));
+        }
+
+        Ok((
+            proof_ids,
+            CallFrameUpdate {
+                nodes_to_move,
+                node_refs_to_copy: HashSet::new(),
+            },
+        ))
+    }
+}
+
+impl NativeInvocation for AuthZoneDrainInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::AuthZone(AuthZoneMethod::Drain),
+            RENodeId::AuthZoneStack(self.auth_zone_id),
+            CallFrameUpdate::empty(),
+        )
     }
 }

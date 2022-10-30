@@ -4,6 +4,7 @@ use crate::model::*;
 use crate::types::*;
 use sbor::rust::fmt::Debug;
 use sbor::*;
+use scrypto::resource::AuthZoneDrainInput;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
     fn into(self) -> RuntimeError {
@@ -93,6 +94,7 @@ pub trait InvokableNative<'a>:
     + Invokable<AuthZoneCreateProofByAmountInput>
     + Invokable<AuthZoneCreateProofByIdsInput>
     + Invokable<AuthZoneClearInput>
+    + Invokable<AuthZoneDrainInput>
 {
 }
 
@@ -206,9 +208,8 @@ impl Executor for NativeMethodExecutor {
         R: FeeReserve,
     {
         let output = match (self.1.receiver, self.0) {
-            (RENodeId::AuthZoneStack(auth_zone_id), NativeMethod::AuthZone(method)) => {
-                AuthZoneStack::main(auth_zone_id, method, self.2, system_api)
-                    .map_err::<RuntimeError, _>(|e| e.into())
+            (RENodeId::AuthZoneStack(..), NativeMethod::AuthZone(..)) => {
+                panic!("Unexpected")
             }
             (RENodeId::Bucket(..), NativeMethod::Bucket(..)) => {
                 panic!("Unexpected")

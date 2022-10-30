@@ -7,6 +7,7 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::*;
+use scrypto::resource::AuthZoneDrainInput;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
 ///
@@ -220,11 +221,12 @@ where
                         .invoke(invocation)
                         .map(|a| ScryptoValue::from_typed(&a))
                 }
-                _ => {
-                    let args = ScryptoValue::from_slice(&args)
+                AuthZoneMethod::Drain => {
+                    let invocation: AuthZoneDrainInput = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                     self.system_api
-                        .invoke(NativeMethodInvocation(native_method, receiver, args))
+                        .invoke(invocation)
+                        .map(|a| ScryptoValue::from_typed(&a))
                 }
             },
             _ => {

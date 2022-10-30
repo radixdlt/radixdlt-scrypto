@@ -43,7 +43,9 @@ pub struct AuthZoneClearInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneDrainInput {}
+pub struct AuthZoneDrainInput {
+    pub auth_zone_id: AuthZoneId,
+}
 
 /// Represents the auth zone, which is used by system for checking
 /// if this component is allowed to

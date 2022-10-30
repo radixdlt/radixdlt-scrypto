@@ -186,21 +186,11 @@ impl TransactionProcessor {
                         .into_iter()
                         .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
                         .expect("AuthZone does not exist");
+                    let auth_zone_id = auth_zone_node_id.into();
 
                     let proofs = system_api
-                        .invoke(NativeMethodInvocation(
-                            NativeMethod::AuthZone(AuthZoneMethod::Drain),
-                            auth_zone_node_id,
-                            ScryptoValue::from_typed(&AuthZoneDrainInput {}),
-                        ))
-                        .map_err(InvokeError::Downstream)
-                        .map(|result| {
-                            let mut proofs = Vec::new();
-                            for (proof_id, _) in result.proof_ids {
-                                proofs.push(scrypto::resource::Proof(proof_id));
-                            }
-                            proofs
-                        })?;
+                        .invoke(AuthZoneDrainInput { auth_zone_id })
+                        .map_err(InvokeError::Downstream)?;
 
                     let val = path
                         .get_from_value_mut(&mut value)
