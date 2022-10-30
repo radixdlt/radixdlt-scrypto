@@ -10,7 +10,7 @@ fn test_trace_resource_transfers() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/execution_trace");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
     let transfer_amount = 10u8;
 
     // Act
@@ -89,7 +89,7 @@ fn test_trace_fee_payments() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/execution_trace");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     // Prepare the component that will pay the fee
     let manifest_prepare = ManifestBuilder::new(&NetworkDefinition::simulator())

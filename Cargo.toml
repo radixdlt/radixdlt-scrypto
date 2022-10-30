@@ -1,0 +1,27 @@
+[workspace]
+# NOTES:
+# This workspace is intended to be used for the primary scrypto/radix engine library crates.
+#
+# In particular:
+# * We purposefully don't include simulator - as it's an application, not a library
+#   The simulator receives its own separate Cargo.lock, that we source control.
+#   We don't source control the Cargo.lock for this workspace, because it's a workspace of libraries:
+#   https://doc.rust-lang.org/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries
+#
+# * We don't include any Scrypto packages here - they should be loaded/built separately, as they need separate profiles.
+#   They either include their own shared workspace for a set of tests, or a [workspace] in each of their Cargo.tomls
+#   to avoid falling back to the root workspace.
+
+members = [
+    "sbor-derive",
+    "sbor",
+    "sbor-tests",
+    "scrypto-abi",
+    "scrypto-derive",
+    "scrypto",
+    "scrypto-tests",
+    "scrypto-unit",
+    "transaction",
+    "radix-engine",
+    "radix-engine-stores",
+]

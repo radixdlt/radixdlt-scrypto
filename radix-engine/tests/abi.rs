@@ -13,7 +13,7 @@ fn test_invalid_access_rule_methods() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/abi");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -48,7 +48,7 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/abi");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

@@ -12,9 +12,9 @@ fn test_external_bridges() {
 
     // Part 1 - Upload the target and caller packages
     // Note - we put them in separate packages so that we test that the package call is to an external package
-    let target_package_address = test_runner.compile_and_publish("./tests/component");
+    let target_package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let caller_package_address =
-        test_runner.compile_and_publish("./tests/external_blueprint_caller");
+        test_runner.compile_and_publish("./tests/blueprints/external_blueprint_caller");
 
     // Part 2 - Get a target component address
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
