@@ -41,14 +41,14 @@ impl NativeFuncInvocation for PackagePublishInput {
         )
     }
 
-    fn execute<'s, Y, R>(
+    fn execute<'s, 'a, Y, R>(
         self,
         system_api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + Invokable<EpochManagerCreateInput>
+            + InvokableNativeFunction<'a>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,

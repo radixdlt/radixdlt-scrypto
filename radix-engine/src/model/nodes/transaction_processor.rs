@@ -78,14 +78,14 @@ impl<'a> NativeFuncInvocation for TransactionProcessorRunInput<'a> {
         )
     }
 
-    fn execute<'s, Y, R>(
+    fn execute<'s, 'b, Y, R>(
         self,
         system_api: &mut Y,
     ) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction
+            + InvokableNativeFunction<'b>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
@@ -141,14 +141,14 @@ impl TransactionProcessor {
         Ok(value)
     }
 
-    fn process_expressions<'s, Y, R>(
+    fn process_expressions<'s, 'a, Y, R>(
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction
+            + InvokableNativeFunction<'a>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
@@ -234,14 +234,14 @@ impl TransactionProcessor {
             .0
     }
 
-    pub fn static_main<'s, Y, R>(
+    pub fn static_main<'s, 'a, Y, R>(
         input: TransactionProcessorRunInput,
         system_api: &mut Y,
     ) -> Result<Vec<Vec<u8>>, InvokeError<TransactionProcessorError>>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction
+            + InvokableNativeFunction<'a>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
@@ -721,6 +721,32 @@ impl TransactionProcessor {
                                     .invoke(invocation)
                                     .map(|a| ScryptoValue::from_typed(&a))
                             }
+                            NativeFunction::ResourceManager(
+                                ResourceManagerFunction::Create,
+                            ) => {
+                                let invocation: ResourceManagerCreateInput =
+                                    scrypto_decode(&args.raw).map_err(|e| {
+                                        InvokeError::Error(
+                                            TransactionProcessorError::InvalidRequestData(e),
+                                        )
+                                    })?;
+                                system_api
+                                    .invoke(invocation)
+                                    .map(|a| ScryptoValue::from_typed(&a))
+                            }
+                            NativeFunction::TransactionProcessor(
+                                TransactionProcessorFunction::Run,
+                            ) => {
+                                let invocation: TransactionProcessorRunInput =
+                                    scrypto_decode(&args.raw).map_err(|e| {
+                                        InvokeError::Error(
+                                            TransactionProcessorError::InvalidRequestData(e),
+                                        )
+                                    })?;
+                                system_api
+                                    .invoke(invocation)
+                                    .map(|a| ScryptoValue::from_typed(&a))
+                            }
                             NativeFunction::Package(PackageFunction::Publish) => {
                                 let invocation: PackagePublishInput = scrypto_decode(&args.raw)
                                     .map_err(|e| {
@@ -732,7 +758,6 @@ impl TransactionProcessor {
                                     .invoke(invocation)
                                     .map(|a| ScryptoValue::from_typed(&a))
                             }
-                            _ => system_api.invoke(NativeFunctionInvocation(native_function, args)),
                         }
                         .map_err(InvokeError::Downstream)
                     })

@@ -48,11 +48,11 @@ impl NativeFuncInvocation for ResourceManagerBurnInput {
         )
     }
 
-    fn execute<'s, Y, R>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'s, 'a, Y, R>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction
+            + InvokableNativeFunction<'a>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
@@ -88,11 +88,11 @@ impl NativeFuncInvocation for ResourceManagerCreateInput {
         )
     }
 
-    fn execute<'s, Y, R>(self, system_api: &mut Y) -> Result<((ResourceAddress, Option<scrypto::resource::Bucket>), CallFrameUpdate), RuntimeError>
+    fn execute<'s, 'a, Y, R>(self, system_api: &mut Y) -> Result<((ResourceAddress, Option<scrypto::resource::Bucket>), CallFrameUpdate), RuntimeError>
         where
             Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction
+            + InvokableNativeFunction<'a>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
             R: FeeReserve,

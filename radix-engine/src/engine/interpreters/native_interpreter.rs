@@ -77,10 +77,12 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
-pub trait InvokableNativeFunction:
+pub trait InvokableNativeFunction<'a>:
     Invokable<EpochManagerCreateInput>
     + Invokable<PackagePublishInput>
     + Invokable<ResourceManagerBurnInput>
+    + Invokable<ResourceManagerCreateInput>
+    + Invokable<TransactionProcessorRunInput<'a>>
 {
 }
 
@@ -93,14 +95,14 @@ pub trait NativeFuncInvocation: Invocation + Encode + Debug {
 
     fn prepare(&self) -> (NativeFunction, CallFrameUpdate);
 
-    fn execute<'s, Y, R>(
+    fn execute<'s, 'a, Y, R>(
         self,
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction
+            + InvokableNativeFunction<'a>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve;
@@ -115,14 +117,14 @@ impl<N: NativeFuncInvocation> Executor for NativeFuncExecutor<N> {
         &self.1
     }
 
-    fn execute<'s, Y, R>(
+    fn execute<'s, 'a, Y, R>(
         self,
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction
+            + InvokableNativeFunction<'a>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
@@ -140,13 +142,14 @@ impl Executor for NativeFunctionExecutor {
         &self.1
     }
 
-    fn execute<'s, Y, R>(
+    fn execute<'s, 'a, Y, R>(
         self,
         system_api: &mut Y,
     ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
+            + InvokableNativeFunction<'a>
             + Invokable<NativeFunctionInvocation>
             + Invokable<EpochManagerCreateInput>
             + Invokable<NativeMethodInvocation>,
@@ -224,14 +227,14 @@ impl Executor for NativeMethodExecutor {
         &self.2
     }
 
-    fn execute<'s, Y, R>(
+    fn execute<'s, 'a, Y, R>(
         self,
         system_api: &mut Y,
     ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + Invokable<NativeFunctionInvocation>
+            + InvokableNativeFunction<'a>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {

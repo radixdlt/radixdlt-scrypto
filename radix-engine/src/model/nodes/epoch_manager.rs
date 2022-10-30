@@ -1,7 +1,4 @@
-use crate::engine::{
-    AuthModule, CallFrameUpdate, Invokable, LockFlags, NativeFuncInvocation,
-    NativeFunctionExecutor, RENode, RuntimeError, SystemApi,
-};
+use crate::engine::{AuthModule, CallFrameUpdate, Invokable, InvokableNativeFunction, LockFlags, NativeFuncInvocation, NativeFunctionExecutor, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
@@ -29,13 +26,14 @@ impl NativeFuncInvocation for EpochManagerCreateInput {
         )
     }
 
-    fn execute<'s, Y, R>(
+    fn execute<'s, 'a, Y, R>(
         self,
         system_api: &mut Y,
     ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
+            + InvokableNativeFunction<'a>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,

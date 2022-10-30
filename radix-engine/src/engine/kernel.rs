@@ -724,20 +724,20 @@ pub trait Executor {
     // TODO: Remove
     fn args(&self) -> &ScryptoValue;
 
-    fn execute<'s, Y, R>(
+    fn execute<'s, 'a, Y, R>(
         self,
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction
+            + InvokableNativeFunction<'a>
             + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve;
 }
 
-impl<'g, 's, W, I, R> InvokableNativeFunction for Kernel<'g, 's, W, I, R>
+impl<'g, 's, 'a, W, I, R> InvokableNativeFunction<'a> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
