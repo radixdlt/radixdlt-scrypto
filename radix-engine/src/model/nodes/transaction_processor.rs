@@ -86,7 +86,6 @@ impl<'a> NativeFuncInvocation for TransactionProcessorRunInput<'a> {
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
             + InvokableNativeFunction<'b>
-            + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
@@ -149,7 +148,6 @@ impl TransactionProcessor {
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
             + InvokableNativeFunction<'a>
-            + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
@@ -242,7 +240,6 @@ impl TransactionProcessor {
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
             + InvokableNativeFunction<'a>
-            + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
@@ -721,9 +718,7 @@ impl TransactionProcessor {
                                     .invoke(invocation)
                                     .map(|a| ScryptoValue::from_typed(&a))
                             }
-                            NativeFunction::ResourceManager(
-                                ResourceManagerFunction::Create,
-                            ) => {
+                            NativeFunction::ResourceManager(ResourceManagerFunction::Create) => {
                                 let invocation: ResourceManagerCreateInput =
                                     scrypto_decode(&args.raw).map_err(|e| {
                                         InvokeError::Error(

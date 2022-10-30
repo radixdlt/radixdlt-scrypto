@@ -732,7 +732,6 @@ pub trait Executor {
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
             + InvokableNativeFunction<'a>
-            + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve;
 }
@@ -807,57 +806,6 @@ where
     R: FeeReserve,
 {
     fn invoke(&mut self, invocation: ScryptoInvocation) -> Result<ScryptoValue, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::Invoke {
-                    name: format!("{:?}", invocation),
-                    input_size: invocation.args().raw.len() as u32,
-                    value_count: invocation.args().value_count() as u32,
-                    depth: self.current_frame.depth,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // Change to kernel mode
-        let saved_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
-        let (executor, actor, call_frame_update) = self.resolve(invocation)?;
-        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
-
-        // Restore previous mode
-        self.execution_mode = saved_mode;
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::Invoke {
-                    rtn: format!("{:?}", rtn),
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(rtn)
-    }
-}
-
-impl<'g, 's, W, I, R> Invokable<NativeFunctionInvocation> for Kernel<'g, 's, W, I, R>
-where
-    W: WasmEngine<I>,
-    I: WasmInstance,
-    R: FeeReserve,
-{
-    fn invoke(
-        &mut self,
-        invocation: NativeFunctionInvocation,
-    ) -> Result<ScryptoValue, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,

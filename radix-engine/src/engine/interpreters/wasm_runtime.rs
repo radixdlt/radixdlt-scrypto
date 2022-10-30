@@ -1,7 +1,10 @@
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::fee::*;
-use crate::model::{ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, InvokeError, KeyValueStore, RuntimeSubstate, TransactionProcessorRunInput};
+use crate::model::{
+    ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, InvokeError,
+    KeyValueStore, RuntimeSubstate, TransactionProcessorRunInput,
+};
 use crate::types::*;
 use crate::wasm::*;
 
@@ -14,8 +17,7 @@ where
     Y: SystemApi<'s, R>
         + Invokable<ScryptoInvocation>
         + InvokableNativeFunction<'a>
-        + Invokable<NativeMethodInvocation>
-        + Invokable<NativeFunctionInvocation>,
+        + Invokable<NativeMethodInvocation>,
     R: FeeReserve,
 {
     actor: ScryptoActor,
@@ -31,7 +33,6 @@ where
     Y: SystemApi<'s, R>
         + Invokable<ScryptoInvocation>
         + InvokableNativeFunction<'a>
-        + Invokable<NativeFunctionInvocation>
         + Invokable<NativeMethodInvocation>,
     R: FeeReserve,
 {
@@ -87,32 +88,23 @@ where
                     .invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
-            NativeFunction::ResourceManager(
-                ResourceManagerFunction::BurnBucket,
-            ) => {
-                let invocation: ResourceManagerBurnInput =
-                    scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+            NativeFunction::ResourceManager(ResourceManagerFunction::BurnBucket) => {
+                let invocation: ResourceManagerBurnInput = scrypto_decode(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 self.system_api
                     .invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
-            NativeFunction::ResourceManager(
-                ResourceManagerFunction::Create,
-            ) => {
-                let invocation: ResourceManagerCreateInput =
-                    scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+            NativeFunction::ResourceManager(ResourceManagerFunction::Create) => {
+                let invocation: ResourceManagerCreateInput = scrypto_decode(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 self.system_api
                     .invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
-            NativeFunction::TransactionProcessor(
-                TransactionProcessorFunction::Run,
-            ) => {
-                let invocation: TransactionProcessorRunInput =
-                    scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+            NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run) => {
+                let invocation: TransactionProcessorRunInput = scrypto_decode(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 self.system_api
                     .invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
@@ -261,7 +253,6 @@ where
     Y: SystemApi<'s, R>
         + Invokable<ScryptoInvocation>
         + InvokableNativeFunction<'a>
-        + Invokable<NativeFunctionInvocation>
         + Invokable<NativeMethodInvocation>,
     R: FeeReserve,
 {

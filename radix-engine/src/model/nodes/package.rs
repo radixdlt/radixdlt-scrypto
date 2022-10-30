@@ -49,7 +49,6 @@ impl NativeFuncInvocation for PackagePublishInput {
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
             + InvokableNativeFunction<'a>
-            + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {

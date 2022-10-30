@@ -2,10 +2,8 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use crate::wasm::{WasmEngine, WasmInstance};
 use sbor::rust::fmt::Debug;
 use sbor::*;
-use std::process::Output;
 use transaction::model::Instruction;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
@@ -103,7 +101,6 @@ pub trait NativeFuncInvocation: Invocation + Encode + Debug {
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
             + InvokableNativeFunction<'a>
-            + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve;
 }
@@ -125,96 +122,10 @@ impl<N: NativeFuncInvocation> Executor for NativeFuncExecutor<N> {
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
             + InvokableNativeFunction<'a>
-            + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
         self.0.execute(system_api)
-    }
-}
-
-pub struct NativeFunctionExecutor(pub NativeFunction, pub ScryptoValue);
-
-impl Executor for NativeFunctionExecutor {
-    type Output = ScryptoValue;
-
-    fn args(&self) -> &ScryptoValue {
-        &self.1
-    }
-
-    fn execute<'s, 'a, Y, R>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation>
-            + InvokableNativeFunction<'a>
-            + Invokable<NativeFunctionInvocation>
-            + Invokable<EpochManagerCreateInput>
-            + Invokable<NativeMethodInvocation>,
-        R: FeeReserve,
-    {
-        panic!("unexpected")
-    }
-}
-
-impl<'g, 's, W, I, R> InvocationResolver<NativeFunctionInvocation, NativeFunctionExecutor>
-    for Kernel<'g, 's, W, I, R>
-where
-    W: WasmEngine<I>,
-    I: WasmInstance,
-    R: FeeReserve,
-{
-    fn resolve(
-        &mut self,
-        native_function: NativeFunctionInvocation,
-    ) -> Result<(NativeFunctionExecutor, REActor, CallFrameUpdate), RuntimeError> {
-        let mut node_refs_to_copy = HashSet::new();
-        let actor = REActor::Function(ResolvedFunction::Native(native_function.0));
-        for global_address in native_function.args().global_references() {
-            node_refs_to_copy.insert(RENodeId::Global(global_address));
-        }
-
-        // TODO: This can be refactored out once any type in sbor is implemented
-        let maybe_txn: Result<TransactionProcessorRunInput, DecodeError> =
-            scrypto_decode(&native_function.args().raw);
-        if let Ok(input) = maybe_txn {
-            for instruction in input.instructions.as_ref() {
-                match instruction {
-                    Instruction::CallFunction { args, .. }
-                    | Instruction::CallMethod { args, .. }
-                    | Instruction::CallNativeFunction { args, .. }
-                    | Instruction::CallNativeMethod { args, .. } => {
-                        let scrypto_value =
-                            ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
-                        for global_address in scrypto_value.global_references() {
-                            node_refs_to_copy.insert(RENodeId::Global(global_address));
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            ECDSA_SECP256K1_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            EDDSA_ED25519_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
-
-        Ok((
-            NativeFunctionExecutor(native_function.0, native_function.1.clone()),
-            actor,
-            CallFrameUpdate {
-                nodes_to_move: native_function.args().node_ids().into_iter().collect(),
-                node_refs_to_copy,
-            },
-        ))
     }
 }
 

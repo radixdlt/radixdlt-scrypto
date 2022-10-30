@@ -1,4 +1,7 @@
-use crate::engine::{ApplicationError, CallFrameUpdate, Invokable, InvokableNativeFunction, LockFlags, NativeFuncInvocation, RENode, RuntimeError, SystemApi};
+use crate::engine::{
+    ApplicationError, CallFrameUpdate, Invokable, InvokableNativeFunction, LockFlags,
+    NativeFuncInvocation, RENode, RuntimeError, SystemApi,
+};
 use crate::fee::FeeReserve;
 use crate::model::{
     BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
@@ -38,22 +41,35 @@ impl NativeFuncInvocation for ResourceManagerBurnInput {
 
     fn prepare(&self) -> (NativeFunction, CallFrameUpdate) {
         let bucket = RENodeId::Bucket(self.bucket.0);
+        let mut node_refs_to_copy = HashSet::new();
+
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            ECDSA_SECP256K1_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            EDDSA_ED25519_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
         (
             NativeFunction::ResourceManager(ResourceManagerFunction::BurnBucket),
             CallFrameUpdate {
                 nodes_to_move: vec![bucket],
-                node_refs_to_copy: HashSet::new(),
+                node_refs_to_copy,
             },
         )
     }
 
-    fn execute<'s, 'a, Y, R>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'s, 'a, Y, R>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
             + InvokableNativeFunction<'a>
-            + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
         R: FeeReserve,
     {
@@ -82,25 +98,47 @@ impl NativeFuncInvocation for ResourceManagerCreateInput {
     type NativeOutput = (ResourceAddress, Option<scrypto::resource::Bucket>);
 
     fn prepare(&self) -> (NativeFunction, CallFrameUpdate) {
+        let mut node_refs_to_copy = HashSet::new();
+
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            ECDSA_SECP256K1_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            EDDSA_ED25519_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+
         (
             NativeFunction::ResourceManager(ResourceManagerFunction::Create),
-            CallFrameUpdate::empty(),
+            CallFrameUpdate {
+                nodes_to_move: vec![],
+                node_refs_to_copy,
+            },
         )
     }
 
-    fn execute<'s, 'a, Y, R>(self, system_api: &mut Y) -> Result<((ResourceAddress, Option<scrypto::resource::Bucket>), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R>
+    fn execute<'s, 'a, Y, R>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<
+        (
+            (ResourceAddress, Option<scrypto::resource::Bucket>),
+            CallFrameUpdate,
+        ),
+        RuntimeError,
+    >
+    where
+        Y: SystemApi<'s, R>
             + Invokable<ScryptoInvocation>
             + InvokableNativeFunction<'a>
-            + Invokable<NativeFunctionInvocation>
             + Invokable<NativeMethodInvocation>,
-            R: FeeReserve,
+        R: FeeReserve,
     {
-
         let node_id = if matches!(self.resource_type, ResourceType::NonFungible) {
-            let nf_store_node_id = system_api
-                .create_node(RENode::NonFungibleStore(NonFungibleStore::new()))?;
+            let nf_store_node_id =
+                system_api.create_node(RENode::NonFungibleStore(NonFungibleStore::new()))?;
             let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
 
             let mut resource_manager = ResourceManager::new(
@@ -108,11 +146,12 @@ impl NativeFuncInvocation for ResourceManagerCreateInput {
                 self.metadata,
                 self.access_rules,
                 Some(nf_store_id),
-            ).map_err(|e| {
-                match e {
-                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
-                    InvokeError::Downstream(e) => e,
+            )
+            .map_err(|e| match e {
+                InvokeError::Error(e) => {
+                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
                 }
+                InvokeError::Downstream(e) => e,
             })?;
 
             if let Some(mint_params) = &self.mint_params {
@@ -126,8 +165,7 @@ impl NativeFuncInvocation for ResourceManagerCreateInput {
                             offset,
                             LockFlags::MUTABLE,
                         )?;
-                        let mut substate_mut =
-                            system_api.get_ref_mut(non_fungible_handle)?;
+                        let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
                         let non_fungible_mut = substate_mut.non_fungible();
                         *non_fungible_mut = NonFungibleSubstate(Some(
                             NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
@@ -136,45 +174,49 @@ impl NativeFuncInvocation for ResourceManagerCreateInput {
                     }
                     resource_manager.total_supply = entries.len().into();
                 } else {
-                    return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
-                        ResourceManagerError::ResourceTypeDoesNotMatch,
-                    )));
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::ResourceTypeDoesNotMatch,
+                        ),
+                    ));
                 }
             }
             system_api.create_node(RENode::ResourceManager(resource_manager))?
         } else {
-            let mut resource_manager = ResourceManager::new(
-                self.resource_type,
-                self.metadata,
-                self.access_rules,
-                None,
-            ).map_err(|e| {
-                match e {
-                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
-                    InvokeError::Downstream(e) => e,
-                }
-            })?;
+            let mut resource_manager =
+                ResourceManager::new(self.resource_type, self.metadata, self.access_rules, None)
+                    .map_err(|e| match e {
+                        InvokeError::Error(e) => RuntimeError::ApplicationError(
+                            ApplicationError::ResourceManagerError(e),
+                        ),
+                        InvokeError::Downstream(e) => e,
+                    })?;
 
             if let Some(mint_params) = &self.mint_params {
                 if let MintParams::Fungible { amount } = mint_params {
-                    resource_manager.check_amount(*amount)
-                        .map_err(|e| {
-                            match e {
-                                InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
-                                InvokeError::Downstream(e) => e,
-                            }
+                    resource_manager
+                        .check_amount(*amount)
+                        .map_err(|e| match e {
+                            InvokeError::Error(e) => RuntimeError::ApplicationError(
+                                ApplicationError::ResourceManagerError(e),
+                            ),
+                            InvokeError::Downstream(e) => e,
                         })?;
                     // TODO: refactor this into mint function
                     if *amount > dec!("1000000000000000000") {
-                        return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
-                            ResourceManagerError::MaxMintAmountExceeded,
-                        )));
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::ResourceManagerError(
+                                ResourceManagerError::MaxMintAmountExceeded,
+                            ),
+                        ));
                     }
                     resource_manager.total_supply = amount.clone();
                 } else {
-                    return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
-                        ResourceManagerError::ResourceTypeDoesNotMatch,
-                    )));
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::ResourceTypeDoesNotMatch,
+                        ),
+                    ));
                 }
             }
             system_api.create_node(RENode::ResourceManager(resource_manager))?
@@ -185,14 +227,13 @@ impl NativeFuncInvocation for ResourceManagerCreateInput {
         let resource_address: ResourceAddress = global_node_id.into();
 
         // FIXME this is temporary workaround for the resource address resolution problem
-        system_api
-            .invoke(NativeMethodInvocation(
-                NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
-                RENodeId::Global(GlobalAddress::Resource(resource_address)),
-                ScryptoValue::from_typed(&ResourceManagerSetResourceAddressInput {
-                    address: resource_address,
-                }),
-            ))?;
+        system_api.invoke(NativeMethodInvocation(
+            NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
+            RENodeId::Global(GlobalAddress::Resource(resource_address)),
+            ScryptoValue::from_typed(&ResourceManagerSetResourceAddressInput {
+                address: resource_address,
+            }),
+        ))?;
 
         // Mint
         let bucket = if let Some(mint_params) = self.mint_params {
@@ -223,13 +264,15 @@ impl NativeFuncInvocation for ResourceManagerCreateInput {
         let mut node_refs_to_copy = HashSet::new();
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(resource_address)));
 
-        Ok(((resource_address, bucket), CallFrameUpdate {
-            nodes_to_move,
-            node_refs_to_copy
-        }))
+        Ok((
+            (resource_address, bucket),
+            CallFrameUpdate {
+                nodes_to_move,
+                node_refs_to_copy,
+            },
+        ))
     }
 }
-
 
 pub struct ResourceManager;
 
