@@ -35,16 +35,16 @@ pub enum TransactionProcessorError {
 impl<'a> NativeFuncInvocation for TransactionProcessorRunInput<'a> {
     type NativeOutput = Vec<Vec<u8>>;
 
-    fn prepare(&self) -> (NativeFunction, CallFrameUpdate) {
+    fn prepare(invocation: &TransactionProcessorRunInput) -> (NativeFunction, CallFrameUpdate) {
         let mut node_refs_to_copy = HashSet::new();
         // TODO: Remove serialization
-        let value = ScryptoValue::from_typed(self);
+        let value = ScryptoValue::from_typed(invocation);
         for global_address in value.global_references() {
             node_refs_to_copy.insert(RENodeId::Global(global_address));
         }
 
         // TODO: This can be refactored out once any type in sbor is implemented
-        for instruction in self.instructions.as_ref() {
+        for instruction in invocation.instructions.as_ref() {
             match instruction {
                 Instruction::CallFunction { args, .. }
                 | Instruction::CallMethod { args, .. }

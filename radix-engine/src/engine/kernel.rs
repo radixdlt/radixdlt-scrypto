@@ -772,7 +772,7 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (function, call_frame_update) = invocation.prepare();
+        let (function, call_frame_update) = N::prepare(&invocation);
         let actor = REActor::Function(ResolvedFunction::Native(function));
         let input = ScryptoValue::from_typed(&invocation);
         let executor = NativeFuncExecutor(invocation, input);

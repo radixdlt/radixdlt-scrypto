@@ -90,7 +90,7 @@ impl<N: NativeFuncInvocation> Invocation for N {
 pub trait NativeFuncInvocation: Invocation + Encode + Debug {
     type NativeOutput: Debug;
 
-    fn prepare(&self) -> (NativeFunction, CallFrameUpdate);
+    fn prepare(invocation: &Self) -> (NativeFunction, CallFrameUpdate);
 
     fn execute<'s, 'a, Y, R>(
         self,

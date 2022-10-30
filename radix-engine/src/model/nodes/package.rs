@@ -34,7 +34,7 @@ impl Package {
 impl NativeFuncInvocation for PackagePublishInput {
     type NativeOutput = PackageAddress;
 
-    fn prepare(&self) -> (NativeFunction, CallFrameUpdate) {
+    fn prepare(_invocation: &PackagePublishInput) -> (NativeFunction, CallFrameUpdate) {
         (
             NativeFunction::Package(PackageFunction::Publish),
             CallFrameUpdate::empty(),

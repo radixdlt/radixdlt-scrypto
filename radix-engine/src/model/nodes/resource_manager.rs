@@ -39,8 +39,8 @@ pub enum ResourceManagerError {
 impl NativeFuncInvocation for ResourceManagerBurnInput {
     type NativeOutput = ();
 
-    fn prepare(&self) -> (NativeFunction, CallFrameUpdate) {
-        let bucket = RENodeId::Bucket(self.bucket.0);
+    fn prepare(invocation: &ResourceManagerBurnInput) -> (NativeFunction, CallFrameUpdate) {
+        let bucket = RENodeId::Bucket(invocation.bucket.0);
         let mut node_refs_to_copy = HashSet::new();
 
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
@@ -97,7 +97,7 @@ impl NativeFuncInvocation for ResourceManagerBurnInput {
 impl NativeFuncInvocation for ResourceManagerCreateInput {
     type NativeOutput = (ResourceAddress, Option<scrypto::resource::Bucket>);
 
-    fn prepare(&self) -> (NativeFunction, CallFrameUpdate) {
+    fn prepare(_: &ResourceManagerCreateInput) -> (NativeFunction, CallFrameUpdate) {
         let mut node_refs_to_copy = HashSet::new();
 
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
