@@ -1,4 +1,3 @@
-use sbor::describe::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
@@ -870,7 +869,7 @@ impl ManifestBuilder {
         let mut encoded = Vec::new();
 
         match arg_type {
-            sbor::Type::Struct {
+            Type::Struct {
                 name: _,
                 fields: Fields::Named { named },
             } => {
@@ -930,53 +929,55 @@ impl ManifestBuilder {
         type_id: u8,
         account: Option<ComponentAddress>,
     ) -> Result<Vec<u8>, BuildArgsError> {
-        match ScryptoType::from_id(type_id).ok_or(BuildArgsError::UnsupportedType(i, ty.clone()))? {
-            ScryptoType::Decimal => {
+        match ScryptoTypeId::from_id(type_id)
+            .ok_or(BuildArgsError::UnsupportedType(i, ty.clone()))?
+        {
+            ScryptoTypeId::Decimal => {
                 let value = arg
                     .parse::<Decimal>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            ScryptoType::PreciseDecimal => {
+            ScryptoTypeId::PreciseDecimal => {
                 let value = arg
                     .parse::<PreciseDecimal>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            ScryptoType::PackageAddress => {
+            ScryptoTypeId::PackageAddress => {
                 let value = self
                     .decoder
                     .validate_and_decode_package_address(arg)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            ScryptoType::ComponentAddress => {
+            ScryptoTypeId::ComponentAddress => {
                 let value = self
                     .decoder
                     .validate_and_decode_component_address(arg)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            ScryptoType::ResourceAddress => {
+            ScryptoTypeId::ResourceAddress => {
                 let value = self
                     .decoder
                     .validate_and_decode_resource_address(arg)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            ScryptoType::Hash => {
+            ScryptoTypeId::Hash => {
                 let value = arg
                     .parse::<Hash>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            ScryptoType::NonFungibleId => {
+            ScryptoTypeId::NonFungibleId => {
                 let value = arg
                     .parse::<NonFungibleId>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            ScryptoType::Bucket => {
+            ScryptoTypeId::Bucket => {
                 let resource_specifier = parse_resource_specifier(arg, &self.decoder)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 let bucket_id = match resource_specifier {
@@ -1005,7 +1006,7 @@ impl ManifestBuilder {
                 };
                 Ok(scrypto_encode(&scrypto::resource::Bucket(bucket_id)))
             }
-            ScryptoType::Proof => {
+            ScryptoTypeId::Proof => {
                 let resource_specifier = parse_resource_specifier(arg, &self.decoder)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 let proof_id = match resource_specifier {

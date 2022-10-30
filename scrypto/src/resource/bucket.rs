@@ -3,7 +3,6 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::engine::types::GlobalAddress;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
@@ -12,6 +11,7 @@ use crate::math::*;
 use crate::misc::*;
 use crate::native_methods;
 use crate::resource::*;
+use crate::scrypto_type;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketTakeInput {
@@ -214,4 +214,4 @@ impl Bucket {
     }
 }
 
-scrypto_type!(Bucket, ScryptoType::Bucket, Vec::new());
+scrypto_type!(Bucket, ScryptoTypeId::Bucket, Vec::new());

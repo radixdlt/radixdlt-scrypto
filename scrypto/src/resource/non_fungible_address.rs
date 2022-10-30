@@ -9,6 +9,7 @@ use crate::abi::*;
 use crate::constants::{ECDSA_SECP256K1_TOKEN, EDDSA_ED25519_TOKEN};
 use crate::crypto::{hash, PublicKey};
 use crate::resource::*;
+use crate::scrypto_type;
 
 /// Identifier for a non-fungible unit.
 #[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
@@ -109,7 +110,7 @@ impl NonFungibleAddress {
 
 scrypto_type!(
     NonFungibleAddress,
-    ScryptoType::NonFungibleAddress,
+    ScryptoTypeId::NonFungibleAddress,
     Vec::new()
 );
 
@@ -148,7 +149,8 @@ impl fmt::Debug for NonFungibleAddress {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{address::Bech32Decoder, sbor::rust::string::ToString};
+    use crate::address::Bech32Decoder;
+    use sbor::rust::string::ToString;
 
     #[test]
     pub fn non_fungible_address_from_and_to_string_succeeds() {

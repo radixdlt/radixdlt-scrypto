@@ -1018,103 +1018,103 @@ fn generate_value(
         }),
         ast::Value::PackageAddress(_) => {
             generate_package_address(value, bech32_decoder).map(|v| Value::Custom {
-                type_id: ScryptoType::PackageAddress.id(),
+                type_id: ScryptoTypeId::PackageAddress.id(),
                 bytes: v.to_vec(),
             })
         }
         ast::Value::SystemAddress(_) => {
             generate_system_address(value, bech32_decoder).map(|v| Value::Custom {
-                type_id: ScryptoType::SystemAddress.id(),
+                type_id: ScryptoTypeId::SystemAddress.id(),
                 bytes: v.to_vec(),
             })
         }
         ast::Value::ComponentAddress(_) => {
             generate_component_address(value, bech32_decoder).map(|v| Value::Custom {
-                type_id: ScryptoType::ComponentAddress.id(),
+                type_id: ScryptoTypeId::ComponentAddress.id(),
                 bytes: v.to_vec(),
             })
         }
         ast::Value::ResourceAddress(_) => {
             generate_resource_address(value, bech32_decoder).map(|v| Value::Custom {
-                type_id: ScryptoType::ResourceAddress.id(),
+                type_id: ScryptoTypeId::ResourceAddress.id(),
                 bytes: v.to_vec(),
             })
         }
 
         ast::Value::Component(_) => generate_component(value).map(|v| Value::Custom {
-            type_id: ScryptoType::Component.id(),
+            type_id: ScryptoTypeId::Component.id(),
             bytes: v.to_vec(),
         }),
         ast::Value::KeyValueStore(_) => generate_key_value_store(value).map(|v| Value::Custom {
-            type_id: ScryptoType::KeyValueStore.id(),
+            type_id: ScryptoTypeId::KeyValueStore.id(),
             bytes: v.to_vec(),
         }),
         ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| Value::Custom {
-            type_id: ScryptoType::Bucket.id(),
+            type_id: ScryptoTypeId::Bucket.id(),
             bytes: scrypto::resource::Bucket(v).to_vec(),
         }),
         ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| Value::Custom {
-            type_id: ScryptoType::Proof.id(),
+            type_id: ScryptoTypeId::Proof.id(),
             bytes: scrypto::resource::Proof(v).to_vec(),
         }),
         ast::Value::Vault(_) => generate_vault(value).map(|v| Value::Custom {
-            type_id: ScryptoType::Vault.id(),
+            type_id: ScryptoTypeId::Vault.id(),
             bytes: v.to_vec(),
         }),
 
         ast::Value::Expression(_) => generate_expression(value).map(|v| Value::Custom {
-            type_id: ScryptoType::Expression.id(),
+            type_id: ScryptoTypeId::Expression.id(),
             bytes: v.to_vec(),
         }),
         ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| Value::Custom {
-            type_id: ScryptoType::Blob.id(),
+            type_id: ScryptoTypeId::Blob.id(),
             bytes: v.to_vec(),
         }),
         ast::Value::NonFungibleAddress(_) => {
             generate_non_fungible_address(value).map(|v| Value::Custom {
-                type_id: ScryptoType::NonFungibleAddress.id(),
+                type_id: ScryptoTypeId::NonFungibleAddress.id(),
                 bytes: v.to_vec(),
             })
         }
 
         ast::Value::Hash(_) => generate_hash(value).map(|v| Value::Custom {
-            type_id: ScryptoType::Hash.id(),
+            type_id: ScryptoTypeId::Hash.id(),
             bytes: v.to_vec(),
         }),
         ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
-            type_id: ScryptoType::Decimal.id(),
+            type_id: ScryptoTypeId::Decimal.id(),
             bytes: v.to_vec(),
         }),
         ast::Value::PreciseDecimal(_) => generate_precise_decimal(value).map(|v| Value::Custom {
-            type_id: ScryptoType::PreciseDecimal.id(),
+            type_id: ScryptoTypeId::PreciseDecimal.id(),
             bytes: v.to_vec(),
         }),
         ast::Value::EcdsaSecp256k1PublicKey(_) => {
             generate_ecdsa_secp256k1_public_key(value).map(|v| Value::Custom {
-                type_id: ScryptoType::EcdsaSecp256k1PublicKey.id(),
+                type_id: ScryptoTypeId::EcdsaSecp256k1PublicKey.id(),
                 bytes: v.to_vec(),
             })
         }
         ast::Value::EcdsaSecp256k1Signature(_) => {
             generate_ecdsa_secp256k1_signature(value).map(|v| Value::Custom {
-                type_id: ScryptoType::EcdsaSecp256k1Signature.id(),
+                type_id: ScryptoTypeId::EcdsaSecp256k1Signature.id(),
                 bytes: v.to_vec(),
             })
         }
         ast::Value::EddsaEd25519PublicKey(_) => {
             generate_eddsa_ed25519_public_key(value).map(|v| Value::Custom {
-                type_id: ScryptoType::EddsaEd25519PublicKey.id(),
+                type_id: ScryptoTypeId::EddsaEd25519PublicKey.id(),
                 bytes: v.to_vec(),
             })
         }
         ast::Value::EddsaEd25519Signature(_) => {
             generate_eddsa_ed25519_signature(value).map(|v| Value::Custom {
-                type_id: ScryptoType::EddsaEd25519Signature.id(),
+                type_id: ScryptoTypeId::EddsaEd25519Signature.id(),
                 bytes: v.to_vec(),
             })
         }
         ast::Value::NonFungibleId(_) => generate_non_fungible_id(value).map(|v| Value::Custom {
-            type_id: ScryptoType::NonFungibleId.id(),
+            type_id: ScryptoTypeId::NonFungibleId.id(),
             bytes: v.to_vec(),
         }),
     }
@@ -1161,32 +1161,32 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::Tuple => TYPE_TUPLE,
 
         // Globals
-        ast::Type::PackageAddress => ScryptoType::PackageAddress.id(),
-        ast::Type::ComponentAddress => ScryptoType::ComponentAddress.id(),
-        ast::Type::ResourceAddress => ScryptoType::ResourceAddress.id(),
-        ast::Type::SystemAddress => ScryptoType::SystemAddress.id(),
+        ast::Type::PackageAddress => ScryptoTypeId::PackageAddress.id(),
+        ast::Type::ComponentAddress => ScryptoTypeId::ComponentAddress.id(),
+        ast::Type::ResourceAddress => ScryptoTypeId::ResourceAddress.id(),
+        ast::Type::SystemAddress => ScryptoTypeId::SystemAddress.id(),
 
         // RE Nodes
-        ast::Type::Component => ScryptoType::Component.id(),
-        ast::Type::KeyValueStore => ScryptoType::KeyValueStore.id(),
-        ast::Type::Bucket => ScryptoType::Bucket.id(),
-        ast::Type::Proof => ScryptoType::Proof.id(),
-        ast::Type::Vault => ScryptoType::Vault.id(),
+        ast::Type::Component => ScryptoTypeId::Component.id(),
+        ast::Type::KeyValueStore => ScryptoTypeId::KeyValueStore.id(),
+        ast::Type::Bucket => ScryptoTypeId::Bucket.id(),
+        ast::Type::Proof => ScryptoTypeId::Proof.id(),
+        ast::Type::Vault => ScryptoTypeId::Vault.id(),
 
         // Other interpreted types
-        ast::Type::Expression => ScryptoType::Expression.id(),
-        ast::Type::Blob => ScryptoType::Blob.id(),
-        ast::Type::NonFungibleAddress => ScryptoType::NonFungibleAddress.id(),
+        ast::Type::Expression => ScryptoTypeId::Expression.id(),
+        ast::Type::Blob => ScryptoTypeId::Blob.id(),
+        ast::Type::NonFungibleAddress => ScryptoTypeId::NonFungibleAddress.id(),
 
-        // Uninterpreted=> ScryptoType::Decimal.id(),
-        ast::Type::Hash => ScryptoType::Hash.id(),
-        ast::Type::EcdsaSecp256k1PublicKey => ScryptoType::EcdsaSecp256k1PublicKey.id(),
-        ast::Type::EcdsaSecp256k1Signature => ScryptoType::EcdsaSecp256k1Signature.id(),
-        ast::Type::EddsaEd25519PublicKey => ScryptoType::EddsaEd25519PublicKey.id(),
-        ast::Type::EddsaEd25519Signature => ScryptoType::EddsaEd25519Signature.id(),
-        ast::Type::Decimal => ScryptoType::Decimal.id(),
-        ast::Type::PreciseDecimal => ScryptoType::PreciseDecimal.id(),
-        ast::Type::NonFungibleId => ScryptoType::NonFungibleId.id(),
+        // Uninterpreted=> ScryptoTypeId::Decimal.id(),
+        ast::Type::Hash => ScryptoTypeId::Hash.id(),
+        ast::Type::EcdsaSecp256k1PublicKey => ScryptoTypeId::EcdsaSecp256k1PublicKey.id(),
+        ast::Type::EcdsaSecp256k1Signature => ScryptoTypeId::EcdsaSecp256k1Signature.id(),
+        ast::Type::EddsaEd25519PublicKey => ScryptoTypeId::EddsaEd25519PublicKey.id(),
+        ast::Type::EddsaEd25519Signature => ScryptoTypeId::EddsaEd25519Signature.id(),
+        ast::Type::Decimal => ScryptoTypeId::Decimal.id(),
+        ast::Type::PreciseDecimal => ScryptoTypeId::PreciseDecimal.id(),
+        ast::Type::NonFungibleId => ScryptoTypeId::NonFungibleId.id(),
     }
 }
 
@@ -1273,11 +1273,11 @@ mod tests {
             Value::Struct {
                 fields: vec![
                     Value::Custom {
-                        type_id: ScryptoType::Bucket.id(),
+                        type_id: ScryptoTypeId::Bucket.id(),
                         bytes: scrypto::resource::Bucket(1).to_vec()
                     },
                     Value::Custom {
-                        type_id: ScryptoType::Proof.id(),
+                        type_id: ScryptoTypeId::Proof.id(),
                         bytes: scrypto::resource::Proof(2).to_vec()
                     },
                     Value::String {
@@ -1291,11 +1291,11 @@ mod tests {
             Value::Struct {
                 fields: vec![
                     Value::Custom {
-                        type_id: ScryptoType::Decimal.id(),
+                        type_id: ScryptoTypeId::Decimal.id(),
                         bytes: Decimal::from_str("1.0").unwrap().to_vec()
                     },
                     Value::Custom {
-                        type_id: ScryptoType::Hash.id(),
+                        type_id: ScryptoTypeId::Hash.id(),
                         bytes: Hash::from_str(
                             "aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"
                         )
@@ -1325,7 +1325,7 @@ mod tests {
         generate_value_ok!(
             r#"Expression("ENTIRE_WORKTOP")"#,
             Value::Custom {
-                type_id: ScryptoType::Expression.id(),
+                type_id: ScryptoTypeId::Expression.id(),
                 bytes: scrypto::core::Expression("ENTIRE_WORKTOP".to_owned()).to_vec()
             }
         );

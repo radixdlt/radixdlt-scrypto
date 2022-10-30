@@ -8,6 +8,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
+use crate::scrypto_type;
 use crate::values::ScryptoValue;
 
 /// Represents a key for a non-fungible resource
@@ -78,7 +79,7 @@ impl NonFungibleId {
     }
 }
 
-scrypto_type!(NonFungibleId, ScryptoType::NonFungibleId, Vec::new());
+scrypto_type!(NonFungibleId, ScryptoTypeId::NonFungibleId, Vec::new());
 
 //======
 // text

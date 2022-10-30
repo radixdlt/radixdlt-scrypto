@@ -1,10 +1,19 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use scrypto::abi::BlueprintAbi;
+use scrypto::abi::*;
 use scrypto::buffer::*;
 use scrypto::prelude::*;
 use serde::Serialize;
-use serde_json::{json, to_value, Value};
+use serde_json::{json, to_string, to_value, Value};
+
+blueprint! {
+  struct Empty {
+  }
+
+  impl Empty {
+
+  }
+}
 
 blueprint! {
     struct Simple {
@@ -34,8 +43,15 @@ blueprint! {
     }
 }
 
-fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
-    assert_eq!(to_value(&actual).unwrap(), expected);
+pub fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
+    let actual = to_value(&actual).unwrap();
+    if actual != expected {
+        panic!(
+            "Mismatching JSONs:\nActual:\n{}\nExpected:\n{}\n",
+            to_string(&actual).unwrap(),
+            to_string(&expected).unwrap()
+        );
+    }
 }
 
 #[test]

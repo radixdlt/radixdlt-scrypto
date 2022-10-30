@@ -107,27 +107,27 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                             bytes
                         }
 
-                        fn immutable_data_schema() -> ::sbor::describe::Type {
+                        fn immutable_data_schema() -> ::scrypto::abi::Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
-                            use ::sbor::Describe;
+                            use ::scrypto::abi::Describe;
 
-                            ::sbor::describe::Type::Struct {
+                            ::scrypto::abi::Type::Struct {
                                 name: #ident_str.to_owned(),
-                                fields: ::sbor::describe::Fields::Named {
+                                fields: ::scrypto::abi::Fields::Named {
                                     named: vec![#((#im_names.to_owned(), <#im_types2>::describe())),*]
                                 },
                             }
                         }
 
-                        fn mutable_data_schema() -> ::sbor::describe::Type {
+                        fn mutable_data_schema() -> ::scrypto::abi::Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
-                            use ::sbor::Describe;
+                            use ::scrypto::abi::Describe;
 
-                            ::sbor::describe::Type::Struct {
+                            ::scrypto::abi::Type::Struct {
                                 name: #ident_str.to_owned(),
-                                fields: ::sbor::describe::Fields::Named {
+                                fields: ::scrypto::abi::Fields::Named {
                                     named: vec![#((#m_names.to_owned(), <#m_types2>::describe())),*]
                                 },
                             }
@@ -218,24 +218,24 @@ mod tests {
                         self.field_2.encode(&mut encoder);
                         bytes
                     }
-                    fn immutable_data_schema() -> ::sbor::describe::Type {
+                    fn immutable_data_schema() -> ::scrypto::abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use ::sbor::Describe;
-                        ::sbor::describe::Type::Struct {
+                        use ::scrypto::abi::Describe;
+                        ::scrypto::abi::Type::Struct {
                             name: "AwesomeNonFungibleData".to_owned(),
-                            fields: ::sbor::describe::Fields::Named {
+                            fields: ::scrypto::abi::Fields::Named {
                                 named: vec![("field_1".to_owned(), <u32>::describe())]
                             },
                         }
                     }
-                    fn mutable_data_schema() -> ::sbor::describe::Type {
+                    fn mutable_data_schema() -> ::scrypto::abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use ::sbor::Describe;
-                        ::sbor::describe::Type::Struct {
+                        use ::scrypto::abi::Describe;
+                        ::scrypto::abi::Type::Struct {
                             name: "AwesomeNonFungibleData".to_owned(),
-                            fields: ::sbor::describe::Fields::Named {
+                            fields: ::scrypto::abi::Fields::Named {
                                 named: vec![("field_2".to_owned(), <String>::describe())]
                             },
                         }

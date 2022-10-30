@@ -50,13 +50,9 @@ pub mod values;
 mod macros;
 pub use macros::*;
 
-// Re-export SBOR derive.
-extern crate sbor;
-pub use sbor::{Decode, Describe, Encode, TypeId};
-
 // Re-export Scrypto derive.
 extern crate scrypto_derive;
-pub use scrypto_derive::{blueprint, import, NonFungibleData};
+pub use scrypto_derive::{blueprint, import, Describe, NonFungibleData};
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502

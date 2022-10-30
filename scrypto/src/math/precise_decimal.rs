@@ -11,6 +11,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::math::*;
+use crate::scrypto_type;
 
 /// `PreciseDecimal` represents a 512 bit representation of a fixed-scale decimal number.
 ///
@@ -379,7 +380,7 @@ impl PreciseDecimal {
     }
 }
 
-scrypto_type!(PreciseDecimal, ScryptoType::PreciseDecimal, Vec::new());
+scrypto_type!(PreciseDecimal, ScryptoTypeId::PreciseDecimal, Vec::new());
 
 //======
 // text

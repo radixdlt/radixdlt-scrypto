@@ -1,6 +1,6 @@
-use sbor::describe::Type;
 use sbor::rust::string::String;
 use sbor::*;
+use scrypto::abi::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::engine::types::*;
 

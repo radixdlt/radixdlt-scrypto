@@ -1,14 +1,15 @@
-use sbor::describe::{Fields, Variant};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::boxed::Box;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::math::Decimal;
 
+use crate::abi::*;
+use crate::math::Decimal;
 use crate::resource::AccessRuleNode::{AllOf, AnyOf};
 use crate::resource::*;
+use crate::Describe;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
 pub enum SoftDecimal {
@@ -187,8 +188,8 @@ pub enum AccessRuleNode {
 
 // FIXME: describe types with cycles
 impl Describe for AccessRuleNode {
-    fn describe() -> sbor::describe::Type {
-        sbor::describe::Type::Enum {
+    fn describe() -> Type {
+        Type::Enum {
             name: "AccessRuleNode".to_owned(),
             variants: vec![
                 Variant {

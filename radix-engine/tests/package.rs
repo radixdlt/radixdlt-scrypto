@@ -3,7 +3,6 @@ use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::PackageError;
 use radix_engine::types::*;
 use radix_engine::wasm::*;
-use sbor::Type;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

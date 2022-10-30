@@ -350,7 +350,7 @@ macro_rules! external_blueprint {
         }
     ) => {
 
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
         struct $blueprint_ident {
             package_address: ::scrypto::component::PackageAddress,
             blueprint_name: ::sbor::rust::string::String,
@@ -493,7 +493,7 @@ macro_rules! external_component {
         }
     ) => {
 
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
         struct $component_ident {
             component_address: ::scrypto::component::ComponentAddress,
         }
@@ -606,4 +606,56 @@ macro_rules! external_component_members {
         compile_error!("The external_component! macro cannot be used to define static blueprint methods which don't take &self or &mut self. For these package methods, use a separate external_blueprint! macro.");
     };
     () => {}
+}
+
+/// A macro to help create a Scrypto-specific type.
+#[macro_export]
+macro_rules! scrypto_type {
+    ($t:ty, $ct:expr, $generics: expr) => {
+        impl TypeId for $t {
+            #[inline]
+            fn type_id() -> u8 {
+                $ct.id()
+            }
+        }
+
+        impl Encode for $t {
+            #[inline]
+            fn encode_type_id(encoder: &mut Encoder) {
+                encoder.write_type_id(Self::type_id());
+            }
+            #[inline]
+            fn encode_value(&self, encoder: &mut Encoder) {
+                let bytes = self.to_vec();
+                encoder.write_size(bytes.len());
+                encoder.write_slice(&bytes);
+            }
+        }
+
+        impl Decode for $t {
+            fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+                decoder.check_type_id(Self::type_id())
+            }
+            fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+                let len = decoder.read_size()?;
+                let slice = decoder.read_slice(len)?;
+                Self::try_from(slice).map_err(|err| {
+                    DecodeError::CustomError(::sbor::rust::format!(
+                        "Failed to decode {}: {:?}",
+                        stringify!($t),
+                        err
+                    ))
+                })
+            }
+        }
+
+        impl Describe for $t {
+            fn describe() -> Type {
+                Type::Custom {
+                    type_id: $ct.id(),
+                    generics: $generics,
+                }
+            }
+        }
+    };
 }

@@ -10,6 +10,7 @@ use crate::math::*;
 use crate::misc::*;
 use crate::native_methods;
 use crate::resource::*;
+use crate::scrypto_type;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ProofGetAmountInput {}
@@ -413,4 +414,4 @@ impl ValidatedProof {
 // implement the sbor::Encode and sbor::Decode traits as they are not meant to be used as arguments and returns to and
 // from methods. They are meant ot be used inside methods.
 
-scrypto_type!(Proof, ScryptoType::Proof, Vec::new());
+scrypto_type!(Proof, ScryptoTypeId::Proof, Vec::new());

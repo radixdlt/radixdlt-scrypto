@@ -4,6 +4,7 @@ use sbor::*;
 
 use crate::math::*;
 use crate::resource::*;
+use crate::Describe;
 
 /// Represents the minting config
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]

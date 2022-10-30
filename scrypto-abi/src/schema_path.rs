@@ -1,4 +1,3 @@
-use sbor::describe::Fields;
 use sbor::path::SborPath;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
@@ -7,12 +6,35 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::resource::schema_path::SchemaSubPath::{Field, Index};
+use crate::schema::*;
+use crate::schema_path::SchemaSubPath::{Field, Index};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Ord, PartialOrd)]
 enum SchemaSubPath {
     Index(usize),
     Field(String),
+}
+
+impl Describe for SchemaPath {
+    fn describe() -> Type {
+        Type::Enum {
+            name: "SchemaPath".to_string(),
+            variants: vec![
+                Variant {
+                    name: "Index".to_string(),
+                    fields: Fields::Unnamed {
+                        unnamed: vec![Type::U32],
+                    },
+                },
+                Variant {
+                    name: "Field".to_string(),
+                    fields: Fields::Unnamed {
+                        unnamed: vec![Type::String],
+                    },
+                },
+            ],
+        }
+    }
 }
 
 impl FromStr for SchemaSubPath {
@@ -29,7 +51,7 @@ impl FromStr for SchemaSubPath {
 }
 
 /// Describes a value located in some sbor given a schema for that sbor
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Ord, PartialOrd)]
 pub struct SchemaPath(Vec<SchemaSubPath>);
 
 impl SchemaPath {

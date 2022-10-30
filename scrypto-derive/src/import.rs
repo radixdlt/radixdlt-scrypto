@@ -2,9 +2,10 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::*;
 
-use sbor::describe as des;
 use scrypto_abi as abi;
-use scrypto_abi::ScryptoType;
+use scrypto_abi::Fields as SchemaFields;
+use scrypto_abi::ScryptoTypeId;
+use scrypto_abi::Type as SchemaType;
 
 macro_rules! trace {
     ($($arg:expr),*) => {{
@@ -42,9 +43,9 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
         let mut func_args = Vec::<Ident>::new();
 
         match &function.input {
-            sbor::Type::Struct {
+            SchemaType::Struct {
                 name: _,
-                fields: sbor::describe::Fields::Named { named },
+                fields: SchemaFields::Named { named },
             } => {
                 for (i, (_, input)) in named.iter().enumerate() {
                     let ident = format_ident!("arg{}", i);
@@ -87,7 +88,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
     let output = quote! {
         #(#structs)*
 
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
         pub struct #ident {
             component_address: ::scrypto::component::ComponentAddress,
         }
@@ -118,30 +119,30 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
     Ok(output)
 }
 
-fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
+fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
     let mut structs = Vec::<Item>::new();
 
     let t: Type = match ty {
         // primitive types
-        des::Type::Unit => parse_quote! { () },
-        des::Type::Bool => parse_quote! { bool },
-        des::Type::I8 => parse_quote! { i8 },
-        des::Type::I16 => parse_quote! { i16 },
-        des::Type::I32 => parse_quote! { i32 },
-        des::Type::I64 => parse_quote! { i64 },
-        des::Type::I128 => parse_quote! { i128 },
-        des::Type::U8 => parse_quote! { u8 },
-        des::Type::U16 => parse_quote! { u16 },
-        des::Type::U32 => parse_quote! { u32 },
-        des::Type::U64 => parse_quote! { u64 },
-        des::Type::U128 => parse_quote! { u128 },
-        des::Type::String => parse_quote! { String },
+        SchemaType::Unit => parse_quote! { () },
+        SchemaType::Bool => parse_quote! { bool },
+        SchemaType::I8 => parse_quote! { i8 },
+        SchemaType::I16 => parse_quote! { i16 },
+        SchemaType::I32 => parse_quote! { i32 },
+        SchemaType::I64 => parse_quote! { i64 },
+        SchemaType::I128 => parse_quote! { i128 },
+        SchemaType::U8 => parse_quote! { u8 },
+        SchemaType::U16 => parse_quote! { u16 },
+        SchemaType::U32 => parse_quote! { u32 },
+        SchemaType::U64 => parse_quote! { u64 },
+        SchemaType::U128 => parse_quote! { u128 },
+        SchemaType::String => parse_quote! { String },
         // struct & enum
-        des::Type::Struct { name, fields } => {
+        SchemaType::Struct { name, fields } => {
             let ident = format_ident!("{}", name);
 
             match fields {
-                des::Fields::Named { named } => {
+                SchemaFields::Named { named } => {
                     let names: Vec<Ident> =
                         named.iter().map(|k| format_ident!("{}", k.0)).collect();
                     let mut types: Vec<Type> = vec![];
@@ -151,13 +152,13 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                         structs.extend(new_structs);
                     }
                     structs.push(parse_quote! {
-                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
                         pub struct #ident {
                             #( pub #names : #types, )*
                         }
                     });
                 }
-                des::Fields::Unnamed { unnamed } => {
+                SchemaFields::Unnamed { unnamed } => {
                     let mut types: Vec<Type> = vec![];
                     for v in unnamed {
                         let (new_type, new_structs) = get_native_type(v)?;
@@ -165,15 +166,15 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                         structs.extend(new_structs);
                     }
                     structs.push(parse_quote! {
-                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
                         pub struct #ident (
                             #( pub #types ),*
                         );
                     });
                 }
-                des::Fields::Unit => {
+                SchemaFields::Unit => {
                     structs.push(parse_quote! {
-                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
                         pub struct #ident;
                     });
                 }
@@ -181,7 +182,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
 
             parse_quote! { #ident }
         }
-        des::Type::Enum { name, variants } => {
+        SchemaType::Enum { name, variants } => {
             let ident = format_ident!("{}", name);
             let mut native_variants = Vec::<Variant>::new();
 
@@ -189,7 +190,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 let v_ident = format_ident!("{}", variant.name);
 
                 match &variant.fields {
-                    des::Fields::Named { named } => {
+                    SchemaFields::Named { named } => {
                         let mut names: Vec<Ident> = vec![];
                         let mut types: Vec<Type> = vec![];
                         for (n, v) in named {
@@ -204,7 +205,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                             }
                         });
                     }
-                    des::Fields::Unnamed { unnamed } => {
+                    SchemaFields::Unnamed { unnamed } => {
                         let mut types: Vec<Type> = vec![];
                         for v in unnamed {
                             let (new_type, new_structs) = get_native_type(v)?;
@@ -215,7 +216,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                             #v_ident ( #(#types),* )
                         });
                     }
-                    des::Fields::Unit => {
+                    SchemaFields::Unit => {
                         native_variants.push(parse_quote! {
                             #v_ident
                         });
@@ -224,7 +225,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
             }
 
             structs.push(parse_quote! {
-                #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
                 pub enum #ident {
                     #( #native_variants ),*
                 }
@@ -233,13 +234,13 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
             parse_quote! { #ident }
         }
         // composite types
-        des::Type::Option { some_type } => {
+        SchemaType::Option { some_type } => {
             let (new_type, new_structs) = get_native_type(some_type)?;
             structs.extend(new_structs);
 
             parse_quote! { Option<#new_type> }
         }
-        des::Type::Tuple { element_types } => {
+        SchemaType::Tuple { element_types } => {
             let mut types: Vec<Type> = vec![];
 
             for element_type in element_types {
@@ -250,7 +251,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
 
             parse_quote! { ( #(#types),* ) }
         }
-        des::Type::Array {
+        SchemaType::Array {
             element_type,
             length,
         } => {
@@ -260,7 +261,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
             let n = *length as usize;
             parse_quote! { [#new_type; #n] }
         }
-        des::Type::Result {
+        SchemaType::Result {
             okay_type,
             err_type,
         } => {
@@ -272,19 +273,19 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
             parse_quote! { Result<#okay_type, #err_type> }
         }
         // collection
-        des::Type::Vec { element_type } => {
+        SchemaType::Vec { element_type } => {
             let (new_type, new_structs) = get_native_type(element_type)?;
             structs.extend(new_structs);
 
             parse_quote! { Vec<#new_type> }
         }
-        des::Type::TreeSet { element_type } => {
+        SchemaType::TreeSet { element_type } => {
             let (new_type, new_structs) = get_native_type(element_type)?;
             structs.extend(new_structs);
 
             parse_quote! { BTreeSet<#new_type> }
         }
-        des::Type::TreeMap {
+        SchemaType::TreeMap {
             key_type,
             value_type,
         } => {
@@ -295,13 +296,13 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
 
             parse_quote! { BTreeMap<#key_type, #value_type> }
         }
-        des::Type::HashSet { element_type } => {
+        SchemaType::HashSet { element_type } => {
             let (new_type, new_structs) = get_native_type(element_type)?;
             structs.extend(new_structs);
 
             parse_quote! { HashSet<#new_type> }
         }
-        des::Type::HashMap {
+        SchemaType::HashMap {
             key_type,
             value_type,
         } => {
@@ -312,45 +313,45 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
 
             parse_quote! { HashMap<#key_type, #value_type> }
         }
-        des::Type::Any => {
+        SchemaType::Any => {
             panic!("Any type not currently supported for importing.");
         }
-        des::Type::Custom { type_id, generics } => {
+        SchemaType::Custom { type_id, generics } => {
             // Copying the names to avoid cyclic dependency.
-            let scrypto_type = ScryptoType::from_id(*type_id).ok_or(Error::new(
+            let scrypto_type = ScryptoTypeId::from_id(*type_id).ok_or(Error::new(
                 Span::call_site(),
                 format!("Invalid custom type: {}", type_id),
             ))?;
 
             let canonical_name = match scrypto_type {
                 // Global addresses types
-                ScryptoType::PackageAddress => "::scrypto::component::PackageAddress",
-                ScryptoType::ComponentAddress => "::scrypto::component::ComponentAddress",
-                ScryptoType::ResourceAddress => "::scrypto::resource::ResourceAddress",
-                ScryptoType::SystemAddress => "::scrypto::core::SystemAddress",
+                ScryptoTypeId::PackageAddress => "::scrypto::component::PackageAddress",
+                ScryptoTypeId::ComponentAddress => "::scrypto::component::ComponentAddress",
+                ScryptoTypeId::ResourceAddress => "::scrypto::resource::ResourceAddress",
+                ScryptoTypeId::SystemAddress => "::scrypto::core::SystemAddress",
                 // RE nodes types
-                ScryptoType::Component => "::scrypto::component::Component",
-                ScryptoType::KeyValueStore => "::scrypto::component::KeyValueStore",
-                ScryptoType::Bucket => "::scrypto::resource::Bucket",
-                ScryptoType::Proof => "::scrypto::resource::Proof",
-                ScryptoType::Vault => "::scrypto::resource::Vault",
+                ScryptoTypeId::Component => "::scrypto::component::Component",
+                ScryptoTypeId::KeyValueStore => "::scrypto::component::KeyValueStore",
+                ScryptoTypeId::Bucket => "::scrypto::resource::Bucket",
+                ScryptoTypeId::Proof => "::scrypto::resource::Proof",
+                ScryptoTypeId::Vault => "::scrypto::resource::Vault",
                 // Other interpreted types
-                ScryptoType::Expression => "::scrypto::core::Expression",
-                ScryptoType::Blob => "::scrypto::core::Blob",
-                ScryptoType::NonFungibleAddress => "::scrypto::resource::NonFungibleAddress",
+                ScryptoTypeId::Expression => "::scrypto::core::Expression",
+                ScryptoTypeId::Blob => "::scrypto::core::Blob",
+                ScryptoTypeId::NonFungibleAddress => "::scrypto::resource::NonFungibleAddress",
                 // Uninterpreted
-                ScryptoType::Hash => "::scrypto::crypto::Hash",
-                ScryptoType::EcdsaSecp256k1PublicKey => {
+                ScryptoTypeId::Hash => "::scrypto::crypto::Hash",
+                ScryptoTypeId::EcdsaSecp256k1PublicKey => {
                     "::scrypto::crypto::EcdsaSecp256k1PublicKey"
                 }
-                ScryptoType::EcdsaSecp256k1Signature => {
+                ScryptoTypeId::EcdsaSecp256k1Signature => {
                     "::scrypto::crypto::EcdsaSecp256k1Signature"
                 }
-                ScryptoType::EddsaEd25519PublicKey => "::scrypto::crypto::EddsaEd25519PublicKey",
-                ScryptoType::EddsaEd25519Signature => "::scrypto::crypto::EddsaEd25519Signature",
-                ScryptoType::Decimal => "::scrypto::math::Decimal",
-                ScryptoType::PreciseDecimal => "::scrypto::math::PreciseDecimal",
-                ScryptoType::NonFungibleId => "::scrypto::resource::NonFungibleId",
+                ScryptoTypeId::EddsaEd25519PublicKey => "::scrypto::crypto::EddsaEd25519PublicKey",
+                ScryptoTypeId::EddsaEd25519Signature => "::scrypto::crypto::EddsaEd25519Signature",
+                ScryptoTypeId::Decimal => "::scrypto::math::Decimal",
+                ScryptoTypeId::PreciseDecimal => "::scrypto::math::PreciseDecimal",
+                ScryptoTypeId::NonFungibleId => "::scrypto::resource::NonFungibleId",
             };
 
             let ty: Type = parse_str(canonical_name).unwrap();
@@ -447,7 +448,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
                 pub struct Simple {
                     component_address: ::scrypto::component::ComponentAddress,
                 }

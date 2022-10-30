@@ -24,7 +24,7 @@ pub enum ScryptoValueReplaceError {
     BucketIdNotFound(BucketId),
 }
 
-/// A Scrypto value is a SBOR value of which the custom types are the ones defined by `ScryptoType`.
+/// A Scrypto value is a SBOR value of which the custom types are the ones defined by `ScryptoTypeId`.
 #[derive(Clone, PartialEq, Eq)]
 pub struct ScryptoValue {
     pub raw: Vec<u8>,
@@ -319,59 +319,59 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
         type_id: u8,
         data: &[u8],
     ) -> Result<(), Self::Err> {
-        match ScryptoType::from_id(type_id).ok_or(Self::Err::UnknownTypeId(type_id))? {
+        match ScryptoTypeId::from_id(type_id).ok_or(Self::Err::UnknownTypeId(type_id))? {
             // Global addresses
-            ScryptoType::PackageAddress => {
+            ScryptoTypeId::PackageAddress => {
                 let package_address = PackageAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?;
                 self.package_addresses.insert(package_address);
             }
-            ScryptoType::ComponentAddress => {
+            ScryptoTypeId::ComponentAddress => {
                 let component_address = ComponentAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
                 self.component_addresses.insert(component_address);
             }
-            ScryptoType::ResourceAddress => {
+            ScryptoTypeId::ResourceAddress => {
                 let resource_address = ResourceAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
                 self.resource_addresses.insert(resource_address);
             }
-            ScryptoType::SystemAddress => {
+            ScryptoTypeId::SystemAddress => {
                 let system_address = SystemAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidSystemAddress)?;
                 self.system_addresses.insert(system_address);
             }
 
             // RE nodes & references
-            ScryptoType::Component => {
+            ScryptoTypeId::Component => {
                 let component = Component::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponent)?;
                 if !self.components.insert(component.0) {
                     return Err(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
-            ScryptoType::KeyValueStore => {
+            ScryptoTypeId::KeyValueStore => {
                 let kv_store = KeyValueStore::<(), ()>::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidKeyValueStore)?;
                 if !self.kv_stores.insert(kv_store.id) {
                     return Err(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
-            ScryptoType::Bucket => {
+            ScryptoTypeId::Bucket => {
                 let bucket =
                     Bucket::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBucket)?;
                 if self.buckets.insert(bucket.0, path.clone().into()).is_some() {
                     return Err(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
-            ScryptoType::Proof => {
+            ScryptoTypeId::Proof => {
                 let proof =
                     Proof::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidProof)?;
                 if self.proofs.insert(proof.0, path.clone().into()).is_some() {
                     return Err(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
-            ScryptoType::Vault => {
+            ScryptoTypeId::Vault => {
                 let vault =
                     Vault::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidVault)?;
                 if !self.vaults.insert(vault.0) {
@@ -380,50 +380,50 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
             }
 
             // Other interpreted
-            ScryptoType::Expression => {
+            ScryptoTypeId::Expression => {
                 let expression = Expression::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidExpression)?;
                 self.expressions.push((expression, path.clone().into()));
             }
-            ScryptoType::Blob => {
+            ScryptoTypeId::Blob => {
                 let blob =
                     Blob::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBlob)?;
                 self.blobs.push((blob, path.clone().into()));
             }
-            ScryptoType::NonFungibleAddress => {
+            ScryptoTypeId::NonFungibleAddress => {
                 let non_fungible_address = NonFungibleAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleAddress)?;
                 self.non_fungible_addresses.insert(non_fungible_address);
             }
 
             // Uninterpreted
-            ScryptoType::Hash => {
+            ScryptoTypeId::Hash => {
                 Hash::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidHash)?;
             }
-            ScryptoType::EcdsaSecp256k1PublicKey => {
+            ScryptoTypeId::EcdsaSecp256k1PublicKey => {
                 EcdsaSecp256k1PublicKey::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidEcdsaSecp256k1PublicKey)?;
             }
-            ScryptoType::EcdsaSecp256k1Signature => {
+            ScryptoTypeId::EcdsaSecp256k1Signature => {
                 EcdsaSecp256k1Signature::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidEcdsaSecp256k1Signature)?;
             }
-            ScryptoType::EddsaEd25519PublicKey => {
+            ScryptoTypeId::EddsaEd25519PublicKey => {
                 EddsaEd25519PublicKey::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidEddsaEd25519PublicKey)?;
             }
-            ScryptoType::EddsaEd25519Signature => {
+            ScryptoTypeId::EddsaEd25519Signature => {
                 EddsaEd25519Signature::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidEddsaEd25519Signature)?;
             }
-            ScryptoType::Decimal => {
+            ScryptoTypeId::Decimal => {
                 Decimal::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidDecimal)?;
             }
-            ScryptoType::PreciseDecimal => {
+            ScryptoTypeId::PreciseDecimal => {
                 PreciseDecimal::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidPreciseDecimal)?;
             }
-            ScryptoType::NonFungibleId => {
+            ScryptoTypeId::NonFungibleId => {
                 NonFungibleId::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleId)?;
             }
@@ -605,7 +605,7 @@ impl ScryptoValueFormatter {
         f: &mut F,
         type_id: u8,
     ) -> Result<(), ScryptoValueFormatterError> {
-        if let Some(ty) = ScryptoType::from_id(type_id) {
+        if let Some(ty) = ScryptoTypeId::from_id(type_id) {
             write!(f, "{}", ty.name())?;
             return Ok(());
         }
@@ -655,13 +655,13 @@ impl ScryptoValueFormatter {
         data: &[u8],
         context: &ScryptoValueFormatterContext,
     ) -> Result<(), ScryptoValueFormatterError> {
-        let scrypto_type = ScryptoType::from_id(type_id);
+        let scrypto_type = ScryptoTypeId::from_id(type_id);
         if scrypto_type.is_none() {
             Err(ScryptoCustomValueCheckError::UnknownTypeId(type_id))?;
         }
         match scrypto_type.unwrap() {
             // Global address types
-            ScryptoType::PackageAddress => {
+            ScryptoTypeId::PackageAddress => {
                 let value = PackageAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?;
                 f.write_str("PackageAddress(\"")?;
@@ -670,7 +670,7 @@ impl ScryptoValueFormatter {
                     .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?;
                 f.write_str("\")")?;
             }
-            ScryptoType::ComponentAddress => {
+            ScryptoTypeId::ComponentAddress => {
                 let value = ComponentAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
                 f.write_str("ComponentAddress(\"")?;
@@ -679,7 +679,7 @@ impl ScryptoValueFormatter {
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
                 f.write_str("\")")?;
             }
-            ScryptoType::ResourceAddress => {
+            ScryptoTypeId::ResourceAddress => {
                 let value = ResourceAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
                 f.write_str("ResourceAddress(\"")?;
@@ -688,7 +688,7 @@ impl ScryptoValueFormatter {
                     .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
                 f.write_str("\")")?;
             }
-            ScryptoType::SystemAddress => {
+            ScryptoTypeId::SystemAddress => {
                 let value = SystemAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidSystemAddress)?;
                 f.write_str("SystemAddress(\"")?;
@@ -698,17 +698,17 @@ impl ScryptoValueFormatter {
                 f.write_str("\")")?;
             }
             // RE node types
-            ScryptoType::Component => {
+            ScryptoTypeId::Component => {
                 let value = Component::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponent)?;
                 write!(f, "Component(\"{}\")", value)?;
             }
-            ScryptoType::KeyValueStore => {
+            ScryptoTypeId::KeyValueStore => {
                 let value = KeyValueStore::<(), ()>::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidKeyValueStore)?;
                 write!(f, "KeyValueStore(\"{}\")", value)?;
             }
-            ScryptoType::Bucket => {
+            ScryptoTypeId::Bucket => {
                 let value =
                     Bucket::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBucket)?;
                 if let Some(name) = context.get_bucket_name(&value.0) {
@@ -717,7 +717,7 @@ impl ScryptoValueFormatter {
                     write!(f, "Bucket({}u32)", value.0)?;
                 }
             }
-            ScryptoType::Proof => {
+            ScryptoTypeId::Proof => {
                 let value =
                     Proof::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidProof)?;
                 if let Some(name) = context.get_proof_name(&value.0) {
@@ -726,65 +726,65 @@ impl ScryptoValueFormatter {
                     write!(f, "Proof({}u32)", value.0)?;
                 }
             }
-            ScryptoType::Vault => {
+            ScryptoTypeId::Vault => {
                 let value =
                     Vault::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidVault)?;
                 write!(f, "Vault(\"{}\")", value)?;
             }
             // Other interpreted types
-            ScryptoType::Expression => {
+            ScryptoTypeId::Expression => {
                 let value = Expression::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidExpression)?;
                 write!(f, "Expression(\"{}\")", value)?;
             }
-            ScryptoType::Blob => {
+            ScryptoTypeId::Blob => {
                 let value =
                     Blob::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBlob)?;
                 write!(f, "Blob(\"{}\")", value)?;
             }
-            ScryptoType::NonFungibleAddress => {
+            ScryptoTypeId::NonFungibleAddress => {
                 let value = NonFungibleAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleAddress)?;
                 write!(f, "NonFungibleAddress(\"{}\")", value)?;
             }
             // Uninterpreted
-            ScryptoType::Hash => {
+            ScryptoTypeId::Hash => {
                 let value =
                     Hash::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidHash)?;
                 write!(f, "Hash(\"{}\")", value)?;
             }
-            ScryptoType::EcdsaSecp256k1PublicKey => {
+            ScryptoTypeId::EcdsaSecp256k1PublicKey => {
                 let value = EcdsaSecp256k1PublicKey::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidEcdsaSecp256k1PublicKey)?;
                 write!(f, "EcdsaSecp256k1PublicKey(\"{}\")", value)?;
             }
-            ScryptoType::EcdsaSecp256k1Signature => {
+            ScryptoTypeId::EcdsaSecp256k1Signature => {
                 let value = EcdsaSecp256k1Signature::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidEcdsaSecp256k1Signature)?;
                 write!(f, "EcdsaSecp256k1Signature(\"{}\")", value)?;
             }
-            ScryptoType::EddsaEd25519PublicKey => {
+            ScryptoTypeId::EddsaEd25519PublicKey => {
                 let value = EddsaEd25519PublicKey::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidEddsaEd25519PublicKey)?;
                 write!(f, "EddsaEd25519PublicKey(\"{}\")", value)?;
             }
-            ScryptoType::EddsaEd25519Signature => {
+            ScryptoTypeId::EddsaEd25519Signature => {
                 let value = EddsaEd25519Signature::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidEddsaEd25519Signature)?;
                 write!(f, "EddsaEd25519Signature(\"{}\")", value)?;
             }
-            ScryptoType::Decimal => {
+            ScryptoTypeId::Decimal => {
                 let value = Decimal::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidDecimal)?;
                 write!(f, "Decimal(\"{}\")", value)?;
             }
-            ScryptoType::PreciseDecimal => {
+            ScryptoTypeId::PreciseDecimal => {
                 let value = PreciseDecimal::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidPreciseDecimal)?;
                 write!(f, "PreciseDecimal(\"{}\")", value)?;
             }
 
-            ScryptoType::NonFungibleId => {
+            ScryptoTypeId::NonFungibleId => {
                 let value = NonFungibleId::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleId)?;
                 write!(f, "NonFungibleId(\"{}\")", value)?;

@@ -9,8 +9,6 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 pub mod any;
 /// SBOR decoding.
 pub mod decode;
-/// SBOR describing.
-pub mod describe;
 /// SBOR encoding.
 pub mod encode;
 /// SBOR paths.
@@ -23,14 +21,13 @@ mod utils;
 
 pub use any::{decode_any, encode_any, encode_any_with_buffer, Value};
 pub use decode::{Decode, DecodeError, Decoder};
-pub use describe::{Describe, Type};
 pub use encode::{Encode, Encoder};
 pub use type_id::TypeId;
 pub use utils::*;
 
 // Re-export derives
 extern crate sbor_derive;
-pub use sbor_derive::{Decode, Describe, Encode, TypeId};
+pub use sbor_derive::{Decode, Encode, TypeId};
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502

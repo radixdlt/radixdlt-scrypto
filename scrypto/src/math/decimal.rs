@@ -11,6 +11,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::math::*;
+use crate::scrypto_type;
 
 /// `Decimal` represents a 256 bit representation of a fixed-scale decimal number.
 ///
@@ -401,7 +402,7 @@ impl Decimal {
     }
 }
 
-scrypto_type!(Decimal, ScryptoType::Decimal, Vec::new());
+scrypto_type!(Decimal, ScryptoTypeId::Decimal, Vec::new());
 
 //======
 // text

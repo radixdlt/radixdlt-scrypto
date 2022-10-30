@@ -11,7 +11,6 @@ mod proof_rule;
 mod resource_builder;
 mod resource_manager;
 mod resource_type;
-mod schema_path;
 mod system;
 mod vault;
 
@@ -34,6 +33,5 @@ pub use resource_manager::Mutability::*;
 pub use resource_manager::ResourceMethodAuthKey::*;
 pub use resource_manager::*;
 pub use resource_type::ResourceType;
-pub use schema_path::SchemaPath;
 pub use system::{init_resource_system, resource_system, ResourceSystem};
 pub use vault::*;

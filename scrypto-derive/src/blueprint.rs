@@ -50,7 +50,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         pub mod #module_ident {
             use super::*;
 
-            #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+            #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
             pub struct #bp_ident #bp_fields #bp_semi_token
 
             impl #bp_ident {
@@ -90,8 +90,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         quote! {
             #[no_mangle]
             pub extern "C" fn #abi_ident(input: *mut u8) -> *mut u8 {
-                use ::sbor::{Describe, Type};
-                use ::scrypto::abi::{BlueprintAbi, Fn};
+                use ::scrypto::abi::{BlueprintAbi, Describe, Fn, Type};
                 use ::sbor::rust::borrow::ToOwned;
                 use ::sbor::rust::vec;
                 use ::sbor::rust::vec::Vec;
@@ -163,7 +162,7 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
 
             let method_input_struct: ItemStruct = parse_quote! {
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
                 pub struct #input_struct_name {
                     #(#args),*
                 }
@@ -332,7 +331,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
                     };
                     let output = match &m.sig.output {
                         ReturnType::Default => quote! {
-                            ::sbor::describe::Type::Unit
+                            ::scrypto::abi::Type::Unit
                         },
                         ReturnType::Type(_, t) => {
                             let ty = replace_self_with(t, &bp_ident.to_string());
@@ -465,7 +464,7 @@ fn generate_stubs(
 
     let output = quote! {
         #[allow(non_camel_case_types)]
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
         pub struct #value_ident {
             pub component: ::scrypto::component::Component,
         }
@@ -544,7 +543,7 @@ mod tests {
                 pub mod Test_impl {
                     use super::*;
 
-                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
                     pub struct Test {
                         a: u32,
                         admin: ResourceManager
@@ -573,11 +572,11 @@ mod tests {
                 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
                 pub struct Test_x_Input { arg0 : u32 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
                 pub struct Test_y_Input { arg0 : u32 }
 
                 #[no_mangle]
@@ -622,8 +621,7 @@ mod tests {
 
                 #[no_mangle]
                 pub extern "C" fn Test_abi(input: *mut u8) -> *mut u8 {
-                    use ::sbor::{Describe, Type};
-                    use ::scrypto::abi::{BlueprintAbi, Fn};
+                    use ::scrypto::abi::{BlueprintAbi, Describe, Fn, Type};
                     use ::sbor::rust::borrow::ToOwned;
                     use ::sbor::rust::vec;
                     use ::sbor::rust::vec::Vec;
@@ -652,7 +650,7 @@ mod tests {
                 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
                 pub struct TestComponent {
                     pub component: ::scrypto::component::Component,
                 }
@@ -697,7 +695,7 @@ mod tests {
                 pub mod Test_impl {
                     use super::*;
 
-                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
                     pub struct Test {
                     }
 
@@ -719,8 +717,7 @@ mod tests {
 
                 #[no_mangle]
                 pub extern "C" fn Test_abi(input: *mut u8) -> *mut u8 {
-                    use ::sbor::{Describe, Type};
-                    use ::scrypto::abi::{BlueprintAbi, Fn};
+                    use ::scrypto::abi::{BlueprintAbi, Describe, Fn, Type};
                     use ::sbor::rust::borrow::ToOwned;
                     use ::sbor::rust::vec;
                     use ::sbor::rust::vec::Vec;
@@ -734,7 +731,7 @@ mod tests {
                 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
                 pub struct TestComponent {
                     pub component: ::scrypto::component::Component,
                 }

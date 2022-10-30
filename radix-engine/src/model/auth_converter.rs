@@ -16,10 +16,10 @@ fn soft_to_hard_decimal(
             if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
                 match sbor_path.get_from_value(&value.dom) {
                     Some(Value::Custom { type_id, bytes }) => {
-                        match ScryptoType::from_id(*type_id)
+                        match ScryptoTypeId::from_id(*type_id)
                             .expect("ScryptoValue contains invalid SBOR type ID")
                         {
-                            ScryptoType::Decimal => {
+                            ScryptoTypeId::Decimal => {
                                 HardDecimal::Amount(Decimal::try_from(bytes.as_slice()).expect(
                                     "ScryptoValue contains mismatching SBOR type ID and value",
                                 ))
@@ -72,8 +72,8 @@ fn soft_to_hard_resource_list(
                     Some(Value::Array {
                         element_type_id,
                         elements,
-                    }) => match ScryptoType::from_id(*element_type_id).expect("ScryptoValue contains invalid SBOR type ID") {
-                        ScryptoType::ResourceAddress => HardProofRuleResourceList::List(
+                    }) => match ScryptoTypeId::from_id(*element_type_id).expect("ScryptoValue contains invalid SBOR type ID") {
+                        ScryptoTypeId::ResourceAddress => HardProofRuleResourceList::List(
                             elements
                                 .iter()
                                 .map(|v| {
@@ -86,7 +86,7 @@ fn soft_to_hard_resource_list(
                                 })
                                 .collect(),
                         ),
-                        ScryptoType::NonFungibleAddress => HardProofRuleResourceList::List(
+                        ScryptoTypeId::NonFungibleAddress => HardProofRuleResourceList::List(
                             elements
                                 .iter()
                                 .map(|v| {
@@ -120,10 +120,10 @@ fn soft_to_hard_resource(
             if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
                 match sbor_path.get_from_value(&value.dom) {
                     Some(Value::Custom { type_id, bytes }) => {
-                        match ScryptoType::from_id(*type_id)
+                        match ScryptoTypeId::from_id(*type_id)
                             .expect("ScryptoValue contains invalid SBOR type ID")
                         {
-                            ScryptoType::ResourceAddress => {
+                            ScryptoTypeId::ResourceAddress => {
                                 ResourceAddress::try_from(bytes.as_slice())
                                     .expect(
                                         "ScryptoValue contains mismatching SBOR type ID and value",
@@ -155,17 +155,17 @@ fn soft_to_hard_resource_or_non_fungible(
             if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
                 match sbor_path.get_from_value(&value.dom) {
                     Some(Value::Custom { type_id, bytes }) => {
-                        match ScryptoType::from_id(*type_id)
+                        match ScryptoTypeId::from_id(*type_id)
                             .expect("ScryptoValue contains invalid SBOR type ID")
                         {
-                            ScryptoType::ResourceAddress => {
+                            ScryptoTypeId::ResourceAddress => {
                                 ResourceAddress::try_from(bytes.as_slice())
                                     .expect(
                                         "ScryptoValue contains mismatching SBOR type ID and value",
                                     )
                                     .into()
                             }
-                            ScryptoType::NonFungibleAddress => {
+                            ScryptoTypeId::NonFungibleAddress => {
                                 NonFungibleAddress::try_from(bytes.as_slice())
                                     .expect(
                                         "ScryptoValue contains mismatching SBOR type ID and value",

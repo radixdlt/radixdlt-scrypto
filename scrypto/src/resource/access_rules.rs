@@ -6,6 +6,7 @@ use sbor::rust::string::ToString;
 use sbor::*;
 
 use crate::resource::*;
+use crate::Describe;
 
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Eq, Describe, TypeId, Encode, Decode)]

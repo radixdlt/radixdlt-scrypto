@@ -15,6 +15,8 @@ use crate::crypto::{hash, Hash, PublicKey};
 use crate::engine::{api::*, types::*, utils::*};
 use crate::misc::*;
 use crate::resource::AccessRules;
+use crate::scrypto_type;
+use crate::Describe;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ComponentAddAccessCheckInput {
@@ -184,7 +186,7 @@ impl Component {
     }
 }
 
-scrypto_type!(Component, ScryptoType::Component, Vec::new());
+scrypto_type!(Component, ScryptoTypeId::Component, Vec::new());
 
 //======
 // text
@@ -284,7 +286,11 @@ impl ComponentAddress {
     }
 }
 
-scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
+scrypto_type!(
+    ComponentAddress,
+    ScryptoTypeId::ComponentAddress,
+    Vec::new()
+);
 
 //======
 // text

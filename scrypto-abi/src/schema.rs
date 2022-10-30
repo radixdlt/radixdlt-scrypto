@@ -1,11 +1,11 @@
-use crate::rust::boxed::Box;
-use crate::rust::collections::*;
-use crate::rust::string::String;
-use crate::rust::vec;
-use crate::rust::vec::Vec;
-use crate::sbor::{Decode, Encode, TypeId};
-use crate::type_id::*;
+use sbor::rust::boxed::Box;
+use sbor::rust::collections::*;
+use sbor::rust::string::String;
+use sbor::rust::vec;
+use sbor::rust::vec::Vec;
+use sbor::type_id::*;
 use sbor::Value;
+use sbor::{Decode, Encode, TypeId};
 
 /// Represents a SBOR type.
 #[cfg_attr(
@@ -484,10 +484,7 @@ impl<K: Describe, V: Describe> Describe for HashMap<K, V> {
 
 #[cfg(test)]
 mod tests {
-    use crate::describe::*;
-    use crate::rust::boxed::Box;
-    use crate::rust::string::String;
-    use crate::rust::vec;
+    use super::*;
 
     #[test]
     pub fn test_basic_types() {

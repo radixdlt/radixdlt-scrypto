@@ -1,10 +1,26 @@
 mod ast;
 mod blueprint;
+mod describe;
 mod import;
 mod non_fungible_data;
 mod utils;
 
 use proc_macro::TokenStream;
+
+/// Derive code that describes this data structure.
+///
+/// Note that this derive doesn't work with recursive type, such as
+/// ```ignore
+/// struct A {
+///     array: Vec<A>
+/// }
+/// ```
+#[proc_macro_derive(Describe, attributes(sbor))]
+pub fn describe(input: TokenStream) -> TokenStream {
+    describe::handle_describe(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
 
 /// Declares a blueprint.
 ///

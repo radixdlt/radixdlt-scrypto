@@ -5,8 +5,9 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::abi::{scrypto_type, ScryptoType};
+use crate::abi::*;
 use crate::misc::copy_u8_array;
+use crate::scrypto_type;
 
 /// Represents an ECDSA public key.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -101,7 +102,7 @@ impl EcdsaSecp256k1PublicKey {
 
 scrypto_type!(
     EcdsaSecp256k1PublicKey,
-    ScryptoType::EcdsaSecp256k1PublicKey,
+    ScryptoTypeId::EcdsaSecp256k1PublicKey,
     Vec::new()
 );
 
@@ -127,7 +128,7 @@ impl EcdsaSecp256k1Signature {
 
 scrypto_type!(
     EcdsaSecp256k1Signature,
-    ScryptoType::EcdsaSecp256k1Signature,
+    ScryptoTypeId::EcdsaSecp256k1Signature,
     Vec::new()
 );
 

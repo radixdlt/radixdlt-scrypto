@@ -1,15 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[rustfmt::skip]
-pub mod utils;
-
-use crate::utils::assert_json_eq;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use serde_json::json;
 
-#[derive(Debug, PartialEq, TypeId, Encode, Decode, Describe)]
+#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
 pub struct TestStructNamed {
     #[allow(unused_variables)]
     #[sbor(skip)]
@@ -17,13 +12,13 @@ pub struct TestStructNamed {
     pub y: u32,
 }
 
-#[derive(Debug, PartialEq, TypeId, Encode, Decode, Describe)]
+#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
 pub struct TestStructUnnamed(#[sbor(skip)] u32, u32);
 
-#[derive(Debug, PartialEq, TypeId, Encode, Decode, Describe)]
+#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
 pub struct TestStructUnit;
 
-#[derive(Debug, PartialEq, TypeId, Encode, Decode, Describe)]
+#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
 pub enum TestEnum {
     A {
         #[sbor(skip)]
@@ -71,50 +66,6 @@ fn test_struct_with_skip() {
     assert_eq!(TestStructNamed { x: 0, y: 2 }, a);
     assert_eq!(TestStructUnnamed(0, 4), b);
     assert_eq!(TestStructUnit {}, c);
-
-    assert_json_eq(
-        TestStructNamed::describe(),
-        json!({
-            "type": "Struct",
-            "name": "TestStructNamed",
-            "fields": {
-                "type": "Named",
-                "named": [
-                    [
-                        "y",
-                        {
-                            "type": "U32"
-                        }
-                    ]
-                ]
-            }
-        }),
-    );
-    assert_json_eq(
-        TestStructUnnamed::describe(),
-        json!({
-            "type": "Struct",
-            "name": "TestStructUnnamed",
-            "fields": {
-                "type": "Unnamed",
-                "unnamed": [
-                    {
-                        "type": "U32"
-                    }
-                ]
-            }
-        }),
-    );
-    assert_json_eq(
-        TestStructUnit::describe(),
-        json!({
-            "type": "Struct",
-            "name": "TestStructUnit",
-            "fields": {
-                "type": "Unit"
-            }
-        }),
-    );
 }
 
 #[test]
@@ -160,45 +111,4 @@ fn test_enum_with_skip() {
     assert_eq!(TestEnum::A { x: 0, y: 2 }, a);
     assert_eq!(TestEnum::B(0, 4), b);
     assert_eq!(TestEnum::C, c);
-
-    assert_json_eq(
-        TestEnum::describe(),
-        json!({
-          "type": "Enum",
-          "name": "TestEnum",
-          "variants": [
-            {
-              "name": "A",
-              "fields": {
-                "type": "Named",
-                "named": [
-                  [
-                    "y",
-                    {
-                      "type": "U32"
-                    }
-                  ]
-                ]
-              }
-            },
-            {
-              "name": "B",
-              "fields": {
-                "type": "Unnamed",
-                "unnamed": [
-                  {
-                    "type": "U32"
-                  }
-                ]
-              }
-            },
-            {
-              "name": "C",
-              "fields": {
-                "type": "Unit"
-              }
-            }
-          ]
-        }),
-    );
 }

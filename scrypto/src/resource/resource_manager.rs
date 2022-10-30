@@ -12,6 +12,8 @@ use crate::math::*;
 use crate::misc::*;
 use crate::native_methods;
 use crate::resource::*;
+use crate::scrypto_type;
+use crate::Describe;
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
@@ -389,7 +391,7 @@ impl ResourceAddress {
     }
 }
 
-scrypto_type!(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
+scrypto_type!(ResourceAddress, ScryptoTypeId::ResourceAddress, Vec::new());
 
 //======
 // text

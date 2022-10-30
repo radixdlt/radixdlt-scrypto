@@ -7,6 +7,7 @@ use crate::abi::*;
 use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
 use crate::core::*;
 use crate::misc::*;
+use crate::scrypto_type;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PackagePublishInput {
@@ -72,7 +73,7 @@ impl PackageAddress {
     }
 }
 
-scrypto_type!(PackageAddress, ScryptoType::PackageAddress, Vec::new());
+scrypto_type!(PackageAddress, ScryptoTypeId::PackageAddress, Vec::new());
 
 //======
 // text

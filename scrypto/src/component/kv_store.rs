@@ -153,7 +153,7 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
 impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> TypeId for KeyValueStore<K, V> {
     #[inline]
     fn type_id() -> u8 {
-        ScryptoType::KeyValueStore.id()
+        ScryptoTypeId::KeyValueStore.id()
     }
 }
 
@@ -189,7 +189,7 @@ impl<K: Encode + Decode + Describe, V: 'static + Encode + Decode + TypeId + Desc
 {
     fn describe() -> Type {
         Type::Custom {
-            type_id: ScryptoType::KeyValueStore.id(),
+            type_id: ScryptoTypeId::KeyValueStore.id(),
             generics: vec![K::describe(), V::describe()],
         }
     }

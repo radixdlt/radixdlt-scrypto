@@ -8,6 +8,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::misc::*;
+use crate::scrypto_type;
 
 /// Represents a 32-byte hash digest.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -87,7 +88,7 @@ impl Hash {
     }
 }
 
-scrypto_type!(Hash, ScryptoType::Hash, Vec::new());
+scrypto_type!(Hash, ScryptoTypeId::Hash, Vec::new());
 
 //======
 // text

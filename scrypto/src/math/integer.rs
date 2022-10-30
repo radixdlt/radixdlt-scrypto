@@ -23,6 +23,7 @@ pub mod bits;
 pub mod convert;
 pub mod test;
 
+use crate::abi::*;
 use convert::*;
 
 macro_rules! types {

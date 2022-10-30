@@ -15,6 +15,7 @@ use crate::math::*;
 use crate::misc::*;
 use crate::native_methods;
 use crate::resource::*;
+use crate::scrypto_type;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultPutInput {
@@ -284,7 +285,7 @@ impl Vault {
     }
 }
 
-scrypto_type!(Vault, ScryptoType::Vault, Vec::new());
+scrypto_type!(Vault, ScryptoTypeId::Vault, Vec::new());
 
 //======
 // text
