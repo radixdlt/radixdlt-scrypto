@@ -162,7 +162,9 @@ impl NativeInvocation for AuthZoneCreateProofInput {
         NativeInvocationInfo::Method(
             NativeMethod::AuthZone(AuthZoneMethod::CreateProof),
             RENodeId::AuthZoneStack(self.auth_zone_id),
-            CallFrameUpdate::empty(),
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
+                self.resource_address,
+            ))),
         )
     }
 }
@@ -221,7 +223,9 @@ impl NativeInvocation for AuthZoneCreateProofByAmountInput {
         NativeInvocationInfo::Method(
             NativeMethod::AuthZone(AuthZoneMethod::CreateProofByAmount),
             RENodeId::AuthZoneStack(self.auth_zone_id),
-            CallFrameUpdate::empty(),
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
+                self.resource_address,
+            ))),
         )
     }
 }
@@ -280,7 +284,9 @@ impl NativeInvocation for AuthZoneCreateProofByIdsInput {
         NativeInvocationInfo::Method(
             NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds),
             RENodeId::AuthZoneStack(self.auth_zone_id),
-            CallFrameUpdate::empty(),
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
+                self.resource_address,
+            ))),
         )
     }
 }
