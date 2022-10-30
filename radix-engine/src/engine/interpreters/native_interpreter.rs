@@ -83,6 +83,7 @@ pub trait InvokableNative<'a>:
     + Invokable<BucketTakeInput>
     + Invokable<BucketCreateProofInput>
     + Invokable<BucketTakeNonFungiblesInput>
+    + Invokable<BucketGetNonFungibleIdsInput>
 {
 }
 

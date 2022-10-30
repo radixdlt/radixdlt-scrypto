@@ -31,7 +31,9 @@ pub struct BucketTakeNonFungiblesInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketGetNonFungibleIdsInput {}
+pub struct BucketGetNonFungibleIdsInput {
+    pub bucket_id: BucketId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketGetAmountInput {}
@@ -98,6 +100,7 @@ impl Bucket {
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
                 BucketMethod::GetNonFungibleIds,
                 BucketGetNonFungibleIdsInput {
+                    bucket_id: self.0,
                 }
             }
             pub fn amount(&self) -> Decimal {

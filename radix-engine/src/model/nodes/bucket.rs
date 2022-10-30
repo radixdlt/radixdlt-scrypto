@@ -142,6 +142,45 @@ impl NativeInvocation for BucketTakeNonFungiblesInput {
     }
 }
 
+impl NativeExecutable for BucketGetNonFungibleIdsInput {
+    type Output = BTreeSet<NonFungibleId>;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Bucket(input.bucket_id);
+        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
+        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+
+        let substate_ref = system_api.get_ref(bucket_handle)?;
+        let bucket = substate_ref.bucket();
+        let ids = bucket
+            .total_ids()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ResourceOperationError(e))))?;
+
+        Ok((
+            ids,
+            CallFrameUpdate::empty()
+        ))
+    }
+}
+
+impl NativeInvocation for BucketGetNonFungibleIdsInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Bucket(BucketMethod::GetNonFungibleIds),
+            RENodeId::Bucket(self.bucket_id),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+
 
 pub struct Bucket;
 
@@ -154,30 +193,6 @@ trait BucketMethodActor<I, O, E> {
     where
         Y: SystemApi<'s, R>,
         R: FeeReserve;
-}
-
-impl BucketMethodActor<BucketGetNonFungibleIdsInput, BTreeSet<NonFungibleId>, BucketError>
-    for Bucket
-{
-    fn execute<'s, Y, R>(
-        bucket_id: BucketId,
-        _input: BucketGetNonFungibleIdsInput,
-        system_api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleId>, InvokeError<BucketError>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve,
-    {
-        let node_id = RENodeId::Bucket(bucket_id);
-        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
-
-        let substate_ref = system_api.get_ref(bucket_handle)?;
-        let bucket = substate_ref.bucket();
-        bucket
-            .total_ids()
-            .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))
-    }
 }
 
 impl BucketMethodActor<BucketGetAmountInput, Decimal, BucketError> for Bucket {
@@ -268,10 +283,7 @@ impl Bucket {
                 panic!("Unexpected")
             }
             BucketMethod::GetNonFungibleIds => {
-                let input: BucketGetNonFungibleIdsInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
-                Self::execute(bucket_id, input, system_api)
-                    .map(|rtn| ScryptoValue::from_typed(&rtn))
+                panic!("Unexpected")
             }
             BucketMethod::Put => {
                 let input: BucketPutInput = scrypto_decode(&args.raw)

@@ -148,6 +148,13 @@ where
                         .invoke(invocation)
                         .map(|a| ScryptoValue::from_typed(&a))
                 }
+                BucketMethod::GetNonFungibleIds => {
+                    let invocation: BucketGetNonFungibleIdsInput = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                    self.system_api
+                        .invoke(invocation)
+                        .map(|a| ScryptoValue::from_typed(&a))
+                }
                 _ => {
                     let args = ScryptoValue::from_slice(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
