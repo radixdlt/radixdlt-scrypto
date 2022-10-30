@@ -132,7 +132,7 @@ fn test_simple_abi() {
               },
               "output": {
                 "type": "Tuple",
-                "elements": [
+                "element_types": [
                   {
                     "type": "Custom",
                     "type_id": 181,

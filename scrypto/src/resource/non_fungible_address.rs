@@ -158,7 +158,7 @@ mod tests {
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p",
             )
             .expect("Resource address from str failed.");
-        let non_fungible_id = NonFungibleId(
+        let non_fungible_id = NonFungibleId::from_bytes(
             hex::decode("30071000000071dba5dd36e30de857049805fd1553cd")
                 .expect("Invalid NonFungibleId hex"),
         );

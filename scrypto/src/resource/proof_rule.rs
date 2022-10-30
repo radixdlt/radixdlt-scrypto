@@ -201,7 +201,7 @@ impl Describe for AccessRuleNode {
                     name: "AnyOf".to_string(),
                     fields: Fields::Unnamed {
                         unnamed: vec![Type::Vec {
-                            element: Box::new(Type::Any),
+                            element_type: Box::new(Type::Any),
                         }],
                     },
                 },
@@ -209,7 +209,7 @@ impl Describe for AccessRuleNode {
                     name: "AllOf".to_string(),
                     fields: Fields::Unnamed {
                         unnamed: vec![Type::Vec {
-                            element: Box::new(Type::Any),
+                            element_type: Box::new(Type::Any),
                         }],
                     },
                 },

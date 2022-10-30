@@ -114,7 +114,7 @@ mod tests {
     #[test]
     fn test_non_fungible_id_string_rep() {
         assert_eq!(
-            NonFungibleId::from_str("3007020000003575").unwrap(),
+            NonFungibleId::from_str("2007020000003575").unwrap(),
             NonFungibleId::from_bytes(vec![53u8, 117u8]),
         );
         assert_eq!(

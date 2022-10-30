@@ -252,7 +252,7 @@ import! {
                                 "arg1",
                                 {
                                     "type": "Tuple",
-                                    "elements": [
+                                    "element_types": [
                                         {
                                             "type": "U8"
                                         },
@@ -266,7 +266,7 @@ import! {
                                 "arg2",
                                 {
                                     "type": "Vec",
-                                    "element": {
+                                    "element_type": {
                                         "type": "String"
                                     }
                                 }
@@ -321,7 +321,7 @@ import! {
                                 "arg5",
                                 {
                                     "type": "Array",
-                                    "element": {
+                                    "element_type": {
                                         "type": "String"
                                     },
                                     "length": 2

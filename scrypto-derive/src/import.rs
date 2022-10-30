@@ -233,69 +233,81 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
             parse_quote! { #ident }
         }
         // composite types
-        des::Type::Option { value } => {
-            let (new_type, new_structs) = get_native_type(value)?;
+        des::Type::Option { some_type } => {
+            let (new_type, new_structs) = get_native_type(some_type)?;
             structs.extend(new_structs);
 
             parse_quote! { Option<#new_type> }
         }
-        des::Type::Tuple { elements } => {
+        des::Type::Tuple { element_types } => {
             let mut types: Vec<Type> = vec![];
 
-            for element in elements {
-                let (new_type, new_structs) = get_native_type(element)?;
+            for element_type in element_types {
+                let (new_type, new_structs) = get_native_type(element_type)?;
                 types.push(new_type);
                 structs.extend(new_structs);
             }
 
             parse_quote! { ( #(#types),* ) }
         }
-        des::Type::Array { element, length } => {
-            let (new_type, new_structs) = get_native_type(element)?;
+        des::Type::Array {
+            element_type,
+            length,
+        } => {
+            let (new_type, new_structs) = get_native_type(element_type)?;
             structs.extend(new_structs);
 
             let n = *length as usize;
             parse_quote! { [#new_type; #n] }
         }
-        des::Type::Result { okay, error } => {
-            let (okay_type, new_structs) = get_native_type(okay)?;
+        des::Type::Result {
+            okay_type,
+            err_type,
+        } => {
+            let (okay_type, new_structs) = get_native_type(okay_type)?;
             structs.extend(new_structs);
-            let (error_type, new_structs) = get_native_type(error)?;
+            let (err_type, new_structs) = get_native_type(err_type)?;
             structs.extend(new_structs);
 
-            parse_quote! { Result<#okay_type, #error_type> }
+            parse_quote! { Result<#okay_type, #err_type> }
         }
         // collection
-        des::Type::Vec { element } => {
-            let (new_type, new_structs) = get_native_type(element)?;
+        des::Type::Vec { element_type } => {
+            let (new_type, new_structs) = get_native_type(element_type)?;
             structs.extend(new_structs);
 
             parse_quote! { Vec<#new_type> }
         }
-        des::Type::TreeSet { element } => {
-            let (new_type, new_structs) = get_native_type(element)?;
+        des::Type::TreeSet { element_type } => {
+            let (new_type, new_structs) = get_native_type(element_type)?;
             structs.extend(new_structs);
 
             parse_quote! { BTreeSet<#new_type> }
         }
-        des::Type::TreeMap { key, value } => {
-            let (key_type, new_structs) = get_native_type(key)?;
+        des::Type::TreeMap {
+            key_type,
+            value_type,
+        } => {
+            let (key_type, new_structs) = get_native_type(key_type)?;
             structs.extend(new_structs);
-            let (value_type, new_structs) = get_native_type(value)?;
+            let (value_type, new_structs) = get_native_type(value_type)?;
             structs.extend(new_structs);
 
             parse_quote! { BTreeMap<#key_type, #value_type> }
         }
-        des::Type::HashSet { element } => {
-            let (new_type, new_structs) = get_native_type(element)?;
+        des::Type::HashSet { element_type } => {
+            let (new_type, new_structs) = get_native_type(element_type)?;
             structs.extend(new_structs);
 
             parse_quote! { HashSet<#new_type> }
         }
-        des::Type::HashMap { key, value } => {
-            let (key_type, new_structs) = get_native_type(key)?;
+        des::Type::HashMap {
+            key_type,
+            value_type,
+        } => {
+            let (key_type, new_structs) = get_native_type(key_type)?;
             structs.extend(new_structs);
-            let (value_type, new_structs) = get_native_type(value)?;
+            let (value_type, new_structs) = get_native_type(value_type)?;
             structs.extend(new_structs);
 
             parse_quote! { HashMap<#key_type, #value_type> }

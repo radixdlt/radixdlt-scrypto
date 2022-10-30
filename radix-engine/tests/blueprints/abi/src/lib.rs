@@ -133,8 +133,8 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8) -> *mut u8 {
                 ident: "result".to_string(),
                 mutability: Option::None,
                 input: Type::Result {
-                    okay: Box::new(Type::Unit),
-                    error: Box::new(Type::Unit),
+                    okay_type: Box::new(Type::Unit),
+                    err_type: Box::new(Type::Unit),
                 },
                 output: Type::Unit,
                 export_name: "AbiComponent2_main".to_string(),
@@ -143,8 +143,8 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8) -> *mut u8 {
                 ident: "tree_map".to_string(),
                 mutability: Option::None,
                 input: Type::TreeMap {
-                    key: Box::new(Type::Unit),
-                    value: Box::new(Type::Unit),
+                    key_type: Box::new(Type::Unit),
+                    value_type: Box::new(Type::Unit),
                 },
                 output: Type::Unit,
                 export_name: "AbiComponent2_main".to_string(),
@@ -153,7 +153,7 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8) -> *mut u8 {
                 ident: "hash_set".to_string(),
                 mutability: Option::None,
                 input: Type::HashSet {
-                    element: Box::new(Type::Unit),
+                    element_type: Box::new(Type::Unit),
                 },
                 output: Type::Unit,
                 export_name: "AbiComponent2_main".to_string(),

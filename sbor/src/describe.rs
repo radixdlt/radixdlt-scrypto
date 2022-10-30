@@ -30,12 +30,12 @@ pub enum Type {
     String,
 
     Array {
-        element: Box<Type>,
+        element_type: Box<Type>,
         length: u16,
     },
 
     Tuple {
-        elements: Vec<Type>,
+        element_types: Vec<Type>,
     },
 
     Struct {
@@ -49,34 +49,34 @@ pub enum Type {
     },
 
     Option {
-        value: Box<Type>,
+        some_type: Box<Type>,
     },
 
     Result {
-        okay: Box<Type>,
-        error: Box<Type>,
+        okay_type: Box<Type>,
+        err_type: Box<Type>,
     },
 
     Vec {
-        element: Box<Type>,
+        element_type: Box<Type>,
     },
 
     TreeSet {
-        element: Box<Type>,
+        element_type: Box<Type>,
     },
 
     TreeMap {
-        key: Box<Type>,
-        value: Box<Type>,
+        key_type: Box<Type>,
+        value_type: Box<Type>,
     },
 
     HashSet {
-        element: Box<Type>,
+        element_type: Box<Type>,
     },
 
     HashMap {
-        key: Box<Type>,
-        value: Box<Type>,
+        key_type: Box<Type>,
+        value_type: Box<Type>,
     },
 
     Custom {
@@ -136,29 +136,30 @@ impl Type {
             Type::U64 => matches!(value, Value::U64 { .. }),
             Type::U128 => matches!(value, Value::U128 { .. }),
             Type::String => matches!(value, Value::String { .. }),
-            Type::Array { element, length } => {
+            Type::Array {
+                element_type,
+                length,
+            } => {
                 if let Value::Array {
                     element_type_id,
                     elements,
                 } = value
                 {
-                    let element_type_matches = match element.id() {
+                    let element_type_matches = match element_type.id() {
                         Some(id) => id == *element_type_id,
                         None => true,
                     };
                     element_type_matches
                         && usize::from(*length) == elements.len()
-                        && elements.iter().all(|v| element.matches(v))
+                        && elements.iter().all(|v| element_type.matches(v))
                 } else {
                     false
                 }
             }
-            Type::Tuple {
-                elements: type_elements,
-            } => {
+            Type::Tuple { element_types } => {
                 if let Value::Tuple { elements } = value {
-                    type_elements.len() == elements.len()
-                        && type_elements
+                    element_types.len() == elements.len()
+                        && element_types
                             .iter()
                             .enumerate()
                             .all(|(i, e)| e.matches(elements.get(i).unwrap()))
@@ -166,14 +167,14 @@ impl Type {
                     false
                 }
             }
-            Type::Option { value: type_value } => {
+            Type::Option { some_type } => {
                 if let Value::Enum {
                     discriminator,
                     fields,
                 } = value
                 {
                     match discriminator.as_str() {
-                        OPTION_VARIANT_SOME => fields.len() == 1 && type_value.matches(&fields[0]),
+                        OPTION_VARIANT_SOME => fields.len() == 1 && some_type.matches(&fields[0]),
                         OPTION_VARIANT_NONE => fields.len() == 0,
                         _ => false,
                     }
@@ -181,43 +182,48 @@ impl Type {
                     false
                 }
             }
-            Type::Result { okay, error } => {
+            Type::Result {
+                okay_type,
+                err_type,
+            } => {
                 if let Value::Enum {
                     discriminator,
                     fields,
                 } = value
                 {
                     match discriminator.as_str() {
-                        RESULT_VARIANT_OK => fields.len() == 1 && okay.matches(&fields[0]),
-                        RESULT_VARIANT_ERR => fields.len() == 1 && error.matches(&fields[0]),
+                        RESULT_VARIANT_OK => fields.len() == 1 && okay_type.matches(&fields[0]),
+                        RESULT_VARIANT_ERR => fields.len() == 1 && err_type.matches(&fields[0]),
                         _ => false,
                     }
                 } else {
                     false
                 }
             }
-            Type::Vec { element } | Type::HashSet { element } | Type::TreeSet { element } => {
+            Type::Vec { element_type }
+            | Type::HashSet { element_type }
+            | Type::TreeSet { element_type } => {
                 if let Value::Array {
                     element_type_id,
                     elements,
                 } = value
                 {
-                    let element_type_matches = match element.id() {
+                    let element_type_matches = match element_type.id() {
                         Some(id) => id == *element_type_id,
                         None => true,
                     };
-                    element_type_matches && elements.iter().all(|v| element.matches(v))
+                    element_type_matches && elements.iter().all(|v| element_type.matches(v))
                 } else {
                     false
                 }
             }
             Type::TreeMap {
-                key: key_type,
-                value: value_type,
+                key_type,
+                value_type,
             }
             | Type::HashMap {
-                key: key_type,
-                value: value_type,
+                key_type,
+                value_type,
             } => {
                 if let Value::Array {
                     element_type_id,
@@ -381,7 +387,7 @@ impl<T: Describe> Describe for Option<T> {
     fn describe() -> Type {
         let ty = T::describe();
         Type::Option {
-            value: Box::new(ty),
+            some_type: Box::new(ty),
         }
     }
 }
@@ -390,7 +396,7 @@ impl<T: Describe, const N: usize> Describe for [T; N] {
     fn describe() -> Type {
         let ty = T::describe();
         Type::Array {
-            element: Box::new(ty),
+            element_type: Box::new(ty),
             length: N as u16,
         }
     }
@@ -400,7 +406,7 @@ macro_rules! describe_tuple {
     ($($name:ident)+) => {
         impl<$($name: Describe),+> Describe for ($($name,)+) {
             fn describe() -> Type {
-                Type::Tuple { elements: vec![ $($name::describe(),)* ] }
+                Type::Tuple { element_types: vec![ $($name::describe(),)* ] }
             }
         }
     };
@@ -421,8 +427,8 @@ impl<T: Describe, E: Describe> Describe for Result<T, E> {
         let t = T::describe();
         let e = E::describe();
         Type::Result {
-            okay: Box::new(t),
-            error: Box::new(e),
+            okay_type: Box::new(t),
+            err_type: Box::new(e),
         }
     }
 }
@@ -431,7 +437,7 @@ impl<T: Describe> Describe for Vec<T> {
     fn describe() -> Type {
         let ty = T::describe();
         Type::Vec {
-            element: Box::new(ty),
+            element_type: Box::new(ty),
         }
     }
 }
@@ -440,7 +446,7 @@ impl<T: Describe> Describe for BTreeSet<T> {
     fn describe() -> Type {
         let ty = T::describe();
         Type::TreeSet {
-            element: Box::new(ty),
+            element_type: Box::new(ty),
         }
     }
 }
@@ -450,8 +456,8 @@ impl<K: Describe, V: Describe> Describe for BTreeMap<K, V> {
         let k = K::describe();
         let v = V::describe();
         Type::TreeMap {
-            key: Box::new(k),
-            value: Box::new(v),
+            key_type: Box::new(k),
+            value_type: Box::new(v),
         }
     }
 }
@@ -460,7 +466,7 @@ impl<T: Describe> Describe for HashSet<T> {
     fn describe() -> Type {
         let ty = T::describe();
         Type::HashSet {
-            element: Box::new(ty),
+            element_type: Box::new(ty),
         }
     }
 }
@@ -470,8 +476,8 @@ impl<K: Describe, V: Describe> Describe for HashMap<K, V> {
         let k = K::describe();
         let v = V::describe();
         Type::HashMap {
-            key: Box::new(k),
-            value: Box::new(v),
+            key_type: Box::new(k),
+            value_type: Box::new(v),
         }
     }
 }
@@ -503,7 +509,7 @@ mod tests {
     pub fn test_option() {
         assert_eq!(
             Type::Option {
-                value: Box::new(Type::String)
+                some_type: Box::new(Type::String)
             },
             Option::<String>::describe(),
         );
@@ -513,7 +519,7 @@ mod tests {
     pub fn test_array() {
         assert_eq!(
             Type::Array {
-                element: Box::new(Type::U8),
+                element_type: Box::new(Type::U8),
                 length: 3,
             },
             <[u8; 3]>::describe(),
@@ -524,7 +530,7 @@ mod tests {
     pub fn test_tuple() {
         assert_eq!(
             Type::Tuple {
-                elements: vec![Type::U8, Type::U128]
+                element_types: vec![Type::U8, Type::U128]
             },
             <(u8, u128)>::describe(),
         );

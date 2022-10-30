@@ -231,7 +231,7 @@ mod tests {
                     }
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-                        decoder.check_static_size(1)?;
+                        decoder.check_size(1)?;
                         Ok(Self {
                             a: <&'a u32>::decode(decoder)?,
                         })
