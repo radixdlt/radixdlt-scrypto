@@ -46,7 +46,7 @@ impl ResourceManagerSubstate {
             ResourceManagerMethod::Burn => self
                 .authorization
                 .get(&ResourceMethodAuthKey::Burn)
-                .expect(&format!("Authorization for {:?} not specified", method))
+                .unwrap_or_else(|| panic!("Authorization for {:?} not specified", method))
                 .get_method_auth(),
             _ => match self.method_table.get(&method) {
                 None => &MethodAuthorization::Unsupported,
@@ -54,7 +54,7 @@ impl ResourceManagerSubstate {
                 Some(Protected(method)) => self
                     .authorization
                     .get(method)
-                    .expect(&format!("Authorization for {:?} not specified", method))
+                    .unwrap_or_else(|| panic!("Authorization for {:?} not specified", method))
                     .get_method_auth(),
             },
         }
@@ -82,7 +82,7 @@ impl ResourceManagerSubstate {
             Some(Protected(auth_key)) => self
                 .authorization
                 .get(auth_key)
-                .expect(&format!("Authorization for {:?} not specified", vault_fn))
+                .unwrap_or_else(|| panic!("Authorization for {:?} not specified", vault_fn))
                 .get_method_auth(),
         }
     }
@@ -94,10 +94,7 @@ impl ResourceManagerSubstate {
             Some(Protected(method)) => self
                 .authorization
                 .get(method)
-                .expect(&format!(
-                    "Authorization for {:?} not specified",
-                    bucket_method
-                ))
+                .unwrap_or_else(|| panic!("Authorization for {:?} not specified", bucket_method))
                 .get_method_auth(),
         }
     }

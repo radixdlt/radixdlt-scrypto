@@ -81,10 +81,6 @@ impl RadixEngineDB {
     pub fn list_components(&self) -> Vec<ComponentAddress> {
         let mut addresses = Vec::new();
         addresses.extend(self.list_components_helper(
-            ComponentAddress::System([0u8; 26]),
-            ComponentAddress::System([255u8; 26]),
-        ));
-        addresses.extend(self.list_components_helper(
             ComponentAddress::Account([0u8; 26]),
             ComponentAddress::Account([255u8; 26]),
         ));

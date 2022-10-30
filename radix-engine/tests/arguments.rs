@@ -9,11 +9,11 @@ fn vector_of_buckets_argument_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/arguments");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 builder.call_function(
@@ -36,11 +36,11 @@ fn tuple_of_buckets_argument_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/arguments");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 builder.call_function(
@@ -63,11 +63,11 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/arguments");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 let mut map = BTreeMap::new();
@@ -89,11 +89,11 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/arguments");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 let mut map = HashMap::new();
@@ -115,11 +115,11 @@ fn some_optional_bucket_argument_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/arguments");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
@@ -140,11 +140,11 @@ fn none_optional_bucket_argument_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/arguments");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "Arguments",

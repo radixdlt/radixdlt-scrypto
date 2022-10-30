@@ -26,8 +26,8 @@ echo "Testing with no_std..."
 (cd scrypto-tests; cargo test --no-default-features --features alloc)
 
 echo "Building system packages and examples..."
-(cd assets/account; scrypto test)
-(cd assets/sys-faucet; scrypto test)
+(cd assets/blueprints/account; scrypto test)
+(cd assets/blueprints/faucet; scrypto test)
 (cd examples/hello-world; scrypto test)
 (cd examples/no-std; scrypto test)
 

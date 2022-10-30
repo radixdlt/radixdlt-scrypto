@@ -9,11 +9,11 @@ fn dangling_component_should_fail() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/leaks");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "Leaks", "dangling_component", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -36,11 +36,11 @@ fn dangling_bucket_should_fail() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/leaks");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "Leaks", "dangling_bucket", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -63,11 +63,11 @@ fn dangling_vault_should_fail() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/leaks");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "Leaks", "dangling_vault", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -90,11 +90,11 @@ fn dangling_worktop_should_fail() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/leaks");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "Leaks", "get_bucket", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -113,11 +113,11 @@ fn dangling_kv_store_should_fail() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/leaks");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "Leaks", "dangling_kv_store", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -140,11 +140,11 @@ fn dangling_bucket_with_proof_should_fail() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/leaks");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "Leaks",

@@ -51,7 +51,7 @@ impl Mint {
         }
 
         let manifest = manifest_builder
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100.into(), FAUCET_COMPONENT)
             .mint(self.amount, self.resource_address.0)
             .call_method(
                 default_account,

@@ -7,10 +7,10 @@ use transaction::builder::ManifestBuilder;
 fn test_process_and_transaction() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/core");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/core");
 
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "CoreTest", "query", args![])
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -21,11 +21,11 @@ fn test_process_and_transaction() {
 fn test_call() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.compile_and_publish("./tests/core");
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/core");
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "MoveTest", "move_bucket", args![])
         .call_function(package_address, "MoveTest", "move_proof", args![])
         .call_method(

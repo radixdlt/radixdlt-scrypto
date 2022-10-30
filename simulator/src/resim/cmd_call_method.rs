@@ -56,7 +56,7 @@ impl CallMethod {
         }
 
         let manifest = manifest_builder
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100.into(), FAUCET_COMPONENT)
             .call_method_with_abi(
                 self.component_address.0,
                 &self.method_name,

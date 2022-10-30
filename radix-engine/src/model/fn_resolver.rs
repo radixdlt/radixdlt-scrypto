@@ -5,16 +5,16 @@ pub fn resolve_native_function(
     function_name: &str,
 ) -> Option<NativeFunction> {
     match blueprint_name {
-        "System" => SystemFunction::from_str(function_name)
+        EPOCH_MANAGER_BLUEPRINT => EpochManagerFunction::from_str(function_name)
             .ok()
-            .map(NativeFunction::System),
-        "ResourceManager" => ResourceManagerFunction::from_str(function_name)
+            .map(NativeFunction::EpochManager),
+        RESOURCE_MANAGER_BLUEPRINT => ResourceManagerFunction::from_str(function_name)
             .ok()
             .map(NativeFunction::ResourceManager),
-        "Package" => PackageFunction::from_str(function_name)
+        PACKAGE_BLUEPRINT => PackageFunction::from_str(function_name)
             .ok()
             .map(NativeFunction::Package),
-        "TransactionProcessor" => TransactionProcessorFunction::from_str(function_name)
+        TRANSACTION_PROCESSOR_BLUEPRINT => TransactionProcessorFunction::from_str(function_name)
             .ok()
             .map(NativeFunction::TransactionProcessor),
         _ => None,
@@ -39,30 +39,20 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
             .ok()
             .map(NativeMethod::Worktop),
 
-        RENodeId::Component(_) => ComponentMethod::from_str(method_name)
-            .ok()
-            .map(NativeMethod::Component),
-        RENodeId::Global(GlobalAddress::Component(component_address))
-            if matches!(
-                component_address,
-                ComponentAddress::Normal(..) | ComponentAddress::Account(..)
-            ) =>
-        {
+        RENodeId::Component(_) | RENodeId::Global(GlobalAddress::Component(_)) => {
             ComponentMethod::from_str(method_name)
                 .ok()
                 .map(NativeMethod::Component)
         }
-        RENodeId::System(_) => SystemMethod::from_str(method_name)
+        RENodeId::EpochManager(_) => EpochManagerMethod::from_str(method_name)
             .ok()
-            .map(NativeMethod::System),
-        RENodeId::Global(GlobalAddress::Component(component_address))
-            if matches!(component_address, ComponentAddress::System(..)) =>
-        {
-            SystemMethod::from_str(method_name)
+            .map(NativeMethod::EpochManager),
+        RENodeId::Global(GlobalAddress::System(system_address)) => match system_address {
+            EPOCH_MANAGER => EpochManagerMethod::from_str(method_name)
                 .ok()
-                .map(NativeMethod::System)
-        }
-
+                .map(NativeMethod::EpochManager),
+            _ => None,
+        },
         RENodeId::Vault(_) => VaultMethod::from_str(method_name)
             .ok()
             .map(NativeMethod::Vault),

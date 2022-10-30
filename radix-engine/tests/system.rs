@@ -10,11 +10,11 @@ fn get_epoch_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/system");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/system");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(package_address, "SystemTest", "get_epoch", args![])
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -30,17 +30,17 @@ fn set_epoch_without_supervisor_auth_fails() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/system");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/system");
 
     // Act
     let epoch = 9876u64;
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
             package_address,
             "SystemTest",
             "set_epoch",
-            args!(SYS_SYSTEM_COMPONENT, epoch),
+            args!(EPOCH_MANAGER, epoch),
         )
         .call_function(package_address, "SystemTest", "get_epoch", args!())
         .build();
@@ -60,8 +60,12 @@ fn system_create_should_fail_with_supervisor_privilege() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
-        .call_native_function("System", SystemFunction::Create.as_ref(), args!())
+        .lock_fee(10u32.into(), FAUCET_COMPONENT)
+        .call_native_function(
+            EPOCH_MANAGER_BLUEPRINT,
+            EpochManagerFunction::Create.as_ref(),
+            args!(),
+        )
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![AuthModule::validator_role_nf_address()]);
@@ -80,8 +84,12 @@ fn system_create_should_succeed_with_system_privilege() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_native_function("System", SystemFunction::Create.as_ref(), args!())
+        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .call_native_function(
+            EPOCH_MANAGER_BLUEPRINT,
+            EpochManagerFunction::Create.as_ref(),
+            args!(),
+        )
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![AuthModule::system_role_nf_address()]);

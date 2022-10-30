@@ -14,7 +14,19 @@ macro_rules! trace {
 pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_describe() starts");
 
-    let DeriveInput { ident, data, .. } = parse2(input)?;
+    let DeriveInput {
+        ident,
+        data,
+        generics,
+        ..
+    } = parse2(input)?;
+    if !generics.params.is_empty() {
+        return Err(Error::new(
+            Span::call_site(),
+            "Generics are not presently supported with Describe",
+        ));
+    }
+
     let ident_str = ident.to_string();
     trace!("Describing: {}", ident);
 

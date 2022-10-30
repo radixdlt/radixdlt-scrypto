@@ -12,12 +12,18 @@ macro_rules! trace {
 pub fn handle_type_id(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_type_id() starts");
 
-    let DeriveInput { ident, data, .. } = parse2(input).expect("Unable to parse input");
+    let DeriveInput {
+        ident,
+        data,
+        generics,
+        ..
+    } = parse2(input).expect("Unable to parse input");
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     trace!("Encoding: {}", ident);
 
     let output = match data {
         Data::Struct(_) => quote! {
-            impl ::sbor::TypeId for #ident {
+            impl #impl_generics ::sbor::TypeId for #ident #ty_generics #where_clause {
                 #[inline]
                 fn type_id() -> u8 {
                     ::sbor::type_id::TYPE_STRUCT
@@ -25,7 +31,7 @@ pub fn handle_type_id(input: TokenStream) -> Result<TokenStream> {
             }
         },
         Data::Enum(_) => quote! {
-            impl ::sbor::TypeId for #ident {
+            impl #impl_generics ::sbor::TypeId for #ident #ty_generics #where_clause {
                 #[inline]
                 fn type_id() -> u8 {
                     ::sbor::type_id::TYPE_ENUM

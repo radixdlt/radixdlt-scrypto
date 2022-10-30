@@ -1,24 +1,53 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - docs
+      - alphanet
+      - release/*
+  pull_request:
+    branches:
+      - main
+      - develop
+      - docs
+      - alphanet
+      - release/*
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  cancel_running_workflows:
+    name: Cancel running workflows
+    runs-on: ubuntu-20.04
+    steps:
+      - name: cancel running workflows
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+
   check-code-format:
     name: Check code format
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
     - uses: Swatinem/rust-cache@master
       with:
         cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
         workspaces: simulator
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang -y
+      if: matrix.os == 'linux'
     - name: Install Scrypto toolchain
       run: cargo install --path ./simulator
     - name: Check format
@@ -28,10 +57,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
     - name: Run tests
       run: cargo test
       working-directory: sbor
@@ -46,10 +77,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
     - name: Run tests
       run: cargo test
       working-directory: sbor-tests
@@ -64,10 +97,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
     - name: Run tests
       run: cargo test
       working-directory: scrypto
@@ -85,10 +120,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
     - name: Run tests
       run: cargo test
       working-directory: scrypto-tests
@@ -100,20 +137,26 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake -y
+      if: matrix.os == 'linux'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Add wasm target (nightly)
       run: rustup +nightly target add wasm32-unknown-unknown
     - name: Build account
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: assets/account
-    - name: Build sys-faucet
+      working-directory: assets/blueprints/account
+    - name: Build faucet
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: assets/sys-faucet
+      working-directory: assets/blueprints/faucet
     - name: Build no-std
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/no-std
@@ -125,14 +168,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
     - uses: Swatinem/rust-cache@master
       with:
         cache-directories: tests/**/target
         workspaces: radix-engine
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake -y
+      if: matrix.os == 'linux'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
@@ -143,14 +192,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
     - uses: Swatinem/rust-cache@master
       with:
         cache-directories: tests/**/target
         workspaces: radix-engine
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake -y
+      if: matrix.os == 'linux'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
@@ -161,14 +216,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
     - uses: Swatinem/rust-cache@master
       with:
         cache-directories: tests/**/target
         workspaces: radix-engine
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake -y
+      if: matrix.os == 'linux'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run bench
@@ -179,10 +240,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
     - name: Run tests
       run: cargo test
       working-directory: transaction
@@ -191,14 +254,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
     - uses: Swatinem/rust-cache@master
       with:
         cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
         workspaces: simulator
+    - run: |
+        sudo apt-get update -qq
+        sudo apt-get install clang cmake -y
+      if: matrix.os == 'linux'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797

@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -76,7 +77,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         EcdsaSecp256k1PrivateKey,
         NonFungibleAddress,
     ) {
-        let key_pair = self.new_account();
+        let key_pair = self.new_allocated_account();
         (
             key_pair.0,
             key_pair.1,
@@ -153,10 +154,27 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .map(|output| output.substate.into())
     }
 
+    pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .call_method(FAUCET_COMPONENT, "free", args!())
+            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+                builder.call_method(
+                    account_address,
+                    "deposit",
+                    args!(scrypto::resource::Bucket(bucket_id)),
+                )
+            })
+            .build();
+
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit_success();
+    }
+
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
-            .call_method(SYS_FAUCET_COMPONENT, "free", args!())
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .call_method(FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(withdraw_auth, bucket_id)
             })
@@ -171,7 +189,22 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .new_component_addresses[0]
     }
 
-    pub fn new_account(
+    pub fn new_virtual_account(
+        &mut self,
+    ) -> (
+        EcdsaSecp256k1PublicKey,
+        EcdsaSecp256k1PrivateKey,
+        ComponentAddress,
+    ) {
+        let (pub_key, priv_key) = self.new_key_pair();
+        let account = ComponentAddress::virtual_account_from_public_key(
+            &PublicKey::EcdsaSecp256k1(pub_key.clone()),
+        );
+        self.load_account_from_faucet(account);
+        (pub_key, priv_key, account)
+    }
+
+    pub fn new_allocated_account(
         &mut self,
     ) -> (
         EcdsaSecp256k1PublicKey,
@@ -184,13 +217,28 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         (key_pair.0, key_pair.1, account)
     }
 
+    pub fn new_account(
+        &mut self,
+        is_virtual: bool,
+    ) -> (
+        EcdsaSecp256k1PublicKey,
+        EcdsaSecp256k1PrivateKey,
+        ComponentAddress,
+    ) {
+        if is_virtual {
+            self.new_virtual_account()
+        } else {
+            self.new_allocated_account()
+        }
+    }
+
     pub fn publish_package(
         &mut self,
         code: Vec<u8>,
         abi: HashMap<String, BlueprintAbi>,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .publish_package(code, abi)
             .build();
 
@@ -226,7 +274,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let mut cargo = package_dir.as_ref().to_owned();
         cargo.push("Cargo.toml");
         let wasm_name = if cargo.exists() {
-            let content = fs::read_to_string(cargo).expect("Failed to read the Cargo.toml file");
+            let content = fs::read_to_string(&cargo).expect("Failed to read the Cargo.toml file");
             Self::extract_crate_name(&content)
                 .expect("Failed to extract crate name from the Cargo.toml file")
                 .replace("-", "_")
@@ -241,8 +289,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 .to_owned()
                 .replace("-", "_")
         };
-        let mut path = PathBuf::from(package_dir.as_ref());
-        path.push("target");
+        let mut path = PathBuf::from_str(&get_cargo_target_directory(&cargo)).unwrap(); // Infallible;
         path.push("wasm32-unknown-unknown");
         path.push("release");
         path.push(wasm_name);
@@ -273,7 +320,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             0,
             transaction::model::Instruction::CallMethod {
                 method_ident: ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Global(SYS_FAUCET_COMPONENT),
+                    receiver: ScryptoReceiver::Global(FAUCET_COMPONENT),
                     method_name: "lock_fee".to_string(),
                 },
                 args: args!(dec!("100")),
@@ -385,9 +432,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         account: ComponentAddress,
         signer_public_key: EcdsaSecp256k1PublicKey,
     ) {
-        let package = self.compile_and_publish("./tests/resource_creator");
+        let package = self.compile_and_publish("./tests/blueprints/resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .create_proof_from_account(auth, account)
             .call_function(package, "ResourceCreator", function, args!(token, set_auth))
             .call_method(
@@ -446,7 +493,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
                 HashMap::new(),
@@ -491,7 +538,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
                 HashMap::new(),
@@ -531,7 +578,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
                 HashMap::new(),
@@ -577,7 +624,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::NonFungible,
                 HashMap::new(),
@@ -608,7 +655,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility },
                 HashMap::new(),
@@ -639,7 +686,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         signer_public_key: EcdsaSecp256k1PublicKey,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), FAUCET_COMPONENT)
             .call_function_with_abi(
                 package_address,
                 blueprint_name,
@@ -675,9 +722,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             |kernel| {
                 kernel
                     .invoke_native(NativeInvocation::Method(
-                        NativeMethod::System(SystemMethod::SetEpoch),
-                        RENodeId::Global(GlobalAddress::Component(SYS_SYSTEM_COMPONENT)),
-                        ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
+                        NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
+                        RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+                        ScryptoValue::from_typed(&EpochManagerSetEpochInput { epoch }),
                     ))
                     .unwrap()
             },
@@ -688,9 +735,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
             kernel
                 .invoke_native(NativeInvocation::Method(
-                    NativeMethod::System(SystemMethod::GetCurrentEpoch),
-                    RENodeId::Global(GlobalAddress::Component(SYS_SYSTEM_COMPONENT)),
-                    ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),
+                    NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
+                    RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+                    ScryptoValue::from_typed(&EpochManagerGetCurrentEpochInput {}),
                 ))
                 .unwrap()
         });
@@ -762,6 +809,32 @@ pub fn wat2wasm(wat: &str) -> Vec<u8> {
             .replace("${buffer}", include_str!("snippets/buffer.wat")),
     )
     .expect("Failed to compiled WAT into WASM")
+}
+
+/// Gets the default cargo directory for the given crate.
+/// This respects whether the crate is in a workspace.
+pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
+    let output = Command::new("cargo")
+        .arg("metadata")
+        .arg("--manifest-path")
+        .arg(manifest_path.as_ref())
+        .arg("--format-version")
+        .arg("1")
+        .arg("--no-deps")
+        .output()
+        .expect("Failed to call cargo metadata");
+    if output.status.success() {
+        let parsed = serde_json::from_slice::<serde_json::Value>(&output.stdout)
+            .expect("Failed to parse cargo metadata");
+        let target_directory = parsed
+            .as_object()
+            .and_then(|o| o.get("target_directory"))
+            .and_then(|o| o.as_str())
+            .expect("Failed to parse target_directory from cargo metadata");
+        target_directory.to_owned()
+    } else {
+        panic!("Cargo metadata call was not successful");
+    }
 }
 
 pub fn test_abi_any_in_void_out(

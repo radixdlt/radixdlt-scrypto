@@ -1,13 +1,10 @@
 use scrypto::prelude::*;
 
-blueprint!{
+blueprint! {
     struct Numbers {}
 
     impl Numbers {
-        pub fn test_input(
-            _: Decimal,
-            _: PreciseDecimal,
-        ) {
+        pub fn test_input(_: Decimal, _: PreciseDecimal) {
             info!("Call succeeded");
         }
     }

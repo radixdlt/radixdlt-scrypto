@@ -19,10 +19,10 @@ pub enum RENodeId {
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
     Component(ComponentId),
-    System(ComponentId),
     Vault(VaultId),
     ResourceManager(ResourceManagerId),
     Package(PackageId),
+    EpochManager(EpochManagerId),
 }
 
 impl Into<(Hash, u32)> for RENodeId {
@@ -32,7 +32,7 @@ impl Into<(Hash, u32)> for RENodeId {
             RENodeId::NonFungibleStore(id) => id,
             RENodeId::Vault(id) => id,
             RENodeId::Component(id) => id,
-            RENodeId::System(id) => id,
+            RENodeId::EpochManager(id) => id,
             RENodeId::ResourceManager(id) => id,
             RENodeId::Package(id) => id,
             _ => panic!("Not a stored id"),
@@ -78,11 +78,21 @@ impl Into<ResourceAddress> for RENodeId {
     }
 }
 
+impl Into<SystemAddress> for RENodeId {
+    fn into(self) -> SystemAddress {
+        match self {
+            RENodeId::Global(GlobalAddress::System(system_address)) => system_address,
+            _ => panic!("Not a system address"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum GlobalAddress {
     Component(ComponentAddress),
     Package(PackageAddress),
     Resource(ResourceAddress),
+    System(SystemAddress),
 }
 
 impl Into<ComponentAddress> for GlobalAddress {
@@ -154,8 +164,8 @@ pub enum VaultOffset {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum SystemOffset {
-    System,
+pub enum EpochManagerOffset {
+    EpochManager,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -184,7 +194,7 @@ pub enum SubstateOffset {
     KeyValueStore(KeyValueStoreOffset),
     NonFungibleStore(NonFungibleStoreOffset),
     Vault(VaultOffset),
-    System(SystemOffset),
+    EpochManager(EpochManagerOffset),
     Bucket(BucketOffset),
     Proof(ProofOffset),
     Worktop(WorktopOffset),

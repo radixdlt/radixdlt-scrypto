@@ -13,7 +13,7 @@ fn test_manifest_with_non_existent_resource() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
     let non_existent_resource = ResourceAddress::Normal([0u8; 26]);
 
     // Act
@@ -46,7 +46,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -92,7 +92,7 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -117,7 +117,7 @@ fn test_non_existent_blob_hash() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -145,8 +145,8 @@ fn test_entire_auth_zone() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -174,13 +174,13 @@ fn test_faucet_drain_attempt_should_fail() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(dec!("10"), account)
-        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
-        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
+        .call_method(FAUCET_COMPONENT, "free", args!())
+        .call_method(FAUCET_COMPONENT, "free", args!())
         .call_method(
             account,
             "deposit_batch",

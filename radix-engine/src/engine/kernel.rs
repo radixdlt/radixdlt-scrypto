@@ -145,19 +145,17 @@ where
                     GlobalAddressSubstate::Component(scrypto::component::Component(component_id)),
                 ))
             }
-            RENodeId::System(component_id) => {
+            RENodeId::EpochManager(epoch_manager_id) => {
                 let transaction_hash = system_api.transaction_hash;
 
-                let component_address = system_api
+                let system_address = system_api
                     .id_allocator
-                    .new_system_component_address(transaction_hash)
+                    .new_system_address(transaction_hash)
                     .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
                 Ok((
-                    GlobalAddress::Component(component_address),
-                    GlobalAddressSubstate::SystemComponent(scrypto::component::Component(
-                        component_id,
-                    )),
+                    GlobalAddress::System(system_address),
+                    GlobalAddressSubstate::System(epoch_manager_id),
                 ))
             }
             RENodeId::ResourceManager(resource_id) => {
@@ -235,10 +233,70 @@ where
                 let component_id = id_allocator.new_component_id(transaction_hash)?;
                 Ok(RENodeId::Component(component_id))
             }
-            RENode::System(..) => {
+            RENode::EpochManager(..) => {
                 let component_id = id_allocator.new_component_id(transaction_hash)?;
-                Ok(RENodeId::System(component_id))
+                Ok(RENodeId::EpochManager(component_id))
             }
+        }
+    }
+
+    fn try_virtualize(
+        &mut self,
+        node_id: RENodeId,
+        offset: &SubstateOffset,
+    ) -> Result<bool, RuntimeError> {
+        match (node_id, offset) {
+            (
+                RENodeId::Global(GlobalAddress::Component(component_address)),
+                SubstateOffset::Global(GlobalOffset::Global),
+            ) => {
+                // Lazy create component if missing
+                let non_fungible_address = match component_address {
+                    ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
+                        NonFungibleAddress::new(
+                            ECDSA_SECP256K1_TOKEN,
+                            NonFungibleId::from_bytes(address.into()),
+                        )
+                    }
+                    ComponentAddress::EddsaEd25519VirtualAccount(address) => {
+                        NonFungibleAddress::new(
+                            EDDSA_ED25519_TOKEN,
+                            NonFungibleId::from_bytes(address.into()),
+                        )
+                    }
+                    _ => return Ok(false),
+                };
+
+                let access_rule = rule!(require(non_fungible_address));
+                let result = self.invoke_scrypto(ScryptoInvocation::Function(
+                    ScryptoFunctionIdent {
+                        package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
+                        blueprint_name: "Account".to_string(),
+                        function_name: "create".to_string(),
+                    },
+                    ScryptoValue::from_slice(&args!(access_rule)).unwrap(),
+                ))?;
+                let component_id = result.component_ids.into_iter().next().unwrap();
+
+                // TODO: Use system_api to globalize component when create_node is refactored
+                // TODO: to allow for address selection
+                let global_substate =
+                    GlobalAddressSubstate::Component(scrypto::component::Component(component_id));
+                self.track.insert_substate(
+                    SubstateId(node_id, offset.clone()),
+                    RuntimeSubstate::Global(global_substate),
+                );
+                self.current_frame
+                    .node_refs
+                    .insert(node_id, RENodeLocation::Store);
+                self.current_frame.move_owned_node_to_store(
+                    &mut self.heap,
+                    &mut self.track,
+                    RENodeId::Component(component_id),
+                )?;
+                Ok(true)
+            }
+            _ => Ok(false),
         }
     }
 
@@ -302,7 +360,7 @@ where
             | RENodeId::Vault(..)
             | RENodeId::Package(..)
             | RENodeId::Worktop
-            | RENodeId::System(..)
+            | RENodeId::EpochManager(..)
             | RENodeId::Global(..) => Err(RuntimeError::KernelError(
                 KernelError::CantMoveDownstream(node_id),
             )),
@@ -337,7 +395,7 @@ where
             | RENodeId::NonFungibleStore(..)
             | RENodeId::Package(..)
             | RENodeId::Worktop
-            | RENodeId::System(..)
+            | RENodeId::EpochManager(..)
             | RENodeId::Global(..) => Err(RuntimeError::KernelError(
                 KernelError::CantMoveUpstream(node_id),
             )),
@@ -909,7 +967,7 @@ where
             static_refs.insert(GlobalAddress::Resource(RADIX_TOKEN));
             static_refs.insert(GlobalAddress::Resource(SYSTEM_TOKEN));
             static_refs.insert(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN));
-            static_refs.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
+            static_refs.insert(GlobalAddress::System(EPOCH_MANAGER));
             static_refs.insert(GlobalAddress::Package(ACCOUNT_PACKAGE));
             static_refs.insert(GlobalAddress::Package(SYS_FAUCET_PACKAGE));
 
@@ -921,7 +979,7 @@ where
             let maybe_txn: Result<TransactionProcessorRunInput, DecodeError> =
                 scrypto_decode(&invocation.args().raw);
             if let Ok(input) = maybe_txn {
-                for instruction in &input.instructions {
+                for instruction in input.instructions.as_ref() {
                     match instruction {
                         Instruction::CallFunction { args, .. }
                         | Instruction::CallMethod { args, .. }
@@ -944,7 +1002,17 @@ where
                 // TODO: static check here is to support the current genesis transaction which
                 // TODO: requires references to dynamically created resources. Can remove
                 // TODO: when this is resolved.
-                if !static_refs.contains(&global_address) {
+                if !static_refs.contains(&global_address)
+                    && !(matches!(
+                        global_address,
+                        GlobalAddress::Component(ComponentAddress::EcdsaSecp256k1VirtualAccount(
+                            ..
+                        ))
+                    ) || matches!(
+                        global_address,
+                        GlobalAddress::Component(ComponentAddress::EddsaEd25519VirtualAccount(..))
+                    ))
+                {
                     self.track
                         .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
                         .map_err(|_| KernelError::GlobalAddressNotFound(global_address))?;
@@ -962,7 +1030,7 @@ where
             // Check that global references are owned by this call frame
             let mut global_references = invocation.args().global_references();
             global_references.insert(GlobalAddress::Resource(RADIX_TOKEN));
-            global_references.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
+            global_references.insert(GlobalAddress::System(EPOCH_MANAGER));
             for global_address in global_references {
                 let node_id = RENodeId::Global(global_address);
 
@@ -1291,13 +1359,33 @@ where
             ));
         }
 
-        let lock_handle = self.current_frame.acquire_lock(
+        let maybe_lock_handle = self.current_frame.acquire_lock(
             &mut self.heap,
             &mut self.track,
             node_id,
             offset.clone(),
             flags,
-        )?;
+        );
+
+        let lock_handle = match maybe_lock_handle {
+            Ok(lock_handle) => lock_handle,
+            Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
+                SubstateId(node_id, ref offset),
+            )))) => {
+                if self.try_virtualize(node_id, &offset)? {
+                    self.current_frame.acquire_lock(
+                        &mut self.heap,
+                        &mut self.track,
+                        node_id,
+                        offset.clone(),
+                        flags,
+                    )?
+                } else {
+                    return maybe_lock_handle;
+                }
+            }
+            Err(err) => return Err(err),
+        };
 
         // Restore current mode
         self.execution_mode = current_mode;

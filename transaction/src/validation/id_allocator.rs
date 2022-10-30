@@ -1,6 +1,7 @@
 use sbor::rust::ops::Range;
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::constants::*;
+use scrypto::core::SystemAddress;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::resource::ResourceAddress;
@@ -68,26 +69,23 @@ impl IdAllocator {
         // println!("Genesis component {:?}", hash(&data).lower_26_bytes());
 
         match (package_address, blueprint_name) {
-            (ACCOUNT_PACKAGE, "Account") => {
+            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => {
                 Ok(ComponentAddress::Account(hash(data).lower_26_bytes()))
-            }
-            (SYS_FAUCET_PACKAGE, "SysFaucet") => {
-                Ok(ComponentAddress::System(hash(data).lower_26_bytes()))
             }
             _ => Ok(ComponentAddress::Normal(hash(data).lower_26_bytes())),
         }
     }
 
-    pub fn new_system_component_address(
+    pub fn new_system_address(
         &mut self,
         transaction_hash: Hash,
-    ) -> Result<ComponentAddress, IdAllocationError> {
+    ) -> Result<SystemAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        // println!("Genesis component {:?}", hash(&data).lower_26_bytes());
+        // println!("Genesis system {:?}", hash(&data).lower_26_bytes());
 
-        Ok(ComponentAddress::System(hash(data).lower_26_bytes()))
+        Ok(SystemAddress::EpochManager(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new resource address.

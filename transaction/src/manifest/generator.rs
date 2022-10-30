@@ -8,7 +8,7 @@ use scrypto::address::Bech32Decoder;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::component::ComponentAddress;
 use scrypto::component::PackageAddress;
-use scrypto::core::{Blob, Expression};
+use scrypto::core::{Blob, Expression, SystemAddress};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
@@ -35,6 +35,7 @@ pub enum GeneratorError {
         actual: ast::Value,
     },
     InvalidPackageAddress(String),
+    InvalidSystemAddress(String),
     InvalidComponentAddress(String),
     InvalidResourceAddress(String),
     InvalidDecimal(String),
@@ -562,6 +563,21 @@ fn generate_package_address(
     }
 }
 
+fn generate_system_address(
+    value: &ast::Value,
+    bech32_decoder: &Bech32Decoder,
+) -> Result<SystemAddress, GeneratorError> {
+    match value {
+        ast::Value::SystemAddress(inner) => match &**inner {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_system_address(s)
+                .map_err(|_| GeneratorError::InvalidSystemAddress(s.into())),
+            v => invalid_type!(v, ast::Type::String),
+        },
+        v => invalid_type!(v, ast::Type::SystemAddress),
+    }
+}
+
 fn generate_component_address(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
@@ -662,7 +678,9 @@ fn generate_re_node_id(
             Ok(RENodeId::NonFungibleStore(generate_node_id(node_id)?))
         }
         ast::RENode::Component(node_id) => Ok(RENodeId::Component(generate_node_id(node_id)?)),
-        ast::RENode::System(node_id) => Ok(RENodeId::System(generate_node_id(node_id)?)),
+        ast::RENode::EpochManager(node_id) => {
+            Ok(RENodeId::EpochManager(generate_node_id(node_id)?))
+        }
         ast::RENode::Vault(node_id) => Ok(RENodeId::Vault(generate_node_id(node_id)?)),
         ast::RENode::ResourceManager(node_id) => {
             Ok(RENodeId::ResourceManager(generate_node_id(node_id)?))
@@ -984,6 +1002,12 @@ fn generate_value(
                 bytes: v.to_vec(),
             })
         }
+        ast::Value::SystemAddress(_) => {
+            generate_system_address(value, bech32_decoder).map(|v| Value::Custom {
+                type_id: ScryptoType::SystemAddress.id(),
+                bytes: v.to_vec(),
+            })
+        }
         ast::Value::ComponentAddress(_) => {
             generate_component_address(value, bech32_decoder).map(|v| Value::Custom {
                 type_id: ScryptoType::ComponentAddress.id(),
@@ -1107,6 +1131,7 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::Decimal => ScryptoType::Decimal.id(),
         ast::Type::PreciseDecimal => ScryptoType::PreciseDecimal.id(),
         ast::Type::PackageAddress => ScryptoType::PackageAddress.id(),
+        ast::Type::SystemAddress => ScryptoType::SystemAddress.id(),
         ast::Type::ComponentAddress => ScryptoType::ComponentAddress.id(),
         ast::Type::ResourceAddress => ScryptoType::ResourceAddress.id(),
         ast::Type::Hash => ScryptoType::Hash.id(),

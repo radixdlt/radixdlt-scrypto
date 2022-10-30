@@ -1,3 +1,5 @@
+use crate::rust::borrow::Cow;
+use crate::rust::borrow::ToOwned;
 use crate::rust::boxed::Box;
 use crate::rust::cell::RefCell;
 use crate::rust::collections::*;
@@ -135,6 +137,13 @@ impl<T> TypeId for Option<T> {
     #[inline]
     fn type_id() -> u8 {
         TYPE_OPTION
+    }
+}
+
+impl<'a, B: ?Sized + 'a + ToOwned + TypeId> TypeId for Cow<'a, B> {
+    #[inline]
+    fn type_id() -> u8 {
+        B::type_id()
     }
 }
 
