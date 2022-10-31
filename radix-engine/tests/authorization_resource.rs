@@ -51,36 +51,36 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
 
     // Act
     let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
-    builder.lock_fee(10.into(), FAUCET_COMPONENT);
-    builder.create_proof_from_account_by_amount(Decimal::one(), auth_to_use, account);
+    builder.lock_fee(FAUCET_COMPONENT, 10.into());
+    builder.create_proof_from_account_by_amount(account, Decimal::one(), auth_to_use);
 
     match action {
         Action::Mint => builder
-            .mint(Decimal::from("1.0"), token_address)
+            .mint(token_address, Decimal::from("1.0"))
             .call_method(
                 account,
                 "deposit_batch",
                 args!(Expression::entire_worktop()),
             ),
         Action::Burn => builder
-            .create_proof_from_account(withdraw_auth, account)
-            .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
-            .burn(Decimal::from("1.0"), token_address)
+            .create_proof_from_account(account, withdraw_auth)
+            .withdraw_from_account_by_amount(account, Decimal::from("1.0"), token_address)
+            .burn(token_address, Decimal::from("1.0"))
             .call_method(
                 account,
                 "deposit_batch",
                 args!(Expression::entire_worktop()),
             ),
         Action::Withdraw => builder
-            .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
+            .withdraw_from_account_by_amount(account, Decimal::from("1.0"), token_address)
             .call_method(
                 account,
                 "deposit_batch",
                 args!(Expression::entire_worktop()),
             ),
         Action::Deposit => builder
-            .create_proof_from_account(withdraw_auth, account)
-            .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
+            .create_proof_from_account(account, withdraw_auth)
+            .withdraw_from_account_by_amount(account, Decimal::from("1.0"), token_address)
             .take_from_worktop(token_address, |builder, bucket_id| {
                 builder.call_method(
                     account,

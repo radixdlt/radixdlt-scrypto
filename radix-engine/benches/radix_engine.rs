@@ -31,7 +31,7 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Create two accounts
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(100.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 100.into())
         .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(
@@ -69,7 +69,7 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Fill first account
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(100.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 100.into())
         .call_method(FAUCET_COMPONENT, "free", args!())
         .call_method(
             account1,
@@ -93,8 +93,8 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Create a transfer manifest
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(100.into(), FAUCET_COMPONENT)
-        .withdraw_from_account_by_amount(dec!("0.000001"), RADIX_TOKEN, account1)
+        .lock_fee(FAUCET_COMPONENT, 100.into())
+        .withdraw_from_account_by_amount(account1, dec!("0.000001"), RADIX_TOKEN)
         .call_method(
             account2,
             "deposit_batch",

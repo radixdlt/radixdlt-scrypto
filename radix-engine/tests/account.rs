@@ -15,7 +15,7 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee_and_withdraw(10.into(), RADIX_TOKEN, account)
+        .lock_fee_and_withdraw(account, 10.into(), RADIX_TOKEN)
         .call_method(
             other_account,
             "deposit_batch",
@@ -62,7 +62,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee_and_withdraw(10.into(), resource_address, account)
+        .lock_fee_and_withdraw(account, 10.into(), resource_address)
         .call_method(
             other_account,
             "deposit_batch",
@@ -95,8 +95,8 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     let (public_key, _, account) = test_runner.new_account(is_virtual);
     let (_, _, other_account) = test_runner.new_account(is_virtual);
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), account)
-        .withdraw_from_account(RADIX_TOKEN, other_account)
+        .lock_fee(account, 10u32.into())
+        .withdraw_from_account(other_account, RADIX_TOKEN)
         .call_method(
             account,
             "deposit_batch",
@@ -130,7 +130,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account(use_virtual);
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee_and_withdraw(10.into(), RADIX_TOKEN, account)
+        .lock_fee_and_withdraw(account, 10.into(), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::CallMethod {
@@ -172,7 +172,7 @@ fn test_account_balance_internal(use_virtual: bool) {
     let (public_key, _, account1) = test_runner.new_account(use_virtual);
     let (_, _, account2) = test_runner.new_account(use_virtual);
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account1)
+        .lock_fee(account1, 10.into())
         .call_method(account2, "balance", args!(RADIX_TOKEN))
         .build();
 

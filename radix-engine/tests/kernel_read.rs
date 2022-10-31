@@ -14,7 +14,7 @@ fn should_not_be_able_to_read_global_substate() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
             "Read",

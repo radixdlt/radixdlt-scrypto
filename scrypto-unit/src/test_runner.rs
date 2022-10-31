@@ -156,7 +156,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_method(
@@ -173,7 +173,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(withdraw_auth, bucket_id)
@@ -238,7 +238,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         abi: HashMap<String, BlueprintAbi>,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .publish_package(code, abi)
             .build();
 
@@ -434,8 +434,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) {
         let package = self.compile_and_publish("./tests/blueprints/resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
-            .create_proof_from_account(auth, account)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .create_proof_from_account(account, auth)
             .call_function(package, "ResourceCreator", function, args!(token, set_auth))
             .call_method(
                 account,
@@ -493,7 +493,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
                 HashMap::new(),
@@ -538,7 +538,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
                 HashMap::new(),
@@ -578,7 +578,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
                 HashMap::new(),
@@ -624,7 +624,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
                 ResourceType::NonFungible,
                 HashMap::new(),
@@ -655,7 +655,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
                 ResourceType::Fungible { divisibility },
                 HashMap::new(),
@@ -686,7 +686,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         signer_public_key: EcdsaSecp256k1PublicKey,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_function_with_abi(
                 package_address,
                 blueprint_name,

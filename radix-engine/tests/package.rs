@@ -15,7 +15,7 @@ fn test_publish_package_from_scrypto() {
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package, "PackageTest", "publish", args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -39,7 +39,7 @@ fn missing_memory_should_cause_error() {
             "#,
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(code, HashMap::new())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -66,7 +66,7 @@ fn large_return_len_should_cause_memory_access_error() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package, "LargeReturnSize", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -90,7 +90,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package, "MaxReturnSize", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -114,7 +114,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package, "ZeroReturnSize", "f", args!())
         .build();
 
@@ -135,7 +135,7 @@ fn test_basic_package() {
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(code, HashMap::new())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -167,7 +167,7 @@ fn test_basic_package_missing_export() {
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(code, blueprints)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
