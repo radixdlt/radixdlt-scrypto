@@ -120,6 +120,7 @@ pub trait InvokableNative<'a>:
     + Invokable<ComponentAddAccessCheckInput>
     + Invokable<ResourceManagerBurnInput>
     + Invokable<ResourceManagerUpdateAuthInput>
+    + Invokable<ResourceManagerLockAuthInput>
 {
 }
 

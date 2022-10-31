@@ -413,6 +413,56 @@ impl NativeInvocation for ResourceManagerUpdateAuthInput {
     }
 }
 
+impl NativeExecutable for ResourceManagerLockAuthInput {
+    type Output = ();
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        // TODO: Remove this hack and get resolved receiver in a better way
+        let node_id = match system_api.get_actor() {
+            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
+            _ => panic!("Unexpected"),
+        };
+        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
+        let method_entry = substate_mut
+            .resource_manager()
+            .authorization
+            .get_mut(&input.method)
+            .expect(&format!(
+                "Authorization for {:?} not specified",
+                input.method
+            ));
+        method_entry.main(MethodAccessRuleMethod::Lock()).map_err(|e| {
+            match e {
+                InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
+                InvokeError::Downstream(runtime_error) => runtime_error,
+            }
+        })?;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for ResourceManagerLockAuthInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
+            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+
 
 pub struct ResourceManager;
 
@@ -529,19 +579,7 @@ impl ResourceManager {
                 panic!("Unexpected")
             }
             ResourceManagerMethod::LockAuth => {
-                let input: ResourceManagerLockAuthInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-                let method_entry = substate_mut
-                    .resource_manager()
-                    .authorization
-                    .get_mut(&input.method)
-                    .expect(&format!(
-                        "Authorization for {:?} not specified",
-                        input.method
-                    ));
-                method_entry.main(MethodAccessRuleMethod::Lock())?;
-                ScryptoValue::unit()
+                panic!("Unexpected")
             }
             ResourceManagerMethod::CreateVault => {
                 let _: ResourceManagerCreateVaultInput = scrypto_decode(&args.raw)

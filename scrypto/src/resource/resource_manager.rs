@@ -59,6 +59,7 @@ pub struct ResourceManagerUpdateAuthInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerLockAuthInput {
+    pub resource_address: ResourceAddress,
     pub method: ResourceMethodAuthKey,
 }
 
@@ -202,6 +203,7 @@ impl ResourceManager {
             NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerLockAuthInput {
+                resource_address: self.0,
                 method: ResourceMethodAuthKey::Mint,
             }),
         );
@@ -213,6 +215,7 @@ impl ResourceManager {
             NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerLockAuthInput {
+                resource_address: self.0,
                 method: ResourceMethodAuthKey::Burn,
             }),
         );
@@ -224,6 +227,7 @@ impl ResourceManager {
             NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerLockAuthInput {
+                resource_address: self.0,
                 method: ResourceMethodAuthKey::Withdraw,
             }),
         );
@@ -235,6 +239,7 @@ impl ResourceManager {
             NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerLockAuthInput {
+                resource_address: self.0,
                 method: ResourceMethodAuthKey::Deposit,
             }),
         );
@@ -246,6 +251,7 @@ impl ResourceManager {
             NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerLockAuthInput {
+                resource_address: self.0,
                 method: ResourceMethodAuthKey::UpdateMetadata,
             }),
         );
@@ -257,6 +263,7 @@ impl ResourceManager {
             NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerLockAuthInput {
+                resource_address: self.0,
                 method: ResourceMethodAuthKey::UpdateNonFungibleData,
             }),
         );
