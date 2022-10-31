@@ -40,10 +40,7 @@ impl<'b> NativeExecutable for TransactionProcessorRunInput<'b> {
         system_api: &mut Y,
     ) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
-            + Invokable<NativeMethodInvocation>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
         R: FeeReserve,
     {
         TransactionProcessor::static_main(invocation, system_api)
@@ -100,30 +97,6 @@ impl<'a> NativeInvocation for TransactionProcessorRunInput<'a> {
 pub struct TransactionProcessor {}
 
 impl TransactionProcessor {
-    fn replace_node_id(
-        node_id: RENodeId,
-        proof_id_mapping: &mut HashMap<ProofId, ProofId>,
-        bucket_id_mapping: &mut HashMap<BucketId, BucketId>,
-    ) -> Result<RENodeId, InvokeError<TransactionProcessorError>> {
-        match node_id {
-            RENodeId::Bucket(bucket_id) => bucket_id_mapping
-                .get(&bucket_id)
-                .cloned()
-                .map(RENodeId::Bucket)
-                .ok_or(InvokeError::Error(
-                    TransactionProcessorError::BucketNotFound(bucket_id),
-                )),
-            RENodeId::Proof(proof_id) => proof_id_mapping
-                .get(&proof_id)
-                .cloned()
-                .map(RENodeId::Proof)
-                .ok_or(InvokeError::Error(
-                    TransactionProcessorError::ProofNotFound(proof_id),
-                )),
-            _ => Ok(node_id),
-        }
-    }
-
     fn replace_ids(
         proof_id_mapping: &mut HashMap<ProofId, ProofId>,
         bucket_id_mapping: &mut HashMap<BucketId, BucketId>,
@@ -147,10 +120,7 @@ impl TransactionProcessor {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
     where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
-            + Invokable<NativeMethodInvocation>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
         R: FeeReserve,
     {
         let mut value = args.dom;
@@ -200,10 +170,7 @@ impl TransactionProcessor {
         system_api: &mut Y,
     ) -> Result<Vec<Vec<u8>>, InvokeError<TransactionProcessorError>>
     where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
-            + Invokable<NativeMethodInvocation>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
         R: FeeReserve,
     {
         let mut proof_id_mapping = HashMap::new();
@@ -708,15 +675,7 @@ impl TransactionProcessor {
                                     .invoke(invocation)
                                     .map(|a| ScryptoValue::from_typed(&a))
                             }
-                            _ => system_api.invoke(NativeMethodInvocation(
-                                native_method,
-                                Self::replace_node_id(
-                                    method_ident.receiver,
-                                    &mut proof_id_mapping,
-                                    &mut bucket_id_mapping,
-                                )?,
-                                args,
-                            )),
+                            _ => Err(RuntimeError::KernelError(KernelError::InvalidMethod)),
                         }
                         .map_err(InvokeError::Downstream)
                     })

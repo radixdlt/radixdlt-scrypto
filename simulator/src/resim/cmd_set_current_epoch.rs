@@ -53,12 +53,10 @@ impl SetCurrentEpoch {
 
         // Invoke the system
         kernel
-            .invoke(NativeMethodInvocation(
-                NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
-                RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                ScryptoValue::from_typed(&EpochManagerSetEpochInput { epoch: self.epoch }),
-            ))
-            .map(|_| ())
+            .invoke(EpochManagerSetEpochInput {
+                epoch: self.epoch,
+                system_address: EPOCH_MANAGER,
+            })
             .map_err(Error::TransactionExecutionError)?;
 
         // Commit

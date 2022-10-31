@@ -39,10 +39,7 @@ impl NativeExecutable for PackagePublishInput {
         system_api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
-            + Invokable<NativeMethodInvocation>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
         R: FeeReserve,
     {
         let code = system_api.read_blob(&invocation.code.0)?.to_vec();

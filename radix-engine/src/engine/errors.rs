@@ -51,6 +51,8 @@ impl From<KernelError> for RuntimeError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum KernelError {
+    InvalidMethod,
+
     InvalidModeTransition(ExecutionMode, ExecutionMode),
 
     // invocation

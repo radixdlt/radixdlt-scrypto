@@ -754,10 +754,7 @@ pub trait Executor {
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
-            + Invokable<NativeMethodInvocation>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
         R: FeeReserve;
 }
 
@@ -827,54 +824,6 @@ where
     R: FeeReserve,
 {
     fn invoke(&mut self, invocation: ScryptoInvocation) -> Result<ScryptoValue, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::Invoke {
-                    name: format!("{:?}", invocation),
-                    input_size: invocation.args().raw.len() as u32,
-                    value_count: invocation.args().value_count() as u32,
-                    depth: self.current_frame.depth,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // Change to kernel mode
-        let saved_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
-        let (executor, actor, call_frame_update) = self.resolve(invocation)?;
-        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
-
-        // Restore previous mode
-        self.execution_mode = saved_mode;
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::Invoke {
-                    rtn: format!("{:?}", rtn),
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(rtn)
-    }
-}
-
-impl<'g, 's, W, I, R> Invokable<NativeMethodInvocation> for Kernel<'g, 's, W, I, R>
-where
-    W: WasmEngine<I>,
-    I: WasmInstance,
-    R: FeeReserve,
-{
-    fn invoke(&mut self, invocation: NativeMethodInvocation) -> Result<ScryptoValue, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,
@@ -1680,55 +1629,6 @@ where
             actor,
             CallFrameUpdate {
                 nodes_to_move: invocation.args().node_ids().into_iter().collect(),
-                node_refs_to_copy,
-            },
-        ))
-    }
-}
-
-impl<'g, 's, W, I, R> InvocationResolver<NativeMethodInvocation, NativeMethodExecutor>
-    for Kernel<'g, 's, W, I, R>
-where
-    W: WasmEngine<I>,
-    I: WasmInstance,
-    R: FeeReserve,
-{
-    fn resolve(
-        &mut self,
-        native_method: NativeMethodInvocation,
-    ) -> Result<(NativeMethodExecutor, REActor, CallFrameUpdate), RuntimeError> {
-        let mut node_refs_to_copy = HashSet::new();
-
-        // Deref
-        let resolved_receiver = if let Some(derefed) = self.node_method_deref(native_method.1)? {
-            ResolvedReceiver::derefed(derefed, native_method.1)
-        } else {
-            ResolvedReceiver::new(native_method.1)
-        };
-
-        let resolved_node_id = resolved_receiver.receiver;
-        node_refs_to_copy.insert(resolved_node_id);
-
-        for global_address in native_method.args().global_references() {
-            node_refs_to_copy.insert(RENodeId::Global(global_address));
-        }
-
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            ECDSA_SECP256K1_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            EDDSA_ED25519_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
-
-        let actor = REActor::Method(ResolvedMethod::Native(native_method.0), resolved_receiver);
-        Ok((
-            NativeMethodExecutor(native_method.0, resolved_receiver, native_method.2.clone()),
-            actor,
-            CallFrameUpdate {
-                nodes_to_move: native_method.args().node_ids().into_iter().collect(),
                 node_refs_to_copy,
             },
         ))

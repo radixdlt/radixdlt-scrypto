@@ -40,10 +40,7 @@ impl NativeExecutable for ResourceManagerBucketBurnInput {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
-            + Invokable<NativeMethodInvocation>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
         R: FeeReserve,
     {
         let node_id = RENodeId::Bucket(invocation.bucket.0);
@@ -102,10 +99,7 @@ impl NativeExecutable for ResourceManagerCreateInput {
         RuntimeError,
     >
     where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
-            + Invokable<NativeMethodInvocation>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
         R: FeeReserve,
     {
         let node_id = if matches!(invocation.resource_type, ResourceType::NonFungible) {

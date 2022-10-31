@@ -1,8 +1,12 @@
-use crate::engine::{AuthModule, CallFrameUpdate, Invokable, InvokableNative, LockFlags, NativeExecutable, NativeInvocation, NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError, SystemApi};
+use crate::engine::{
+    AuthModule, CallFrameUpdate, Invokable, InvokableNative, LockFlags, NativeExecutable,
+    NativeInvocation, NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError,
+    SystemApi,
+};
 use crate::fee::FeeReserve;
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
-    HardResourceOrNonFungible, InvokeError, MethodAuthorization,
+    HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
 
@@ -24,10 +28,7 @@ impl NativeExecutable for EpochManagerCreateInput {
         system_api: &mut Y,
     ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
-            + Invokable<NativeMethodInvocation>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
         R: FeeReserve,
     {
         let node_id =
@@ -66,9 +67,9 @@ impl NativeExecutable for EpochManagerGetCurrentEpochInput {
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(u64, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -95,6 +96,41 @@ impl NativeInvocation for EpochManagerGetCurrentEpochInput {
     }
 }
 
+impl NativeExecutable for EpochManagerSetEpochInput {
+    type Output = ();
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
+    {
+        // TODO: Remove this hack and get resolved receiver in a better way
+        let node_id = match system_api.get_actor() {
+            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
+            _ => panic!("Unexpected"),
+        };
+        let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let mut substate_mut = system_api.get_ref_mut(handle)?;
+        substate_mut.epoch_manager().epoch = input.epoch;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for EpochManagerSetEpochInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
+            RENodeId::Global(GlobalAddress::System(self.system_address)),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
 
 impl EpochManager {
     pub fn function_auth(func: &EpochManagerFunction) -> Vec<MethodAuthorization> {
@@ -119,45 +155,6 @@ impl EpochManager {
                 ))]
             }
             _ => vec![],
-        }
-    }
-
-    fn method_lock_flags(method: EpochManagerMethod) -> LockFlags {
-        match method {
-            EpochManagerMethod::SetEpoch => LockFlags::MUTABLE,
-            EpochManagerMethod::GetCurrentEpoch => LockFlags::read_only(),
-        }
-    }
-
-    pub fn main<'s, Y, R>(
-        component_id: ComponentId,
-        method: EpochManagerMethod,
-        args: ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<ScryptoValue, InvokeError<EpochManagerError>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve,
-    {
-        let node_id = RENodeId::EpochManager(component_id);
-        let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let handle = system_api.lock_substate(node_id, offset, Self::method_lock_flags(method))?;
-
-        match method {
-            EpochManagerMethod::GetCurrentEpoch => {
-                panic!("Unexpected")
-            }
-            EpochManagerMethod::SetEpoch => {
-                let EpochManagerSetEpochInput { epoch } = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(EpochManagerError::InvalidRequestData(e)))?;
-
-                let mut substate_mut = system_api
-                    .get_ref_mut(handle)
-                    .map_err(InvokeError::Downstream)?;
-                substate_mut.epoch_manager().epoch = epoch;
-
-                Ok(ScryptoValue::from_typed(&()))
-            }
         }
     }
 }

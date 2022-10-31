@@ -20,6 +20,7 @@ pub struct EpochManagerGetCurrentEpochInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerSetEpochInput {
+    pub system_address: SystemAddress,
     pub epoch: u64,
 }
 

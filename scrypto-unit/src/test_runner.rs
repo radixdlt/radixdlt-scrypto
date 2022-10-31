@@ -721,11 +721,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             )],
             |kernel| {
                 kernel
-                    .invoke(NativeMethodInvocation(
-                        NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
-                        RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                        ScryptoValue::from_typed(&EpochManagerSetEpochInput { epoch }),
-                    ))
+                    .invoke(EpochManagerSetEpochInput {
+                        epoch,
+                        system_address: EPOCH_MANAGER,
+                    })
                     .unwrap()
             },
         );
@@ -734,7 +733,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn get_current_epoch(&mut self) -> u64 {
         self.kernel_call(vec![], |kernel| {
             kernel
-                .invoke(EpochManagerGetCurrentEpochInput {system_address: EPOCH_MANAGER })
+                .invoke(EpochManagerGetCurrentEpochInput {
+                    system_address: EPOCH_MANAGER,
+                })
                 .unwrap()
         })
     }
@@ -742,9 +743,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     /// Performs a kernel call through a kernel with `is_system = true`.
     fn kernel_call<F, O>(&mut self, initial_proofs: Vec<NonFungibleAddress>, fun: F) -> O
     where
-        F: FnOnce(
-            &mut Kernel<DefaultWasmEngine, DefaultWasmInstance, SystemLoanFeeReserve>,
-        ) -> O,
+        F: FnOnce(&mut Kernel<DefaultWasmEngine, DefaultWasmInstance, SystemLoanFeeReserve>) -> O,
     {
         let tx_hash = hash(self.next_transaction_nonce.to_string());
         let blobs = HashMap::new();

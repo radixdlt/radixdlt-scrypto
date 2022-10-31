@@ -133,6 +133,7 @@ pub trait InvokableNative<'a>:
     + Invokable<ResourceManagerGetNonFungibleInput>
     + Invokable<ResourceManagerSetResourceAddressInput>
     + Invokable<EpochManagerGetCurrentEpochInput>
+    + Invokable<EpochManagerSetEpochInput>
 {
 }
 
@@ -194,10 +195,7 @@ pub trait NativeExecutable: Invocation {
         system_api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
-            + Invokable<NativeMethodInvocation>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
         R: FeeReserve;
 }
 
@@ -215,78 +213,9 @@ impl<N: NativeExecutable> Executor for NativeExecutor<N> {
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
-            + Invokable<NativeMethodInvocation>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
         R: FeeReserve,
     {
         N::execute(self.0, system_api)
-    }
-}
-
-pub struct NativeMethodExecutor(pub NativeMethod, pub ResolvedReceiver, pub ScryptoValue);
-
-impl Executor for NativeMethodExecutor {
-    type Output = ScryptoValue;
-
-    fn args(&self) -> &ScryptoValue {
-        &self.2
-    }
-
-    fn execute<'s, 'a, Y, R>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi<'s, R>
-            + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
-            + Invokable<NativeMethodInvocation>,
-        R: FeeReserve,
-    {
-        let output = match (self.1.receiver, self.0) {
-            (RENodeId::AuthZoneStack(..), NativeMethod::AuthZone(..)) => {
-                panic!("Unexpected")
-            }
-            (RENodeId::Bucket(..), NativeMethod::Bucket(..)) => {
-                panic!("Unexpected")
-            }
-            (RENodeId::Proof(..), NativeMethod::Proof(..)) => {
-                panic!("Unexpected")
-            }
-            (RENodeId::Worktop, NativeMethod::Worktop(..)) => {
-                panic!("Unexpected")
-            }
-            (RENodeId::Vault(..), NativeMethod::Vault(..)) => {
-                panic!("Unexpected")
-            }
-            (RENodeId::Component(..), NativeMethod::Component(..)) => {
-                panic!("Unexpected")
-            }
-            (RENodeId::ResourceManager(..), NativeMethod::ResourceManager(..)) => {
-                panic!("Unexpected")
-            }
-            (RENodeId::EpochManager(component_id), NativeMethod::EpochManager(method)) => {
-                EpochManager::main(component_id, method, self.2, system_api)
-                    .map_err::<RuntimeError, _>(|e| e.into())
-            }
-            (receiver, native_method) => {
-                return Err(RuntimeError::KernelError(
-                    KernelError::MethodReceiverNotMatch(native_method, receiver),
-                ));
-            }
-        }?;
-
-        let update = CallFrameUpdate {
-            node_refs_to_copy: output
-                .global_references()
-                .into_iter()
-                .map(|a| RENodeId::Global(a))
-                .collect(),
-            nodes_to_move: output.node_ids().into_iter().collect(),
-        };
-
-        Ok((output, update))
     }
 }
