@@ -14,7 +14,13 @@ macro_rules! trace {
 pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_decode() starts");
 
-    let DeriveInput { ident, data, .. } = parse2(input)?;
+    let DeriveInput {
+        ident,
+        data,
+        generics,
+        ..
+    } = parse2(input)?;
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     trace!("Decoding: {}", ident);
 
     let output = match data {
@@ -29,7 +35,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 let s_ids = s.iter().map(|f| &f.ident);
                 let s_types = s.iter().map(|f| &f.ty);
                 quote! {
-                    impl ::sbor::Decode for #ident {
+                    impl #impl_generics ::sbor::Decode for #ident #ty_generics #where_clause {
                         #[inline]
                         fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
                             decoder.check_type_id(::sbor::type_id::TYPE_STRUCT)
@@ -57,7 +63,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 }
                 let ns_len = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
                 quote! {
-                    impl ::sbor::Decode for #ident {
+                    impl #impl_generics ::sbor::Decode for #ident #ty_generics #where_clause {
                         #[inline]
                         fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
                             decoder.check_type_id(::sbor::type_id::TYPE_STRUCT)
@@ -74,7 +80,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl ::sbor::Decode for #ident {
+                    impl #impl_generics ::sbor::Decode for #ident #ty_generics #where_clause {
                         #[inline]
                         fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
                             decoder.check_type_id(::sbor::type_id::TYPE_STRUCT)
@@ -144,7 +150,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             });
 
             quote! {
-                impl ::sbor::Decode for #ident {
+                impl #impl_generics ::sbor::Decode for #ident #ty_generics #where_clause {
                     #[inline]
                     fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
                         decoder.check_type_id(::sbor::type_id::TYPE_ENUM)
@@ -156,7 +162,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         let name = decoder.read_variant_label()?;
                         match name.as_str() {
                             #(#match_arms,)*
-                            _ => Err(::sbor::DecodeError::InvalidEnumVariant(name))
+                            _ => Err(::sbor::DecodeError::InvalidVariantLabel(name))
                         }
                     }
                 }
@@ -211,6 +217,31 @@ mod tests {
     }
 
     #[test]
+    fn test_decode_struct_with_lifetime() {
+        let input = TokenStream::from_str("struct Test<'a> {a: &'a u32}").unwrap();
+        let output = handle_decode(input).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                impl <'a> ::sbor::Decode for Test<'a> {
+                    #[inline]
+                    fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                        decoder.check_type_id(::sbor::type_id::TYPE_STRUCT)
+                    }
+                    fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
+                        use ::sbor::{self, Decode};
+                        decoder.check_static_size(1)?;
+                        Ok(Self {
+                            a: <&'a u32>::decode(decoder)?,
+                        })
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
     fn test_decode_enum() {
         let input = TokenStream::from_str("enum Test {A, B (u32), C {x: u8}}").unwrap();
         let output = handle_decode(input).unwrap();
@@ -242,7 +273,7 @@ mod tests {
                                     x: <u8>::decode(decoder)?,
                                 })
                             },
-                            _ => Err(::sbor::DecodeError::InvalidEnumVariant(name))
+                            _ => Err(::sbor::DecodeError::InvalidVariantLabel(name))
                         }
                     }
                 }

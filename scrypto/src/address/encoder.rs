@@ -89,7 +89,10 @@ impl Bech32Encoder {
         component_address: &ComponentAddress,
     ) -> Result<(), AddressError> {
         match component_address {
-            ComponentAddress::Normal(data) | ComponentAddress::Account(data) => {
+            ComponentAddress::Normal(data)
+            | ComponentAddress::Account(data)
+            | ComponentAddress::EcdsaSecp256k1VirtualAccount(data)
+            | ComponentAddress::EddsaEd25519VirtualAccount(data) => {
                 self.encode_to_fmt(fmt, EntityType::component(component_address), data)
             }
         }

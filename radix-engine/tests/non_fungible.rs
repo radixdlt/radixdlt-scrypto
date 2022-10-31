@@ -9,8 +9,8 @@ fn create_non_fungible_mutable() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let package = test_runner.compile_and_publish("./tests/non_fungible");
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -41,8 +41,8 @@ fn can_burn_non_fungible() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let package = test_runner.compile_and_publish("./tests/non_fungible");
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
@@ -98,8 +98,8 @@ fn can_burn_non_fungible() {
 fn test_non_fungible() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.compile_and_publish("./tests/non_fungible");
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), FAUCET_COMPONENT)
@@ -162,8 +162,8 @@ fn test_non_fungible() {
 fn test_singleton_non_fungible() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.compile_and_publish("./tests/non_fungible");
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), FAUCET_COMPONENT)
@@ -192,8 +192,8 @@ fn test_singleton_non_fungible() {
 fn test_mint_update_and_withdraw() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.compile_and_publish("./tests/non_fungible");
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let network = NetworkDefinition::simulator();
     let bech32_encoder = Bech32Encoder::for_simulator();
 

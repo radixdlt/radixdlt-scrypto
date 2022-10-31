@@ -17,6 +17,12 @@ pub const ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x03;
 /// A unique identifier used in the addressing of System Addresses.
 pub const EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x04;
 
+/// A unique identifier used in the addressing of a virtual Account Component Addresses.
+pub const ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x05;
+
+/// A unique identifier used in the addressing of a virtual Account Component Addresses.
+pub const EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x06;
+
 /// An enum which represents the different addressable entities.
 #[derive(PartialEq, Eq)]
 pub enum EntityType {
@@ -24,6 +30,8 @@ pub enum EntityType {
     Package,
     NormalComponent,
     AccountComponent,
+    EcdsaSecp256k1VirtualAccountComponent,
+    EddsaEd25519VirtualAccountComponent,
     EpochManager,
 }
 
@@ -38,6 +46,12 @@ impl EntityType {
         match address {
             ComponentAddress::Normal(_) => Self::NormalComponent,
             ComponentAddress::Account(_) => Self::AccountComponent,
+            ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => {
+                Self::EcdsaSecp256k1VirtualAccountComponent
+            }
+            ComponentAddress::EddsaEd25519VirtualAccount(_) => {
+                Self::EddsaEd25519VirtualAccountComponent
+            }
         }
     }
 
@@ -53,6 +67,12 @@ impl EntityType {
             Self::Package => PACKAGE_ADDRESS_ENTITY_ID,
             Self::NormalComponent => NORMAL_COMPONENT_ADDRESS_ENTITY_ID,
             Self::AccountComponent => ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
+            Self::EcdsaSecp256k1VirtualAccountComponent => {
+                ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID
+            }
+            Self::EddsaEd25519VirtualAccountComponent => {
+                EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID
+            }
             Self::EpochManager => EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID,
         }
     }
@@ -67,6 +87,12 @@ impl TryFrom<u8> for EntityType {
             PACKAGE_ADDRESS_ENTITY_ID => Ok(Self::Package),
             NORMAL_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::NormalComponent),
             ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::AccountComponent),
+            ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID => {
+                Ok(Self::EcdsaSecp256k1VirtualAccountComponent)
+            }
+            EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID => {
+                Ok(Self::EddsaEd25519VirtualAccountComponent)
+            }
             EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::EpochManager),
             _ => Err(EntityTypeError::InvalidEntityTypeId(value)),
         }

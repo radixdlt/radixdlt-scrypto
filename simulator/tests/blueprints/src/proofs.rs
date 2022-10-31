@@ -23,15 +23,18 @@ blueprint! {
 
             // Creating the access rules for the component and instantiating an new component
             let access_rules: AccessRules = AccessRules::new()
-                .method("organizational_authenticated_method", organizational_access_rule)
+                .method(
+                    "organizational_authenticated_method",
+                    organizational_access_rule,
+                )
                 .default(rule!(deny_all));
 
-            let mut local_component = Self{}.instantiate();
+            let mut local_component = Self {}.instantiate();
             local_component.add_access_check(access_rules);
 
             (
                 local_component.globalize(),
-                vec![supervisor_badge, admin_badge, superadmin_badge, token]
+                vec![supervisor_badge, admin_badge, superadmin_badge, token],
             )
         }
 

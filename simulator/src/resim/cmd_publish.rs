@@ -37,16 +37,19 @@ pub struct Publish {
 impl Publish {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         // Load wasm code
-        let code_path = if self.path.extension() != Some(OsStr::new("wasm")) {
-            build_package(&self.path, false).map_err(Error::BuildError)?
+        let (code_path, abi_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
+            build_package(&self.path, false, false).map_err(Error::BuildError)?
         } else {
-            self.path.clone()
+            let code_path = self.path.clone();
+            let abi_path = code_path.with_extension("abi");
+            (code_path, abi_path)
         };
-        let abi_path = code_path.with_extension("abi");
 
         let code = fs::read(&code_path).map_err(Error::IOError)?;
-        let abi = scrypto_decode(&fs::read(&abi_path).map_err(Error::IOError)?)
-            .map_err(Error::DataError)?;
+        let abi = scrypto_decode(
+            &fs::read(&abi_path).map_err(|err| Error::IOErrorAtPath(err, abi_path))?,
+        )
+        .map_err(Error::DataError)?;
 
         if let Some(package_address) = self.package_address.clone() {
             let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);

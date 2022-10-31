@@ -1,5 +1,7 @@
+use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
+use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -10,7 +12,7 @@ use crate::address::*;
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
-use crate::crypto::Hash;
+use crate::crypto::{hash, Hash, PublicKey};
 use crate::engine::{api::*, types::*, utils::*};
 use crate::misc::*;
 use crate::resource::AccessRules;
@@ -207,6 +209,15 @@ scrypto_type!(Component, ScryptoType::Component, Vec::new());
 // text
 //======
 
+impl FromStr for Component {
+    type Err = ParseComponentError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = hex::decode(s).map_err(|_| ParseComponentError::InvalidHex(s.to_owned()))?;
+        Self::try_from(bytes.as_slice())
+    }
+}
+
 impl fmt::Display for Component {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(self.to_vec()))
@@ -224,6 +235,8 @@ impl fmt::Debug for Component {
 pub enum ComponentAddress {
     Normal([u8; 26]),
     Account([u8; 26]),
+    EcdsaSecp256k1VirtualAccount([u8; 26]),
+    EddsaEd25519VirtualAccount([u8; 26]),
 }
 
 //========
@@ -240,6 +253,12 @@ impl TryFrom<&[u8]> for ComponentAddress {
             {
                 EntityType::NormalComponent => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
                 EntityType::AccountComponent => Ok(Self::Account(copy_u8_array(&slice[1..]))),
+                EntityType::EcdsaSecp256k1VirtualAccountComponent => Ok(
+                    Self::EcdsaSecp256k1VirtualAccount(copy_u8_array(&slice[1..])),
+                ),
+                EntityType::EddsaEd25519VirtualAccountComponent => {
+                    Ok(Self::EddsaEd25519VirtualAccount(copy_u8_array(&slice[1..])))
+                }
                 _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
             },
             _ => Err(AddressError::InvalidLength(slice.len())),
@@ -248,11 +267,27 @@ impl TryFrom<&[u8]> for ComponentAddress {
 }
 
 impl ComponentAddress {
+    pub fn virtual_account_from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self {
+        match public_key.clone().into() {
+            PublicKey::EcdsaSecp256k1(public_key) => {
+                ComponentAddress::EcdsaSecp256k1VirtualAccount(
+                    hash(public_key.to_vec()).lower_26_bytes(),
+                )
+            }
+            PublicKey::EddsaEd25519(public_key) => ComponentAddress::EddsaEd25519VirtualAccount(
+                hash(public_key.to_vec()).lower_26_bytes(),
+            ),
+        }
+    }
+
     pub fn to_vec(&self) -> Vec<u8> {
         let mut buf = Vec::new();
         buf.push(EntityType::component(self).id());
         match self {
-            Self::Normal(v) | Self::Account(v) => buf.extend(v),
+            Self::Normal(v)
+            | Self::Account(v)
+            | Self::EddsaEd25519VirtualAccount(v)
+            | Self::EcdsaSecp256k1VirtualAccount(v) => buf.extend(v),
         }
         buf
     }
@@ -299,6 +334,16 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
             }
             ComponentAddress::Account(_) => {
                 write!(f, "AccountComponent[{}]", self.to_hex())
+            }
+            ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => {
+                write!(
+                    f,
+                    "EcdsaSecp256k1VirtualAccountComponent[{}]",
+                    self.to_hex()
+                )
+            }
+            ComponentAddress::EddsaEd25519VirtualAccount(_) => {
+                write!(f, "EddsaEd25519VirtualAccountComponent[{}]", self.to_hex())
             }
         }
         .map_err(|err| AddressError::FormatError(err))

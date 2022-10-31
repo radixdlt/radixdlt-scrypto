@@ -12,7 +12,7 @@ use transaction::builder::ManifestBuilder;
 fn test_publish_package_from_scrypto() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package = test_runner.compile_and_publish("./tests/package");
+    let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), FAUCET_COMPONENT)
@@ -62,7 +62,7 @@ fn large_return_len_should_cause_memory_access_error() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package = test_runner.compile_and_publish("./tests/package");
+    let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -86,7 +86,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package = test_runner.compile_and_publish("./tests/package");
+    let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -110,7 +110,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package = test_runner.compile_and_publish("./tests/package");
+    let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

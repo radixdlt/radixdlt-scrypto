@@ -30,7 +30,7 @@ fn test_dynamic_auth(
         .map(|index| NonFungibleAddress::from_public_key(&key_and_addresses.get(*index).unwrap().0))
         .collect();
 
-    let package = test_runner.compile_and_publish("./tests/component");
+    let package = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
@@ -102,7 +102,7 @@ fn test_dynamic_authlist(
     let authorization = AccessRules::new().method("get_secret", auth_rule);
 
     // Arrange
-    let package = test_runner.compile_and_publish("./tests/component");
+    let package = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10u32.into(), FAUCET_COMPONENT)
         .call_function(
@@ -223,9 +223,9 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (pk, _, _) = test_runner.new_account();
-    let (other_public_key, _, _) = test_runner.new_account();
-    let package = test_runner.compile_and_publish("./tests/component");
+    let (pk, _, _) = test_runner.new_allocated_account();
+    let (other_public_key, _, _) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/component");
     let non_fungible_address = NonFungibleAddress::new(
         ECDSA_SECP256K1_TOKEN,
         NonFungibleId::from_bytes(pk.to_vec()),
@@ -262,9 +262,9 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, _) = test_runner.new_account();
-    let (other_public_key, _, _) = test_runner.new_account();
-    let package = test_runner.compile_and_publish("./tests/component");
+    let (public_key, _, _) = test_runner.new_allocated_account();
+    let (other_public_key, _, _) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/component");
     let non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
     let other_non_fungible_address = NonFungibleAddress::from_public_key(&other_public_key);
     let players = [
