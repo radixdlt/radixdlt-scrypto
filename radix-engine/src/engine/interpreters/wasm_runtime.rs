@@ -323,13 +323,14 @@ where
                         .invoke(invocation)
                         .map(|a| ScryptoValue::from_typed(&a))
                 }
-                _ => {
-                    let args = ScryptoValue::from_slice(&args)
+                VaultMethod::CreateProofByIds => {
+                    let invocation: VaultCreateProofByIdsInput = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                     self.system_api
-                        .invoke(NativeMethodInvocation(native_method, receiver, args))
+                        .invoke(invocation)
+                        .map(|a| ScryptoValue::from_typed(&a))
                 }
-            }
+            },
             _ => {
                 let args = ScryptoValue::from_slice(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;

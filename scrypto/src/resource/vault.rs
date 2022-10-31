@@ -62,6 +62,7 @@ pub struct VaultCreateProofByAmountInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultCreateProofByIdsInput {
+    pub vault_id: VaultId,
     pub ids: BTreeSet<NonFungibleId>,
 }
 
@@ -98,7 +99,10 @@ impl Vault {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Vault(VaultMethod::Take),
             RENodeId::Vault(self.0),
-            scrypto_encode(&VaultTakeInput { vault_id: self.0, amount }),
+            scrypto_encode(&VaultTakeInput {
+                vault_id: self.0,
+                amount,
+            }),
         );
         call_engine(input)
     }
@@ -107,7 +111,11 @@ impl Vault {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Vault(VaultMethod::LockFee),
             RENodeId::Vault(self.0),
-            scrypto_encode(&VaultLockFeeInput { vault_id: self.0, amount, contingent: false}),
+            scrypto_encode(&VaultLockFeeInput {
+                vault_id: self.0,
+                amount,
+                contingent: false,
+            }),
         );
         call_engine(input)
     }
@@ -116,7 +124,11 @@ impl Vault {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Vault(VaultMethod::LockFee),
             RENodeId::Vault(self.0),
-            scrypto_encode(&VaultLockFeeInput { vault_id: self.0, amount, contingent: true }),
+            scrypto_encode(&VaultLockFeeInput {
+                vault_id: self.0,
+                amount,
+                contingent: true,
+            }),
         );
         call_engine(input)
     }
@@ -174,7 +186,7 @@ impl Vault {
 
             pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
                 VaultMethod::CreateProofByIds,
-                VaultCreateProofByIdsInput { ids: ids.clone() }
+                VaultCreateProofByIdsInput { ids: ids.clone(), vault_id: self.0 }
             }
         }
     }

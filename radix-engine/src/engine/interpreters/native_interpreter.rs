@@ -116,6 +116,7 @@ pub trait InvokableNative<'a>:
     + Invokable<VaultGetNonFungibleIdsInput>
     + Invokable<VaultCreateProofInput>
     + Invokable<VaultCreateProofByAmountInput>
+    + Invokable<VaultCreateProofByIdsInput>
 {
 }
 
@@ -241,9 +242,8 @@ impl Executor for NativeMethodExecutor {
             (RENodeId::Worktop, NativeMethod::Worktop(..)) => {
                 panic!("Unexpected")
             }
-            (RENodeId::Vault(vault_id), NativeMethod::Vault(method)) => {
-                Vault::main(vault_id, method, self.2, system_api)
-                    .map_err::<RuntimeError, _>(|e| e.into())
+            (RENodeId::Vault(..), NativeMethod::Vault(..)) => {
+                panic!("Unexpected")
             }
             (RENodeId::Component(component_id), NativeMethod::Component(method)) => {
                 Component::main(component_id, method, self.2, system_api)
