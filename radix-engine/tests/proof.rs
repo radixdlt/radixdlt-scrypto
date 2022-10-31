@@ -13,11 +13,11 @@ fn can_create_clone_and_drop_bucket_proof() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function_with_abi(
             package_address,
             "BucketProof",
@@ -56,7 +56,7 @@ fn can_create_clone_and_drop_vault_proof() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -71,7 +71,7 @@ fn can_create_clone_and_drop_vault_proof() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(
             component_address,
             "create_clone_drop_vault_proof",
@@ -93,7 +93,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -108,7 +108,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method_with_abi(
             component_address,
             "create_clone_drop_vault_proof_by_amount",
@@ -132,7 +132,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -153,7 +153,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     ]);
     let proof_ids = BTreeSet::from([NonFungibleId::from_u32(2)]);
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_ids",
@@ -174,11 +174,11 @@ fn can_use_bucket_for_authorization() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function_with_abi(
             package_address,
             "BucketProof",
@@ -220,7 +220,7 @@ fn can_use_vault_for_authorization() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -235,7 +235,7 @@ fn can_use_vault_for_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method_with_abi(
             component_address,
             "use_vault_proof_for_auth",
@@ -265,11 +265,11 @@ fn can_create_proof_from_account_and_pass_on() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function_with_abi(
             package_address,
             "VaultProof",
@@ -303,11 +303,11 @@ fn cant_move_restricted_proof() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function_with_abi(
             package_address,
             "VaultProof",
@@ -346,11 +346,11 @@ fn cant_move_locked_bucket() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function_with_abi(
             package_address,
             "BucketProof",
@@ -389,7 +389,7 @@ fn can_compose_bucket_and_vault_proof() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -404,8 +404,8 @@ fn can_compose_bucket_and_vault_proof() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
-        .withdraw_from_account_by_amount(99.into(), resource_address, account)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .withdraw_from_account_by_amount(account, 99.into(), resource_address)
         .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
                 component_address,
@@ -431,7 +431,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -446,8 +446,8 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
-        .withdraw_from_account_by_amount(99.into(), resource_address, account)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .withdraw_from_account_by_amount(account, 99.into(), resource_address)
         .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
                 component_address,
@@ -472,7 +472,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -487,11 +487,11 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .withdraw_from_account_by_ids(
+            account,
             &BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)]),
             resource_address,
-            account,
         )
         .take_from_worktop_by_ids(
             &BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)]),
@@ -524,7 +524,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -539,7 +539,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_amount",
@@ -559,20 +559,20 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account_by_ids(
+            account,
             &BTreeSet::from([NonFungibleId::from_u32(1), NonFungibleId::from_u32(2)]),
             resource_address,
-            account,
         )
         .create_proof_from_account_by_ids(
+            account,
             &BTreeSet::from([NonFungibleId::from_u32(3)]),
             resource_address,
-            account,
         )
         .create_proof_from_auth_zone_by_ids(
             &BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)]),

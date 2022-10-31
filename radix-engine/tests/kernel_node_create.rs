@@ -9,11 +9,11 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kernel");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/kernel");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
             "NodeCreate",
@@ -44,11 +44,11 @@ fn should_not_be_able_to_node_create_with_invalid_package() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kernel");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/kernel");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
             "NodeCreate",

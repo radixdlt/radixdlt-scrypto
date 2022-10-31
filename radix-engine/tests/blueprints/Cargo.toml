@@ -1,0 +1,37 @@
+[workspace]
+members = [
+    "abi",
+    "arguments",
+    "bucket",
+    "component",
+    "core",
+    "data_access",
+    "execution_trace",
+    "external_blueprint_caller",
+    "fee",
+    "kernel",
+    "kv_store",
+    "leaks",
+    "local_component",
+    "local_recursion",
+    "math-ops-check",
+    "non_fungible",
+    "package",
+    "proof",
+    "recursion",
+    "resource",
+    "resource_creator",
+    "stored_external_component",
+    "stored_resource",
+    "stored_values",
+    "system",
+    "vault"
+]
+
+[profile.release]
+opt-level = 's'        # Optimize for size.
+lto = true             # Enable Link Time Optimization.
+codegen-units = 1      # Reduce number of codegen units to increase optimizations.
+panic = 'abort'        # Abort on panic.
+strip = "debuginfo"    # Strip debug info.
+overflow-checks = true # Panic in the case of an overflow.

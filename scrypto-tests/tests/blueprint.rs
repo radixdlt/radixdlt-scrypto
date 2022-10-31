@@ -46,139 +46,140 @@ fn test_simple_abi() {
     assert_json_eq(
         abi,
         json!({
-            "structure": {
-                "fields":{
-                    "named":[
-                        [
-                            "state",
-                            { "type":"U32" }
-                        ]
-                    ],
-                    "type":"Named"
-                },
-                "name":"Simple",
-                "type":"Struct"
-            },
-            "fns": [
-                {
-                    "ident": "new",
-                    "mutability": null,
-                    "input": {
-                        "type": "Struct",
-                        "name": "Simple_new_Input",
-                        "fields": {
-                            "type": "Named",
-                            "named": []
-                        }
-                    },
-                    "output": {
-                        "type": "Custom",
-                        "type_id": 129,
-                        "generics": []
-                    },
-                    "export_name": "Simple_new"
-                },
-
-                {
-                    "ident": "get_state",
-                    "mutability": "Immutable",
-                    "input": {
-                        "type": "Struct",
-                        "name": "Simple_get_state_Input",
-                        "fields": {
-                            "type": "Named",
-                            "named": []
-                        }
-                    },
-                    "output": {
-                        "type": "U32"
-                    },
-                    "export_name": "Simple_get_state"
-                },
-                {
-                    "ident": "set_state",
-                    "mutability": "Mutable",
-                    "input": {
-                        "type": "Struct",
-                        "name": "Simple_set_state_Input",
-                        "fields": {
-                            "type": "Named",
-                            "named": [
-                                [
-                                    "arg0",
-                                    {
-                                        "type": "U32"
-                                    }
-                                ]
-                            ]
-                        }
-                    },
-                    "output": {
-                        "type": "Unit"
-                    },
-                    "export_name": "Simple_set_state"
-                },
-                {
-                    "ident": "custom_types",
-                    "mutability": null,
-                    "input": {
-                        "type": "Struct",
-                        "name": "Simple_custom_types_Input",
-                        "fields": {
-                            "type": "Named",
-                            "named": []
-                        }
-                    },
-                    "output": {
-                        "type": "Tuple",
-                        "elements": [
-                            {
-                                "type": "Custom",
-                                "type_id": 161,
-                                "generics": []
-                            },
-                            {
-                                "type": "Custom",
-                                "type_id": 128,
-                                "generics": []
-                            },
-                            {
-                                "type": "Custom",
-                                "type_id": 131,
-                                "generics": [
-                                    {
-                                        "type": "String"
-                                    },
-                                    {
-                                        "type": "String"
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "Custom",
-                                "type_id": 144,
-                                "generics": []
-                            },
-                            {
-                                "type": "Custom",
-                                "type_id": 177,
-                                "generics": []
-                            },
-                            {
-                                "type": "Custom",
-                                "type_id": 178,
-                                "generics": []
-                            },
-                            {
-                                "type": "Custom",
-                                "type_id": 179,
-                                "generics": []
-                            }
-                        ]
-                    },
-                    "export_name": "Simple_custom_types"
+          "structure": {
+            "type": "Struct",
+            "name": "Simple",
+            "fields": {
+              "type": "Named",
+              "named": [
+                [
+                  "state",
+                  {
+                    "type": "U32"
+                  }
+                ]
+              ]
+            }
+          },
+          "fns": [
+            {
+              "ident": "new",
+              "mutability": null,
+              "input": {
+                "type": "Struct",
+                "name": "Simple_new_Input",
+                "fields": {
+                  "type": "Named",
+                  "named": []
                 }
-            ]
+              },
+              "output": {
+                "type": "Custom",
+                "type_id": 129,
+                "generics": []
+              },
+              "export_name": "Simple_new"
+            },
+            {
+              "ident": "get_state",
+              "mutability": "Immutable",
+              "input": {
+                "type": "Struct",
+                "name": "Simple_get_state_Input",
+                "fields": {
+                  "type": "Named",
+                  "named": []
+                }
+              },
+              "output": {
+                "type": "U32"
+              },
+              "export_name": "Simple_get_state"
+            },
+            {
+              "ident": "set_state",
+              "mutability": "Mutable",
+              "input": {
+                "type": "Struct",
+                "name": "Simple_set_state_Input",
+                "fields": {
+                  "type": "Named",
+                  "named": [
+                    [
+                      "arg0",
+                      {
+                        "type": "U32"
+                      }
+                    ]
+                  ]
+                }
+              },
+              "output": {
+                "type": "Unit"
+              },
+              "export_name": "Simple_set_state"
+            },
+            {
+              "ident": "custom_types",
+              "mutability": null,
+              "input": {
+                "type": "Struct",
+                "name": "Simple_custom_types_Input",
+                "fields": {
+                  "type": "Named",
+                  "named": []
+                }
+              },
+              "output": {
+                "type": "Tuple",
+                "elements": [
+                  {
+                    "type": "Custom",
+                    "type_id": 181,
+                    "generics": []
+                  },
+                  {
+                    "type": "Custom",
+                    "type_id": 128,
+                    "generics": []
+                  },
+                  {
+                    "type": "Custom",
+                    "type_id": 145,
+                    "generics": [
+                      {
+                        "type": "String"
+                      },
+                      {
+                        "type": "String"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Custom",
+                    "type_id": 176,
+                    "generics": []
+                  },
+                  {
+                    "type": "Custom",
+                    "type_id": 146,
+                    "generics": []
+                  },
+                  {
+                    "type": "Custom",
+                    "type_id": 147,
+                    "generics": []
+                  },
+                  {
+                    "type": "Custom",
+                    "type_id": 148,
+                    "generics": []
+                  }
+                ]
+              },
+              "export_name": "Simple_custom_types"
+            }
+          ]
         }),
     );
 }
