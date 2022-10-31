@@ -373,6 +373,49 @@ impl NativeInvocation for VaultCreateProofInput {
 }
 
 
+impl NativeExecutable for VaultCreateProofByAmountInput {
+    type Output = scrypto::resource::Proof;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Vault(input.vault_id);
+        let offset = SubstateOffset::Vault(VaultOffset::Vault);
+        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+
+        let proof = {
+            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let vault = substate_mut.vault();
+            vault
+                .create_proof_by_amount(input.amount, ResourceContainerId::Vault(vault_id))
+                .map_err(|e| RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ProofError(e))))?
+        };
+
+        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+
+        Ok((
+            scrypto::resource::Proof(proof_id),
+            CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
+        ))
+    }
+}
+
+impl NativeInvocation for VaultCreateProofByAmountInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Vault(VaultMethod::CreateProofByAmount),
+            RENodeId::Vault(self.vault_id),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
 
 pub struct Vault;
 

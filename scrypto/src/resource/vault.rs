@@ -56,6 +56,7 @@ pub struct VaultCreateProofInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultCreateProofByAmountInput {
+    pub vault_id: VaultId,
     pub amount: Decimal,
 }
 
@@ -168,7 +169,7 @@ impl Vault {
 
             pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
                 VaultMethod::CreateProofByAmount,
-                VaultCreateProofByAmountInput { amount }
+                VaultCreateProofByAmountInput { amount, vault_id: self.0, }
             }
 
             pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {

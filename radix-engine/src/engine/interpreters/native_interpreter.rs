@@ -115,6 +115,7 @@ pub trait InvokableNative<'a>:
     + Invokable<VaultGetResourceAddressInput>
     + Invokable<VaultGetNonFungibleIdsInput>
     + Invokable<VaultCreateProofInput>
+    + Invokable<VaultCreateProofByAmountInput>
 {
 }
 
