@@ -322,13 +322,10 @@ impl TransactionProcessor {
                     .remove(bucket_id)
                     .map(|real_id| {
                         system_api
-                            .invoke(NativeMethodInvocation(
-                                NativeMethod::Worktop(WorktopMethod::Put),
-                                RENodeId::Worktop,
-                                ScryptoValue::from_typed(&WorktopPutInput {
+                            .invoke(WorktopPutInput {
                                     bucket: scrypto::resource::Bucket(real_id),
-                                }),
-                            ))
+                                })
+                            .map(|rtn| ScryptoValue::from_typed(&rtn))
                             .map_err(InvokeError::Downstream)
                     })
                     .unwrap_or(Err(InvokeError::Error(
@@ -562,13 +559,9 @@ impl TransactionProcessor {
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
                             system_api
-                                .invoke(NativeMethodInvocation(
-                                    NativeMethod::Worktop(WorktopMethod::Put),
-                                    RENodeId::Worktop,
-                                    ScryptoValue::from_typed(&WorktopPutInput {
-                                        bucket: scrypto::resource::Bucket(*bucket_id),
-                                    }),
-                                ))
+                                .invoke(WorktopPutInput {
+                                    bucket: scrypto::resource::Bucket(*bucket_id),
+                                })
                                 .map_err(InvokeError::Downstream)?;
                         }
                         Ok(result)
@@ -600,13 +593,10 @@ impl TransactionProcessor {
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
                             system_api
-                                .invoke(NativeMethodInvocation(
-                                    NativeMethod::Worktop(WorktopMethod::Put),
-                                    RENodeId::Worktop,
-                                    ScryptoValue::from_typed(&WorktopPutInput {
+                                .invoke(WorktopPutInput {
                                         bucket: scrypto::resource::Bucket(*bucket_id),
-                                    }),
-                                ))
+                                    }
+                                )
                                 .map_err(InvokeError::downstream)?;
                         }
                         Ok(result)
@@ -716,13 +706,10 @@ impl TransactionProcessor {
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
                             system_api
-                                .invoke(NativeMethodInvocation(
-                                    NativeMethod::Worktop(WorktopMethod::Put),
-                                    RENodeId::Worktop,
-                                    ScryptoValue::from_typed(&WorktopPutInput {
+                                .invoke(WorktopPutInput {
                                         bucket: scrypto::resource::Bucket(*bucket_id),
-                                    }),
-                                ))
+                                    }
+                                )
                                 .map_err(InvokeError::Downstream)?;
                         }
                         Ok(result)
@@ -770,13 +757,9 @@ impl TransactionProcessor {
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
                             system_api
-                                .invoke(NativeMethodInvocation(
-                                    NativeMethod::Worktop(WorktopMethod::Put),
-                                    RENodeId::Worktop,
-                                    ScryptoValue::from_typed(&WorktopPutInput {
-                                        bucket: scrypto::resource::Bucket(*bucket_id),
-                                    }),
-                                ))
+                                .invoke(WorktopPutInput {
+                                    bucket: scrypto::resource::Bucket(*bucket_id),
+                                })
                                 .map_err(InvokeError::downstream)?;
                         }
                         Ok(result)

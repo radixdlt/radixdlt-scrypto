@@ -99,6 +99,7 @@ pub trait InvokableNative<'a>:
     + Invokable<ProofGetNonFungibleIdsInput>
     + Invokable<ProofGetResourceAddressInput>
     + Invokable<ProofCloneInput>
+    + Invokable<WorktopPutInput>
 {
 }
 

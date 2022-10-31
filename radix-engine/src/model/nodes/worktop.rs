@@ -1,4 +1,4 @@
-use crate::engine::{InvokeError, LockFlags, RENode, SystemApi};
+use crate::engine::{ApplicationError, CallFrameUpdate, InvokableNative, InvokeError, LockFlags, NativeExecutable, NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
@@ -57,6 +57,46 @@ pub enum WorktopError {
     CouldNotDrop,
 }
 
+impl NativeExecutable for WorktopPutInput {
+    type Output = ();
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Worktop;
+        let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
+        let worktop_handle =
+            system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let bucket = system_api
+            .drop_node(RENodeId::Bucket(input.bucket.0))?
+            .into();
+        let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
+        let worktop = substate_mut.worktop();
+        worktop
+            .put(bucket)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::WorktopError(WorktopError::ResourceOperationError(e))))?;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for WorktopPutInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Worktop(WorktopMethod::Put),
+            RENodeId::Worktop,
+            CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0)),
+        )
+    }
+}
+
+
 pub struct Worktop;
 
 impl Worktop {
@@ -89,18 +129,7 @@ impl Worktop {
 
         let rtn = match method {
             WorktopMethod::Put => {
-                let input: WorktopPutInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
-                let bucket = system_api
-                    .drop_node(RENodeId::Bucket(input.bucket.0))?
-                    .into();
-                let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
-                let worktop = substate_mut.worktop();
-                worktop
-                    .put(bucket)
-                    .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
-
-                Ok(ScryptoValue::from_typed(&()))
+                panic!("Unexpected");
             }
             WorktopMethod::TakeAmount => {
                 let input: WorktopTakeAmountInput = scrypto_decode(&args.raw)
