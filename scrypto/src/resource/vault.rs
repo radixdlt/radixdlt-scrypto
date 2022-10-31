@@ -18,6 +18,7 @@ use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultPutInput {
+    pub vault_id: VaultId,
     pub bucket: Bucket,
 }
 
@@ -113,7 +114,8 @@ impl Vault {
             pub fn put(&mut self, bucket: Bucket) -> () {
                 VaultMethod::Put,
                 VaultPutInput {
-                    bucket
+                    vault_id: self.0,
+                    bucket,
                 }
             }
 

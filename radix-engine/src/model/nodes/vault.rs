@@ -65,6 +65,49 @@ impl NativeInvocation for VaultTakeInput {
     }
 }
 
+impl NativeExecutable for VaultPutInput {
+    type Output = ();
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Vault(input.vault_id);
+        let offset = SubstateOffset::Vault(VaultOffset::Vault);
+        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let bucket = system_api
+            .drop_node(RENodeId::Bucket(input.bucket.0))?
+            .into();
+
+        let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+        let vault = substate_mut.vault();
+        vault
+            .put(bucket)
+            .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
+
+        Ok((
+            (),
+            CallFrameUpdate::empty(),
+        ))
+    }
+}
+
+impl NativeInvocation for VaultPutInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Vault(VaultMethod::Put),
+            RENodeId::Vault(self.vault_id),
+            CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0)),
+        )
+    }
+}
+
+
 pub struct Vault;
 
 impl Vault {
@@ -104,18 +147,7 @@ impl Vault {
 
         let rtn = match method {
             VaultMethod::Put => {
-                let input: VaultPutInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
-                let bucket = system_api
-                    .drop_node(RENodeId::Bucket(input.bucket.0))?
-                    .into();
-
-                let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                let vault = substate_mut.vault();
-                vault
-                    .put(bucket)
-                    .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
-                ScryptoValue::from_typed(&())
+                panic!("Unexpected")
             }
             VaultMethod::Take => {
                 panic!("Unexpected")
