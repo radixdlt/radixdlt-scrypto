@@ -60,17 +60,11 @@ pub enum TokenKind {
     Set,
     Map,
 
-    Decimal,
-    PreciseDecimal,
-    Hash,
-    NonFungibleId,
-    NonFungibleAddress,
+    /* Global address */
     PackageAddress,
     SystemAddress,
     ComponentAddress,
     ResourceAddress,
-    Expression,
-    Blob,
 
     /* RE Nodes */
     Global,
@@ -85,6 +79,21 @@ pub enum TokenKind {
     Vault,
     ResourceManager,
     Package,
+
+    /* Other interpreted */
+    Expression,
+    Blob,
+    NonFungibleAddress,
+
+    /* Uninterpreted */
+    Hash,
+    EcdsaSecp256k1PublicKey,
+    EcdsaSecp256k1Signature,
+    EddsaEd25519PublicKey,
+    EddsaEd25519Signature,
+    Decimal,
+    PreciseDecimal,
+    NonFungibleId,
 
     /* Punctuations */
     OpenParenthesis,
@@ -400,22 +409,16 @@ impl Lexer {
             "List" => Ok(TokenKind::List),
             "Set" => Ok(TokenKind::Set),
             "Map" => Ok(TokenKind::Map),
-            "Decimal" => Ok(TokenKind::Decimal),
-            "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
-            "Hash" => Ok(TokenKind::Hash),
-            "NonFungibleId" => Ok(TokenKind::NonFungibleId),
-            "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
-            "PackageAddress" => Ok(TokenKind::PackageAddress),
-            "SystemAddress" => Ok(TokenKind::SystemAddress),
-            "ComponentAddress" => Ok(TokenKind::ComponentAddress),
-            "ResourceAddress" => Ok(TokenKind::ResourceAddress),
-            "Expression" => Ok(TokenKind::Expression),
-            "Blob" => Ok(TokenKind::Blob),
 
             "Some" => Ok(TokenKind::Some),
             "None" => Ok(TokenKind::None),
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
+
+            "PackageAddress" => Ok(TokenKind::PackageAddress),
+            "SystemAddress" => Ok(TokenKind::SystemAddress),
+            "ComponentAddress" => Ok(TokenKind::ComponentAddress),
+            "ResourceAddress" => Ok(TokenKind::ResourceAddress),
 
             "Global" => Ok(TokenKind::Global),
             "Bucket" => Ok(TokenKind::Bucket),
@@ -429,6 +432,19 @@ impl Lexer {
             "Vault" => Ok(TokenKind::Vault),
             "ResourceManager" => Ok(TokenKind::ResourceManager),
             "Package" => Ok(TokenKind::Package),
+
+            "Expression" => Ok(TokenKind::Expression),
+            "Blob" => Ok(TokenKind::Blob),
+            "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
+
+            "Hash" => Ok(TokenKind::Hash),
+            "EcdsaSecp256k1PublicKey" => Ok(TokenKind::EcdsaSecp256k1PublicKey),
+            "EcdsaSecp256k1Signature" => Ok(TokenKind::EcdsaSecp256k1Signature),
+            "EddsaEd25519PublicKey" => Ok(TokenKind::EddsaEd25519PublicKey),
+            "EddsaEd25519Signature" => Ok(TokenKind::EddsaEd25519Signature),
+            "Decimal" => Ok(TokenKind::Decimal),
+            "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
+            "NonFungibleId" => Ok(TokenKind::NonFungibleId),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),

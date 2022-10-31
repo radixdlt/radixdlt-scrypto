@@ -282,19 +282,30 @@ impl Parser {
             TokenKind::List => self.parse_list(),
             TokenKind::Set => self.parse_set(),
             TokenKind::Map => self.parse_map(),
-            TokenKind::Decimal
-            | TokenKind::PreciseDecimal
-            | TokenKind::PackageAddress
-            | TokenKind::SystemAddress
-            | TokenKind::ComponentAddress
-            | TokenKind::ResourceAddress
-            | TokenKind::Hash
-            | TokenKind::Bucket
-            | TokenKind::Proof
-            | TokenKind::NonFungibleId
-            | TokenKind::NonFungibleAddress
-            | TokenKind::Expression
-            | TokenKind::Blob => self.parse_scrypto_types(),
+            /* Global address */
+            TokenKind:: PackageAddress |
+            TokenKind:: SystemAddress |
+            TokenKind:: ComponentAddress |
+            TokenKind::ResourceAddress |
+            /* RE Nodes */
+            TokenKind::Component |
+            TokenKind::KeyValueStore |
+            TokenKind:: Bucket |
+            TokenKind::Proof |
+            TokenKind::Vault |
+            /* Other interpreted */
+            TokenKind:: Expression |
+            TokenKind::Blob |
+            TokenKind:: NonFungibleAddress |
+            /* Uninterpreted */
+            TokenKind:: Hash |
+            TokenKind::EcdsaSecp256k1PublicKey |
+            TokenKind::EcdsaSecp256k1Signature |
+            TokenKind::EddsaEd25519PublicKey |
+            TokenKind::EddsaEd25519Signature |
+            TokenKind::Decimal |
+            TokenKind:: PreciseDecimal |
+            TokenKind:: NonFungibleId  => self.parse_scrypto_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -385,8 +396,7 @@ impl Parser {
     pub fn parse_scrypto_types(&mut self) -> Result<Value, ParserError> {
         let token = self.advance()?;
         match token.kind {
-            TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
-            TokenKind::PreciseDecimal => Ok(Value::PreciseDecimal(self.parse_values_one()?.into())),
+            // Global address types
             TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
             TokenKind::SystemAddress => Ok(Value::SystemAddress(self.parse_values_one()?.into())),
             TokenKind::ComponentAddress => {
@@ -395,15 +405,39 @@ impl Parser {
             TokenKind::ResourceAddress => {
                 Ok(Value::ResourceAddress(self.parse_values_one()?.into()))
             }
-            TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
+
+            // RE nodes
+            TokenKind::Component => Ok(Value::Component(self.parse_values_one()?.into())),
+            TokenKind::KeyValueStore => Ok(Value::KeyValueStore(self.parse_values_one()?.into())),
             TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
             TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
-            TokenKind::NonFungibleId => Ok(Value::NonFungibleId(self.parse_values_one()?.into())),
+            TokenKind::Vault => Ok(Value::Vault(self.parse_values_one()?.into())),
+
+            // Interpreted
+            TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
+            TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
             TokenKind::NonFungibleAddress => {
                 Ok(Value::NonFungibleAddress(self.parse_values_one()?.into()))
             }
-            TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
-            TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
+
+            // Uninterpreted
+            TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
+            TokenKind::EcdsaSecp256k1PublicKey => Ok(Value::EcdsaSecp256k1PublicKey(
+                self.parse_values_one()?.into(),
+            )),
+            TokenKind::EcdsaSecp256k1Signature => Ok(Value::EcdsaSecp256k1Signature(
+                self.parse_values_one()?.into(),
+            )),
+            TokenKind::EddsaEd25519PublicKey => Ok(Value::EddsaEd25519PublicKey(
+                self.parse_values_one()?.into(),
+            )),
+            TokenKind::EddsaEd25519Signature => Ok(Value::EddsaEd25519Signature(
+                self.parse_values_one()?.into(),
+            )),
+            TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
+            TokenKind::PreciseDecimal => Ok(Value::PreciseDecimal(self.parse_values_one()?.into())),
+            TokenKind::NonFungibleId => Ok(Value::NonFungibleId(self.parse_values_one()?.into())),
+
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -485,17 +519,35 @@ impl Parser {
             TokenKind::List => Ok(Type::List),
             TokenKind::Set => Ok(Type::Set),
             TokenKind::Map => Ok(Type::Map),
-            TokenKind::Decimal => Ok(Type::Decimal),
+
+            // Globals
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
-            TokenKind::SystemAddress => Ok(Type::SystemAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
             TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
-            TokenKind::Hash => Ok(Type::Hash),
+            TokenKind::SystemAddress => Ok(Type::SystemAddress),
+
+            // RE Nodes
+            TokenKind::Component => Ok(Type::Component),
+            TokenKind::KeyValueStore => Ok(Type::KeyValueStore),
             TokenKind::Bucket => Ok(Type::Bucket),
             TokenKind::Proof => Ok(Type::Proof),
-            TokenKind::NonFungibleId => Ok(Type::NonFungibleId),
+            TokenKind::Vault => Ok(Type::Vault),
+
+            // Other interpreted types
             TokenKind::Expression => Ok(Type::Expression),
             TokenKind::Blob => Ok(Type::Blob),
+            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
+
+            // Uninterpreted
+            TokenKind::Hash => Ok(Type::Hash),
+            TokenKind::EcdsaSecp256k1PublicKey => Ok(Type::EcdsaSecp256k1PublicKey),
+            TokenKind::EcdsaSecp256k1Signature => Ok(Type::EcdsaSecp256k1Signature),
+            TokenKind::EddsaEd25519PublicKey => Ok(Type::EddsaEd25519PublicKey),
+            TokenKind::EddsaEd25519Signature => Ok(Type::EddsaEd25519Signature),
+            TokenKind::Decimal => Ok(Type::Decimal),
+            TokenKind::PreciseDecimal => Ok(Type::PreciseDecimal),
+            TokenKind::NonFungibleId => Ok(Type::NonFungibleId),
+
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }

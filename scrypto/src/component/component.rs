@@ -1,4 +1,6 @@
+use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
+use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -179,6 +181,15 @@ scrypto_type!(Component, ScryptoType::Component, Vec::new());
 //======
 // text
 //======
+
+impl FromStr for Component {
+    type Err = ParseComponentError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = hex::decode(s).map_err(|_| ParseComponentError::InvalidHex(s.to_owned()))?;
+        Self::try_from(bytes.as_slice())
+    }
+}
 
 impl fmt::Display for Component {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {

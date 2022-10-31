@@ -44,10 +44,12 @@ impl NativeExecutable for ComponentAddAccessCheckInput {
                 system_api.lock_substate(package_id, package_offset, LockFlags::read_only())?;
             let substate_ref = system_api.get_ref(handle)?;
             let package = substate_ref.package();
-            let blueprint_abi = package.blueprint_abi(&blueprint_name).expect(&format!(
-                "Blueprint {} is not found in package node {:?}",
-                blueprint_name, package_id
-            ));
+            let blueprint_abi = package.blueprint_abi(&blueprint_name).unwrap_or_else(|| {
+                panic!(
+                    "Blueprint {} is not found in package node {:?}",
+                    blueprint_name, package_id
+                )
+            });
             for (func_name, _) in input.access_rules.iter() {
                 if !blueprint_abi.contains_fn(func_name.as_str()) {
                     return Err(RuntimeError::ApplicationError(

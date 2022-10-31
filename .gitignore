@@ -3,8 +3,60 @@
 
 # Rust auto-generated
 target/
-Cargo.lock
 **/*.rs.bk
+
+# CARGO.LOCK - Source controlling strategy
+#
+# We have multiple workspaces/crates in this repository:
+#
+# TYPE 1:
+# - The root workspace of libraries. As per docs in below link, libraries shouldn't have Cargo.lock source controlled.
+#   The Cargo.lock of packages is ignored anyway by crates pulling them in.
+#   https://doc.rust-lang.org/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries
+Cargo.lock
+
+# TYPE 2:
+# - The simulator workspace/package. This is an application, and so has its Cargo.lock source controlled
+!simulator/Cargo.lock
+
+# TYPE 3:
+# - The asset scrypto packages. These need to be built deterministically, so include a Cargo.lock (at a shared workspace layer)
+#   But also keep blanket ignoring all the old Cargo.locks before they moved to blueprints, to avoid developer git issues
+assets/**/Cargo.lock
+!assets/blueprints/Cargo.lock
+
+# TYPE 4:
+# - Various test scrypto packages. We don't care too much about either way - but we do want CI to run without a lock, so let's git ignore these.
+#   Also make sure to blanket ignore all the old Cargo.locks before they moved to blueprints, to avoid developer git issues
+radix-engine/tests/**/Cargo.lock
+radix-engine/tests/blueprints/Cargo.lock
+simulator/tests/blueprints/Cargo.lock
+
+# TYPE 5:
+# - Examples should have their own Cargo.lock files to show good practice
+!examples/**/Cargo.lock
+
+# TYPE 6:
+# - Old cargo locks of crates now part of central workspace. These will be ignored by cargo now.
+#   Keep these git'ignored so that they don't cause confusion on developers' computers
+radix-engine/Cargo.lock
+radix-engine-stores/Cargo.lock
+scrypto/Cargo.lock
+scrypto-unit/Cargo.lock
+scrypto-derive/Cargo.lock
+scrypto-abi/Cargo.lock
+scrypto-tests/Cargo.lock
+transaction/Cargo.lock
+sbor/Cargo.lock
+sbor-derive/Cargo.lock
+sbor-tests/Cargo.lock
+
+# FURTHER DETAILS:
+# Our CI tests ensure that libraries can build and have their tests run with an empty lock file (ie, with the latest semver
+# crates available on crates.io).
+#
+# In the future, we leave the option open to including more Cargo.locks for more of the repository, to speed up our local
+# builds and provide a consistent set of dependencies developers can use to get-up-and-running.
 
 # Flamegraph profiles
 flamegraph.svg

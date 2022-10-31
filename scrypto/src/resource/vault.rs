@@ -72,7 +72,6 @@ pub struct VaultLockFeeInput {
     pub contingent: bool,
 }
 
-/// Represents a persistent resource container on ledger state.
 #[derive(PartialEq, Eq, Hash)]
 pub struct Vault(pub VaultId);
 
