@@ -33,7 +33,7 @@ pub enum ResourceManagerError {
 }
 
 impl NativeExecutable for ResourceManagerBucketBurnInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         invocation: Self,
@@ -86,7 +86,7 @@ impl NativeInvocation for ResourceManagerBucketBurnInput {
 }
 
 impl NativeExecutable for ResourceManagerCreateInput {
-    type Output = (ResourceAddress, Option<scrypto::resource::Bucket>);
+    type NativeOutput = (ResourceAddress, Option<scrypto::resource::Bucket>);
 
     fn execute<'s, 'a, Y, R>(
         invocation: Self,
@@ -263,7 +263,7 @@ impl NativeInvocation for ResourceManagerCreateInput {
 }
 
 impl NativeExecutable for ResourceManagerBurnInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -345,7 +345,7 @@ impl NativeInvocation for ResourceManagerBurnInput {
 }
 
 impl NativeExecutable for ResourceManagerUpdateAuthInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -396,7 +396,7 @@ impl NativeInvocation for ResourceManagerUpdateAuthInput {
 }
 
 impl NativeExecutable for ResourceManagerLockAuthInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -447,7 +447,7 @@ impl NativeInvocation for ResourceManagerLockAuthInput {
 }
 
 impl NativeExecutable for ResourceManagerCreateVaultInput {
-    type Output = scrypto::resource::Vault;
+    type NativeOutput = scrypto::resource::Vault;
 
     fn execute<'s, 'a, Y, R>(
         _input: Self,
@@ -493,7 +493,7 @@ impl NativeInvocation for ResourceManagerCreateVaultInput {
 }
 
 impl NativeExecutable for ResourceManagerCreateBucketInput {
-    type Output = scrypto::resource::Bucket;
+    type NativeOutput = scrypto::resource::Bucket;
 
     fn execute<'s, 'a, Y, R>(
         _input: Self,
@@ -539,7 +539,7 @@ impl NativeInvocation for ResourceManagerCreateBucketInput {
 }
 
 impl NativeExecutable for ResourceManagerMintInput {
-    type Output = scrypto::resource::Bucket;
+    type NativeOutput = scrypto::resource::Bucket;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -632,7 +632,7 @@ impl NativeInvocation for ResourceManagerMintInput {
 }
 
 impl NativeExecutable for ResourceManagerGetMetadataInput {
-    type Output = HashMap<String, String>;
+    type NativeOutput = HashMap<String, String>;
 
     fn execute<'s, 'a, Y, R>(
         _input: Self,
@@ -668,7 +668,7 @@ impl NativeInvocation for ResourceManagerGetMetadataInput {
 }
 
 impl NativeExecutable for ResourceManagerGetResourceTypeInput {
-    type Output = ResourceType;
+    type NativeOutput = ResourceType;
 
     fn execute<'s, 'a, Y, R>(
         _input: Self,
@@ -704,7 +704,7 @@ impl NativeInvocation for ResourceManagerGetResourceTypeInput {
 }
 
 impl NativeExecutable for ResourceManagerGetTotalSupplyInput {
-    type Output = Decimal;
+    type NativeOutput = Decimal;
 
     fn execute<'s, 'a, Y, R>(
         _input: Self,
@@ -739,7 +739,7 @@ impl NativeInvocation for ResourceManagerGetTotalSupplyInput {
 }
 
 impl NativeExecutable for ResourceManagerUpdateMetadataInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -783,7 +783,7 @@ impl NativeInvocation for ResourceManagerUpdateMetadataInput {
 }
 
 impl NativeExecutable for ResourceManagerUpdateNonFungibleDataInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -849,7 +849,7 @@ impl NativeInvocation for ResourceManagerUpdateNonFungibleDataInput {
 }
 
 impl NativeExecutable for ResourceManagerNonFungibleExistsInput {
-    type Output = bool;
+    type NativeOutput = bool;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -901,7 +901,7 @@ impl NativeInvocation for ResourceManagerNonFungibleExistsInput {
 }
 
 impl NativeExecutable for ResourceManagerGetNonFungibleInput {
-    type Output = [Vec<u8>; 2];
+    type NativeOutput = [Vec<u8>; 2];
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -966,7 +966,7 @@ impl NativeInvocation for ResourceManagerGetNonFungibleInput {
 }
 
 impl NativeExecutable for ResourceManagerSetResourceAddressInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,

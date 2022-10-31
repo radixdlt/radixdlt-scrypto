@@ -12,7 +12,7 @@ pub enum ComponentError {
 }
 
 impl NativeExecutable for ComponentAddAccessCheckInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,

@@ -21,7 +21,7 @@ pub struct EpochManager {
 }
 
 impl NativeExecutable for EpochManagerCreateInput {
-    type Output = SystemAddress;
+    type NativeOutput = SystemAddress;
 
     fn execute<'s, 'a, Y, R>(
         _invocation: Self,
@@ -61,7 +61,7 @@ impl NativeInvocation for EpochManagerCreateInput {
 }
 
 impl NativeExecutable for EpochManagerGetCurrentEpochInput {
-    type Output = u64;
+    type NativeOutput = u64;
 
     fn execute<'s, 'a, Y, R>(
         _input: Self,
@@ -97,7 +97,7 @@ impl NativeInvocation for EpochManagerGetCurrentEpochInput {
 }
 
 impl NativeExecutable for EpochManagerSetEpochInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,

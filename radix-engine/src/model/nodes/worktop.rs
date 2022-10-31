@@ -61,7 +61,7 @@ pub enum WorktopError {
 }
 
 impl NativeExecutable for WorktopPutInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -101,7 +101,7 @@ impl NativeInvocation for WorktopPutInput {
 }
 
 impl NativeExecutable for WorktopTakeAmountInput {
-    type Output = scrypto::resource::Bucket;
+    type NativeOutput = scrypto::resource::Bucket;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -167,7 +167,7 @@ impl NativeInvocation for WorktopTakeAmountInput {
 }
 
 impl NativeExecutable for WorktopTakeAllInput {
-    type Output = scrypto::resource::Bucket;
+    type NativeOutput = scrypto::resource::Bucket;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -232,7 +232,7 @@ impl NativeInvocation for WorktopTakeAllInput {
 }
 
 impl NativeExecutable for WorktopTakeNonFungiblesInput {
-    type Output = scrypto::resource::Bucket;
+    type NativeOutput = scrypto::resource::Bucket;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -299,7 +299,7 @@ impl NativeInvocation for WorktopTakeNonFungiblesInput {
 }
 
 impl NativeExecutable for WorktopAssertContainsInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -338,7 +338,7 @@ impl NativeInvocation for WorktopAssertContainsInput {
 }
 
 impl NativeExecutable for WorktopAssertContainsAmountInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -377,7 +377,7 @@ impl NativeInvocation for WorktopAssertContainsAmountInput {
 }
 
 impl NativeExecutable for WorktopAssertContainsNonFungiblesInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -424,7 +424,7 @@ impl NativeInvocation for WorktopAssertContainsNonFungiblesInput {
 }
 
 impl NativeExecutable for WorktopDrainInput {
-    type Output = Vec<scrypto::resource::Bucket>;
+    type NativeOutput = Vec<scrypto::resource::Bucket>;
 
     fn execute<'s, 'a, Y, R>(
         _input: Self,

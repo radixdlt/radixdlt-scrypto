@@ -12,6 +12,14 @@ pub struct AuthZonePopInput {
     pub auth_zone_id: AuthZoneId,
 }
 
+impl SysInvocation for AuthZonePopInput {
+    type Output = scrypto::resource::Proof;
+
+    fn native_method() -> NativeMethod {
+        NativeMethod::AuthZone(AuthZoneMethod::Pop)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZonePushInput {
     pub auth_zone_id: AuthZoneId,
@@ -63,19 +71,16 @@ impl ComponentAuthZone {
 
     pub fn sys_pop<Y, E: Debug + TypeId + Decode>(sys_calls: &mut Y) -> Result<Proof, E>
     where
-        Y: ScryptoSyscalls<E>,
+        Y: ScryptoSyscalls<E> + SysInvokable<AuthZonePopInput, E>,
     {
         let owned_node_ids = sys_calls.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        sys_calls.sys_invoke_native_method(
-            NativeMethod::AuthZone(AuthZoneMethod::Pop),
-            &AuthZonePopInput {
-                auth_zone_id: node_id.into(),
-            },
-        )
+        sys_calls.sys_invoke(AuthZonePopInput {
+            auth_zone_id: node_id.into(),
+        })
     }
 
     #[cfg(target_arch = "wasm32")]

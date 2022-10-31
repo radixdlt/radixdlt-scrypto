@@ -22,7 +22,7 @@ pub enum VaultError {
 }
 
 impl NativeExecutable for VaultTakeInput {
-    type Output = scrypto::resource::Bucket;
+    type NativeOutput = scrypto::resource::Bucket;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -69,7 +69,7 @@ impl NativeInvocation for VaultTakeInput {
 }
 
 impl NativeExecutable for VaultPutInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -110,7 +110,7 @@ impl NativeInvocation for VaultPutInput {
 }
 
 impl NativeExecutable for VaultLockFeeInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -175,7 +175,7 @@ impl NativeInvocation for VaultLockFeeInput {
 }
 
 impl NativeExecutable for VaultTakeNonFungiblesInput {
-    type Output = scrypto::resource::Bucket;
+    type NativeOutput = scrypto::resource::Bucket;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -224,7 +224,7 @@ impl NativeInvocation for VaultTakeNonFungiblesInput {
 }
 
 impl NativeExecutable for VaultGetAmountInput {
-    type Output = Decimal;
+    type NativeOutput = Decimal;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -257,7 +257,7 @@ impl NativeInvocation for VaultGetAmountInput {
 }
 
 impl NativeExecutable for VaultGetResourceAddressInput {
-    type Output = ResourceAddress;
+    type NativeOutput = ResourceAddress;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -293,7 +293,7 @@ impl NativeInvocation for VaultGetResourceAddressInput {
 }
 
 impl NativeExecutable for VaultGetNonFungibleIdsInput {
-    type Output = BTreeSet<NonFungibleId>;
+    type NativeOutput = BTreeSet<NonFungibleId>;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -330,7 +330,7 @@ impl NativeInvocation for VaultGetNonFungibleIdsInput {
 }
 
 impl NativeExecutable for VaultCreateProofInput {
-    type Output = scrypto::resource::Proof;
+    type NativeOutput = scrypto::resource::Proof;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -375,7 +375,7 @@ impl NativeInvocation for VaultCreateProofInput {
 }
 
 impl NativeExecutable for VaultCreateProofByAmountInput {
-    type Output = scrypto::resource::Proof;
+    type NativeOutput = scrypto::resource::Proof;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -421,7 +421,7 @@ impl NativeInvocation for VaultCreateProofByAmountInput {
 }
 
 impl NativeExecutable for VaultCreateProofByIdsInput {
-    type Output = scrypto::resource::Proof;
+    type NativeOutput = scrypto::resource::Proof;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,

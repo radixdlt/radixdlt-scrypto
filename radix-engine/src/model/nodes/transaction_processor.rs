@@ -1,6 +1,6 @@
 use scrypto::resource::{AuthZoneDrainInput, ComponentAuthZone};
 use sbor::rust::borrow::Cow;
-use scrypto::engine::api::ScryptoSyscalls;
+use scrypto::engine::api::{ScryptoSyscalls, SysInvokableNative};
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
@@ -34,14 +34,14 @@ pub enum TransactionProcessorError {
 }
 
 impl<'b> NativeExecutable for TransactionProcessorRunInput<'b> {
-    type Output = Vec<Vec<u8>>;
+    type NativeOutput = Vec<Vec<u8>>;
 
     fn execute<'s, 'a, Y, R>(
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a> + ScryptoSyscalls<RuntimeError>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a> + ScryptoSyscalls<RuntimeError> + SysInvokableNative<RuntimeError>,
         R: FeeReserve,
     {
         TransactionProcessor::static_main(invocation, system_api)
@@ -171,7 +171,7 @@ impl TransactionProcessor {
         system_api: &mut Y,
     ) -> Result<Vec<Vec<u8>>, InvokeError<TransactionProcessorError>>
     where
-        Y: SystemApi<'s, R> + ScryptoSyscalls<RuntimeError> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
+        Y: SystemApi<'s, R> + ScryptoSyscalls<RuntimeError> + Invokable<ScryptoInvocation> + InvokableNative<'a> + SysInvokableNative<RuntimeError>,
         R: FeeReserve,
     {
         let mut proof_id_mapping = HashMap::new();
@@ -297,6 +297,13 @@ impl TransactionProcessor {
                         InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                     })
                     .and_then(|new_id| {
+                        ComponentAuthZone::sys_pop(system_api)
+                            .map_err(InvokeError::Downstream)
+                            .map(|proof| {
+                                proof_id_mapping.insert(new_id, proof.0);
+                                ScryptoValue::from_typed(&proof)
+                            })
+                        /*
                         system_api
                             .invoke(AuthZonePopInput { auth_zone_id })
                             .map_err(InvokeError::Downstream)
@@ -304,14 +311,10 @@ impl TransactionProcessor {
                                 proof_id_mapping.insert(new_id, proof.0);
                                 ScryptoValue::from_typed(&proof)
                             })
+                         */
                             /*
                             .and_then(|new_id| {
-                                ComponentAuthZone::sys_pop(system_api)
-                                    .map_err(InvokeError::Downstream)
-                                    .map(|proof| {
-                                        proof_id_mapping.insert(new_id, proof.0);
-                                        ScryptoValue::from_typed(&proof)
-                                    })
+
                             }),
                         Instruction::ClearAuthZone => {
                             proof_id_mapping.clear();

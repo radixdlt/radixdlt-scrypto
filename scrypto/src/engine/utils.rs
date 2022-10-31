@@ -5,7 +5,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
 use scrypto::core::*;
-use scrypto::engine::api::ScryptoSyscalls;
+use scrypto::engine::api::*;
 use scrypto::engine::types::*;
 
 #[cfg(target_arch = "wasm32")]
@@ -36,6 +36,17 @@ pub fn call_engine<V: Decode>(_input: RadixEngineInput) -> V {
 pub struct SyscallError;
 
 pub struct Syscalls;
+
+impl<N: SysInvocation> SysInvokable<N, SyscallError> for Syscalls {
+
+    fn sys_invoke(&mut self, input: N) -> Result<N::Output, SyscallError> {
+        let rtn = call_engine(RadixEngineInput::InvokeNativeMethod(
+            N::native_method(),
+            scrypto_encode(&input),
+        ));
+        Ok(rtn)
+    }
+}
 
 impl ScryptoSyscalls<SyscallError> for Syscalls {
     fn sys_invoke_scrypto_function<ARGS: Encode, V: Decode>(

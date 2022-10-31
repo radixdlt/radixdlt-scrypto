@@ -23,6 +23,14 @@ pub struct ComponentAddAccessCheckInput {
     pub access_rules: AccessRules,
 }
 
+impl SysInvocation for ComponentAddAccessCheckInput {
+    type Output = ();
+
+    fn native_method() -> NativeMethod {
+        NativeMethod::Component(ComponentMethod::AddAccessCheck)
+    }
+}
+
 /// Represents the state of a component.
 pub trait ComponentState<C: LocalComponent>: Encode + Decode {
     /// Instantiates a component from this data structure.
@@ -95,12 +103,11 @@ impl Component {
         sys_calls: &mut Y,
     ) -> Result<&mut Self, E>
     where
-        Y: ScryptoSyscalls<E>,
+        Y: ScryptoSyscalls<E> + SysInvokable<ComponentAddAccessCheckInput, E>,
     {
-        let _: () = sys_calls.sys_invoke_native_method(
-            NativeMethod::Component(ComponentMethod::AddAccessCheck),
-            &ComponentAddAccessCheckInput { access_rules, component_id: self.0 },
-        )?;
+        sys_calls.sys_invoke(ComponentAddAccessCheckInput {
+            access_rules, component_id: self.0
+        })?;
 
         Ok(self)
     }

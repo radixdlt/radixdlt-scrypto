@@ -6,7 +6,7 @@ use crate::types::*;
 pub struct NativeInterpreter;
 use sbor::rust::fmt::Debug;
 use sbor::*;
-use scrypto::engine::api::ScryptoSyscalls;
+use scrypto::engine::api::{ScryptoSyscalls, SysInvokableNative};
 use scrypto::resource::AuthZoneDrainInput;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
@@ -147,7 +147,7 @@ pub enum NativeInvocationInfo {
 }
 
 impl<N: NativeExecutable> Invocation for N {
-    type Output = <N as NativeExecutable>::Output;
+    type Output = <N as NativeExecutable>::NativeOutput;
 }
 
 pub struct NativeResolver;
@@ -191,14 +191,14 @@ pub trait NativeInvocation: NativeExecutable + Encode + Debug {
 }
 
 pub trait NativeExecutable: Invocation {
-    type Output: Debug;
+    type NativeOutput: Debug;
 
     fn execute<'s, 'a, Y, R>(
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a> + ScryptoSyscalls<RuntimeError>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a> + ScryptoSyscalls<RuntimeError> + SysInvokableNative<RuntimeError>,
         R: FeeReserve;
 }
 
@@ -216,7 +216,7 @@ impl<N: NativeExecutable> Executor for NativeExecutor<N> {
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a> + ScryptoSyscalls<RuntimeError>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a> + ScryptoSyscalls<RuntimeError> + SysInvokableNative<RuntimeError>,
         R: FeeReserve,
     {
         N::execute(self.0, system_api)

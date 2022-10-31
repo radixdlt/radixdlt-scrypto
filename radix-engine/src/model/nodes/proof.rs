@@ -23,7 +23,7 @@ pub enum ProofError {
 }
 
 impl NativeExecutable for ProofGetAmountInput {
-    type Output = Decimal;
+    type NativeOutput = Decimal;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -54,7 +54,7 @@ impl NativeInvocation for ProofGetAmountInput {
 }
 
 impl NativeExecutable for ProofGetNonFungibleIdsInput {
-    type Output = BTreeSet<NonFungibleId>;
+    type NativeOutput = BTreeSet<NonFungibleId>;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -91,7 +91,7 @@ impl NativeInvocation for ProofGetNonFungibleIdsInput {
 }
 
 impl NativeExecutable for ProofGetResourceAddressInput {
-    type Output = ResourceAddress;
+    type NativeOutput = ResourceAddress;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -127,7 +127,7 @@ impl NativeInvocation for ProofGetResourceAddressInput {
 }
 
 impl NativeExecutable for ProofCloneInput {
-    type Output = scrypto::resource::Proof;
+    type NativeOutput = scrypto::resource::Proof;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,

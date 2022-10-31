@@ -19,7 +19,7 @@ pub enum AuthZoneError {
 }
 
 impl NativeExecutable for AuthZonePopInput {
-    type Output = scrypto::resource::Proof;
+    type NativeOutput = scrypto::resource::Proof;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -65,7 +65,7 @@ impl NativeInvocation for AuthZonePopInput {
 }
 
 impl NativeExecutable for AuthZonePushInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -110,7 +110,7 @@ impl NativeInvocation for AuthZonePushInput {
 }
 
 impl NativeExecutable for AuthZoneCreateProofInput {
-    type Output = scrypto::resource::Proof;
+    type NativeOutput = scrypto::resource::Proof;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -170,7 +170,7 @@ impl NativeInvocation for AuthZoneCreateProofInput {
 }
 
 impl NativeExecutable for AuthZoneCreateProofByAmountInput {
-    type Output = scrypto::resource::Proof;
+    type NativeOutput = scrypto::resource::Proof;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -231,7 +231,7 @@ impl NativeInvocation for AuthZoneCreateProofByAmountInput {
 }
 
 impl NativeExecutable for AuthZoneCreateProofByIdsInput {
-    type Output = scrypto::resource::Proof;
+    type NativeOutput = scrypto::resource::Proof;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -292,7 +292,7 @@ impl NativeInvocation for AuthZoneCreateProofByIdsInput {
 }
 
 impl NativeExecutable for AuthZoneClearInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -324,7 +324,7 @@ impl NativeInvocation for AuthZoneClearInput {
 }
 
 impl NativeExecutable for AuthZoneDrainInput {
-    type Output = Vec<scrypto::resource::Proof>;
+    type NativeOutput = Vec<scrypto::resource::Proof>;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,

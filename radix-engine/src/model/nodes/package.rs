@@ -32,7 +32,7 @@ impl Package {
 }
 
 impl NativeExecutable for PackagePublishInput {
-    type Output = PackageAddress;
+    type NativeOutput = PackageAddress;
 
     fn execute<'s, 'a, Y, R>(
         invocation: Self,

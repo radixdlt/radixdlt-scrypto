@@ -5,9 +5,24 @@ use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::core::*;
 use scrypto::engine::types::*;
+use scrypto::resource::AuthZonePopInput;
 use crate::buffer::scrypto_encode;
 
 use super::types::*;
+
+pub trait SysInvocation : Encode {
+    type Output: Debug + Decode;
+
+    fn native_method() -> NativeMethod;
+}
+
+pub trait SysInvokable<I, E>
+    where
+        I: SysInvocation,
+{
+    fn sys_invoke(&mut self, input: I) -> Result<I::Output, E>;
+}
+
 
 pub trait ScryptoSyscalls<E: Debug> {
     fn sys_invoke_scrypto_function<ARGS: Encode, V: Decode>(
@@ -45,4 +60,9 @@ pub trait ScryptoSyscalls<E: Debug> {
     fn sys_get_actor(&mut self) -> Result<ScryptoActor, E>;
     fn sys_generate_uuid(&mut self) -> Result<u128, E>;
     fn sys_emit_log(&mut self, level: Level, message: String) -> Result<(), E>;
+}
+
+pub trait SysInvokableNative<E>:
+    SysInvokable<AuthZonePopInput, E>
+{
 }

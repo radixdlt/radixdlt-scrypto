@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use std::mem;
-use scrypto::engine::api::ScryptoSyscalls;
+use scrypto::engine::api::{ScryptoSyscalls, SysInvokableNative};
 use transaction::errors::IdAllocationError;
 use transaction::model::AuthZoneParams;
 use transaction::validation::*;
@@ -756,7 +756,7 @@ pub trait Executor {
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a> + ScryptoSyscalls<RuntimeError>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a> + ScryptoSyscalls<RuntimeError> + SysInvokableNative<RuntimeError>,
         R: FeeReserve;
 }
 

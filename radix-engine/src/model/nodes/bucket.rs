@@ -19,7 +19,7 @@ pub enum BucketError {
 }
 
 impl NativeExecutable for BucketTakeInput {
-    type Output = scrypto::resource::Bucket;
+    type NativeOutput = scrypto::resource::Bucket;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -61,7 +61,7 @@ impl NativeInvocation for BucketTakeInput {
 }
 
 impl NativeExecutable for BucketCreateProofInput {
-    type Output = scrypto::resource::Proof;
+    type NativeOutput = scrypto::resource::Proof;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -102,7 +102,7 @@ impl NativeInvocation for BucketCreateProofInput {
 }
 
 impl NativeExecutable for BucketTakeNonFungiblesInput {
-    type Output = scrypto::resource::Bucket;
+    type NativeOutput = scrypto::resource::Bucket;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -144,7 +144,7 @@ impl NativeInvocation for BucketTakeNonFungiblesInput {
 }
 
 impl NativeExecutable for BucketGetNonFungibleIdsInput {
-    type Output = BTreeSet<NonFungibleId>;
+    type NativeOutput = BTreeSet<NonFungibleId>;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -181,7 +181,7 @@ impl NativeInvocation for BucketGetNonFungibleIdsInput {
 }
 
 impl NativeExecutable for BucketGetAmountInput {
-    type Output = Decimal;
+    type NativeOutput = Decimal;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -212,7 +212,7 @@ impl NativeInvocation for BucketGetAmountInput {
 }
 
 impl NativeExecutable for BucketPutInput {
-    type Output = ();
+    type NativeOutput = ();
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
@@ -252,7 +252,7 @@ impl NativeInvocation for BucketPutInput {
 }
 
 impl NativeExecutable for BucketGetResourceAddressInput {
-    type Output = ResourceAddress;
+    type NativeOutput = ResourceAddress;
 
     fn execute<'s, 'a, Y, R>(
         input: Self,
