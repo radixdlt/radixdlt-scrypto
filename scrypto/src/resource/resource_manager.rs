@@ -114,6 +114,7 @@ pub struct ResourceManagerUpdateNonFungibleDataInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerNonFungibleExistsInput {
+    pub resource_address: ResourceAddress,
     pub id: NonFungibleId,
 }
 
@@ -340,6 +341,7 @@ impl ResourceManager {
             pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
                 ResourceManagerMethod::NonFungibleExists,
                 ResourceManagerNonFungibleExistsInput {
+                    resource_address: self.0,
                     id: id.clone()
                 }
             }
