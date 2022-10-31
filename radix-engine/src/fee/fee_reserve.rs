@@ -173,7 +173,8 @@ impl FeeReserve for SystemLoanFeeReserve {
         reason: T,
         deferred: bool,
     ) -> Result<(), FeeReserveError> {
-        let total = cost_multiplier.checked_mul(amount)
+        let total = cost_multiplier
+            .checked_mul(amount)
             .ok_or(FeeReserveError::Overflow)?;
         self.consume_flat(total, reason, deferred)
     }
@@ -185,8 +186,7 @@ impl FeeReserve for SystemLoanFeeReserve {
         reason: T,
         deferred: bool,
     ) -> Result<(), FeeReserveError> {
-        let amount: u32 = size.try_into()
-            .map_err(|_| FeeReserveError::Overflow)?;
+        let amount: u32 = size.try_into().map_err(|_| FeeReserveError::Overflow)?;
         self.consume_multiplied(amount, cost_multiplier, reason, deferred)
     }
 
