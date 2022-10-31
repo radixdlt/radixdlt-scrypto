@@ -35,7 +35,9 @@ pub struct VaultTakeNonFungiblesInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultGetAmountInput {}
+pub struct VaultGetAmountInput {
+    pub vault_id: VaultId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultGetResourceAddressInput {}
@@ -132,7 +134,9 @@ impl Vault {
 
             pub fn amount(&self) -> Decimal {
                 VaultMethod::GetAmount,
-                VaultGetAmountInput {}
+                VaultGetAmountInput {
+                    vault_id: self.0,
+                }
             }
 
             pub fn resource_address(&self) -> ResourceAddress {

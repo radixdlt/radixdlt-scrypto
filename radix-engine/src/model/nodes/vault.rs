@@ -219,6 +219,42 @@ impl NativeInvocation for VaultTakeNonFungiblesInput {
     }
 }
 
+impl NativeExecutable for VaultGetAmountInput {
+    type Output = Decimal;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Vault(input.vault_id);
+        let offset = SubstateOffset::Vault(VaultOffset::Vault);
+        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+
+        let substate_ref = system_api.get_ref(vault_handle)?;
+        let vault = substate_ref.vault();
+        let amount = vault.total_amount();
+
+        Ok((
+            amount,
+            CallFrameUpdate::empty(),
+        ))
+    }
+}
+
+impl NativeInvocation for VaultGetAmountInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Vault(VaultMethod::GetAmount),
+            RENodeId::Vault(self.vault_id),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
 
 
 pub struct Vault;
@@ -269,12 +305,7 @@ impl Vault {
                 panic!("Unexpected")
             }
             VaultMethod::GetAmount => {
-                let _: VaultGetAmountInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
-                let substate_ref = system_api.get_ref(vault_handle)?;
-                let vault = substate_ref.vault();
-                let amount = vault.total_amount();
-                ScryptoValue::from_typed(&amount)
+                panic!("Unexpected")
             }
             VaultMethod::GetResourceAddress => {
                 let _: VaultGetResourceAddressInput = scrypto_decode(&args.raw)
