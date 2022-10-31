@@ -51,10 +51,6 @@ impl<'a> Encoder<'a> {
     pub fn write_slice(&mut self, slice: &[u8]) {
         self.buf.extend(slice);
     }
-
-    pub fn encode<T: Encode + ?Sized>(&mut self, value: &T) {
-        value.encode(self)
-    }
 }
 
 impl Encode for () {

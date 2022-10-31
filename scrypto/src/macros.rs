@@ -295,7 +295,6 @@ macro_rules! include_abi {
 /// ```no_run
 /// use scrypto::prelude::*;
 /// use scrypto::address::Bech32Decoder;
-/// use sbor::{TypeId, Encode, Decode, Describe};
 ///
 /// external_blueprint! {
 ///     CustomAccountBlueprint {
@@ -459,7 +458,6 @@ macro_rules! external_blueprint_members {
 /// ```no_run
 /// use scrypto::prelude::*;
 /// use scrypto::address::Bech32Decoder;
-/// use sbor::{TypeId, Encode, Decode, Describe};
 ///
 /// #[derive(TypeId, Encode, Decode, Describe)]
 /// enum DepositResult {

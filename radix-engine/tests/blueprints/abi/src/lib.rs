@@ -1,5 +1,4 @@
-use sbor::Type;
-use scrypto::abi::{BlueprintAbi, Fields, Fn};
+use scrypto::abi::{BlueprintAbi, Fields, Fn, Type};
 use scrypto::prelude::*;
 
 blueprint! {
