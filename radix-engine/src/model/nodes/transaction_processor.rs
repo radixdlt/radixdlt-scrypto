@@ -552,7 +552,8 @@ impl TransactionProcessor {
                                 function_ident.clone(),
                             ),
                         ))?;
-                        parse_and_invoke_native_function(native_function, args.raw, system_api).map_err(InvokeError::Downstream)
+                        parse_and_invoke_native_function(native_function, args.raw, system_api)
+                            .map_err(InvokeError::Downstream)
                     })
                     .and_then(|result| {
                         // Auto move into auth_zone

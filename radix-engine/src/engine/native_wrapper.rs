@@ -1,9 +1,13 @@
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::fee::*;
+use crate::model::{
+    TransactionProcessorRunInput, WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
+    WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput,
+    WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput,
+};
 use crate::types::*;
 use scrypto::resource::AuthZoneDrainInput;
-use crate::model::TransactionProcessorRunInput;
 
 // TODO: Cleanup
 pub fn parse_and_invoke_native_function<'y, 's, 'a, Y, R>(
@@ -11,9 +15,9 @@ pub fn parse_and_invoke_native_function<'y, 's, 'a, Y, R>(
     args: Vec<u8>,
     system_api: &'y mut Y,
 ) -> Result<ScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
-        R: FeeReserve,
+where
+    Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
+    R: FeeReserve,
 {
     match native_function {
         NativeFunction::EpochManager(EpochManagerFunction::Create) => {
@@ -395,8 +399,63 @@ where
                     .map(|a| ScryptoValue::from_typed(&a))
             }
         },
-        _ => {
-            return Err(RuntimeError::KernelError(KernelError::InvalidMethod))?;
-        }
+        NativeMethod::Worktop(worktop_method) => match worktop_method {
+            WorktopMethod::TakeNonFungibles => {
+                let invocation: WorktopTakeNonFungiblesInput = scrypto_decode(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                system_api
+                    .invoke(invocation)
+                    .map(|a| ScryptoValue::from_typed(&a))
+            }
+            WorktopMethod::Put => {
+                let invocation: WorktopPutInput = scrypto_decode(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                system_api
+                    .invoke(invocation)
+                    .map(|a| ScryptoValue::from_typed(&a))
+            }
+            WorktopMethod::Drain => {
+                let invocation: WorktopDrainInput = scrypto_decode(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                system_api
+                    .invoke(invocation)
+                    .map(|a| ScryptoValue::from_typed(&a))
+            }
+            WorktopMethod::AssertContainsNonFungibles => {
+                let invocation: WorktopAssertContainsNonFungiblesInput = scrypto_decode(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                system_api
+                    .invoke(invocation)
+                    .map(|a| ScryptoValue::from_typed(&a))
+            }
+            WorktopMethod::AssertContains => {
+                let invocation: WorktopAssertContainsInput = scrypto_decode(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                system_api
+                    .invoke(invocation)
+                    .map(|a| ScryptoValue::from_typed(&a))
+            }
+            WorktopMethod::AssertContainsAmount => {
+                let invocation: WorktopAssertContainsAmountInput = scrypto_decode(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                system_api
+                    .invoke(invocation)
+                    .map(|a| ScryptoValue::from_typed(&a))
+            }
+            WorktopMethod::TakeAll => {
+                let invocation: WorktopTakeAllInput = scrypto_decode(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                system_api
+                    .invoke(invocation)
+                    .map(|a| ScryptoValue::from_typed(&a))
+            }
+            WorktopMethod::TakeAmount => {
+                let invocation: WorktopTakeAmountInput = scrypto_decode(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                system_api
+                    .invoke(invocation)
+                    .map(|a| ScryptoValue::from_typed(&a))
+            }
+        },
     }
 }
