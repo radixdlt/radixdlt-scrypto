@@ -16,6 +16,7 @@ use crate::resource::AccessRules;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ComponentAddAccessCheckInput {
+    pub component_id: ComponentId,
     pub access_rules: AccessRules,
 }
 
@@ -87,7 +88,7 @@ impl Component {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Component(ComponentMethod::AddAccessCheck),
             RENodeId::Component(self.0),
-            scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
+            scrypto_encode(&ComponentAddAccessCheckInput { access_rules, component_id: self.0 }),
         );
         let _: () = call_engine(input);
 
@@ -135,17 +136,6 @@ impl BorrowedGlobalComponent {
         );
         let state: DataRef<ComponentInfoSubstate> = pointer.get();
         state.blueprint_name.clone()
-    }
-
-    pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethod::Component(ComponentMethod::AddAccessCheck),
-            RENodeId::Global(GlobalAddress::Component(self.0)),
-            scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
-        );
-        let _: () = call_engine(input);
-
-        self
     }
 }
 

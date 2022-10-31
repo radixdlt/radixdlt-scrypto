@@ -117,6 +117,7 @@ pub trait InvokableNative<'a>:
     + Invokable<VaultCreateProofInput>
     + Invokable<VaultCreateProofByAmountInput>
     + Invokable<VaultCreateProofByIdsInput>
+    + Invokable<ComponentAddAccessCheckInput>
 {
 }
 
@@ -245,9 +246,8 @@ impl Executor for NativeMethodExecutor {
             (RENodeId::Vault(..), NativeMethod::Vault(..)) => {
                 panic!("Unexpected")
             }
-            (RENodeId::Component(component_id), NativeMethod::Component(method)) => {
-                Component::main(component_id, method, self.2, system_api)
-                    .map_err::<RuntimeError, _>(|e| e.into())
+            (RENodeId::Component(..), NativeMethod::Component(..)) => {
+                panic!("Unexpected")
             }
             (
                 RENodeId::ResourceManager(resource_address),
