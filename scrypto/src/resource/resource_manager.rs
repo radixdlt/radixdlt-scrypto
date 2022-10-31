@@ -120,6 +120,7 @@ pub struct ResourceManagerNonFungibleExistsInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerGetNonFungibleInput {
+    pub resource_address: ResourceAddress,
     pub id: NonFungibleId,
 }
 
@@ -306,7 +307,7 @@ impl ResourceManager {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
-            scrypto_encode(&ResourceManagerGetNonFungibleInput { id }),
+            scrypto_encode(&ResourceManagerGetNonFungibleInput { id, resource_address: self.0 }),
         );
         call_engine(input)
     }

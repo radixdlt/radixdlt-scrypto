@@ -907,6 +907,76 @@ impl NativeInvocation for ResourceManagerNonFungibleExistsInput {
     }
 }
 
+impl NativeExecutable for ResourceManagerGetNonFungibleInput {
+    type Output = [Vec<u8>; 2];
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<([Vec<u8>; 2], CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        // TODO: Remove this hack and get resolved receiver in a better way
+        let node_id = match system_api.get_actor() {
+            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
+            _ => panic!("Unexpected"),
+        };
+        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+
+
+        let substate_ref = system_api.get_ref(resman_handle)?;
+        let resource_manager = substate_ref.resource_manager();
+        let nf_store_id = resource_manager
+            .nf_store_id
+            .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))
+            .map_err(|e| {
+                match e {
+                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                }
+            })?;
+
+        let non_fungible_address = NonFungibleAddress::new(
+            resource_manager.resource_address.unwrap(),
+            input.id.clone(),
+        );
+
+        let node_id = RENodeId::NonFungibleStore(nf_store_id);
+        let offset =
+            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
+        let non_fungible_handle =
+            system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let non_fungible_ref = system_api.get_ref(non_fungible_handle)?;
+        let wrapper = non_fungible_ref.non_fungible();
+        if let Some(non_fungible) = wrapper.0.as_ref() {
+            Ok((
+                [
+                    non_fungible.immutable_data(),
+                    non_fungible.mutable_data(),
+                ],
+                CallFrameUpdate::empty()
+           ))
+        } else {
+            return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+                ResourceManagerError::NonFungibleNotFound(non_fungible_address)
+            )));
+        }
+    }
+}
+
+impl NativeInvocation for ResourceManagerGetNonFungibleInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible),
+            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
 
 pub struct ResourceManager;
 
@@ -1053,36 +1123,7 @@ impl ResourceManager {
                 panic!("Unexpected")
             }
             ResourceManagerMethod::GetNonFungible => {
-                let input: ResourceManagerGetNonFungibleInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let substate_ref = system_api.get_ref(resman_handle)?;
-                let resource_manager = substate_ref.resource_manager();
-                let nf_store_id = resource_manager
-                    .nf_store_id
-                    .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?;
-
-                let non_fungible_address = NonFungibleAddress::new(
-                    resource_manager.resource_address.unwrap(),
-                    input.id.clone(),
-                );
-
-                let node_id = RENodeId::NonFungibleStore(nf_store_id);
-                let offset =
-                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
-                let non_fungible_handle =
-                    system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
-                let non_fungible_ref = system_api.get_ref(non_fungible_handle)?;
-                let wrapper = non_fungible_ref.non_fungible();
-                if let Some(non_fungible) = wrapper.0.as_ref() {
-                    ScryptoValue::from_typed(&[
-                        non_fungible.immutable_data(),
-                        non_fungible.mutable_data(),
-                    ])
-                } else {
-                    return Err(InvokeError::Error(
-                        ResourceManagerError::NonFungibleNotFound(non_fungible_address),
-                    ));
-                }
+                panic!("Unexpected")
             }
             ResourceManagerMethod::SetResourceAddress => {
                 let input: ResourceManagerSetResourceAddressInput = scrypto_decode(&args.raw)

@@ -130,6 +130,7 @@ pub trait InvokableNative<'a>:
     + Invokable<ResourceManagerUpdateMetadataInput>
     + Invokable<ResourceManagerUpdateNonFungibleDataInput>
     + Invokable<ResourceManagerNonFungibleExistsInput>
+    + Invokable<ResourceManagerGetNonFungibleInput>
 {
 }
 
