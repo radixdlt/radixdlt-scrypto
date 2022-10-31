@@ -50,8 +50,10 @@ pub use scrypto::resource::{
     VaultLockFeeInput, VaultPutInput, VaultTakeInput, VaultTakeNonFungiblesInput, LOCKED, MUTABLE,
 };
 pub use scrypto::values::{ScryptoValue, ScryptoValueReplaceError};
+use std::fmt::Debug;
 
 // methods and macros
+use crate::engine::Invocation;
 pub use sbor::decode_any;
 pub use scrypto::buffer::{scrypto_decode, scrypto_encode};
 pub use scrypto::crypto::hash;
@@ -60,30 +62,15 @@ pub use scrypto::resource::{
 };
 pub use scrypto::{access_and_or, access_rule_node, args, dec, pdec, rule};
 
-pub enum Invocation {
-    Scrypto(ScryptoInvocation),
-    Native(NativeInvocation),
-}
-
 /// Scrypto function/method invocation.
+#[derive(Debug)]
 pub enum ScryptoInvocation {
     Function(ScryptoFunctionIdent, ScryptoValue),
     Method(ScryptoMethodIdent, ScryptoValue),
 }
 
-/// Native function/method invocation.
-pub enum NativeInvocation {
-    Function(NativeFunction, ScryptoValue),
-    Method(NativeMethod, RENodeId, ScryptoValue),
-}
-
-impl Invocation {
-    pub fn args(&self) -> &ScryptoValue {
-        match self {
-            Invocation::Scrypto(i) => i.args(),
-            Invocation::Native(i) => i.args(),
-        }
-    }
+impl Invocation for ScryptoInvocation {
+    type Output = ScryptoValue;
 }
 
 impl ScryptoInvocation {
@@ -95,11 +82,15 @@ impl ScryptoInvocation {
     }
 }
 
-impl NativeInvocation {
+#[derive(Debug)]
+pub struct NativeMethodInvocation(pub NativeMethod, pub RENodeId, pub ScryptoValue);
+
+impl Invocation for NativeMethodInvocation {
+    type Output = ScryptoValue;
+}
+
+impl NativeMethodInvocation {
     pub fn args(&self) -> &ScryptoValue {
-        match self {
-            NativeInvocation::Function(_, args) => &args,
-            NativeInvocation::Method(_, _, args) => &args,
-        }
+        &self.2
     }
 }

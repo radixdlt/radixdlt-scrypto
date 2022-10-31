@@ -4,7 +4,6 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::engine::types::GlobalAddress;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
@@ -16,30 +15,41 @@ use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketTakeInput {
+    pub bucket_id: BucketId,
     pub amount: Decimal,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketPutInput {
+    pub bucket_id: BucketId,
     pub bucket: scrypto::resource::Bucket,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketTakeNonFungiblesInput {
+    pub bucket_id: BucketId,
     pub ids: BTreeSet<NonFungibleId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketGetNonFungibleIdsInput {}
+pub struct BucketGetNonFungibleIdsInput {
+    pub bucket_id: BucketId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketGetAmountInput {}
+pub struct BucketGetAmountInput {
+    pub bucket_id: BucketId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketGetResourceAddressInput {}
+pub struct BucketGetResourceAddressInput {
+    pub bucket_id: BucketId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketCreateProofInput {}
+pub struct BucketCreateProofInput {
+    pub bucket_id: BucketId,
+}
 
 /// Represents a transient resource container.
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -61,35 +71,20 @@ impl Bucket {
     {
         sys_calls.sys_invoke_native_method(
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
-            RENodeId::Global(GlobalAddress::Resource(resource_address)),
-            &ResourceManagerCreateBucketInput {},
-        )
-    }
-
-    #[cfg(target_arch = "wasm32")]
-    pub fn create_proof(&self) -> scrypto::resource::Proof {
-        self.sys_create_proof(&mut Syscalls).unwrap()
-    }
-
-    pub fn sys_create_proof<Y, E: Debug + TypeId + Decode>(
-        &self,
-        sys_calls: &mut Y,
-    ) -> Result<scrypto::resource::Proof, E>
-    where
-        Y: ScryptoSyscalls<E>,
-    {
-        sys_calls.sys_invoke_native_method(
-            NativeMethod::Bucket(BucketMethod::CreateProof),
-            RENodeId::Bucket(self.0),
-            &BucketCreateProofInput {},
+            &ResourceManagerCreateBucketInput {
+                resource_address,
+            },
         )
     }
 
     pub fn burn(self) -> () {
+        let resource_address = self.resource_address();
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address())),
-            scrypto_encode(&ResourceManagerBurnInput { bucket: self }),
+            scrypto_encode(&ResourceManagerBurnInput {
+                bucket: self,
+                resource_address,
+            }),
         );
         call_engine(input)
     }
@@ -97,42 +92,55 @@ impl Bucket {
     fn take_internal(&mut self, amount: Decimal) -> Self {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Bucket(BucketMethod::Take),
-            RENodeId::Bucket(self.0),
-            scrypto_encode(&BucketTakeInput { amount }),
+            scrypto_encode(&BucketTakeInput {
+                bucket_id: self.0,
+                amount,
+            }),
         );
         call_engine(input)
     }
 
     native_methods! {
-        RENodeId::Bucket(self.0), NativeMethod::Bucket => {
+        NativeMethod::Bucket => {
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
                 BucketMethod::TakeNonFungibles,
                 BucketTakeNonFungiblesInput {
+                    bucket_id: self.0,
                     ids: non_fungible_ids.clone()
                 }
             }
             pub fn put(&mut self, other: Self) -> () {
                 BucketMethod::Put,
                 BucketPutInput {
-                    bucket: other
+                    bucket_id: self.0,
+                    bucket: other,
                 }
             }
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
                 BucketMethod::GetNonFungibleIds,
                 BucketGetNonFungibleIdsInput {
+                    bucket_id: self.0,
                 }
             }
             pub fn amount(&self) -> Decimal {
                 BucketMethod::GetAmount,
                 BucketGetAmountInput {
+                    bucket_id: self.0,
                 }
             }
             pub fn resource_address(&self) -> ResourceAddress {
                 BucketMethod::GetResourceAddress,
                 BucketGetResourceAddressInput {
+                    bucket_id: self.0,
                 }
             }
 
+            pub fn create_proof(&self) -> scrypto::resource::Proof {
+                BucketMethod::CreateProof,
+                BucketCreateProofInput {
+                    bucket_id: self.0
+                }
+            }
         }
     }
 

@@ -6,16 +6,22 @@ use scrypto::engine::utils::ScryptoSyscalls;
 
 pub struct ScryptoExecutor<I: WasmInstance> {
     instance: I,
+    args: ScryptoValue,
 }
 
-impl<I: WasmInstance> ScryptoExecutor<I> {
-    pub fn run<'s, Y, R>(
-        &mut self,
-        input: ScryptoValue,
+impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
+    type Output = ScryptoValue;
+
+    fn args(&self) -> &ScryptoValue {
+        &self.args
+    }
+
+    fn execute<'s, 'a, Y, R>(
+        mut self,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, RuntimeError>
+    ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + ScryptoSyscalls<RuntimeError>,
+        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a> + ScryptoSyscalls<RuntimeError>,
         R: FeeReserve,
     {
         let (export_name, return_type) = match system_api.get_actor() {
@@ -40,18 +46,14 @@ impl<I: WasmInstance> ScryptoExecutor<I> {
         };
 
         let output = {
-            system_api.execute_in_mode(ExecutionMode::Application, |system_api| {
-                let mut runtime: Box<dyn WasmRuntime> =
-                    Box::new(RadixEngineWasmRuntime::new(system_api));
-                self.instance
-                    .invoke_export(&export_name, &input, &mut runtime)
-                    .map_err(|e| match e {
-                        InvokeError::Error(e) => {
-                            RuntimeError::KernelError(KernelError::WasmError(e))
-                        }
-                        InvokeError::Downstream(runtime_error) => runtime_error,
-                    })
-            })?
+            let mut runtime: Box<dyn WasmRuntime> =
+                Box::new(RadixEngineWasmRuntime::new(system_api));
+            self.instance
+                .invoke_export(&export_name, &self.args, &mut runtime)
+                .map_err(|e| match e {
+                    InvokeError::Error(e) => RuntimeError::KernelError(KernelError::WasmError(e)),
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                })?
         };
 
         let rtn = if !return_type.matches(&output.dom) {
@@ -59,7 +61,15 @@ impl<I: WasmInstance> ScryptoExecutor<I> {
                 KernelError::InvalidScryptoFnOutput,
             ))
         } else {
-            Ok(output)
+            let update = CallFrameUpdate {
+                node_refs_to_copy: output
+                    .global_references()
+                    .into_iter()
+                    .map(|a| RENodeId::Global(a))
+                    .collect(),
+                nodes_to_move: output.node_ids().into_iter().collect(),
+            };
+            Ok((output, update))
         };
 
         rtn
@@ -76,11 +86,14 @@ pub struct ScryptoInterpreter<I: WasmInstance, W: WasmEngine<I>> {
 }
 
 impl<I: WasmInstance, W: WasmEngine<I>> ScryptoInterpreter<I, W> {
-    pub fn create_executor(&mut self, code: &[u8]) -> ScryptoExecutor<I> {
+    pub fn create_executor(&mut self, code: &[u8], args: ScryptoValue) -> ScryptoExecutor<I> {
         let instrumented_code = self
             .wasm_instrumenter
             .instrument(code, &self.wasm_metering_params);
         let instance = self.wasm_engine.instantiate(instrumented_code);
-        ScryptoExecutor { instance }
+        ScryptoExecutor {
+            instance,
+            args: args,
+        }
     }
 }

@@ -4,6 +4,7 @@ use crate::fee::FeeReserve;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use bitflags::bitflags;
+use std::fmt::Debug;
 
 bitflags! {
     #[derive(Encode, Decode, TypeId)]
@@ -28,6 +29,17 @@ impl LockFlags {
 
 pub struct LockInfo {
     pub offset: SubstateOffset,
+}
+
+pub trait Invocation {
+    type Output: Debug;
+}
+
+pub trait Invokable<I>
+where
+    I: Invocation,
+{
+    fn invoke(&mut self, input: I) -> Result<I::Output, RuntimeError>;
 }
 
 pub trait SystemApi<'s, R>
@@ -57,14 +69,6 @@ where
 
     /// Retrieves all nodes referenceable by the current frame
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
-
-    fn invoke_scrypto(
-        &mut self,
-        invocation: ScryptoInvocation,
-    ) -> Result<ScryptoValue, RuntimeError>;
-
-    fn invoke_native(&mut self, invocation: NativeInvocation)
-        -> Result<ScryptoValue, RuntimeError>;
 
     /// Removes an RENode and all of it's children from the Heap
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;

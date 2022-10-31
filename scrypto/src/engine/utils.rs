@@ -46,7 +46,6 @@ pub trait ScryptoSyscalls<E: Debug> {
     fn sys_invoke_native_method<ARGS: Encode, V: Decode>(
         &mut self,
         native_method: NativeMethod,
-        receiver: RENodeId,
         args: &ARGS,
     ) -> Result<V, E>;
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, E>;
@@ -68,12 +67,11 @@ pub trait ScryptoSyscalls<E: Debug> {
 
 #[macro_export]
 macro_rules! native_methods {
-    ($receiver:expr, $type_ident:expr => { $($vis:vis $fn:ident $method_name:ident ($($args:tt)*) -> $rtn:ty { $fn_ident:expr, $arg:expr })* } ) => {
+    ($type_ident:expr => { $($vis:vis $fn:ident $method_name:ident ($($args:tt)*) -> $rtn:ty { $fn_ident:expr, $arg:expr })* } ) => {
         $(
             $vis $fn $method_name ($($args)*) -> $rtn {
                 let input = RadixEngineInput::InvokeNativeMethod(
                     $type_ident($fn_ident),
-                    $receiver,
                     scrypto::buffer::scrypto_encode(&$arg)
                 );
                 call_engine(input)

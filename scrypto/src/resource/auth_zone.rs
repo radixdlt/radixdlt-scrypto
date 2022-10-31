@@ -5,39 +5,48 @@ use sbor::*;
 
 use crate::engine::{api::*, types::*, utils::*};
 use crate::math::Decimal;
-use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZonePopInput {}
+pub struct AuthZonePopInput {
+    pub auth_zone_id: AuthZoneId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZonePushInput {
+    pub auth_zone_id: AuthZoneId,
     pub proof: Proof,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofInput {
+    pub auth_zone_id: AuthZoneId,
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByAmountInput {
+    pub auth_zone_id: AuthZoneId,
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByIdsInput {
+    pub auth_zone_id: AuthZoneId,
     pub ids: BTreeSet<NonFungibleId>,
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneClearInput {}
+pub struct AuthZoneClearInput {
+    pub auth_zone_id: AuthZoneId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneDrainInput {}
+pub struct AuthZoneDrainInput {
+    pub auth_zone_id: AuthZoneId,
+}
 
 /// Represents the auth zone, which is used by system for checking
 /// if this component is allowed to
@@ -63,8 +72,9 @@ impl ComponentAuthZone {
             .expect("AuthZone does not exist");
         sys_calls.sys_invoke_native_method(
             NativeMethod::AuthZone(AuthZoneMethod::Pop),
-            node_id,
-            &AuthZonePopInput {},
+            &AuthZonePopInput {
+                auth_zone_id: node_id.into(),
+            },
         )
     }
 
@@ -87,8 +97,10 @@ impl ComponentAuthZone {
             .expect("AuthZone does not exist");
         sys_calls.sys_invoke_native_method(
             NativeMethod::AuthZone(AuthZoneMethod::CreateProof),
-            node_id,
-            &AuthZoneCreateProofInput { resource_address },
+            &AuthZoneCreateProofInput {
+                auth_zone_id: node_id.into(),
+                resource_address,
+            },
         )
     }
 
@@ -112,8 +124,8 @@ impl ComponentAuthZone {
             .expect("AuthZone does not exist");
         sys_calls.sys_invoke_native_method(
             NativeMethod::AuthZone(AuthZoneMethod::CreateProofByAmount),
-            node_id,
             &AuthZoneCreateProofByAmountInput {
+                auth_zone_id: node_id.into(),
                 amount,
                 resource_address,
             },
@@ -143,8 +155,8 @@ impl ComponentAuthZone {
             .expect("AuthZone does not exist");
         sys_calls.sys_invoke_native_method(
             NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds),
-            node_id,
             &AuthZoneCreateProofByIdsInput {
+                auth_zone_id: node_id.into(),
                 ids: ids.clone(),
                 resource_address,
             },
@@ -173,8 +185,10 @@ impl ComponentAuthZone {
 
         sys_calls.sys_invoke_native_method(
             NativeMethod::AuthZone(AuthZoneMethod::Push),
-            node_id,
-            &AuthZonePushInput { proof },
+            &AuthZonePushInput {
+                auth_zone_id: node_id.into(),
+                proof,
+            },
         )
     }
 }

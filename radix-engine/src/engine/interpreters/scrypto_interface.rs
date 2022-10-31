@@ -1,13 +1,10 @@
-use crate::engine::{
-    Kernel, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
-    ResolvedReceiver, RuntimeError, SystemApi,
-};
+use crate::engine::{Invokable, Kernel, KernelError, LockFlags, parse_and_invoke_native_function, parse_and_invoke_native_method, REActor, RENode, ResolvedFunction, ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore,
     RuntimeSubstate,
 };
-use crate::types::{NativeInvocation, ScryptoInvocation};
+use crate::types::{ScryptoInvocation};
 use crate::wasm::{WasmEngine, WasmInstance};
 use sbor::{Decode, Encode};
 use scrypto::buffer::scrypto_decode;
@@ -31,7 +28,7 @@ where
         args: &ARGS,
     ) -> Result<V, RuntimeError> {
         let args = ScryptoValue::from_typed(args);
-        self.invoke_scrypto(ScryptoInvocation::Function(fn_ident, args))
+        self.invoke(ScryptoInvocation::Function(fn_ident, args))
             .map(|value| scrypto_decode(&value.raw).unwrap())
     }
 
@@ -41,7 +38,7 @@ where
         args: &ARGS,
     ) -> Result<V, RuntimeError> {
         let args = ScryptoValue::from_typed(args);
-        self.invoke_scrypto(ScryptoInvocation::Method(method_ident, args))
+        self.invoke(ScryptoInvocation::Method(method_ident, args))
             .map(|value| scrypto_decode(&value.raw).unwrap())
     }
 
@@ -51,18 +48,21 @@ where
         args: &ARGS,
     ) -> Result<V, RuntimeError> {
         let args = ScryptoValue::from_typed(args);
-        self.invoke_native(NativeInvocation::Function(native_function, args))
+
+        // TODO: Fix
+        parse_and_invoke_native_function(native_function, args.raw, self)
             .map(|value| scrypto_decode(&value.raw).unwrap())
     }
 
     fn sys_invoke_native_method<ARGS: Encode, V: Decode>(
         &mut self,
         native_method: NativeMethod,
-        receiver: RENodeId,
         args: &ARGS,
     ) -> Result<V, RuntimeError> {
         let args = ScryptoValue::from_typed(args);
-        self.invoke_native(NativeInvocation::Method(native_method, receiver, args))
+
+        // TODO: Fix
+        parse_and_invoke_native_method(native_method, args.raw, self)
             .map(|value| scrypto_decode(&value.raw).unwrap())
     }
 

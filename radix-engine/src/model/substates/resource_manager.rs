@@ -1,6 +1,8 @@
 use crate::model::ResourceMethodRule::{Protected, Public};
 use crate::model::{convert, InvokeError, MethodAuthorization};
 use crate::model::{NonFungible, Resource, ResourceManagerError};
+use crate::types::AccessRule::*;
+use crate::types::ResourceMethodAuthKey::*;
 use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -17,6 +19,76 @@ pub struct ResourceManagerSubstate {
 }
 
 impl ResourceManagerSubstate {
+    pub fn new(
+        resource_type: ResourceType,
+        metadata: HashMap<String, String>,
+        mut auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        nf_store_id: Option<NonFungibleStoreId>,
+    ) -> Result<ResourceManagerSubstate, InvokeError<ResourceManagerError>> {
+        let mut vault_method_table: HashMap<VaultMethod, ResourceMethodRule> = HashMap::new();
+        vault_method_table.insert(VaultMethod::LockFee, Protected(Withdraw));
+        vault_method_table.insert(VaultMethod::Take, Protected(Withdraw));
+        vault_method_table.insert(VaultMethod::Put, Protected(Deposit));
+        vault_method_table.insert(VaultMethod::GetAmount, Public);
+        vault_method_table.insert(VaultMethod::GetResourceAddress, Public);
+        vault_method_table.insert(VaultMethod::GetNonFungibleIds, Public);
+        vault_method_table.insert(VaultMethod::CreateProof, Public);
+        vault_method_table.insert(VaultMethod::CreateProofByAmount, Public);
+        vault_method_table.insert(VaultMethod::CreateProofByIds, Public);
+        vault_method_table.insert(VaultMethod::TakeNonFungibles, Protected(Withdraw));
+
+        let bucket_method_table: HashMap<BucketMethod, ResourceMethodRule> = HashMap::new();
+
+        let mut method_table: HashMap<ResourceManagerMethod, ResourceMethodRule> = HashMap::new();
+        method_table.insert(ResourceManagerMethod::Mint, Protected(Mint));
+        method_table.insert(
+            ResourceManagerMethod::UpdateMetadata,
+            Protected(UpdateMetadata),
+        );
+        method_table.insert(ResourceManagerMethod::CreateBucket, Public);
+        method_table.insert(ResourceManagerMethod::GetMetadata, Public);
+        method_table.insert(ResourceManagerMethod::GetResourceType, Public);
+        method_table.insert(ResourceManagerMethod::GetTotalSupply, Public);
+        method_table.insert(ResourceManagerMethod::CreateVault, Public);
+        method_table.insert(ResourceManagerMethod::Burn, Protected(Burn));
+        method_table.insert(ResourceManagerMethod::SetResourceAddress, Public);
+
+        // Non Fungible methods
+        method_table.insert(
+            ResourceManagerMethod::UpdateNonFungibleData,
+            Protected(UpdateNonFungibleData),
+        );
+        method_table.insert(ResourceManagerMethod::NonFungibleExists, Public);
+        method_table.insert(ResourceManagerMethod::GetNonFungible, Public);
+
+        let mut authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule> = HashMap::new();
+        for (auth_entry_key, default) in [
+            (Mint, (DenyAll, LOCKED)),
+            (Burn, (DenyAll, LOCKED)),
+            (Withdraw, (AllowAll, LOCKED)),
+            (Deposit, (AllowAll, LOCKED)),
+            (UpdateMetadata, (DenyAll, LOCKED)),
+            (UpdateNonFungibleData, (DenyAll, LOCKED)),
+        ] {
+            let entry = auth.remove(&auth_entry_key).unwrap_or(default);
+            authorization.insert(auth_entry_key, MethodAccessRule::new(entry));
+        }
+
+        let resource_manager = ResourceManagerSubstate {
+            resource_type,
+            metadata,
+            method_table,
+            vault_method_table,
+            bucket_method_table,
+            authorization,
+            total_supply: 0.into(),
+            nf_store_id,
+            resource_address: None,
+        };
+
+        Ok(resource_manager)
+    }
+
     pub fn get_auth(
         &self,
         method: ResourceManagerMethod,

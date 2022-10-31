@@ -4,8 +4,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use radix_engine::constants::*;
-use radix_engine::engine::{Kernel, KernelError, ModuleError, ScryptoInterpreter};
-use radix_engine::engine::{RuntimeError, SystemApi, Track};
+use radix_engine::engine::{Invokable, Kernel, KernelError, ModuleError, ScryptoInterpreter};
+use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_abi};
@@ -721,35 +721,29 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             )],
             |kernel| {
                 kernel
-                    .invoke_native(NativeInvocation::Method(
-                        NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
-                        RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                        ScryptoValue::from_typed(&EpochManagerSetEpochInput { epoch }),
-                    ))
+                    .invoke(EpochManagerSetEpochInput {
+                        epoch,
+                        system_address: EPOCH_MANAGER,
+                    })
                     .unwrap()
             },
         );
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
+        self.kernel_call(vec![], |kernel| {
             kernel
-                .invoke_native(NativeInvocation::Method(
-                    NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
-                    RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                    ScryptoValue::from_typed(&EpochManagerGetCurrentEpochInput {}),
-                ))
+                .invoke(EpochManagerGetCurrentEpochInput {
+                    system_address: EPOCH_MANAGER,
+                })
                 .unwrap()
-        });
-        scrypto_decode(&current_epoch.raw).unwrap()
+        })
     }
 
     /// Performs a kernel call through a kernel with `is_system = true`.
-    fn kernel_call<F>(&mut self, initial_proofs: Vec<NonFungibleAddress>, fun: F) -> ScryptoValue
+    fn kernel_call<F, O>(&mut self, initial_proofs: Vec<NonFungibleAddress>, fun: F) -> O
     where
-        F: FnOnce(
-            &mut Kernel<DefaultWasmEngine, DefaultWasmInstance, SystemLoanFeeReserve>,
-        ) -> ScryptoValue,
+        F: FnOnce(&mut Kernel<DefaultWasmEngine, DefaultWasmInstance, SystemLoanFeeReserve>) -> O,
     {
         let tx_hash = hash(self.next_transaction_nonce.to_string());
         let blobs = HashMap::new();
@@ -776,7 +770,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         // Invoke the system
-        let output: ScryptoValue = fun(&mut kernel);
+        let output = fun(&mut kernel);
 
         // Commit
         self.next_transaction_nonce += 1;
