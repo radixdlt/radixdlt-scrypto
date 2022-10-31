@@ -49,7 +49,7 @@ impl RuntimeValidation {
     pub fn enforced(self) -> RuntimeValidationRequest {
         RuntimeValidationRequest {
             validation: self,
-            skip_assertion: true,
+            skip_assertion: false,
         }
     }
 
