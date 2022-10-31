@@ -255,6 +255,41 @@ impl NativeInvocation for VaultGetAmountInput {
     }
 }
 
+impl NativeExecutable for VaultGetResourceAddressInput {
+    type Output = ResourceAddress;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Vault(input.vault_id);
+        let offset = SubstateOffset::Vault(VaultOffset::Vault);
+        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+
+        let substate_ref = system_api.get_ref(vault_handle)?;
+        let vault = substate_ref.vault();
+        let resource_address = vault.resource_address();
+
+        Ok((
+            resource_address,
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(resource_address))),
+        ))
+    }
+}
+
+impl NativeInvocation for VaultGetResourceAddressInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Vault(VaultMethod::GetResourceAddress),
+            RENodeId::Vault(self.vault_id),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
 
 
 pub struct Vault;
@@ -308,12 +343,7 @@ impl Vault {
                 panic!("Unexpected")
             }
             VaultMethod::GetResourceAddress => {
-                let _: VaultGetResourceAddressInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
-                let substate_ref = system_api.get_ref(vault_handle)?;
-                let vault = substate_ref.vault();
-                let resource_address = vault.resource_address();
-                ScryptoValue::from_typed(&resource_address)
+                panic!("Unexpected")
             }
             VaultMethod::GetNonFungibleIds => {
                 let _: VaultGetNonFungibleIdsInput = scrypto_decode(&args.raw)

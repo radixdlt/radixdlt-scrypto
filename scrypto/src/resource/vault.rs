@@ -40,7 +40,9 @@ pub struct VaultGetAmountInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultGetResourceAddressInput {}
+pub struct VaultGetResourceAddressInput {
+    pub vault_id: VaultId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultGetNonFungibleIdsInput {}
@@ -141,7 +143,9 @@ impl Vault {
 
             pub fn resource_address(&self) -> ResourceAddress {
                 VaultMethod::GetResourceAddress,
-                VaultGetResourceAddressInput {}
+                VaultGetResourceAddressInput {
+                    vault_id: self.0,
+                }
             }
 
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
