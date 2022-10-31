@@ -5,7 +5,6 @@ use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct SystemTransaction {
-    // TODO: Add header
     pub manifest: TransactionManifest,
 }
 
@@ -27,6 +26,7 @@ impl Into<Executable> for SystemTransaction {
             10_000,
             0,
             blobs,
+            vec![],
         )
     }
 }

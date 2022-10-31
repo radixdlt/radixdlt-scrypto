@@ -1,4 +1,5 @@
 use sbor::rust::vec::Vec;
+use sbor::{Decode, Encode, TypeId};
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::*;
 use scrypto::resource::{NonFungibleAddress, ResourceAddress};
@@ -15,12 +16,49 @@ pub struct AuthZoneParams {
 /// Represents a validated transaction
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Executable {
-    pub transaction_hash: Hash,
-    pub instructions: Vec<Instruction>,
-    pub auth_zone_params: AuthZoneParams,
-    pub cost_unit_limit: u32,
-    pub tip_percentage: u32,
-    pub blobs: Vec<Vec<u8>>,
+    transaction_hash: Hash,
+    instructions: Vec<Instruction>,
+    auth_zone_params: AuthZoneParams,
+    cost_unit_limit: u32,
+    tip_percentage: u32,
+    blobs: Vec<Vec<u8>>,
+    runtime_validations: Vec<RuntimeValidationRequest>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+pub struct RuntimeValidationRequest {
+    /// The validation to perform
+    pub validation: RuntimeValidation,
+    /// This option is intended for preview uses cases
+    /// In these cases, we still want to do the look ups to give equivalent cost unit spend, but may wish to ignore the result
+    pub skip_assertion: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+pub enum RuntimeValidation {
+    /// To ensure we don't commit a duplicate intent hash
+    IntentHashUniqueness { intent_hash: Hash },
+    /// For preview - still do the look-ups to give equivalent cost unit spend, but ignore the result
+    WithinEpochRange {
+        start_epoch_inclusive: u64,
+        end_epoch_exclusive: u64,
+    },
+}
+
+impl RuntimeValidation {
+    pub fn enforced(self) -> RuntimeValidationRequest {
+        RuntimeValidationRequest {
+            validation: self,
+            skip_assertion: false,
+        }
+    }
+
+    pub fn with_skipped_assertion_if(self, skip_assertion: bool) -> RuntimeValidationRequest {
+        RuntimeValidationRequest {
+            validation: self,
+            skip_assertion,
+        }
+    }
 }
 
 impl Executable {
@@ -31,6 +69,7 @@ impl Executable {
         cost_unit_limit: u32,
         tip_percentage: u32,
         blobs: Vec<Vec<u8>>,
+        runtime_validations: Vec<RuntimeValidationRequest>,
     ) -> Self {
         Self {
             transaction_hash,
@@ -39,6 +78,7 @@ impl Executable {
             cost_unit_limit,
             tip_percentage,
             blobs,
+            runtime_validations,
         }
     }
 
@@ -62,11 +102,15 @@ impl Executable {
         &self.instructions
     }
 
-    pub fn auth_zone_params(&self) -> AuthZoneParams {
-        self.auth_zone_params.clone()
+    pub fn auth_zone_params(&self) -> &AuthZoneParams {
+        &self.auth_zone_params
     }
 
     pub fn blobs(&self) -> &[Vec<u8>] {
         &self.blobs
+    }
+
+    pub fn runtime_validations(&self) -> &[RuntimeValidationRequest] {
+        &self.runtime_validations
     }
 }

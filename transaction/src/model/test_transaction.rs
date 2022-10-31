@@ -33,16 +33,17 @@ impl TestTransaction {
 
         let transaction_hash = transaction.hash();
 
-        Executable {
+        Executable::new(
             transaction_hash,
-            instructions: transaction.signed_intent.intent.manifest.instructions,
-            auth_zone_params: AuthZoneParams {
+            transaction.signed_intent.intent.manifest.instructions,
+            AuthZoneParams {
                 initial_proofs,
                 virtualizable_proofs_resource_addresses: BTreeSet::new(),
             },
-            cost_unit_limit: transaction.signed_intent.intent.header.cost_unit_limit,
-            tip_percentage: transaction.signed_intent.intent.header.tip_percentage,
-            blobs: transaction.signed_intent.intent.manifest.blobs,
-        }
+            transaction.signed_intent.intent.header.cost_unit_limit,
+            transaction.signed_intent.intent.header.tip_percentage,
+            transaction.signed_intent.intent.manifest.blobs,
+            vec![],
+        )
     }
 }

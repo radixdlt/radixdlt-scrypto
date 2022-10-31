@@ -1,4 +1,5 @@
 use radix_engine::engine::KernelError;
+use radix_engine::engine::RejectionError;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
@@ -36,7 +37,9 @@ fn test_manifest_with_non_existent_resource() {
     receipt.expect_specific_rejection(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::GlobalAddressNotFound(..))
+            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+                KernelError::GlobalAddressNotFound(..)
+            ))
         )
     });
 }
