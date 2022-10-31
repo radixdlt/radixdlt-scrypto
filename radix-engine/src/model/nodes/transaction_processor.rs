@@ -303,19 +303,8 @@ impl TransactionProcessor {
                                 proof_id_mapping.insert(new_id, proof.0);
                                 ScryptoValue::from_typed(&proof)
                             })
-                        /*
-                        system_api
-                            .invoke(AuthZonePopInput { auth_zone_id })
-                            .map_err(InvokeError::Downstream)
-                            .map(|proof| {
-                                proof_id_mapping.insert(new_id, proof.0);
-                                ScryptoValue::from_typed(&proof)
-                            })
-                         */
                             /*
-                            .and_then(|new_id| {
 
-                            }),
                         Instruction::ClearAuthZone => {
                             proof_id_mapping.clear();
                             system_api
@@ -326,70 +315,6 @@ impl TransactionProcessor {
                                 ))
                                 .map_err(InvokeError::Downstream)
                         }
-                        Instruction::PushToAuthZone { proof_id } => proof_id_mapping
-                            .remove(proof_id)
-                            .ok_or(InvokeError::Error(
-                                TransactionProcessorError::ProofNotFound(*proof_id),
-                            ))
-                            .and_then(|real_id| {
-                                let proof = scrypto::resource::Proof(real_id);
-                                ComponentAuthZone::sys_push(proof, system_api)
-                                    .map(|_| ScryptoValue::unit())
-                                    .map_err(InvokeError::Downstream)
-                            }),
-                        Instruction::CreateProofFromAuthZone { resource_address } => id_allocator
-                            .new_proof_id()
-                            .map_err(|e| {
-                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
-                            })
-                            .and_then(|new_id| {
-                                ComponentAuthZone::sys_create_proof(*resource_address, system_api)
-                                    .map_err(InvokeError::Downstream)
-                                    .map(|proof| {
-                                        proof_id_mapping.insert(new_id, proof.0);
-                                        ScryptoValue::from_typed(&proof)
-                                    })
-                            }),
-                        Instruction::CreateProofFromAuthZoneByAmount {
-                            amount,
-                            resource_address,
-                        } => id_allocator
-                            .new_proof_id()
-                            .map_err(|e| {
-                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
-                            })
-                            .and_then(|new_id| {
-                                ComponentAuthZone::sys_create_proof_by_amount(
-                                    *amount,
-                                    *resource_address,
-                                    system_api,
-                                )
-                                .map_err(InvokeError::Downstream)
-                                .map(|proof| {
-                                    proof_id_mapping.insert(new_id, proof.0);
-                                    ScryptoValue::from_typed(&proof)
-                                })
-                            }),
-                        Instruction::CreateProofFromAuthZoneByIds {
-                            ids,
-                            resource_address,
-                        } => id_allocator
-                            .new_proof_id()
-                            .map_err(|e| {
-                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
-                            })
-                            .and_then(|new_id| {
-                                ComponentAuthZone::sys_create_proof_by_ids(
-                                    ids,
-                                    *resource_address,
-                                    system_api,
-                                )
-                                .map_err(InvokeError::Downstream)
-                                .map(|proof| {
-                                    proof_id_mapping.insert(new_id, proof.0);
-                                    ScryptoValue::from_typed(&proof)
-                                })
-                            }),
                         Instruction::CreateProofFromBucket { bucket_id } => id_allocator
                             .new_proof_id()
                             .map_err(|e| {
@@ -409,11 +334,8 @@ impl TransactionProcessor {
                         TransactionProcessorError::ProofNotFound(*proof_id),
                     ))
                     .and_then(|real_id| {
-                        system_api
-                            .invoke(AuthZonePushInput {
-                                auth_zone_id,
-                                proof: scrypto::resource::Proof(real_id),
-                            })
+                        let proof = scrypto::resource::Proof(real_id);
+                        ComponentAuthZone::sys_push(proof, system_api)
                             .map(|rtn| ScryptoValue::from_typed(&rtn))
                             .map_err(InvokeError::Downstream)
                     }),
@@ -423,11 +345,7 @@ impl TransactionProcessor {
                         InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                     })
                     .and_then(|new_id| {
-                        system_api
-                            .invoke(AuthZoneCreateProofInput {
-                                resource_address: *resource_address,
-                                auth_zone_id,
-                            })
+                        ComponentAuthZone::sys_create_proof(*resource_address, system_api)
                             .map_err(InvokeError::Downstream)
                             .map(|proof| {
                                 proof_id_mapping.insert(new_id, proof.0);
@@ -443,12 +361,11 @@ impl TransactionProcessor {
                         InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                     })
                     .and_then(|new_id| {
-                        system_api
-                            .invoke(AuthZoneCreateProofByAmountInput {
-                                amount: *amount,
-                                resource_address: *resource_address,
-                                auth_zone_id,
-                            })
+                        ComponentAuthZone::sys_create_proof_by_amount(
+                            *amount,
+                            *resource_address,
+                            system_api,
+                        )
                             .map_err(InvokeError::Downstream)
                             .map(|proof| {
                                 proof_id_mapping.insert(new_id, proof.0);
@@ -507,12 +424,11 @@ impl TransactionProcessor {
                         InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                     })
                     .and_then(|new_id| {
-                        system_api
-                            .invoke(AuthZoneCreateProofByIdsInput {
-                                auth_zone_id,
-                                ids: ids.clone(),
-                                resource_address: *resource_address,
-                            })
+                        ComponentAuthZone::sys_create_proof_by_ids(
+                            ids,
+                            *resource_address,
+                            system_api,
+                        )
                             .map_err(InvokeError::Downstream)
                             .map(|proof| {
                                 proof_id_mapping.insert(new_id, proof.0);

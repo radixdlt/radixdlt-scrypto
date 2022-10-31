@@ -5,8 +5,10 @@ use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::core::*;
 use scrypto::engine::types::*;
-use scrypto::resource::AuthZonePopInput;
+use scrypto::resource::{AuthZoneCreateProofByIdsInput, AuthZonePopInput};
 use crate::buffer::scrypto_encode;
+use crate::prelude::{AuthZoneCreateProofInput, AuthZonePushInput};
+use crate::resource::AuthZoneCreateProofByAmountInput;
 
 use super::types::*;
 
@@ -64,5 +66,9 @@ pub trait ScryptoSyscalls<E: Debug> {
 
 pub trait SysInvokableNative<E>:
     SysInvokable<AuthZonePopInput, E>
+    + SysInvokable<AuthZonePushInput, E>
+    + SysInvokable<AuthZoneCreateProofInput, E>
+    + SysInvokable<AuthZoneCreateProofByAmountInput, E>
+    + SysInvokable<AuthZoneCreateProofByIdsInput, E>
 {
 }
