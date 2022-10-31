@@ -634,6 +634,42 @@ impl NativeInvocation for ResourceManagerMintInput {
     }
 }
 
+impl NativeExecutable for ResourceManagerGetMetadataInput {
+    type Output = HashMap<String, String>;
+
+    fn execute<'s, 'a, Y, R>(
+        _input: Self,
+        system_api: &mut Y,
+    ) -> Result<(HashMap<String, String>, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        // TODO: Remove this hack and get resolved receiver in a better way
+        let node_id = match system_api.get_actor() {
+            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
+            _ => panic!("Unexpected"),
+        };
+        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+
+        let substate_ref = system_api.get_ref(resman_handle)?;
+        let metadata = &substate_ref.resource_manager().metadata;
+
+        Ok((metadata.clone(), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for ResourceManagerGetMetadataInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
+            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
 
 
 pub struct ResourceManager;
@@ -763,11 +799,7 @@ impl ResourceManager {
                 panic!("Unexpected")
             }
             ResourceManagerMethod::GetMetadata => {
-                let _: ResourceManagerGetMetadataInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let substate_ref = system_api.get_ref(resman_handle)?;
-                let metadata = &substate_ref.resource_manager().metadata;
-                ScryptoValue::from_typed(metadata)
+                panic!("Unexpected")
             }
             ResourceManagerMethod::GetResourceType => {
                 let _: ResourceManagerGetResourceTypeInput = scrypto_decode(&args.raw)

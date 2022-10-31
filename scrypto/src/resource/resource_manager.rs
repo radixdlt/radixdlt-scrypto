@@ -80,7 +80,9 @@ pub struct ResourceManagerMintInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerGetMetadataInput {}
+pub struct ResourceManagerGetMetadataInput {
+    pub resource_address: ResourceAddress,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerGetResourceTypeInput {}
@@ -306,7 +308,9 @@ impl ResourceManager {
         RENodeId::Global(GlobalAddress::Resource(self.0)), NativeMethod::ResourceManager => {
             pub fn metadata(&self) -> HashMap<String, String> {
                 ResourceManagerMethod::GetMetadata,
-                ResourceManagerGetMetadataInput {}
+                ResourceManagerGetMetadataInput {
+                    resource_address: self.0,
+                }
             }
             pub fn resource_type(&self) -> ResourceType {
                 ResourceManagerMethod::GetResourceType,

@@ -124,6 +124,7 @@ pub trait InvokableNative<'a>:
     + Invokable<ResourceManagerCreateVaultInput>
     + Invokable<ResourceManagerCreateBucketInput>
     + Invokable<ResourceManagerMintInput>
+    + Invokable<ResourceManagerGetMetadataInput>
 {
 }
 

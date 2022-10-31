@@ -698,6 +698,15 @@ impl TransactionProcessor {
                                     .invoke(invocation)
                                     .map(|a| ScryptoValue::from_typed(&a))
                             }
+                            NativeMethod::ResourceManager(ResourceManagerMethod::Mint) => {
+                                let invocation: ResourceManagerMintInput = scrypto_decode(&args.raw)
+                                    .map_err(|e| InvokeError::Error(
+                                        TransactionProcessorError::InvalidRequestData(e),
+                                    ))?;
+                                system_api
+                                    .invoke(invocation)
+                                    .map(|a| ScryptoValue::from_typed(&a))
+                            }
                             _ => {
                                 system_api
                                     .invoke(NativeMethodInvocation(native_method,
