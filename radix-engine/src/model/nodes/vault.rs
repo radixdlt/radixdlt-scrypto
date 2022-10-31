@@ -311,7 +311,7 @@ impl NativeExecutable for VaultGetNonFungibleIdsInput {
         let vault = substate_ref.vault();
         let ids = vault
             .total_ids()
-            .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceOperationError(e))))?;
 
         Ok((
             ids,
@@ -324,6 +324,48 @@ impl NativeInvocation for VaultGetNonFungibleIdsInput {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Vault(VaultMethod::GetNonFungibleIds),
+            RENodeId::Vault(self.vault_id),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+
+impl NativeExecutable for VaultCreateProofInput {
+    type Output = scrypto::resource::Proof;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Vault(input.vault_id);
+        let offset = SubstateOffset::Vault(VaultOffset::Vault);
+        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let proof = {
+            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let vault = substate_mut.vault();
+            vault
+                .create_proof(ResourceContainerId::Vault(input.vault_id))
+                .map_err(|e| RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ProofError(e))))?
+        };
+        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+
+        Ok((
+            scrypto::resource::Proof(proof_id),
+            CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
+        ))
+    }
+}
+
+impl NativeInvocation for VaultCreateProofInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Vault(VaultMethod::CreateProof),
             RENodeId::Vault(self.vault_id),
             CallFrameUpdate::empty(),
         )
@@ -389,18 +431,7 @@ impl Vault {
                 panic!("Unexpected")
             }
             VaultMethod::CreateProof => {
-                let _: VaultCreateProofInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
-
-                let proof = {
-                    let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let vault = substate_mut.vault();
-                    vault
-                        .create_proof(ResourceContainerId::Vault(vault_id))
-                        .map_err(|e| InvokeError::Error(VaultError::ProofError(e)))?
-                };
-                let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
-                ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
+                panic!("Unexpected")
             }
             VaultMethod::CreateProofByAmount => {
                 let input: VaultCreateProofByAmountInput = scrypto_decode(&args.raw)

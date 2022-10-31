@@ -50,7 +50,9 @@ pub struct VaultGetNonFungibleIdsInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultCreateProofInput {}
+pub struct VaultCreateProofInput {
+    pub vault_id: VaultId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultCreateProofByAmountInput {
@@ -159,7 +161,9 @@ impl Vault {
 
             pub fn create_proof(&self) -> Proof {
                 VaultMethod::CreateProof,
-                VaultCreateProofInput {}
+                VaultCreateProofInput {
+                    vault_id: self.0,
+                }
             }
 
             pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
