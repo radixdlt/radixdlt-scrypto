@@ -1,13 +1,13 @@
-use crate::any::Value;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
+use crate::value::Value;
 
 #[derive(Eq, PartialEq, Clone)]
-pub struct MutableSborPath(Vec<usize>);
+pub struct SborPathBuf(Vec<usize>);
 
-impl MutableSborPath {
+impl SborPathBuf {
     pub fn new() -> Self {
-        MutableSborPath(vec![])
+        SborPathBuf(vec![])
     }
 
     pub fn push(&mut self, path: usize) {
@@ -19,8 +19,8 @@ impl MutableSborPath {
     }
 }
 
-impl From<MutableSborPath> for SborPath {
-    fn from(mutable: MutableSborPath) -> Self {
+impl From<SborPathBuf> for SborPath {
+    fn from(mutable: SborPathBuf) -> Self {
         SborPath::new(mutable.0)
     }
 }

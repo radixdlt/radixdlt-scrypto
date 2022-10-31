@@ -234,3 +234,74 @@ impl<K, V> TypeId for HashMap<K, V> {
         TYPE_ARRAY
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SborTypeId {
+    Unit,
+    Bool,
+    I8,
+    I16,
+    I32,
+    I64,
+    I128,
+    U8,
+    U16,
+    U32,
+    U64,
+    U128,
+    String,
+    Struct,
+    Enum,
+    Array,
+    Tuple,
+    Custom(u8),
+}
+
+impl SborTypeId {
+    pub fn id(&self) -> u8 {
+        match self {
+            SborTypeId::Unit => TYPE_UNIT,
+            SborTypeId::Bool => TYPE_BOOL,
+            SborTypeId::I8 => TYPE_I8,
+            SborTypeId::I16 => TYPE_I16,
+            SborTypeId::I32 => TYPE_I32,
+            SborTypeId::I64 => TYPE_I64,
+            SborTypeId::I128 => TYPE_I128,
+            SborTypeId::U8 => TYPE_U8,
+            SborTypeId::U16 => TYPE_U16,
+            SborTypeId::U32 => TYPE_U32,
+            SborTypeId::U64 => TYPE_U64,
+            SborTypeId::U128 => TYPE_U128,
+            SborTypeId::String => TYPE_STRING,
+            SborTypeId::Struct => TYPE_STRUCT,
+            SborTypeId::Enum => TYPE_ENUM,
+            SborTypeId::Array => TYPE_ARRAY,
+            SborTypeId::Tuple => TYPE_TUPLE,
+            SborTypeId::Custom(type_id) => *type_id,
+        }
+    }
+
+    pub fn from_id(id: u8) -> Option<Self> {
+        match id {
+            TYPE_UNIT => Some(SborTypeId::Unit),
+            TYPE_BOOL => Some(SborTypeId::Bool),
+            TYPE_I8 => Some(SborTypeId::I8),
+            TYPE_I16 => Some(SborTypeId::I16),
+            TYPE_I32 => Some(SborTypeId::I32),
+            TYPE_I64 => Some(SborTypeId::I64),
+            TYPE_I128 => Some(SborTypeId::I128),
+            TYPE_U8 => Some(SborTypeId::U8),
+            TYPE_U16 => Some(SborTypeId::U16),
+            TYPE_U32 => Some(SborTypeId::U32),
+            TYPE_U64 => Some(SborTypeId::U64),
+            TYPE_U128 => Some(SborTypeId::U128),
+            TYPE_STRING => Some(SborTypeId::String),
+            TYPE_STRUCT => Some(SborTypeId::Struct),
+            TYPE_ENUM => Some(SborTypeId::Enum),
+            TYPE_ARRAY => Some(SborTypeId::Array),
+            TYPE_TUPLE => Some(SborTypeId::Tuple),
+            id if id >= TYPE_CUSTOM_START => Some(SborTypeId::Custom(id)),
+            _ => None,
+        }
+    }
+}

@@ -5,8 +5,6 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-/// SBOR any data encoding and decoding.
-pub mod any;
 /// SBOR decoding.
 pub mod decode;
 /// SBOR encoding.
@@ -17,13 +15,17 @@ pub mod path;
 pub mod rust;
 /// SBOR type ids.
 pub mod type_id;
+/// SBOR utility functions.
 mod utils;
+/// SBOR any value encoding and decoding.
+pub mod value;
 
-pub use any::{decode_any, encode_any, encode_any_with_buffer, Value};
 pub use decode::{Decode, DecodeError, Decoder};
 pub use encode::{Encode, Encoder};
-pub use type_id::TypeId;
+pub use path::{SborPath, SborPathBuf};
+pub use type_id::{SborTypeId, TypeId};
 pub use utils::*;
+pub use value::*;
 
 // Re-export derives
 extern crate sbor_derive;

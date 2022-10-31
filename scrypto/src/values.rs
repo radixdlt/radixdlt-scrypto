@@ -1,4 +1,4 @@
-use sbor::path::{MutableSborPath, SborPath};
+use sbor::path::{SborPath, SborPathBuf};
 use sbor::rust::collections::HashMap;
 use sbor::rust::collections::HashSet;
 use sbor::rust::fmt;
@@ -6,7 +6,7 @@ use sbor::rust::format;
 use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use sbor::type_id::*;
-use sbor::{any::*, *};
+use sbor::*;
 
 use crate::abi::*;
 use crate::address::{AddressError, Bech32Encoder};
@@ -66,7 +66,7 @@ impl ScryptoValue {
 
     pub fn from_value(value: Value) -> Result<Self, DecodeError> {
         let mut checker = ScryptoCustomValueChecker::new();
-        traverse_any(&mut MutableSborPath::new(), &value, &mut checker)
+        traverse_any(&mut SborPathBuf::new(), &value, &mut checker)
             .map_err(|e| DecodeError::CustomError(format!("{:?}", e)))?;
 
         Ok(Self {
@@ -90,7 +90,7 @@ impl ScryptoValue {
     pub fn from_slice_no_custom_values(slice: &[u8]) -> Result<Self, DecodeError> {
         let value = decode_any(slice)?;
         let mut checker = ScryptoNoCustomValuesChecker {};
-        traverse_any(&mut MutableSborPath::new(), &value, &mut checker)
+        traverse_any(&mut SborPathBuf::new(), &value, &mut checker)
             .map_err(|e| DecodeError::CustomError(format!("{:?}", e)))?;
         Ok(Self {
             raw: encode_any(&value),
@@ -235,7 +235,7 @@ impl CustomValueVisitor for ScryptoNoCustomValuesChecker {
 
     fn visit(
         &mut self,
-        _path: &mut MutableSborPath,
+        _path: &mut SborPathBuf,
         type_id: u8,
         _data: &[u8],
     ) -> Result<(), Self::Err> {
@@ -313,12 +313,7 @@ impl ScryptoCustomValueChecker {
 impl CustomValueVisitor for ScryptoCustomValueChecker {
     type Err = ScryptoCustomValueCheckError;
 
-    fn visit(
-        &mut self,
-        path: &mut MutableSborPath,
-        type_id: u8,
-        data: &[u8],
-    ) -> Result<(), Self::Err> {
+    fn visit(&mut self, path: &mut SborPathBuf, type_id: u8, data: &[u8]) -> Result<(), Self::Err> {
         match ScryptoTypeId::from_id(type_id).ok_or(Self::Err::UnknownTypeId(type_id))? {
             // Global addresses
             ScryptoTypeId::PackageAddress => {

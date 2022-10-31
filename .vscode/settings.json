@@ -11,6 +11,7 @@
         "instantiatable",
         "Instrumenter",
         "persistable",
+        "Sbor",
         "Scrypto",
         "Substate",
         "substates",
