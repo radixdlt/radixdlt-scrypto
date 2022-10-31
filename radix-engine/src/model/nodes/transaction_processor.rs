@@ -652,32 +652,9 @@ impl TransactionProcessor {
                                         method_ident.clone(),
                                     ),
                                 ))?;
-                        match native_method {
-                            NativeMethod::ResourceManager(ResourceManagerMethod::Burn) => {
-                                let invocation: ResourceManagerBurnInput =
-                                    scrypto_decode(&args.raw).map_err(|e| {
-                                        InvokeError::Error(
-                                            TransactionProcessorError::InvalidRequestData(e),
-                                        )
-                                    })?;
-                                system_api
-                                    .invoke(invocation)
-                                    .map(|a| ScryptoValue::from_typed(&a))
-                            }
-                            NativeMethod::ResourceManager(ResourceManagerMethod::Mint) => {
-                                let invocation: ResourceManagerMintInput =
-                                    scrypto_decode(&args.raw).map_err(|e| {
-                                        InvokeError::Error(
-                                            TransactionProcessorError::InvalidRequestData(e),
-                                        )
-                                    })?;
-                                system_api
-                                    .invoke(invocation)
-                                    .map(|a| ScryptoValue::from_typed(&a))
-                            }
-                            _ => Err(RuntimeError::KernelError(KernelError::InvalidMethod)),
-                        }
-                        .map_err(InvokeError::Downstream)
+
+                        parse_and_invoke_native_method(native_method, args.raw, system_api)
+                            .map_err(InvokeError::Downstream)
                     })
                     .and_then(|result| {
                         // Auto move into auth_zone
