@@ -5,7 +5,7 @@ use scrypto::misc::ContextualDisplay;
 use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
 use transaction::model::*;
 
-use crate::engine::{RejectionError, ResourceChange, RuntimeError, TraceHeapSnapshot};
+use crate::engine::{RejectionError, ResourceChange, RuntimeError, OutputEvent};
 use crate::fee::FeeSummary;
 use crate::state_manager::StateDiff;
 use crate::types::*;
@@ -19,7 +19,7 @@ pub struct TransactionContents {
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
-    pub instruction_traces: Vec<(Instruction, TraceHeapSnapshot, TraceHeapSnapshot)>,
+    pub output_events: Vec<OutputEvent>,
 }
 
 /// Captures whether a transaction should be committed, and its other results

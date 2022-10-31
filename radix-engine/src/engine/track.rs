@@ -1,4 +1,4 @@
-use transaction::model::{Executable, Instruction};
+use transaction::model::Executable;
 
 use crate::engine::*;
 use crate::fee::FeeReserve;
@@ -62,7 +62,7 @@ pub struct Track<'s, R: FeeReserve> {
     pub fee_reserve: R,
     pub fee_table: FeeTable,
     pub vault_ops: Vec<(REActor, VaultId, VaultOp)>,
-    pub instruction_traces: Vec<(Instruction, TraceHeapSnapshot, TraceHeapSnapshot)>,
+    pub output_events: Vec<OutputEvent>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -77,7 +77,7 @@ pub struct TrackReceipt {
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
     pub result: TransactionResult,
-    pub instruction_traces: Vec<(Instruction, TraceHeapSnapshot, TraceHeapSnapshot)>,
+    pub output_events: Vec<OutputEvent>,
 }
 
 pub struct PreExecutionError {
@@ -99,13 +99,18 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             fee_reserve,
             fee_table,
             vault_ops: Vec::new(),
-            instruction_traces: Vec::new(),
+            output_events: Vec::new(),
         }
     }
 
     /// Adds a log message.
     pub fn add_log(&mut self, level: Level, message: String) {
         self.application_logs.push((level, message));
+    }
+
+    /// Adds an output event..
+    pub fn add_output_event(&mut self, event: OutputEvent) {
+        self.output_events.push(event);
     }
 
     /// Returns a copy of the substate associated with the given address, if exists
@@ -611,7 +616,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             fee_summary,
             application_logs: self.application_logs,
             result,
-            instruction_traces: self.instruction_traces,
+            output_events: self.output_events,
         }
     }
 

@@ -1,4 +1,4 @@
-use radix_engine::engine::TraceHeapSnapshot;
+use radix_engine::engine::{OutputEvent, TraceHeapSnapshot};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::LockedAmountOrIds;
 use radix_engine::types::*;
@@ -175,7 +175,13 @@ fn test_instruction_traces() {
     receipt.expect_commit_success();
 
     // Check traces for the 7 manifest instructions
-    let traces = receipt.execution.instruction_traces;
+    let traces: Vec<(Instruction, TraceHeapSnapshot, TraceHeapSnapshot)> = receipt.execution.output_events
+        .into_iter()
+        .filter_map(|ev| match ev {
+            OutputEvent::InstructionTraceV0(inst, pre, post) => Some((inst, pre, post)),
+            _ => None
+        })
+        .collect();
 
     {
         // LOCK_FEE

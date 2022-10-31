@@ -172,9 +172,11 @@ impl ExecutionTraceModule {
         match self.snapshot_pre_current_instruction.take() {
             Some(pre_snapshot) => {
                 let post_snapshot = ExecutionTraceModule::heap_snapshot(heap)?;
-                track
-                    .instruction_traces
-                    .push((instruction.clone(), pre_snapshot, post_snapshot));
+
+                track.add_output_event(
+                    OutputEvent::InstructionTraceV0(
+                        instruction.clone(), pre_snapshot, post_snapshot));
+
                 Ok(())
             }
             None => Err(ModuleError::ExecutionTraceError(
