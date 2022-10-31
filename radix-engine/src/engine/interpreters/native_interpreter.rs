@@ -113,6 +113,7 @@ pub trait InvokableNative<'a>:
     + Invokable<VaultTakeNonFungiblesInput>
     + Invokable<VaultGetAmountInput>
     + Invokable<VaultGetResourceAddressInput>
+    + Invokable<VaultGetNonFungibleIdsInput>
 {
 }
 

@@ -292,6 +292,46 @@ impl NativeInvocation for VaultGetResourceAddressInput {
 }
 
 
+impl NativeExecutable for VaultGetNonFungibleIdsInput {
+    type Output = BTreeSet<NonFungibleId>;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Vault(input.vault_id);
+        let offset = SubstateOffset::Vault(VaultOffset::Vault);
+        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+
+        let substate_ref = system_api.get_ref(vault_handle)?;
+        let vault = substate_ref.vault();
+        let ids = vault
+            .total_ids()
+            .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
+
+        Ok((
+            ids,
+            CallFrameUpdate::empty(),
+        ))
+    }
+}
+
+impl NativeInvocation for VaultGetNonFungibleIdsInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Vault(VaultMethod::GetNonFungibleIds),
+            RENodeId::Vault(self.vault_id),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+
+
 pub struct Vault;
 
 impl Vault {
@@ -346,14 +386,7 @@ impl Vault {
                 panic!("Unexpected")
             }
             VaultMethod::GetNonFungibleIds => {
-                let _: VaultGetNonFungibleIdsInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
-                let substate_ref = system_api.get_ref(vault_handle)?;
-                let vault = substate_ref.vault();
-                let ids = vault
-                    .total_ids()
-                    .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
-                ScryptoValue::from_typed(&ids)
+                panic!("Unexpected")
             }
             VaultMethod::CreateProof => {
                 let _: VaultCreateProofInput = scrypto_decode(&args.raw)

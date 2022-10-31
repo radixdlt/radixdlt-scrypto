@@ -45,7 +45,9 @@ pub struct VaultGetResourceAddressInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultGetNonFungibleIdsInput {}
+pub struct VaultGetNonFungibleIdsInput {
+    pub vault_id: VaultId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultCreateProofInput {}
@@ -150,7 +152,9 @@ impl Vault {
 
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
                 VaultMethod::GetNonFungibleIds,
-                VaultGetNonFungibleIdsInput {}
+                VaultGetNonFungibleIdsInput {
+                    vault_id: self.0,
+                }
             }
 
             pub fn create_proof(&self) -> Proof {
