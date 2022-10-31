@@ -12,8 +12,10 @@ blueprint! {
         pub fn set_epoch(epoch_manager: SystemAddress, epoch: u64) {
             let input = RadixEngineInput::InvokeNativeMethod(
                 NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
-                RENodeId::Global(GlobalAddress::System(epoch_manager)),
-                scrypto_encode(&EpochManagerSetEpochInput { epoch }),
+                scrypto_encode(&EpochManagerSetEpochInput {
+                    epoch,
+                    system_address: epoch_manager,
+                }),
             );
             call_engine(input)
         }
