@@ -351,10 +351,9 @@ impl ResourceManager {
                     .resource_manager()
                     .authorization
                     .get_mut(&input.method)
-                    .expect(&format!(
-                        "Authorization for {:?} not specified",
-                        input.method
-                    ));
+                    .unwrap_or_else(|| {
+                        panic!("Authorization for {:?} not specified", input.method)
+                    });
                 method_entry.main(MethodAccessRuleMethod::Update(input.access_rule))?;
 
                 ScryptoValue::unit()
@@ -367,10 +366,9 @@ impl ResourceManager {
                     .resource_manager()
                     .authorization
                     .get_mut(&input.method)
-                    .expect(&format!(
-                        "Authorization for {:?} not specified",
-                        input.method
-                    ));
+                    .unwrap_or_else(|| {
+                        panic!("Authorization for {:?} not specified", input.method)
+                    });
                 method_entry.main(MethodAccessRuleMethod::Lock())?;
                 ScryptoValue::unit()
             }

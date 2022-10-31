@@ -30,17 +30,24 @@ pub enum ScryptoValueReplaceError {
 pub struct ScryptoValue {
     pub raw: Vec<u8>,
     pub dom: Value,
-    pub expressions: Vec<(Expression, SborPath)>,
+
+    // Global addresses
+    pub component_addresses: HashSet<ComponentAddress>,
+    pub resource_addresses: HashSet<ResourceAddress>,
+    pub package_addresses: HashSet<PackageAddress>,
+    pub system_addresses: HashSet<SystemAddress>,
+
+    // RE nodes and refs
     pub bucket_ids: HashMap<BucketId, SborPath>,
     pub proof_ids: HashMap<ProofId, SborPath>,
     pub vault_ids: HashSet<VaultId>,
     pub kv_store_ids: HashSet<KeyValueStoreId>,
     pub component_ids: HashSet<ComponentId>,
-    pub refed_component_addresses: HashSet<ComponentAddress>,
-    pub resource_addresses: HashSet<ResourceAddress>,
+
+    // Other interpreted
+    pub expressions: Vec<(Expression, SborPath)>,
+    pub blobs: Vec<(Blob, SborPath)>,
     pub non_fungible_addresses: HashSet<NonFungibleAddress>,
-    pub package_addresses: HashSet<PackageAddress>,
-    pub system_addresses: HashSet<SystemAddress>,
 }
 
 impl ScryptoValue {
@@ -66,25 +73,18 @@ impl ScryptoValue {
         Ok(Self {
             raw: encode_any(&value),
             dom: value,
-            expressions: checker.expressions,
-            bucket_ids: checker
-                .buckets
-                .drain()
-                .map(|(e, path)| (e.0, path))
-                .collect(),
-            proof_ids: checker
-                .proofs
-                .drain()
-                .map(|(e, path)| (e.0, path))
-                .collect(),
-            vault_ids: checker.vaults.iter().map(|e| e.0).collect(),
-            kv_store_ids: checker.kv_stores,
-            component_ids: checker.components.iter().map(|e| e.0).collect(),
-            refed_component_addresses: checker.ref_components,
+            component_addresses: checker.component_addresses,
             resource_addresses: checker.resource_addresses,
-            non_fungible_addresses: checker.non_fungible_addresses,
             package_addresses: checker.package_addresses,
             system_addresses: checker.system_addresses,
+            bucket_ids: checker.buckets,
+            proof_ids: checker.proofs,
+            vault_ids: checker.vaults,
+            kv_store_ids: checker.kv_stores,
+            component_ids: checker.components,
+            expressions: checker.expressions,
+            blobs: checker.blobs,
+            non_fungible_addresses: checker.non_fungible_addresses,
         })
     }
 
@@ -96,17 +96,18 @@ impl ScryptoValue {
         Ok(Self {
             raw: encode_any(&value),
             dom: value,
-            expressions: Vec::new(),
+            component_addresses: HashSet::new(),
+            resource_addresses: HashSet::new(),
+            package_addresses: HashSet::new(),
+            system_addresses: HashSet::new(),
             bucket_ids: HashMap::new(),
             proof_ids: HashMap::new(),
             vault_ids: HashSet::new(),
             kv_store_ids: HashSet::new(),
             component_ids: HashSet::new(),
-            refed_component_addresses: HashSet::new(),
-            resource_addresses: HashSet::new(),
+            expressions: Vec::new(),
+            blobs: Vec::new(),
             non_fungible_addresses: HashSet::new(),
-            package_addresses: HashSet::new(),
-            system_addresses: HashSet::new(),
         })
     }
 
@@ -132,7 +133,7 @@ impl ScryptoValue {
 
     pub fn global_references(&self) -> HashSet<GlobalAddress> {
         let mut node_ids = HashSet::new();
-        for component_address in &self.refed_component_addresses {
+        for component_address in &self.component_addresses {
             node_ids.insert(GlobalAddress::Component(*component_address));
         }
         for resource_address in &self.resource_addresses {
@@ -207,6 +208,7 @@ impl ScryptoValue {
             + self.proof_ids.len()
             + self.vault_ids.len()
             + self.component_ids.len()
+            + self.kv_store_ids.len()
     }
 }
 
@@ -246,17 +248,21 @@ impl CustomValueVisitor for ScryptoNoCustomValuesChecker {
 
 /// A checker the check a Scrypto-specific value.
 pub struct ScryptoCustomValueChecker {
-    pub expressions: Vec<(Expression, SborPath)>,
-    pub buckets: HashMap<Bucket, SborPath>,
-    pub proofs: HashMap<Proof, SborPath>,
-    pub vaults: HashSet<Vault>,
-    pub kv_stores: HashSet<KeyValueStoreId>,
-    pub components: HashSet<Component>,
-    pub ref_components: HashSet<ComponentAddress>,
+    // Global addresses
+    pub component_addresses: HashSet<ComponentAddress>,
     pub resource_addresses: HashSet<ResourceAddress>,
-    pub non_fungible_addresses: HashSet<NonFungibleAddress>,
     pub package_addresses: HashSet<PackageAddress>,
     pub system_addresses: HashSet<SystemAddress>,
+    // RE nodes
+    pub buckets: HashMap<BucketId, SborPath>,
+    pub proofs: HashMap<ProofId, SborPath>,
+    pub vaults: HashSet<VaultId>,
+    pub kv_stores: HashSet<KeyValueStoreId>,
+    pub components: HashSet<ComponentId>,
+    // Other interpreted
+    pub expressions: Vec<(Expression, SborPath)>,
+    pub blobs: Vec<(Blob, SborPath)>,
+    pub non_fungible_addresses: HashSet<NonFungibleAddress>,
 }
 
 /// Represents an error when validating a Scrypto-specific value.
@@ -289,17 +295,18 @@ pub enum ScryptoCustomValueCheckError {
 impl ScryptoCustomValueChecker {
     pub fn new() -> Self {
         Self {
-            expressions: Vec::new(),
+            component_addresses: HashSet::new(),
+            resource_addresses: HashSet::new(),
+            package_addresses: HashSet::new(),
+            system_addresses: HashSet::new(),
             buckets: HashMap::new(),
             proofs: HashMap::new(),
             vaults: HashSet::new(),
             kv_stores: HashSet::new(),
             components: HashSet::new(),
-            ref_components: HashSet::new(),
-            resource_addresses: HashSet::new(),
+            expressions: Vec::new(),
+            blobs: Vec::new(),
             non_fungible_addresses: HashSet::new(),
-            package_addresses: HashSet::new(),
-            system_addresses: HashSet::new(),
         }
     }
 }
@@ -314,6 +321,7 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
         data: &[u8],
     ) -> Result<(), Self::Err> {
         match ScryptoType::from_id(type_id).ok_or(Self::Err::UnknownTypeId(type_id))? {
+            // Global addresses
             ScryptoType::PackageAddress => {
                 let package_address = PackageAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?;
@@ -322,37 +330,74 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
             ScryptoType::ComponentAddress => {
                 let component_address = ComponentAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
-                self.ref_components.insert(component_address);
+                self.component_addresses.insert(component_address);
+            }
+            ScryptoType::ResourceAddress => {
+                let resource_address = ResourceAddress::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
+                self.resource_addresses.insert(resource_address);
             }
             ScryptoType::SystemAddress => {
                 let system_address = SystemAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidSystemAddress)?;
                 self.system_addresses.insert(system_address);
             }
+
+            // RE nodes & references
             ScryptoType::Component => {
                 let component = Component::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponent)?;
-                if !self.components.insert(component) {
+                if !self.components.insert(component.0) {
                     return Err(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
             ScryptoType::KeyValueStore => {
-                let kv_store_id: KeyValueStoreId = match data.len() {
-                    36 => (
-                        Hash(copy_u8_array(&data[0..32])),
-                        u32::from_le_bytes(copy_u8_array(&data[32..])),
-                    ),
-                    _ => {
-                        return Err(ScryptoCustomValueCheckError::InvalidKeyValueStore(
-                            ParseKeyValueStoreError::InvalidLength(data.len()),
-                        ))
-                    }
-                };
-
-                if !self.kv_stores.insert(kv_store_id) {
+                let kv_store = KeyValueStore::<(), ()>::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidKeyValueStore)?;
+                if !self.kv_stores.insert(kv_store.id) {
                     return Err(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
+            ScryptoType::Bucket => {
+                let bucket =
+                    Bucket::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBucket)?;
+                if self.buckets.insert(bucket.0, path.clone().into()).is_some() {
+                    return Err(ScryptoCustomValueCheckError::DuplicateIds);
+                }
+            }
+            ScryptoType::Proof => {
+                let proof =
+                    Proof::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidProof)?;
+                if self.proofs.insert(proof.0, path.clone().into()).is_some() {
+                    return Err(ScryptoCustomValueCheckError::DuplicateIds);
+                }
+            }
+            ScryptoType::Vault => {
+                let vault =
+                    Vault::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidVault)?;
+                if !self.vaults.insert(vault.0) {
+                    return Err(ScryptoCustomValueCheckError::DuplicateIds);
+                }
+            }
+
+            // Other interpreted
+            ScryptoType::Expression => {
+                let expression = Expression::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidExpression)?;
+                self.expressions.push((expression, path.clone().into()));
+            }
+            ScryptoType::Blob => {
+                let blob =
+                    Blob::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBlob)?;
+                self.blobs.push((blob, path.clone().into()));
+            }
+            ScryptoType::NonFungibleAddress => {
+                let non_fungible_address = NonFungibleAddress::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleAddress)?;
+                self.non_fungible_addresses.insert(non_fungible_address);
+            }
+
+            // Uninterpreted
             ScryptoType::Hash => {
                 Hash::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidHash)?;
             }
@@ -379,48 +424,9 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                 PreciseDecimal::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidPreciseDecimal)?;
             }
-            ScryptoType::Bucket => {
-                let bucket =
-                    Bucket::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBucket)?;
-                if self.buckets.insert(bucket, path.clone().into()).is_some() {
-                    return Err(ScryptoCustomValueCheckError::DuplicateIds);
-                }
-            }
-            ScryptoType::Proof => {
-                let proof =
-                    Proof::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidProof)?;
-                if self.proofs.insert(proof, path.clone().into()).is_some() {
-                    return Err(ScryptoCustomValueCheckError::DuplicateIds);
-                }
-            }
-            ScryptoType::Vault => {
-                let vault =
-                    Vault::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidVault)?;
-                if !self.vaults.insert(vault) {
-                    return Err(ScryptoCustomValueCheckError::DuplicateIds);
-                }
-            }
             ScryptoType::NonFungibleId => {
                 NonFungibleId::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleId)?;
-            }
-            ScryptoType::NonFungibleAddress => {
-                let non_fungible_address = NonFungibleAddress::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleAddress)?;
-                self.non_fungible_addresses.insert(non_fungible_address);
-            }
-            ScryptoType::ResourceAddress => {
-                let resource_address = ResourceAddress::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
-                self.resource_addresses.insert(resource_address);
-            }
-            ScryptoType::Expression => {
-                let expression = Expression::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidExpression)?;
-                self.expressions.push((expression, path.clone().into()));
-            }
-            ScryptoType::Blob => {
-                Blob::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBlob)?;
             }
         }
         Ok(())
@@ -715,16 +721,7 @@ impl ScryptoValueFormatter {
             Err(ScryptoCustomValueCheckError::UnknownTypeId(type_id))?;
         }
         match scrypto_type.unwrap() {
-            ScryptoType::Decimal => {
-                let value = Decimal::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidDecimal)?;
-                write!(f, "Decimal(\"{}\")", value)?;
-            }
-            ScryptoType::PreciseDecimal => {
-                let value = PreciseDecimal::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidPreciseDecimal)?;
-                write!(f, "PreciseDecimal(\"{}\")", value)?;
-            }
+            // Global address types
             ScryptoType::PackageAddress => {
                 let value = PackageAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?;
@@ -743,6 +740,15 @@ impl ScryptoValueFormatter {
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
                 f.write_str("\")")?;
             }
+            ScryptoType::ResourceAddress => {
+                let value = ResourceAddress::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
+                f.write_str("ResourceAddress(\"")?;
+                value
+                    .format(f, context.bech32_encoder)
+                    .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
+                f.write_str("\")")?;
+            }
             ScryptoType::SystemAddress => {
                 let value = SystemAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidSystemAddress)?;
@@ -752,6 +758,57 @@ impl ScryptoValueFormatter {
                     .map_err(ScryptoCustomValueCheckError::InvalidSystemAddress)?;
                 f.write_str("\")")?;
             }
+            // RE node types
+            ScryptoType::Component => {
+                let value = Component::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidComponent)?;
+                write!(f, "Component(\"{}\")", value)?;
+            }
+            ScryptoType::KeyValueStore => {
+                let value = KeyValueStore::<(), ()>::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidKeyValueStore)?;
+                write!(f, "KeyValueStore(\"{}\")", value)?;
+            }
+            ScryptoType::Bucket => {
+                let value =
+                    Bucket::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBucket)?;
+                if let Some(name) = context.get_bucket_name(&value.0) {
+                    write!(f, "Bucket(\"{}\")", name)?;
+                } else {
+                    write!(f, "Bucket({}u32)", value.0)?;
+                }
+            }
+            ScryptoType::Proof => {
+                let value =
+                    Proof::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidProof)?;
+                if let Some(name) = context.get_proof_name(&value.0) {
+                    write!(f, "Proof(\"{}\")", name)?;
+                } else {
+                    write!(f, "Proof({}u32)", value.0)?;
+                }
+            }
+            ScryptoType::Vault => {
+                let value =
+                    Vault::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidVault)?;
+                write!(f, "Vault(\"{}\")", value)?;
+            }
+            // Other interpreted types
+            ScryptoType::Expression => {
+                let value = Expression::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidExpression)?;
+                write!(f, "Expression(\"{}\")", value)?;
+            }
+            ScryptoType::Blob => {
+                let value =
+                    Blob::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBlob)?;
+                write!(f, "Blob(\"{}\")", value)?;
+            }
+            ScryptoType::NonFungibleAddress => {
+                let value = NonFungibleAddress::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleAddress)?;
+                write!(f, "NonFungibleAddress(\"{}\")", value)?;
+            }
+            // Uninterpreted
             ScryptoType::Hash => {
                 let value =
                     Hash::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidHash)?;
@@ -777,69 +834,21 @@ impl ScryptoValueFormatter {
                     .map_err(ScryptoCustomValueCheckError::InvalidEddsaEd25519Signature)?;
                 write!(f, "EddsaEd25519Signature(\"{}\")", value)?;
             }
-            /* RE node starts */
-            ScryptoType::Bucket => {
-                let value =
-                    Bucket::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBucket)?;
-                if let Some(name) = context.get_bucket_name(&value.0) {
-                    write!(f, "Bucket(\"{}\")", name)?;
-                } else {
-                    write!(f, "Bucket({}u32)", value.0)?;
-                }
+            ScryptoType::Decimal => {
+                let value = Decimal::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidDecimal)?;
+                write!(f, "Decimal(\"{}\")", value)?;
             }
-            ScryptoType::Proof => {
-                let value =
-                    Proof::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidProof)?;
-                if let Some(name) = context.get_proof_name(&value.0) {
-                    write!(f, "Proof(\"{}\")", name)?;
-                } else {
-                    write!(f, "Proof({}u32)", value.0)?;
-                }
+            ScryptoType::PreciseDecimal => {
+                let value = PreciseDecimal::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidPreciseDecimal)?;
+                write!(f, "PreciseDecimal(\"{}\")", value)?;
             }
-            ScryptoType::Component => {
-                let value = Component::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidComponent)?;
-                write!(f, "Component(\"{}\")", value)?;
-            }
-            ScryptoType::KeyValueStore => {
-                let value = KeyValueStore::<(), ()>::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidKeyValueStore)?;
-                write!(f, "KeyValueStore(\"{}\")", value)?;
-            }
-            ScryptoType::Vault => {
-                let value =
-                    Vault::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidVault)?;
-                write!(f, "Vault(\"{}\")", value)?;
-            }
-            /* RE node ends */
+
             ScryptoType::NonFungibleId => {
                 let value = NonFungibleId::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleId)?;
                 write!(f, "NonFungibleId(\"{}\")", value)?;
-            }
-            ScryptoType::NonFungibleAddress => {
-                let value = NonFungibleAddress::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleAddress)?;
-                write!(f, "NonFungibleAddress(\"{}\")", value)?;
-            }
-            ScryptoType::ResourceAddress => {
-                let value = ResourceAddress::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
-                f.write_str("ResourceAddress(\"")?;
-                value
-                    .format(f, context.bech32_encoder)
-                    .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
-                f.write_str("\")")?;
-            }
-            ScryptoType::Expression => {
-                let value = Expression::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidExpression)?;
-                write!(f, "Expression(\"{}\")", value)?;
-            }
-            ScryptoType::Blob => {
-                let value =
-                    Blob::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBlob)?;
-                write!(f, "Blob(\"{}\")", value)?;
             }
         }
         Ok(())

@@ -1,3 +1,3 @@
 mod nfts;
-mod proofs;
 mod numbers;
+mod proofs;

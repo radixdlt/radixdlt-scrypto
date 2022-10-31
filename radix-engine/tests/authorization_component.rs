@@ -15,7 +15,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let authorization =
         AccessRules::new().method("get_component_state", rule!(require(auth_address)));
 
-    let package_address = test_runner.compile_and_publish("./tests/component");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
@@ -75,7 +75,7 @@ fn can_make_cross_component_call_with_authorization() {
     let authorization =
         AccessRules::new().method("get_component_state", rule!(require(auth_address)));
 
-    let package_address = test_runner.compile_and_publish("./tests/component");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(
@@ -150,7 +150,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     let authorization =
         AccessRules::new().method("get_component_state", rule!(require(auth_address)));
 
-    let package_address = test_runner.compile_and_publish("./tests/component");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), FAUCET_COMPONENT)
         .call_function(

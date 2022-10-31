@@ -10,7 +10,7 @@ fn get_epoch_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/system");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/system");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -30,7 +30,7 @@ fn set_epoch_without_supervisor_auth_fails() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/system");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/system");
 
     // Act
     let epoch = 9876u64;

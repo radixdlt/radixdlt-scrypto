@@ -184,20 +184,37 @@ pub enum Type {
     Set,
     Map,
 
-    /* Custom types */
-    Decimal,
-    PreciseDecimal,
+    // ==============
+    // Custom Types
+    // ==============
+
+    // Globals
     PackageAddress,
-    SystemAddress,
     ComponentAddress,
     ResourceAddress,
-    Hash,
+    SystemAddress,
+
+    // RE Nodes
+    Component,
+    KeyValueStore,
     Bucket,
     Proof,
-    NonFungibleId,
-    NonFungibleAddress,
+    Vault,
+
+    // Other interpreted types
     Expression,
     Blob,
+    NonFungibleAddress,
+
+    // Uninterpreted,
+    Hash,
+    EcdsaSecp256k1PublicKey,
+    EcdsaSecp256k1Signature,
+    EddsaEd25519PublicKey,
+    EddsaEd25519Signature,
+    Decimal,
+    PreciseDecimal,
+    NonFungibleId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -228,19 +245,37 @@ pub enum Value {
     Set(Type, Vec<Value>),
     Map(Type, Type, Vec<Value>),
 
-    Decimal(Box<Value>),
-    PreciseDecimal(Box<Value>),
+    // ==============
+    // Custom Types
+    // ==============
+
+    // Globals
     PackageAddress(Box<Value>),
-    SystemAddress(Box<Value>),
     ComponentAddress(Box<Value>),
     ResourceAddress(Box<Value>),
-    Hash(Box<Value>),
+    SystemAddress(Box<Value>),
+
+    // RE Nodes
+    Component(Box<Value>),
+    KeyValueStore(Box<Value>),
     Bucket(Box<Value>),
     Proof(Box<Value>),
-    NonFungibleId(Box<Value>),
-    NonFungibleAddress(Box<Value>),
+    Vault(Box<Value>),
+
+    // Other interpreted types
     Expression(Box<Value>),
     Blob(Box<Value>),
+    NonFungibleAddress(Box<Value>),
+
+    // Uninterpreted,
+    Hash(Box<Value>),
+    EcdsaSecp256k1PublicKey(Box<Value>),
+    EcdsaSecp256k1Signature(Box<Value>),
+    EddsaEd25519PublicKey(Box<Value>),
+    EddsaEd25519Signature(Box<Value>),
+    Decimal(Box<Value>),
+    PreciseDecimal(Box<Value>),
+    NonFungibleId(Box<Value>),
 }
 
 impl Value {
@@ -268,19 +303,34 @@ impl Value {
             Value::List(_, _) => Type::List,
             Value::Set(_, _) => Type::Set,
             Value::Map(_, _, _) => Type::Map,
-            Value::Decimal(_) => Type::Decimal,
-            Value::PreciseDecimal(_) => Type::PreciseDecimal,
+
+            // Global address types
             Value::PackageAddress(_) => Type::PackageAddress,
-            Value::SystemAddress(_) => Type::SystemAddress,
             Value::ComponentAddress(_) => Type::ComponentAddress,
             Value::ResourceAddress(_) => Type::ResourceAddress,
-            Value::Hash(_) => Type::Hash,
+            Value::SystemAddress(_) => Type::SystemAddress,
+
+            // RE Nodes
+            Value::Component(_) => Type::Component,
+            Value::KeyValueStore(_) => Type::KeyValueStore,
             Value::Bucket(_) => Type::Bucket,
             Value::Proof(_) => Type::Proof,
-            Value::NonFungibleId(_) => Type::NonFungibleId,
-            Value::NonFungibleAddress(_) => Type::NonFungibleAddress,
+            Value::Vault(_) => Type::Vault,
+
+            // Other interpreted types
             Value::Expression(_) => Type::Expression,
             Value::Blob(_) => Type::Blob,
+            Value::NonFungibleAddress(_) => Type::NonFungibleAddress,
+
+            // Uninterpreted,
+            Value::Hash(_) => Type::Hash,
+            Value::EcdsaSecp256k1PublicKey(_) => Type::EcdsaSecp256k1PublicKey,
+            Value::EcdsaSecp256k1Signature(_) => Type::EcdsaSecp256k1Signature,
+            Value::EddsaEd25519PublicKey(_) => Type::EddsaEd25519PublicKey,
+            Value::EddsaEd25519Signature(_) => Type::EddsaEd25519Signature,
+            Value::Decimal(_) => Type::Decimal,
+            Value::PreciseDecimal(_) => Type::PreciseDecimal,
+            Value::NonFungibleId(_) => Type::NonFungibleId,
         }
     }
 }
