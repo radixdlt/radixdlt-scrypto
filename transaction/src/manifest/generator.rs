@@ -477,6 +477,7 @@ pub fn generate_instruction(
         } => {
             let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
             let input = ResourceManagerMintInput {
+                resource_address,
                 mint_params: MintParams::Fungible {
                     amount: generate_decimal(amount)?,
                 },

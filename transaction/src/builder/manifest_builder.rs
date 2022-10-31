@@ -639,6 +639,7 @@ impl ManifestBuilder {
                 method_name: ResourceManagerMethod::Mint.to_string(),
             },
             args: scrypto_encode(&ResourceManagerMintInput {
+                resource_address,
                 mint_params: MintParams::Fungible { amount },
             }),
         });

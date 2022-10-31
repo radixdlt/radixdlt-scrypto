@@ -548,6 +548,93 @@ impl NativeInvocation for ResourceManagerCreateBucketInput {
     }
 }
 
+impl NativeExecutable for ResourceManagerMintInput {
+    type Output = scrypto::resource::Bucket;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        // TODO: Remove this hack and get resolved receiver in a better way
+        let node_id = match system_api.get_actor() {
+            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
+            _ => panic!("Unexpected"),
+        };
+        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let (resource, non_fungibles) = {
+            let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
+            let resource_manager = substate_mut.resource_manager();
+            let result = resource_manager.mint(
+                input.mint_params,
+                resource_manager.resource_address.unwrap(),
+            ).map_err(|e| {
+                match e {
+                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                }
+            })?;
+            result
+        };
+
+        let bucket_id = system_api
+            .create_node(RENode::Bucket(BucketSubstate::new(resource)))?
+            .into();
+
+        let (nf_store_id, resource_address) = {
+            let substate_ref = system_api.get_ref(resman_handle)?;
+            let resource_manager = substate_ref.resource_manager();
+            (
+                resource_manager.nf_store_id.clone(),
+                resource_manager.resource_address.unwrap(),
+            )
+        };
+
+        for (id, non_fungible) in non_fungibles {
+            let node_id = RENodeId::NonFungibleStore(nf_store_id.unwrap());
+            let offset =
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone()));
+            let non_fungible_handle =
+                system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+            {
+                let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
+                let non_fungible_mut = substate_mut.non_fungible();
+
+                if non_fungible_mut.0.is_some() {
+                    return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+                        ResourceManagerError::NonFungibleAlreadyExists(
+                            NonFungibleAddress::new(resource_address, id),
+                        ),
+                    )));
+                }
+
+                *non_fungible_mut = NonFungibleSubstate(Some(non_fungible));
+            }
+
+            system_api.drop_lock(non_fungible_handle)?;
+        }
+
+        Ok((scrypto::resource::Bucket(bucket_id), CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id))))
+    }
+}
+
+impl NativeInvocation for ResourceManagerMintInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
+            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+
 
 pub struct ResourceManager;
 
@@ -673,58 +760,7 @@ impl ResourceManager {
                 panic!("Unexpected")
             }
             ResourceManagerMethod::Mint => {
-                let input: ResourceManagerMintInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-
-                let (resource, non_fungibles) = {
-                    let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-                    let resource_manager = substate_mut.resource_manager();
-                    let result = resource_manager.mint(
-                        input.mint_params,
-                        resource_manager.resource_address.unwrap(),
-                    )?;
-                    result
-                };
-
-                let bucket_id = system_api
-                    .create_node(RENode::Bucket(BucketSubstate::new(resource)))?
-                    .into();
-
-                let (nf_store_id, resource_address) = {
-                    let substate_ref = system_api.get_ref(resman_handle)?;
-                    let resource_manager = substate_ref.resource_manager();
-                    (
-                        resource_manager.nf_store_id.clone(),
-                        resource_manager.resource_address.unwrap(),
-                    )
-                };
-
-                for (id, non_fungible) in non_fungibles {
-                    let node_id = RENodeId::NonFungibleStore(nf_store_id.unwrap());
-                    let offset =
-                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone()));
-                    let non_fungible_handle =
-                        system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-
-                    {
-                        let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
-                        let non_fungible_mut = substate_mut.non_fungible();
-
-                        if non_fungible_mut.0.is_some() {
-                            return Err(InvokeError::Error(
-                                ResourceManagerError::NonFungibleAlreadyExists(
-                                    NonFungibleAddress::new(resource_address, id),
-                                ),
-                            ));
-                        }
-
-                        *non_fungible_mut = NonFungibleSubstate(Some(non_fungible));
-                    }
-
-                    system_api.drop_lock(non_fungible_handle)?;
-                }
-
-                ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
+                panic!("Unexpected")
             }
             ResourceManagerMethod::GetMetadata => {
                 let _: ResourceManagerGetMetadataInput = scrypto_decode(&args.raw)

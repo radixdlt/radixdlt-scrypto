@@ -75,6 +75,7 @@ pub struct ResourceManagerCreateBucketInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerMintInput {
+    pub resource_address: ResourceAddress,
     pub mint_params: MintParams,
 }
 
@@ -278,7 +279,7 @@ impl ResourceManager {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
-            scrypto_encode(&ResourceManagerMintInput { mint_params }),
+            scrypto_encode(&ResourceManagerMintInput { mint_params, resource_address: self.0 }),
         );
         call_engine(input)
     }
