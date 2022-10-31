@@ -1615,29 +1615,21 @@ where
         Ok(())
     }
 
-    fn pre_execute_instruction(&mut self, instruction: &Instruction) -> Result<(), RuntimeError> {
+    fn emit_application_event(&mut self, event: ApplicationEvent) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
-            m.pre_execute_instruction(
+            m.on_application_event(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                instruction,
+                &event,
             )
             .map_err(RuntimeError::ModuleError)?;
         }
         Ok(())
     }
 
-    fn post_execute_instruction(&mut self, instruction: &Instruction) -> Result<(), RuntimeError> {
-        for m in &mut self.modules {
-            m.post_execute_instruction(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                instruction,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
+    fn emit_output_event(&mut self, _event: OutputEvent) -> Result<(), RuntimeError> {
+        // TODO: add event to track
         Ok(())
     }
 }

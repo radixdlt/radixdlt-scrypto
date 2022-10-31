@@ -4,7 +4,6 @@ use crate::fee::FeeReserve;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use bitflags::bitflags;
-use transaction::model::Instruction;
 
 bitflags! {
     #[derive(Encode, Decode, TypeId)]
@@ -94,8 +93,10 @@ where
 
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError>;
 
-    // Used to trigger the ExecutionTraceModule from within TransactionProcessor.
-    fn pre_execute_instruction(&mut self, instruction: &Instruction) -> Result<(), RuntimeError>;
+    /// Emits an application event. Application events are used during the execution
+    /// to exchange information between the kernel and modules. They're volatile.
+    fn emit_application_event(&mut self, event: ApplicationEvent) -> Result<(), RuntimeError>;
 
-    fn post_execute_instruction(&mut self, instruction: &Instruction) -> Result<(), RuntimeError>;
+    /// Emits an output event. Output events are included in a transaction receipt.
+    fn emit_output_event(&mut self, event: OutputEvent) -> Result<(), RuntimeError>;
 }

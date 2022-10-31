@@ -127,24 +127,20 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
         Ok(fee)
     }
 
-    fn pre_execute_instruction(
-        &mut self,
-        _call_frame: &CallFrame,
-        heap: &mut Heap,
-        _track: &mut Track<R>,
-        _instruction: &Instruction,
-    ) -> Result<(), ModuleError> {
-        self.pre_instruction_trace(heap)
-    }
 
-    fn post_execute_instruction(
+    fn on_application_event(
         &mut self,
         _call_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track<R>,
-        instruction: &Instruction,
+        event: &ApplicationEvent,
     ) -> Result<(), ModuleError> {
-        self.post_instruction_trace(heap, track, instruction)
+        match event {
+            ApplicationEvent::PreExecuteInstruction { .. } =>
+                self.pre_instruction_trace(heap),
+            ApplicationEvent::PostExecuteInstruction { instruction } =>
+                self.post_instruction_trace(heap, track, instruction)
+        }
     }
 }
 

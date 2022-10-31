@@ -4,7 +4,7 @@ use transaction::errors::IdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
 
-use crate::engine::{RENode, SystemApi};
+use crate::engine::{ApplicationEvent, RENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::resolve_native_function;
 use crate::model::resolve_native_method;
@@ -202,7 +202,7 @@ impl TransactionProcessor {
 
                 for inst in input.instructions.as_ref() {
                     system_api
-                        .pre_execute_instruction(inst)
+                        .emit_application_event(ApplicationEvent::PreExecuteInstruction { instruction: &inst })
                         .map_err(InvokeError::Downstream)?;
 
                     let result = match inst {
@@ -749,7 +749,7 @@ impl TransactionProcessor {
                     outputs.push(result);
 
                     system_api
-                        .post_execute_instruction(inst)
+                        .emit_application_event(ApplicationEvent::PostExecuteInstruction { instruction: &inst })
                         .map_err(InvokeError::Downstream)?;
                 }
 
