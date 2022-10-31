@@ -23,6 +23,7 @@ pub struct VaultPutInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultTakeInput {
+    pub vault_id: VaultId,
     pub amount: Decimal,
 }
 
@@ -84,7 +85,7 @@ impl Vault {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Vault(VaultMethod::Take),
             RENodeId::Vault(self.0),
-            scrypto_encode(&VaultTakeInput { amount }),
+            scrypto_encode(&VaultTakeInput { vault_id: self.0, amount }),
         );
         call_engine(input)
     }
@@ -93,7 +94,7 @@ impl Vault {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Vault(VaultMethod::LockFee),
             RENodeId::Vault(self.0),
-            scrypto_encode(&VaultTakeInput { amount }),
+            scrypto_encode(&VaultLockFeeInput { amount }),
         );
         call_engine(input)
     }
@@ -102,7 +103,7 @@ impl Vault {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Vault(VaultMethod::LockContingentFee),
             RENodeId::Vault(self.0),
-            scrypto_encode(&VaultTakeInput { amount }),
+            scrypto_encode(&VaultLockFeeInput { amount }),
         );
         call_engine(input)
     }

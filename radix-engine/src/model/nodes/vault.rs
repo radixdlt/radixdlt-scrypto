@@ -1,4 +1,4 @@
-use crate::engine::{LockFlags, RENode, SystemApi};
+use crate::engine::{ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable, NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi};
 use crate::fee::{FeeReserve, FeeReserveError};
 use crate::model::{
     BucketSubstate, InvokeError, ProofError, ResourceContainerId, ResourceOperationError,
@@ -16,6 +16,53 @@ pub enum VaultError {
     LockFeeNotRadixToken,
     LockFeeInsufficientBalance,
     LockFeeRepayFailure(FeeReserveError),
+}
+
+impl NativeExecutable for VaultTakeInput {
+    type Output = scrypto::resource::Bucket;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Vault(input.vault_id);
+        let offset = SubstateOffset::Vault(VaultOffset::Vault);
+        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let container = {
+            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let vault = substate_mut.vault();
+            vault.take(input.amount).map_err(|e| {
+                match e {
+                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::VaultError(e)),
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                }
+            })?
+        };
+
+        let bucket_id = system_api
+            .create_node(RENode::Bucket(BucketSubstate::new(container)))?
+            .into();
+
+        Ok((
+            scrypto::resource::Bucket(bucket_id),
+            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
+        ))
+    }
+}
+
+impl NativeInvocation for VaultTakeInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Vault(VaultMethod::Take),
+            RENodeId::Vault(self.vault_id),
+            CallFrameUpdate::empty(),
+        )
+    }
 }
 
 pub struct Vault;
@@ -71,19 +118,7 @@ impl Vault {
                 ScryptoValue::from_typed(&())
             }
             VaultMethod::Take => {
-                let input: VaultTakeInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
-
-                let container = {
-                    let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let vault = substate_mut.vault();
-                    vault.take(input.amount)?
-                };
-
-                let bucket_id = system_api
-                    .create_node(RENode::Bucket(BucketSubstate::new(container)))?
-                    .into();
-                ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
+                panic!("Unexpected")
             }
             VaultMethod::LockFee | VaultMethod::LockContingentFee => {
                 let input: VaultLockFeeInput = scrypto_decode(&args.raw)
