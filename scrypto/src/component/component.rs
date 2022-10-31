@@ -88,7 +88,10 @@ impl Component {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Component(ComponentMethod::AddAccessCheck),
             RENodeId::Component(self.0),
-            scrypto_encode(&ComponentAddAccessCheckInput { access_rules, component_id: self.0 }),
+            scrypto_encode(&ComponentAddAccessCheckInput {
+                access_rules,
+                component_id: self.0,
+            }),
         );
         let _: () = call_engine(input);
 

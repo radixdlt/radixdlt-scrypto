@@ -40,12 +40,19 @@ pub struct ResourceManagerCreateInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerBucketBurnInput {
+    pub bucket: Bucket,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerBurnInput {
+    pub resource_address: ResourceAddress,
     pub bucket: Bucket,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateAuthInput {
+    pub resource_address: ResourceAddress,
     pub method: ResourceMethodAuthKey,
     pub access_rule: AccessRule,
 }
@@ -117,6 +124,7 @@ impl ResourceManager {
             NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
+                resource_address: self.0,
                 method: ResourceMethodAuthKey::Mint,
                 access_rule,
             }),
@@ -129,6 +137,7 @@ impl ResourceManager {
             NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
+                resource_address: self.0,
                 method: ResourceMethodAuthKey::Burn,
                 access_rule,
             }),
@@ -141,6 +150,7 @@ impl ResourceManager {
             NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
+                resource_address: self.0,
                 method: ResourceMethodAuthKey::Withdraw,
                 access_rule,
             }),
@@ -153,6 +163,7 @@ impl ResourceManager {
             NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
+                resource_address: self.0,
                 method: ResourceMethodAuthKey::Deposit,
                 access_rule,
             }),
@@ -165,6 +176,7 @@ impl ResourceManager {
             NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
+                resource_address: self.0,
                 method: ResourceMethodAuthKey::UpdateMetadata,
                 access_rule,
             }),
@@ -177,6 +189,7 @@ impl ResourceManager {
             NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
+                resource_address: self.0,
                 method: ResourceMethodAuthKey::UpdateNonFungibleData,
                 access_rule,
             }),
@@ -306,6 +319,7 @@ impl ResourceManager {
             pub fn burn(&mut self, bucket: Bucket) -> () {
                 ResourceManagerMethod::Burn,
                 ResourceManagerBurnInput {
+                    resource_address: self.0,
                     bucket
                 }
             }

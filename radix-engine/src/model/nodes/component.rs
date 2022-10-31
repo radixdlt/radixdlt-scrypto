@@ -1,4 +1,7 @@
-use crate::engine::{ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable, NativeInvocation, NativeInvocationInfo, RuntimeError, SystemApi};
+use crate::engine::{
+    ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
+    NativeInvocation, NativeInvocationInfo, RuntimeError, SystemApi,
+};
 use crate::fee::FeeReserve;
 use crate::types::*;
 
@@ -15,9 +18,9 @@ impl NativeExecutable for ComponentAddAccessCheckInput {
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         let node_id = RENodeId::Component(input.component_id);
         let offset = SubstateOffset::Component(ComponentOffset::Info);
@@ -37,11 +40,8 @@ impl NativeExecutable for ComponentAddAccessCheckInput {
             };
 
             let package_offset = SubstateOffset::Package(PackageOffset::Package);
-            let handle = system_api.lock_substate(
-                package_id,
-                package_offset,
-                LockFlags::read_only(),
-            )?;
+            let handle =
+                system_api.lock_substate(package_id, package_offset, LockFlags::read_only())?;
             let substate_ref = system_api.get_ref(handle)?;
             let package = substate_ref.package();
             let blueprint_abi = package.blueprint_abi(&blueprint_name).expect(&format!(
@@ -50,9 +50,11 @@ impl NativeExecutable for ComponentAddAccessCheckInput {
             ));
             for (func_name, _) in input.access_rules.iter() {
                 if !blueprint_abi.contains_fn(func_name.as_str()) {
-                    return Err(RuntimeError::ApplicationError(ApplicationError::ComponentError(
-                        ComponentError::BlueprintFunctionNotFound(func_name.to_string()),
-                    )));
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ComponentError(
+                            ComponentError::BlueprintFunctionNotFound(func_name.to_string()),
+                        ),
+                    ));
                 }
             }
         }
@@ -63,11 +65,7 @@ impl NativeExecutable for ComponentAddAccessCheckInput {
             .access_rules
             .push(input.access_rules);
 
-
-        Ok((
-           (),
-            CallFrameUpdate::empty(),
-        ))
+        Ok(((), CallFrameUpdate::empty()))
     }
 }
 

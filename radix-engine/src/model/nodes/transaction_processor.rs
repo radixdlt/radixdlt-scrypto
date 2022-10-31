@@ -678,25 +678,38 @@ impl TransactionProcessor {
                     )
                     .and_then(|args| Self::process_expressions(args, system_api))
                     .and_then(|args| {
-                        system_api
-                            .invoke(NativeMethodInvocation(
-                                resolve_native_method(
-                                    method_ident.receiver,
-                                    &method_ident.method_name,
-                                )
+                        let native_method =
+                            resolve_native_method(
+                                method_ident.receiver,
+                                &method_ident.method_name,
+                            )
                                 .ok_or(InvokeError::Error(
                                     TransactionProcessorError::NativeMethodNotFound(
                                         method_ident.clone(),
                                     ),
-                                ))?,
-                                Self::replace_node_id(
-                                    method_ident.receiver,
-                                    &mut proof_id_mapping,
-                                    &mut bucket_id_mapping,
-                                )?,
-                                args,
-                            ))
-                            .map_err(InvokeError::Downstream)
+                                ))?;
+                        match native_method {
+                            NativeMethod::ResourceManager(ResourceManagerMethod::Burn) => {
+                                let invocation: ResourceManagerBurnInput = scrypto_decode(&args.raw)
+                                    .map_err(|e| InvokeError::Error(
+                                        TransactionProcessorError::InvalidRequestData(e),
+                                    ))?;
+                                system_api
+                                    .invoke(invocation)
+                                    .map(|a| ScryptoValue::from_typed(&a))
+                            }
+                            _ => {
+                                system_api
+                                    .invoke(NativeMethodInvocation(native_method,
+                                                Self::replace_node_id(
+                                                    method_ident.receiver,
+                                                    &mut proof_id_mapping,
+                                                    &mut bucket_id_mapping,
+                                                )?,
+                                                args,
+                                            ))
+                            }
+                        }.map_err(InvokeError::Downstream)
                     })
                     .and_then(|result| {
                         // Auto move into auth_zone

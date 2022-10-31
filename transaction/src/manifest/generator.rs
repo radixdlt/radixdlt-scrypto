@@ -13,7 +13,7 @@ use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{
-    MintParams, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerBurnInput,
+    MintParams, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerBucketBurnInput,
     ResourceManagerCreateInput, ResourceManagerMintInput,
 };
 use scrypto::values::*;
@@ -466,7 +466,7 @@ pub fn generate_instruction(
                     blueprint_name: "ResourceManager".to_owned(),
                     function_name: ResourceManagerFunction::BurnBucket.to_string(),
                 },
-                args: scrypto_encode(&ResourceManagerBurnInput {
+                args: scrypto_encode(&ResourceManagerBucketBurnInput {
                     bucket: scrypto::resource::Bucket(bucket_id),
                 }),
             }

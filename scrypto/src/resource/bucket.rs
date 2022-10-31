@@ -67,10 +67,14 @@ impl Bucket {
     }
 
     pub fn burn(self) -> () {
+        let resource_address = self.resource_address();
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address())),
-            scrypto_encode(&ResourceManagerBurnInput { bucket: self }),
+            RENodeId::Global(GlobalAddress::Resource(resource_address)),
+            scrypto_encode(&ResourceManagerBurnInput {
+                bucket: self,
+                resource_address,
+            }),
         );
         call_engine(input)
     }

@@ -1,6 +1,7 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, Invokable, InvokableNative, LockFlags, NativeExecutable,
-    NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
+    NativeInvocation, NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError,
+    SystemApi,
 };
 use crate::fee::FeeReserve;
 use crate::model::{
@@ -15,6 +16,7 @@ use crate::model::{
 use crate::types::AccessRule::*;
 use crate::types::ResourceMethodAuthKey::*;
 use crate::types::*;
+use scrypto::resource::ResourceManagerBucketBurnInput;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -36,7 +38,7 @@ pub enum ResourceManagerError {
     ResourceAddressAlreadySet,
 }
 
-impl NativeExecutable for ResourceManagerBurnInput {
+impl NativeExecutable for ResourceManagerBucketBurnInput {
     type Output = ();
 
     fn execute<'s, 'a, Y, R>(
@@ -58,20 +60,16 @@ impl NativeExecutable for ResourceManagerBurnInput {
         let resource_address = substate_ref.bucket().resource_address();
 
         system_api.drop_lock(bucket_handle)?;
-
-        system_api.invoke(NativeMethodInvocation(
-            NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
-            RENodeId::Global(GlobalAddress::Resource(resource_address)),
-            ScryptoValue::from_typed(&ResourceManagerBurnInput {
-                bucket: invocation.bucket,
-            }),
-        ))?;
+        system_api.invoke(ResourceManagerBurnInput {
+            resource_address,
+            bucket: invocation.bucket,
+        })?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
 }
 
-impl NativeInvocation for ResourceManagerBurnInput {
+impl NativeInvocation for ResourceManagerBucketBurnInput {
     fn info(&self) -> NativeInvocationInfo {
         let bucket = RENodeId::Bucket(self.bucket.0);
         let mut node_refs_to_copy = HashSet::new();
@@ -282,6 +280,140 @@ impl NativeInvocation for ResourceManagerCreateInput {
     }
 }
 
+impl NativeExecutable for ResourceManagerBurnInput {
+    type Output = ();
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
+    {
+        // TODO: Remove this hack and get resolved receiver in a better way
+        let node_id = match system_api.get_actor() {
+            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
+            _ => panic!("Unexpected"),
+        };
+        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let bucket: BucketSubstate = system_api
+            .drop_node(RENodeId::Bucket(input.bucket.0))?
+            .into();
+
+        // Check if resource matches
+        // TODO: Move this check into actor check
+        {
+            let substate_ref = system_api.get_ref(resman_handle)?;
+            let resource_manager = substate_ref.resource_manager();
+            if Some(bucket.resource_address()) != resource_manager.resource_address {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ResourceManagerError(
+                        ResourceManagerError::MismatchingBucketResource,
+                    ),
+                ));
+            }
+        }
+        // Update total supply
+        // TODO: there might be better for maintaining total supply, especially for non-fungibles
+        // where we can leverage capabilities of key-value map.
+
+        // Update total supply
+        {
+            let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
+            let resource_manager = substate_mut.resource_manager();
+            resource_manager.total_supply -= bucket.total_amount();
+        }
+
+        // Burn non-fungible
+        let substate_ref = system_api.get_ref(resman_handle)?;
+        let resource_manager = substate_ref.resource_manager();
+        if let Some(nf_store_id) = resource_manager.nf_store_id {
+            let node_id = RENodeId::NonFungibleStore(nf_store_id);
+
+            for id in bucket
+                .total_ids()
+                .expect("Failed to list non-fungible IDs on non-fungible Bucket")
+            {
+                let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id));
+                let non_fungible_handle =
+                    system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+                let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
+                let non_fungible_mut = substate_mut.non_fungible();
+
+                *non_fungible_mut = NonFungibleSubstate(None);
+                system_api.drop_lock(non_fungible_handle)?;
+            }
+        }
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for ResourceManagerBurnInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
+            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0)),
+        )
+    }
+}
+
+impl NativeExecutable for ResourceManagerUpdateAuthInput {
+    type Output = ();
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        // TODO: Remove this hack and get resolved receiver in a better way
+        let node_id = match system_api.get_actor() {
+            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
+            _ => panic!("Unexpected"),
+        };
+        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+
+        let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
+        let method_entry = substate_mut
+            .resource_manager()
+            .authorization
+            .get_mut(&input.method)
+            .expect(&format!(
+                "Authorization for {:?} not specified",
+                input.method
+            ));
+        method_entry.main(MethodAccessRuleMethod::Update(input.access_rule))
+            .map_err(|e| {
+                match e {
+                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                }
+            })?;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for ResourceManagerUpdateAuthInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
+            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+
 pub struct ResourceManager;
 
 impl ResourceManager {
@@ -391,74 +523,10 @@ impl ResourceManager {
 
         let rtn = match method {
             ResourceManagerMethod::Burn => {
-                let input: ResourceManagerBurnInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-
-                let bucket: BucketSubstate = system_api
-                    .drop_node(RENodeId::Bucket(input.bucket.0))?
-                    .into();
-
-                // Check if resource matches
-                // TODO: Move this check into actor check
-                {
-                    let substate_ref = system_api.get_ref(resman_handle)?;
-                    let resource_manager = substate_ref.resource_manager();
-                    if Some(bucket.resource_address()) != resource_manager.resource_address {
-                        return Err(InvokeError::Error(
-                            ResourceManagerError::MismatchingBucketResource,
-                        ));
-                    }
-                }
-                // Update total supply
-                // TODO: there might be better for maintaining total supply, especially for non-fungibles
-                // where we can leverage capabilities of key-value map.
-
-                // Update total supply
-                {
-                    let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-                    let resource_manager = substate_mut.resource_manager();
-                    resource_manager.total_supply -= bucket.total_amount();
-                }
-
-                // Burn non-fungible
-                let substate_ref = system_api.get_ref(resman_handle)?;
-                let resource_manager = substate_ref.resource_manager();
-                if let Some(nf_store_id) = resource_manager.nf_store_id {
-                    let node_id = RENodeId::NonFungibleStore(nf_store_id);
-
-                    for id in bucket
-                        .total_ids()
-                        .expect("Failed to list non-fungible IDs on non-fungible Bucket")
-                    {
-                        let offset =
-                            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id));
-                        let non_fungible_handle =
-                            system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-                        let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
-                        let non_fungible_mut = substate_mut.non_fungible();
-
-                        *non_fungible_mut = NonFungibleSubstate(None);
-                        system_api.drop_lock(non_fungible_handle)?;
-                    }
-                }
-
-                ScryptoValue::from_typed(&())
+                panic!("Unexpected")
             }
             ResourceManagerMethod::UpdateAuth => {
-                let input: ResourceManagerUpdateAuthInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-                let method_entry = substate_mut
-                    .resource_manager()
-                    .authorization
-                    .get_mut(&input.method)
-                    .expect(&format!(
-                        "Authorization for {:?} not specified",
-                        input.method
-                    ));
-                method_entry.main(MethodAccessRuleMethod::Update(input.access_rule))?;
-
-                ScryptoValue::unit()
+                panic!("Unexpected")
             }
             ResourceManagerMethod::LockAuth => {
                 let input: ResourceManagerLockAuthInput = scrypto_decode(&args.raw)

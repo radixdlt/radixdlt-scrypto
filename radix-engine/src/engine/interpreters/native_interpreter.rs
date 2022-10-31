@@ -118,6 +118,8 @@ pub trait InvokableNative<'a>:
     + Invokable<VaultCreateProofByAmountInput>
     + Invokable<VaultCreateProofByIdsInput>
     + Invokable<ComponentAddAccessCheckInput>
+    + Invokable<ResourceManagerBurnInput>
+    + Invokable<ResourceManagerUpdateAuthInput>
 {
 }
 

@@ -339,7 +339,29 @@ where
                         .invoke(invocation)
                         .map(|a| ScryptoValue::from_typed(&a))
                 }
-            }
+            },
+            NativeMethod::ResourceManager(resman_method) => match resman_method {
+                ResourceManagerMethod::Burn => {
+                    let invocation: ResourceManagerBurnInput = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                    self.system_api
+                        .invoke(invocation)
+                        .map(|a| ScryptoValue::from_typed(&a))
+                }
+                ResourceManagerMethod::UpdateAuth => {
+                    let invocation: ResourceManagerUpdateAuthInput = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                    self.system_api
+                        .invoke(invocation)
+                        .map(|a| ScryptoValue::from_typed(&a))
+                }
+                _ => {
+                    let args = ScryptoValue::from_slice(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                    self.system_api
+                        .invoke(NativeMethodInvocation(native_method, receiver, args))
+                }
+            },
             _ => {
                 let args = ScryptoValue::from_slice(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;

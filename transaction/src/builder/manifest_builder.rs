@@ -16,7 +16,8 @@ use scrypto::core::{Blob, NetworkDefinition};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
-use scrypto::resource::{require, ResourceManagerBurnInput, LOCKED};
+use scrypto::resource::{ResourceManagerBurnInput};
+use scrypto::resource::{require, LOCKED};
 use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
 use scrypto::resource::{
     MintParams, Mutability, ResourceManagerCreateInput, ResourceMethodAuthKey,
@@ -654,6 +655,7 @@ impl ManifestBuilder {
                         method_name: ResourceManagerMethod::Burn.to_string(),
                     },
                     args: scrypto_encode(&ResourceManagerBurnInput {
+                        resource_address,
                         bucket: scrypto::resource::Bucket(bucket_id),
                     }),
                 })
@@ -677,6 +679,7 @@ impl ManifestBuilder {
                             method_name: ResourceManagerMethod::Burn.to_string(),
                         },
                         args: scrypto_encode(&ResourceManagerBurnInput {
+                            resource_address: non_fungible_address.resource_address(),
                             bucket: scrypto::resource::Bucket(bucket_id),
                         }),
                     })
