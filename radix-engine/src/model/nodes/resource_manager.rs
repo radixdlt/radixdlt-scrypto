@@ -1014,7 +1014,3 @@ impl NativeInvocation for ResourceManagerSetResourceAddressInput {
         )
     }
 }
-
-pub struct ResourceManager;
-
-impl ResourceManager {}

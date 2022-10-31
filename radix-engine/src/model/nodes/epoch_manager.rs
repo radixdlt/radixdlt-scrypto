@@ -1,7 +1,4 @@
-use crate::engine::{
-    AuthModule, CallFrameUpdate, Invokable, InvokableNative, LockFlags, NativeExecutable,
-    NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
-};
+use crate::engine::{AuthModule, CallFrameUpdate, Invokable, InvokableNative, LockFlags, NativeExecutable, NativeInvocation, NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
@@ -62,6 +59,43 @@ impl NativeInvocation for EpochManagerCreateInput {
     }
 }
 
+impl NativeExecutable for EpochManagerGetCurrentEpochInput {
+    type Output = u64;
+
+    fn execute<'s, 'a, Y, R>(
+        _input: Self,
+        system_api: &mut Y,
+    ) -> Result<(u64, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        // TODO: Remove this hack and get resolved receiver in a better way
+        let node_id = match system_api.get_actor() {
+            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
+            _ => panic!("Unexpected"),
+        };
+        let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+
+        let substate_ref = system_api.get_ref(handle)?;
+        let system = substate_ref.epoch_manager();
+
+        Ok((system.epoch, CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for EpochManagerGetCurrentEpochInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
+            RENodeId::Global(GlobalAddress::System(self.system_address)),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+
 impl EpochManager {
     pub fn function_auth(func: &EpochManagerFunction) -> Vec<MethodAuthorization> {
         match func {
@@ -111,13 +145,7 @@ impl EpochManager {
 
         match method {
             EpochManagerMethod::GetCurrentEpoch => {
-                let _: EpochManagerGetCurrentEpochInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(EpochManagerError::InvalidRequestData(e)))?;
-
-                let substate_ref = system_api.get_ref(handle)?;
-                let system = substate_ref.epoch_manager();
-
-                Ok(ScryptoValue::from_typed(&system.epoch))
+                panic!("Unexpected")
             }
             EpochManagerMethod::SetEpoch => {
                 let EpochManagerSetEpochInput { epoch } = scrypto_decode(&args.raw)

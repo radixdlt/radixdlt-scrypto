@@ -14,7 +14,9 @@ use crate::engine::{api::*, types::*, utils::*};
 pub struct EpochManagerCreateInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct EpochManagerGetCurrentEpochInput {}
+pub struct EpochManagerGetCurrentEpochInput {
+    pub system_address: SystemAddress,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerSetEpochInput {
@@ -94,7 +96,9 @@ impl Runtime {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
             RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-            scrypto_encode(&EpochManagerGetCurrentEpochInput {}),
+            scrypto_encode(&EpochManagerGetCurrentEpochInput {
+                system_address: EPOCH_MANAGER,
+            }),
         );
         call_engine(input)
     }

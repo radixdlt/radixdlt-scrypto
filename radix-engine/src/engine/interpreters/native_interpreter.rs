@@ -132,6 +132,7 @@ pub trait InvokableNative<'a>:
     + Invokable<ResourceManagerNonFungibleExistsInput>
     + Invokable<ResourceManagerGetNonFungibleInput>
     + Invokable<ResourceManagerSetResourceAddressInput>
+    + Invokable<EpochManagerGetCurrentEpochInput>
 {
 }
 
