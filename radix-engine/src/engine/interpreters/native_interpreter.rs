@@ -109,6 +109,7 @@ pub trait InvokableNative<'a>:
     + Invokable<WorktopDrainInput>
     + Invokable<VaultTakeInput>
     + Invokable<VaultPutInput>
+    + Invokable<VaultLockFeeInput>
 {
 }
 

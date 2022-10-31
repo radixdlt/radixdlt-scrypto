@@ -57,7 +57,9 @@ pub struct VaultCreateProofByIdsInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultLockFeeInput {
+    pub vault_id: VaultId,
     pub amount: Decimal,
+    pub contingent: bool,
 }
 
 /// Represents a persistent resource container on ledger state.
@@ -95,16 +97,16 @@ impl Vault {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Vault(VaultMethod::LockFee),
             RENodeId::Vault(self.0),
-            scrypto_encode(&VaultLockFeeInput { amount }),
+            scrypto_encode(&VaultLockFeeInput { vault_id: self.0, amount, contingent: false}),
         );
         call_engine(input)
     }
 
     fn lock_contingent_fee_internal(&mut self, amount: Decimal) {
         let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethod::Vault(VaultMethod::LockContingentFee),
+            NativeMethod::Vault(VaultMethod::LockFee),
             RENodeId::Vault(self.0),
-            scrypto_encode(&VaultLockFeeInput { amount }),
+            scrypto_encode(&VaultLockFeeInput { vault_id: self.0, amount, contingent: true }),
         );
         call_engine(input)
     }

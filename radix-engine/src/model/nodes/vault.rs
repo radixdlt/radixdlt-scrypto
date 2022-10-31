@@ -88,7 +88,7 @@ impl NativeExecutable for VaultPutInput {
         let vault = substate_mut.vault();
         vault
             .put(bucket)
-            .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceOperationError(e))))?;
 
         Ok((
             (),
@@ -107,6 +107,71 @@ impl NativeInvocation for VaultPutInput {
     }
 }
 
+impl NativeExecutable for VaultLockFeeInput {
+    type Output = ();
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Vault(input.vault_id);
+        let offset = SubstateOffset::Vault(VaultOffset::Vault);
+        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE)?;
+
+        let fee = {
+            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let vault = substate_mut.vault();
+
+            // Check resource and take amount
+            if vault.resource_address() != RADIX_TOKEN {
+                return Err(RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::LockFeeNotRadixToken)));
+            }
+
+            // Take fee from the vault
+            vault
+                .take(input.amount)
+                .map_err(|_| RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::LockFeeInsufficientBalance)))?
+        };
+
+        // Refill fee reserve
+        let changes = system_api.lock_fee(
+            input.vault_id,
+            fee,
+            input.contingent
+        )?;
+
+
+        // Return changes
+        {
+            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let vault = substate_mut.vault();
+            vault
+                .borrow_resource_mut()
+                .put(changes)
+                .expect("Failed to return fee changes to a locking-fee vault");
+        }
+
+        Ok((
+            (),
+            CallFrameUpdate::empty(),
+        ))
+    }
+}
+
+impl NativeInvocation for VaultLockFeeInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Vault(VaultMethod::LockFee),
+            RENodeId::Vault(self.vault_id),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
 
 pub struct Vault;
 
@@ -115,9 +180,6 @@ impl Vault {
         match vault_method {
             VaultMethod::Take => LockFlags::MUTABLE,
             VaultMethod::LockFee => {
-                LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE
-            }
-            VaultMethod::LockContingentFee => {
                 LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE
             }
             VaultMethod::Put => LockFlags::MUTABLE,
@@ -152,43 +214,8 @@ impl Vault {
             VaultMethod::Take => {
                 panic!("Unexpected")
             }
-            VaultMethod::LockFee | VaultMethod::LockContingentFee => {
-                let input: VaultLockFeeInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
-
-                let fee = {
-                    let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let vault = substate_mut.vault();
-
-                    // Check resource and take amount
-                    if vault.resource_address() != RADIX_TOKEN {
-                        return Err(InvokeError::Error(VaultError::LockFeeNotRadixToken));
-                    }
-
-                    // Take fee from the vault
-                    vault
-                        .take(input.amount)
-                        .map_err(|_| InvokeError::Error(VaultError::LockFeeInsufficientBalance))?
-                };
-
-                // Refill fee reserve
-                let changes = system_api.lock_fee(
-                    vault_id,
-                    fee,
-                    matches!(method, VaultMethod::LockContingentFee),
-                )?;
-
-                // Return changes
-                {
-                    let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let vault = substate_mut.vault();
-                    vault
-                        .borrow_resource_mut()
-                        .put(changes)
-                        .expect("Failed to return fee changes to a locking-fee vault");
-                }
-
-                ScryptoValue::from_typed(&())
+            VaultMethod::LockFee => {
+                panic!("Unexpected")
             }
             VaultMethod::TakeNonFungibles => {
                 let input: VaultTakeNonFungiblesInput = scrypto_decode(&args.raw)
