@@ -89,7 +89,7 @@ impl Component {
             .unwrap()
     }
 
-    pub fn sys_add_access_check<Y, E: Debug + TypeId + Decode>(
+    pub fn sys_add_access_check<Y, E: Debug + Decode>(
         &mut self,
         access_rules: AccessRules,
         sys_calls: &mut Y,
@@ -109,7 +109,7 @@ impl Component {
         self.sys_globalize(&mut Syscalls).unwrap()
     }
 
-    pub fn sys_globalize<Y, E: Debug + TypeId + Decode>(
+    pub fn sys_globalize<Y, E: Debug + Decode>(
         self,
         sys_calls: &mut Y,
     ) -> Result<ComponentAddress, E>

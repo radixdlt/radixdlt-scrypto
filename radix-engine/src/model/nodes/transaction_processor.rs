@@ -1,6 +1,6 @@
-use scrypto::engine::utils::ScryptoSyscalls;
 use scrypto::resource::{AuthZoneDrainInput, ComponentAuthZone};
 use sbor::rust::borrow::Cow;
+use scrypto::engine::api::ScryptoSyscalls;
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;

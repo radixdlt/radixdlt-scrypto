@@ -9,11 +9,11 @@ use crate::wasm::{WasmEngine, WasmInstance};
 use sbor::{Decode, Encode};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::ScryptoActor;
+use scrypto::engine::api::ScryptoSyscalls;
 use scrypto::engine::types::{
     Level, LockHandle, NativeFunction, NativeMethod, RENodeId, ScryptoFunctionIdent,
     ScryptoMethodIdent, ScryptoRENode, SubstateOffset,
 };
-use scrypto::engine::utils::ScryptoSyscalls;
 use scrypto::values::ScryptoValue;
 
 impl<'g, 's, W, I, R> ScryptoSyscalls<RuntimeError> for Kernel<'g, 's, W, I, R>

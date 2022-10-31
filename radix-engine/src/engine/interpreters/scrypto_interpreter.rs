@@ -1,8 +1,8 @@
+use scrypto::engine::api::ScryptoSyscalls;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringParams, WasmRuntime};
-use scrypto::engine::utils::ScryptoSyscalls;
 
 pub struct ScryptoExecutor<I: WasmInstance> {
     instance: I,

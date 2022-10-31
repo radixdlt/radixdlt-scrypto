@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use std::mem;
-use scrypto::engine::utils::ScryptoSyscalls;
+use scrypto::engine::api::ScryptoSyscalls;
 use transaction::errors::IdAllocationError;
 use transaction::model::AuthZoneParams;
 use transaction::validation::*;

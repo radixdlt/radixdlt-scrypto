@@ -2,11 +2,11 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use scrypto::engine::utils::ScryptoSyscalls;
 
 pub struct NativeInterpreter;
 use sbor::rust::fmt::Debug;
 use sbor::*;
+use scrypto::engine::api::ScryptoSyscalls;
 use scrypto::resource::AuthZoneDrainInput;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {

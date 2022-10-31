@@ -132,7 +132,7 @@ impl Vault {
         self.sys_amount(&mut Syscalls).unwrap()
     }
 
-    pub fn sys_amount<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
+    pub fn sys_amount<Y, E: Debug + Decode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
     where
         Y: ScryptoSyscalls<E>,
     {

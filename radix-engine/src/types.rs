@@ -28,7 +28,7 @@ pub use scrypto::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
     Hash, PublicKey, Signature,
 };
-pub use scrypto::engine::{api::RadixEngineInput, types::*};
+pub use scrypto::engine::{utils::RadixEngineInput, types::*};
 pub use scrypto::math::{Decimal, RoundingMode, I256};
 pub use scrypto::resource::{
     AccessRule, AccessRuleNode, AccessRules, AuthZoneClearInput, AuthZoneCreateProofByAmountInput,

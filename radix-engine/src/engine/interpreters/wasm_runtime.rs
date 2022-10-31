@@ -1,3 +1,4 @@
+use scrypto::engine::api::ScryptoSyscalls;
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::fee::*;
@@ -7,7 +8,6 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::*;
-use scrypto::engine::utils::ScryptoSyscalls;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
 ///
