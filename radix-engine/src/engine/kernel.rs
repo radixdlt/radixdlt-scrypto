@@ -1617,13 +1617,8 @@ where
 
     fn emit_application_event(&mut self, event: ApplicationEvent) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
-            m.on_application_event(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                &event,
-            )
-            .map_err(RuntimeError::ModuleError)?;
+            m.on_application_event(&self.current_frame, &mut self.heap, &mut self.track, &event)
+                .map_err(RuntimeError::ModuleError)?;
         }
         Ok(())
     }

@@ -175,11 +175,13 @@ fn test_instruction_traces() {
     receipt.expect_commit_success();
 
     // Check traces for the 7 manifest instructions
-    let traces: Vec<(Instruction, TraceHeapSnapshot, TraceHeapSnapshot)> = receipt.execution.output_events
+    let traces: Vec<(Instruction, TraceHeapSnapshot, TraceHeapSnapshot)> = receipt
+        .execution
+        .output_events
         .into_iter()
         .filter_map(|ev| match ev {
             OutputEvent::InstructionTraceV0(inst, pre, post) => Some((inst, pre, post)),
-            _ => None
+            _ => None,
         })
         .collect();
 

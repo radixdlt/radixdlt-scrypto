@@ -1,6 +1,7 @@
 mod actor;
 mod call_frame;
 mod errors;
+mod event;
 mod heap;
 mod interpreters;
 mod kernel;
@@ -9,11 +10,11 @@ mod node;
 mod node_properties;
 mod system_api;
 mod track;
-mod event;
 
 pub use actor::*;
 pub use call_frame::*;
 pub use errors::*;
+pub use event::*;
 pub use heap::*;
 pub use interpreters::*;
 pub use kernel::*;
@@ -22,4 +23,3 @@ pub use node::*;
 pub use node_properties::*;
 pub use system_api::{LockFlags, SystemApi};
 pub use track::*;
-pub use event::*;

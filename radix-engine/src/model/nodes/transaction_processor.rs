@@ -202,7 +202,9 @@ impl TransactionProcessor {
 
                 for inst in input.instructions.as_ref() {
                     system_api
-                        .emit_application_event(ApplicationEvent::PreExecuteInstruction { instruction: &inst })
+                        .emit_application_event(ApplicationEvent::PreExecuteInstruction {
+                            instruction: &inst,
+                        })
                         .map_err(InvokeError::Downstream)?;
 
                     let result = match inst {
@@ -749,7 +751,9 @@ impl TransactionProcessor {
                     outputs.push(result);
 
                     system_api
-                        .emit_application_event(ApplicationEvent::PostExecuteInstruction { instruction: &inst })
+                        .emit_application_event(ApplicationEvent::PostExecuteInstruction {
+                            instruction: &inst,
+                        })
                         .map_err(InvokeError::Downstream)?;
                 }
 

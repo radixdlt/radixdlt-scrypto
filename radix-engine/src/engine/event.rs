@@ -1,9 +1,9 @@
-use transaction::model::Instruction;
-use scrypto::engine::types::{BucketId, ProofId};
 use crate::engine::{ProofSnapshot, REActor, TraceHeapSnapshot};
 use crate::model::Resource;
+use sbor::{Decode, Encode, TypeId};
+use scrypto::engine::types::{BucketId, ProofId};
 use std::collections::HashMap;
-use sbor::{TypeId, Encode, Decode};
+use transaction::model::Instruction;
 
 pub enum ApplicationEvent<'a> {
     PreExecuteInstruction { instruction: &'a Instruction },
@@ -27,5 +27,5 @@ pub struct SysCallTrace {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct SysCallTraceValue {
     pub buckets: HashMap<BucketId, Resource>,
-    pub proofs: HashMap<ProofId, ProofSnapshot>
+    pub proofs: HashMap<ProofId, ProofSnapshot>,
 }
