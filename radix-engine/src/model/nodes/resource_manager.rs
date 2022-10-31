@@ -505,6 +505,49 @@ impl NativeInvocation for ResourceManagerCreateVaultInput {
     }
 }
 
+impl NativeExecutable for ResourceManagerCreateBucketInput {
+    type Output = scrypto::resource::Bucket;
+
+    fn execute<'s, 'a, Y, R>(
+        _input: Self,
+        system_api: &mut Y,
+    ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        // TODO: Remove this hack and get resolved receiver in a better way
+        let node_id = match system_api.get_actor() {
+            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
+            _ => panic!("Unexpected"),
+        };
+        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let substate_ref = system_api.get_ref(resman_handle)?;
+        let resource_manager = substate_ref.resource_manager();
+        let container = Resource::new_empty(
+            resource_manager.resource_address.unwrap(),
+            resource_manager.resource_type,
+        );
+        let bucket_id = system_api
+            .create_node(RENode::Bucket(BucketSubstate::new(container)))?
+            .into();
+
+        Ok((scrypto::resource::Bucket(bucket_id), CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id))))
+    }
+}
+
+impl NativeInvocation for ResourceManagerCreateBucketInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
+            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
 
 pub struct ResourceManager;
 
@@ -627,18 +670,7 @@ impl ResourceManager {
                 panic!("Unexpected")
             }
             ResourceManagerMethod::CreateBucket => {
-                let _: ResourceManagerCreateBucketInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let substate_ref = system_api.get_ref(resman_handle)?;
-                let resource_manager = substate_ref.resource_manager();
-                let container = Resource::new_empty(
-                    resource_manager.resource_address.unwrap(),
-                    resource_manager.resource_type,
-                );
-                let bucket_id = system_api
-                    .create_node(RENode::Bucket(BucketSubstate::new(container)))?
-                    .into();
-                ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
+                panic!("Unexpected")
             }
             ResourceManagerMethod::Mint => {
                 let input: ResourceManagerMintInput = scrypto_decode(&args.raw)

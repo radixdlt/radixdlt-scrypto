@@ -69,7 +69,9 @@ pub struct ResourceManagerCreateVaultInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerCreateBucketInput {}
+pub struct ResourceManagerCreateBucketInput {
+    pub resource_address: ResourceAddress,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerMintInput {

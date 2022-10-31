@@ -61,7 +61,9 @@ impl Bucket {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
             RENodeId::Global(GlobalAddress::Resource(resource_address)),
-            scrypto_encode(&ResourceManagerCreateBucketInput {}),
+            scrypto_encode(&ResourceManagerCreateBucketInput {
+                resource_address,
+            }),
         );
         call_engine(input)
     }
