@@ -94,12 +94,14 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
                     cost_unit_limit: header.cost_unit_limit,
                     tip_percentage: header.tip_percentage,
                 },
-                intent_validation: IntentValidation::User {
-                    intent_hash,
-                    start_epoch_inclusive: header.start_epoch_inclusive,
-                    end_epoch_exclusive: header.end_epoch_exclusive,
-                    skip_epoch_assertions: false,
-                },
+                runtime_validations: vec![
+                    RuntimeValidation::IntentHashUniqueness { intent_hash }.enforced(),
+                    RuntimeValidation::WithinEpochRange {
+                        start_epoch_inclusive: header.start_epoch_inclusive,
+                        end_epoch_exclusive: header.end_epoch_exclusive,
+                    }
+                    .enforced(),
+                ],
             },
         ))
     }
@@ -117,19 +119,24 @@ impl NotarizedTransactionValidator {
     ) -> Result<Executable<'t>, TransactionValidationError> {
         let transaction_hash = preview_intent.hash();
         let intent = &preview_intent.intent;
+
+        let flags = &preview_intent.flags;
         let intent_hash = intent.hash();
         self.validate_intent(intent, intent_hash_manager)?;
         let initial_proofs = AuthModule::pk_non_fungibles(&preview_intent.signer_public_keys);
 
         let mut virtualizable_proofs_resource_addresses = BTreeSet::new();
-        if preview_intent.flags.assume_all_signature_proofs {
+        if flags.assume_all_signature_proofs {
             virtualizable_proofs_resource_addresses.insert(ECDSA_SECP256K1_TOKEN);
             virtualizable_proofs_resource_addresses.insert(EDDSA_ED25519_TOKEN);
         }
 
+        let header = &intent.header;
+        let manifest = &intent.manifest;
+
         Ok(Executable::new(
-            &intent.manifest.instructions,
-            &intent.manifest.blobs,
+            &manifest.instructions,
+            &manifest.blobs,
             ExecutionContext {
                 transaction_hash,
                 auth_zone_params: AuthZoneParams {
@@ -137,15 +144,18 @@ impl NotarizedTransactionValidator {
                     virtualizable_proofs_resource_addresses,
                 },
                 fee_payment: FeePayment {
-                    cost_unit_limit: intent.header.cost_unit_limit,
-                    tip_percentage: intent.header.tip_percentage,
+                    cost_unit_limit: header.cost_unit_limit,
+                    tip_percentage: header.tip_percentage,
                 },
-                intent_validation: IntentValidation::User {
-                    intent_hash,
-                    start_epoch_inclusive: intent.header.start_epoch_inclusive,
-                    end_epoch_exclusive: intent.header.end_epoch_exclusive,
-                    skip_epoch_assertions: !preview_intent.flags.permit_invalid_header_epoch,
-                },
+                runtime_validations: vec![
+                    RuntimeValidation::IntentHashUniqueness { intent_hash }
+                        .with_skipped_assertion_if(flags.permit_duplicate_intent_hash),
+                    RuntimeValidation::WithinEpochRange {
+                        start_epoch_inclusive: header.start_epoch_inclusive,
+                        end_epoch_exclusive: header.end_epoch_exclusive,
+                    }
+                    .with_skipped_assertion_if(flags.permit_invalid_header_epoch),
+                ],
             },
         ))
     }
@@ -440,6 +450,7 @@ mod tests {
                 unlimited_loan: true,
                 assume_all_signature_proofs: false,
                 permit_invalid_header_epoch: false,
+                permit_duplicate_intent_hash: false,
             },
         };
 

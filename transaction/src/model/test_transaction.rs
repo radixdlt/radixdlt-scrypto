@@ -49,7 +49,7 @@ impl TestTransaction {
                     cost_unit_limit: intent.header.cost_unit_limit,
                     tip_percentage: intent.header.tip_percentage,
                 },
-                intent_validation: IntentValidation::None,
+                runtime_validations: vec![],
             },
         )
     }

@@ -8,6 +8,7 @@ use crate::model::TransactionIntent;
 pub struct PreviewFlags {
     pub unlimited_loan: bool,
     pub assume_all_signature_proofs: bool,
+    pub permit_duplicate_intent_hash: bool,
     pub permit_invalid_header_epoch: bool,
 }
 

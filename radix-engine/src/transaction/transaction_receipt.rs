@@ -144,24 +144,18 @@ impl TransactionReceipt {
 
     pub fn expect_specific_rejection<F>(&self, f: F)
     where
-        F: FnOnce(&RuntimeError) -> bool,
+        F: FnOnce(&RejectionError) -> bool,
     {
         match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was committed"),
-            TransactionResult::Reject(result) => match &result.error {
-                RejectionError::ErrorBeforeFeeLoanRepaid(err) => {
-                    if !f(&err) {
-                        panic!(
-                            "Expected specific rejection but was different error:\n{:?}",
-                            self
-                        );
-                    }
+            TransactionResult::Reject(result) => {
+                if !f(&result.error) {
+                    panic!(
+                        "Expected specific rejection but was different error:\n{:?}",
+                        self
+                    );
                 }
-                _ => panic!(
-                    "Expected specific rejection but was different error:\n{:?}",
-                    self
-                ),
-            },
+            }
         }
     }
 
