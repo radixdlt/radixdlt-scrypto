@@ -27,7 +27,9 @@ pub struct ProofGetResourceAddressInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofCloneInput {}
+pub struct ProofCloneInput {
+    pub proof_id: ProofId,
+}
 
 /// Represents a proof of owning some resource.
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -71,7 +73,9 @@ impl Clone for Proof {
         RENodeId::Proof(self.0), NativeMethod::Proof => {
             fn clone(&self) -> Self {
                 ProofMethod::Clone,
-                ProofCloneInput {}
+                ProofCloneInput {
+                    proof_id: self.0
+                }
             }
         }
     }

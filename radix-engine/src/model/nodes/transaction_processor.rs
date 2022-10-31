@@ -215,15 +215,6 @@ impl TransactionProcessor {
             .0
     }
 
-    fn first_proof(value: &ScryptoValue) -> ProofId {
-        *value
-            .proof_ids
-            .iter()
-            .next()
-            .expect("No proof found in value")
-            .0
-    }
-
     pub fn static_main<'s, 'a, Y, R>(
         input: TransactionProcessorRunInput,
         system_api: &mut Y,
@@ -509,16 +500,11 @@ impl TransactionProcessor {
                             .cloned()
                             .map(|real_id| {
                                 system_api
-                                    .invoke(NativeMethodInvocation(
-                                        NativeMethod::Proof(ProofMethod::Clone),
-                                        RENodeId::Proof(real_id),
-                                        ScryptoValue::from_typed(&ProofCloneInput {}),
-                                    ))
+                                    .invoke(ProofCloneInput { proof_id: real_id })
                                     .map_err(InvokeError::Downstream)
-                                    .map(|v| {
-                                        let cloned_proof_id = Self::first_proof(&v);
-                                        proof_id_mapping.insert(new_id, cloned_proof_id);
-                                        ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
+                                    .map(|proof| {
+                                        proof_id_mapping.insert(new_id, proof.0);
+                                        ScryptoValue::from_typed(&proof)
                                     })
                             })
                             .unwrap_or(Err(InvokeError::Error(

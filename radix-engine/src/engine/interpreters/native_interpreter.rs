@@ -98,6 +98,7 @@ pub trait InvokableNative<'a>:
     + Invokable<ProofGetAmountInput>
     + Invokable<ProofGetNonFungibleIdsInput>
     + Invokable<ProofGetResourceAddressInput>
+    + Invokable<ProofCloneInput>
 {
 }
 
@@ -217,9 +218,8 @@ impl Executor for NativeMethodExecutor {
             (RENodeId::Bucket(..), NativeMethod::Bucket(..)) => {
                 panic!("Unexpected")
             }
-            (RENodeId::Proof(proof_id), NativeMethod::Proof(method)) => {
-                Proof::main(proof_id, method, self.2, system_api)
-                    .map_err::<RuntimeError, _>(|e| e.into())
+            (RENodeId::Proof(..), NativeMethod::Proof(..)) => {
+                panic!("Unexpected")
             }
             (RENodeId::Worktop, NativeMethod::Worktop(method)) => {
                 Worktop::main(method, self.2, system_api).map_err::<RuntimeError, _>(|e| e.into())
