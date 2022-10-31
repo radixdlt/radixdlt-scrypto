@@ -104,6 +104,9 @@ pub trait InvokableNative<'a>:
     + Invokable<WorktopTakeAllInput>
     + Invokable<WorktopTakeNonFungiblesInput>
     + Invokable<WorktopAssertContainsInput>
+    + Invokable<WorktopAssertContainsAmountInput>
+    + Invokable<WorktopAssertContainsNonFungiblesInput>
+    + Invokable<WorktopDrainInput>
 {
 }
 
@@ -226,8 +229,8 @@ impl Executor for NativeMethodExecutor {
             (RENodeId::Proof(..), NativeMethod::Proof(..)) => {
                 panic!("Unexpected")
             }
-            (RENodeId::Worktop, NativeMethod::Worktop(method)) => {
-                Worktop::main(method, self.2, system_api).map_err::<RuntimeError, _>(|e| e.into())
+            (RENodeId::Worktop, NativeMethod::Worktop(..)) => {
+                panic!("Unexpected")
             }
             (RENodeId::Vault(vault_id), NativeMethod::Vault(method)) => {
                 Vault::main(vault_id, method, self.2, system_api)

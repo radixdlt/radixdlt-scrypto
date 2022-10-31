@@ -155,7 +155,7 @@ fn test_basic_transfer() {
         + 5600 /* drop_lock */
         + 2000 /* drop_node */
         + 0 /* instantiate_wasm */
-        + 2110 /* invoke */
+        + 2085 /* invoke */
         + 7100 /* lock_substate */
         + 2100 /* read_owned_nodes */
         + 22000 /* read_substate */

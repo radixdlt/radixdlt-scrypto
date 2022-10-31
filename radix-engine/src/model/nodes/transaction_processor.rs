@@ -158,19 +158,8 @@ impl TransactionProcessor {
             match expression.0.as_str() {
                 "ENTIRE_WORKTOP" => {
                     let buckets = system_api
-                        .invoke(NativeMethodInvocation(
-                            NativeMethod::Worktop(WorktopMethod::Drain),
-                            RENodeId::Worktop,
-                            ScryptoValue::from_typed(&WorktopDrainInput {}),
-                        ))
-                        .map_err(InvokeError::Downstream)
-                        .map(|result| {
-                            let mut buckets = Vec::new();
-                            for (bucket_id, _) in result.bucket_ids {
-                                buckets.push(scrypto::resource::Bucket(bucket_id));
-                            }
-                            buckets
-                        })?;
+                        .invoke(WorktopDrainInput {})
+                        .map_err(InvokeError::Downstream)?;
 
                     let val = path
                         .get_from_value_mut(&mut value)
@@ -246,8 +235,8 @@ impl TransactionProcessor {
                     .and_then(|new_id| {
                         system_api
                             .invoke(WorktopTakeAllInput {
-                                    resource_address: *resource_address,
-                                })
+                                resource_address: *resource_address,
+                            })
                             .map_err(InvokeError::Downstream)
                             .map(|bucket| {
                                 bucket_id_mapping.insert(new_id, bucket.0);
@@ -285,9 +274,9 @@ impl TransactionProcessor {
                     .and_then(|new_id| {
                         system_api
                             .invoke(WorktopTakeNonFungiblesInput {
-                                    ids: ids.clone(),
-                                    resource_address: *resource_address,
-                                })
+                                ids: ids.clone(),
+                                resource_address: *resource_address,
+                            })
                             .map_err(InvokeError::Downstream)
                             .map(|bucket| {
                                 bucket_id_mapping.insert(new_id, bucket.0);
@@ -309,35 +298,29 @@ impl TransactionProcessor {
                     ))),
                 Instruction::AssertWorktopContains { resource_address } => system_api
                     .invoke(WorktopAssertContainsInput {
-                            resource_address: *resource_address
-                        })
+                        resource_address: *resource_address,
+                    })
                     .map(|rtn| ScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream),
                 Instruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_address,
                 } => system_api
-                    .invoke(NativeMethodInvocation(
-                        NativeMethod::Worktop(WorktopMethod::AssertContainsAmount),
-                        RENodeId::Worktop,
-                        ScryptoValue::from_typed(&WorktopAssertContainsAmountInput {
-                            amount: *amount,
-                            resource_address: *resource_address,
-                        }),
-                    ))
+                    .invoke(WorktopAssertContainsAmountInput {
+                        amount: *amount,
+                        resource_address: *resource_address,
+                    })
+                    .map(|rtn| ScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream),
                 Instruction::AssertWorktopContainsByIds {
                     ids,
                     resource_address,
                 } => system_api
-                    .invoke(NativeMethodInvocation(
-                        NativeMethod::Worktop(WorktopMethod::AssertContainsNonFungibles),
-                        RENodeId::Worktop,
-                        ScryptoValue::from_typed(&WorktopAssertContainsNonFungiblesInput {
-                            ids: ids.clone(),
-                            resource_address: *resource_address,
-                        }),
-                    ))
+                    .invoke(WorktopAssertContainsNonFungiblesInput {
+                        ids: ids.clone(),
+                        resource_address: *resource_address,
+                    })
+                    .map(|rtn| ScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream),
 
                 Instruction::PopFromAuthZone {} => id_allocator

@@ -1,5 +1,5 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, InvokableNative, InvokeError, LockFlags, NativeExecutable,
+    ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
@@ -173,25 +173,22 @@ impl NativeExecutable for WorktopTakeAllInput {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
         let worktop_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-
         let maybe_resource = {
             let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
             let worktop = substate_mut.worktop();
-            let maybe_resource = worktop
-                .take_all(input.resource_address)
-                .map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::WorktopError(
-                        WorktopError::ResourceOperationError(e),
-                    ))
-                })?;
+            let maybe_resource = worktop.take_all(input.resource_address).map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::WorktopError(
+                    WorktopError::ResourceOperationError(e),
+                ))
+            })?;
             maybe_resource
         };
 
@@ -199,15 +196,11 @@ impl NativeExecutable for WorktopTakeAllInput {
             resource
         } else {
             let resource_type = {
-                let resource_id =
-                    RENodeId::Global(GlobalAddress::Resource(input.resource_address));
+                let resource_id = RENodeId::Global(GlobalAddress::Resource(input.resource_address));
                 let offset =
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                let resource_handle = system_api.lock_substate(
-                    resource_id,
-                    offset,
-                    LockFlags::read_only(),
-                )?;
+                let resource_handle =
+                    system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
                 let substate_ref = system_api.get_ref(resource_handle)?;
                 substate_ref.resource_manager().resource_type
             };
@@ -238,7 +231,6 @@ impl NativeInvocation for WorktopTakeAllInput {
     }
 }
 
-
 impl NativeExecutable for WorktopTakeNonFungiblesInput {
     type Output = scrypto::resource::Bucket;
 
@@ -246,14 +238,13 @@ impl NativeExecutable for WorktopTakeNonFungiblesInput {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
         let worktop_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-
 
         let maybe_resource = {
             let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
@@ -272,15 +263,11 @@ impl NativeExecutable for WorktopTakeNonFungiblesInput {
             resource
         } else {
             let resource_type = {
-                let resource_id =
-                    RENodeId::Global(GlobalAddress::Resource(input.resource_address));
+                let resource_id = RENodeId::Global(GlobalAddress::Resource(input.resource_address));
                 let offset =
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                let resource_handle = system_api.lock_substate(
-                    resource_id,
-                    offset,
-                    LockFlags::read_only(),
-                )?;
+                let resource_handle =
+                    system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
                 let substate_ref = system_api.get_ref(resource_handle)?;
                 substate_ref.resource_manager().resource_type
             };
@@ -291,7 +278,6 @@ impl NativeExecutable for WorktopTakeNonFungiblesInput {
         let bucket_id = system_api
             .create_node(RENode::Bucket(BucketSubstate::new(resource_resource)))?
             .into();
-
 
         Ok((
             scrypto::resource::Bucket(bucket_id),
@@ -319,9 +305,9 @@ impl NativeExecutable for WorktopAssertContainsInput {
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -330,7 +316,9 @@ impl NativeExecutable for WorktopAssertContainsInput {
         let substate_ref = system_api.get_ref(worktop_handle)?;
         let worktop = substate_ref.worktop();
         if worktop.total_amount(input.resource_address).is_zero() {
-            return Err(RuntimeError::ApplicationError(ApplicationError::WorktopError(WorktopError::AssertionFailed)));
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::WorktopError(WorktopError::AssertionFailed),
+            ));
         }
 
         Ok(((), CallFrameUpdate::empty()))
@@ -349,106 +337,149 @@ impl NativeInvocation for WorktopAssertContainsInput {
     }
 }
 
-pub struct Worktop;
+impl NativeExecutable for WorktopAssertContainsAmountInput {
+    type Output = ();
 
-impl Worktop {
-    pub fn method_locks(method: WorktopMethod) -> LockFlags {
-        match method {
-            WorktopMethod::TakeAll => LockFlags::MUTABLE,
-            WorktopMethod::TakeAmount => LockFlags::MUTABLE,
-            WorktopMethod::TakeNonFungibles => LockFlags::MUTABLE,
-            WorktopMethod::Put => LockFlags::MUTABLE,
-            WorktopMethod::AssertContains => LockFlags::read_only(),
-            WorktopMethod::AssertContainsAmount => LockFlags::read_only(),
-            WorktopMethod::AssertContainsNonFungibles => LockFlags::read_only(),
-            WorktopMethod::Drain => LockFlags::MUTABLE,
-        }
-    }
-
-    pub fn main<'s, Y, R>(
-        method: WorktopMethod,
-        args: ScryptoValue,
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, InvokeError<WorktopError>>
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R>,
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
         R: FeeReserve,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle =
-            system_api.lock_substate(node_id, offset, Self::method_locks(method))?;
+        let worktop_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
 
-        let rtn = match method {
-            WorktopMethod::Put => {
-                panic!("Unexpected");
-            }
-            WorktopMethod::TakeAmount => {
-                panic!("Unexpected");
-            }
-            WorktopMethod::TakeAll => {
-                panic!("Unexpected");
-            }
-            WorktopMethod::TakeNonFungibles => {
-                panic!("Unexpected");
-            }
-            WorktopMethod::AssertContains => {
-                panic!("Unexpected");
-            }
-            WorktopMethod::AssertContainsAmount => {
-                let input: WorktopAssertContainsAmountInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
-                let substate_ref = system_api.get_ref(worktop_handle)?;
-                let worktop = substate_ref.worktop();
-                if worktop.total_amount(input.resource_address) < input.amount {
-                    Err(InvokeError::Error(WorktopError::AssertionFailed))
-                } else {
-                    Ok(ScryptoValue::from_typed(&()))
-                }
-            }
-            WorktopMethod::AssertContainsNonFungibles => {
-                let input: WorktopAssertContainsNonFungiblesInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
-                let substate_ref = system_api.get_ref(worktop_handle)?;
-                let worktop = substate_ref.worktop();
-                if !worktop
-                    .total_ids(input.resource_address)
-                    .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?
-                    .is_superset(&input.ids)
-                {
-                    Err(InvokeError::Error(WorktopError::AssertionFailed))
-                } else {
-                    Ok(ScryptoValue::from_typed(&()))
-                }
-            }
-            WorktopMethod::Drain => {
-                let _: WorktopDrainInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
-                let mut resources = Vec::new();
-                {
-                    let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
-                    let worktop = substate_mut.worktop();
-                    for (_, resource) in worktop.resources.drain() {
-                        let taken = resource.borrow_mut().take_all_liquid().map_err(|e| {
-                            InvokeError::Error(WorktopError::ResourceOperationError(e))
-                        })?;
-                        if !taken.is_empty() {
-                            resources.push(taken);
-                        }
-                    }
-                }
+        let substate_ref = system_api.get_ref(worktop_handle)?;
+        let worktop = substate_ref.worktop();
+        if worktop.total_amount(input.resource_address) < input.amount {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::WorktopError(WorktopError::AssertionFailed),
+            ));
+        }
 
-                let mut buckets = Vec::new();
-                for resource in resources {
-                    let bucket_id = system_api
-                        .create_node(RENode::Bucket(BucketSubstate::new(resource)))?
-                        .into();
-                    buckets.push(scrypto::resource::Bucket(bucket_id))
-                }
-                Ok(ScryptoValue::from_typed(&buckets))
-            }
-        }?;
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
 
-        Ok(rtn)
+impl NativeInvocation for WorktopAssertContainsAmountInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Worktop(WorktopMethod::AssertContainsAmount),
+            RENodeId::Worktop,
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
+                self.resource_address,
+            ))),
+        )
+    }
+}
+
+impl NativeExecutable for WorktopAssertContainsNonFungiblesInput {
+    type Output = ();
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
+    {
+        let node_id = RENodeId::Worktop;
+        let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
+        let worktop_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+
+        let substate_ref = system_api.get_ref(worktop_handle)?;
+        let worktop = substate_ref.worktop();
+        if !worktop
+            .total_ids(input.resource_address)
+            .map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::WorktopError(
+                    WorktopError::ResourceOperationError(e),
+                ))
+            })?
+            .is_superset(&input.ids)
+        {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::WorktopError(WorktopError::AssertionFailed),
+            ));
+        }
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for WorktopAssertContainsNonFungiblesInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Worktop(WorktopMethod::AssertContainsNonFungibles),
+            RENodeId::Worktop,
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
+                self.resource_address,
+            ))),
+        )
+    }
+}
+
+impl NativeExecutable for WorktopDrainInput {
+    type Output = Vec<scrypto::resource::Bucket>;
+
+    fn execute<'s, 'a, Y, R>(
+        _input: Self,
+        system_api: &mut Y,
+    ) -> Result<(Vec<scrypto::resource::Bucket>, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
+    {
+        let node_id = RENodeId::Worktop;
+        let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
+        let worktop_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let mut resources = Vec::new();
+        {
+            let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
+            let worktop = substate_mut.worktop();
+            for (_, resource) in worktop.resources.drain() {
+                let taken = resource.borrow_mut().take_all_liquid().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::WorktopError(
+                        WorktopError::ResourceOperationError(e),
+                    ))
+                })?;
+                if !taken.is_empty() {
+                    resources.push(taken);
+                }
+            }
+        }
+
+        let mut buckets = Vec::new();
+        let mut nodes_to_move = Vec::new();
+        for resource in resources {
+            let bucket_id = system_api
+                .create_node(RENode::Bucket(BucketSubstate::new(resource)))?
+                .into();
+            buckets.push(scrypto::resource::Bucket(bucket_id));
+            nodes_to_move.push(RENodeId::Bucket(bucket_id));
+        }
+
+        Ok((
+            buckets,
+            CallFrameUpdate {
+                nodes_to_move,
+                node_refs_to_copy: HashSet::new(),
+            },
+        ))
+    }
+}
+
+impl NativeInvocation for WorktopDrainInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Worktop(WorktopMethod::Drain),
+            RENodeId::Worktop,
+            CallFrameUpdate::empty(),
+        )
     }
 }
