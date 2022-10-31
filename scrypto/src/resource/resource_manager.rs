@@ -90,7 +90,9 @@ pub struct ResourceManagerGetResourceTypeInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerGetTotalSupplyInput {}
+pub struct ResourceManagerGetTotalSupplyInput {
+    pub resource_address: ResourceAddress,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateMetadataInput {
@@ -322,7 +324,9 @@ impl ResourceManager {
             }
             pub fn total_supply(&self) -> Decimal {
                 ResourceManagerMethod::GetTotalSupply,
-                ResourceManagerGetTotalSupplyInput {}
+                ResourceManagerGetTotalSupplyInput {
+                    resource_address: self.0,
+                }
             }
             pub fn update_metadata(&mut self, metadata: HashMap<String, String>) -> () {
                 ResourceManagerMethod::UpdateMetadata,
