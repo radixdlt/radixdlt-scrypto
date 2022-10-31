@@ -278,19 +278,14 @@ impl TransactionProcessor {
                     })
                     .and_then(|new_id| {
                         system_api
-                            .invoke(NativeMethodInvocation(
-                                NativeMethod::Worktop(WorktopMethod::TakeAmount),
-                                RENodeId::Worktop,
-                                ScryptoValue::from_typed(&WorktopTakeAmountInput {
-                                    amount: *amount,
-                                    resource_address: *resource_address,
-                                }),
-                            ))
+                            .invoke(WorktopTakeAmountInput {
+                                amount: *amount,
+                                resource_address: *resource_address,
+                            })
                             .map_err(InvokeError::Downstream)
-                            .map(|rtn| {
-                                let bucket_id = Self::first_bucket(&rtn);
-                                bucket_id_mapping.insert(new_id, bucket_id);
-                                ScryptoValue::from_typed(&scrypto::resource::Bucket(new_id))
+                            .map(|bucket| {
+                                bucket_id_mapping.insert(new_id, bucket.0);
+                                ScryptoValue::from_typed(&bucket)
                             })
                     }),
                 Instruction::TakeFromWorktopByIds {
@@ -323,8 +318,8 @@ impl TransactionProcessor {
                     .map(|real_id| {
                         system_api
                             .invoke(WorktopPutInput {
-                                    bucket: scrypto::resource::Bucket(real_id),
-                                })
+                                bucket: scrypto::resource::Bucket(real_id),
+                            })
                             .map(|rtn| ScryptoValue::from_typed(&rtn))
                             .map_err(InvokeError::Downstream)
                     })
@@ -594,9 +589,8 @@ impl TransactionProcessor {
                         for (bucket_id, _) in &result.bucket_ids {
                             system_api
                                 .invoke(WorktopPutInput {
-                                        bucket: scrypto::resource::Bucket(*bucket_id),
-                                    }
-                                )
+                                    bucket: scrypto::resource::Bucket(*bucket_id),
+                                })
                                 .map_err(InvokeError::downstream)?;
                         }
                         Ok(result)
@@ -707,9 +701,8 @@ impl TransactionProcessor {
                         for (bucket_id, _) in &result.bucket_ids {
                             system_api
                                 .invoke(WorktopPutInput {
-                                        bucket: scrypto::resource::Bucket(*bucket_id),
-                                    }
-                                )
+                                    bucket: scrypto::resource::Bucket(*bucket_id),
+                                })
                                 .map_err(InvokeError::Downstream)?;
                         }
                         Ok(result)

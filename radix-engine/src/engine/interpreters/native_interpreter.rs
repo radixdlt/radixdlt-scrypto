@@ -100,6 +100,7 @@ pub trait InvokableNative<'a>:
     + Invokable<ProofGetResourceAddressInput>
     + Invokable<ProofCloneInput>
     + Invokable<WorktopPutInput>
+    + Invokable<WorktopTakeAmountInput>
 {
 }
 
