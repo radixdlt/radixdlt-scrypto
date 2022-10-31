@@ -206,15 +206,6 @@ impl TransactionProcessor {
             .expect("Value became invalid post expression transformation"))
     }
 
-    fn first_bucket(value: &ScryptoValue) -> BucketId {
-        *value
-            .bucket_ids
-            .iter()
-            .next()
-            .expect("No bucket found in value")
-            .0
-    }
-
     pub fn static_main<'s, 'a, Y, R>(
         input: TransactionProcessorRunInput,
         system_api: &mut Y,
@@ -293,19 +284,14 @@ impl TransactionProcessor {
                     })
                     .and_then(|new_id| {
                         system_api
-                            .invoke(NativeMethodInvocation(
-                                NativeMethod::Worktop(WorktopMethod::TakeNonFungibles),
-                                RENodeId::Worktop,
-                                ScryptoValue::from_typed(&WorktopTakeNonFungiblesInput {
+                            .invoke(WorktopTakeNonFungiblesInput {
                                     ids: ids.clone(),
                                     resource_address: *resource_address,
-                                }),
-                            ))
+                                })
                             .map_err(InvokeError::Downstream)
-                            .map(|rtn| {
-                                let bucket_id = Self::first_bucket(&rtn);
-                                bucket_id_mapping.insert(new_id, bucket_id);
-                                ScryptoValue::from_typed(&scrypto::resource::Bucket(new_id))
+                            .map(|bucket| {
+                                bucket_id_mapping.insert(new_id, bucket.0);
+                                ScryptoValue::from_typed(&bucket)
                             })
                     }),
                 Instruction::ReturnToWorktop { bucket_id } => bucket_id_mapping
