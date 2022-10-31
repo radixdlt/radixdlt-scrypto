@@ -786,6 +786,72 @@ impl NativeInvocation for ResourceManagerUpdateMetadataInput {
     }
 }
 
+impl NativeExecutable for ResourceManagerUpdateNonFungibleDataInput {
+    type Output = ();
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        // TODO: Remove this hack and get resolved receiver in a better way
+        let node_id = match system_api.get_actor() {
+            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
+            _ => panic!("Unexpected"),
+        };
+        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let substate_ref = system_api.get_ref(resman_handle)?;
+        let resource_manager = substate_ref.resource_manager();
+        let nf_store_id = resource_manager
+            .nf_store_id
+            .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))
+            .map_err(|e| {
+                match e {
+                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                }
+            })?;
+        let resource_address = resource_manager.resource_address.unwrap();
+
+        let node_id = RENodeId::NonFungibleStore(nf_store_id);
+        let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
+            input.id.clone(),
+        ));
+
+        let non_fungible_handle =
+            system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
+        let non_fungible_mut = substate_mut.non_fungible();
+        if let Some(ref mut non_fungible) = non_fungible_mut.0 {
+            non_fungible.set_mutable_data(input.data);
+        } else {
+            let non_fungible_address = NonFungibleAddress::new(resource_address, input.id);
+            return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+                ResourceManagerError::NonFungibleNotFound(non_fungible_address),
+            )));
+        }
+
+        system_api.drop_lock(non_fungible_handle)?;
+
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for ResourceManagerUpdateNonFungibleDataInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData),
+            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
 
 
 pub struct ResourceManager;
@@ -927,37 +993,7 @@ impl ResourceManager {
                 panic!("Unexpected")
             }
             ResourceManagerMethod::UpdateNonFungibleData => {
-                let input: ResourceManagerUpdateNonFungibleDataInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-
-                let substate_ref = system_api.get_ref(resman_handle)?;
-                let resource_manager = substate_ref.resource_manager();
-                let nf_store_id = resource_manager
-                    .nf_store_id
-                    .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?;
-                let resource_address = resource_manager.resource_address.unwrap();
-
-                let node_id = RENodeId::NonFungibleStore(nf_store_id);
-                let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
-                    input.id.clone(),
-                ));
-
-                let non_fungible_handle =
-                    system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-                let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
-                let non_fungible_mut = substate_mut.non_fungible();
-                if let Some(ref mut non_fungible) = non_fungible_mut.0 {
-                    non_fungible.set_mutable_data(input.data);
-                } else {
-                    let non_fungible_address = NonFungibleAddress::new(resource_address, input.id);
-                    return Err(InvokeError::Error(
-                        ResourceManagerError::NonFungibleNotFound(non_fungible_address),
-                    ));
-                }
-
-                system_api.drop_lock(non_fungible_handle)?;
-
-                ScryptoValue::from_typed(&())
+                panic!("Unexpected")
             }
             ResourceManagerMethod::NonFungibleExists => {
                 let input: ResourceManagerNonFungibleExistsInput = scrypto_decode(&args.raw)

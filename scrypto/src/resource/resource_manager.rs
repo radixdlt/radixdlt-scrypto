@@ -107,6 +107,7 @@ pub struct ResourceManagerSetResourceAddressInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateNonFungibleDataInput {
+    pub resource_address: ResourceAddress,
     pub id: NonFungibleId,
     pub data: Vec<u8>,
 }
@@ -295,7 +296,7 @@ impl ResourceManager {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
-            scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput { id, data }),
+            scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput { id, data, resource_address: self.0 }),
         );
         call_engine(input)
     }
