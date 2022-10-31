@@ -153,8 +153,8 @@ fn test_instruction_traces() {
     let package_address = test_runner.compile_and_publish("./tests/execution_trace");
 
     let manfiest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .create_proof_from_bucket(bucket_id, |builder, proof_id| {
