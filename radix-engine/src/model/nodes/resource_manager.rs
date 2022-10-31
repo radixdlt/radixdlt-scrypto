@@ -6,15 +6,9 @@ use crate::engine::{
 use crate::fee::FeeReserve;
 use crate::model::{
     BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
-    ResourceMethodRule::{Protected, Public},
     VaultRuntimeSubstate,
 };
-use crate::model::{
-    MethodAccessRule, MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate,
-    ResourceMethodRule,
-};
-use crate::types::AccessRule::*;
-use crate::types::ResourceMethodAuthKey::*;
+use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
 use scrypto::resource::ResourceManagerBucketBurnInput;
 
@@ -119,7 +113,7 @@ impl NativeExecutable for ResourceManagerCreateInput {
                 system_api.create_node(RENode::NonFungibleStore(NonFungibleStore::new()))?;
             let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
 
-            let mut resource_manager = ResourceManager::new(
+            let mut resource_manager = ResourceManagerSubstate::new(
                 invocation.resource_type,
                 invocation.metadata,
                 invocation.access_rules,
@@ -161,7 +155,7 @@ impl NativeExecutable for ResourceManagerCreateInput {
             }
             system_api.create_node(RENode::ResourceManager(resource_manager))?
         } else {
-            let mut resource_manager = ResourceManager::new(
+            let mut resource_manager = ResourceManagerSubstate::new(
                 invocation.resource_type,
                 invocation.metadata,
                 invocation.access_rules,
@@ -209,13 +203,7 @@ impl NativeExecutable for ResourceManagerCreateInput {
         let resource_address: ResourceAddress = global_node_id.into();
 
         // FIXME this is temporary workaround for the resource address resolution problem
-        system_api.invoke(NativeMethodInvocation(
-            NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
-            RENodeId::Global(GlobalAddress::Resource(resource_address)),
-            ScryptoValue::from_typed(&ResourceManagerSetResourceAddressInput {
-                address: resource_address,
-            }),
-        ))?;
+        system_api.invoke(ResourceManagerSetResourceAddressInput { resource_address })?;
 
         // Mint
         let bucket = if let Some(mint_params) = invocation.mint_params {
@@ -369,9 +357,9 @@ impl NativeExecutable for ResourceManagerUpdateAuthInput {
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -380,7 +368,6 @@ impl NativeExecutable for ResourceManagerUpdateAuthInput {
         };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-
 
         let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
         let method_entry = substate_mut
@@ -391,12 +378,13 @@ impl NativeExecutable for ResourceManagerUpdateAuthInput {
                 "Authorization for {:?} not specified",
                 input.method
             ));
-        method_entry.main(MethodAccessRuleMethod::Update(input.access_rule))
-            .map_err(|e| {
-                match e {
-                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
-                    InvokeError::Downstream(runtime_error) => runtime_error,
+        method_entry
+            .main(MethodAccessRuleMethod::Update(input.access_rule))
+            .map_err(|e| match e {
+                InvokeError::Error(e) => {
+                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
                 }
+                InvokeError::Downstream(runtime_error) => runtime_error,
             })?;
 
         Ok(((), CallFrameUpdate::empty()))
@@ -420,9 +408,9 @@ impl NativeExecutable for ResourceManagerLockAuthInput {
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -441,12 +429,14 @@ impl NativeExecutable for ResourceManagerLockAuthInput {
                 "Authorization for {:?} not specified",
                 input.method
             ));
-        method_entry.main(MethodAccessRuleMethod::Lock()).map_err(|e| {
-            match e {
-                InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
+        method_entry
+            .main(MethodAccessRuleMethod::Lock())
+            .map_err(|e| match e {
+                InvokeError::Error(e) => {
+                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+                }
                 InvokeError::Downstream(runtime_error) => runtime_error,
-            }
-        })?;
+            })?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -469,9 +459,9 @@ impl NativeExecutable for ResourceManagerCreateVaultInput {
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Vault, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -491,7 +481,10 @@ impl NativeExecutable for ResourceManagerCreateVaultInput {
             .create_node(RENode::Vault(VaultRuntimeSubstate::new(resource)))?
             .into();
 
-        Ok((scrypto::resource::Vault(vault_id), CallFrameUpdate::move_node(RENodeId::Vault(vault_id))))
+        Ok((
+            scrypto::resource::Vault(vault_id),
+            CallFrameUpdate::move_node(RENodeId::Vault(vault_id)),
+        ))
     }
 }
 
@@ -512,9 +505,9 @@ impl NativeExecutable for ResourceManagerCreateBucketInput {
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -534,7 +527,10 @@ impl NativeExecutable for ResourceManagerCreateBucketInput {
             .create_node(RENode::Bucket(BucketSubstate::new(container)))?
             .into();
 
-        Ok((scrypto::resource::Bucket(bucket_id), CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id))))
+        Ok((
+            scrypto::resource::Bucket(bucket_id),
+            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
+        ))
     }
 }
 
@@ -555,9 +551,9 @@ impl NativeExecutable for ResourceManagerMintInput {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -570,15 +566,17 @@ impl NativeExecutable for ResourceManagerMintInput {
         let (resource, non_fungibles) = {
             let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
-            let result = resource_manager.mint(
-                input.mint_params,
-                resource_manager.resource_address.unwrap(),
-            ).map_err(|e| {
-                match e {
-                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
+            let result = resource_manager
+                .mint(
+                    input.mint_params,
+                    resource_manager.resource_address.unwrap(),
+                )
+                .map_err(|e| match e {
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+                    }
                     InvokeError::Downstream(runtime_error) => runtime_error,
-                }
-            })?;
+                })?;
             result
         };
 
@@ -607,11 +605,13 @@ impl NativeExecutable for ResourceManagerMintInput {
                 let non_fungible_mut = substate_mut.non_fungible();
 
                 if non_fungible_mut.0.is_some() {
-                    return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
-                        ResourceManagerError::NonFungibleAlreadyExists(
-                            NonFungibleAddress::new(resource_address, id),
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::NonFungibleAlreadyExists(
+                                NonFungibleAddress::new(resource_address, id),
+                            ),
                         ),
-                    )));
+                    ));
                 }
 
                 *non_fungible_mut = NonFungibleSubstate(Some(non_fungible));
@@ -620,7 +620,10 @@ impl NativeExecutable for ResourceManagerMintInput {
             system_api.drop_lock(non_fungible_handle)?;
         }
 
-        Ok((scrypto::resource::Bucket(bucket_id), CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id))))
+        Ok((
+            scrypto::resource::Bucket(bucket_id),
+            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
+        ))
     }
 }
 
@@ -641,9 +644,9 @@ impl NativeExecutable for ResourceManagerGetMetadataInput {
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(HashMap<String, String>, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -677,9 +680,9 @@ impl NativeExecutable for ResourceManagerGetResourceTypeInput {
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(ResourceType, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -713,9 +716,9 @@ impl NativeExecutable for ResourceManagerGetTotalSupplyInput {
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -741,7 +744,6 @@ impl NativeInvocation for ResourceManagerGetTotalSupplyInput {
     }
 }
 
-
 impl NativeExecutable for ResourceManagerUpdateMetadataInput {
     type Output = ();
 
@@ -749,9 +751,9 @@ impl NativeExecutable for ResourceManagerUpdateMetadataInput {
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -765,11 +767,11 @@ impl NativeExecutable for ResourceManagerUpdateMetadataInput {
         substate_mut
             .resource_manager()
             .update_metadata(input.metadata)
-            .map_err(|e| {
-                match e {
-                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
-                    InvokeError::Downstream(runtime_error) => runtime_error,
+            .map_err(|e| match e {
+                InvokeError::Error(e) => {
+                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
                 }
+                InvokeError::Downstream(runtime_error) => runtime_error,
             })?;
 
         Ok(((), CallFrameUpdate::empty()))
@@ -793,9 +795,9 @@ impl NativeExecutable for ResourceManagerUpdateNonFungibleDataInput {
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -810,34 +812,33 @@ impl NativeExecutable for ResourceManagerUpdateNonFungibleDataInput {
         let nf_store_id = resource_manager
             .nf_store_id
             .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))
-            .map_err(|e| {
-                match e {
-                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
-                    InvokeError::Downstream(runtime_error) => runtime_error,
+            .map_err(|e| match e {
+                InvokeError::Error(e) => {
+                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
                 }
+                InvokeError::Downstream(runtime_error) => runtime_error,
             })?;
         let resource_address = resource_manager.resource_address.unwrap();
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
-        let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
-            input.id.clone(),
-        ));
+        let offset =
+            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id.clone()));
 
-        let non_fungible_handle =
-            system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let non_fungible_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
         let non_fungible_mut = substate_mut.non_fungible();
         if let Some(ref mut non_fungible) = non_fungible_mut.0 {
             non_fungible.set_mutable_data(input.data);
         } else {
             let non_fungible_address = NonFungibleAddress::new(resource_address, input.id);
-            return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
-                ResourceManagerError::NonFungibleNotFound(non_fungible_address),
-            )));
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ResourceManagerError(ResourceManagerError::NonFungibleNotFound(
+                    non_fungible_address,
+                )),
+            ));
         }
 
         system_api.drop_lock(non_fungible_handle)?;
-
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -853,7 +854,6 @@ impl NativeInvocation for ResourceManagerUpdateNonFungibleDataInput {
     }
 }
 
-
 impl NativeExecutable for ResourceManagerNonFungibleExistsInput {
     type Output = bool;
 
@@ -861,9 +861,9 @@ impl NativeExecutable for ResourceManagerNonFungibleExistsInput {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(bool, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -878,16 +878,15 @@ impl NativeExecutable for ResourceManagerNonFungibleExistsInput {
         let nf_store_id = resource_manager
             .nf_store_id
             .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))
-            .map_err(|e| {
-                match e {
-                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
-                    InvokeError::Downstream(runtime_error) => runtime_error,
+            .map_err(|e| match e {
+                InvokeError::Error(e) => {
+                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
                 }
+                InvokeError::Downstream(runtime_error) => runtime_error,
             })?;
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
-        let offset =
-            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
+        let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
         let non_fungible_handle =
             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate = system_api.get_ref(non_fungible_handle)?;
@@ -914,9 +913,9 @@ impl NativeExecutable for ResourceManagerGetNonFungibleInput {
         input: Self,
         system_api: &mut Y,
     ) -> Result<([Vec<u8>; 2], CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi<'s, R> + InvokableNative<'a>,
-            R: FeeReserve,
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -926,43 +925,38 @@ impl NativeExecutable for ResourceManagerGetNonFungibleInput {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
 
-
         let substate_ref = system_api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
         let nf_store_id = resource_manager
             .nf_store_id
             .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))
-            .map_err(|e| {
-                match e {
-                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
-                    InvokeError::Downstream(runtime_error) => runtime_error,
+            .map_err(|e| match e {
+                InvokeError::Error(e) => {
+                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
                 }
+                InvokeError::Downstream(runtime_error) => runtime_error,
             })?;
 
-        let non_fungible_address = NonFungibleAddress::new(
-            resource_manager.resource_address.unwrap(),
-            input.id.clone(),
-        );
+        let non_fungible_address =
+            NonFungibleAddress::new(resource_manager.resource_address.unwrap(), input.id.clone());
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
-        let offset =
-            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
+        let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
         let non_fungible_handle =
             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let non_fungible_ref = system_api.get_ref(non_fungible_handle)?;
         let wrapper = non_fungible_ref.non_fungible();
         if let Some(non_fungible) = wrapper.0.as_ref() {
             Ok((
-                [
-                    non_fungible.immutable_data(),
-                    non_fungible.mutable_data(),
-                ],
-                CallFrameUpdate::empty()
-           ))
+                [non_fungible.immutable_data(), non_fungible.mutable_data()],
+                CallFrameUpdate::empty(),
+            ))
         } else {
-            return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
-                ResourceManagerError::NonFungibleNotFound(non_fungible_address)
-            )));
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ResourceManagerError(ResourceManagerError::NonFungibleNotFound(
+                    non_fungible_address,
+                )),
+            ));
         }
     }
 }
@@ -977,167 +971,50 @@ impl NativeInvocation for ResourceManagerGetNonFungibleInput {
     }
 }
 
+impl NativeExecutable for ResourceManagerSetResourceAddressInput {
+    type Output = ();
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi<'s, R> + InvokableNative<'a>,
+        R: FeeReserve,
+    {
+        // TODO: Remove this hack and get resolved receiver in a better way
+        let node_id = match system_api.get_actor() {
+            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
+            _ => panic!("Unexpected"),
+        };
+        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
+        substate_mut
+            .resource_manager()
+            .set_resource_address(input.resource_address)
+            .map_err(|e| match e {
+                InvokeError::Error(e) => {
+                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+                }
+                InvokeError::Downstream(runtime_error) => runtime_error,
+            })?;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for ResourceManagerSetResourceAddressInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
+            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
 
 pub struct ResourceManager;
 
-impl ResourceManager {
-    pub fn new(
-        resource_type: ResourceType,
-        metadata: HashMap<String, String>,
-        mut auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
-        nf_store_id: Option<NonFungibleStoreId>,
-    ) -> Result<ResourceManagerSubstate, InvokeError<ResourceManagerError>> {
-        let mut vault_method_table: HashMap<VaultMethod, ResourceMethodRule> = HashMap::new();
-        vault_method_table.insert(VaultMethod::LockFee, Protected(Withdraw));
-        vault_method_table.insert(VaultMethod::Take, Protected(Withdraw));
-        vault_method_table.insert(VaultMethod::Put, Protected(Deposit));
-        vault_method_table.insert(VaultMethod::GetAmount, Public);
-        vault_method_table.insert(VaultMethod::GetResourceAddress, Public);
-        vault_method_table.insert(VaultMethod::GetNonFungibleIds, Public);
-        vault_method_table.insert(VaultMethod::CreateProof, Public);
-        vault_method_table.insert(VaultMethod::CreateProofByAmount, Public);
-        vault_method_table.insert(VaultMethod::CreateProofByIds, Public);
-        vault_method_table.insert(VaultMethod::TakeNonFungibles, Protected(Withdraw));
-
-        let bucket_method_table: HashMap<BucketMethod, ResourceMethodRule> = HashMap::new();
-
-        let mut method_table: HashMap<ResourceManagerMethod, ResourceMethodRule> = HashMap::new();
-        method_table.insert(ResourceManagerMethod::Mint, Protected(Mint));
-        method_table.insert(
-            ResourceManagerMethod::UpdateMetadata,
-            Protected(UpdateMetadata),
-        );
-        method_table.insert(ResourceManagerMethod::CreateBucket, Public);
-        method_table.insert(ResourceManagerMethod::GetMetadata, Public);
-        method_table.insert(ResourceManagerMethod::GetResourceType, Public);
-        method_table.insert(ResourceManagerMethod::GetTotalSupply, Public);
-        method_table.insert(ResourceManagerMethod::CreateVault, Public);
-        method_table.insert(ResourceManagerMethod::Burn, Protected(Burn));
-        method_table.insert(ResourceManagerMethod::SetResourceAddress, Public);
-
-        // Non Fungible methods
-        method_table.insert(
-            ResourceManagerMethod::UpdateNonFungibleData,
-            Protected(UpdateNonFungibleData),
-        );
-        method_table.insert(ResourceManagerMethod::NonFungibleExists, Public);
-        method_table.insert(ResourceManagerMethod::GetNonFungible, Public);
-
-        let mut authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule> = HashMap::new();
-        for (auth_entry_key, default) in [
-            (Mint, (DenyAll, LOCKED)),
-            (Burn, (DenyAll, LOCKED)),
-            (Withdraw, (AllowAll, LOCKED)),
-            (Deposit, (AllowAll, LOCKED)),
-            (UpdateMetadata, (DenyAll, LOCKED)),
-            (UpdateNonFungibleData, (DenyAll, LOCKED)),
-        ] {
-            let entry = auth.remove(&auth_entry_key).unwrap_or(default);
-            authorization.insert(auth_entry_key, MethodAccessRule::new(entry));
-        }
-
-        let resource_manager = ResourceManagerSubstate {
-            resource_type,
-            metadata,
-            method_table,
-            vault_method_table,
-            bucket_method_table,
-            authorization,
-            total_supply: 0.into(),
-            nf_store_id,
-            resource_address: None,
-        };
-
-        Ok(resource_manager)
-    }
-
-    fn method_lock_flags(method: ResourceManagerMethod) -> LockFlags {
-        match method {
-            ResourceManagerMethod::Burn => LockFlags::MUTABLE,
-            ResourceManagerMethod::UpdateAuth => LockFlags::MUTABLE,
-            ResourceManagerMethod::LockAuth => LockFlags::MUTABLE,
-            ResourceManagerMethod::Mint => LockFlags::MUTABLE,
-            ResourceManagerMethod::UpdateNonFungibleData => LockFlags::MUTABLE,
-            ResourceManagerMethod::GetNonFungible => LockFlags::read_only(),
-            ResourceManagerMethod::GetMetadata => LockFlags::read_only(),
-            ResourceManagerMethod::GetResourceType => LockFlags::read_only(),
-            ResourceManagerMethod::GetTotalSupply => LockFlags::read_only(),
-            ResourceManagerMethod::UpdateMetadata => LockFlags::MUTABLE,
-            ResourceManagerMethod::NonFungibleExists => LockFlags::read_only(),
-            ResourceManagerMethod::CreateBucket => LockFlags::MUTABLE,
-            ResourceManagerMethod::CreateVault => LockFlags::MUTABLE,
-            ResourceManagerMethod::SetResourceAddress => LockFlags::MUTABLE,
-        }
-    }
-
-    pub fn main<'s, Y, R>(
-        resource_manager_id: ResourceManagerId,
-        method: ResourceManagerMethod,
-        args: ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<ScryptoValue, InvokeError<ResourceManagerError>>
-    where
-        Y: SystemApi<'s, R> + Invokable<NativeMethodInvocation>,
-        R: FeeReserve,
-    {
-        let node_id = RENodeId::ResourceManager(resource_manager_id);
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle =
-            system_api.lock_substate(node_id, offset, Self::method_lock_flags(method))?;
-
-        let rtn = match method {
-            ResourceManagerMethod::Burn => {
-                panic!("Unexpected")
-            }
-            ResourceManagerMethod::UpdateAuth => {
-                panic!("Unexpected")
-            }
-            ResourceManagerMethod::LockAuth => {
-                panic!("Unexpected")
-            }
-            ResourceManagerMethod::CreateVault => {
-                panic!("Unexpected")
-            }
-            ResourceManagerMethod::CreateBucket => {
-                panic!("Unexpected")
-            }
-            ResourceManagerMethod::Mint => {
-                panic!("Unexpected")
-            }
-            ResourceManagerMethod::GetMetadata => {
-                panic!("Unexpected")
-            }
-            ResourceManagerMethod::GetResourceType => {
-                panic!("Unexpected")
-            }
-            ResourceManagerMethod::GetTotalSupply => {
-                panic!("Unexpected")
-            }
-            ResourceManagerMethod::UpdateMetadata => {
-                panic!("Unexpected")
-            }
-            ResourceManagerMethod::UpdateNonFungibleData => {
-                panic!("Unexpected")
-            }
-            ResourceManagerMethod::NonFungibleExists => {
-                panic!("Unexpected")
-            }
-            ResourceManagerMethod::GetNonFungible => {
-                panic!("Unexpected")
-            }
-            ResourceManagerMethod::SetResourceAddress => {
-                let input: ResourceManagerSetResourceAddressInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-
-                let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-                substate_mut
-                    .resource_manager()
-                    .set_resource_address(input.address)?;
-
-                ScryptoValue::from_typed(&())
-            }
-        };
-
-        Ok(rtn)
-    }
-}
+impl ResourceManager {}

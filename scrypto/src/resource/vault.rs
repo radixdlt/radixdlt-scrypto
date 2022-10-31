@@ -83,9 +83,7 @@ impl Vault {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault),
             RENodeId::Global(GlobalAddress::Resource(resource_address)),
-            scrypto_encode(&ResourceManagerCreateVaultInput {
-                resource_address,
-            }),
+            scrypto_encode(&ResourceManagerCreateVaultInput { resource_address }),
         );
         call_engine(input)
     }

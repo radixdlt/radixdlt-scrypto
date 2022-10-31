@@ -16,7 +16,7 @@ use scrypto::core::{Blob, NetworkDefinition};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
-use scrypto::resource::{ResourceManagerBurnInput};
+use scrypto::resource::ResourceManagerBurnInput;
 use scrypto::resource::{require, LOCKED};
 use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
 use scrypto::resource::{

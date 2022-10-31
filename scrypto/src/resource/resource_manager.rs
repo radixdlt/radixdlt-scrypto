@@ -102,7 +102,7 @@ pub struct ResourceManagerUpdateMetadataInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerSetResourceAddressInput {
-    pub address: ResourceAddress,
+    pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -289,7 +289,10 @@ impl ResourceManager {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
-            scrypto_encode(&ResourceManagerMintInput { mint_params, resource_address: self.0 }),
+            scrypto_encode(&ResourceManagerMintInput {
+                mint_params,
+                resource_address: self.0,
+            }),
         );
         call_engine(input)
     }
@@ -298,7 +301,11 @@ impl ResourceManager {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
-            scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput { id, data, resource_address: self.0 }),
+            scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput {
+                id,
+                data,
+                resource_address: self.0,
+            }),
         );
         call_engine(input)
     }
@@ -307,7 +314,10 @@ impl ResourceManager {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible),
             RENodeId::Global(GlobalAddress::Resource(self.0)),
-            scrypto_encode(&ResourceManagerGetNonFungibleInput { id, resource_address: self.0 }),
+            scrypto_encode(&ResourceManagerGetNonFungibleInput {
+                id,
+                resource_address: self.0,
+            }),
         );
         call_engine(input)
     }

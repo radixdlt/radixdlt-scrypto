@@ -131,6 +131,7 @@ pub trait InvokableNative<'a>:
     + Invokable<ResourceManagerUpdateNonFungibleDataInput>
     + Invokable<ResourceManagerNonFungibleExistsInput>
     + Invokable<ResourceManagerGetNonFungibleInput>
+    + Invokable<ResourceManagerSetResourceAddressInput>
 {
 }
 
@@ -262,11 +263,9 @@ impl Executor for NativeMethodExecutor {
             (RENodeId::Component(..), NativeMethod::Component(..)) => {
                 panic!("Unexpected")
             }
-            (
-                RENodeId::ResourceManager(resource_address),
-                NativeMethod::ResourceManager(method),
-            ) => ResourceManager::main(resource_address, method, self.2, system_api)
-                .map_err::<RuntimeError, _>(|e| e.into()),
+            (RENodeId::ResourceManager(..), NativeMethod::ResourceManager(..)) => {
+                panic!("Unexpected")
+            }
             (RENodeId::EpochManager(component_id), NativeMethod::EpochManager(method)) => {
                 EpochManager::main(component_id, method, self.2, system_api)
                     .map_err::<RuntimeError, _>(|e| e.into())

@@ -412,15 +412,17 @@ where
                         .map(|a| ScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::UpdateNonFungibleData => {
-                    let invocation: ResourceManagerUpdateNonFungibleDataInput = scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                    let invocation: ResourceManagerUpdateNonFungibleDataInput =
+                        scrypto_decode(&args)
+                            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                     self.system_api
                         .invoke(invocation)
                         .map(|a| ScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::NonFungibleExists => {
-                    let invocation: ResourceManagerNonFungibleExistsInput = scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                    let invocation: ResourceManagerNonFungibleExistsInput =
+                        scrypto_decode(&args)
+                            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                     self.system_api
                         .invoke(invocation)
                         .map(|a| ScryptoValue::from_typed(&a))
@@ -432,11 +434,12 @@ where
                         .invoke(invocation)
                         .map(|a| ScryptoValue::from_typed(&a))
                 }
-                _ => {
-                    let args = ScryptoValue::from_slice(&args)
+                ResourceManagerMethod::SetResourceAddress => {
+                    let invocation: ResourceManagerSetResourceAddressInput = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                     self.system_api
-                        .invoke(NativeMethodInvocation(native_method, receiver, args))
+                        .invoke(invocation)
+                        .map(|a| ScryptoValue::from_typed(&a))
                 }
             },
             _ => {
