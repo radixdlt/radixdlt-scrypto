@@ -462,6 +462,48 @@ impl NativeInvocation for ResourceManagerLockAuthInput {
     }
 }
 
+impl NativeExecutable for ResourceManagerCreateVaultInput {
+    type Output = scrypto::resource::Vault;
+
+    fn execute<'s, 'a, Y, R>(
+        _input: Self,
+        system_api: &mut Y,
+    ) -> Result<(scrypto::resource::Vault, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        // TODO: Remove this hack and get resolved receiver in a better way
+        let node_id = match system_api.get_actor() {
+            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
+            _ => panic!("Unexpected"),
+        };
+        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let substate_ref = system_api.get_ref(resman_handle)?;
+        let resource_manager = substate_ref.resource_manager();
+        let resource = Resource::new_empty(
+            resource_manager.resource_address.unwrap(),
+            resource_manager.resource_type,
+        );
+        let vault_id = system_api
+            .create_node(RENode::Vault(VaultRuntimeSubstate::new(resource)))?
+            .into();
+
+        Ok((scrypto::resource::Vault(vault_id), CallFrameUpdate::move_node(RENodeId::Vault(vault_id))))
+    }
+}
+
+impl NativeInvocation for ResourceManagerCreateVaultInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault),
+            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
 
 
 pub struct ResourceManager;
@@ -582,19 +624,7 @@ impl ResourceManager {
                 panic!("Unexpected")
             }
             ResourceManagerMethod::CreateVault => {
-                let _: ResourceManagerCreateVaultInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-
-                let substate_ref = system_api.get_ref(resman_handle)?;
-                let resource_manager = substate_ref.resource_manager();
-                let resource = Resource::new_empty(
-                    resource_manager.resource_address.unwrap(),
-                    resource_manager.resource_type,
-                );
-                let vault_id = system_api
-                    .create_node(RENode::Vault(VaultRuntimeSubstate::new(resource)))?
-                    .into();
-                ScryptoValue::from_typed(&scrypto::resource::Vault(vault_id))
+                panic!("Unexpected")
             }
             ResourceManagerMethod::CreateBucket => {
                 let _: ResourceManagerCreateBucketInput = scrypto_decode(&args.raw)

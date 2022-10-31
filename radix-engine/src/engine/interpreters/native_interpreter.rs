@@ -121,6 +121,7 @@ pub trait InvokableNative<'a>:
     + Invokable<ResourceManagerBurnInput>
     + Invokable<ResourceManagerUpdateAuthInput>
     + Invokable<ResourceManagerLockAuthInput>
+    + Invokable<ResourceManagerCreateVaultInput>
 {
 }
 

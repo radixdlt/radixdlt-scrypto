@@ -64,7 +64,9 @@ pub struct ResourceManagerLockAuthInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerCreateVaultInput {}
+pub struct ResourceManagerCreateVaultInput {
+    pub resource_address: ResourceAddress,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateBucketInput {}
