@@ -742,6 +742,51 @@ impl NativeInvocation for ResourceManagerGetTotalSupplyInput {
 }
 
 
+impl NativeExecutable for ResourceManagerUpdateMetadataInput {
+    type Output = ();
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        // TODO: Remove this hack and get resolved receiver in a better way
+        let node_id = match system_api.get_actor() {
+            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
+            _ => panic!("Unexpected"),
+        };
+        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
+        substate_mut
+            .resource_manager()
+            .update_metadata(input.metadata)
+            .map_err(|e| {
+                match e {
+                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e)),
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                }
+            })?;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for ResourceManagerUpdateMetadataInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateMetadata),
+            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+
 
 pub struct ResourceManager;
 
@@ -879,15 +924,7 @@ impl ResourceManager {
                 panic!("Unexpected")
             }
             ResourceManagerMethod::UpdateMetadata => {
-                let input: ResourceManagerUpdateMetadataInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-
-                let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-                substate_mut
-                    .resource_manager()
-                    .update_metadata(input.metadata)?;
-
-                ScryptoValue::from_typed(&())
+                panic!("Unexpected")
             }
             ResourceManagerMethod::UpdateNonFungibleData => {
                 let input: ResourceManagerUpdateNonFungibleDataInput = scrypto_decode(&args.raw)

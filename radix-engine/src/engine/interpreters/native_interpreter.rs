@@ -127,6 +127,7 @@ pub trait InvokableNative<'a>:
     + Invokable<ResourceManagerGetMetadataInput>
     + Invokable<ResourceManagerGetResourceTypeInput>
     + Invokable<ResourceManagerGetTotalSupplyInput>
+    + Invokable<ResourceManagerUpdateMetadataInput>
 {
 }
 

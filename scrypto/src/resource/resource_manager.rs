@@ -96,6 +96,7 @@ pub struct ResourceManagerGetTotalSupplyInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateMetadataInput {
+    pub resource_address: ResourceAddress,
     pub metadata: HashMap<String, String>,
 }
 
@@ -331,7 +332,8 @@ impl ResourceManager {
             pub fn update_metadata(&mut self, metadata: HashMap<String, String>) -> () {
                 ResourceManagerMethod::UpdateMetadata,
                 ResourceManagerUpdateMetadataInput {
-                    metadata
+                    resource_address: self.0,
+                    metadata,
                 }
             }
             pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
