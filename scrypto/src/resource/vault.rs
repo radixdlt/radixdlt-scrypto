@@ -30,6 +30,7 @@ pub struct VaultTakeInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultTakeNonFungiblesInput {
+    pub vault_id: VaultId,
     pub non_fungible_ids: BTreeSet<NonFungibleId>,
 }
 
@@ -124,6 +125,7 @@ impl Vault {
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
                 VaultMethod::TakeNonFungibles,
                 VaultTakeNonFungiblesInput {
+                    vault_id: self.0,
                     non_fungible_ids: non_fungible_ids.clone(),
                 }
             }

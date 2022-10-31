@@ -172,6 +172,54 @@ impl NativeInvocation for VaultLockFeeInput {
     }
 }
 
+impl NativeExecutable for VaultTakeNonFungiblesInput {
+    type Output = scrypto::resource::Bucket;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Vault(input.vault_id);
+        let offset = SubstateOffset::Vault(VaultOffset::Vault);
+        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let container = {
+            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let vault = substate_mut.vault();
+            vault.take_non_fungibles(&input.non_fungible_ids).map_err(|e| {
+                match e {
+                    InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::VaultError(e)),
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                }
+            })?
+        };
+
+        let bucket_id = system_api
+            .create_node(RENode::Bucket(BucketSubstate::new(container)))?
+            .into();
+
+        Ok((
+            scrypto::resource::Bucket(bucket_id),
+            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
+        ))
+    }
+}
+
+impl NativeInvocation for VaultTakeNonFungiblesInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Vault(VaultMethod::TakeNonFungibles),
+            RENodeId::Vault(self.vault_id),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+
 
 pub struct Vault;
 
@@ -218,19 +266,7 @@ impl Vault {
                 panic!("Unexpected")
             }
             VaultMethod::TakeNonFungibles => {
-                let input: VaultTakeNonFungiblesInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
-
-                let container = {
-                    let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
-                    let vault = substate_mut.vault();
-                    vault.take_non_fungibles(&input.non_fungible_ids)?
-                };
-
-                let bucket_id = system_api
-                    .create_node(RENode::Bucket(BucketSubstate::new(container)))?
-                    .into();
-                ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
+                panic!("Unexpected")
             }
             VaultMethod::GetAmount => {
                 let _: VaultGetAmountInput = scrypto_decode(&args.raw)
