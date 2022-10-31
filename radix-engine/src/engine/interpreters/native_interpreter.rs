@@ -101,6 +101,7 @@ pub trait InvokableNative<'a>:
     + Invokable<ProofCloneInput>
     + Invokable<WorktopPutInput>
     + Invokable<WorktopTakeAmountInput>
+    + Invokable<WorktopTakeAllInput>
 {
 }
 

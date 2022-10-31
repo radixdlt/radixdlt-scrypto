@@ -166,6 +166,78 @@ impl NativeInvocation for WorktopTakeAmountInput {
     }
 }
 
+impl NativeExecutable for WorktopTakeAllInput {
+    type Output = scrypto::resource::Bucket;
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Worktop;
+        let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
+        let worktop_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+
+        let maybe_resource = {
+            let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
+            let worktop = substate_mut.worktop();
+            let maybe_resource = worktop
+                .take_all(input.resource_address)
+                .map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::WorktopError(
+                        WorktopError::ResourceOperationError(e),
+                    ))
+                })?;
+            maybe_resource
+        };
+
+        let resource_resource = if let Some(resource) = maybe_resource {
+            resource
+        } else {
+            let resource_type = {
+                let resource_id =
+                    RENodeId::Global(GlobalAddress::Resource(input.resource_address));
+                let offset =
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+                let resource_handle = system_api.lock_substate(
+                    resource_id,
+                    offset,
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = system_api.get_ref(resource_handle)?;
+                substate_ref.resource_manager().resource_type
+            };
+
+            Resource::new_empty(input.resource_address, resource_type)
+        };
+
+        let bucket_id = system_api
+            .create_node(RENode::Bucket(BucketSubstate::new(resource_resource)))?
+            .into();
+
+        Ok((
+            scrypto::resource::Bucket(bucket_id),
+            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
+        ))
+    }
+}
+
+impl NativeInvocation for WorktopTakeAllInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Worktop(WorktopMethod::TakeAll),
+            RENodeId::Worktop,
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
+                self.resource_address,
+            ))),
+        )
+    }
+}
+
 pub struct Worktop;
 
 impl Worktop {
@@ -204,44 +276,7 @@ impl Worktop {
                 panic!("Unexpected");
             }
             WorktopMethod::TakeAll => {
-                let input: WorktopTakeAllInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
-
-                let maybe_resource = {
-                    let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
-                    let worktop = substate_mut.worktop();
-                    let maybe_resource = worktop
-                        .take_all(input.resource_address)
-                        .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
-                    maybe_resource
-                };
-
-                let resource_resource = if let Some(resource) = maybe_resource {
-                    resource
-                } else {
-                    let resource_type = {
-                        let resource_id =
-                            RENodeId::Global(GlobalAddress::Resource(input.resource_address));
-                        let offset =
-                            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                        let resource_handle = system_api.lock_substate(
-                            resource_id,
-                            offset,
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = system_api.get_ref(resource_handle)?;
-                        substate_ref.resource_manager().resource_type
-                    };
-
-                    Resource::new_empty(input.resource_address, resource_type)
-                };
-
-                let bucket_id = system_api
-                    .create_node(RENode::Bucket(BucketSubstate::new(resource_resource)))?
-                    .into();
-                Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
-                    bucket_id,
-                )))
+                panic!("Unexpected");
             }
             WorktopMethod::TakeNonFungibles => {
                 let input: WorktopTakeNonFungiblesInput = scrypto_decode(&args.raw)

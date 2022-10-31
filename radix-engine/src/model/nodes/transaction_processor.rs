@@ -254,18 +254,13 @@ impl TransactionProcessor {
                     })
                     .and_then(|new_id| {
                         system_api
-                            .invoke(NativeMethodInvocation(
-                                NativeMethod::Worktop(WorktopMethod::TakeAll),
-                                RENodeId::Worktop,
-                                ScryptoValue::from_typed(&WorktopTakeAllInput {
+                            .invoke(WorktopTakeAllInput {
                                     resource_address: *resource_address,
-                                }),
-                            ))
+                                })
                             .map_err(InvokeError::Downstream)
-                            .map(|rtn| {
-                                let bucket_id = Self::first_bucket(&rtn);
-                                bucket_id_mapping.insert(new_id, bucket_id);
-                                ScryptoValue::from_typed(&scrypto::resource::Bucket(new_id))
+                            .map(|bucket| {
+                                bucket_id_mapping.insert(new_id, bucket.0);
+                                ScryptoValue::from_typed(&bucket)
                             })
                     }),
                 Instruction::TakeFromWorktopByAmount {
