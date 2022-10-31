@@ -18,7 +18,7 @@ use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInput<'a> {
-    pub intent_validation: Cow<'a, IntentValidation>,
+    pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
     pub instructions: Cow<'a, [Instruction]>,
 }
 
@@ -176,20 +176,19 @@ impl TransactionProcessor {
             .0
     }
 
-    fn perform_intent_validation<'s, Y, R>(
-        intent_validation: &IntentValidation,
+    fn perform_validation<'s, Y, R>(
+        request: &RuntimeValidationRequest,
         system_api: &mut Y,
     ) -> Result<(), InvokeError<TransactionProcessorError>>
     where
         Y: SystemApi<'s, R>,
         R: FeeReserve,
     {
-        match intent_validation {
-            IntentValidation::User {
-                intent_hash: _,
+        let should_skip_assertion = request.skip_assertion;
+        match &request.validation {
+            RuntimeValidation::WithinEpochRange {
                 start_epoch_inclusive,
                 end_epoch_exclusive,
-                skip_epoch_assertions: skip_epoch_validation,
             } => {
                 // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
                 //        Which could allow for better caching of transaction validity over epoch boundaries
@@ -202,7 +201,7 @@ impl TransactionProcessor {
                     InvokeError::Error(TransactionProcessorError::InvalidGetEpochResponseData(err))
                 })?;
 
-                if !*skip_epoch_validation && current_epoch < *start_epoch_inclusive {
+                if !should_skip_assertion && current_epoch < *start_epoch_inclusive {
                     return Err(InvokeError::Error(
                         TransactionProcessorError::TransactionEpochNotYetValid {
                             valid_from: *start_epoch_inclusive,
@@ -210,7 +209,7 @@ impl TransactionProcessor {
                         },
                     ));
                 }
-                if !*skip_epoch_validation && current_epoch >= *end_epoch_exclusive {
+                if !should_skip_assertion && current_epoch >= *end_epoch_exclusive {
                     return Err(InvokeError::Error(
                         TransactionProcessorError::TransactionEpochNoLongerValid {
                             valid_until: *end_epoch_exclusive - 1,
@@ -219,11 +218,13 @@ impl TransactionProcessor {
                     ));
                 }
 
+                Ok(())
+            }
+            RuntimeValidation::IntentHashUniqueness { .. } => {
                 // TODO - Add intent hash replay prevention here
                 // This will to enable its removal from the node
                 Ok(())
             }
-            IntentValidation::None => Ok(()),
         }
     }
 
@@ -243,7 +244,9 @@ impl TransactionProcessor {
                         InvokeError::Error(TransactionProcessorError::InvalidRequestData(e))
                     })?;
 
-                Self::perform_intent_validation(input.intent_validation.as_ref(), system_api)?;
+                for request in input.runtime_validations.as_ref() {
+                    Self::perform_validation(request, system_api)?;
+                }
 
                 let mut proof_id_mapping = HashMap::new();
                 let mut bucket_id_mapping = HashMap::new();

@@ -23,6 +23,7 @@ fn test_transaction_preview_cost_estimate() {
         unlimited_loan: true,
         assume_all_signature_proofs: false,
         permit_invalid_header_epoch: false,
+        permit_duplicate_intent_hash: false,
     };
     let (validated_transaction, preview_intent) =
         prepare_test_tx_and_preview_intent(&test_runner, &network, manifest, &preview_flags);
@@ -63,6 +64,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
         unlimited_loan: true,
         assume_all_signature_proofs: true,
         permit_invalid_header_epoch: false,
+        permit_duplicate_intent_hash: false,
     };
 
     // Check method authorization (withdrawal) without a proof in the auth zone

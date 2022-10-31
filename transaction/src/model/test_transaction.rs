@@ -43,7 +43,7 @@ impl TestTransaction {
             transaction.signed_intent.intent.header.cost_unit_limit,
             transaction.signed_intent.intent.header.tip_percentage,
             transaction.signed_intent.intent.manifest.blobs,
-            IntentValidation::None,
+            vec![],
         )
     }
 }

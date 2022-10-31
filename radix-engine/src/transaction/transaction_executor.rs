@@ -170,7 +170,7 @@ where
                 .invoke_native(NativeInvocation::Function(
                     NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
                     ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                        intent_validation: Cow::Borrowed(transaction.intent_validation()),
+                        runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
                         instructions: Cow::Borrowed(instructions),
                     }),
                 ))

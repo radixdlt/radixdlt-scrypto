@@ -99,12 +99,14 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
             header.cost_unit_limit,
             header.tip_percentage,
             manifest.blobs,
-            IntentValidation::User {
-                intent_hash,
-                start_epoch_inclusive: header.start_epoch_inclusive,
-                end_epoch_exclusive: header.end_epoch_exclusive,
-                skip_epoch_assertions: false,
-            },
+            vec![
+                RuntimeValidation::IntentHashUniqueness { intent_hash }.enforced(),
+                RuntimeValidation::WithinEpochRange {
+                    start_epoch_inclusive: header.start_epoch_inclusive,
+                    end_epoch_exclusive: header.end_epoch_exclusive,
+                }
+                .enforced(),
+            ],
         ))
     }
 }
@@ -121,15 +123,18 @@ impl NotarizedTransactionValidator {
     ) -> Result<Executable, TransactionValidationError> {
         let transaction_hash = preview_intent.hash();
         let intent = preview_intent.intent;
+        let flags = preview_intent.flags;
         let intent_hash = intent.hash();
         let instructions = self.validate_intent(&intent, intent_hash_manager)?;
         let initial_proofs = AuthModule::pk_non_fungibles(&preview_intent.signer_public_keys);
 
         let mut virtualizable_proofs_resource_addresses = BTreeSet::new();
-        if preview_intent.flags.assume_all_signature_proofs {
+        if flags.assume_all_signature_proofs {
             virtualizable_proofs_resource_addresses.insert(ECDSA_SECP256K1_TOKEN);
             virtualizable_proofs_resource_addresses.insert(EDDSA_ED25519_TOKEN);
         }
+
+        let header = intent.header;
 
         Ok(Executable::new(
             transaction_hash,
@@ -138,15 +143,18 @@ impl NotarizedTransactionValidator {
                 initial_proofs,
                 virtualizable_proofs_resource_addresses,
             },
-            intent.header.cost_unit_limit,
-            intent.header.tip_percentage,
+            header.cost_unit_limit,
+            header.tip_percentage,
             intent.manifest.blobs,
-            IntentValidation::User {
-                intent_hash,
-                start_epoch_inclusive: intent.header.start_epoch_inclusive,
-                end_epoch_exclusive: intent.header.end_epoch_exclusive,
-                skip_epoch_assertions: !preview_intent.flags.permit_invalid_header_epoch,
-            },
+            vec![
+                RuntimeValidation::IntentHashUniqueness { intent_hash }
+                    .with_skipped_assertion_if(flags.permit_duplicate_intent_hash),
+                RuntimeValidation::WithinEpochRange {
+                    start_epoch_inclusive: header.start_epoch_inclusive,
+                    end_epoch_exclusive: header.end_epoch_exclusive,
+                }
+                .with_skipped_assertion_if(flags.permit_invalid_header_epoch),
+            ],
         ))
     }
 
@@ -441,6 +449,7 @@ mod tests {
                     unlimited_loan: true,
                     assume_all_signature_proofs: false,
                     permit_invalid_header_epoch: false,
+                    permit_duplicate_intent_hash: false,
                 },
             },
             &mut intent_hash_manager,
