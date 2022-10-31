@@ -308,13 +308,10 @@ impl TransactionProcessor {
                         TransactionProcessorError::BucketNotFound(*bucket_id),
                     ))),
                 Instruction::AssertWorktopContains { resource_address } => system_api
-                    .invoke(NativeMethodInvocation(
-                        NativeMethod::Worktop(WorktopMethod::AssertContains),
-                        RENodeId::Worktop,
-                        ScryptoValue::from_typed(&WorktopAssertContainsInput {
-                            resource_address: *resource_address,
-                        }),
-                    ))
+                    .invoke(WorktopAssertContainsInput {
+                            resource_address: *resource_address
+                        })
+                    .map(|rtn| ScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream),
                 Instruction::AssertWorktopContainsByAmount {
                     amount,

@@ -312,6 +312,43 @@ impl NativeInvocation for WorktopTakeNonFungiblesInput {
     }
 }
 
+impl NativeExecutable for WorktopAssertContainsInput {
+    type Output = ();
+
+    fn execute<'s, 'a, Y, R>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi<'s, R> + InvokableNative<'a>,
+            R: FeeReserve,
+    {
+        let node_id = RENodeId::Worktop;
+        let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
+        let worktop_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+
+        let substate_ref = system_api.get_ref(worktop_handle)?;
+        let worktop = substate_ref.worktop();
+        if worktop.total_amount(input.resource_address).is_zero() {
+            return Err(RuntimeError::ApplicationError(ApplicationError::WorktopError(WorktopError::AssertionFailed)));
+        }
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for WorktopAssertContainsInput {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Worktop(WorktopMethod::AssertContains),
+            RENodeId::Worktop,
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
+                self.resource_address,
+            ))),
+        )
+    }
+}
+
 pub struct Worktop;
 
 impl Worktop {
@@ -356,15 +393,7 @@ impl Worktop {
                 panic!("Unexpected");
             }
             WorktopMethod::AssertContains => {
-                let input: WorktopAssertContainsInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
-                let substate_ref = system_api.get_ref(worktop_handle)?;
-                let worktop = substate_ref.worktop();
-                if worktop.total_amount(input.resource_address).is_zero() {
-                    Err(InvokeError::Error(WorktopError::AssertionFailed))
-                } else {
-                    Ok(ScryptoValue::from_typed(&()))
-                }
+                panic!("Unexpected");
             }
             WorktopMethod::AssertContainsAmount => {
                 let input: WorktopAssertContainsAmountInput = scrypto_decode(&args.raw)

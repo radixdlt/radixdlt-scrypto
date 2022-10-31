@@ -103,6 +103,7 @@ pub trait InvokableNative<'a>:
     + Invokable<WorktopTakeAmountInput>
     + Invokable<WorktopTakeAllInput>
     + Invokable<WorktopTakeNonFungiblesInput>
+    + Invokable<WorktopAssertContainsInput>
 {
 }
 
