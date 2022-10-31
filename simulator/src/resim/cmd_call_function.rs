@@ -50,14 +50,14 @@ impl CallFunction {
         for resource_specifier in proofs {
             manifest_builder = manifest_builder
                 .create_proof_from_account_by_resource_specifier(
-                    resource_specifier,
                     default_account,
+                    resource_specifier,
                 )
                 .map_err(Error::FailedToBuildArgs)?;
         }
 
         let manifest = manifest_builder
-            .lock_fee(100.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100.into())
             .call_function_with_abi(
                 self.package_address.0,
                 &self.blueprint_name,

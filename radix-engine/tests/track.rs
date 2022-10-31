@@ -6,8 +6,8 @@ use transaction::model::*;
 
 fn self_transfer_txn(account: ComponentAddress, amount: Decimal) -> TransactionManifest {
     ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
-        .withdraw_from_account_by_amount(amount, RADIX_TOKEN, account)
+        .lock_fee(account, 10.into())
+        .withdraw_from_account_by_amount(account, amount, RADIX_TOKEN)
         .call_method(
             account,
             "deposit_batch",

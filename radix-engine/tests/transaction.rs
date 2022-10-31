@@ -1,4 +1,5 @@
 use radix_engine::engine::KernelError;
+use radix_engine::engine::RejectionError;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
@@ -18,7 +19,7 @@ fn test_manifest_with_non_existent_resource() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(account, 10.into())
         .take_from_worktop(non_existent_resource, |builder, bucket_id| {
             builder.call_method(
                 account,
@@ -36,7 +37,9 @@ fn test_manifest_with_non_existent_resource() {
     receipt.expect_specific_rejection(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::GlobalAddressNotFound(..))
+            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+                KernelError::GlobalAddressNotFound(..)
+            ))
         )
     });
 }
@@ -50,8 +53,8 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(dec!("10"), account)
-        .create_proof_from_account(RADIX_TOKEN, account)
+        .lock_fee(account, dec!("10"))
+        .create_proof_from_account(account, RADIX_TOKEN)
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
             builder.push_to_auth_zone(proof_id)
         })
@@ -96,11 +99,11 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(dec!("10"), account)
-        .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
-        .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
-        .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
-        .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
+        .lock_fee(account, dec!("10"))
+        .create_proof_from_account_by_amount(account, dec!("1"), RADIX_TOKEN)
+        .create_proof_from_account_by_amount(account, dec!("1"), RADIX_TOKEN)
+        .create_proof_from_account_by_amount(account, dec!("1"), RADIX_TOKEN)
+        .create_proof_from_account_by_amount(account, dec!("1"), RADIX_TOKEN)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -121,7 +124,7 @@ fn test_non_existent_blob_hash() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(dec!("10"), account)
+        .lock_fee(account, dec!("10"))
         .add_instruction(Instruction::PublishPackage {
             code: Blob(Hash([0; 32])),
             abi: Blob(Hash([0; 32])),
@@ -146,12 +149,12 @@ fn test_entire_auth_zone() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.compile_and_publish("./tests/proof");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(dec!("10"), account)
-        .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
+        .lock_fee(account, dec!("10"))
+        .create_proof_from_account_by_amount(account, dec!("1"), RADIX_TOKEN)
         .call_function(
             package_address,
             "Receiver",
@@ -178,7 +181,7 @@ fn test_faucet_drain_attempt_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(dec!("10"), account)
+        .lock_fee(account, dec!("10"))
         .call_method(FAUCET_COMPONENT, "free", args!())
         .call_method(FAUCET_COMPONENT, "free", args!())
         .call_method(

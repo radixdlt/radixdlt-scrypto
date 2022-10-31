@@ -50,7 +50,7 @@ import! {
                                 "arg0",
                                 {
                                     "type": "Custom",
-                                    "type_id": 161,
+                                    "type_id": 128,
                                     "generics": []
                                 }
                             ],
@@ -58,7 +58,7 @@ import! {
                                 "arg1",
                                 {
                                     "type": "Custom",
-                                    "type_id": 128,
+                                    "type_id": 129,
                                     "generics": []
                                 }
                             ],
@@ -66,7 +66,7 @@ import! {
                                 "arg2",
                                 {
                                     "type": "Custom",
-                                    "type_id": 129,
+                                    "type_id": 130,
                                     "generics": []
                                 }
                             ],
@@ -74,7 +74,15 @@ import! {
                                 "arg3",
                                 {
                                     "type": "Custom",
-                                    "type_id": 131,
+                                    "type_id": 144,
+                                    "generics": []
+                                }
+                            ],
+                            [
+                                "arg4",
+                                {
+                                    "type": "Custom",
+                                    "type_id": 145,
                                     "generics": [
                                         {
                                             "type": "String"
@@ -86,18 +94,10 @@ import! {
                                 }
                             ],
                             [
-                                "arg4",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 177,
-                                    "generics": []
-                                }
-                            ],
-                            [
                                 "arg5",
                                 {
                                     "type": "Custom",
-                                    "type_id": 178,
+                                    "type_id": 146,
                                     "generics": []
                                 }
                             ],
@@ -105,7 +105,7 @@ import! {
                                 "arg6",
                                 {
                                     "type": "Custom",
-                                    "type_id": 179,
+                                    "type_id": 147,
                                     "generics": []
                                 }
                             ],
@@ -113,7 +113,95 @@ import! {
                                 "arg7",
                                 {
                                     "type": "Custom",
+                                    "type_id": 148,
+                                    "generics": []
+                                }
+                            ],
+                            [
+                                "arg8",
+                                {
+                                    "type": "Custom",
+                                    "type_id": 160,
+                                    "generics": []
+                                }
+                            ],
+                            [
+                                "arg9",
+                                {
+                                    "type": "Custom",
+                                    "type_id": 161,
+                                    "generics": []
+                                }
+                            ],
+                            [
+                                "arg10",
+                                {
+                                    "type": "Custom",
+                                    "type_id": 162,
+                                    "generics": []
+                                }
+                            ],
+                            [
+                                "arg11",
+                                {
+                                    "type": "Custom",
+                                    "type_id": 176,
+                                    "generics": []
+                                }
+                            ],
+                            [
+                                "arg12",
+                                {
+                                    "type": "Custom",
+                                    "type_id": 177,
+                                    "generics": []
+                                }
+                            ],
+                            [
+                                "arg13",
+                                {
+                                    "type": "Custom",
+                                    "type_id": 178,
+                                    "generics": []
+                                }
+                            ],
+                            [
+                                "arg14",
+                                {
+                                    "type": "Custom",
+                                    "type_id": 179,
+                                    "generics": []
+                                }
+                            ],
+                            [
+                                "arg16",
+                                {
+                                    "type": "Custom",
+                                    "type_id": 180,
+                                    "generics": []
+                                }
+                            ],
+                            [
+                                "arg17",
+                                {
+                                    "type": "Custom",
+                                    "type_id": 181,
+                                    "generics": []
+                                }
+                            ],
+                            [
+                                "arg18",
+                                {
+                                    "type": "Custom",
                                     "type_id": 182,
+                                    "generics": []
+                                }
+                            ],
+                            [
+                                "arg19",
+                                {
+                                    "type": "Custom",
+                                    "type_id": 183,
                                     "generics": []
                                 }
                             ]
@@ -122,7 +210,7 @@ import! {
                 },
                 "output": {
                     "type": "Custom",
-                    "type_id": 177,
+                    "type_id": 128,
                     "generics": []
                 },
                 "export_name": "Simple_test_custom_types_main"

@@ -200,7 +200,7 @@ fn create_notarized_transaction(params: TransactionParams) -> NotarizedTransacti
         })
         .manifest(
             ManifestBuilder::new(&NetworkDefinition::simulator())
-                .lock_fee(10.into(), FAUCET_COMPONENT)
+                .lock_fee(FAUCET_COMPONENT, 10.into())
                 .clear_auth_zone()
                 .build(),
         )

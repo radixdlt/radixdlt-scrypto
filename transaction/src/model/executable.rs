@@ -17,7 +17,7 @@ pub struct ExecutionContext {
     pub transaction_hash: Hash,
     pub auth_zone_params: AuthZoneParams,
     pub fee_payment: FeePayment,
-    pub intent_validation: IntentValidation,
+    pub runtime_validations: Vec<RuntimeValidationRequest>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -35,15 +35,39 @@ pub struct Executable<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
-pub enum IntentValidation {
-    User {
-        intent_hash: Hash,
+pub struct RuntimeValidationRequest {
+    /// The validation to perform
+    pub validation: RuntimeValidation,
+    /// This option is intended for preview uses cases
+    /// In these cases, we still want to do the look ups to give equivalent cost unit spend, but may wish to ignore the result
+    pub skip_assertion: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+pub enum RuntimeValidation {
+    /// To ensure we don't commit a duplicate intent hash
+    IntentHashUniqueness { intent_hash: Hash },
+    /// For preview - still do the look-ups to give equivalent cost unit spend, but ignore the result
+    WithinEpochRange {
         start_epoch_inclusive: u64,
         end_epoch_exclusive: u64,
-        /// For preview - still do the look ups to give equivalent cost unit spend, but ignore the result
-        skip_epoch_assertions: bool,
     },
-    None,
+}
+
+impl RuntimeValidation {
+    pub fn enforced(self) -> RuntimeValidationRequest {
+        RuntimeValidationRequest {
+            validation: self,
+            skip_assertion: false,
+        }
+    }
+
+    pub fn with_skipped_assertion_if(self, skip_assertion: bool) -> RuntimeValidationRequest {
+        RuntimeValidationRequest {
+            validation: self,
+            skip_assertion,
+        }
+    }
 }
 
 impl<'a> Executable<'a> {
@@ -84,7 +108,7 @@ impl<'a> Executable<'a> {
         &self.blobs
     }
 
-    pub fn intent_validation(&self) -> &IntentValidation {
-        &self.context.intent_validation
+    pub fn runtime_validations(&self) -> &[RuntimeValidationRequest] {
+        &self.context.runtime_validations
     }
 }

@@ -16,13 +16,14 @@ fn test_transaction_preview_cost_estimate() {
     let mut test_runner = TestRunner::new(true, &mut substate_store);
     let network = NetworkDefinition::simulator();
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .clear_auth_zone()
         .build();
     let preview_flags = PreviewFlags {
         unlimited_loan: true,
         assume_all_signature_proofs: false,
         permit_invalid_header_epoch: false,
+        permit_duplicate_intent_hash: false,
     };
     let (notarized_transaction, preview_intent) = prepare_matching_test_tx_and_preview_intent(
         &test_runner,
@@ -67,12 +68,13 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
         unlimited_loan: true,
         assume_all_signature_proofs: true,
         permit_invalid_header_epoch: false,
+        permit_duplicate_intent_hash: false,
     };
 
     // Check method authorization (withdrawal) without a proof in the auth zone
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
-        .withdraw_from_account(RADIX_TOKEN, account)
+        .lock_fee(account, 10.into())
+        .withdraw_from_account(account, RADIX_TOKEN)
         .call_method(
             other_account,
             "deposit_batch",

@@ -350,7 +350,7 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
                 OPTION_VARIANT_NONE => Ok(Value::Option {
                     value: Box::new(None),
                 }),
-                _ => Err(DecodeError::InvalidIndex(index)),
+                _ => Err(DecodeError::InvalidVariantIndex(index)),
             }
         }
         TYPE_RESULT => {
@@ -364,7 +364,7 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
                 RESULT_VARIANT_ERR => Ok(Value::Result {
                     value: Box::new(Err(decode_next(None, dec)?)),
                 }),
-                _ => Err(DecodeError::InvalidIndex(index)),
+                _ => Err(DecodeError::InvalidVariantIndex(index)),
             }
         }
         // composite types

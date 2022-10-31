@@ -73,6 +73,8 @@ pub enum TrackError {
     LockUnmodifiedBaseOnOnUpdatedSubstate(SubstateId),
 }
 
+pub type InvokeResult = Result<Vec<Vec<u8>>, RuntimeError>;
+
 pub struct TrackReceipt {
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
@@ -461,55 +463,140 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         &mut self,
         transaction: &Executable,
     ) -> Result<(), FeeReserveError> {
-        let encoded_instruction_length =
-            Self::to_u32_or_pre_error(scrypto_encode(transaction.instructions()).len())?;
-        let initial_proofs_count =
-            Self::to_u32_or_pre_error(transaction.auth_zone_params().initial_proofs.len())?;
-        let blobs_length = Self::to_u32_or_pre_error(
-            transaction
-                .blobs()
-                .iter()
-                .map(|b| b.0 .0.len() + b.1.len())
-                .sum::<usize>(),
-        )?;
+        let encoded_instructions_byte_length = scrypto_encode(transaction.instructions()).len();
+        let blobs_size = {
+            let mut total_size: usize = 0;
+            for blob in transaction.blobs() {
+                total_size = total_size
+                    .checked_add(Hash::LENGTH)
+                    .ok_or(FeeReserveError::Overflow)?;
+                total_size = total_size
+                    .checked_add(blob.1.len())
+                    .ok_or(FeeReserveError::Overflow)?;
+            }
+            total_size
+        };
 
         self.fee_reserve
-            .consume(self.fee_table.tx_base_fee(), "base_fee", true)
+            .consume_flat(self.fee_table.tx_base_fee(), "base_fee", true)
             .and_then(|()| {
-                self.fee_reserve.consume(
-                    self.fee_table.tx_manifest_decoding_per_byte() * encoded_instruction_length,
+                self.fee_reserve.consume_sized(
+                    encoded_instructions_byte_length,
+                    self.fee_table.tx_manifest_decoding_per_byte(),
                     "decode_manifest",
                     true,
                 )
             })
             .and_then(|()| {
-                self.fee_reserve.consume(
-                    self.fee_table.tx_manifest_verification_per_byte() * encoded_instruction_length,
+                self.fee_reserve.consume_sized(
+                    encoded_instructions_byte_length,
+                    self.fee_table.tx_manifest_verification_per_byte(),
                     "verify_manifest",
                     true,
                 )
             })
             .and_then(|()| {
-                self.fee_reserve.consume(
-                    self.fee_table.tx_signature_verification_per_sig() * initial_proofs_count,
+                self.fee_reserve.consume_sized(
+                    transaction.auth_zone_params().initial_proofs.len(),
+                    self.fee_table.tx_signature_verification_per_sig(),
                     "verify_signatures",
                     true,
                 )
             })
             .and_then(|()| {
-                self.fee_reserve.consume(
-                    self.fee_table.tx_blob_price_per_byte() * blobs_length,
+                self.fee_reserve.consume_sized(
+                    blobs_size,
+                    self.fee_table.tx_blob_price_per_byte(),
                     "blobs",
                     true,
                 )
             })
     }
 
-    fn to_u32_or_pre_error(size: usize) -> Result<u32, FeeReserveError> {
-        size.try_into().map_err(|_| FeeReserveError::LimitExceeded)
+    pub fn finalize(self, invoke_result: InvokeResult) -> TrackReceipt {
+        // Close fee reserve
+        let fee_summary = self.fee_reserve.finalize();
+
+        let result = match check_for_rejection(invoke_result, &fee_summary) {
+            Ok(invoke_result) => {
+                let finalizing_track = FinalizingTrack {
+                    substate_store: self.substate_store,
+                    new_global_addresses: self.new_global_addresses,
+                    loaded_substates: self.loaded_substates,
+                    vault_ops: self.vault_ops,
+                };
+                finalizing_track.calculate_commit_result(invoke_result, &fee_summary)
+            }
+            Err(rejection_error) => TransactionResult::Reject(RejectResult {
+                error: rejection_error,
+            }),
+        };
+
+        TrackReceipt {
+            fee_summary,
+            application_logs: self.application_logs,
+            result,
+        }
+    }
+}
+
+fn check_for_rejection(
+    invoke_result: InvokeResult,
+    fee_summary: &FeeSummary,
+) -> Result<InvokeResult, RejectionError> {
+    // First - check for required rejections from explicit invoke result errors
+    match &invoke_result {
+        Err(RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(err))) => {
+            match err {
+                TransactionProcessorError::TransactionEpochNotYetValid {
+                    valid_from,
+                    current_epoch,
+                } => {
+                    return Err(RejectionError::TransactionEpochNotYetValid {
+                        valid_from: *valid_from,
+                        current_epoch: *current_epoch,
+                    })
+                }
+                TransactionProcessorError::TransactionEpochNoLongerValid {
+                    valid_until,
+                    current_epoch,
+                } => {
+                    return Err(RejectionError::TransactionEpochNoLongerValid {
+                        valid_until: *valid_until,
+                        current_epoch: *current_epoch,
+                    })
+                }
+                _ => {}
+            }
+        }
+        _ => {}
     }
 
-    pub fn finalize(self, invoke_result: Result<Vec<Vec<u8>>, RuntimeError>) -> TrackReceipt {
+    // Check for errors before loan is repaid - in which case, we also reject
+    if !fee_summary.loan_fully_repaid {
+        return Err(match invoke_result {
+            Ok(..) => RejectionError::SuccessButFeeLoanNotRepaid,
+            Err(error) => RejectionError::ErrorBeforeFeeLoanRepaid(error),
+        });
+    }
+
+    return Ok(invoke_result);
+}
+
+/// This is just used when finalizing track into a commit
+struct FinalizingTrack<'s> {
+    substate_store: &'s dyn ReadableSubstateStore,
+    new_global_addresses: Vec<GlobalAddress>,
+    loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
+    vault_ops: Vec<(REActor, VaultId, VaultOp)>,
+}
+
+impl<'s> FinalizingTrack<'s> {
+    fn calculate_commit_result(
+        self,
+        invoke_result: InvokeResult,
+        fee_summary: &FeeSummary,
+    ) -> TransactionResult {
         let is_success = invoke_result.is_ok();
 
         let mut new_global_addresses = Vec::new();
@@ -541,111 +628,70 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             }
         }
 
-        // Close fee reserve
-        let fee_summary = self.fee_reserve.finalize();
-        let required_rejection = invoke_result
-            .as_ref()
-            .err()
-            .and_then(extract_required_rejection);
-        let is_loan_payback_rejection = !fee_summary.loan_fully_repaid;
-
         let mut actual_fee_payments: HashMap<VaultId, Decimal> = HashMap::new();
-
-        // Commit fee state changes
-        let result = if let Some(rejection_error) = required_rejection {
-            TransactionResult::Reject(RejectResult {
-                error: rejection_error,
-            })
-        } else if is_loan_payback_rejection {
-            TransactionResult::Reject(RejectResult {
-                error: match invoke_result {
-                    Ok(..) => RejectionError::SuccessButFeeLoanNotRepaid,
-                    Err(error) => RejectionError::ErrorBeforeFeeLoanRepaid(error),
-                },
-            })
-        } else {
-            let mut required = fee_summary.burned + fee_summary.tipped;
-            let mut collector: LockableResource =
-                Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 })
-                    .into();
-            for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
-                let amount = if contingent {
-                    if is_success {
-                        Decimal::min(locked.amount(), required)
-                    } else {
-                        Decimal::zero()
-                    }
+        let mut required_fee = fee_summary.burned + fee_summary.tipped;
+        let mut collector: LockableResource =
+            Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }).into();
+        for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
+            let amount = if contingent {
+                if is_success {
+                    Decimal::min(locked.amount(), required_fee)
                 } else {
-                    Decimal::min(locked.amount(), required)
-                };
+                    Decimal::zero()
+                }
+            } else {
+                Decimal::min(locked.amount(), required_fee)
+            };
 
-                // Deduct fee required
-                required = required - amount;
+            // Deduct fee required
+            required_fee = required_fee - amount;
 
-                // Collect fees into collector
-                collector
-                    .put(
-                        locked
-                            .take_by_amount(amount)
-                            .expect("Failed to extract locked fee"),
-                    )
-                    .expect("Failed to add fee to fee collector");
+            // Collect fees into collector
+            collector
+                .put(
+                    locked
+                        .take_by_amount(amount)
+                        .expect("Failed to extract locked fee"),
+                )
+                .expect("Failed to add fee to fee collector");
 
-                // Refund overpayment
-                let substate_id = SubstateId(
-                    RENodeId::Vault(vault_id),
-                    SubstateOffset::Vault(VaultOffset::Vault),
-                );
-
-                let (substate, old_version) = to_persist
-                    .remove(&substate_id)
-                    .expect("Failed to fetch a fee-locking vault");
-                let mut runtime_substate = substate.to_runtime();
-                runtime_substate
-                    .vault_mut()
-                    .borrow_resource_mut()
-                    .put(locked)
-                    .expect("Failed to put a fee-locking vault");
-                to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
-
-                *actual_fee_payments.entry(vault_id).or_default() += amount;
-            }
-            let execution_trace_receipt = ExecutionTraceReceipt::new(
-                self.vault_ops,
-                actual_fee_payments,
-                &mut to_persist,
-                invoke_result.is_ok(),
+            // Refund overpayment
+            let substate_id = SubstateId(
+                RENodeId::Vault(vault_id),
+                SubstateOffset::Vault(VaultOffset::Vault),
             );
 
-            // TODO: update XRD supply or disable it
-            // TODO: pay tips to the lead validator
+            let (substate, old_version) = to_persist
+                .remove(&substate_id)
+                .expect("Failed to fetch a fee-locking vault");
+            let mut runtime_substate = substate.to_runtime();
+            runtime_substate
+                .vault_mut()
+                .borrow_resource_mut()
+                .put(locked)
+                .expect("Failed to put a fee-locking vault");
+            to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
 
-            TransactionResult::Commit(CommitResult {
-                outcome: match invoke_result {
-                    Ok(output) => TransactionOutcome::Success(output),
-                    Err(error) => TransactionOutcome::Failure(error),
-                },
-                state_updates: Self::generate_diff(self.substate_store, to_persist),
-                entity_changes: EntityChanges::new(new_global_addresses),
-                resource_changes: execution_trace_receipt.resource_changes,
-            })
-        };
-
-        TrackReceipt {
-            fee_summary,
-            application_logs: self.application_logs,
-            result,
+            *actual_fee_payments.entry(vault_id).or_default() += amount;
         }
-    }
+        let execution_trace_receipt = ExecutionTraceReceipt::new(
+            self.vault_ops,
+            actual_fee_payments,
+            &mut to_persist,
+            invoke_result.is_ok(),
+        );
 
-    fn get_substate_output_id(
-        substate_store: &dyn ReadableSubstateStore,
-        substate_id: &SubstateId,
-    ) -> Option<OutputId> {
-        substate_store.get_substate(&substate_id).map(|s| OutputId {
-            substate_id: substate_id.clone(),
-            substate_hash: hash(scrypto_encode(&s.substate)),
-            version: s.version,
+        // TODO: update XRD supply or disable it
+        // TODO: pay tips to the lead validator
+
+        TransactionResult::Commit(CommitResult {
+            outcome: match invoke_result {
+                Ok(output) => TransactionOutcome::Success(output),
+                Err(error) => TransactionOutcome::Failure(error),
+            },
+            state_updates: Self::generate_diff(self.substate_store, to_persist),
+            entity_changes: EntityChanges::new(new_global_addresses),
+            resource_changes: execution_trace_receipt.resource_changes,
         })
     }
 
@@ -674,28 +720,15 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         diff
     }
-}
 
-fn extract_required_rejection(runtime_error: &RuntimeError) -> Option<RejectionError> {
-    match runtime_error {
-        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-            TransactionProcessorError::TransactionEpochNoLongerValid {
-                valid_until,
-                current_epoch,
-            },
-        )) => Some(RejectionError::TransactionEpochNoLongerValid {
-            valid_until: *valid_until,
-            current_epoch: *current_epoch,
-        }),
-        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-            TransactionProcessorError::TransactionEpochNotYetValid {
-                valid_from,
-                current_epoch,
-            },
-        )) => Some(RejectionError::TransactionEpochNotYetValid {
-            valid_from: *valid_from,
-            current_epoch: *current_epoch,
-        }),
-        _ => None,
+    fn get_substate_output_id(
+        substate_store: &dyn ReadableSubstateStore,
+        substate_id: &SubstateId,
+    ) -> Option<OutputId> {
+        substate_store.get_substate(&substate_id).map(|s| OutputId {
+            substate_id: substate_id.clone(),
+            substate_hash: hash(scrypto_encode(&s.substate)),
+            version: s.version,
+        })
     }
 }
