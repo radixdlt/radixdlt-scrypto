@@ -3,7 +3,7 @@ use crate::engine::*;
 use crate::fee::*;
 use crate::model::{
     ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, InvokeError,
-    KeyValueStore, RuntimeSubstate, TransactionProcessorRunInput,
+    KeyValueStore, RuntimeSubstate,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -74,43 +74,7 @@ where
         native_function: NativeFunction,
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        match native_function {
-            NativeFunction::EpochManager(EpochManagerFunction::Create) => {
-                let invocation: EpochManagerCreateInput = scrypto_decode(&args)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                self.system_api
-                    .invoke(invocation)
-                    .map(|a| ScryptoValue::from_typed(&a))
-            }
-            NativeFunction::ResourceManager(ResourceManagerFunction::BurnBucket) => {
-                let invocation: ResourceManagerBurnInput = scrypto_decode(&args)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                self.system_api
-                    .invoke(invocation)
-                    .map(|a| ScryptoValue::from_typed(&a))
-            }
-            NativeFunction::ResourceManager(ResourceManagerFunction::Create) => {
-                let invocation: ResourceManagerCreateInput = scrypto_decode(&args)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                self.system_api
-                    .invoke(invocation)
-                    .map(|a| ScryptoValue::from_typed(&a))
-            }
-            NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run) => {
-                let invocation: TransactionProcessorRunInput = scrypto_decode(&args)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                self.system_api
-                    .invoke(invocation)
-                    .map(|a| ScryptoValue::from_typed(&a))
-            }
-            NativeFunction::Package(PackageFunction::Publish) => {
-                let invocation: PackagePublishInput = scrypto_decode(&args)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                self.system_api
-                    .invoke(invocation)
-                    .map(|a| ScryptoValue::from_typed(&a))
-            }
-        }
+        parse_and_invoke_native_function(native_function, args, self.system_api)
     }
 
     fn handle_invoke_native_method(

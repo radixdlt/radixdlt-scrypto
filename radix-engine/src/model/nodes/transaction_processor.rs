@@ -552,68 +552,7 @@ impl TransactionProcessor {
                                 function_ident.clone(),
                             ),
                         ))?;
-                        match native_function {
-                            NativeFunction::EpochManager(EpochManagerFunction::Create) => {
-                                let invocation: EpochManagerCreateInput = scrypto_decode(&args.raw)
-                                    .map_err(|e| {
-                                        InvokeError::Error(
-                                            TransactionProcessorError::InvalidRequestData(e),
-                                        )
-                                    })?;
-                                system_api
-                                    .invoke(invocation)
-                                    .map(|a| ScryptoValue::from_typed(&a))
-                            }
-                            NativeFunction::ResourceManager(
-                                ResourceManagerFunction::BurnBucket,
-                            ) => {
-                                let invocation: ResourceManagerBurnInput =
-                                    scrypto_decode(&args.raw).map_err(|e| {
-                                        InvokeError::Error(
-                                            TransactionProcessorError::InvalidRequestData(e),
-                                        )
-                                    })?;
-                                system_api
-                                    .invoke(invocation)
-                                    .map(|a| ScryptoValue::from_typed(&a))
-                            }
-                            NativeFunction::ResourceManager(ResourceManagerFunction::Create) => {
-                                let invocation: ResourceManagerCreateInput =
-                                    scrypto_decode(&args.raw).map_err(|e| {
-                                        InvokeError::Error(
-                                            TransactionProcessorError::InvalidRequestData(e),
-                                        )
-                                    })?;
-                                system_api
-                                    .invoke(invocation)
-                                    .map(|a| ScryptoValue::from_typed(&a))
-                            }
-                            NativeFunction::TransactionProcessor(
-                                TransactionProcessorFunction::Run,
-                            ) => {
-                                let invocation: TransactionProcessorRunInput =
-                                    scrypto_decode(&args.raw).map_err(|e| {
-                                        InvokeError::Error(
-                                            TransactionProcessorError::InvalidRequestData(e),
-                                        )
-                                    })?;
-                                system_api
-                                    .invoke(invocation)
-                                    .map(|a| ScryptoValue::from_typed(&a))
-                            }
-                            NativeFunction::Package(PackageFunction::Publish) => {
-                                let invocation: PackagePublishInput = scrypto_decode(&args.raw)
-                                    .map_err(|e| {
-                                        InvokeError::Error(
-                                            TransactionProcessorError::InvalidRequestData(e),
-                                        )
-                                    })?;
-                                system_api
-                                    .invoke(invocation)
-                                    .map(|a| ScryptoValue::from_typed(&a))
-                            }
-                        }
-                        .map_err(InvokeError::Downstream)
+                        parse_and_invoke_native_function(native_function, args.raw, system_api).map_err(InvokeError::Downstream)
                     })
                     .and_then(|result| {
                         // Auto move into auth_zone
