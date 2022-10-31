@@ -65,7 +65,6 @@ impl ComponentAuthZone {
 
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::AuthZone(AuthZoneMethod::Pop),
-            node_id,
             scrypto::buffer::scrypto_encode(
                 &(AuthZonePopInput {
                     auth_zone_id: node_id.into(),
@@ -85,7 +84,6 @@ impl ComponentAuthZone {
 
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::AuthZone(AuthZoneMethod::CreateProof),
-            node_id,
             scrypto::buffer::scrypto_encode(
                 &(AuthZoneCreateProofInput {
                     auth_zone_id: node_id.into(),
@@ -106,7 +104,6 @@ impl ComponentAuthZone {
 
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::AuthZone(AuthZoneMethod::CreateProofByAmount),
-            node_id,
             scrypto::buffer::scrypto_encode(
                 &(AuthZoneCreateProofByAmountInput {
                     amount,
@@ -131,7 +128,6 @@ impl ComponentAuthZone {
 
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds),
-            node_id,
             scrypto::buffer::scrypto_encode(
                 &(AuthZoneCreateProofByIdsInput {
                     ids: ids.clone(),
@@ -154,7 +150,6 @@ impl ComponentAuthZone {
         let proof: Proof = proof.into();
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::AuthZone(AuthZoneMethod::Push),
-            node_id,
             scrypto::buffer::scrypto_encode(
                 &(AuthZonePushInput {
                     proof,

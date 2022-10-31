@@ -117,7 +117,6 @@ where
     fn handle_invoke_native_method(
         &mut self,
         native_method: NativeMethod,
-        receiver: RENodeId,
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         match native_method {
@@ -592,8 +591,8 @@ where
             RadixEngineInput::InvokeNativeFunction(native_function, args) => {
                 self.handle_invoke_native_function(native_function, args)?
             }
-            RadixEngineInput::InvokeNativeMethod(native_method, receiver, args) => {
-                self.handle_invoke_native_method(native_method, receiver, args)?
+            RadixEngineInput::InvokeNativeMethod(native_method, args) => {
+                self.handle_invoke_native_method(native_method, args)?
             }
             RadixEngineInput::CreateNode(node) => self.handle_node_create(node)?,
             RadixEngineInput::GetVisibleNodeIds() => self.handle_get_visible_node_ids()?,

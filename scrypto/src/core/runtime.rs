@@ -96,7 +96,6 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
-            RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
             scrypto_encode(&EpochManagerGetCurrentEpochInput {
                 system_address: EPOCH_MANAGER,
             }),

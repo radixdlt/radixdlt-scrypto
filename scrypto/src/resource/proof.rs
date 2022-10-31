@@ -70,7 +70,7 @@ impl From<NonFungibleAddress> for ProofValidationMode {
 
 impl Clone for Proof {
     native_methods! {
-        RENodeId::Proof(self.0), NativeMethod::Proof => {
+        NativeMethod::Proof => {
             fn clone(&self) -> Self {
                 ProofMethod::Clone,
                 ProofCloneInput {
@@ -225,7 +225,7 @@ impl Proof {
     }
 
     native_methods! {
-        RENodeId::Proof(self.0), NativeMethod::Proof => {
+        NativeMethod::Proof => {
             fn amount(&self) -> Decimal {
                 ProofMethod::GetAmount,
                 ProofGetAmountInput {
@@ -265,7 +265,7 @@ impl Clone for ValidatedProof {
 
 impl ValidatedProof {
     native_methods! {
-        RENodeId::Proof(self.proof_id()), NativeMethod::Proof => {
+        NativeMethod::Proof => {
             pub fn amount(&self) -> Decimal {
                 ProofMethod::GetAmount,
                 ProofGetAmountInput {

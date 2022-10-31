@@ -5,7 +5,6 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::engine::types::GlobalAddress;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
@@ -82,7 +81,6 @@ impl Vault {
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault),
-            RENodeId::Global(GlobalAddress::Resource(resource_address)),
             scrypto_encode(&ResourceManagerCreateVaultInput { resource_address }),
         );
         call_engine(input)
@@ -98,7 +96,6 @@ impl Vault {
     fn take_internal(&mut self, amount: Decimal) -> Bucket {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Vault(VaultMethod::Take),
-            RENodeId::Vault(self.0),
             scrypto_encode(&VaultTakeInput {
                 vault_id: self.0,
                 amount,
@@ -110,7 +107,6 @@ impl Vault {
     fn lock_fee_internal(&mut self, amount: Decimal) {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Vault(VaultMethod::LockFee),
-            RENodeId::Vault(self.0),
             scrypto_encode(&VaultLockFeeInput {
                 vault_id: self.0,
                 amount,
@@ -123,7 +119,6 @@ impl Vault {
     fn lock_contingent_fee_internal(&mut self, amount: Decimal) {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Vault(VaultMethod::LockFee),
-            RENodeId::Vault(self.0),
             scrypto_encode(&VaultLockFeeInput {
                 vault_id: self.0,
                 amount,
@@ -134,7 +129,7 @@ impl Vault {
     }
 
     native_methods! {
-        RENodeId::Vault(self.0), NativeMethod::Vault => {
+        NativeMethod::Vault => {
             pub fn put(&mut self, bucket: Bucket) -> () {
                 VaultMethod::Put,
                 VaultPutInput {
