@@ -36,7 +36,7 @@ fn test_encode_as_json() {
         d: "5".to_string(),
     };
     let bytes = sbor::encode(&sample);
-    let any = sbor::decode_any(&bytes).unwrap();
+    let any = sbor::decode_any::<NoCustomValue>(&bytes).unwrap();
 
     assert_json_eq(
         any,

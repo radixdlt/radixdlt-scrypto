@@ -1,5 +1,4 @@
 /// A custom type is an application defined type with special semantics.
-/// SborValues of a custom type must be encoded a `size + data`
 pub const CUSTOM_TYPE_START: u8 = 0x80;
 
 pub const OPTION_VARIANT_SOME: &str = "Some";

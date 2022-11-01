@@ -1,6 +1,7 @@
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::value::SborValue;
+use crate::CustomValue;
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct SborPathBuf(Vec<usize>);
@@ -34,12 +35,18 @@ impl SborPath {
         SborPath(path)
     }
 
-    pub fn get_from_value<'a>(&'a self, value: &'a SborValue) -> Option<&'a SborValue> {
+    pub fn get_from_value<'a, X: CustomValue>(
+        &'a self,
+        value: &'a SborValue<X>,
+    ) -> Option<&'a SborValue<X>> {
         let rel_path = SborValueRetriever(&self.0);
         rel_path.get_from(value)
     }
 
-    pub fn get_from_value_mut<'a>(&'a self, value: &'a mut SborValue) -> Option<&'a mut SborValue> {
+    pub fn get_from_value_mut<'a, X: CustomValue>(
+        &'a self,
+        value: &'a mut SborValue<X>,
+    ) -> Option<&'a mut SborValue<X>> {
         let rel_path = SborValueRetriever(&self.0);
         rel_path.get_from_mut(value)
     }
@@ -59,14 +66,17 @@ impl<'a> SborValueRetriever<'a> {
         (index, SborValueRetriever(extended_path))
     }
 
-    fn get_from_vector(&self, values: &'a [SborValue]) -> Option<&'a SborValue> {
+    fn get_from_vector<X: CustomValue>(
+        &self,
+        values: &'a [SborValue<X>],
+    ) -> Option<&'a SborValue<X>> {
         let (index, next_path) = self.pop();
         values
             .get(index)
             .and_then(|value| next_path.get_from(value))
     }
 
-    fn get_from(self, value: &'a SborValue) -> Option<&'a SborValue> {
+    fn get_from<X: CustomValue>(self, value: &'a SborValue<X>) -> Option<&'a SborValue<X>> {
         if self.is_empty() {
             return Option::Some(value);
         }
@@ -80,14 +90,20 @@ impl<'a> SborValueRetriever<'a> {
         }
     }
 
-    fn get_from_vector_mut(&self, values: &'a mut [SborValue]) -> Option<&'a mut SborValue> {
+    fn get_from_vector_mut<X: CustomValue>(
+        &self,
+        values: &'a mut [SborValue<X>],
+    ) -> Option<&'a mut SborValue<X>> {
         let (index, next_path) = self.pop();
         values
             .get_mut(index)
             .and_then(|value| next_path.get_from_mut(value))
     }
 
-    fn get_from_mut(self, value: &'a mut SborValue) -> Option<&'a mut SborValue> {
+    fn get_from_mut<X: CustomValue>(
+        self,
+        value: &'a mut SborValue<X>,
+    ) -> Option<&'a mut SborValue<X>> {
         if self.is_empty() {
             return Option::Some(value);
         }
