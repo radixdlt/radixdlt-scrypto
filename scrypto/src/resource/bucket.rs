@@ -19,10 +19,24 @@ pub struct BucketTakeInvocation {
     pub amount: Decimal,
 }
 
+impl SysInvocation for BucketTakeInvocation {
+    type Output = Bucket;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Bucket(BucketMethod::Take)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketPutInvocation {
     pub receiver: BucketId,
-    pub bucket: scrypto::resource::Bucket,
+    pub bucket: Bucket,
+}
+
+impl SysInvocation for BucketPutInvocation {
+    type Output = ();
+    fn native_method() -> NativeMethod {
+        NativeMethod::Bucket(BucketMethod::Put)
+    }
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -31,9 +45,23 @@ pub struct BucketTakeNonFungiblesInvocation {
     pub ids: BTreeSet<NonFungibleId>,
 }
 
+impl SysInvocation for BucketTakeNonFungiblesInvocation {
+    type Output = Bucket;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Bucket(BucketMethod::TakeNonFungibles)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketGetNonFungibleIdsInvocation {
     pub receiver: BucketId,
+}
+
+impl SysInvocation for BucketGetNonFungibleIdsInvocation {
+    type Output = BTreeSet<NonFungibleId>;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Bucket(BucketMethod::GetNonFungibleIds)
+    }
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -41,9 +69,23 @@ pub struct BucketGetAmountInvocation {
     pub receiver: BucketId,
 }
 
+impl SysInvocation for BucketGetAmountInvocation {
+    type Output = Decimal;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Bucket(BucketMethod::GetAmount)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketGetResourceAddressInvocation {
     pub receiver: BucketId,
+}
+
+impl SysInvocation for BucketGetResourceAddressInvocation {
+    type Output = ResourceAddress;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Bucket(BucketMethod::GetResourceAddress)
+    }
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

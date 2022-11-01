@@ -1,10 +1,9 @@
-use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::{ InvokeError, };
 use crate::types::*;
 use crate::wasm::*;
-use scrypto::engine::api::ScryptoSyscalls;
+use scrypto::engine::api::{ScryptoSyscalls, SysInvokableNative};
 
 /// A glue between system api (call frame and track abstraction) and WASM.
 ///
@@ -16,6 +15,7 @@ where
         + ScryptoSyscalls<RuntimeError>
         + Invokable<ScryptoInvocation>
         + InvokableNative<'a>
+        + SysInvokableNative<RuntimeError>
 {
     system_api: &'y mut Y,
     phantom: PhantomData<&'a ()>,
@@ -27,6 +27,7 @@ where
         + ScryptoSyscalls<RuntimeError>
         + Invokable<ScryptoInvocation>
         + InvokableNative<'a>
+        + SysInvokableNative<RuntimeError>
 {
     // TODO: expose API for reading blobs
 
@@ -68,6 +69,7 @@ where
         + ScryptoSyscalls<RuntimeError>
         + Invokable<ScryptoInvocation>
         + InvokableNative<'a>
+        + SysInvokableNative<RuntimeError>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>> {
         let input: RadixEngineInput = scrypto_decode(&input.raw)

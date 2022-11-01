@@ -4,6 +4,7 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::core::NetworkDefinition;
 
 use crate::abi::*;
 use crate::engine::{api::*, types::*, utils::*};
@@ -17,14 +18,35 @@ pub struct ProofGetAmountInvocation {
     pub receiver: ProofId,
 }
 
+impl SysInvocation for ProofGetAmountInvocation {
+    type Output = Decimal;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Proof(ProofMethod::GetAmount)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ProofGetNonFungibleIdsInvocation {
     pub receiver: ProofId,
 }
 
+impl SysInvocation for ProofGetNonFungibleIdsInvocation {
+    type Output = BTreeSet<NonFungibleId>;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Proof(ProofMethod::GetNonFungibleIds)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ProofGetResourceAddressInvocation {
     pub receiver: ProofId,
+}
+
+impl SysInvocation for ProofGetResourceAddressInvocation {
+    type Output = ResourceAddress;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Proof(ProofMethod::GetResourceAddress)
+    }
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

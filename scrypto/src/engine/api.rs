@@ -11,15 +11,11 @@ use super::types::*;
 
 pub trait SysInvocation: Encode {
     type Output: Debug + Decode;
-
     fn native_method() -> NativeMethod;
 }
 
-pub trait SysInvokable<I, E>
-where
-    I: SysInvocation,
-{
-    fn sys_invoke(&mut self, input: I) -> Result<I::Output, E>;
+pub trait SysInvokable<I: SysInvocation, E> {
+    fn sys_invoke(&mut self, invocation: I) -> Result<I::Output, E>;
 }
 
 pub trait ScryptoSyscalls<E: Debug> {
@@ -57,10 +53,22 @@ pub trait SysInvokableNative<E>:
     + SysInvokable<AuthZoneCreateProofInvocation, E>
     + SysInvokable<AuthZoneCreateProofByAmountInvocation, E>
     + SysInvokable<AuthZoneCreateProofByIdsInvocation, E>
+    + SysInvokable<AuthZoneClearInvocation, E>
+    + SysInvokable<AuthZoneDrainInvocation, E>
+    + SysInvokable<BucketTakeInvocation, E>
+    + SysInvokable<BucketPutInvocation, E>
+    + SysInvokable<BucketTakeNonFungiblesInvocation, E>
+    + SysInvokable<BucketGetNonFungibleIdsInvocation, E>
+    + SysInvokable<BucketGetAmountInvocation, E>
+    + SysInvokable<BucketGetResourceAddressInvocation, E>
+    + SysInvokable<BucketCreateProofInvocation, E>
     + SysInvokable<ResourceManagerCreateBucketInvocation, E>
     + SysInvokable<ResourceManagerBurnInvocation, E>
     + SysInvokable<BucketCreateProofInvocation, E>
     + SysInvokable<ProofCloneInvocation, E>
+    + SysInvokable<ProofGetAmountInvocation, E>
+    + SysInvokable<ProofGetNonFungibleIdsInvocation, E>
+    + SysInvokable<ProofGetResourceAddressInvocation, E>
     + SysInvokable<VaultGetAmountInvocation, E>
 {
 }

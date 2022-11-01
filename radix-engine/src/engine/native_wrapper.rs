@@ -1,3 +1,4 @@
+use scrypto::engine::api::SysInvokableNative;
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::model::{
@@ -58,13 +59,13 @@ where
 }
 
 // TODO: Cleanup
-pub fn parse_and_invoke_native_method<'y, 'a, Y>(
+pub fn parse_and_invoke_native_method<Y>(
     native_method: NativeMethod,
     args: Vec<u8>,
-    system_api: &'y mut Y,
+    system_api: &mut Y,
 ) -> Result<ScryptoValue, RuntimeError>
 where
-    Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
+    Y: SystemApi + Invokable<ScryptoInvocation> + SysInvokableNative<RuntimeError>,
 {
     match native_method {
         NativeMethod::Bucket(bucket_method) => match bucket_method {
@@ -72,49 +73,49 @@ where
                 let invocation: BucketTakeInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             BucketMethod::CreateProof => {
                 let invocation: BucketCreateProofInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             BucketMethod::TakeNonFungibles => {
                 let invocation: BucketTakeNonFungiblesInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             BucketMethod::GetNonFungibleIds => {
                 let invocation: BucketGetNonFungibleIdsInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             BucketMethod::GetAmount => {
                 let invocation: BucketGetAmountInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             BucketMethod::Put => {
                 let invocation: BucketPutInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             BucketMethod::GetResourceAddress => {
                 let invocation: BucketGetResourceAddressInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
         },
@@ -123,49 +124,49 @@ where
                 let invocation: AuthZonePopInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             AuthZoneMethod::Push => {
                 let invocation: AuthZonePushInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             AuthZoneMethod::CreateProof => {
                 let invocation: AuthZoneCreateProofInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             AuthZoneMethod::CreateProofByAmount => {
                 let invocation: AuthZoneCreateProofByAmountInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             AuthZoneMethod::CreateProofByIds => {
                 let invocation: AuthZoneCreateProofByIdsInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             AuthZoneMethod::Clear => {
                 let invocation: AuthZoneClearInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             AuthZoneMethod::Drain => {
                 let invocation: AuthZoneDrainInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
         },
@@ -174,31 +175,33 @@ where
                 let invocation: ProofGetAmountInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ProofMethod::GetNonFungibleIds => {
                 let invocation: ProofGetNonFungibleIdsInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ProofMethod::GetResourceAddress => {
                 let invocation: ProofGetResourceAddressInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ProofMethod::Clone => {
                 let invocation: ProofCloneInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
         },
+        _ => panic!("oops")
+        /*
         NativeMethod::Vault(vault_method) => match vault_method {
             VaultMethod::Take => {
                 let invocation: VaultTakeInvocation = scrypto_decode(&args)
@@ -455,5 +458,6 @@ where
                     .map(|a| ScryptoValue::from_typed(&a))
             }
         },
+         */
     }
 }

@@ -1,7 +1,7 @@
 use crate::engine::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringParams, WasmRuntime};
-use scrypto::engine::api::ScryptoSyscalls;
+use scrypto::engine::api::{ScryptoSyscalls, SysInvokableNative};
 
 pub struct ScryptoExecutor<I: WasmInstance> {
     instance: I,
@@ -24,6 +24,7 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
             + Invokable<ScryptoInvocation>
             + InvokableNative<'a>
             + ScryptoSyscalls<RuntimeError>
+            + SysInvokableNative<RuntimeError>
     {
         let (export_name, return_type) = match system_api.get_actor() {
             REActor::Method(

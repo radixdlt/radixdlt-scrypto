@@ -82,10 +82,28 @@ pub struct AuthZoneClearInvocation {
     pub receiver: AuthZoneId,
 }
 
+impl SysInvocation for AuthZoneClearInvocation {
+    type Output = ();
+
+    fn native_method() -> NativeMethod {
+        NativeMethod::AuthZone(AuthZoneMethod::Clear)
+    }
+}
+
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZoneDrainInvocation {
     pub receiver: AuthZoneId,
 }
+
+impl SysInvocation for AuthZoneDrainInvocation {
+    type Output = Vec<scrypto::resource::Proof>;
+
+    fn native_method() -> NativeMethod {
+        NativeMethod::AuthZone(AuthZoneMethod::Drain)
+    }
+}
+
 
 /// Represents the auth zone, which is used by system for checking
 /// if this component is allowed to
