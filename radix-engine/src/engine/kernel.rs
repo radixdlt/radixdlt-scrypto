@@ -53,7 +53,7 @@ pub struct Kernel<
     track: &'g mut Track<'s, R>,
 
     /// Interpreter capable of running scrypto programs
-    scrypto_interpreter: &'g mut ScryptoInterpreter<I, W>,
+    scrypto_interpreter: &'g ScryptoInterpreter<I, W>,
 
     /// Kernel modules
     modules: Vec<Box<dyn Module<R>>>,
@@ -73,7 +73,7 @@ where
         blobs: &'g HashMap<Hash, &'g [u8]>,
         max_depth: usize,
         track: &'g mut Track<'s, R>,
-        scrypto_interpreter: &'g mut ScryptoInterpreter<I, W>,
+        scrypto_interpreter: &'g ScryptoInterpreter<I, W>,
         modules: Vec<Box<dyn Module<R>>>,
     ) -> Self {
         let mut kernel = Self {

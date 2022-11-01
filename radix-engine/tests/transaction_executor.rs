@@ -2,11 +2,11 @@ use radix_engine::constants::DEFAULT_MAX_COST_UNIT_LIMIT;
 use radix_engine::engine::{ModuleError, RejectionError};
 use radix_engine::engine::{RuntimeError, ScryptoInterpreter};
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::transaction::TransactionExecutor;
+use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
-use radix_engine::wasm::{DefaultWasmEngine, InstructionCostRules, WasmMeteringParams};
+use radix_engine::wasm::{DefaultWasmEngine, InstructionCostRules, WasmMeteringConfig};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
@@ -124,9 +124,9 @@ fn test_normal_transaction_flow() {
     let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
 
     let mut scrypto_interpreter = ScryptoInterpreter {
-        wasm_engine: DefaultWasmEngine::new(),
-        wasm_instrumenter: WasmInstrumenter::new(),
-        wasm_metering_params: WasmMeteringParams::new(
+        wasm_engine: DefaultWasmEngine::default(),
+        wasm_instrumenter: WasmInstrumenter::default(),
+        wasm_metering_config: WasmMeteringConfig::new(
             InstructionCostRules::tiered(1, 5, 10, 5000),
             512,
         ),
@@ -153,10 +153,14 @@ fn test_normal_transaction_flow() {
         .validate(&transaction, &intent_hash_manager)
         .expect("Invalid transaction");
 
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut scrypto_interpreter);
-
     // Act
-    let receipt = executor.execute_and_commit(&executable, &fee_reserve_config, &execution_config);
+    let receipt = execute_and_commit_transaction(
+        &mut substate_store,
+        &mut scrypto_interpreter,
+        &fee_reserve_config,
+        &execution_config,
+        &executable,
+    );
 
     // Assert
     receipt.expect_commit_success();

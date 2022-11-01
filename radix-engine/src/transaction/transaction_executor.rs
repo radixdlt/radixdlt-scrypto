@@ -54,15 +54,16 @@ impl ExecutionConfig {
 }
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'s, 'w, S, W, I>
+/// This is no longer public -- it can be removed / merged into the exposed functions in a future small PR
+/// But I'm not doing it in this PR to avoid merge conflicts in the body of execute_with_fee_reserve
+struct TransactionExecutor<'s, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    substate_store: &'s mut S,
-    scrypto_interpreter: &'w mut ScryptoInterpreter<I, W>,
-    phantom: PhantomData<I>,
+    substate_store: &'s S,
+    scrypto_interpreter: &'w ScryptoInterpreter<I, W>,
 }
 
 impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
@@ -71,14 +72,10 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    pub fn new(
-        substate_store: &'s mut S,
-        scrypto_interpreter: &'w mut ScryptoInterpreter<I, W>,
-    ) -> Self {
+    pub fn new(substate_store: &'s S, scrypto_interpreter: &'w ScryptoInterpreter<I, W>) -> Self {
         Self {
             substate_store,
             scrypto_interpreter,
-            phantom: PhantomData,
         }
     }
 
@@ -214,22 +211,58 @@ where
     }
 }
 
-impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
-where
+pub fn execute_and_commit_transaction<
     S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine<I>,
     I: WasmInstance,
-{
-    pub fn execute_and_commit(
-        &mut self,
-        transaction: &Executable,
-        fee_reserve_config: &FeeReserveConfig,
-        execution_config: &ExecutionConfig,
-    ) -> TransactionReceipt {
-        let receipt = self.execute(transaction, fee_reserve_config, execution_config);
-        if let TransactionResult::Commit(commit) = &receipt.result {
-            commit.state_updates.commit(self.substate_store);
-        }
-        receipt
+    W: WasmEngine<I>,
+>(
+    substate_store: &mut S,
+    scrypto_interpreter: &ScryptoInterpreter<I, W>,
+    fee_reserve_config: &FeeReserveConfig,
+    execution_config: &ExecutionConfig,
+    transaction: &Executable,
+) -> TransactionReceipt {
+    let receipt = execute_transaction(
+        substate_store,
+        scrypto_interpreter,
+        fee_reserve_config,
+        execution_config,
+        transaction,
+    );
+    if let TransactionResult::Commit(commit) = &receipt.result {
+        commit.state_updates.commit(substate_store);
     }
+    receipt
+}
+
+pub fn execute_transaction<S: ReadableSubstateStore, I: WasmInstance, W: WasmEngine<I>>(
+    substate_store: &S,
+    scrypto_interpreter: &ScryptoInterpreter<I, W>,
+    fee_reserve_config: &FeeReserveConfig,
+    execution_config: &ExecutionConfig,
+    transaction: &Executable,
+) -> TransactionReceipt {
+    TransactionExecutor::new(substate_store, scrypto_interpreter).execute(
+        transaction,
+        fee_reserve_config,
+        execution_config,
+    )
+}
+
+pub fn execute_transaction_with_fee_reserve<
+    S: ReadableSubstateStore,
+    I: WasmInstance,
+    W: WasmEngine<I>,
+>(
+    substate_store: &S,
+    scrypto_interpreter: &ScryptoInterpreter<I, W>,
+    fee_reserve: impl FeeReserve,
+    execution_config: &ExecutionConfig,
+    transaction: &Executable,
+) -> TransactionReceipt {
+    TransactionExecutor::new(substate_store, scrypto_interpreter).execute_with_fee_reserve(
+        transaction,
+        execution_config,
+        fee_reserve,
+    )
 }
