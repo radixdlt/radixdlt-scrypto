@@ -140,14 +140,12 @@ pub struct BorrowedGlobalComponent(pub ComponentAddress);
 impl BorrowedGlobalComponent {
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
-        let input = RadixEngineInput::InvokeScryptoMethod(
-            ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Global(self.0),
-                method_name: method.to_string(),
-            },
-            args,
-        );
-        call_engine(input)
+        let mut syscalls = Syscalls;
+        let raw = syscalls.sys_invoke_scrypto_method(ScryptoMethodIdent {
+            receiver: ScryptoReceiver::Global(self.0),
+            method_name: method.to_string(),
+        }, args).unwrap();
+        scrypto_decode(&raw).unwrap()
     }
 
     /// Returns the package ID of this component.

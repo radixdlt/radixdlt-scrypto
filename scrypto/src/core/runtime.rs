@@ -100,14 +100,17 @@ impl Runtime {
         method: S,
         args: Vec<u8>,
     ) -> T {
-        let input = RadixEngineInput::InvokeScryptoMethod(
-            ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Global(component_address),
-                method_name: method.as_ref().to_string(),
-            },
-            args,
-        );
-        call_engine(input)
+        let mut syscalls = Syscalls;
+        let rtn = syscalls
+            .sys_invoke_scrypto_method(
+                ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Global(component_address),
+                    method_name: method.as_ref().to_string(),
+                },
+                args,
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Returns the transaction hash.
