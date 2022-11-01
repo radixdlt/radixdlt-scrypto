@@ -13,8 +13,8 @@ blueprint! {
             let input = RadixEngineInput::InvokeNativeMethod(
                 NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
                 scrypto_encode(&EpochManagerSetEpochInvocation {
+                    receiver: epoch_manager,
                     epoch,
-                    system_address: epoch_manager,
                 }),
             );
             call_engine(input)
