@@ -6,7 +6,7 @@ use crate::wasm::errors::*;
 
 /// Represents the runtime that can be invoked by Scrypto modules.
 pub trait WasmRuntime {
-    fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>>;
+    fn main(&mut self, input: ScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>>;
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>>;
 }

@@ -2,6 +2,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::buffer::*;
+use crate::values::ScryptoValue;
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
@@ -22,6 +23,12 @@ pub fn scrypto_encode_to_buffer<T: Encode + ?Sized>(v: &T) -> *mut u8 {
 /// Decode a data structure from a Scrypto buffer.
 pub fn scrypto_decode_from_buffer<T: Decode + ?Sized>(ptr: *mut u8) -> Result<T, DecodeError> {
     scrypto_consume(ptr, |slice| scrypto_decode(slice))
+}
+
+/// Decode a data structure from a Scrypto buffer.
+pub fn scrypto_raw_from_buffer(ptr: *mut u8) -> Vec<u8> {
+    // TODO: Rather than to_vec(), just take ownership
+    scrypto_consume(ptr, |slice| slice.to_vec())
 }
 
 #[cfg(test)]

@@ -1,10 +1,7 @@
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::fee::*;
-use crate::model::{
-    ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, InvokeError,
-    KeyValueStore, RuntimeSubstate,
-};
+use crate::model::{ InvokeError, KeyValueStore, RuntimeSubstate, };
 use crate::types::*;
 use crate::wasm::*;
 use scrypto::engine::api::ScryptoSyscalls;
@@ -48,28 +45,6 @@ where
             phantom2: PhantomData,
             phantom3: PhantomData,
         }
-    }
-
-    fn handle_invoke_scrypto_function(
-        &mut self,
-        fn_ident: ScryptoFunctionIdent,
-        args: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let args = ScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api
-            .invoke(ScryptoInvocation::Function(fn_ident, args))
-    }
-
-    fn handle_invoke_scrypto_method(
-        &mut self,
-        fn_ident: ScryptoMethodIdent,
-        args: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let args = ScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api
-            .invoke(ScryptoInvocation::Method(fn_ident, args))
     }
 
     fn handle_invoke_native_function(
@@ -168,8 +143,8 @@ where
     }
 }
 
-fn encode<T: Encode>(output: T) -> ScryptoValue {
-    ScryptoValue::from_typed(&output)
+fn encode<T: Encode>(output: T) -> Vec<u8> {
+    scrypto_encode(&output)
 }
 
 impl<'y, 's, 'a, Y, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
@@ -180,31 +155,31 @@ where
         + InvokableNative<'a>,
     R: FeeReserve,
 {
-    fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {
+    fn main(&mut self, input: ScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>> {
         let input: RadixEngineInput = scrypto_decode(&input.raw)
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         let rtn = match input {
             RadixEngineInput::InvokeScryptoFunction(function_ident, args) => {
-                self.handle_invoke_scrypto_function(function_ident, args)?
+                self.system_api.sys_invoke_scrypto_function(function_ident, args)?
             }
             RadixEngineInput::InvokeScryptoMethod(method_ident, args) => {
-                self.handle_invoke_scrypto_method(method_ident, args)?
+                self.system_api.sys_invoke_scrypto_method(method_ident, args)?
             }
             RadixEngineInput::InvokeNativeFunction(native_function, args) => {
-                self.handle_invoke_native_function(native_function, args)?
+                self.handle_invoke_native_function(native_function, args).map(|v| v.raw)?
             }
             RadixEngineInput::InvokeNativeMethod(native_method, args) => {
-                self.handle_invoke_native_method(native_method, args)?
+                self.handle_invoke_native_method(native_method, args).map(|v| v.raw)?
             }
-            RadixEngineInput::CreateNode(node) => self.handle_node_create(node)?,
-            RadixEngineInput::GetVisibleNodeIds() => self.handle_get_visible_node_ids()?,
-            RadixEngineInput::DropNode(node_id) => self.handle_drop_node(node_id)?,
+            RadixEngineInput::CreateNode(node) => self.handle_node_create(node).map(|v| v.raw)?,
+            RadixEngineInput::GetVisibleNodeIds() => self.handle_get_visible_node_ids().map(|v| v.raw)?,
+            RadixEngineInput::DropNode(node_id) => self.handle_drop_node(node_id).map(|v| v.raw)?,
             RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
-                self.handle_lock_substate(node_id, offset, mutable)?
+                self.handle_lock_substate(node_id, offset, mutable).map(|v| v.raw)?
             }
-            RadixEngineInput::Read(lock_handle) => self.handle_read(lock_handle)?,
-            RadixEngineInput::Write(lock_handle, value) => self.handle_write(lock_handle, value)?,
-            RadixEngineInput::DropLock(lock_handle) => self.handle_drop_lock(lock_handle)?,
+            RadixEngineInput::Read(lock_handle) => self.handle_read(lock_handle).map(|v| v.raw)?,
+            RadixEngineInput::Write(lock_handle, value) => self.handle_write(lock_handle, value).map(|v| v.raw)?,
+            RadixEngineInput::DropLock(lock_handle) => self.handle_drop_lock(lock_handle).map(|v| v.raw)?,
 
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode)?,
             RadixEngineInput::GetTransactionHash() => {
@@ -238,8 +213,8 @@ impl NopWasmRuntime {
 }
 
 impl WasmRuntime for NopWasmRuntime {
-    fn main(&mut self, _input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {
-        Ok(ScryptoValue::unit())
+    fn main(&mut self, _input: ScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>> {
+        Ok(ScryptoValue::unit().raw)
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>> {

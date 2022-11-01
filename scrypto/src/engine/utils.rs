@@ -25,8 +25,25 @@ pub fn call_engine<V: Decode>(input: RadixEngineInput) -> V {
 }
 
 /// Utility function for making a radix engine call.
+#[cfg(target_arch = "wasm32")]
+pub fn call_engine_to_raw(input: RadixEngineInput) -> Vec<u8> {
+    use crate::buffer::{scrypto_raw_from_buffer, *};
+
+    unsafe {
+        let input_ptr = scrypto_encode_to_buffer(&input);
+        let output_ptr = radix_engine(input_ptr);
+        scrypto_raw_from_buffer(output_ptr)
+    }
+}
+
+/// Utility function for making a radix engine call.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn call_engine<V: Decode>(_input: RadixEngineInput) -> V {
+    todo!()
+}
+/// Utility function for making a radix engine call.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn call_engine_to_raw(_input: RadixEngineInput) -> Vec<u8> {
     todo!()
 }
 
@@ -46,26 +63,26 @@ impl<N: SysInvocation> SysInvokable<N, SyscallError> for Syscalls {
 }
 
 impl ScryptoSyscalls<SyscallError> for Syscalls {
-    fn sys_invoke_scrypto_function<ARGS: Encode, V: Decode>(
+    fn sys_invoke_scrypto_function(
         &mut self,
         fn_ident: ScryptoFunctionIdent,
-        args: &ARGS,
-    ) -> Result<V, SyscallError> {
-        let rtn = call_engine(RadixEngineInput::InvokeScryptoFunction(
+        args: Vec<u8>, // TODO: Update to any
+    ) -> Result<Vec<u8>, SyscallError> {
+        let rtn = call_engine_to_raw(RadixEngineInput::InvokeScryptoFunction(
             fn_ident,
-            scrypto_encode(args),
+            args,
         ));
         Ok(rtn)
     }
 
-    fn sys_invoke_scrypto_method<ARGS: Encode, V: Decode>(
+    fn sys_invoke_scrypto_method(
         &mut self,
         method_ident: ScryptoMethodIdent,
-        args: &ARGS,
-    ) -> Result<V, SyscallError> {
-        let rtn = call_engine(RadixEngineInput::InvokeScryptoMethod(
+        args: Vec<u8>, // TODO: Update to any
+    ) -> Result<Vec<u8>, SyscallError> {
+        let rtn = call_engine_to_raw(RadixEngineInput::InvokeScryptoMethod(
             method_ident,
-            scrypto_encode(args),
+            args,
         ));
         Ok(rtn)
     }

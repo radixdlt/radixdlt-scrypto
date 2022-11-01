@@ -4,11 +4,12 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::constants::EPOCH_MANAGER;
 
-use crate::buffer::scrypto_encode;
+use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::engine::{api::*, types::*, utils::*};
+use crate::values::ScryptoValue;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInput {}
@@ -59,15 +60,16 @@ impl Runtime {
         function_name: S2,
         args: Vec<u8>,
     ) -> T {
-        let input = RadixEngineInput::InvokeScryptoFunction(
+        let mut syscalls = Syscalls;
+        let rtn = syscalls.sys_invoke_scrypto_function(
             ScryptoFunctionIdent {
                 package: ScryptoPackage::Global(package_address),
                 blueprint_name: blueprint_name.as_ref().to_owned(),
                 function_name: function_name.as_ref().to_owned(),
             },
             args,
-        );
-        call_engine(input)
+        ).unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Invokes a method on a component.

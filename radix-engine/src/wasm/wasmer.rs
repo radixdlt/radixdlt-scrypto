@@ -37,10 +37,9 @@ pub struct WasmerEngine {
 
 pub fn send_value(
     instance: &Instance,
-    value: &ScryptoValue,
+    value: &[u8],
 ) -> Result<usize, InvokeError<WasmError>> {
-    let slice = &value.raw;
-    let n = slice.len();
+    let n = value.len();
 
     let result = instance
         .exports
@@ -62,7 +61,7 @@ pub fn send_value(
         if size > ptr && size - ptr >= n {
             unsafe {
                 let dest = memory.data_ptr().add(ptr + 4);
-                ptr::copy(slice.as_ptr(), dest, n);
+                ptr::copy(value.as_ptr(), dest, n);
             }
             return Ok(ptr);
         }
@@ -196,7 +195,7 @@ impl WasmInstance for WasmerInstance {
             *guard = runtime as *mut _ as usize;
         }
 
-        let pointer = send_value(&self.instance, args)?;
+        let pointer = send_value(&self.instance, &args.raw)?;
         let result = self
             .instance
             .exports

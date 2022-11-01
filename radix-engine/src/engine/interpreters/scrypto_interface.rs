@@ -46,24 +46,28 @@ where
     I: WasmInstance,
     R: FeeReserve,
 {
-    fn sys_invoke_scrypto_function<ARGS: Encode, V: Decode>(
+    fn sys_invoke_scrypto_function(
         &mut self,
         fn_ident: ScryptoFunctionIdent,
-        args: &ARGS,
-    ) -> Result<V, RuntimeError> {
-        let args = ScryptoValue::from_typed(args);
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let args = ScryptoValue::from_slice(&args)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+
         self.invoke(ScryptoInvocation::Function(fn_ident, args))
-            .map(|value| scrypto_decode(&value.raw).unwrap())
+            .map(|v| v.raw)
     }
 
-    fn sys_invoke_scrypto_method<ARGS: Encode, V: Decode>(
+    fn sys_invoke_scrypto_method(
         &mut self,
         method_ident: ScryptoMethodIdent,
-        args: &ARGS,
-    ) -> Result<V, RuntimeError> {
-        let args = ScryptoValue::from_typed(args);
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let args = ScryptoValue::from_slice(&args)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+
         self.invoke(ScryptoInvocation::Method(method_ident, args))
-            .map(|value| scrypto_decode(&value.raw).unwrap())
+            .map(|v| v.raw)
     }
 
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {

@@ -6,6 +6,7 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::buffer::scrypto_decode;
 
 use crate::abi::*;
 use crate::address::*;
@@ -16,6 +17,7 @@ use crate::crypto::{hash, Hash, PublicKey};
 use crate::engine::{api::*, types::*, utils::*};
 use crate::misc::*;
 use crate::resource::AccessRules;
+use crate::values::ScryptoValue;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ComponentAddAccessCheckInput {
@@ -64,13 +66,15 @@ pub struct ComponentStateSubstate {
 
 impl Component {
     pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
-        call_engine(RadixEngineInput::InvokeScryptoMethod(
+        let mut sys_calls = Syscalls;
+        let rtn = sys_calls.sys_invoke_scrypto_method(
             ScryptoMethodIdent {
                 receiver: ScryptoReceiver::Component(self.0),
                 method_name: method.to_string(),
             },
             args,
-        ))
+        ).unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Returns the package ID of this component.

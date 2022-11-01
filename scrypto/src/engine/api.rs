@@ -1,5 +1,3 @@
-use crate::buffer::scrypto_encode;
-use crate::engine::utils::call_engine;
 use crate::resource::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -10,6 +8,7 @@ use scrypto::engine::types::*;
 use scrypto::resource::{
     AuthZoneCreateProofByIdsInput, AuthZonePopInput, ProofCloneInput, VaultGetAmountInput,
 };
+use scrypto::values::ScryptoValue;
 
 use super::types::*;
 
@@ -27,16 +26,16 @@ where
 }
 
 pub trait ScryptoSyscalls<E: Debug> {
-    fn sys_invoke_scrypto_function<ARGS: Encode, V: Decode>(
+    fn sys_invoke_scrypto_function(
         &mut self,
         fn_ident: ScryptoFunctionIdent,
-        args: &ARGS,
-    ) -> Result<V, E>;
-    fn sys_invoke_scrypto_method<ARGS: Encode, V: Decode>(
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, E>;
+    fn sys_invoke_scrypto_method(
         &mut self,
         method_ident: ScryptoMethodIdent,
-        args: &ARGS,
-    ) -> Result<V, E>;
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, E>;
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, E>;
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), E>;
     fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, E>;

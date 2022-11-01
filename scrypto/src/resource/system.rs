@@ -2,7 +2,7 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 
 use crate::buffer::scrypto_encode;
-use crate::engine::{api::*, types::*, utils::*};
+use crate::engine::{types::*, utils::*};
 use crate::resource::*;
 
 /// Represents the Radix Engine resource subsystem.
