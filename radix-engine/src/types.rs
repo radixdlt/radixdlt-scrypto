@@ -51,6 +51,8 @@ pub use scrypto::resource::{
     VaultCreateProofByIdsInvocation, VaultCreateProofInvocation, VaultGetAmountInvocation,
     VaultGetNonFungibleIdsInvocation, VaultGetResourceAddressInvocation, VaultLockFeeInvocation,
     VaultPutInvocation, VaultTakeInvocation, VaultTakeNonFungiblesInvocation, LOCKED, MUTABLE,
+    WorktopPutInvocation, WorktopTakeAllInvocation, WorktopDrainInvocation, WorktopTakeAmountInvocation, WorktopTakeNonFungiblesInvocation, WorktopAssertContainsNonFungiblesInvocation,
+    WorktopAssertContainsAmountInvocation, WorktopAssertContainsInvocation,
 };
 pub use scrypto::values::{ScryptoValue, ScryptoValueReplaceError};
 use std::fmt::Debug;

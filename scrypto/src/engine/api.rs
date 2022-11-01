@@ -97,5 +97,13 @@ pub trait SysInvokableNative<E>:
     + SysInvokable<ResourceManagerSetResourceAddressInvocation, E>
     + SysInvokable<EpochManagerSetEpochInvocation, E>
     + SysInvokable<EpochManagerGetCurrentEpochInvocation, E>
+    + SysInvokable<WorktopPutInvocation, E>
+    + SysInvokable<WorktopTakeAmountInvocation, E>
+    + SysInvokable<WorktopTakeAllInvocation, E>
+    + SysInvokable<WorktopTakeNonFungiblesInvocation, E>
+    + SysInvokable<WorktopAssertContainsInvocation, E>
+    + SysInvokable<WorktopAssertContainsAmountInvocation, E>
+    + SysInvokable<WorktopAssertContainsNonFungiblesInvocation, E>
+    + SysInvokable<WorktopDrainInvocation, E>
 {
 }

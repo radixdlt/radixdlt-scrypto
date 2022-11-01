@@ -9,11 +9,6 @@ use crate::engine::*;
 use crate::model::resolve_native_function;
 use crate::model::resolve_native_method;
 use crate::model::{InvokeError, WorktopSubstate};
-use crate::model::{
-    WorktopAssertContainsAmountInvocation, WorktopAssertContainsInvocation,
-    WorktopAssertContainsNonFungiblesInvocation, WorktopDrainInvocation, WorktopPutInvocation,
-    WorktopTakeAllInvocation, WorktopTakeAmountInvocation, WorktopTakeNonFungiblesInvocation,
-};
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]

@@ -2,6 +2,7 @@ use crate::engine::{
     ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
+use sbor::rust::vec::Vec;
 use crate::model::{InvokeError, ProofError};
 use crate::types::*;
 use scrypto::resource::AuthZoneDrainInvocation;

@@ -2,10 +2,7 @@ use scrypto::engine::api::SysInvokableNative;
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::model::{
-    TransactionProcessorRunInvocation, WorktopAssertContainsAmountInvocation,
-    WorktopAssertContainsInvocation, WorktopAssertContainsNonFungiblesInvocation,
-    WorktopDrainInvocation, WorktopPutInvocation, WorktopTakeAllInvocation,
-    WorktopTakeAmountInvocation, WorktopTakeNonFungiblesInvocation,
+    TransactionProcessorRunInvocation
 };
 use crate::types::*;
 use scrypto::resource::AuthZoneDrainInvocation;
@@ -397,66 +394,63 @@ where Y: SysInvokableNative<RuntimeError>,
                     .map(|a| ScryptoValue::from_typed(&a))
             }
         },
-        _ => panic!("oops {:?}", native_method)
-        /*
         NativeMethod::Worktop(worktop_method) => match worktop_method {
             WorktopMethod::TakeNonFungibles => {
                 let invocation: WorktopTakeNonFungiblesInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             WorktopMethod::Put => {
                 let invocation: WorktopPutInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             WorktopMethod::Drain => {
                 let invocation: WorktopDrainInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             WorktopMethod::AssertContainsNonFungibles => {
                 let invocation: WorktopAssertContainsNonFungiblesInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             WorktopMethod::AssertContains => {
                 let invocation: WorktopAssertContainsInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             WorktopMethod::AssertContainsAmount => {
                 let invocation: WorktopAssertContainsAmountInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             WorktopMethod::TakeAll => {
                 let invocation: WorktopTakeAllInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             WorktopMethod::TakeAmount => {
                 let invocation: WorktopTakeAmountInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
         },
-         */
     }
 }

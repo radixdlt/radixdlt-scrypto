@@ -14,6 +14,7 @@ mod resource_type;
 mod schema_path;
 mod system;
 mod vault;
+mod worktop;
 
 pub use access_rules::AccessRules;
 pub use auth_zone::*;
@@ -37,3 +38,4 @@ pub use resource_type::ResourceType;
 pub use schema_path::SchemaPath;
 pub use system::{init_resource_system, resource_system, ResourceSystem};
 pub use vault::*;
+pub use worktop::*;
