@@ -10,6 +10,7 @@ use crate::model::{
 };
 use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
+use scrypto::engine::api::SysInvokableNative;
 use scrypto::resource::ResourceManagerBucketBurnInput;
 
 /// Represents an error when accessing a bucket.
@@ -40,22 +41,13 @@ impl NativeExecutable for ResourceManagerBucketBurnInput {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
+        Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation>
+            + InvokableNative<'a>
+            + SysInvokableNative<RuntimeError>,
         R: FeeReserve,
     {
-        let node_id = RENodeId::Bucket(invocation.bucket.0);
-        let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-
-        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
-        let substate_ref = system_api.get_ref(bucket_handle)?;
-        let resource_address = substate_ref.bucket().resource_address();
-
-        system_api.drop_lock(bucket_handle)?;
-        system_api.invoke(ResourceManagerBurnInput {
-            resource_address,
-            bucket: invocation.bucket,
-        })?;
-
+        invocation.bucket.sys_burn(system_api)?;
         Ok(((), CallFrameUpdate::empty()))
     }
 }

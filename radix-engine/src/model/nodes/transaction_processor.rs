@@ -1,6 +1,6 @@
-use scrypto::resource::{AuthZoneDrainInput, ComponentAuthZone};
 use sbor::rust::borrow::Cow;
 use scrypto::engine::api::{ScryptoSyscalls, SysInvokableNative};
+use scrypto::resource::{AuthZoneDrainInput, ComponentAuthZone};
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
@@ -41,7 +41,11 @@ impl<'b> NativeExecutable for TransactionProcessorRunInput<'b> {
         system_api: &mut Y,
     ) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a> + ScryptoSyscalls<RuntimeError> + SysInvokableNative<RuntimeError>,
+        Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation>
+            + InvokableNative<'a>
+            + ScryptoSyscalls<RuntimeError>
+            + SysInvokableNative<RuntimeError>,
         R: FeeReserve,
     {
         TransactionProcessor::static_main(invocation, system_api)
@@ -171,7 +175,11 @@ impl TransactionProcessor {
         system_api: &mut Y,
     ) -> Result<Vec<Vec<u8>>, InvokeError<TransactionProcessorError>>
     where
-        Y: SystemApi<'s, R> + ScryptoSyscalls<RuntimeError> + Invokable<ScryptoInvocation> + InvokableNative<'a> + SysInvokableNative<RuntimeError>,
+        Y: SystemApi<'s, R>
+            + ScryptoSyscalls<RuntimeError>
+            + Invokable<ScryptoInvocation>
+            + InvokableNative<'a>
+            + SysInvokableNative<RuntimeError>,
         R: FeeReserve,
     {
         let mut proof_id_mapping = HashMap::new();
@@ -349,23 +357,11 @@ impl TransactionProcessor {
                             *resource_address,
                             system_api,
                         )
-                            .map_err(InvokeError::Downstream)
-                            .map(|proof| {
-                                proof_id_mapping.insert(new_id, proof.0);
-                                ScryptoValue::from_typed(&proof)
-                            })
-                            /*
-                            .and_then(|(new_id, real_bucket_id)| {
-                                let bucket = scrypto::resource::Bucket(real_bucket_id);
-                                bucket
-                                    .sys_create_proof(system_api)
-                                    .map_err(InvokeError::Downstream)
-                                    .map(|p| {
-                                        proof_id_mapping.insert(new_id, p.0);
-                                        ScryptoValue::from_typed(&p)
-                                    })
-                            }),
-                             */
+                        .map_err(InvokeError::Downstream)
+                        .map(|proof| {
+                            proof_id_mapping.insert(new_id, proof.0);
+                            ScryptoValue::from_typed(&proof)
+                        })
                     }),
                 Instruction::CreateProofFromAuthZoneByIds {
                     ids,
@@ -381,11 +377,11 @@ impl TransactionProcessor {
                             *resource_address,
                             system_api,
                         )
-                            .map_err(InvokeError::Downstream)
-                            .map(|proof| {
-                                proof_id_mapping.insert(new_id, proof.0);
-                                ScryptoValue::from_typed(&proof)
-                            })
+                        .map_err(InvokeError::Downstream)
+                        .map(|proof| {
+                            proof_id_mapping.insert(new_id, proof.0);
+                            ScryptoValue::from_typed(&proof)
+                        })
                     }),
                 Instruction::CreateProofFromBucket { bucket_id } => id_allocator
                     .new_proof_id()
@@ -402,10 +398,9 @@ impl TransactionProcessor {
                             ))
                     })
                     .and_then(|(new_id, real_bucket_id)| {
-                        system_api
-                            .invoke(BucketCreateProofInput {
-                                bucket_id: real_bucket_id,
-                            })
+                        let bucket = scrypto::resource::Bucket(real_bucket_id);
+                        bucket
+                            .sys_create_proof(system_api)
                             .map_err(InvokeError::Downstream)
                             .map(|proof| {
                                 proof_id_mapping.insert(new_id, proof.0);

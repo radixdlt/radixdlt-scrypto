@@ -1,6 +1,5 @@
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
-use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::engine::{api::*, types::*, utils::*};
@@ -63,7 +62,6 @@ impl SysInvocation for AuthZoneCreateProofByAmountInput {
     }
 }
 
-
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByIdsInput {
     pub auth_zone_id: AuthZoneId,
@@ -78,7 +76,6 @@ impl SysInvocation for AuthZoneCreateProofByIdsInput {
         NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds)
     }
 }
-
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZoneClearInput {
@@ -134,12 +131,10 @@ impl ComponentAuthZone {
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        sys_calls.sys_invoke(
-            AuthZoneCreateProofInput {
-                auth_zone_id: node_id.into(),
-                resource_address,
-            },
-        )
+        sys_calls.sys_invoke(AuthZoneCreateProofInput {
+            auth_zone_id: node_id.into(),
+            resource_address,
+        })
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -160,13 +155,11 @@ impl ComponentAuthZone {
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        sys_calls.sys_invoke(
-            AuthZoneCreateProofByAmountInput {
-                auth_zone_id: node_id.into(),
-                amount,
-                resource_address,
-            },
-        )
+        sys_calls.sys_invoke(AuthZoneCreateProofByAmountInput {
+            auth_zone_id: node_id.into(),
+            amount,
+            resource_address,
+        })
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -190,13 +183,11 @@ impl ComponentAuthZone {
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        sys_calls.sys_invoke(
-            AuthZoneCreateProofByIdsInput {
-                auth_zone_id: node_id.into(),
-                ids: ids.clone(),
-                resource_address,
-            }
-        )
+        sys_calls.sys_invoke(AuthZoneCreateProofByIdsInput {
+            auth_zone_id: node_id.into(),
+            ids: ids.clone(),
+            resource_address,
+        })
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -219,11 +210,9 @@ impl ComponentAuthZone {
 
         let proof: Proof = proof.into();
 
-        sys_calls.sys_invoke(
-            AuthZonePushInput {
-                auth_zone_id: node_id.into(),
-                proof,
-            }
-        )
+        sys_calls.sys_invoke(AuthZonePushInput {
+            auth_zone_id: node_id.into(),
+            proof,
+        })
     }
 }

@@ -1,13 +1,13 @@
+use scrypto::engine::api::{ScryptoSyscalls, SysInvokableNative};
 use std::fmt::Debug;
 use std::mem;
-use scrypto::engine::api::{ScryptoSyscalls, SysInvokableNative};
 use transaction::errors::IdAllocationError;
 use transaction::model::AuthZoneParams;
 use transaction::validation::*;
 
 use crate::engine::call_frame::RENodeLocation;
-use crate::engine::system_api::LockInfo;
 use crate::engine::system_api::Invokable;
+use crate::engine::system_api::LockInfo;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
@@ -756,7 +756,11 @@ pub trait Executor {
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a> + ScryptoSyscalls<RuntimeError> + SysInvokableNative<RuntimeError>,
+        Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation>
+            + InvokableNative<'a>
+            + ScryptoSyscalls<RuntimeError>
+            + SysInvokableNative<RuntimeError>,
         R: FeeReserve;
 }
 

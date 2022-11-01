@@ -1,4 +1,3 @@
-use scrypto::engine::api::ScryptoSyscalls;
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::fee::*;
@@ -8,6 +7,7 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::*;
+use scrypto::engine::api::ScryptoSyscalls;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
 ///
@@ -15,7 +15,10 @@ use crate::wasm::*;
 /// the system api will bill properly.
 pub struct RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
 where
-    Y: SystemApi<'s, R> + ScryptoSyscalls<RuntimeError> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
+    Y: SystemApi<'s, R>
+        + ScryptoSyscalls<RuntimeError>
+        + Invokable<ScryptoInvocation>
+        + InvokableNative<'a>,
     R: FeeReserve,
 {
     system_api: &'y mut Y,
@@ -26,7 +29,10 @@ where
 
 impl<'y, 's, 'a, Y, R> RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
 where
-    Y: SystemApi<'s, R> + ScryptoSyscalls<RuntimeError> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
+    Y: SystemApi<'s, R>
+        + ScryptoSyscalls<RuntimeError>
+        + Invokable<ScryptoInvocation>
+        + InvokableNative<'a>,
     R: FeeReserve,
 {
     // TODO: expose API for reading blobs
@@ -192,7 +198,10 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
 
 impl<'y, 's, 'a, Y, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
 where
-    Y: SystemApi<'s, R> + ScryptoSyscalls<RuntimeError> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
+    Y: SystemApi<'s, R>
+        + ScryptoSyscalls<RuntimeError>
+        + Invokable<ScryptoInvocation>
+        + InvokableNative<'a>,
     R: FeeReserve,
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {

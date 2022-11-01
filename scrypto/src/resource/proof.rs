@@ -126,11 +126,7 @@ impl Proof {
     where
         Y: ScryptoSyscalls<E> + SysInvokable<ProofCloneInput, E>,
     {
-        sys_calls.sys_invoke(
-            ProofCloneInput {
-                proof_id: self.0,
-            },
-        )
+        sys_calls.sys_invoke(ProofCloneInput { proof_id: self.0 })
     }
 
     /// Skips the validation process of the proof producing a validated proof **WITHOUT** performing any validation.

@@ -143,11 +143,7 @@ impl Vault {
     where
         Y: ScryptoSyscalls<E> + SysInvokable<VaultGetAmountInput, E>,
     {
-        sys_calls.sys_invoke(
-            VaultGetAmountInput {
-                vault_id: self.0,
-            }
-        )
+        sys_calls.sys_invoke(VaultGetAmountInput { vault_id: self.0 })
     }
 
     native_methods! {

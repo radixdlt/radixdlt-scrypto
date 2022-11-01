@@ -198,7 +198,11 @@ pub trait NativeExecutable: Invocation {
         system_api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a> + ScryptoSyscalls<RuntimeError> + SysInvokableNative<RuntimeError>,
+        Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation>
+            + InvokableNative<'a>
+            + ScryptoSyscalls<RuntimeError>
+            + SysInvokableNative<RuntimeError>,
         R: FeeReserve;
 }
 
@@ -216,7 +220,11 @@ impl<N: NativeExecutable> Executor for NativeExecutor<N> {
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a> + ScryptoSyscalls<RuntimeError> + SysInvokableNative<RuntimeError>,
+        Y: SystemApi<'s, R>
+            + Invokable<ScryptoInvocation>
+            + InvokableNative<'a>
+            + ScryptoSyscalls<RuntimeError>
+            + SysInvokableNative<RuntimeError>,
         R: FeeReserve,
     {
         N::execute(self.0, system_api)

@@ -51,6 +51,13 @@ pub struct BucketCreateProofInput {
     pub bucket_id: BucketId,
 }
 
+impl SysInvocation for BucketCreateProofInput {
+    type Output = Proof;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Bucket(BucketMethod::CreateProof)
+    }
+}
+
 /// Represents a transient resource container.
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Bucket(pub BucketId);
@@ -67,25 +74,40 @@ impl Bucket {
         sys_calls: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<ResourceManagerCreateBucketInput, E>,
+        Y: SysInvokable<ResourceManagerCreateBucketInput, E>,
     {
-        sys_calls.sys_invoke(
-            ResourceManagerCreateBucketInput {
-                resource_address,
-            }
-        )
+        sys_calls.sys_invoke(ResourceManagerCreateBucketInput { resource_address })
     }
 
-    pub fn burn(self) -> () {
+    #[cfg(target_arch = "wasm32")]
+    pub fn burn(self) {
+        self.sys_burn(&mut Syscalls).unwrap()
+    }
+
+    pub fn sys_burn<Y, E: Debug + TypeId + Decode>(self, sys_calls: &mut Y) -> Result<(), E>
+    where
+        Y: SysInvokable<ResourceManagerBurnInput, E>,
+    {
         let resource_address = self.resource_address();
-        let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
-            scrypto_encode(&ResourceManagerBurnInput {
-                bucket: self,
-                resource_address,
-            }),
-        );
-        call_engine(input)
+        sys_calls.sys_invoke(ResourceManagerBurnInput {
+            resource_address,
+            bucket: self,
+        })
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn create_proof(&self) -> Proof {
+        self.sys_create_proof(&mut Syscalls).unwrap()
+    }
+
+    pub fn sys_create_proof<Y, E: Debug + TypeId + Decode>(
+        &self,
+        sys_calls: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: SysInvokable<BucketCreateProofInput, E>,
+    {
+        sys_calls.sys_invoke(BucketCreateProofInput { bucket_id: self.0 })
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Self {
@@ -131,13 +153,6 @@ impl Bucket {
                 BucketMethod::GetResourceAddress,
                 BucketGetResourceAddressInput {
                     bucket_id: self.0,
-                }
-            }
-
-            pub fn create_proof(&self) -> scrypto::resource::Proof {
-                BucketMethod::CreateProof,
-                BucketCreateProofInput {
-                    bucket_id: self.0
                 }
             }
         }

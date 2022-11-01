@@ -1,29 +1,30 @@
-use sbor::rust::fmt::Debug;
+use crate::buffer::scrypto_encode;
 use crate::engine::utils::call_engine;
+use crate::resource::*;
+use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::core::*;
 use scrypto::engine::types::*;
-use scrypto::resource::{AuthZoneCreateProofByIdsInput, AuthZonePopInput, ProofCloneInput, VaultGetAmountInput};
-use crate::buffer::scrypto_encode;
-use crate::resource::*;
+use scrypto::resource::{
+    AuthZoneCreateProofByIdsInput, AuthZonePopInput, ProofCloneInput, VaultGetAmountInput,
+};
 
 use super::types::*;
 
-pub trait SysInvocation : Encode {
+pub trait SysInvocation: Encode {
     type Output: Debug + Decode;
 
     fn native_method() -> NativeMethod;
 }
 
 pub trait SysInvokable<I, E>
-    where
-        I: SysInvocation,
+where
+    I: SysInvocation,
 {
     fn sys_invoke(&mut self, input: I) -> Result<I::Output, E>;
 }
-
 
 pub trait ScryptoSyscalls<E: Debug> {
     fn sys_invoke_scrypto_function<ARGS: Encode, V: Decode>(
@@ -60,6 +61,8 @@ pub trait SysInvokableNative<E>:
     + SysInvokable<AuthZoneCreateProofByAmountInput, E>
     + SysInvokable<AuthZoneCreateProofByIdsInput, E>
     + SysInvokable<ResourceManagerCreateBucketInput, E>
+    + SysInvokable<ResourceManagerBurnInput, E>
+    + SysInvokable<BucketCreateProofInput, E>
     + SysInvokable<ProofCloneInput, E>
     + SysInvokable<VaultGetAmountInput, E>
 {

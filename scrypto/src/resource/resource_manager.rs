@@ -50,6 +50,14 @@ pub struct ResourceManagerBurnInput {
     pub bucket: Bucket,
 }
 
+impl SysInvocation for ResourceManagerBurnInput {
+    type Output = ();
+
+    fn native_method() -> NativeMethod {
+        NativeMethod::ResourceManager(ResourceManagerMethod::Burn)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateAuthInput {
     pub resource_address: ResourceAddress,

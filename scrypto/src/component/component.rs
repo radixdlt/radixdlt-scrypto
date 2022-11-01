@@ -64,12 +64,13 @@ pub struct ComponentStateSubstate {
 
 impl Component {
     pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
-        call_engine(
-            RadixEngineInput::InvokeScryptoMethod(ScryptoMethodIdent {
+        call_engine(RadixEngineInput::InvokeScryptoMethod(
+            ScryptoMethodIdent {
                 receiver: ScryptoReceiver::Component(self.0),
                 method_name: method.to_string(),
-            }, args)
-        )
+            },
+            args,
+        ))
     }
 
     /// Returns the package ID of this component.
@@ -106,7 +107,8 @@ impl Component {
         Y: ScryptoSyscalls<E> + SysInvokable<ComponentAddAccessCheckInput, E>,
     {
         sys_calls.sys_invoke(ComponentAddAccessCheckInput {
-            access_rules, component_id: self.0
+            access_rules,
+            component_id: self.0,
         })?;
 
         Ok(self)

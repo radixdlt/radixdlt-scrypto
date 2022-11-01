@@ -1,4 +1,3 @@
-use crate::values::ScryptoValue;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -31,14 +30,12 @@ pub fn call_engine<V: Decode>(_input: RadixEngineInput) -> V {
     todo!()
 }
 
-
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct SyscallError;
 
 pub struct Syscalls;
 
 impl<N: SysInvocation> SysInvokable<N, SyscallError> for Syscalls {
-
     fn sys_invoke(&mut self, input: N) -> Result<N::Output, SyscallError> {
         let rtn = call_engine(RadixEngineInput::InvokeNativeMethod(
             N::native_method(),
@@ -54,8 +51,10 @@ impl ScryptoSyscalls<SyscallError> for Syscalls {
         fn_ident: ScryptoFunctionIdent,
         args: &ARGS,
     ) -> Result<V, SyscallError> {
-        let rtn = call_engine(
-            RadixEngineInput::InvokeScryptoFunction(fn_ident, scrypto_encode(args)));
+        let rtn = call_engine(RadixEngineInput::InvokeScryptoFunction(
+            fn_ident,
+            scrypto_encode(args),
+        ));
         Ok(rtn)
     }
 
@@ -64,7 +63,10 @@ impl ScryptoSyscalls<SyscallError> for Syscalls {
         method_ident: ScryptoMethodIdent,
         args: &ARGS,
     ) -> Result<V, SyscallError> {
-        let rtn = call_engine(RadixEngineInput::InvokeScryptoMethod(method_ident, scrypto_encode(args)));
+        let rtn = call_engine(RadixEngineInput::InvokeScryptoMethod(
+            method_ident,
+            scrypto_encode(args),
+        ));
         Ok(rtn)
     }
 
@@ -145,7 +147,6 @@ pub enum RadixEngineInput {
     GenerateUuid(),
     GetTransactionHash(),
 }
-
 
 #[macro_export]
 macro_rules! native_methods {

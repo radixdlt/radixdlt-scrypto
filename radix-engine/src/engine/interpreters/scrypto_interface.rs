@@ -1,41 +1,44 @@
-use crate::engine::{Invokable, Kernel, KernelError, LockFlags, NativeInvocation, parse_and_invoke_native_function, parse_and_invoke_native_method, REActor, RENode, ResolvedFunction, ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi};
+use crate::engine::{
+    parse_and_invoke_native_function, parse_and_invoke_native_method, Invokable, Kernel,
+    KernelError, LockFlags, NativeInvocation, REActor, RENode, ResolvedFunction, ResolvedMethod,
+    ResolvedReceiver, RuntimeError, SystemApi,
+};
 use crate::fee::FeeReserve;
 use crate::model::{
     ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore,
     RuntimeSubstate,
 };
-use crate::types::{ScryptoInvocation};
+use crate::types::ScryptoInvocation;
 use crate::wasm::{WasmEngine, WasmInstance};
 use sbor::{Decode, Encode};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::ScryptoActor;
 use scrypto::engine::api::{ScryptoSyscalls, SysInvocation, SysInvokable, SysInvokableNative};
 use scrypto::engine::types::{
-    Level, LockHandle, NativeFunction, NativeMethod, RENodeId, ScryptoFunctionIdent,
-    ScryptoMethodIdent, ScryptoRENode, SubstateOffset,
+    Level, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode,
+    SubstateOffset,
 };
 use scrypto::values::ScryptoValue;
 
 impl<'g, 's, W, I, R, N, T> SysInvokable<N, RuntimeError> for Kernel<'g, 's, W, I, R>
-    where
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        R: FeeReserve,
-        N: SysInvocation<Output = T> + NativeInvocation<Output = T>,
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
+    N: SysInvocation<Output = T> + NativeInvocation<Output = T>,
 {
     fn sys_invoke(&mut self, input: N) -> Result<T, RuntimeError> {
         self.invoke(input)
     }
 }
 
-
 impl<'g, 's, W, I, R> SysInvokableNative<RuntimeError> for Kernel<'g, 's, W, I, R>
-    where
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        R: FeeReserve
-{}
-
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
+{
+}
 
 impl<'g, 's, W, I, R> ScryptoSyscalls<RuntimeError> for Kernel<'g, 's, W, I, R>
 where
