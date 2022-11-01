@@ -111,27 +111,27 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
     }
 
     pub fn get(&self) -> DataRef<V> {
-        let input = RadixEngineInput::LockSubstate(self.node_id, self.offset.clone(), false);
-        let lock_handle: LockHandle = call_engine(input);
+        let mut syscalls = Syscalls;
 
-        let input = RadixEngineInput::Read(lock_handle);
+        let lock_handle = syscalls.sys_lock_substate(self.node_id, self.offset.clone(), false).unwrap();
+        let raw_substate = syscalls.sys_read(lock_handle).unwrap();
         match &self.offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
-                let substate: KeyValueStoreEntrySubstate = call_engine(input);
+                let substate: KeyValueStoreEntrySubstate = scrypto_decode(&raw_substate).unwrap();
                 DataRef {
                     lock_handle,
                     value: scrypto_decode(&substate.0.unwrap()).unwrap(),
                 }
             }
             SubstateOffset::Component(ComponentOffset::State) => {
-                let substate: ComponentStateSubstate = call_engine(input);
+                let substate: ComponentStateSubstate = scrypto_decode(&raw_substate).unwrap();
                 DataRef {
                     lock_handle,
                     value: scrypto_decode(&substate.raw).unwrap(),
                 }
             }
             _ => {
-                let substate: V = call_engine(input);
+                let substate: V = scrypto_decode(&raw_substate).unwrap();
                 DataRef {
                     lock_handle,
                     value: substate,
@@ -141,13 +141,14 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
     }
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
-        let input = RadixEngineInput::LockSubstate(self.node_id, self.offset.clone(), true);
-        let lock_handle: LockHandle = call_engine(input);
+        let mut syscalls = Syscalls;
 
-        let input = RadixEngineInput::Read(lock_handle);
+        let lock_handle = syscalls.sys_lock_substate(self.node_id, self.offset.clone(), true).unwrap();
+        let raw_substate = syscalls.sys_read(lock_handle).unwrap();
+
         match &self.offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
-                let substate: KeyValueStoreEntrySubstate = call_engine(input);
+                let substate: KeyValueStoreEntrySubstate = scrypto_decode(&raw_substate).unwrap();
                 DataRefMut {
                     lock_handle,
                     offset: self.offset.clone(),
@@ -155,7 +156,7 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
                 }
             }
             SubstateOffset::Component(ComponentOffset::State) => {
-                let substate: ComponentStateSubstate = call_engine(input);
+                let substate: ComponentStateSubstate = scrypto_decode(&raw_substate).unwrap();
                 DataRefMut {
                     lock_handle,
                     offset: self.offset.clone(),
@@ -163,7 +164,7 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
                 }
             }
             _ => {
-                let substate: V = call_engine(input);
+                let substate: V = scrypto_decode(&raw_substate).unwrap();
                 DataRefMut {
                     lock_handle,
                     offset: self.offset.clone(),

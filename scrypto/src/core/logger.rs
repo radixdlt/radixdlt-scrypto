@@ -9,8 +9,8 @@ pub struct Logger {}
 impl Logger {
     /// Emits a log to console.
     pub fn log(level: Level, message: String) {
-        let input = RadixEngineInput::EmitLog(level, message);
-        let _: () = call_engine(input);
+        let mut sys_calls = Syscalls;
+        sys_calls.sys_emit_log(level, message).unwrap();
     }
 
     /// Emits a trace message.

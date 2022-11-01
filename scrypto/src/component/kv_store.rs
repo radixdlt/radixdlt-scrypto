@@ -28,11 +28,11 @@ pub struct KeyValueStoreEntrySubstate(pub Option<Vec<u8>>);
 impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K, V> {
     /// Creates a new key value store.
     pub fn new() -> Self {
-        let input = RadixEngineInput::CreateNode(ScryptoRENode::KeyValueStore);
-        let output: RENodeId = call_engine(input);
+        let mut syscalls = Syscalls;
+        let id = syscalls.sys_create_node(ScryptoRENode::KeyValueStore).unwrap();
 
         Self {
-            id: output.into(),
+            id: id.into(),
             key: PhantomData,
             value: PhantomData,
         }

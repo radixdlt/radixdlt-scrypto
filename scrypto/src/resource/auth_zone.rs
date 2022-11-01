@@ -1,8 +1,12 @@
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::*;
+use sbor::rust::vec::Vec;
 
-use crate::engine::{api::*, types::*, utils::*};
+use crate::engine::{api::*, types::*};
+#[cfg(target_arch = "wasm32")]
+use crate::engine::{utils::*};
+
 use crate::math::Decimal;
 use crate::resource::*;
 

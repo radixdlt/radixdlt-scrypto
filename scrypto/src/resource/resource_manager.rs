@@ -6,7 +6,6 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::address::*;
-use crate::buffer::scrypto_encode;
 use crate::engine::{api::*, types::*, utils::*};
 use crate::math::*;
 use crate::misc::*;
@@ -275,204 +274,131 @@ pub enum ResourceAddress {
 pub struct ResourceManager(pub(crate) ResourceAddress);
 
 impl ResourceManager {
-    pub fn set_mintable(&mut self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateAuth,
-            )),
-            scrypto_encode(&ResourceManagerUpdateAuthInvocation {
-                receiver: self.0,
-                method: ResourceMethodAuthKey::Mint,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+    pub fn set_mintable(&mut self, access_rule: AccessRule) {
+        let mut syscalls = Syscalls;
+        syscalls.sys_invoke(ResourceManagerUpdateAuthInvocation {
+            receiver: self.0,
+            method: ResourceMethodAuthKey::Mint,
+            access_rule,
+        }).unwrap();
     }
 
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateAuth,
-            )),
-            scrypto_encode(&ResourceManagerUpdateAuthInvocation {
-                receiver: self.0,
-                method: ResourceMethodAuthKey::Burn,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+        let mut syscalls = Syscalls;
+        syscalls.sys_invoke(ResourceManagerUpdateAuthInvocation {
+            receiver: self.0,
+            method: ResourceMethodAuthKey::Burn,
+            access_rule,
+        }).unwrap()
     }
 
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateAuth,
-            )),
-            scrypto_encode(&ResourceManagerUpdateAuthInvocation {
-                receiver: self.0,
-                method: ResourceMethodAuthKey::Withdraw,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+        let mut syscalls = Syscalls;
+        syscalls.sys_invoke(ResourceManagerUpdateAuthInvocation {
+            receiver: self.0,
+            method: ResourceMethodAuthKey::Withdraw,
+            access_rule,
+        }).unwrap()
     }
 
-    pub fn set_depositable(&mut self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateAuth,
-            )),
-            scrypto_encode(&ResourceManagerUpdateAuthInvocation {
-                receiver: self.0,
-                method: ResourceMethodAuthKey::Deposit,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+    pub fn set_depositable(&mut self, access_rule: AccessRule) {
+        let mut syscalls = Syscalls;
+        syscalls.sys_invoke(ResourceManagerUpdateAuthInvocation {
+            receiver: self.0,
+            method: ResourceMethodAuthKey::Deposit,
+            access_rule,
+        }).unwrap()
     }
 
-    pub fn set_updateable_metadata(&self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateAuth,
-            )),
-            scrypto_encode(&ResourceManagerUpdateAuthInvocation {
-                receiver: self.0,
-                method: ResourceMethodAuthKey::UpdateMetadata,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+    pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
+        let mut syscalls = Syscalls;
+        syscalls.sys_invoke(ResourceManagerUpdateAuthInvocation {
+            receiver: self.0,
+            method: ResourceMethodAuthKey::UpdateMetadata,
+            access_rule,
+        }).unwrap()
     }
 
-    pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateAuth,
-            )),
-            scrypto_encode(&ResourceManagerUpdateAuthInvocation {
-                receiver: self.0,
-                method: ResourceMethodAuthKey::UpdateNonFungibleData,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+    pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
+        let mut syscalls = Syscalls;
+        syscalls.sys_invoke(ResourceManagerUpdateAuthInvocation {
+            receiver: self.0,
+            method: ResourceMethodAuthKey::UpdateNonFungibleData,
+            access_rule,
+        }).unwrap()
     }
 
-    pub fn lock_mintable(&mut self) -> () {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::LockAuth,
-            )),
-            scrypto_encode(&ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: ResourceMethodAuthKey::Mint,
-            }),
-        );
-        call_engine(input)
+    pub fn lock_mintable(&mut self) {
+        let mut syscalls = Syscalls;
+        syscalls.sys_invoke(ResourceManagerLockAuthInvocation {
+            receiver: self.0,
+            method: ResourceMethodAuthKey::Mint,
+        }).unwrap()
     }
 
-    pub fn lock_burnable(&mut self) -> () {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::LockAuth,
-            )),
-            scrypto_encode(&ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: ResourceMethodAuthKey::Burn,
-            }),
-        );
-        call_engine(input)
+    pub fn lock_burnable(&mut self) {
+        let mut syscalls = Syscalls;
+        syscalls.sys_invoke(ResourceManagerLockAuthInvocation {
+            receiver: self.0,
+            method: ResourceMethodAuthKey::Burn,
+        }).unwrap()
     }
 
-    pub fn lock_withdrawable(&mut self) -> () {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::LockAuth,
-            )),
-            scrypto_encode(&ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: ResourceMethodAuthKey::Withdraw,
-            }),
-        );
-        call_engine(input)
+    pub fn lock_withdrawable(&mut self) {
+        let mut syscalls = Syscalls;
+        syscalls.sys_invoke(ResourceManagerLockAuthInvocation {
+            receiver: self.0,
+            method: ResourceMethodAuthKey::Withdraw,
+        }).unwrap()
     }
 
-    pub fn lock_depositable(&mut self) -> () {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::LockAuth,
-            )),
-            scrypto_encode(&ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: ResourceMethodAuthKey::Deposit,
-            }),
-        );
-        call_engine(input)
+    pub fn lock_depositable(&mut self) {
+        let mut syscalls = Syscalls;
+        syscalls.sys_invoke(ResourceManagerLockAuthInvocation {
+            receiver: self.0,
+            method: ResourceMethodAuthKey::Deposit,
+        }).unwrap()
     }
 
-    pub fn lock_updateable_metadata(&mut self) -> () {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::LockAuth,
-            )),
-            scrypto_encode(&ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: ResourceMethodAuthKey::UpdateMetadata,
-            }),
-        );
-        call_engine(input)
+    pub fn lock_updateable_metadata(&mut self) {
+        let mut syscalls = Syscalls;
+        syscalls.sys_invoke(ResourceManagerLockAuthInvocation {
+            receiver: self.0,
+            method: ResourceMethodAuthKey::UpdateMetadata,
+        }).unwrap()
     }
 
-    pub fn lock_updateable_non_fungible_data(&mut self) -> () {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::LockAuth,
-            )),
-            scrypto_encode(&ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: ResourceMethodAuthKey::UpdateNonFungibleData,
-            }),
-        );
-        call_engine(input)
+    pub fn lock_updateable_non_fungible_data(&mut self) {
+        let mut syscalls = Syscalls;
+        syscalls.sys_invoke(ResourceManagerLockAuthInvocation {
+            receiver: self.0,
+            method: ResourceMethodAuthKey::UpdateNonFungibleData,
+        }).unwrap()
     }
 
     fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::Mint)),
-            scrypto_encode(&ResourceManagerMintInvocation {
-                mint_params,
-                receiver: self.0,
-            }),
-        );
-        call_engine(input)
+        let mut syscalls = Syscalls;
+        syscalls.sys_invoke(ResourceManagerMintInvocation {
+            mint_params,
+            receiver: self.0,
+        }).unwrap()
     }
 
-    fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) -> () {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateNonFungibleData,
-            )),
-            scrypto_encode(&ResourceManagerUpdateNonFungibleDataInvocation {
-                id,
-                data,
-                receiver: self.0,
-            }),
-        );
-        call_engine(input)
+    fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) {
+        let mut syscalls = Syscalls;
+        syscalls.sys_invoke(ResourceManagerUpdateNonFungibleDataInvocation {
+            id,
+            data,
+            receiver: self.0,
+        }).unwrap()
     }
 
     fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetNonFungible,
-            )),
-            scrypto_encode(&ResourceManagerGetNonFungibleInvocation {
-                id,
-                receiver: self.0,
-            }),
-        );
-        call_engine(input)
+        let mut syscalls = Syscalls;
+        syscalls.sys_invoke(ResourceManagerGetNonFungibleInvocation {
+            id,
+            receiver: self.0,
+        }).unwrap()
     }
 
     native_methods! {

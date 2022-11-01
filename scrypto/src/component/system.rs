@@ -62,13 +62,14 @@ impl ComponentSystem {
         blueprint_name: &str,
         state: T,
     ) -> Component {
-        let input = RadixEngineInput::CreateNode(ScryptoRENode::Component(
-            Runtime::package_address(),
-            blueprint_name.to_string(),
-            scrypto_encode(&state),
-        ));
-        let node_id: RENodeId = call_engine(input);
-
+        let mut syscalls = Syscalls;
+        let node_id = syscalls.sys_create_node(
+            ScryptoRENode::Component(
+                Runtime::package_address(),
+                blueprint_name.to_string(),
+                scrypto_encode(&state),
+            )
+        ).unwrap();
         Component(node_id.into())
     }
 }
