@@ -32,7 +32,7 @@ fn test_dynamic_auth(
 
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package,
             "AuthComponent",
@@ -49,7 +49,7 @@ fn test_dynamic_auth(
 
     if let Some(next_auth) = update_auth {
         let update_manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(10.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 10.into())
             .call_method(
                 component,
                 "update_auth",
@@ -63,7 +63,7 @@ fn test_dynamic_auth(
 
     // Act
     let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(component, "get_secret", args!())
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, initial_proofs.to_vec());
@@ -104,7 +104,7 @@ fn test_dynamic_authlist(
     // Arrange
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(
             package,
             "AuthListComponent",
@@ -121,7 +121,7 @@ fn test_dynamic_authlist(
 
     // Act
     let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(component, "get_secret", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest2, initial_proofs);
@@ -236,7 +236,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     );
     let players = [non_fungible_address, other_non_fungible_address.clone()];
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package, "Chess", "create_game", args!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -248,7 +248,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
 
     // Act
     let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(component, "make_move", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest2, vec![other_non_fungible_address]);
@@ -272,7 +272,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
         other_non_fungible_address.clone(),
     ];
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(package, "Chess", "create_game", args!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -282,7 +282,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
         .entity_changes
         .new_component_addresses[0];
     let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(component, "make_move", args!())
         .build();
     test_runner
@@ -291,7 +291,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
 
     // Act
     let manifest3 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(component, "make_move", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest3, vec![other_non_fungible_address]);

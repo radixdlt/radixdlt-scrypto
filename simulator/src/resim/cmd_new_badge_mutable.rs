@@ -67,7 +67,7 @@ impl NewBadgeMutable {
         };
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100.into())
             .new_badge_mutable(metadata, self.minter_resource_address.0)
             .build();
         handle_manifest(

@@ -92,7 +92,7 @@ impl Publish {
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
             let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-                .lock_fee(100u32.into(), FAUCET_COMPONENT)
+                .lock_fee(FAUCET_COMPONENT, 100u32.into())
                 .publish_package(code, abi)
                 .build();
 

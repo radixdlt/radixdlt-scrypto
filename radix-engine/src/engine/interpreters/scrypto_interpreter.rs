@@ -1,6 +1,6 @@
 use crate::engine::*;
 use crate::types::*;
-use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringParams, WasmRuntime};
+use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 
 pub struct ScryptoExecutor<I: WasmInstance> {
     instance: I,
@@ -93,17 +93,17 @@ pub struct ScryptoInterpreter<I: WasmInstance, W: WasmEngine<I>> {
     pub wasm_engine: W,
     /// WASM Instrumenter
     pub wasm_instrumenter: WasmInstrumenter,
-    /// WASM metering params
-    pub wasm_metering_params: WasmMeteringParams,
+    /// WASM metering config
+    pub wasm_metering_config: WasmMeteringConfig,
     pub phantom: PhantomData<I>,
 }
 
 impl<I: WasmInstance, W: WasmEngine<I>> ScryptoInterpreter<I, W> {
-    pub fn create_executor(&mut self, code: &[u8], args: ScryptoValue) -> ScryptoExecutor<I> {
+    pub fn create_executor(&self, code: &[u8], args: ScryptoValue) -> ScryptoExecutor<I> {
         let instrumented_code = self
             .wasm_instrumenter
-            .instrument(code, &self.wasm_metering_params);
-        let instance = self.wasm_engine.instantiate(instrumented_code);
+            .instrument(code, &self.wasm_metering_config);
+        let instance = self.wasm_engine.instantiate(&instrumented_code);
         ScryptoExecutor {
             instance,
             args: args,

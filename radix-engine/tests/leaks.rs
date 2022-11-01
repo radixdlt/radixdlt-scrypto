@@ -13,7 +13,7 @@ fn dangling_component_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Leaks", "dangling_component", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -40,7 +40,7 @@ fn dangling_bucket_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Leaks", "dangling_bucket", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -67,7 +67,7 @@ fn dangling_vault_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Leaks", "dangling_vault", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -94,7 +94,7 @@ fn dangling_worktop_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Leaks", "get_bucket", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -117,7 +117,7 @@ fn dangling_kv_store_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Leaks", "dangling_kv_store", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -144,7 +144,7 @@ fn dangling_bucket_with_proof_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
             "Leaks",

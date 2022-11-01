@@ -13,7 +13,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
             "NodeCreate",
@@ -48,7 +48,7 @@ fn should_not_be_able_to_node_create_with_invalid_package() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
             "NodeCreate",

@@ -17,12 +17,22 @@ use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInvocation<'a> {
-    pub instructions: Cow<'a, Vec<Instruction>>,
+    pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
+    pub instructions: Cow<'a, [Instruction]>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum TransactionProcessorError {
+    TransactionEpochNotYetValid {
+        valid_from: u64,
+        current_epoch: u64,
+    },
+    TransactionEpochNoLongerValid {
+        valid_until: u64,
+        current_epoch: u64,
+    },
     InvalidRequestData(DecodeError),
+    InvalidGetEpochResponseData(DecodeError),
     InvalidMethod,
     BucketNotFound(BucketId),
     ProofNotFound(ProofId),
@@ -164,6 +174,52 @@ impl TransactionProcessor {
             .expect("Value became invalid post expression transformation"))
     }
 
+    fn perform_validation<'a, Y>(
+        request: &RuntimeValidationRequest,
+        system_api: &mut Y,
+    ) -> Result<(), InvokeError<TransactionProcessorError>>
+    where
+        Y: SystemApi + InvokableNative<'a>,
+    {
+        let should_skip_assertion = request.skip_assertion;
+        match &request.validation {
+            RuntimeValidation::WithinEpochRange {
+                start_epoch_inclusive,
+                end_epoch_exclusive,
+            } => {
+                // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
+                //        Which could allow for better caching of transaction validity over epoch boundaries
+                let current_epoch = system_api.invoke(EpochManagerGetCurrentEpochInvocation {
+                    receiver: EPOCH_MANAGER,
+                })?;
+
+                if !should_skip_assertion && current_epoch < *start_epoch_inclusive {
+                    return Err(InvokeError::Error(
+                        TransactionProcessorError::TransactionEpochNotYetValid {
+                            valid_from: *start_epoch_inclusive,
+                            current_epoch,
+                        },
+                    ));
+                }
+                if !should_skip_assertion && current_epoch >= *end_epoch_exclusive {
+                    return Err(InvokeError::Error(
+                        TransactionProcessorError::TransactionEpochNoLongerValid {
+                            valid_until: *end_epoch_exclusive - 1,
+                            current_epoch,
+                        },
+                    ));
+                }
+
+                Ok(())
+            }
+            RuntimeValidation::IntentHashUniqueness { .. } => {
+                // TODO - Add intent hash replay prevention here
+                // This will to enable its removal from the node
+                Ok(())
+            }
+        }
+    }
+
     pub fn static_main<'a, Y>(
         input: TransactionProcessorRunInvocation,
         system_api: &mut Y,
@@ -171,6 +227,9 @@ impl TransactionProcessor {
     where
         Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
     {
+        for request in input.runtime_validations.as_ref() {
+            Self::perform_validation(request, system_api)?;
+        }
         let mut proof_id_mapping = HashMap::new();
         let mut bucket_id_mapping = HashMap::new();
         let mut outputs = Vec::new();

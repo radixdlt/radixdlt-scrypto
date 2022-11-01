@@ -1,5 +1,5 @@
-use radix_engine::engine::RuntimeError;
 use radix_engine::engine::{ApplicationError, KernelError, TrackError};
+use radix_engine::engine::{RejectionError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::ledger::WriteableSubstateStore;
 use radix_engine::model::KeyValueStoreEntrySubstate;
@@ -23,8 +23,8 @@ where
     let package_address = test_runner.compile_and_publish("./tests/blueprints/fee");
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(10.into(), account)
-            .withdraw_from_account_by_amount(10u32.into(), RADIX_TOKEN, account)
+            .lock_fee(account, 10.into())
+            .withdraw_from_account_by_amount(account, 10u32.into(), RADIX_TOKEN)
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_function(
                     package_address,
@@ -121,12 +121,11 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
             )
             .build()
     });
-
     receipt.expect_specific_rejection(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::TrackError(
-                TrackError::LockUnmodifiedBaseOnNewSubstate(..)
+            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+                KernelError::TrackError(TrackError::LockUnmodifiedBaseOnNewSubstate(..))
             ))
         )
     });
@@ -162,8 +161,8 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
     receipt.expect_specific_rejection(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::TrackError(
-                TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(..)
+            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+                KernelError::TrackError(TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(..))
             ))
         )
     });
@@ -220,8 +219,8 @@ fn test_fee_accounting_success() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account1)
-        .withdraw_from_account_by_amount(66.into(), RADIX_TOKEN, account1)
+        .lock_fee(account1, 10.into())
+        .withdraw_from_account_by_amount(account1, 66.into(), RADIX_TOKEN)
         .call_method(
             account2,
             "deposit_batch",
@@ -260,8 +259,8 @@ fn test_fee_accounting_failure() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account1)
-        .withdraw_from_account_by_amount(66.into(), RADIX_TOKEN, account1)
+        .lock_fee(account1, 10.into())
+        .withdraw_from_account_by_amount(account1, 66.into(), RADIX_TOKEN)
         .call_method(
             account2,
             "deposit_batch",
@@ -305,7 +304,7 @@ fn test_fee_accounting_rejection() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(Decimal::from_str("0.000000000000000001").unwrap(), account1)
+        .lock_fee(account1, Decimal::from_str("0.000000000000000001").unwrap())
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -330,8 +329,8 @@ fn test_contingent_fee_accounting_success() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(dec!("10"), account1)
-        .lock_contingent_fee(dec!("0.001"), account2)
+        .lock_fee(account1, dec!("10"))
+        .lock_contingent_fee(account2, dec!("0.001"))
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -369,8 +368,8 @@ fn test_contingent_fee_accounting_failure() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(dec!("10"), account1)
-        .lock_contingent_fee(dec!("0.001"), account2)
+        .lock_fee(account1, dec!("10"))
+        .lock_contingent_fee(account2, dec!("0.001"))
         .assert_worktop_contains_by_amount(1.into(), RADIX_TOKEN)
         .build();
     let receipt = test_runner.execute_manifest(

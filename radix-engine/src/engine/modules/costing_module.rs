@@ -29,7 +29,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                 if depth > 0 {
                     track
                         .fee_reserve
-                        .consume(
+                        .consume_flat(
                             track
                                 .fee_table
                                 .system_api_cost(SystemApiCostingEntry::Invoke {
@@ -45,7 +45,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
             SysCallInput::ReadOwnedNodes => {
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_flat(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::ReadOwnedNodes),
@@ -57,7 +57,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
             SysCallInput::BorrowNode { node_id } => {
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_flat(
                         track.fee_table.system_api_cost({
                             match node_id {
                                 RENodeId::Global(_) => SystemApiCostingEntry::BorrowNode {
@@ -132,7 +132,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
             SysCallInput::DropNode { .. } => {
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_flat(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::DropNode { size: 0 }),
@@ -145,7 +145,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                 // Costing
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_flat(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::CreateNode {
@@ -160,7 +160,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                 // Costing
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_flat(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::LockSubstate {
@@ -175,7 +175,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                 // Costing
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_flat(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::ReadSubstate {
@@ -190,7 +190,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                 // Costing
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_flat(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::WriteSubstate {
@@ -205,7 +205,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                 // Costing
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_flat(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::DropLock),
@@ -218,7 +218,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                 // Costing
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_flat(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::TakeSubstate {
@@ -232,7 +232,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
             SysCallInput::ReadTransactionHash => {
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_flat(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::ReadTransactionHash),
@@ -244,7 +244,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
             SysCallInput::ReadBlob { .. } => {
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_flat(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::ReadBlob { size: 0 }), // TODO pass the right size
@@ -256,7 +256,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
             SysCallInput::GenerateUuid => {
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_flat(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::GenerateUuid),
@@ -268,7 +268,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
             SysCallInput::EmitLog { message, .. } => {
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_flat(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::EmitLog {
@@ -303,8 +303,9 @@ impl<R: FeeReserve> Module<R> for CostingModule {
     ) -> Result<(), ModuleError> {
         track
             .fee_reserve
-            .consume(
-                track.fee_table.wasm_instantiation_per_byte() * code.len() as u32,
+            .consume_sized(
+                code.len(),
+                track.fee_table.wasm_instantiation_per_byte(),
                 "instantiate_wasm",
                 false,
             )
@@ -320,7 +321,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
     ) -> Result<(), ModuleError> {
         track
             .fee_reserve
-            .consume(units, "run_wasm", false)
+            .consume_flat(units, "run_wasm", false)
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 
@@ -350,7 +351,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
         match actor {
             REActor::Function(ResolvedFunction::Native(native_function)) => track
                 .fee_reserve
-                .consume(
+                .consume_flat(
                     track
                         .fee_table
                         .run_native_function_cost(&native_function, &input),
@@ -360,7 +361,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                 .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
             REActor::Method(ResolvedMethod::Native(native_method), _) => track
                 .fee_reserve
-                .consume(
+                .consume_flat(
                     track
                         .fee_table
                         .run_native_method_cost(&native_method, &input),

@@ -1,13 +1,18 @@
+use moka::sync::Cache;
+use std::sync::Arc;
 use wasmi::*;
 
 use crate::model::InvokeError;
-use crate::types::{format, hash, Box, Hash, HashMap, ScryptoValue};
+use crate::types::{format, Box, Hash, ScryptoValue};
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
 
+use super::InstrumentedCode;
+
 pub struct WasmiModule {
     module: Module,
+    code_size_bytes: usize,
 }
 
 pub struct WasmiInstance {
@@ -21,10 +26,6 @@ pub struct WasmiExternals<'a, 'b, 'r> {
 }
 
 pub struct WasmiEnvModule {}
-
-pub struct WasmiEngine {
-    modules: HashMap<Hash, WasmiModule>,
-}
 
 impl ModuleImportResolver for WasmiEnvModule {
     fn resolve_func(&self, field_name: &str, signature: &Signature) -> Result<FuncRef, Error> {
@@ -209,22 +210,54 @@ impl WasmInstance for WasmiInstance {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct EngineOptions {
+    max_cache_size_bytes: u64,
+}
+
+pub struct WasmiEngine {
+    modules_cache: Cache<Hash, Arc<WasmiModule>>,
+}
+
+impl Default for WasmiEngine {
+    fn default() -> Self {
+        Self::new(EngineOptions {
+            max_cache_size_bytes: 200 * 1024 * 1024,
+        })
+    }
+}
+
 impl WasmiEngine {
-    pub fn new() -> Self {
+    pub fn new(options: EngineOptions) -> Self {
+        let cache = Cache::builder()
+            .weigher(|_key: &Hash, value: &Arc<WasmiModule>| -> u32 {
+                // Approximate the module entry size by the code size
+                value.code_size_bytes.try_into().unwrap_or(u32::MAX)
+            })
+            .max_capacity(options.max_cache_size_bytes)
+            .build();
         Self {
-            modules: HashMap::new(),
+            modules_cache: cache,
         }
     }
 }
 
 impl WasmEngine<WasmiInstance> for WasmiEngine {
-    fn instantiate(&mut self, code: &[u8]) -> WasmiInstance {
-        let code_hash = hash(code);
-        self.modules
-            .entry(code_hash)
-            .or_insert_with(|| WasmiModule {
-                module: Module::from_buffer(code).expect("Failed to parse WASM module"),
-            })
-            .instantiate()
+    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmiInstance {
+        let code_hash = &instrumented_code.code_hash;
+        if let Some(cached_module) = self.modules_cache.get(code_hash) {
+            return cached_module.instantiate();
+        }
+
+        let code = instrumented_code.code.as_ref();
+
+        let new_module = Arc::new(WasmiModule {
+            module: Module::from_buffer(code).expect("Failed to parse WASM module"),
+            code_size_bytes: code.len(),
+        });
+
+        self.modules_cache.insert(*code_hash, new_module.clone());
+
+        new_module.instantiate()
     }
 }

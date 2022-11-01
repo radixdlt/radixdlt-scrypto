@@ -31,7 +31,7 @@ impl NewAccount {
         let auth_address = NonFungibleAddress::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_address));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(&withdraw_auth, bucket_id)
@@ -54,7 +54,7 @@ impl NewAccount {
             let commit_result = receipt.result.expect_commit();
             commit_result
                 .outcome
-                .success_or_else(TransactionExecutionError)?;
+                .success_or_else(|err| TransactionExecutionError(err.clone()))?;
 
             let account = commit_result.entity_changes.new_component_addresses[0];
             writeln!(out, "A new account has been created!").map_err(Error::IOError)?;

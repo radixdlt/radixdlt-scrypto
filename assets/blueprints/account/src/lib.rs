@@ -138,6 +138,35 @@ blueprint! {
             }
         }
 
+        pub fn lock_fee_and_withdraw(
+            &mut self,
+            amount_to_lock: Decimal,
+            resource_address: ResourceAddress,
+        ) -> Bucket {
+            self.lock_fee(amount_to_lock);
+            self.withdraw(resource_address)
+        }
+
+        pub fn lock_fee_and_withdraw_by_amount(
+            &mut self,
+            amount_to_lock: Decimal,
+            amount: Decimal,
+            resource_address: ResourceAddress,
+        ) -> Bucket {
+            self.lock_fee(amount_to_lock);
+            self.withdraw_by_amount(amount, resource_address)
+        }
+
+        pub fn lock_fee_and_withdraw_by_ids(
+            &mut self,
+            amount_to_lock: Decimal,
+            ids: BTreeSet<NonFungibleId>,
+            resource_address: ResourceAddress,
+        ) -> Bucket {
+            self.lock_fee(amount_to_lock);
+            self.withdraw_by_ids(ids, resource_address)
+        }
+
         /// Create proof of resource.
         pub fn create_proof(&self, resource_address: ResourceAddress) -> Proof {
             let vault = self.vaults.get(&resource_address);

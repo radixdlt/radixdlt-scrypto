@@ -17,7 +17,7 @@ fn test_invalid_access_rule_methods() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
             "AbiComponent",
@@ -52,7 +52,7 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "AbiComponent2", method_name, args)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
