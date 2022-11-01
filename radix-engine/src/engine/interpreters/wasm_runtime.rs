@@ -63,83 +63,8 @@ where
         parse_and_invoke_native_method(native_method, args, self.system_api)
     }
 
-    fn handle_node_create(
-        &mut self,
-        scrypto_node: ScryptoRENode,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let id = self.system_api.sys_create_node(scrypto_node)?;
-        Ok(ScryptoValue::from_typed(&id))
-    }
-
-    fn handle_get_visible_node_ids(&mut self) -> Result<ScryptoValue, RuntimeError> {
-        let node_ids = self.system_api.get_visible_node_ids()?;
-        Ok(ScryptoValue::from_typed(&node_ids))
-    }
-
-    fn handle_drop_node(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api.sys_drop_node(node_id)?;
-        Ok(ScryptoValue::from_typed(&()))
-    }
-
-    fn handle_lock_substate(
-        &mut self,
-        node_id: RENodeId,
-        offset: SubstateOffset,
-        mutable: bool,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let handle = self.system_api.sys_lock_substate(node_id, offset, mutable)?;
-        Ok(ScryptoValue::from_typed(&handle))
-    }
-
-    fn handle_read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api
-            .get_ref(lock_handle)
-            .map(|substate_ref| substate_ref.to_scrypto_value())
-    }
-
-    fn handle_write(
-        &mut self,
-        lock_handle: LockHandle,
-        buffer: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let offset = self.system_api.get_lock_info(lock_handle)?.offset;
-        let substate = RuntimeSubstate::decode_from_buffer(&offset, &buffer)?;
-        let mut substate_mut = self.system_api.get_ref_mut(lock_handle)?;
-
-        match substate {
-            RuntimeSubstate::ComponentState(next) => *substate_mut.component_state() = next,
-            RuntimeSubstate::KeyValueStoreEntry(next) => {
-                *substate_mut.kv_store_entry() = next;
-            }
-            RuntimeSubstate::NonFungible(next) => {
-                *substate_mut.non_fungible() = next;
-            }
-            _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
-        }
-
-        Ok(ScryptoValue::unit())
-    }
-
-    fn handle_drop_lock(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api
-            .drop_lock(lock_handle)
-            .map(|unit| ScryptoValue::from_typed(&unit))
-    }
-
-    fn handle_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {
-        self.system_api.sys_get_actor()
-    }
-
     fn handle_get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         self.system_api.read_transaction_hash()
-    }
-
-    fn handle_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
-        self.system_api.generate_uuid()
-    }
-
-    fn handle_emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.system_api.emit_log(level, message)
     }
 }
 
@@ -171,23 +96,38 @@ where
             RadixEngineInput::InvokeNativeMethod(native_method, args) => {
                 self.handle_invoke_native_method(native_method, args).map(|v| v.raw)?
             }
-            RadixEngineInput::CreateNode(node) => self.handle_node_create(node).map(|v| v.raw)?,
-            RadixEngineInput::GetVisibleNodeIds() => self.handle_get_visible_node_ids().map(|v| v.raw)?,
-            RadixEngineInput::DropNode(node_id) => self.handle_drop_node(node_id).map(|v| v.raw)?,
+            RadixEngineInput::CreateNode(node) => {
+                self.system_api.sys_create_node(node).map(encode)?
+            },
+            RadixEngineInput::GetVisibleNodeIds() => {
+                self.system_api.sys_get_visible_nodes().map(encode)?
+            },
+            RadixEngineInput::DropNode(node_id) => {
+                self.system_api.sys_drop_node(node_id).map(encode)?
+            },
             RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
-                self.handle_lock_substate(node_id, offset, mutable).map(|v| v.raw)?
+                self.system_api.sys_lock_substate(node_id, offset, mutable).map(encode)?
             }
-            RadixEngineInput::Read(lock_handle) => self.handle_read(lock_handle).map(|v| v.raw)?,
-            RadixEngineInput::Write(lock_handle, value) => self.handle_write(lock_handle, value).map(|v| v.raw)?,
-            RadixEngineInput::DropLock(lock_handle) => self.handle_drop_lock(lock_handle).map(|v| v.raw)?,
-
-            RadixEngineInput::GetActor() => self.handle_get_actor().map(encode)?,
+            RadixEngineInput::Read(lock_handle) => {
+                self.system_api.sys_read(lock_handle)?
+            },
+            RadixEngineInput::Write(lock_handle, value) => {
+                self.system_api.sys_write(lock_handle, value).map(encode)?
+            },
+            RadixEngineInput::DropLock(lock_handle) => {
+                self.system_api.sys_drop_lock(lock_handle).map(encode)?
+            },
+            RadixEngineInput::GetActor() => {
+                self.system_api.sys_get_actor().map(encode)?
+            },
             RadixEngineInput::GetTransactionHash() => {
                 self.handle_get_transaction_hash().map(encode)?
             }
-            RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode)?,
+            RadixEngineInput::GenerateUuid() => {
+                self.system_api.sys_generate_uuid().map(encode)?
+            },
             RadixEngineInput::EmitLog(level, message) => {
-                self.handle_emit_log(level, message).map(encode)?
+                self.system_api.sys_emit_log(level, message).map(encode)?
             }
         };
 

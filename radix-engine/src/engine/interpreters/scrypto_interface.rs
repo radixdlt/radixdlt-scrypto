@@ -113,10 +113,9 @@ where
         self.lock_substate(node_id, offset, flags)
     }
 
-    fn sys_read<V: Decode>(&mut self, lock_handle: LockHandle) -> Result<V, RuntimeError> {
+    fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
         self.get_ref(lock_handle)
-            .map(|substate_ref| substate_ref.to_scrypto_value())
-            .map(|value| scrypto_decode(&value.raw).unwrap())
+            .map(|substate_ref| substate_ref.to_scrypto_value().raw)
     }
 
     fn sys_write(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), RuntimeError> {

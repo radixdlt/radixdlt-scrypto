@@ -112,8 +112,8 @@ impl ScryptoSyscalls<SyscallError> for Syscalls {
         Ok(rtn)
     }
 
-    fn sys_read<V: Decode>(&mut self, lock_handle: LockHandle) -> Result<V, SyscallError> {
-        let rtn = call_engine(RadixEngineInput::Read(lock_handle));
+    fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, SyscallError> {
+        let rtn = call_engine_to_raw(RadixEngineInput::Read(lock_handle));
         Ok(rtn)
     }
 

@@ -2,13 +2,12 @@ use crate::resource::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::{Decode, Encode, TypeId};
+use sbor::{Decode, Encode};
 use scrypto::core::*;
 use scrypto::engine::types::*;
 use scrypto::resource::{
     AuthZoneCreateProofByIdsInput, AuthZonePopInput, ProofCloneInput, VaultGetAmountInput,
 };
-use scrypto::values::ScryptoValue;
 
 use super::types::*;
 
@@ -45,7 +44,7 @@ pub trait ScryptoSyscalls<E: Debug> {
         offset: SubstateOffset,
         mutable: bool,
     ) -> Result<LockHandle, E>;
-    fn sys_read<V: Decode>(&mut self, lock_handle: LockHandle) -> Result<V, E>;
+    fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, E>;
     fn sys_write(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), E>;
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), E>;
     fn sys_get_actor(&mut self) -> Result<ScryptoActor, E>;
