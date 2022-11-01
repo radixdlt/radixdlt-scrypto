@@ -1,3 +1,4 @@
+use crate::constants::*;
 use crate::rust::borrow::Cow;
 use crate::rust::borrow::ToOwned;
 use crate::rust::boxed::Box;
@@ -31,8 +32,8 @@ impl<'a> Encoder<'a> {
         Self { buf }
     }
 
-    pub fn write_type_id(&mut self, ty: u8) {
-        self.buf.push(ty);
+    pub fn write_type_id(&mut self, ty: SborTypeId) {
+        self.buf.push(ty.id());
     }
 
     pub fn write_discriminator(&mut self, discriminator: &str) {
@@ -220,7 +221,7 @@ impl<T: Encode + TypeId> Encode for [T] {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type_id(T::type_id());
         encoder.write_size(self.len());
-        if T::type_id() == TYPE_U8 || T::type_id() == TYPE_I8 {
+        if T::type_id() == SborTypeId::U8 || T::type_id() == SborTypeId::I8 {
             let mut buf = Vec::<u8>::with_capacity(self.len());
             unsafe {
                 copy(self.as_ptr() as *mut u8, buf.as_mut_ptr(), self.len());

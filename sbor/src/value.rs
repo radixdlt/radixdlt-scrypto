@@ -5,6 +5,7 @@ use crate::encode::*;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
+use crate::*;
 
 /// Represents a SBOR value.
 #[cfg_attr(
@@ -12,8 +13,8 @@ use crate::type_id::*;
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type") // For JSON readability, see https://serde.rs/enum-representations.html
 )]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Value {
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+pub enum SborValue {
     Unit,
     Bool {
         value: bool,
@@ -53,29 +54,29 @@ pub enum Value {
     },
 
     Struct {
-        fields: Vec<Value>,
+        fields: Vec<SborValue>,
     },
     Enum {
         discriminator: String,
-        fields: Vec<Value>,
+        fields: Vec<SborValue>,
     },
     Array {
-        element_type_id: u8,
-        elements: Vec<Value>,
+        element_type_id: SborTypeId,
+        elements: Vec<SborValue>,
     },
     Tuple {
-        elements: Vec<Value>,
+        elements: Vec<SborValue>,
     },
 
     Custom {
-        type_id: u8,
+        type_id: SborTypeId,
         #[cfg_attr(feature = "serde", serde(with = "hex::serde"))]
         bytes: Vec<u8>,
     },
 }
 
 /// Encodes any SBOR value into byte array.
-pub fn encode_any(value: &Value) -> Vec<u8> {
+pub fn encode_any(value: &SborValue) -> Vec<u8> {
     let mut bytes = Vec::new();
     let mut enc = ::sbor::Encoder::new(&mut bytes);
     encode_value(None, value, &mut enc);
@@ -83,41 +84,41 @@ pub fn encode_any(value: &Value) -> Vec<u8> {
 }
 
 /// Encodes any SBOR value with a given buffer
-pub fn encode_any_with_buffer(value: &Value, buffer: &mut Vec<u8>) {
+pub fn encode_any_with_buffer(value: &SborValue, buffer: &mut Vec<u8>) {
     let mut enc = ::sbor::Encoder::new(buffer);
     encode_value(None, value, &mut enc);
 }
 
-fn encode_value(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
+fn encode_value(known_type: Option<SborTypeId>, value: &SborValue, enc: &mut Encoder) {
     match value {
-        Value::Unit => encode_basic(ty_ctx, TYPE_UNIT, &(), enc),
-        Value::Bool { value } => encode_basic(ty_ctx, TYPE_BOOL, value, enc),
-        Value::I8 { value } => encode_basic(ty_ctx, TYPE_I8, value, enc),
-        Value::I16 { value } => encode_basic(ty_ctx, TYPE_I16, value, enc),
-        Value::I32 { value } => encode_basic(ty_ctx, TYPE_I32, value, enc),
-        Value::I64 { value } => encode_basic(ty_ctx, TYPE_I64, value, enc),
-        Value::I128 { value } => encode_basic(ty_ctx, TYPE_I128, value, enc),
-        Value::U8 { value } => encode_basic(ty_ctx, TYPE_U8, value, enc),
-        Value::U16 { value } => encode_basic(ty_ctx, TYPE_U16, value, enc),
-        Value::U32 { value } => encode_basic(ty_ctx, TYPE_U32, value, enc),
-        Value::U64 { value } => encode_basic(ty_ctx, TYPE_U64, value, enc),
-        Value::U128 { value } => encode_basic(ty_ctx, TYPE_U128, value, enc),
-        Value::String { value } => encode_basic(ty_ctx, TYPE_STRING, value, enc),
-        Value::Struct { fields } => {
-            if ty_ctx.is_none() {
-                enc.write_type_id(TYPE_STRUCT);
+        SborValue::Unit => encode_basic(known_type, SborTypeId::Unit, &(), enc),
+        SborValue::Bool { value } => encode_basic(known_type, SborTypeId::Bool, value, enc),
+        SborValue::I8 { value } => encode_basic(known_type, SborTypeId::I8, value, enc),
+        SborValue::I16 { value } => encode_basic(known_type, SborTypeId::I16, value, enc),
+        SborValue::I32 { value } => encode_basic(known_type, SborTypeId::I32, value, enc),
+        SborValue::I64 { value } => encode_basic(known_type, SborTypeId::I64, value, enc),
+        SborValue::I128 { value } => encode_basic(known_type, SborTypeId::I128, value, enc),
+        SborValue::U8 { value } => encode_basic(known_type, SborTypeId::U8, value, enc),
+        SborValue::U16 { value } => encode_basic(known_type, SborTypeId::U16, value, enc),
+        SborValue::U32 { value } => encode_basic(known_type, SborTypeId::U32, value, enc),
+        SborValue::U64 { value } => encode_basic(known_type, SborTypeId::U64, value, enc),
+        SborValue::U128 { value } => encode_basic(known_type, SborTypeId::U128, value, enc),
+        SborValue::String { value } => encode_basic(known_type, SborTypeId::String, value, enc),
+        SborValue::Struct { fields } => {
+            if known_type.is_none() {
+                enc.write_type_id(SborTypeId::Struct);
             }
             enc.write_size(fields.len());
             for field in fields {
                 encode_value(None, field, enc);
             }
         }
-        Value::Enum {
+        SborValue::Enum {
             discriminator,
             fields,
         } => {
-            if ty_ctx.is_none() {
-                enc.write_type_id(TYPE_ENUM);
+            if known_type.is_none() {
+                enc.write_type_id(SborTypeId::Enum);
             }
             enc.write_discriminator(discriminator);
             enc.write_size(fields.len());
@@ -125,12 +126,12 @@ fn encode_value(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                 encode_value(None, field, enc);
             }
         }
-        Value::Array {
+        SborValue::Array {
             element_type_id,
             elements,
         } => {
-            if ty_ctx.is_none() {
-                enc.write_type_id(TYPE_ARRAY);
+            if known_type.is_none() {
+                enc.write_type_id(SborTypeId::Array);
             }
             enc.write_type_id(*element_type_id);
             enc.write_size(elements.len());
@@ -138,9 +139,9 @@ fn encode_value(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                 encode_value(Some(*element_type_id), e, enc);
             }
         }
-        Value::Tuple { elements } => {
-            if ty_ctx.is_none() {
-                enc.write_type_id(TYPE_TUPLE);
+        SborValue::Tuple { elements } => {
+            if known_type.is_none() {
+                enc.write_type_id(SborTypeId::Tuple);
             }
             enc.write_size(elements.len());
             for e in elements {
@@ -148,8 +149,8 @@ fn encode_value(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
         }
         // custom
-        Value::Custom { type_id, bytes } => {
-            if ty_ctx.is_none() {
+        SborValue::Custom { type_id, bytes } => {
+            if known_type.is_none() {
                 enc.write_type_id(*type_id);
             }
             enc.write_size(bytes.len());
@@ -158,71 +159,79 @@ fn encode_value(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
     }
 }
 
-fn encode_basic<T: Encode>(ty_ctx: Option<u8>, t: u8, v: &T, enc: &mut Encoder) {
-    if ty_ctx.is_none() {
+fn encode_basic<T: Encode>(
+    known_type: Option<SborTypeId>,
+    t: SborTypeId,
+    v: &T,
+    enc: &mut Encoder,
+) {
+    if known_type.is_none() {
         enc.write_type_id(t);
     }
     <T>::encode_value(v, enc);
 }
 
 /// Decode any SBOR data.
-pub fn decode_any(data: &[u8]) -> Result<Value, DecodeError> {
+pub fn decode_any(data: &[u8]) -> Result<SborValue, DecodeError> {
     let mut decoder = Decoder::new(data);
     let result = decode_next(None, &mut decoder);
     decoder.check_end()?;
     result
 }
 
-fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError> {
-    let ty = match ty_ctx {
+fn decode_next(
+    known_type: Option<SborTypeId>,
+    dec: &mut Decoder,
+) -> Result<SborValue, DecodeError> {
+    let ty = match known_type {
         Some(t) => t,
         None => dec.read_type_id()?,
     };
 
     match ty {
         // primitive types
-        TYPE_UNIT => {
+        SborTypeId::Unit => {
             <()>::decode_value(dec)?;
-            Ok(Value::Unit)
+            Ok(SborValue::Unit)
         }
-        TYPE_BOOL => Ok(Value::Bool {
+        SborTypeId::Bool => Ok(SborValue::Bool {
             value: <bool>::decode_value(dec)?,
         }),
-        TYPE_I8 => Ok(Value::I8 {
+        SborTypeId::I8 => Ok(SborValue::I8 {
             value: <i8>::decode_value(dec)?,
         }),
-        TYPE_I16 => Ok(Value::I16 {
+        SborTypeId::I16 => Ok(SborValue::I16 {
             value: <i16>::decode_value(dec)?,
         }),
-        TYPE_I32 => Ok(Value::I32 {
+        SborTypeId::I32 => Ok(SborValue::I32 {
             value: <i32>::decode_value(dec)?,
         }),
-        TYPE_I64 => Ok(Value::I64 {
+        SborTypeId::I64 => Ok(SborValue::I64 {
             value: <i64>::decode_value(dec)?,
         }),
-        TYPE_I128 => Ok(Value::I128 {
+        SborTypeId::I128 => Ok(SborValue::I128 {
             value: <i128>::decode_value(dec)?,
         }),
-        TYPE_U8 => Ok(Value::U8 {
+        SborTypeId::U8 => Ok(SborValue::U8 {
             value: <u8>::decode_value(dec)?,
         }),
-        TYPE_U16 => Ok(Value::U16 {
+        SborTypeId::U16 => Ok(SborValue::U16 {
             value: <u16>::decode_value(dec)?,
         }),
-        TYPE_U32 => Ok(Value::U32 {
+        SborTypeId::U32 => Ok(SborValue::U32 {
             value: <u32>::decode_value(dec)?,
         }),
-        TYPE_U64 => Ok(Value::U64 {
+        SborTypeId::U64 => Ok(SborValue::U64 {
             value: <u64>::decode_value(dec)?,
         }),
-        TYPE_U128 => Ok(Value::U128 {
+        SborTypeId::U128 => Ok(SborValue::U128 {
             value: <u128>::decode_value(dec)?,
         }),
-        TYPE_STRING => Ok(Value::String {
+        SborTypeId::String => Ok(SborValue::String {
             value: <String>::decode_value(dec)?,
         }),
         // struct & enum
-        TYPE_STRUCT => {
+        SborTypeId::Struct => {
             // number of fields
             let len = dec.read_size()?;
             // fields
@@ -230,9 +239,9 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             for _ in 0..len {
                 fields.push(decode_next(None, dec)?);
             }
-            Ok(Value::Struct { fields })
+            Ok(SborValue::Struct { fields })
         }
-        TYPE_ENUM => {
+        SborTypeId::Enum => {
             // discriminator
             let discriminator = <String>::decode_value(dec)?;
             // number of fields
@@ -242,13 +251,13 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             for _ in 0..len {
                 fields.push(decode_next(None, dec)?);
             }
-            Ok(Value::Enum {
+            Ok(SborValue::Enum {
                 discriminator,
                 fields,
             })
         }
         // composite types
-        TYPE_ARRAY => {
+        SborTypeId::Array => {
             // element type
             let element_type_id = dec.read_type_id()?;
             // length
@@ -258,12 +267,12 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             for _ in 0..len {
                 elements.push(decode_next(Some(element_type_id), dec)?);
             }
-            Ok(Value::Array {
+            Ok(SborValue::Array {
                 element_type_id,
                 elements,
             })
         }
-        TYPE_TUPLE => {
+        SborTypeId::Tuple => {
             //length
             let len = dec.read_size()?;
             // values
@@ -271,48 +280,45 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             for _ in 0..len {
                 elements.push(decode_next(None, dec)?);
             }
-            Ok(Value::Tuple { elements })
+            Ok(SborValue::Tuple { elements })
         }
-        _ => {
-            if ty >= TYPE_CUSTOM_START {
-                // length
-                let len = dec.read_size()?;
-                let slice = dec.read_slice(len)?;
-                Ok(Value::Custom {
-                    type_id: ty,
-                    bytes: slice.to_vec(),
-                })
-            } else {
-                Err(DecodeError::InvalidType {
-                    expected: None,
-                    actual: ty,
-                })
-            }
+        type_id @ SborTypeId::Custom(_) => {
+            // length
+            let len = dec.read_size()?;
+            let slice = dec.read_slice(len)?;
+            Ok(SborValue::Custom {
+                type_id,
+                bytes: slice.to_vec(),
+            })
         }
     }
 }
 
-pub fn traverse_any<V, E>(path: &mut SborPathBuf, value: &Value, visitor: &mut V) -> Result<(), E>
+pub fn traverse_any<V, E>(
+    path: &mut SborPathBuf,
+    value: &SborValue,
+    visitor: &mut V,
+) -> Result<(), E>
 where
     V: CustomValueVisitor<Err = E>,
 {
     match value {
         // primitive types
-        Value::Unit
-        | Value::Bool { .. }
-        | Value::I8 { .. }
-        | Value::I16 { .. }
-        | Value::I32 { .. }
-        | Value::I64 { .. }
-        | Value::I128 { .. }
-        | Value::U8 { .. }
-        | Value::U16 { .. }
-        | Value::U32 { .. }
-        | Value::U64 { .. }
-        | Value::U128 { .. }
-        | Value::String { .. } => {}
+        SborValue::Unit
+        | SborValue::Bool { .. }
+        | SborValue::I8 { .. }
+        | SborValue::I16 { .. }
+        | SborValue::I32 { .. }
+        | SborValue::I64 { .. }
+        | SborValue::I128 { .. }
+        | SborValue::U8 { .. }
+        | SborValue::U16 { .. }
+        | SborValue::U32 { .. }
+        | SborValue::U64 { .. }
+        | SborValue::U128 { .. }
+        | SborValue::String { .. } => {}
         // struct & enum
-        Value::Struct { fields } | Value::Enum { fields, .. } => {
+        SborValue::Struct { fields } | SborValue::Enum { fields, .. } => {
             for (i, field) in fields.iter().enumerate() {
                 path.push(i);
                 traverse_any(path, field, visitor)?;
@@ -320,14 +326,14 @@ where
             }
         }
         // composite types
-        Value::Array { elements, .. } => {
+        SborValue::Array { elements, .. } => {
             for (i, e) in elements.iter().enumerate() {
                 path.push(i);
                 traverse_any(path, e, visitor)?;
                 path.pop();
             }
         }
-        Value::Tuple { elements } => {
+        SborValue::Tuple { elements } => {
             for (i, e) in elements.iter().enumerate() {
                 path.push(i);
                 traverse_any(path, e, visitor)?;
@@ -335,7 +341,7 @@ where
             }
         }
         // custom types
-        Value::Custom { type_id, bytes } => {
+        SborValue::Custom { type_id, bytes } => {
             visitor.visit(path, *type_id, bytes)?;
         }
     }
@@ -346,7 +352,12 @@ where
 pub trait CustomValueVisitor {
     type Err;
 
-    fn visit(&mut self, path: &mut SborPathBuf, type_id: u8, data: &[u8]) -> Result<(), Self::Err>;
+    fn visit(
+        &mut self,
+        path: &mut SborPathBuf,
+        type_id: SborTypeId,
+        data: &[u8],
+    ) -> Result<(), Self::Err>;
 }
 
 #[cfg(test)]
@@ -445,79 +456,85 @@ mod tests {
         let value = decode_any(&bytes).unwrap();
 
         assert_eq!(
-            Value::Struct {
+            SborValue::Struct {
                 fields: vec![
-                    Value::Unit,
-                    Value::Bool { value: true },
-                    Value::I8 { value: 1 },
-                    Value::I16 { value: 2 },
-                    Value::I32 { value: 3 },
-                    Value::I64 { value: 4 },
-                    Value::I128 { value: 5 },
-                    Value::U8 { value: 6 },
-                    Value::U16 { value: 7 },
-                    Value::U32 { value: 8 },
-                    Value::U64 { value: 9 },
-                    Value::U128 { value: 10 },
-                    Value::String {
+                    SborValue::Unit,
+                    SborValue::Bool { value: true },
+                    SborValue::I8 { value: 1 },
+                    SborValue::I16 { value: 2 },
+                    SborValue::I32 { value: 3 },
+                    SborValue::I64 { value: 4 },
+                    SborValue::I128 { value: 5 },
+                    SborValue::U8 { value: 6 },
+                    SborValue::U16 { value: 7 },
+                    SborValue::U32 { value: 8 },
+                    SborValue::U64 { value: 9 },
+                    SborValue::U128 { value: 10 },
+                    SborValue::String {
                         value: String::from("abc")
                     },
-                    Value::Enum {
+                    SborValue::Enum {
                         discriminator: "Some".to_string(),
-                        fields: vec![Value::U32 { value: 1 }]
+                        fields: vec![SborValue::U32 { value: 1 }]
                     },
-                    Value::Enum {
+                    SborValue::Enum {
                         discriminator: "Ok".to_string(),
-                        fields: vec![Value::U32 { value: 2 }]
+                        fields: vec![SborValue::U32 { value: 2 }]
                     },
-                    Value::Array {
-                        element_type_id: TYPE_U32,
+                    SborValue::Array {
+                        element_type_id: SborTypeId::U32,
                         elements: vec![
-                            Value::U32 { value: 1 },
-                            Value::U32 { value: 2 },
-                            Value::U32 { value: 3 },
+                            SborValue::U32 { value: 1 },
+                            SborValue::U32 { value: 2 },
+                            SborValue::U32 { value: 3 },
                         ]
                     },
-                    Value::Tuple {
-                        elements: vec![Value::U32 { value: 1 }, Value::U32 { value: 2 },]
+                    SborValue::Tuple {
+                        elements: vec![SborValue::U32 { value: 1 }, SborValue::U32 { value: 2 },]
                     },
-                    Value::Struct {
-                        fields: vec![Value::U32 { value: 1 }]
+                    SborValue::Struct {
+                        fields: vec![SborValue::U32 { value: 1 }]
                     },
-                    Value::Enum {
+                    SborValue::Enum {
                         discriminator: "A".to_string(),
-                        fields: vec![Value::U32 { value: 1 }]
+                        fields: vec![SborValue::U32 { value: 1 }]
                     },
-                    Value::Enum {
+                    SborValue::Enum {
                         discriminator: "B".to_string(),
-                        fields: vec![Value::U32 { value: 2 }]
+                        fields: vec![SborValue::U32 { value: 2 }]
                     },
-                    Value::Enum {
+                    SborValue::Enum {
                         discriminator: "C".to_string(),
                         fields: vec![]
                     },
-                    Value::Array {
-                        element_type_id: TYPE_U32,
-                        elements: vec![Value::U32 { value: 1 }, Value::U32 { value: 2 },]
+                    SborValue::Array {
+                        element_type_id: SborTypeId::U32,
+                        elements: vec![SborValue::U32 { value: 1 }, SborValue::U32 { value: 2 },]
                     },
-                    Value::Array {
-                        element_type_id: TYPE_U32,
-                        elements: vec![Value::U32 { value: 1 }]
+                    SborValue::Array {
+                        element_type_id: SborTypeId::U32,
+                        elements: vec![SborValue::U32 { value: 1 }]
                     },
-                    Value::Array {
-                        element_type_id: TYPE_U32,
-                        elements: vec![Value::U32 { value: 2 }]
+                    SborValue::Array {
+                        element_type_id: SborTypeId::U32,
+                        elements: vec![SborValue::U32 { value: 2 }]
                     },
-                    Value::Array {
-                        element_type_id: TYPE_TUPLE,
-                        elements: vec![Value::Tuple {
-                            elements: vec![Value::U32 { value: 1 }, Value::U32 { value: 2 }]
+                    SborValue::Array {
+                        element_type_id: SborTypeId::Tuple,
+                        elements: vec![SborValue::Tuple {
+                            elements: vec![
+                                SborValue::U32 { value: 1 },
+                                SborValue::U32 { value: 2 }
+                            ]
                         }]
                     },
-                    Value::Array {
-                        element_type_id: TYPE_TUPLE,
-                        elements: vec![Value::Tuple {
-                            elements: vec![Value::U32 { value: 3 }, Value::U32 { value: 4 }]
+                    SborValue::Array {
+                        element_type_id: SborTypeId::Tuple,
+                        elements: vec![SborValue::Tuple {
+                            elements: vec![
+                                SborValue::U32 { value: 3 },
+                                SborValue::U32 { value: 4 }
+                            ]
                         }]
                     }
                 ]
@@ -537,8 +554,8 @@ mod tests {
         let value = decode_any(&bytes).unwrap();
 
         assert_eq!(
-            Value::Custom {
-                type_id: 0x80,
+            SborValue::Custom {
+                type_id: SborTypeId::Custom(0x80),
                 bytes: vec![1, 2]
             },
             value

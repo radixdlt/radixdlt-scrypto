@@ -25,16 +25,16 @@ pub fn handle_type_id(input: TokenStream) -> Result<TokenStream> {
         Data::Struct(_) => quote! {
             impl #impl_generics ::sbor::TypeId for #ident #ty_generics #where_clause {
                 #[inline]
-                fn type_id() -> u8 {
-                    ::sbor::type_id::TYPE_STRUCT
+                fn type_id() -> ::sbor::type_id::SborTypeId {
+                    ::sbor::type_id::SborTypeId::Struct
                 }
             }
         },
         Data::Enum(_) => quote! {
             impl #impl_generics ::sbor::TypeId for #ident #ty_generics #where_clause {
                 #[inline]
-                fn type_id() -> u8 {
-                    ::sbor::type_id::TYPE_ENUM
+                fn type_id() -> ::sbor::type_id::SborTypeId {
+                    ::sbor::type_id::SborTypeId::Enum
                 }
             }
         },
@@ -71,8 +71,8 @@ mod tests {
             quote! {
                 impl ::sbor::TypeId for Test {
                     #[inline]
-                    fn type_id() -> u8 {
-                        ::sbor::type_id::TYPE_STRUCT
+                    fn type_id() -> ::sbor::type_id::SborTypeId {
+                        ::sbor::type_id::SborTypeId::Struct
                     }
                 }
             },
@@ -89,8 +89,8 @@ mod tests {
             quote! {
                 impl ::sbor::TypeId for Test {
                     #[inline]
-                    fn type_id() -> u8 {
-                        ::sbor::type_id::TYPE_ENUM
+                    fn type_id() -> ::sbor::type_id::SborTypeId {
+                        ::sbor::type_id::SborTypeId::Enum
                     }
                 }
             },

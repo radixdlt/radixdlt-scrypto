@@ -101,5 +101,5 @@ fn test_decode_empty_enum() {
     let mut decoder = Decoder::new(&bytes);
     let result = EmptyEnum::decode(&mut decoder);
 
-    assert!(matches!(result, Err(DecodeError::InvalidDiscriminator(_))));
+    assert!(matches!(result, Err(DecodeError::UnknownDiscriminator(_))));
 }

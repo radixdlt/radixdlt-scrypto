@@ -1,3 +1,4 @@
+use crate::constants::*;
 use crate::rust::borrow::Cow;
 use crate::rust::borrow::ToOwned;
 use crate::rust::boxed::Box;
@@ -10,20 +11,31 @@ use crate::rust::rc::Rc;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
-use sbor::*;
+use crate::*;
 
 /// Represents an error ocurred during decoding.
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum DecodeError {
     ExtraTrailingBytes(usize),
 
-    Underflow { required: usize, remaining: usize },
+    Underflow {
+        required: usize,
+        remaining: usize,
+    },
 
-    InvalidType { expected: Option<u8>, actual: u8 },
+    MismatchingType {
+        expected: Option<SborTypeId>,
+        actual: SborTypeId,
+    },
 
-    InvalidSize { expected: usize, actual: usize },
+    MismatchingSize {
+        expected: usize,
+        actual: usize,
+    },
 
-    InvalidDiscriminator(String),
+    UnknownTypeId(u8),
+
+    UnknownDiscriminator(String),
 
     InvalidUnit(u8),
 
@@ -73,8 +85,9 @@ impl<'de> Decoder<'de> {
         }
     }
 
-    pub fn read_type_id(&mut self) -> Result<u8, DecodeError> {
-        self.read_byte()
+    pub fn read_type_id(&mut self) -> Result<SborTypeId, DecodeError> {
+        let id = self.read_byte()?;
+        SborTypeId::from_id(id).ok_or(DecodeError::UnknownTypeId(id))
     }
 
     pub fn read_discriminator(&mut self) -> Result<String, DecodeError> {
@@ -103,10 +116,10 @@ impl<'de> Decoder<'de> {
         Ok(slice)
     }
 
-    pub fn check_type_id(&mut self, expected: u8) -> Result<(), DecodeError> {
+    pub fn check_type_id(&mut self, expected: SborTypeId) -> Result<(), DecodeError> {
         let ty = self.read_type_id()?;
         if ty != expected {
-            return Err(DecodeError::InvalidType {
+            return Err(DecodeError::MismatchingType {
                 expected: Some(expected),
                 actual: ty,
             });
@@ -118,7 +131,7 @@ impl<'de> Decoder<'de> {
     pub fn check_size(&mut self, expected: usize) -> Result<(), DecodeError> {
         let len = self.read_size()?;
         if len != expected {
-            return Err(DecodeError::InvalidSize {
+            return Err(DecodeError::MismatchingSize {
                 expected,
                 actual: len,
             });
@@ -365,7 +378,7 @@ impl<T: Decode> Decode for Option<T> {
                 decoder.check_size(0)?;
                 Ok(None)
             }
-            _ => Err(DecodeError::InvalidDiscriminator(discriminator)),
+            _ => Err(DecodeError::UnknownDiscriminator(discriminator)),
         }
     }
 }
@@ -386,7 +399,7 @@ impl<T: Decode + TypeId, E: Decode + TypeId> Decode for Result<T, E> {
                 decoder.check_size(1)?;
                 Ok(Err(E::decode(decoder)?))
             }
-            _ => Err(DecodeError::InvalidDiscriminator(discriminator)),
+            _ => Err(DecodeError::UnknownDiscriminator(discriminator)),
         }
     }
 }
@@ -400,7 +413,7 @@ impl<T: Decode + TypeId> Decode for Vec<T> {
         decoder.check_type_id(T::type_id())?;
         let len = decoder.read_size()?;
 
-        if T::type_id() == TYPE_U8 || T::type_id() == TYPE_I8 {
+        if T::type_id() == SborTypeId::U8 || T::type_id() == SborTypeId::I8 {
             let slice = decoder.read_slice(len)?; // length is checked here
             let mut result = Vec::<T>::with_capacity(len);
             unsafe {
