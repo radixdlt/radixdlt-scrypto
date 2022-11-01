@@ -17,6 +17,8 @@ pub use alloc::string;
 #[cfg(feature = "alloc")]
 pub use alloc::vec;
 #[cfg(feature = "alloc")]
+pub use alloc::sync;
+#[cfg(feature = "alloc")]
 pub use core::cell;
 #[cfg(feature = "alloc")]
 pub use core::cmp;
@@ -41,6 +43,8 @@ pub use core::slice;
 pub use std::borrow;
 #[cfg(not(feature = "alloc"))]
 pub use std::boxed;
+#[cfg(not(feature = "alloc"))]
+pub use std::sync;
 #[cfg(not(feature = "alloc"))]
 pub use std::cell;
 #[cfg(not(feature = "alloc"))]

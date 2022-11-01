@@ -8,11 +8,13 @@ pub enum TypeEncodingClass {
 }
 
 impl TypeEncodingClass {
+    // TODO separate out RAW_BYTE / RAW_BYTES_2 / RAW_BYTES_4 / RAW_BYTES_8
     pub const RAW_BYTES_U8_LENGTH: u8 = 0x00;
     pub const RAW_BYTES_U16_LENGTH: u8 = 0x01;
     pub const RAW_BYTES_U32_LENGTH: u8 = 0x02;
     pub const RAW_BYTES_U64_LENGTH: u8 = 0x03;
 
+    // TODO separate out PRODUCT_TYPE_ZERO / PRODUCT_LEN_1 / PRODUCT_LEN_2 / PRODUCT_LEN_3 / .. / PRODUCT_LEN_8
     pub const PRODUCT_TYPE_U8_LENGTH: u8 = 0x10;
     pub const PRODUCT_TYPE_U16_LENGTH: u8 = 0x11;
 
@@ -156,19 +158,18 @@ pub enum SizedLength {
 impl SizedLength {
     #[inline]
     pub fn from_size(length: usize) -> SizedLength {
-        // There's likely a faster way of implementing this
-        let byte_length =
-            (core::mem::size_of::<usize>() as u8) - ((length.leading_zeros() / 8) as u8);
-        match byte_length {
-            0 => SizedLength::U8(length as u8),
-            1 => SizedLength::U16(length as u16),
-            2 => SizedLength::U32(length as u32),
-            3 => SizedLength::U32(length as u32),
-            4 => SizedLength::U64(length as u64),
-            5 => SizedLength::U64(length as u64),
-            6 => SizedLength::U64(length as u64),
-            7 => SizedLength::U64(length as u64),
-            _ => panic!("usize larger than 8 bytes not supported"),
+        // There may be a faster way of implementing this by avoiding branches...
+        // But I hope LLVM would take care of this
+        if length <= u8::MAX as usize {
+            SizedLength::U8(length as u8)
+        } else if length <= u16::MAX as usize {
+            SizedLength::U16(length as u16)
+        } else if length <= u32::MAX as usize {
+            SizedLength::U32(length as u32)
+        } else if length <= u64::MAX as usize {
+            SizedLength::U64(length as u64)
+        } else {
+            panic!("usize larger than 8 bytes not supported")
         }
     }
 

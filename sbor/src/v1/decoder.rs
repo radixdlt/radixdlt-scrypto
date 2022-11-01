@@ -1,10 +1,13 @@
 use super::*;
+use crate::rust::string::String;
 
 // TODO - turn Decoder into a trait
 
 /// Represents an error occurred during decoding.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DecodeError {
+
+    MaxDepthExceeded(u32),
 
     InvalidPayloadPrefix(u8),
     InvalidTypeEncodingClass(u8),
@@ -17,14 +20,14 @@ pub enum DecodeError {
     ExpectedList { actual: TypeEncodingClass },
     ExpectedMap { actual: TypeEncodingClass },
 
-
     UnexpectedProductLengthType,
     UnexpectedU8Length { expected: u8, actual: u8 },
     UnexpectedU16Length { expected: u16, actual: u16 },
     UnexpectedLength { expected: usize, actual: usize },
     LengthInvalidForArchitecture,
 
-
+    DuplicateSetEntry,
+    DuplicateMapEntry,
 
     InvalidDiscriminatorType(SumTypeDiscriminator),
     InvalidU8Discriminator(u8),
@@ -62,7 +65,7 @@ pub enum DecodeError {
 pub struct Decoder<'a> {
     input: &'a [u8],
     offset: usize,
-    decoder_stack_depth: u8,
+    decoder_stack_depth: u32,
 }
 
 impl<'a> Decoder<'a> {
@@ -75,7 +78,7 @@ impl<'a> Decoder<'a> {
     }
 
     /// For decoding a full payload
-    pub fn decode_payload<T: Decodable>(mut self) -> Result<T, DecodeError> {
+    pub fn decode_payload<T: Decode>(mut self) -> Result<T, DecodeError> {
         let prefix_byte = self.read_u8()?;
         if prefix_byte != SBOR_V1_PREFIX_BYTE {
             return Err(DecodeError::InvalidPayloadPrefix(prefix_byte));
@@ -86,9 +89,12 @@ impl<'a> Decoder<'a> {
     }
 
     /// For decoding the type from the buffer
-    pub fn decode<T: Decodable>(&mut self) -> Result<T, DecodeError> {
+    pub fn decode<T: Decode>(&mut self) -> Result<T, DecodeError> {
+        self.track_decode_depth_increase()?;
         T::check_interpretation(self.read_interpretation()?)?;
-        T::decode_value_from(self)
+        let value = T::decode_value(self);
+        self.track_decode_depth_decrease();
+        value
     }
 
     #[inline]
@@ -171,8 +177,22 @@ impl<'a> Decoder<'a> {
     }
 
     #[inline]
-    pub fn read_sum_type_any_discriminator<T: Decodable>(&mut self) -> Result<T, DecodeError> {
+    pub fn read_sum_type_any_discriminator<T: Decode>(&mut self) -> Result<T, DecodeError> {
         self.decode()
+    }
+
+    #[inline]
+    pub fn read_list_type_length(&mut self) -> Result<usize, DecodeError> {
+        let length_type = Self::expect_list_type(self.read_type_encoding_class()?)?;
+        let length = self.read_length(length_type)?;
+        Ok(length)
+    }
+
+    #[inline]
+    pub fn read_map_type_length(&mut self) -> Result<usize, DecodeError> {
+        let length_type = Self::expect_map_type(self.read_type_encoding_class()?)?;
+        let length = self.read_length(length_type)?;
+        Ok(length)
     }
 
     #[inline]
@@ -268,7 +288,7 @@ impl<'a> Decoder<'a> {
 
     #[inline]
     fn read_single_byte(&mut self) -> Result<u8, DecodeError> {
-        // TODO - add require
+        // TODO - add require bytes remaining
         let result = self.input[self.offset];
         self.offset += 1;
         Ok(result)
@@ -276,7 +296,7 @@ impl<'a> Decoder<'a> {
 
     #[inline]
     fn read_fixed_bytes<const N: usize>(&mut self) -> Result<&'a [u8], DecodeError> {
-        // TODO - add require
+        // TODO - add require bytes remaining
         let slice = &self.input[self.offset..self.offset + N];
         self.offset += N;
         Ok(slice)
@@ -284,7 +304,7 @@ impl<'a> Decoder<'a> {
 
     #[inline]
     fn read_fixed_bytes_array<const N: usize>(&mut self) -> Result<[u8; N], DecodeError> {
-        // TODO - add require
+        // TODO - add require bytes remaining
         let mut bytes_out = [0u8; N];
         bytes_out.copy_from_slice(self.read_fixed_bytes::<N>()?);
         Ok(bytes_out)
@@ -292,22 +312,23 @@ impl<'a> Decoder<'a> {
 
     #[inline]
     fn read_variable_bytes(&mut self, count: usize) -> Result<&'a [u8], DecodeError> {
-        // TODO - add require
+        // TODO - add require bytes remaining
         let slice = &self.input[self.offset..self.offset + count];
         self.offset += count;
         Ok(slice)
     }
 
     #[inline]
-    fn track_encode_depth_increase(&mut self) {
+    fn track_decode_depth_increase(&mut self) -> Result<(), DecodeError> {
         self.decoder_stack_depth += 1;
         if self.decoder_stack_depth > DEFAULT_MAX_ENCODING_DEPTH {
-            panic!("Max encoding depth reached encoding SBOR");
+            return Err(DecodeError::MaxDepthExceeded(DEFAULT_MAX_ENCODING_DEPTH));
         }
+        Ok(())
     }
 
     #[inline]
-    fn track_encode_depth_decrease(&mut self) {
+    fn track_decode_depth_decrease(&mut self) {
         self.decoder_stack_depth -= 1;
     }
 }

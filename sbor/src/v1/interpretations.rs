@@ -4,12 +4,15 @@ pub struct DefaultInterpretations {
 /// These are the default interpretations in base-Sbor
 /// Specific variants may introduce more
 impl DefaultInterpretations {
+    // A placeholder interpretation meaning "not fixed"
+    pub const NOT_FIXED: u8 = 0x00;
 
     // Misc raw bytes
     pub const BOOLEAN: u8 = 0x01;
     pub const UTF8_STRING: u8 = 0x01;
     pub const UTF8_STRING_DISCRIMINATOR: u8 = 0x02;
     pub const SBOR_ANY: u8 = 0x03;
+    pub const PLAIN_RAW_BYTES: u8 = 0x04;
 
     // Unsigned Integers
     pub const U8: u8 = 0x10;

@@ -7,7 +7,7 @@ use super::*;
 /// An `Encoder` abstracts the logic for writing core types into a byte buffer.
 pub struct Encoder<'a> {
     buf: &'a mut Vec<u8>,
-    encoder_stack_depth: u8,
+    encoder_stack_depth: u32,
 }
 
 impl<'a> Encoder<'a> {
@@ -19,21 +19,23 @@ impl<'a> Encoder<'a> {
     }
 
     /// For encoding a full payload
-    pub fn encode_payload<T: Encodable>(mut self, value: &T) {
+    pub fn encode_payload<T: Encode>(mut self, value: &T) {
         self.write_u8(SBOR_V1_PREFIX_BYTE);
         self.encode(value);
     }
 
     /// For encoding the type to the encoder, as a partial encoding of a larger payload
-    pub fn encode<T: Encodable>(&mut self, value: &T) {
-        self.write_interpretation(value.interpretation());
-        value.encode_value_to(self);
+    pub fn encode<T: Encode>(&mut self, value: &T) {
+        self.track_encode_depth_increase();
+        self.write_interpretation(value.get_interpretation());
+        value.encode_value(self);
+        self.track_encode_depth_decrease();
     }
 
     #[inline]
     pub fn write_raw_bytes(&mut self, bytes: &[u8]) {
         let sized_length = SizedLength::from_size(bytes.len());
-        self.write_u8(sized_length.list_encoding_id());
+        self.write_u8(sized_length.raw_bytes_encoding_id());
         self.write_length(sized_length);
         self.write_bytes(bytes);
     }
@@ -51,68 +53,58 @@ impl<'a> Encoder<'a> {
     }
 
     #[inline]
-    pub fn write_sum_type_u8_discriminator<T: Encodable>(
+    pub fn write_sum_type_u8_discriminator<T: Encode>(
         &mut self,
         discriminator: u8,
         value: &T,
     ) {
         self.write_u8(SumTypeDiscriminator::U8.encoding_id());
         self.write_u8(discriminator);
-        self.track_encode_depth_increase();
         self.encode(value);
-        self.track_encode_depth_decrease();
     }
 
     #[inline]
-    pub fn write_sum_type_u16_discriminator<T: Encodable>(
+    pub fn write_sum_type_u16_discriminator<T: Encode>(
         &mut self,
         discriminator: u16,
         value: &T,
     ) {
         self.write_u8(SumTypeDiscriminator::U16.encoding_id());
         self.write_u16(discriminator);
-        self.track_encode_depth_increase();
         self.encode(value);
-        self.track_encode_depth_decrease();
     }
 
     #[inline]
-    pub fn write_sum_type_u32_discriminator<T: Encodable>(
+    pub fn write_sum_type_u32_discriminator<T: Encode>(
         &mut self,
         discriminator: u32,
         value: &T,
     ) {
         self.write_u8(SumTypeDiscriminator::U32.encoding_id());
         self.write_u32(discriminator);
-        self.track_encode_depth_increase();
         self.encode(value);
-        self.track_encode_depth_decrease();
     }
 
     #[inline]
-    pub fn write_sum_type_u64_discriminator<T: Encodable>(
+    pub fn write_sum_type_u64_discriminator<T: Encode>(
         &mut self,
         discriminator: u64,
         value: &T,
     ) {
         self.write_u8(SumTypeDiscriminator::U64.encoding_id());
         self.write_u64(discriminator);
-        self.track_encode_depth_increase();
         self.encode(value);
-        self.track_encode_depth_decrease();
     }
 
     #[inline]
-    pub fn write_sum_type_any_discriminator<D: Encodable, V: Encodable>(
+    pub fn write_sum_type_any_discriminator<D: Encode, V: Encode>(
         &mut self,
         discriminator: &D,
         value: &V,
     ) {
         self.write_u8(SumTypeDiscriminator::Any.encoding_id());
-        self.track_encode_depth_increase();
         self.encode(discriminator);
         self.encode(value);
-        self.track_encode_depth_decrease();
     }
 
     #[inline]
@@ -120,27 +112,33 @@ impl<'a> Encoder<'a> {
         let sized_length = SizedLength::from_size(list.len());
         self.write_u8(sized_length.list_encoding_id());
         self.write_length(sized_length);
-        self.track_encode_depth_increase();
         for value in list {
             self.encode(value);
         }
-        self.track_encode_depth_decrease();
     }
 
     #[inline]
-    pub fn write_map<TKey: Encodable, TValue: Encodable>(
+    pub fn write_list_from_iterator<'t, 's, I: ExactSizeIterator<Item = &'s T>, T: Encode + 's>(&'t mut self, sized_iterator: I) {
+        let sized_length = SizedLength::from_size(sized_iterator.len());
+        self.write_u8(sized_length.list_encoding_id());
+        self.write_length(sized_length);
+        for value in sized_iterator {
+            self.encode(value);
+        }
+    }
+
+    #[inline]
+    pub fn write_map<TKey: Encode, TValue: Encode>(
         &mut self,
         map: &[(TKey, TValue)],
     ) {
         let sized_length = SizedLength::from_size(map.len());
         self.write_u8(sized_length.map_encoding_id());
         self.write_length(sized_length);
-        self.track_encode_depth_increase();
         for (key, value) in map {
             self.encode(key);
             self.encode(value);
         }
-        self.track_encode_depth_decrease();
     }
 
     #[inline]
