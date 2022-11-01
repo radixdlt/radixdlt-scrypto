@@ -20,12 +20,12 @@ use crate::resource::AccessRules;
 use crate::values::ScryptoValue;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ComponentAddAccessCheckInput {
-    pub component_id: ComponentId,
+pub struct ComponentAddAccessCheckInvocation {
+    pub receiver: ComponentId,
     pub access_rules: AccessRules,
 }
 
-impl SysInvocation for ComponentAddAccessCheckInput {
+impl SysInvocation for ComponentAddAccessCheckInvocation {
     type Output = ();
 
     fn native_method() -> NativeMethod {
@@ -108,11 +108,11 @@ impl Component {
         sys_calls: &mut Y,
     ) -> Result<&mut Self, E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<ComponentAddAccessCheckInput, E>,
+        Y: ScryptoSyscalls<E> + SysInvokable<ComponentAddAccessCheckInvocation, E>,
     {
-        sys_calls.sys_invoke(ComponentAddAccessCheckInput {
+        sys_calls.sys_invoke(ComponentAddAccessCheckInvocation {
+            receiver: self.0,
             access_rules,
-            component_id: self.0,
         })?;
 
         Ok(self)

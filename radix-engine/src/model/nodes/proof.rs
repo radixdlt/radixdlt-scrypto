@@ -2,7 +2,6 @@ use crate::engine::{
     ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
-use crate::fee::FeeReserve;
 use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
 
@@ -22,18 +21,17 @@ pub enum ProofError {
     InvalidRequestData(DecodeError),
 }
 
-impl NativeExecutable for ProofGetAmountInput {
+impl NativeExecutable for ProofGetAmountInvocation {
     type NativeOutput = Decimal;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
-        let node_id = RENodeId::Proof(input.proof_id);
+        let node_id = RENodeId::Proof(input.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
         let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
@@ -43,28 +41,27 @@ impl NativeExecutable for ProofGetAmountInput {
     }
 }
 
-impl NativeInvocation for ProofGetAmountInput {
+impl NativeInvocation for ProofGetAmountInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Proof(ProofMethod::GetAmount),
-            RENodeId::Proof(self.proof_id),
+            RENodeId::Proof(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for ProofGetNonFungibleIdsInput {
+impl NativeExecutable for ProofGetNonFungibleIdsInvocation {
     type NativeOutput = BTreeSet<NonFungibleId>;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
-        let node_id = RENodeId::Proof(input.proof_id);
+        let node_id = RENodeId::Proof(input.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
         let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
@@ -80,28 +77,27 @@ impl NativeExecutable for ProofGetNonFungibleIdsInput {
     }
 }
 
-impl NativeInvocation for ProofGetNonFungibleIdsInput {
+impl NativeInvocation for ProofGetNonFungibleIdsInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Proof(ProofMethod::GetNonFungibleIds),
-            RENodeId::Proof(self.proof_id),
+            RENodeId::Proof(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for ProofGetResourceAddressInput {
+impl NativeExecutable for ProofGetResourceAddressInvocation {
     type NativeOutput = ResourceAddress;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
-        let node_id = RENodeId::Proof(input.proof_id);
+        let node_id = RENodeId::Proof(input.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
         let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
@@ -116,28 +112,27 @@ impl NativeExecutable for ProofGetResourceAddressInput {
     }
 }
 
-impl NativeInvocation for ProofGetResourceAddressInput {
+impl NativeInvocation for ProofGetResourceAddressInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Proof(ProofMethod::GetResourceAddress),
-            RENodeId::Proof(self.proof_id),
+            RENodeId::Proof(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for ProofCloneInput {
+impl NativeExecutable for ProofCloneInvocation {
     type NativeOutput = scrypto::resource::Proof;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
-        let node_id = RENodeId::Proof(input.proof_id);
+        let node_id = RENodeId::Proof(input.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
         let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
@@ -152,11 +147,11 @@ impl NativeExecutable for ProofCloneInput {
     }
 }
 
-impl NativeInvocation for ProofCloneInput {
+impl NativeInvocation for ProofCloneInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Proof(ProofMethod::Clone),
-            RENodeId::Proof(self.proof_id),
+            RENodeId::Proof(self.receiver),
             CallFrameUpdate::empty(),
         )
     }

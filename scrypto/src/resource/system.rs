@@ -48,7 +48,7 @@ impl ResourceSystem {
     ) -> (ResourceAddress, Option<Bucket>) {
         let input = RadixEngineInput::InvokeNativeFunction(
             NativeFunction::ResourceManager(ResourceManagerFunction::Create),
-            scrypto_encode(&ResourceManagerCreateInput {
+            scrypto_encode(&ResourceManagerCreateInvocation {
                 resource_type,
                 metadata,
                 access_rules,

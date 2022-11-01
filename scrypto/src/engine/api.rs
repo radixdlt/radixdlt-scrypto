@@ -5,9 +5,6 @@ use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode};
 use scrypto::core::*;
 use scrypto::engine::types::*;
-use scrypto::resource::{
-    AuthZoneCreateProofByIdsInput, AuthZonePopInput, ProofCloneInput, VaultGetAmountInput,
-};
 use crate::crypto::Hash;
 
 use super::types::*;
@@ -55,15 +52,15 @@ pub trait ScryptoSyscalls<E: Debug> {
 }
 
 pub trait SysInvokableNative<E>:
-    SysInvokable<AuthZonePopInput, E>
-    + SysInvokable<AuthZonePushInput, E>
-    + SysInvokable<AuthZoneCreateProofInput, E>
-    + SysInvokable<AuthZoneCreateProofByAmountInput, E>
-    + SysInvokable<AuthZoneCreateProofByIdsInput, E>
-    + SysInvokable<ResourceManagerCreateBucketInput, E>
-    + SysInvokable<ResourceManagerBurnInput, E>
-    + SysInvokable<BucketCreateProofInput, E>
-    + SysInvokable<ProofCloneInput, E>
-    + SysInvokable<VaultGetAmountInput, E>
+    SysInvokable<AuthZonePopInvocation, E>
+    + SysInvokable<AuthZonePushInvocation, E>
+    + SysInvokable<AuthZoneCreateProofInvocation, E>
+    + SysInvokable<AuthZoneCreateProofByAmountInvocation, E>
+    + SysInvokable<AuthZoneCreateProofByIdsInvocation, E>
+    + SysInvokable<ResourceManagerCreateBucketInvocation, E>
+    + SysInvokable<ResourceManagerBurnInvocation, E>
+    + SysInvokable<BucketCreateProofInvocation, E>
+    + SysInvokable<ProofCloneInvocation, E>
+    + SysInvokable<VaultGetAmountInvocation, E>
 {
 }

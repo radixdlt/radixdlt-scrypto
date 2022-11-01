@@ -14,44 +14,44 @@ use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketTakeInput {
-    pub bucket_id: BucketId,
+pub struct BucketTakeInvocation {
+    pub receiver: BucketId,
     pub amount: Decimal,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketPutInput {
-    pub bucket_id: BucketId,
+pub struct BucketPutInvocation {
+    pub receiver: BucketId,
     pub bucket: scrypto::resource::Bucket,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketTakeNonFungiblesInput {
-    pub bucket_id: BucketId,
+pub struct BucketTakeNonFungiblesInvocation {
+    pub receiver: BucketId,
     pub ids: BTreeSet<NonFungibleId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketGetNonFungibleIdsInput {
-    pub bucket_id: BucketId,
+pub struct BucketGetNonFungibleIdsInvocation {
+    pub receiver: BucketId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketGetAmountInput {
-    pub bucket_id: BucketId,
+pub struct BucketGetAmountInvocation {
+    pub receiver: BucketId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketGetResourceAddressInput {
-    pub bucket_id: BucketId,
+pub struct BucketGetResourceAddressInvocation {
+    pub receiver: BucketId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketCreateProofInput {
-    pub bucket_id: BucketId,
+pub struct BucketCreateProofInvocation {
+    pub receiver: BucketId,
 }
 
-impl SysInvocation for BucketCreateProofInput {
+impl SysInvocation for BucketCreateProofInvocation {
     type Output = Proof;
     fn native_method() -> NativeMethod {
         NativeMethod::Bucket(BucketMethod::CreateProof)
@@ -70,13 +70,13 @@ impl Bucket {
     }
 
     pub fn sys_new<Y, E: Debug + TypeId + Decode>(
-        resource_address: ResourceAddress,
+        receiver: ResourceAddress,
         sys_calls: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: SysInvokable<ResourceManagerCreateBucketInput, E>,
+        Y: SysInvokable<ResourceManagerCreateBucketInvocation, E>,
     {
-        sys_calls.sys_invoke(ResourceManagerCreateBucketInput { resource_address })
+        sys_calls.sys_invoke(ResourceManagerCreateBucketInvocation { receiver })
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -86,11 +86,11 @@ impl Bucket {
 
     pub fn sys_burn<Y, E: Debug + TypeId + Decode>(self, sys_calls: &mut Y) -> Result<(), E>
     where
-        Y: SysInvokable<ResourceManagerBurnInput, E>,
+        Y: SysInvokable<ResourceManagerBurnInvocation, E>,
     {
-        let resource_address = self.resource_address();
-        sys_calls.sys_invoke(ResourceManagerBurnInput {
-            resource_address,
+        let receiver = self.resource_address();
+        sys_calls.sys_invoke(ResourceManagerBurnInvocation {
+            receiver,
             bucket: self,
         })
     }
@@ -105,16 +105,16 @@ impl Bucket {
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: SysInvokable<BucketCreateProofInput, E>,
+        Y: SysInvokable<BucketCreateProofInvocation, E>,
     {
-        sys_calls.sys_invoke(BucketCreateProofInput { bucket_id: self.0 })
+        sys_calls.sys_invoke(BucketCreateProofInvocation { receiver: self.0 })
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Self {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Bucket(BucketMethod::Take),
-            scrypto_encode(&BucketTakeInput {
-                bucket_id: self.0,
+            scrypto_encode(&BucketTakeInvocation {
+                receiver: self.0,
                 amount,
             }),
         );
@@ -125,34 +125,34 @@ impl Bucket {
         NativeMethod::Bucket => {
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
                 BucketMethod::TakeNonFungibles,
-                BucketTakeNonFungiblesInput {
-                    bucket_id: self.0,
+                BucketTakeNonFungiblesInvocation {
+                    receiver: self.0,
                     ids: non_fungible_ids.clone()
                 }
             }
             pub fn put(&mut self, other: Self) -> () {
                 BucketMethod::Put,
-                BucketPutInput {
-                    bucket_id: self.0,
+                BucketPutInvocation {
+                    receiver: self.0,
                     bucket: other,
                 }
             }
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
                 BucketMethod::GetNonFungibleIds,
-                BucketGetNonFungibleIdsInput {
-                    bucket_id: self.0,
+                BucketGetNonFungibleIdsInvocation {
+                    receiver: self.0,
                 }
             }
             pub fn amount(&self) -> Decimal {
                 BucketMethod::GetAmount,
-                BucketGetAmountInput {
-                    bucket_id: self.0,
+                BucketGetAmountInvocation {
+                    receiver: self.0,
                 }
             }
             pub fn resource_address(&self) -> ResourceAddress {
                 BucketMethod::GetResourceAddress,
-                BucketGetResourceAddressInput {
-                    bucket_id: self.0,
+                BucketGetResourceAddressInvocation {
+                    receiver: self.0,
                 }
             }
         }

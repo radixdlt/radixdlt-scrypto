@@ -2,51 +2,50 @@ use crate::engine::{
     ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
-use crate::fee::FeeReserve;
 use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct WorktopPutInput {
+pub struct WorktopPutInvocation {
     pub bucket: scrypto::resource::Bucket,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct WorktopTakeAmountInput {
+pub struct WorktopTakeAmountInvocation {
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct WorktopTakeNonFungiblesInput {
+pub struct WorktopTakeNonFungiblesInvocation {
     pub ids: BTreeSet<NonFungibleId>,
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct WorktopTakeAllInput {
+pub struct WorktopTakeAllInvocation {
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct WorktopAssertContainsInput {
+pub struct WorktopAssertContainsInvocation {
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct WorktopAssertContainsAmountInput {
+pub struct WorktopAssertContainsAmountInvocation {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct WorktopAssertContainsNonFungiblesInput {
+pub struct WorktopAssertContainsNonFungiblesInvocation {
     pub resource_address: ResourceAddress,
     pub ids: BTreeSet<NonFungibleId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct WorktopDrainInput {}
+pub struct WorktopDrainInvocation {}
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum WorktopError {
@@ -60,16 +59,15 @@ pub enum WorktopError {
     CouldNotDrop,
 }
 
-impl NativeExecutable for WorktopPutInput {
+impl NativeExecutable for WorktopPutInvocation {
     type NativeOutput = ();
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -90,7 +88,7 @@ impl NativeExecutable for WorktopPutInput {
     }
 }
 
-impl NativeInvocation for WorktopPutInput {
+impl NativeInvocation for WorktopPutInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Worktop(WorktopMethod::Put),
@@ -100,16 +98,15 @@ impl NativeInvocation for WorktopPutInput {
     }
 }
 
-impl NativeExecutable for WorktopTakeAmountInput {
+impl NativeExecutable for WorktopTakeAmountInvocation {
     type NativeOutput = scrypto::resource::Bucket;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -154,7 +151,7 @@ impl NativeExecutable for WorktopTakeAmountInput {
     }
 }
 
-impl NativeInvocation for WorktopTakeAmountInput {
+impl NativeInvocation for WorktopTakeAmountInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Worktop(WorktopMethod::TakeAmount),
@@ -166,16 +163,15 @@ impl NativeInvocation for WorktopTakeAmountInput {
     }
 }
 
-impl NativeExecutable for WorktopTakeAllInput {
+impl NativeExecutable for WorktopTakeAllInvocation {
     type NativeOutput = scrypto::resource::Bucket;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -219,7 +215,7 @@ impl NativeExecutable for WorktopTakeAllInput {
     }
 }
 
-impl NativeInvocation for WorktopTakeAllInput {
+impl NativeInvocation for WorktopTakeAllInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Worktop(WorktopMethod::TakeAll),
@@ -231,16 +227,15 @@ impl NativeInvocation for WorktopTakeAllInput {
     }
 }
 
-impl NativeExecutable for WorktopTakeNonFungiblesInput {
+impl NativeExecutable for WorktopTakeNonFungiblesInvocation {
     type NativeOutput = scrypto::resource::Bucket;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -286,7 +281,7 @@ impl NativeExecutable for WorktopTakeNonFungiblesInput {
     }
 }
 
-impl NativeInvocation for WorktopTakeNonFungiblesInput {
+impl NativeInvocation for WorktopTakeNonFungiblesInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Worktop(WorktopMethod::TakeNonFungibles),
@@ -298,16 +293,15 @@ impl NativeInvocation for WorktopTakeNonFungiblesInput {
     }
 }
 
-impl NativeExecutable for WorktopAssertContainsInput {
+impl NativeExecutable for WorktopAssertContainsInvocation {
     type NativeOutput = ();
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -325,7 +319,7 @@ impl NativeExecutable for WorktopAssertContainsInput {
     }
 }
 
-impl NativeInvocation for WorktopAssertContainsInput {
+impl NativeInvocation for WorktopAssertContainsInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Worktop(WorktopMethod::AssertContains),
@@ -337,16 +331,15 @@ impl NativeInvocation for WorktopAssertContainsInput {
     }
 }
 
-impl NativeExecutable for WorktopAssertContainsAmountInput {
+impl NativeExecutable for WorktopAssertContainsAmountInvocation {
     type NativeOutput = ();
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -364,7 +357,7 @@ impl NativeExecutable for WorktopAssertContainsAmountInput {
     }
 }
 
-impl NativeInvocation for WorktopAssertContainsAmountInput {
+impl NativeInvocation for WorktopAssertContainsAmountInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Worktop(WorktopMethod::AssertContainsAmount),
@@ -376,16 +369,15 @@ impl NativeInvocation for WorktopAssertContainsAmountInput {
     }
 }
 
-impl NativeExecutable for WorktopAssertContainsNonFungiblesInput {
+impl NativeExecutable for WorktopAssertContainsNonFungiblesInvocation {
     type NativeOutput = ();
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -411,7 +403,7 @@ impl NativeExecutable for WorktopAssertContainsNonFungiblesInput {
     }
 }
 
-impl NativeInvocation for WorktopAssertContainsNonFungiblesInput {
+impl NativeInvocation for WorktopAssertContainsNonFungiblesInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Worktop(WorktopMethod::AssertContainsNonFungibles),
@@ -423,16 +415,15 @@ impl NativeInvocation for WorktopAssertContainsNonFungiblesInput {
     }
 }
 
-impl NativeExecutable for WorktopDrainInput {
+impl NativeExecutable for WorktopDrainInvocation {
     type NativeOutput = Vec<scrypto::resource::Bucket>;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(Vec<scrypto::resource::Bucket>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -474,7 +465,7 @@ impl NativeExecutable for WorktopDrainInput {
     }
 }
 
-impl NativeInvocation for WorktopDrainInput {
+impl NativeInvocation for WorktopDrainInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Worktop(WorktopMethod::Drain),

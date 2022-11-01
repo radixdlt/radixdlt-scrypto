@@ -10,27 +10,23 @@ use scrypto::engine::api::ScryptoSyscalls;
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
+pub struct RadixEngineWasmRuntime<'y, 'a, Y>
 where
-    Y: SystemApi<'s, R>
+    Y: SystemApi
         + ScryptoSyscalls<RuntimeError>
         + Invokable<ScryptoInvocation>
-        + InvokableNative<'a>,
-    R: FeeReserve,
+        + InvokableNative<'a>
 {
     system_api: &'y mut Y,
-    phantom1: PhantomData<R>,
-    phantom2: PhantomData<&'s ()>,
-    phantom3: PhantomData<&'a ()>,
+    phantom: PhantomData<&'a ()>,
 }
 
-impl<'y, 's, 'a, Y, R> RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
+impl<'y, 'a, Y> RadixEngineWasmRuntime<'y, 'a, Y>
 where
-    Y: SystemApi<'s, R>
+    Y: SystemApi
         + ScryptoSyscalls<RuntimeError>
         + Invokable<ScryptoInvocation>
-        + InvokableNative<'a>,
-    R: FeeReserve,
+        + InvokableNative<'a>
 {
     // TODO: expose API for reading blobs
 
@@ -41,9 +37,7 @@ where
     pub fn new(system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
             system_api,
-            phantom1: PhantomData,
-            phantom2: PhantomData,
-            phantom3: PhantomData,
+            phantom: PhantomData,
         }
     }
 
@@ -68,13 +62,12 @@ fn encode<T: Encode>(output: T) -> Vec<u8> {
     scrypto_encode(&output)
 }
 
-impl<'y, 's, 'a, Y, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
+impl<'y, 'a, Y> WasmRuntime for RadixEngineWasmRuntime<'y, 'a, Y>
 where
-    Y: SystemApi<'s, R>
+    Y: SystemApi
         + ScryptoSyscalls<RuntimeError>
         + Invokable<ScryptoInvocation>
-        + InvokableNative<'a>,
-    R: FeeReserve,
+        + InvokableNative<'a>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>> {
         let input: RadixEngineInput = scrypto_decode(&input.raw)

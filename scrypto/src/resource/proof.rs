@@ -13,26 +13,26 @@ use crate::native_methods;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofGetAmountInput {
-    pub proof_id: ProofId,
+pub struct ProofGetAmountInvocation {
+    pub receiver: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofGetNonFungibleIdsInput {
-    pub proof_id: ProofId,
+pub struct ProofGetNonFungibleIdsInvocation {
+    pub receiver: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofGetResourceAddressInput {
-    pub proof_id: ProofId,
+pub struct ProofGetResourceAddressInvocation {
+    pub receiver: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofCloneInput {
-    pub proof_id: ProofId,
+pub struct ProofCloneInvocation {
+    pub receiver: ProofId,
 }
 
-impl SysInvocation for ProofCloneInput {
+impl SysInvocation for ProofCloneInvocation {
     type Output = Proof;
 
     fn native_method() -> NativeMethod {
@@ -124,9 +124,9 @@ impl Proof {
 
     pub fn sys_clone<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<Proof, E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<ProofCloneInput, E>,
+        Y: ScryptoSyscalls<E> + SysInvokable<ProofCloneInvocation, E>,
     {
-        sys_calls.sys_invoke(ProofCloneInput { proof_id: self.0 })
+        sys_calls.sys_invoke(ProofCloneInvocation { receiver: self.0 })
     }
 
     /// Skips the validation process of the proof producing a validated proof **WITHOUT** performing any validation.
@@ -238,20 +238,20 @@ impl Proof {
         NativeMethod::Proof => {
             fn amount(&self) -> Decimal {
                 ProofMethod::GetAmount,
-                ProofGetAmountInput {
-                    proof_id: self.0
+                ProofGetAmountInvocation {
+                    receiver: self.0
                 }
             }
             fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
                 ProofMethod::GetNonFungibleIds,
-                ProofGetNonFungibleIdsInput {
-                    proof_id: self.0
+                ProofGetNonFungibleIdsInvocation {
+                    receiver: self.0
                 }
             }
             fn resource_address(&self) -> ResourceAddress {
                 ProofMethod::GetResourceAddress,
-                ProofGetResourceAddressInput {
-                    proof_id: self.0
+                ProofGetResourceAddressInvocation {
+                    receiver: self.0
                 }
             }
         }
@@ -286,20 +286,20 @@ impl ValidatedProof {
         NativeMethod::Proof => {
             pub fn amount(&self) -> Decimal {
                 ProofMethod::GetAmount,
-                ProofGetAmountInput {
-                    proof_id: self.proof_id(),
+                ProofGetAmountInvocation {
+                    receiver: self.proof_id(),
                 }
             }
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
                 ProofMethod::GetNonFungibleIds,
-                ProofGetNonFungibleIdsInput {
-                    proof_id: self.proof_id(),
+                ProofGetNonFungibleIdsInvocation {
+                    receiver: self.proof_id(),
                 }
             }
             pub fn resource_address(&self) -> ResourceAddress {
                 ProofMethod::GetResourceAddress,
-                ProofGetResourceAddressInput {
-                    proof_id: self.proof_id(),
+                ProofGetResourceAddressInvocation {
+                    receiver: self.proof_id(),
                 }
             }
         }

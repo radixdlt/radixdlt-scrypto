@@ -1,5 +1,4 @@
 use crate::engine::*;
-use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 
@@ -7,7 +6,8 @@ pub struct NativeInterpreter;
 use sbor::rust::fmt::Debug;
 use sbor::*;
 use scrypto::engine::api::{ScryptoSyscalls, SysInvokableNative};
-use scrypto::resource::AuthZoneDrainInput;
+use scrypto::resource::AuthZoneDrainInvocation;
+use scrypto::resource::ResourceManagerBucketBurnInvocation;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
     fn into(self) -> RuntimeError {
@@ -79,64 +79,64 @@ impl Into<ApplicationError> for EpochManagerError {
 }
 
 pub trait InvokableNative<'a>:
-    Invokable<EpochManagerCreateInput>
-    + Invokable<PackagePublishInput>
-    + Invokable<ResourceManagerBurnInput>
-    + Invokable<ResourceManagerCreateInput>
-    + Invokable<TransactionProcessorRunInput<'a>>
-    + Invokable<BucketTakeInput>
-    + Invokable<BucketCreateProofInput>
-    + Invokable<BucketTakeNonFungiblesInput>
-    + Invokable<BucketGetNonFungibleIdsInput>
-    + Invokable<BucketGetAmountInput>
-    + Invokable<BucketPutInput>
-    + Invokable<BucketGetResourceAddressInput>
-    + Invokable<AuthZonePopInput>
-    + Invokable<AuthZonePushInput>
-    + Invokable<AuthZoneCreateProofInput>
-    + Invokable<AuthZoneCreateProofByAmountInput>
-    + Invokable<AuthZoneCreateProofByIdsInput>
-    + Invokable<AuthZoneClearInput>
-    + Invokable<AuthZoneDrainInput>
-    + Invokable<ProofGetAmountInput>
-    + Invokable<ProofGetNonFungibleIdsInput>
-    + Invokable<ProofGetResourceAddressInput>
-    + Invokable<ProofCloneInput>
-    + Invokable<WorktopPutInput>
-    + Invokable<WorktopTakeAmountInput>
-    + Invokable<WorktopTakeAllInput>
-    + Invokable<WorktopTakeNonFungiblesInput>
-    + Invokable<WorktopAssertContainsInput>
-    + Invokable<WorktopAssertContainsAmountInput>
-    + Invokable<WorktopAssertContainsNonFungiblesInput>
-    + Invokable<WorktopDrainInput>
-    + Invokable<VaultTakeInput>
-    + Invokable<VaultPutInput>
-    + Invokable<VaultLockFeeInput>
-    + Invokable<VaultTakeNonFungiblesInput>
-    + Invokable<VaultGetAmountInput>
-    + Invokable<VaultGetResourceAddressInput>
-    + Invokable<VaultGetNonFungibleIdsInput>
-    + Invokable<VaultCreateProofInput>
-    + Invokable<VaultCreateProofByAmountInput>
-    + Invokable<VaultCreateProofByIdsInput>
-    + Invokable<ComponentAddAccessCheckInput>
-    + Invokable<ResourceManagerBurnInput>
-    + Invokable<ResourceManagerUpdateAuthInput>
-    + Invokable<ResourceManagerLockAuthInput>
-    + Invokable<ResourceManagerCreateVaultInput>
-    + Invokable<ResourceManagerCreateBucketInput>
-    + Invokable<ResourceManagerMintInput>
-    + Invokable<ResourceManagerGetMetadataInput>
-    + Invokable<ResourceManagerGetResourceTypeInput>
-    + Invokable<ResourceManagerGetTotalSupplyInput>
-    + Invokable<ResourceManagerUpdateMetadataInput>
-    + Invokable<ResourceManagerUpdateNonFungibleDataInput>
-    + Invokable<ResourceManagerNonFungibleExistsInput>
-    + Invokable<ResourceManagerGetNonFungibleInput>
-    + Invokable<ResourceManagerSetResourceAddressInput>
-    + Invokable<EpochManagerGetCurrentEpochInput>
-    + Invokable<EpochManagerSetEpochInput>
+    Invokable<EpochManagerCreateInvocation>
+    + Invokable<PackagePublishInvocation>
+    + Invokable<ResourceManagerBucketBurnInvocation>
+    + Invokable<ResourceManagerCreateInvocation>
+    + Invokable<TransactionProcessorRunInvocation<'a>>
+    + Invokable<BucketTakeInvocation>
+    + Invokable<BucketCreateProofInvocation>
+    + Invokable<BucketTakeNonFungiblesInvocation>
+    + Invokable<BucketGetNonFungibleIdsInvocation>
+    + Invokable<BucketGetAmountInvocation>
+    + Invokable<BucketPutInvocation>
+    + Invokable<BucketGetResourceAddressInvocation>
+    + Invokable<AuthZonePopInvocation>
+    + Invokable<AuthZonePushInvocation>
+    + Invokable<AuthZoneCreateProofInvocation>
+    + Invokable<AuthZoneCreateProofByAmountInvocation>
+    + Invokable<AuthZoneCreateProofByIdsInvocation>
+    + Invokable<AuthZoneClearInvocation>
+    + Invokable<AuthZoneDrainInvocation>
+    + Invokable<ProofGetAmountInvocation>
+    + Invokable<ProofGetNonFungibleIdsInvocation>
+    + Invokable<ProofGetResourceAddressInvocation>
+    + Invokable<ProofCloneInvocation>
+    + Invokable<WorktopPutInvocation>
+    + Invokable<WorktopTakeAmountInvocation>
+    + Invokable<WorktopTakeAllInvocation>
+    + Invokable<WorktopTakeNonFungiblesInvocation>
+    + Invokable<WorktopAssertContainsInvocation>
+    + Invokable<WorktopAssertContainsAmountInvocation>
+    + Invokable<WorktopAssertContainsNonFungiblesInvocation>
+    + Invokable<WorktopDrainInvocation>
+    + Invokable<VaultTakeInvocation>
+    + Invokable<VaultPutInvocation>
+    + Invokable<VaultLockFeeInvocation>
+    + Invokable<VaultTakeNonFungiblesInvocation>
+    + Invokable<VaultGetAmountInvocation>
+    + Invokable<VaultGetResourceAddressInvocation>
+    + Invokable<VaultGetNonFungibleIdsInvocation>
+    + Invokable<VaultCreateProofInvocation>
+    + Invokable<VaultCreateProofByAmountInvocation>
+    + Invokable<VaultCreateProofByIdsInvocation>
+    + Invokable<ComponentAddAccessCheckInvocation>
+    + Invokable<ResourceManagerBurnInvocation>
+    + Invokable<ResourceManagerUpdateAuthInvocation>
+    + Invokable<ResourceManagerLockAuthInvocation>
+    + Invokable<ResourceManagerCreateVaultInvocation>
+    + Invokable<ResourceManagerCreateBucketInvocation>
+    + Invokable<ResourceManagerMintInvocation>
+    + Invokable<ResourceManagerGetMetadataInvocation>
+    + Invokable<ResourceManagerGetResourceTypeInvocation>
+    + Invokable<ResourceManagerGetTotalSupplyInvocation>
+    + Invokable<ResourceManagerUpdateMetadataInvocation>
+    + Invokable<ResourceManagerUpdateNonFungibleDataInvocation>
+    + Invokable<ResourceManagerNonFungibleExistsInvocation>
+    + Invokable<ResourceManagerGetNonFungibleInvocation>
+    + Invokable<ResourceManagerSetResourceAddressInvocation>
+    + Invokable<EpochManagerGetCurrentEpochInvocation>
+    + Invokable<EpochManagerSetEpochInvocation>
 {
 }
 
@@ -193,17 +193,16 @@ pub trait NativeInvocation: NativeExecutable + Encode + Debug {
 pub trait NativeExecutable: Invocation {
     type NativeOutput: Debug;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R>
+        Y: SystemApi
             + Invokable<ScryptoInvocation>
             + InvokableNative<'a>
             + ScryptoSyscalls<RuntimeError>
-            + SysInvokableNative<RuntimeError>,
-        R: FeeReserve;
+            + SysInvokableNative<RuntimeError>;
 }
 
 pub struct NativeExecutor<N: NativeExecutable>(pub N, pub ScryptoValue);
@@ -215,17 +214,16 @@ impl<N: NativeExecutable> Executor for NativeExecutor<N> {
         &self.1
     }
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         self,
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R>
+        Y: SystemApi
             + Invokable<ScryptoInvocation>
             + InvokableNative<'a>
             + ScryptoSyscalls<RuntimeError>
-            + SysInvokableNative<RuntimeError>,
-        R: FeeReserve,
+            + SysInvokableNative<RuntimeError>
     {
         N::execute(self.0, system_api)
     }

@@ -53,9 +53,9 @@ impl SetCurrentEpoch {
 
         // Invoke the system
         kernel
-            .invoke(EpochManagerSetEpochInput {
+            .invoke(EpochManagerSetEpochInvocation {
                 epoch: self.epoch,
-                system_address: EPOCH_MANAGER,
+                receiver: EPOCH_MANAGER,
             })
             .map_err(Error::TransactionExecutionError)?;
 

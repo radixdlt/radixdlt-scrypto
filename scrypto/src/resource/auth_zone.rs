@@ -7,11 +7,11 @@ use crate::math::Decimal;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZonePopInput {
-    pub auth_zone_id: AuthZoneId,
+pub struct AuthZonePopInvocation {
+    pub receiver: AuthZoneId,
 }
 
-impl SysInvocation for AuthZonePopInput {
+impl SysInvocation for AuthZonePopInvocation {
     type Output = scrypto::resource::Proof;
 
     fn native_method() -> NativeMethod {
@@ -20,12 +20,12 @@ impl SysInvocation for AuthZonePopInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZonePushInput {
-    pub auth_zone_id: AuthZoneId,
+pub struct AuthZonePushInvocation {
+    pub receiver: AuthZoneId,
     pub proof: Proof,
 }
 
-impl SysInvocation for AuthZonePushInput {
+impl SysInvocation for AuthZonePushInvocation {
     type Output = ();
 
     fn native_method() -> NativeMethod {
@@ -34,12 +34,12 @@ impl SysInvocation for AuthZonePushInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneCreateProofInput {
-    pub auth_zone_id: AuthZoneId,
+pub struct AuthZoneCreateProofInvocation {
+    pub receiver: AuthZoneId,
     pub resource_address: ResourceAddress,
 }
 
-impl SysInvocation for AuthZoneCreateProofInput {
+impl SysInvocation for AuthZoneCreateProofInvocation {
     type Output = Proof;
 
     fn native_method() -> NativeMethod {
@@ -48,13 +48,13 @@ impl SysInvocation for AuthZoneCreateProofInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneCreateProofByAmountInput {
-    pub auth_zone_id: AuthZoneId,
+pub struct AuthZoneCreateProofByAmountInvocation {
+    pub receiver: AuthZoneId,
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
-impl SysInvocation for AuthZoneCreateProofByAmountInput {
+impl SysInvocation for AuthZoneCreateProofByAmountInvocation {
     type Output = Proof;
 
     fn native_method() -> NativeMethod {
@@ -63,13 +63,13 @@ impl SysInvocation for AuthZoneCreateProofByAmountInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneCreateProofByIdsInput {
-    pub auth_zone_id: AuthZoneId,
+pub struct AuthZoneCreateProofByIdsInvocation {
+    pub receiver: AuthZoneId,
     pub ids: BTreeSet<NonFungibleId>,
     pub resource_address: ResourceAddress,
 }
 
-impl SysInvocation for AuthZoneCreateProofByIdsInput {
+impl SysInvocation for AuthZoneCreateProofByIdsInvocation {
     type Output = Proof;
 
     fn native_method() -> NativeMethod {
@@ -78,13 +78,13 @@ impl SysInvocation for AuthZoneCreateProofByIdsInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneClearInput {
-    pub auth_zone_id: AuthZoneId,
+pub struct AuthZoneClearInvocation {
+    pub receiver: AuthZoneId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneDrainInput {
-    pub auth_zone_id: AuthZoneId,
+pub struct AuthZoneDrainInvocation {
+    pub receiver: AuthZoneId,
 }
 
 /// Represents the auth zone, which is used by system for checking
@@ -102,15 +102,15 @@ impl ComponentAuthZone {
 
     pub fn sys_pop<Y, E: Debug + TypeId + Decode>(sys_calls: &mut Y) -> Result<Proof, E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<AuthZonePopInput, E>,
+        Y: ScryptoSyscalls<E> + SysInvokable<AuthZonePopInvocation, E>,
     {
         let owned_node_ids = sys_calls.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        sys_calls.sys_invoke(AuthZonePopInput {
-            auth_zone_id: node_id.into(),
+        sys_calls.sys_invoke(AuthZonePopInvocation {
+            receiver: node_id.into(),
         })
     }
 
@@ -124,15 +124,15 @@ impl ComponentAuthZone {
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<AuthZoneCreateProofInput, E>,
+        Y: ScryptoSyscalls<E> + SysInvokable<AuthZoneCreateProofInvocation, E>,
     {
         let owned_node_ids = sys_calls.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        sys_calls.sys_invoke(AuthZoneCreateProofInput {
-            auth_zone_id: node_id.into(),
+        sys_calls.sys_invoke(AuthZoneCreateProofInvocation {
+            receiver: node_id.into(),
             resource_address,
         })
     }
@@ -148,15 +148,15 @@ impl ComponentAuthZone {
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<AuthZoneCreateProofByAmountInput, E>,
+        Y: ScryptoSyscalls<E> + SysInvokable<AuthZoneCreateProofByAmountInvocation, E>,
     {
         let owned_node_ids = sys_calls.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        sys_calls.sys_invoke(AuthZoneCreateProofByAmountInput {
-            auth_zone_id: node_id.into(),
+        sys_calls.sys_invoke(AuthZoneCreateProofByAmountInvocation {
+            receiver: node_id.into(),
             amount,
             resource_address,
         })
@@ -176,15 +176,15 @@ impl ComponentAuthZone {
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<AuthZoneCreateProofByIdsInput, E>,
+        Y: ScryptoSyscalls<E> + SysInvokable<AuthZoneCreateProofByIdsInvocation, E>,
     {
         let owned_node_ids = sys_calls.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        sys_calls.sys_invoke(AuthZoneCreateProofByIdsInput {
-            auth_zone_id: node_id.into(),
+        sys_calls.sys_invoke(AuthZoneCreateProofByIdsInvocation {
+            receiver: node_id.into(),
             ids: ids.clone(),
             resource_address,
         })
@@ -200,7 +200,7 @@ impl ComponentAuthZone {
         sys_calls: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<AuthZonePushInput, E>,
+        Y: ScryptoSyscalls<E> + SysInvokable<AuthZonePushInvocation, E>,
     {
         let owned_node_ids = sys_calls.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -210,8 +210,8 @@ impl ComponentAuthZone {
 
         let proof: Proof = proof.into();
 
-        sys_calls.sys_invoke(AuthZonePushInput {
-            auth_zone_id: node_id.into(),
+        sys_calls.sys_invoke(AuthZonePushInvocation {
+            receiver: node_id.into(),
             proof,
         })
     }

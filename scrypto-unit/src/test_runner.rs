@@ -721,9 +721,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             )],
             |kernel| {
                 kernel
-                    .invoke(EpochManagerSetEpochInput {
+                    .invoke(EpochManagerSetEpochInvocation {
                         epoch,
-                        system_address: EPOCH_MANAGER,
+                        receiver: EPOCH_MANAGER,
                     })
                     .unwrap()
             },
@@ -733,8 +733,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn get_current_epoch(&mut self) -> u64 {
         self.kernel_call(vec![], |kernel| {
             kernel
-                .invoke(EpochManagerGetCurrentEpochInput {
-                    system_address: EPOCH_MANAGER,
+                .invoke(EpochManagerGetCurrentEpochInvocation {
+                    receiver: EPOCH_MANAGER,
                 })
                 .unwrap()
         })

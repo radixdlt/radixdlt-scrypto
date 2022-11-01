@@ -1,7 +1,6 @@
 use core::fmt::Debug;
 
 use crate::engine::*;
-use crate::fee::FeeReserve;
 use crate::model::{GlobalAddressSubstate, PackageSubstate};
 use crate::types::*;
 use crate::wasm::*;
@@ -31,16 +30,15 @@ impl Package {
     }
 }
 
-impl NativeExecutable for PackagePublishInput {
+impl NativeExecutable for PackagePublishInvocation {
     type NativeOutput = PackageAddress;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
     {
         let code = system_api.read_blob(&invocation.code.0)?.to_vec();
         let blob = system_api.read_blob(&invocation.abi.0)?;
@@ -66,7 +64,7 @@ impl NativeExecutable for PackagePublishInput {
     }
 }
 
-impl NativeInvocation for PackagePublishInput {
+impl NativeInvocation for PackagePublishInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Function(
             NativeFunction::Package(PackageFunction::Publish),

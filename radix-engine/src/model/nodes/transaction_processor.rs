@@ -1,24 +1,23 @@
 use sbor::rust::borrow::Cow;
 use scrypto::engine::api::{ScryptoSyscalls, SysInvokableNative};
-use scrypto::resource::{AuthZoneDrainInput, ComponentAuthZone};
+use scrypto::resource::{AuthZoneDrainInvocation, ComponentAuthZone};
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
 
 use crate::engine::*;
-use crate::fee::FeeReserve;
 use crate::model::resolve_native_function;
 use crate::model::resolve_native_method;
 use crate::model::{InvokeError, WorktopSubstate};
 use crate::model::{
-    WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
-    WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput,
-    WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput,
+    WorktopAssertContainsAmountInvocation, WorktopAssertContainsInvocation,
+    WorktopAssertContainsNonFungiblesInvocation, WorktopDrainInvocation, WorktopPutInvocation,
+    WorktopTakeAllInvocation, WorktopTakeAmountInvocation, WorktopTakeNonFungiblesInvocation,
 };
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct TransactionProcessorRunInput<'a> {
+pub struct TransactionProcessorRunInvocation<'a> {
     pub instructions: Cow<'a, Vec<Instruction>>,
 }
 
@@ -33,20 +32,19 @@ pub enum TransactionProcessorError {
     IdAllocationError(IdAllocationError),
 }
 
-impl<'b> NativeExecutable for TransactionProcessorRunInput<'b> {
+impl<'b> NativeExecutable for TransactionProcessorRunInvocation<'b> {
     type NativeOutput = Vec<Vec<u8>>;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R>
+        Y: SystemApi
             + Invokable<ScryptoInvocation>
             + InvokableNative<'a>
             + ScryptoSyscalls<RuntimeError>
-            + SysInvokableNative<RuntimeError>,
-        R: FeeReserve,
+            + SysInvokableNative<RuntimeError>
     {
         TransactionProcessor::static_main(invocation, system_api)
             .map(|rtn| (rtn, CallFrameUpdate::empty()))
@@ -54,7 +52,7 @@ impl<'b> NativeExecutable for TransactionProcessorRunInput<'b> {
     }
 }
 
-impl<'a> NativeInvocation for TransactionProcessorRunInput<'a> {
+impl<'a> NativeInvocation for TransactionProcessorRunInvocation<'a> {
     fn info(&self) -> NativeInvocationInfo {
         let mut node_refs_to_copy = HashSet::new();
         // TODO: Remove serialization
@@ -120,20 +118,19 @@ impl TransactionProcessor {
         Ok(value)
     }
 
-    fn process_expressions<'s, 'a, Y, R>(
+    fn process_expressions<'a, Y>(
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
     {
         let mut value = args.dom;
         for (expression, path) in args.expressions {
             match expression.0.as_str() {
                 "ENTIRE_WORKTOP" => {
                     let buckets = system_api
-                        .invoke(WorktopDrainInput {})
+                        .invoke(WorktopDrainInvocation {})
                         .map_err(InvokeError::Downstream)?;
 
                     let val = path
@@ -153,7 +150,9 @@ impl TransactionProcessor {
                     let auth_zone_id = auth_zone_node_id.into();
 
                     let proofs = system_api
-                        .invoke(AuthZoneDrainInput { auth_zone_id })
+                        .invoke(AuthZoneDrainInvocation {
+                            receiver: auth_zone_id,
+                        })
                         .map_err(InvokeError::Downstream)?;
 
                     let val = path
@@ -170,17 +169,16 @@ impl TransactionProcessor {
             .expect("Value became invalid post expression transformation"))
     }
 
-    pub fn static_main<'s, 'a, Y, R>(
-        input: TransactionProcessorRunInput,
+    pub fn static_main<'a, Y>(
+        input: TransactionProcessorRunInvocation,
         system_api: &mut Y,
     ) -> Result<Vec<Vec<u8>>, InvokeError<TransactionProcessorError>>
     where
-        Y: SystemApi<'s, R>
+        Y: SystemApi
             + ScryptoSyscalls<RuntimeError>
             + Invokable<ScryptoInvocation>
             + InvokableNative<'a>
-            + SysInvokableNative<RuntimeError>,
-        R: FeeReserve,
+            + SysInvokableNative<RuntimeError>
     {
         let mut proof_id_mapping = HashMap::new();
         let mut bucket_id_mapping = HashMap::new();
@@ -210,7 +208,7 @@ impl TransactionProcessor {
                     })
                     .and_then(|new_id| {
                         system_api
-                            .invoke(WorktopTakeAllInput {
+                            .invoke(WorktopTakeAllInvocation {
                                 resource_address: *resource_address,
                             })
                             .map_err(InvokeError::Downstream)
@@ -229,7 +227,7 @@ impl TransactionProcessor {
                     })
                     .and_then(|new_id| {
                         system_api
-                            .invoke(WorktopTakeAmountInput {
+                            .invoke(WorktopTakeAmountInvocation {
                                 amount: *amount,
                                 resource_address: *resource_address,
                             })
@@ -249,7 +247,7 @@ impl TransactionProcessor {
                     })
                     .and_then(|new_id| {
                         system_api
-                            .invoke(WorktopTakeNonFungiblesInput {
+                            .invoke(WorktopTakeNonFungiblesInvocation {
                                 ids: ids.clone(),
                                 resource_address: *resource_address,
                             })
@@ -263,7 +261,7 @@ impl TransactionProcessor {
                     .remove(bucket_id)
                     .map(|real_id| {
                         system_api
-                            .invoke(WorktopPutInput {
+                            .invoke(WorktopPutInvocation {
                                 bucket: scrypto::resource::Bucket(real_id),
                             })
                             .map(|rtn| ScryptoValue::from_typed(&rtn))
@@ -273,7 +271,7 @@ impl TransactionProcessor {
                         TransactionProcessorError::BucketNotFound(*bucket_id),
                     ))),
                 Instruction::AssertWorktopContains { resource_address } => system_api
-                    .invoke(WorktopAssertContainsInput {
+                    .invoke(WorktopAssertContainsInvocation {
                         resource_address: *resource_address,
                     })
                     .map(|rtn| ScryptoValue::from_typed(&rtn))
@@ -282,7 +280,7 @@ impl TransactionProcessor {
                     amount,
                     resource_address,
                 } => system_api
-                    .invoke(WorktopAssertContainsAmountInput {
+                    .invoke(WorktopAssertContainsAmountInvocation {
                         amount: *amount,
                         resource_address: *resource_address,
                     })
@@ -292,7 +290,7 @@ impl TransactionProcessor {
                     ids,
                     resource_address,
                 } => system_api
-                    .invoke(WorktopAssertContainsNonFungiblesInput {
+                    .invoke(WorktopAssertContainsNonFungiblesInvocation {
                         ids: ids.clone(),
                         resource_address: *resource_address,
                     })
@@ -315,7 +313,9 @@ impl TransactionProcessor {
                 Instruction::ClearAuthZone => {
                     proof_id_mapping.clear();
                     system_api
-                        .invoke(AuthZoneClearInput { auth_zone_id })
+                        .invoke(AuthZoneClearInvocation {
+                            receiver: auth_zone_id,
+                        })
                         .map(|rtn| ScryptoValue::from_typed(&rtn))
                         .map_err(InvokeError::Downstream)
                 }
@@ -451,7 +451,9 @@ impl TransactionProcessor {
                             .map_err(InvokeError::Downstream)?;
                     }
                     system_api
-                        .invoke(AuthZoneClearInput { auth_zone_id })
+                        .invoke(AuthZoneClearInvocation {
+                            receiver: auth_zone_id,
+                        })
                         .map(|rtn| ScryptoValue::from_typed(&rtn))
                         .map_err(InvokeError::Downstream)
                 }
@@ -480,7 +482,7 @@ impl TransactionProcessor {
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
                             system_api
-                                .invoke(WorktopPutInput {
+                                .invoke(WorktopPutInvocation {
                                     bucket: scrypto::resource::Bucket(*bucket_id),
                                 })
                                 .map_err(InvokeError::Downstream)?;
@@ -510,7 +512,7 @@ impl TransactionProcessor {
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
                             system_api
-                                .invoke(WorktopPutInput {
+                                .invoke(WorktopPutInvocation {
                                     bucket: scrypto::resource::Bucket(*bucket_id),
                                 })
                                 .map_err(InvokeError::downstream)?;
@@ -519,7 +521,7 @@ impl TransactionProcessor {
                     })
                 }
                 Instruction::PublishPackage { code, abi } => system_api
-                    .invoke(PackagePublishInput {
+                    .invoke(PackagePublishInvocation {
                         code: code.clone(),
                         abi: abi.clone(),
                     })
@@ -559,7 +561,7 @@ impl TransactionProcessor {
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
                             system_api
-                                .invoke(WorktopPutInput {
+                                .invoke(WorktopPutInvocation {
                                     bucket: scrypto::resource::Bucket(*bucket_id),
                                 })
                                 .map_err(InvokeError::Downstream)?;
@@ -597,7 +599,7 @@ impl TransactionProcessor {
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
                             system_api
-                                .invoke(WorktopPutInput {
+                                .invoke(WorktopPutInvocation {
                                     bucket: scrypto::resource::Bucket(*bucket_id),
                                 })
                                 .map_err(InvokeError::downstream)?;

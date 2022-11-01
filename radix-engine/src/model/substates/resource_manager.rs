@@ -98,7 +98,7 @@ impl ResourceManagerSubstate {
             ResourceManagerMethod::UpdateAuth => {
                 // FIXME we can't assume the input always match the function identifier
                 // especially for the auth module code path
-                let input: ResourceManagerUpdateAuthInput = scrypto_decode(&args.raw).unwrap();
+                let input: ResourceManagerUpdateAuthInvocation = scrypto_decode(&args.raw).unwrap();
                 match self.authorization.get(&input.method) {
                     None => &MethodAuthorization::Unsupported,
                     Some(entry) => {
@@ -109,7 +109,7 @@ impl ResourceManagerSubstate {
             ResourceManagerMethod::LockAuth => {
                 // FIXME we can't assume the input always match the function identifier
                 // especially for the auth module code path
-                let input: ResourceManagerLockAuthInput = scrypto_decode(&args.raw).unwrap();
+                let input: ResourceManagerLockAuthInvocation = scrypto_decode(&args.raw).unwrap();
                 match self.authorization.get(&input.method) {
                     None => &MethodAuthorization::Unsupported,
                     Some(entry) => entry.get_update_auth(MethodAccessRuleMethod::Lock()),
