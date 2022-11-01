@@ -92,21 +92,7 @@ where
         &mut self,
         scrypto_node: ScryptoRENode,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let node = match scrypto_node {
-            ScryptoRENode::GlobalComponent(component_id) => RENode::Global(
-                GlobalAddressSubstate::Component(scrypto::component::Component(component_id)),
-            ),
-            ScryptoRENode::Component(package_address, blueprint_name, state) => {
-                // Create component
-                RENode::Component(
-                    ComponentInfoSubstate::new(package_address, blueprint_name, Vec::new()),
-                    ComponentStateSubstate::new(state),
-                )
-            }
-            ScryptoRENode::KeyValueStore => RENode::KeyValueStore(KeyValueStore::new()),
-        };
-
-        let id = self.system_api.create_node(node)?;
+        let id = self.system_api.sys_create_node(scrypto_node)?;
         Ok(ScryptoValue::from_typed(&id))
     }
 
@@ -116,7 +102,7 @@ where
     }
 
     fn handle_drop_node(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api.drop_node(node_id)?;
+        self.system_api.sys_drop_node(node_id)?;
         Ok(ScryptoValue::from_typed(&()))
     }
 
@@ -126,17 +112,7 @@ where
         offset: SubstateOffset,
         mutable: bool,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let flags = if mutable {
-            LockFlags::MUTABLE
-        } else {
-            // TODO: Do we want to expose full flag functionality to Scrypto?
-            LockFlags::read_only()
-        };
-
-        let handle = self
-            .system_api
-            .lock_substate(node_id, offset.clone(), flags)?;
-
+        let handle = self.system_api.sys_lock_substate(node_id, offset, mutable)?;
         Ok(ScryptoValue::from_typed(&handle))
     }
 
