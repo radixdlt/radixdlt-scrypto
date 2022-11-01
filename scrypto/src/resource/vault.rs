@@ -8,12 +8,11 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::buffer::scrypto_encode;
 use crate::crypto::*;
 use crate::engine::{api::*, types::*, utils::*};
 use crate::math::*;
 use crate::misc::*;
-use crate::native_methods;
+use crate::native_fn;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -147,59 +146,11 @@ impl SysInvocation for VaultLockFeeInvocation {
 pub struct Vault(pub VaultId);
 
 impl Vault {
-    /// Creates an empty vault to permanently hold resource of the given definition.
-    pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::CreateVault,
-            )),
-            scrypto_encode(&ResourceManagerCreateVaultInvocation {
-                receiver: resource_address,
-            }),
-        );
-        call_engine(input)
-    }
-
     /// Creates an empty vault and fills it with an initial bucket of resource.
     pub fn with_bucket(bucket: Bucket) -> Self {
         let mut vault = Vault::new(bucket.resource_address());
         vault.put(bucket);
         vault
-    }
-
-    fn take_internal(&mut self, amount: Decimal) -> Bucket {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::Vault(VaultMethod::Take)),
-            scrypto_encode(&VaultTakeInvocation {
-                receiver: self.0,
-                amount,
-            }),
-        );
-        call_engine(input)
-    }
-
-    fn lock_fee_internal(&mut self, amount: Decimal) {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::Vault(VaultMethod::LockFee)),
-            scrypto_encode(&VaultLockFeeInvocation {
-                receiver: self.0,
-                amount,
-                contingent: false,
-            }),
-        );
-        call_engine(input)
-    }
-
-    fn lock_contingent_fee_internal(&mut self, amount: Decimal) {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::Vault(VaultMethod::LockFee)),
-            scrypto_encode(&VaultLockFeeInvocation {
-                receiver: self.0,
-                amount,
-                contingent: true,
-            }),
-        );
-        call_engine(input)
     }
 
     pub fn amount(&self) -> Decimal {
@@ -213,7 +164,36 @@ impl Vault {
         sys_calls.sys_invoke(VaultGetAmountInvocation { receiver: self.0 })
     }
 
-    native_methods! {
+    native_fn! {
+        pub fn new(resource_address: ResourceAddress) -> Self {
+            ResourceManagerCreateVaultInvocation {
+                receiver: resource_address,
+            }
+        }
+
+        fn take_internal(&mut self, amount: Decimal) -> Bucket {
+            VaultTakeInvocation {
+                receiver: self.0,
+                amount,
+            }
+        }
+
+        fn lock_fee_internal(&mut self, amount: Decimal) -> () {
+            VaultLockFeeInvocation {
+                receiver: self.0,
+                amount,
+                contingent: false,
+            }
+        }
+
+        fn lock_contingent_fee_internal(&mut self, amount: Decimal) -> () {
+            VaultLockFeeInvocation {
+                receiver: self.0,
+                amount,
+                contingent: true,
+            }
+        }
+
         pub fn put(&mut self, bucket: Bucket) -> () {
             VaultPutInvocation {
                 receiver: self.0,

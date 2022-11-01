@@ -4,11 +4,12 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::constants::EPOCH_MANAGER;
 
-use crate::buffer::{scrypto_decode, scrypto_encode};
+use crate::buffer::scrypto_decode;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::engine::{api::*, types::*, utils::*};
+use crate::native_fn;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {}
@@ -55,9 +56,8 @@ impl Runtime {
     /// Returns the running entity, a component if within a call-method context or a
     /// blueprint if within a call-function context.
     pub fn actor() -> ScryptoActor {
-        let input = RadixEngineInput::GetActor();
-        let output: ScryptoActor = call_engine(input);
-        output
+        let mut syscalls = Syscalls;
+        syscalls.sys_get_actor().unwrap()
     }
 
     pub fn package_address() -> PackageAddress {
@@ -69,10 +69,8 @@ impl Runtime {
 
     /// Generates a UUID.
     pub fn generate_uuid() -> u128 {
-        let input = RadixEngineInput::GenerateUuid();
-        let output: u128 = call_engine(input);
-
-        output
+        let mut syscalls = Syscalls;
+        syscalls.sys_generate_uuid().unwrap()
     }
 
     /// Invokes a function on a blueprint.
@@ -114,20 +112,15 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let input = RadixEngineInput::GetTransactionHash();
-        call_engine(input)
+        let mut syscalls = Syscalls;
+        syscalls.sys_get_transaction_hash().unwrap()
     }
 
-    /// Returns the current epoch number.
-    pub fn current_epoch() -> u64 {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::EpochManager(
-                EpochManagerMethod::GetCurrentEpoch,
-            )),
-            scrypto_encode(&EpochManagerGetCurrentEpochInvocation {
+    native_fn! {
+        pub fn current_epoch() -> u64 {
+            EpochManagerGetCurrentEpochInvocation {
                 receiver: EPOCH_MANAGER,
-            }),
-        );
-        call_engine(input)
+            }
+        }
     }
 }

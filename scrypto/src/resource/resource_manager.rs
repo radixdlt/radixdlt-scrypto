@@ -9,7 +9,7 @@ use crate::address::*;
 use crate::engine::{api::*, types::*, utils::*};
 use crate::math::*;
 use crate::misc::*;
-use crate::native_methods;
+use crate::native_fn;
 use crate::resource::*;
 
 #[derive(
@@ -276,132 +276,162 @@ pub struct ResourceManager(pub(crate) ResourceAddress);
 impl ResourceManager {
     pub fn set_mintable(&mut self, access_rule: AccessRule) {
         let mut syscalls = Syscalls;
-        syscalls.sys_invoke(ResourceManagerUpdateAuthInvocation {
-            receiver: self.0,
-            method: ResourceMethodAuthKey::Mint,
-            access_rule,
-        }).unwrap();
+        syscalls
+            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+                receiver: self.0,
+                method: ResourceMethodAuthKey::Mint,
+                access_rule,
+            })
+            .unwrap();
     }
 
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
         let mut syscalls = Syscalls;
-        syscalls.sys_invoke(ResourceManagerUpdateAuthInvocation {
-            receiver: self.0,
-            method: ResourceMethodAuthKey::Burn,
-            access_rule,
-        }).unwrap()
+        syscalls
+            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+                receiver: self.0,
+                method: ResourceMethodAuthKey::Burn,
+                access_rule,
+            })
+            .unwrap()
     }
 
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) -> () {
         let mut syscalls = Syscalls;
-        syscalls.sys_invoke(ResourceManagerUpdateAuthInvocation {
-            receiver: self.0,
-            method: ResourceMethodAuthKey::Withdraw,
-            access_rule,
-        }).unwrap()
+        syscalls
+            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+                receiver: self.0,
+                method: ResourceMethodAuthKey::Withdraw,
+                access_rule,
+            })
+            .unwrap()
     }
 
     pub fn set_depositable(&mut self, access_rule: AccessRule) {
         let mut syscalls = Syscalls;
-        syscalls.sys_invoke(ResourceManagerUpdateAuthInvocation {
-            receiver: self.0,
-            method: ResourceMethodAuthKey::Deposit,
-            access_rule,
-        }).unwrap()
+        syscalls
+            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+                receiver: self.0,
+                method: ResourceMethodAuthKey::Deposit,
+                access_rule,
+            })
+            .unwrap()
     }
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
         let mut syscalls = Syscalls;
-        syscalls.sys_invoke(ResourceManagerUpdateAuthInvocation {
-            receiver: self.0,
-            method: ResourceMethodAuthKey::UpdateMetadata,
-            access_rule,
-        }).unwrap()
+        syscalls
+            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+                receiver: self.0,
+                method: ResourceMethodAuthKey::UpdateMetadata,
+                access_rule,
+            })
+            .unwrap()
     }
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
         let mut syscalls = Syscalls;
-        syscalls.sys_invoke(ResourceManagerUpdateAuthInvocation {
-            receiver: self.0,
-            method: ResourceMethodAuthKey::UpdateNonFungibleData,
-            access_rule,
-        }).unwrap()
+        syscalls
+            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+                receiver: self.0,
+                method: ResourceMethodAuthKey::UpdateNonFungibleData,
+                access_rule,
+            })
+            .unwrap()
     }
 
     pub fn lock_mintable(&mut self) {
         let mut syscalls = Syscalls;
-        syscalls.sys_invoke(ResourceManagerLockAuthInvocation {
-            receiver: self.0,
-            method: ResourceMethodAuthKey::Mint,
-        }).unwrap()
+        syscalls
+            .sys_invoke(ResourceManagerLockAuthInvocation {
+                receiver: self.0,
+                method: ResourceMethodAuthKey::Mint,
+            })
+            .unwrap()
     }
 
     pub fn lock_burnable(&mut self) {
         let mut syscalls = Syscalls;
-        syscalls.sys_invoke(ResourceManagerLockAuthInvocation {
-            receiver: self.0,
-            method: ResourceMethodAuthKey::Burn,
-        }).unwrap()
+        syscalls
+            .sys_invoke(ResourceManagerLockAuthInvocation {
+                receiver: self.0,
+                method: ResourceMethodAuthKey::Burn,
+            })
+            .unwrap()
     }
 
     pub fn lock_withdrawable(&mut self) {
         let mut syscalls = Syscalls;
-        syscalls.sys_invoke(ResourceManagerLockAuthInvocation {
-            receiver: self.0,
-            method: ResourceMethodAuthKey::Withdraw,
-        }).unwrap()
+        syscalls
+            .sys_invoke(ResourceManagerLockAuthInvocation {
+                receiver: self.0,
+                method: ResourceMethodAuthKey::Withdraw,
+            })
+            .unwrap()
     }
 
     pub fn lock_depositable(&mut self) {
         let mut syscalls = Syscalls;
-        syscalls.sys_invoke(ResourceManagerLockAuthInvocation {
-            receiver: self.0,
-            method: ResourceMethodAuthKey::Deposit,
-        }).unwrap()
+        syscalls
+            .sys_invoke(ResourceManagerLockAuthInvocation {
+                receiver: self.0,
+                method: ResourceMethodAuthKey::Deposit,
+            })
+            .unwrap()
     }
 
     pub fn lock_updateable_metadata(&mut self) {
         let mut syscalls = Syscalls;
-        syscalls.sys_invoke(ResourceManagerLockAuthInvocation {
-            receiver: self.0,
-            method: ResourceMethodAuthKey::UpdateMetadata,
-        }).unwrap()
+        syscalls
+            .sys_invoke(ResourceManagerLockAuthInvocation {
+                receiver: self.0,
+                method: ResourceMethodAuthKey::UpdateMetadata,
+            })
+            .unwrap()
     }
 
     pub fn lock_updateable_non_fungible_data(&mut self) {
         let mut syscalls = Syscalls;
-        syscalls.sys_invoke(ResourceManagerLockAuthInvocation {
-            receiver: self.0,
-            method: ResourceMethodAuthKey::UpdateNonFungibleData,
-        }).unwrap()
+        syscalls
+            .sys_invoke(ResourceManagerLockAuthInvocation {
+                receiver: self.0,
+                method: ResourceMethodAuthKey::UpdateNonFungibleData,
+            })
+            .unwrap()
     }
 
     fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
         let mut syscalls = Syscalls;
-        syscalls.sys_invoke(ResourceManagerMintInvocation {
-            mint_params,
-            receiver: self.0,
-        }).unwrap()
+        syscalls
+            .sys_invoke(ResourceManagerMintInvocation {
+                mint_params,
+                receiver: self.0,
+            })
+            .unwrap()
     }
 
     fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) {
         let mut syscalls = Syscalls;
-        syscalls.sys_invoke(ResourceManagerUpdateNonFungibleDataInvocation {
-            id,
-            data,
-            receiver: self.0,
-        }).unwrap()
+        syscalls
+            .sys_invoke(ResourceManagerUpdateNonFungibleDataInvocation {
+                id,
+                data,
+                receiver: self.0,
+            })
+            .unwrap()
     }
 
     fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
         let mut syscalls = Syscalls;
-        syscalls.sys_invoke(ResourceManagerGetNonFungibleInvocation {
-            id,
-            receiver: self.0,
-        }).unwrap()
+        syscalls
+            .sys_invoke(ResourceManagerGetNonFungibleInvocation {
+                id,
+                receiver: self.0,
+            })
+            .unwrap()
     }
 
-    native_methods! {
+    native_fn! {
         pub fn metadata(&self) -> HashMap<String, String> {
             ResourceManagerGetMetadataInvocation {
                 receiver: self.0,

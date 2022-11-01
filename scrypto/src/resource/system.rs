@@ -1,9 +1,9 @@
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 
-use crate::buffer::scrypto_encode;
-use crate::engine::{types::*, utils::*};
 use crate::resource::*;
+
+use crate::native_fn;
 
 /// Represents the Radix Engine resource subsystem.
 ///
@@ -36,28 +36,21 @@ impl ResourceSystem {
             .or_insert(ResourceManager(resource_address))
     }
 
-    /// Creates a new resource with the given config.
-    ///
-    /// A bucket is returned iif an initial supply is provided.
-    pub fn new_resource(
-        &mut self,
-        resource_type: ResourceType,
-        metadata: HashMap<String, String>,
-        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
-        mint_params: Option<MintParams>,
-    ) -> (ResourceAddress, Option<Bucket>) {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Function(NativeFunction::ResourceManager(
-                ResourceManagerFunction::Create,
-            )),
-            scrypto_encode(&ResourceManagerCreateInvocation {
+    native_fn! {
+        pub fn new_resource(
+            &mut self,
+            resource_type: ResourceType,
+            metadata: HashMap<String, String>,
+            access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+            mint_params: Option<MintParams>,
+        ) -> (ResourceAddress, Option<Bucket>) {
+            ResourceManagerCreateInvocation {
                 resource_type,
                 metadata,
                 access_rules,
                 mint_params,
-            }),
-        );
-        call_engine(input)
+            }
+        }
     }
 }
 

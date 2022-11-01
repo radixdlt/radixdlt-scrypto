@@ -6,11 +6,12 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::buffer::scrypto_encode;
-use crate::engine::{api::*, types::*, utils::*};
+#[cfg(target_arch = "wasm32")]
+use crate::engine::utils::*;
+use crate::engine::{api::*, types::*};
 use crate::math::*;
 use crate::misc::*;
-use crate::native_methods;
+use crate::native_fn;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -152,18 +153,14 @@ impl Bucket {
         sys_calls.sys_invoke(BucketCreateProofInvocation { receiver: self.0 })
     }
 
-    fn take_internal(&mut self, amount: Decimal) -> Self {
-        let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::Bucket(BucketMethod::Take)),
-            scrypto_encode(&BucketTakeInvocation {
+    native_fn! {
+        fn take_internal(&mut self, amount: Decimal) -> Self {
+            BucketTakeInvocation {
                 receiver: self.0,
                 amount,
-            }),
-        );
-        call_engine(input)
-    }
+            }
+        }
 
-    native_methods! {
         pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
             BucketTakeNonFungiblesInvocation {
                 receiver: self.0,

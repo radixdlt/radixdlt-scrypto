@@ -63,13 +63,13 @@ impl ComponentSystem {
         state: T,
     ) -> Component {
         let mut syscalls = Syscalls;
-        let node_id = syscalls.sys_create_node(
-            ScryptoRENode::Component(
+        let node_id = syscalls
+            .sys_create_node(ScryptoRENode::Component(
                 Runtime::package_address(),
                 blueprint_name.to_string(),
                 scrypto_encode(&state),
-            )
-        ).unwrap();
+            ))
+            .unwrap();
         Component(node_id.into())
     }
 }

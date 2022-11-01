@@ -34,8 +34,8 @@ impl<V: Encode> Deref for DataRef<V> {
 
 impl<V: Encode> Drop for DataRef<V> {
     fn drop(&mut self) {
-        let input = RadixEngineInput::DropLock(self.lock_handle);
-        let _: () = call_engine(input);
+        let mut syscalls = Syscalls;
+        syscalls.sys_drop_lock(self.lock_handle).unwrap();
     }
 }
 
@@ -63,6 +63,7 @@ impl<V: Encode> DataRefMut<V> {
 
 impl<V: Encode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
+        let mut syscalls = Syscalls;
         let bytes = scrypto_encode(&self.value);
         let substate = match &self.offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
@@ -73,11 +74,9 @@ impl<V: Encode> Drop for DataRefMut<V> {
             }
             s @ _ => panic!("Unsupported substate: {:?}", s),
         };
-        let input = RadixEngineInput::Write(self.lock_handle, substate);
-        let _: () = call_engine(input);
 
-        let input = RadixEngineInput::DropLock(self.lock_handle);
-        let _: () = call_engine(input);
+        syscalls.sys_write(self.lock_handle, substate).unwrap();
+        syscalls.sys_drop_lock(self.lock_handle).unwrap();
     }
 }
 
@@ -113,7 +112,9 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
     pub fn get(&self) -> DataRef<V> {
         let mut syscalls = Syscalls;
 
-        let lock_handle = syscalls.sys_lock_substate(self.node_id, self.offset.clone(), false).unwrap();
+        let lock_handle = syscalls
+            .sys_lock_substate(self.node_id, self.offset.clone(), false)
+            .unwrap();
         let raw_substate = syscalls.sys_read(lock_handle).unwrap();
         match &self.offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
@@ -143,7 +144,9 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
     pub fn get_mut(&mut self) -> DataRefMut<V> {
         let mut syscalls = Syscalls;
 
-        let lock_handle = syscalls.sys_lock_substate(self.node_id, self.offset.clone(), true).unwrap();
+        let lock_handle = syscalls
+            .sys_lock_substate(self.node_id, self.offset.clone(), true)
+            .unwrap();
         let raw_substate = syscalls.sys_read(lock_handle).unwrap();
 
         match &self.offset {

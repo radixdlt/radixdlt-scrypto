@@ -127,13 +127,13 @@ impl ScryptoSyscalls<SyscallError> for Syscalls {
         Ok(rtn)
     }
 
-    fn sys_get_transaction_hash(&mut self) -> Result<Hash, SyscallError> {
-        let rtn = call_engine(RadixEngineInput::GetTransactionHash());
+    fn sys_generate_uuid(&mut self) -> Result<u128, SyscallError> {
+        let rtn = call_engine(RadixEngineInput::GenerateUuid());
         Ok(rtn)
     }
 
-    fn sys_generate_uuid(&mut self) -> Result<u128, SyscallError> {
-        let rtn = call_engine(RadixEngineInput::GenerateUuid());
+    fn sys_get_transaction_hash(&mut self) -> Result<Hash, SyscallError> {
+        let rtn = call_engine(RadixEngineInput::GetTransactionHash());
         Ok(rtn)
     }
 
@@ -165,12 +165,12 @@ pub enum RadixEngineInput {
 }
 
 #[macro_export]
-macro_rules! native_methods {
-    ($($vis:vis $fn:ident $method_name:ident ($($args:tt)*) -> $rtn:ty { $arg:expr })*) => {
+macro_rules! native_fn {
+    ($($vis:vis $fn:ident $fn_name:ident ($($args:tt)*) -> $rtn:ty { $arg:expr })*) => {
         $(
-            $vis $fn $method_name ($($args)*) -> $rtn {
-                let mut syscalls = Syscalls;
-                syscalls.sys_invoke($arg).unwrap()
+            $vis $fn $fn_name ($($args)*) -> $rtn {
+                let mut syscalls = crate::engine::utils::Syscalls;
+                crate::engine::api::SysInvokable::sys_invoke(&mut syscalls, $arg).unwrap()
             }
         )+
     };

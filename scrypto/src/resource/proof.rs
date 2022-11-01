@@ -4,12 +4,13 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::engine::utils::Syscalls;
 
 use crate::abi::*;
-use crate::engine::{api::*, types::*, utils::*};
+use crate::engine::{api::*, types::*};
 use crate::math::*;
 use crate::misc::*;
-use crate::native_methods;
+use crate::native_fn;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -98,7 +99,6 @@ impl From<NonFungibleAddress> for ProofValidationMode {
     }
 }
 
-#[cfg(target_arch = "wasm32")]
 impl Clone for Proof {
     fn clone(&self) -> Self {
         self.sys_clone(&mut Syscalls).unwrap()
@@ -255,7 +255,7 @@ impl Proof {
         }
     }
 
-    native_methods! {
+    native_fn! {
         fn amount(&self) -> Decimal {
             ProofGetAmountInvocation {
                 receiver: self.0
@@ -298,7 +298,7 @@ impl Clone for ValidatedProof {
 }
 
 impl ValidatedProof {
-    native_methods! {
+    native_fn! {
         pub fn amount(&self) -> Decimal {
             ProofGetAmountInvocation {
                 receiver: self.proof_id(),

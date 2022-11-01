@@ -29,7 +29,9 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
     /// Creates a new key value store.
     pub fn new() -> Self {
         let mut syscalls = Syscalls;
-        let id = syscalls.sys_create_node(ScryptoRENode::KeyValueStore).unwrap();
+        let id = syscalls
+            .sys_create_node(ScryptoRENode::KeyValueStore)
+            .unwrap();
 
         Self {
             id: id.into(),
@@ -40,19 +42,16 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
 
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<DataRef<V>> {
-        let input = RadixEngineInput::LockSubstate(
-            RENodeId::KeyValueStore(self.id),
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key))),
-            false,
-        );
-        let lock_handle: LockHandle = call_engine(input);
-
-        let input = RadixEngineInput::Read(lock_handle);
-        let value: KeyValueStoreEntrySubstate = call_engine(input);
+        let mut syscalls = Syscalls;
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key)));
+        let lock_handle = syscalls
+            .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset, false)
+            .unwrap();
+        let raw_bytes = syscalls.sys_read(lock_handle).unwrap();
+        let value: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
 
         if value.0.is_none() {
-            let input = RadixEngineInput::DropLock(lock_handle);
-            let _: () = call_engine(input);
+            syscalls.sys_drop_lock(lock_handle).unwrap();
         }
 
         value
@@ -61,17 +60,16 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
     }
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
+        let mut syscalls = Syscalls;
         let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key)));
-        let input =
-            RadixEngineInput::LockSubstate(RENodeId::KeyValueStore(self.id), offset.clone(), true);
-        let lock_handle: LockHandle = call_engine(input);
-
-        let input = RadixEngineInput::Read(lock_handle);
-        let value: KeyValueStoreEntrySubstate = call_engine(input);
+        let lock_handle = syscalls
+            .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset.clone(), true)
+            .unwrap();
+        let raw_bytes = syscalls.sys_read(lock_handle).unwrap();
+        let value: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
 
         if value.0.is_none() {
-            let input = RadixEngineInput::DropLock(lock_handle);
-            let _: () = call_engine(input);
+            syscalls.sys_drop_lock(lock_handle).unwrap();
         }
 
         value
@@ -81,19 +79,17 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
 
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
-        let input = RadixEngineInput::LockSubstate(
-            RENodeId::KeyValueStore(self.id),
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&key))),
-            true,
-        );
-        let lock_handle: LockHandle = call_engine(input);
-
+        let mut syscalls = Syscalls;
+        let offset =
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&key)));
+        let lock_handle = syscalls
+            .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset.clone(), true)
+            .unwrap();
         let substate = KeyValueStoreEntrySubstate(Some(scrypto_encode(&value)));
-        let input = RadixEngineInput::Write(lock_handle, scrypto_encode(&substate));
-        let _: () = call_engine(input);
-
-        let input = RadixEngineInput::DropLock(lock_handle);
-        let _: () = call_engine(input);
+        syscalls
+            .sys_write(lock_handle, scrypto_encode(&substate))
+            .unwrap();
+        syscalls.sys_drop_lock(lock_handle).unwrap();
     }
 }
 
