@@ -52,7 +52,6 @@ pub struct ResourceManagerBurnInvocation {
 
 impl SysInvocation for ResourceManagerBurnInvocation {
     type Output = ();
-
     fn native_method() -> NativeMethod {
         NativeMethod::ResourceManager(ResourceManagerMethod::Burn)
     }
@@ -65,15 +64,36 @@ pub struct ResourceManagerUpdateAuthInvocation {
     pub access_rule: AccessRule,
 }
 
+impl SysInvocation for ResourceManagerUpdateAuthInvocation {
+    type Output = ();
+    fn native_method() -> NativeMethod {
+        NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerLockAuthInvocation {
     pub receiver: ResourceAddress,
     pub method: ResourceMethodAuthKey,
 }
 
+impl SysInvocation for ResourceManagerLockAuthInvocation {
+    type Output = ();
+    fn native_method() -> NativeMethod {
+        NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateVaultInvocation {
     pub receiver: ResourceAddress,
+}
+
+impl SysInvocation for ResourceManagerCreateVaultInvocation {
+    type Output = Vault;
+    fn native_method() -> NativeMethod {
+        NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault)
+    }
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -83,7 +103,6 @@ pub struct ResourceManagerCreateBucketInvocation {
 
 impl SysInvocation for ResourceManagerCreateBucketInvocation {
     type Output = Bucket;
-
     fn native_method() -> NativeMethod {
         NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket)
     }
@@ -95,9 +114,23 @@ pub struct ResourceManagerMintInvocation {
     pub mint_params: MintParams,
 }
 
+impl SysInvocation for ResourceManagerMintInvocation {
+    type Output = Bucket;
+    fn native_method() -> NativeMethod {
+        NativeMethod::ResourceManager(ResourceManagerMethod::Mint)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerGetMetadataInvocation {
     pub receiver: ResourceAddress,
+}
+
+impl SysInvocation for ResourceManagerGetMetadataInvocation {
+    type Output = HashMap<String, String>;
+    fn native_method() -> NativeMethod {
+        NativeMethod::ResourceManager(ResourceManagerMethod::GetMetadata)
+    }
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -105,9 +138,23 @@ pub struct ResourceManagerGetResourceTypeInvocation {
     pub receiver: ResourceAddress,
 }
 
+impl SysInvocation for ResourceManagerGetResourceTypeInvocation {
+    type Output = ResourceType;
+    fn native_method() -> NativeMethod {
+        NativeMethod::ResourceManager(ResourceManagerMethod::GetResourceType)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerGetTotalSupplyInvocation {
     pub receiver: ResourceAddress,
+}
+
+impl SysInvocation for ResourceManagerGetTotalSupplyInvocation {
+    type Output = Decimal;
+    fn native_method() -> NativeMethod {
+        NativeMethod::ResourceManager(ResourceManagerMethod::GetTotalSupply)
+    }
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -116,9 +163,23 @@ pub struct ResourceManagerUpdateMetadataInvocation {
     pub metadata: HashMap<String, String>,
 }
 
+impl SysInvocation for ResourceManagerUpdateMetadataInvocation {
+    type Output = ();
+    fn native_method() -> NativeMethod {
+        NativeMethod::ResourceManager(ResourceManagerMethod::UpdateMetadata)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerSetResourceAddressInvocation {
     pub receiver: ResourceAddress,
+}
+
+impl SysInvocation for ResourceManagerSetResourceAddressInvocation {
+    type Output = ();
+    fn native_method() -> NativeMethod {
+        NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress)
+    }
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -128,16 +189,37 @@ pub struct ResourceManagerUpdateNonFungibleDataInvocation {
     pub data: Vec<u8>,
 }
 
+impl SysInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
+    type Output = ();
+    fn native_method() -> NativeMethod {
+        NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerNonFungibleExistsInvocation {
     pub receiver: ResourceAddress,
     pub id: NonFungibleId,
 }
 
+impl SysInvocation for ResourceManagerNonFungibleExistsInvocation {
+    type Output = bool;
+    fn native_method() -> NativeMethod {
+        NativeMethod::ResourceManager(ResourceManagerMethod::NonFungibleExists)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerGetNonFungibleInvocation {
     pub receiver: ResourceAddress,
     pub id: NonFungibleId,
+}
+
+impl SysInvocation for ResourceManagerGetNonFungibleInvocation {
+    type Output = [Vec<u8>; 2];
+    fn native_method() -> NativeMethod {
+        NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible)
+    }
 }
 
 /// Represents a resource address.

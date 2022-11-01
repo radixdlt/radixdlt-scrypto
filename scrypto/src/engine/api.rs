@@ -5,6 +5,7 @@ use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode};
 use scrypto::core::*;
 use scrypto::engine::types::*;
+use crate::component::ComponentAddAccessCheckInvocation;
 use crate::crypto::Hash;
 
 use super::types::*;
@@ -55,6 +56,7 @@ pub trait SysInvokableNative<E>:
     + SysInvokable<AuthZoneCreateProofByIdsInvocation, E>
     + SysInvokable<AuthZoneClearInvocation, E>
     + SysInvokable<AuthZoneDrainInvocation, E>
+    + SysInvokable<ComponentAddAccessCheckInvocation, E>
     + SysInvokable<BucketTakeInvocation, E>
     + SysInvokable<BucketPutInvocation, E>
     + SysInvokable<BucketTakeNonFungiblesInvocation, E>
@@ -69,6 +71,31 @@ pub trait SysInvokableNative<E>:
     + SysInvokable<ProofGetAmountInvocation, E>
     + SysInvokable<ProofGetNonFungibleIdsInvocation, E>
     + SysInvokable<ProofGetResourceAddressInvocation, E>
+    + SysInvokable<VaultTakeInvocation, E>
+    + SysInvokable<VaultPutInvocation, E>
+    + SysInvokable<VaultLockFeeInvocation, E>
+    + SysInvokable<VaultTakeNonFungiblesInvocation, E>
     + SysInvokable<VaultGetAmountInvocation, E>
+    + SysInvokable<VaultGetResourceAddressInvocation, E>
+    + SysInvokable<VaultGetNonFungibleIdsInvocation, E>
+    + SysInvokable<VaultCreateProofInvocation, E>
+    + SysInvokable<VaultCreateProofByAmountInvocation, E>
+    + SysInvokable<VaultCreateProofByIdsInvocation, E>
+    + SysInvokable<ResourceManagerBurnInvocation, E>
+    + SysInvokable<ResourceManagerUpdateAuthInvocation, E>
+    + SysInvokable<ResourceManagerLockAuthInvocation, E>
+    + SysInvokable<ResourceManagerCreateVaultInvocation, E>
+    + SysInvokable<ResourceManagerCreateBucketInvocation, E>
+    + SysInvokable<ResourceManagerMintInvocation, E>
+    + SysInvokable<ResourceManagerGetMetadataInvocation, E>
+    + SysInvokable<ResourceManagerGetResourceTypeInvocation, E>
+    + SysInvokable<ResourceManagerGetTotalSupplyInvocation, E>
+    + SysInvokable<ResourceManagerUpdateMetadataInvocation, E>
+    + SysInvokable<ResourceManagerUpdateNonFungibleDataInvocation, E>
+    + SysInvokable<ResourceManagerNonFungibleExistsInvocation, E>
+    + SysInvokable<ResourceManagerGetNonFungibleInvocation, E>
+    + SysInvokable<ResourceManagerSetResourceAddressInvocation, E>
+    + SysInvokable<EpochManagerSetEpochInvocation, E>
+    + SysInvokable<EpochManagerGetCurrentEpochInvocation, E>
 {
 }

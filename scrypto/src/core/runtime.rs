@@ -19,11 +19,26 @@ pub struct EpochManagerGetCurrentEpochInvocation {
     pub receiver: SystemAddress,
 }
 
+impl SysInvocation for EpochManagerGetCurrentEpochInvocation {
+    type Output = u64;
+    fn native_method() -> NativeMethod {
+        NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerSetEpochInvocation {
     pub receiver: SystemAddress,
     pub epoch: u64,
 }
+
+impl SysInvocation for EpochManagerSetEpochInvocation {
+    type Output = ();
+    fn native_method() -> NativeMethod {
+        NativeMethod::EpochManager(EpochManagerMethod::SetEpoch)
+    }
+}
+
 
 /// The transaction runtime.
 #[derive(Debug)]

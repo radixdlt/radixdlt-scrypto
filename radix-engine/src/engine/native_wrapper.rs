@@ -64,8 +64,7 @@ pub fn parse_and_invoke_native_method<Y>(
     args: Vec<u8>,
     system_api: &mut Y,
 ) -> Result<ScryptoValue, RuntimeError>
-where
-    Y: SystemApi + Invokable<ScryptoInvocation> + SysInvokableNative<RuntimeError>,
+where Y: SysInvokableNative<RuntimeError>,
 {
     match native_method {
         NativeMethod::Bucket(bucket_method) => match bucket_method {
@@ -200,77 +199,75 @@ where
                     .map(|a| ScryptoValue::from_typed(&a))
             }
         },
-        _ => panic!("oops")
-        /*
         NativeMethod::Vault(vault_method) => match vault_method {
             VaultMethod::Take => {
                 let invocation: VaultTakeInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             VaultMethod::Put => {
                 let invocation: VaultPutInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             VaultMethod::LockFee => {
                 let invocation: VaultLockFeeInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             VaultMethod::TakeNonFungibles => {
                 let invocation: VaultTakeNonFungiblesInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             VaultMethod::GetAmount => {
                 let invocation: VaultGetAmountInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             VaultMethod::GetResourceAddress => {
                 let invocation: VaultGetResourceAddressInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             VaultMethod::GetNonFungibleIds => {
                 let invocation: VaultGetNonFungibleIdsInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             VaultMethod::CreateProof => {
                 let invocation: VaultCreateProofInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             VaultMethod::CreateProofByAmount => {
                 let invocation: VaultCreateProofByAmountInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             VaultMethod::CreateProofByIds => {
                 let invocation: VaultCreateProofByIdsInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
         },
@@ -279,7 +276,7 @@ where
                 let invocation: ComponentAddAccessCheckInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
         },
@@ -288,70 +285,70 @@ where
                 let invocation: ResourceManagerBurnInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ResourceManagerMethod::UpdateAuth => {
                 let invocation: ResourceManagerUpdateAuthInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ResourceManagerMethod::LockAuth => {
                 let invocation: ResourceManagerLockAuthInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ResourceManagerMethod::CreateVault => {
                 let invocation: ResourceManagerCreateVaultInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ResourceManagerMethod::CreateBucket => {
                 let invocation: ResourceManagerCreateBucketInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ResourceManagerMethod::Mint => {
                 let invocation: ResourceManagerMintInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ResourceManagerMethod::GetMetadata => {
                 let invocation: ResourceManagerGetMetadataInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ResourceManagerMethod::GetResourceType => {
                 let invocation: ResourceManagerGetResourceTypeInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ResourceManagerMethod::GetTotalSupply => {
                 let invocation: ResourceManagerGetTotalSupplyInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ResourceManagerMethod::UpdateMetadata => {
                 let invocation: ResourceManagerUpdateMetadataInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ResourceManagerMethod::UpdateNonFungibleData => {
@@ -359,28 +356,28 @@ where
                     scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ResourceManagerMethod::NonFungibleExists => {
                 let invocation: ResourceManagerNonFungibleExistsInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ResourceManagerMethod::GetNonFungible => {
                 let invocation: ResourceManagerGetNonFungibleInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             ResourceManagerMethod::SetResourceAddress => {
                 let invocation: ResourceManagerSetResourceAddressInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
         },
@@ -389,17 +386,19 @@ where
                 let invocation: EpochManagerGetCurrentEpochInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
             EpochManagerMethod::SetEpoch => {
                 let invocation: EpochManagerSetEpochInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 system_api
-                    .invoke(invocation)
+                    .sys_invoke(invocation)
                     .map(|a| ScryptoValue::from_typed(&a))
             }
         },
+        _ => panic!("oops {:?}", native_method)
+        /*
         NativeMethod::Worktop(worktop_method) => match worktop_method {
             WorktopMethod::TakeNonFungibles => {
                 let invocation: WorktopTakeNonFungiblesInvocation = scrypto_decode(&args)

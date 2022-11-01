@@ -22,16 +22,37 @@ pub struct VaultPutInvocation {
     pub bucket: Bucket,
 }
 
+impl SysInvocation for VaultPutInvocation {
+    type Output = ();
+    fn native_method() -> NativeMethod {
+        NativeMethod::Vault(VaultMethod::Put)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultTakeInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,
 }
 
+impl SysInvocation for VaultTakeInvocation {
+    type Output = Bucket;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Vault(VaultMethod::Take)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultTakeNonFungiblesInvocation {
     pub receiver: VaultId,
     pub non_fungible_ids: BTreeSet<NonFungibleId>,
+}
+
+impl SysInvocation for VaultTakeNonFungiblesInvocation {
+    type Output = Bucket;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Vault(VaultMethod::TakeNonFungibles)
+    }
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -51,14 +72,35 @@ pub struct VaultGetResourceAddressInvocation {
     pub receiver: VaultId,
 }
 
+impl SysInvocation for VaultGetResourceAddressInvocation {
+    type Output = ResourceAddress;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Vault(VaultMethod::GetResourceAddress)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultGetNonFungibleIdsInvocation {
     pub receiver: VaultId,
 }
 
+impl SysInvocation for VaultGetNonFungibleIdsInvocation {
+    type Output = BTreeSet<NonFungibleId>;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Vault(VaultMethod::GetNonFungibleIds)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultCreateProofInvocation {
     pub receiver: VaultId,
+}
+
+impl SysInvocation for VaultCreateProofInvocation {
+    type Output = Proof;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Vault(VaultMethod::CreateProof)
+    }
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -67,10 +109,24 @@ pub struct VaultCreateProofByAmountInvocation {
     pub amount: Decimal,
 }
 
+impl SysInvocation for VaultCreateProofByAmountInvocation {
+    type Output = Proof;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Vault(VaultMethod::CreateProofByAmount)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultCreateProofByIdsInvocation {
     pub receiver: VaultId,
     pub ids: BTreeSet<NonFungibleId>,
+}
+
+impl SysInvocation for VaultCreateProofByIdsInvocation {
+    type Output = Proof;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Vault(VaultMethod::CreateProofByIds)
+    }
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -78,6 +134,13 @@ pub struct VaultLockFeeInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,
     pub contingent: bool,
+}
+
+impl SysInvocation for VaultLockFeeInvocation {
+    type Output = ();
+    fn native_method() -> NativeMethod {
+        NativeMethod::Vault(VaultMethod::LockFee)
+    }
 }
 
 #[derive(PartialEq, Eq, Hash)]

@@ -4,7 +4,6 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::NetworkDefinition;
 
 use crate::abi::*;
 use crate::engine::{api::*, types::*, utils::*};
