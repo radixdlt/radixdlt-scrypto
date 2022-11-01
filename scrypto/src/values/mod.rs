@@ -8,9 +8,12 @@ mod schema_matcher;
 mod schema_path;
 /// Format any Scrypto value using the Manifest syntax.
 mod value_formatter;
+/// Indexed Scrypto value.
+mod indexed_value;
 
 pub use custom_type_id::*;
 pub use custom_value::*;
 pub use schema_matcher::*;
 pub use schema_path::*;
 pub use value_formatter::*;
+pub use indexed_value::*;
