@@ -11,7 +11,7 @@ use crate::abi::*;
 use crate::buffer::*;
 use crate::core::{DataRef, DataRefMut};
 use crate::crypto::*;
-use crate::engine::{api::*, types::*, utils::*};
+use crate::engine::{api::*, types::*, scrypto_env::*};
 use crate::misc::*;
 
 /// A scalable key-value map which loads entries on demand.
@@ -28,7 +28,7 @@ pub struct KeyValueStoreEntrySubstate(pub Option<Vec<u8>>);
 impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K, V> {
     /// Creates a new key value store.
     pub fn new() -> Self {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         let id = syscalls
             .sys_create_node(ScryptoRENode::KeyValueStore)
             .unwrap();
@@ -42,7 +42,7 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
 
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<DataRef<V>> {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key)));
         let lock_handle = syscalls
             .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset, false)
@@ -60,7 +60,7 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
     }
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key)));
         let lock_handle = syscalls
             .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset.clone(), true)
@@ -79,7 +79,7 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
 
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         let offset =
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&key)));
         let lock_handle = syscalls

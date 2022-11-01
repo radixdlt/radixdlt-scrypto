@@ -6,7 +6,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::address::*;
-use crate::engine::{api::*, utils::*};
+use crate::engine::{api::*, scrypto_env::*};
 use crate::math::*;
 use crate::misc::*;
 use crate::native_fn;
@@ -38,8 +38,11 @@ pub struct ResourceManagerCreateInvocation {
     pub mint_params: Option<MintParams>,
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateInvocation {
+impl SysInvocation for ResourceManagerCreateInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
+}
+
+impl ScryptoNativeInvocation for ResourceManagerCreateInvocation {
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerCreateInvocation {
@@ -55,8 +58,11 @@ pub struct ResourceManagerBucketBurnInvocation {
     pub bucket: Bucket,
 }
 
-impl ScryptoNativeInvocation for ResourceManagerBucketBurnInvocation {
+impl SysInvocation for ResourceManagerBucketBurnInvocation {
     type Output = ();
+}
+
+impl ScryptoNativeInvocation for ResourceManagerBucketBurnInvocation {
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerBucketBurnInvocation {
@@ -73,8 +79,11 @@ pub struct ResourceManagerBurnInvocation {
     pub bucket: Bucket,
 }
 
-impl ScryptoNativeInvocation for ResourceManagerBurnInvocation {
+impl SysInvocation for ResourceManagerBurnInvocation {
     type Output = ();
+}
+
+impl ScryptoNativeInvocation for ResourceManagerBurnInvocation {
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerBurnInvocation {
@@ -92,8 +101,11 @@ pub struct ResourceManagerUpdateAuthInvocation {
     pub access_rule: AccessRule,
 }
 
-impl ScryptoNativeInvocation for ResourceManagerUpdateAuthInvocation {
+impl SysInvocation for ResourceManagerUpdateAuthInvocation {
     type Output = ();
+}
+
+impl ScryptoNativeInvocation for ResourceManagerUpdateAuthInvocation {
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerUpdateAuthInvocation {
@@ -110,8 +122,11 @@ pub struct ResourceManagerLockAuthInvocation {
     pub method: ResourceMethodAuthKey,
 }
 
-impl ScryptoNativeInvocation for ResourceManagerLockAuthInvocation {
+impl SysInvocation for ResourceManagerLockAuthInvocation {
     type Output = ();
+}
+
+impl ScryptoNativeInvocation for ResourceManagerLockAuthInvocation {
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerLockAuthInvocation {
@@ -127,8 +142,11 @@ pub struct ResourceManagerCreateVaultInvocation {
     pub receiver: ResourceAddress,
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateVaultInvocation {
+impl SysInvocation for ResourceManagerCreateVaultInvocation {
     type Output = Vault;
+}
+
+impl ScryptoNativeInvocation for ResourceManagerCreateVaultInvocation {
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerCreateVaultInvocation {
@@ -144,8 +162,11 @@ pub struct ResourceManagerCreateBucketInvocation {
     pub receiver: ResourceAddress,
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateBucketInvocation {
+impl SysInvocation for ResourceManagerCreateBucketInvocation {
     type Output = Bucket;
+}
+
+impl ScryptoNativeInvocation for ResourceManagerCreateBucketInvocation {
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerCreateBucketInvocation {
@@ -162,8 +183,11 @@ pub struct ResourceManagerMintInvocation {
     pub mint_params: MintParams,
 }
 
-impl ScryptoNativeInvocation for ResourceManagerMintInvocation {
+impl SysInvocation for ResourceManagerMintInvocation {
     type Output = Bucket;
+}
+
+impl ScryptoNativeInvocation for ResourceManagerMintInvocation {
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerMintInvocation {
@@ -179,8 +203,11 @@ pub struct ResourceManagerGetMetadataInvocation {
     pub receiver: ResourceAddress,
 }
 
-impl ScryptoNativeInvocation for ResourceManagerGetMetadataInvocation {
+impl SysInvocation for ResourceManagerGetMetadataInvocation {
     type Output = HashMap<String, String>;
+}
+
+impl ScryptoNativeInvocation for ResourceManagerGetMetadataInvocation {
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerGetMetadataInvocation {
@@ -196,8 +223,11 @@ pub struct ResourceManagerGetResourceTypeInvocation {
     pub receiver: ResourceAddress,
 }
 
-impl ScryptoNativeInvocation for ResourceManagerGetResourceTypeInvocation {
+impl SysInvocation for ResourceManagerGetResourceTypeInvocation {
     type Output = ResourceType;
+}
+
+impl ScryptoNativeInvocation for ResourceManagerGetResourceTypeInvocation {
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerGetResourceTypeInvocation {
@@ -213,8 +243,11 @@ pub struct ResourceManagerGetTotalSupplyInvocation {
     pub receiver: ResourceAddress,
 }
 
-impl ScryptoNativeInvocation for ResourceManagerGetTotalSupplyInvocation {
+impl SysInvocation for ResourceManagerGetTotalSupplyInvocation {
     type Output = Decimal;
+}
+
+impl ScryptoNativeInvocation for ResourceManagerGetTotalSupplyInvocation {
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerGetTotalSupplyInvocation {
@@ -231,8 +264,11 @@ pub struct ResourceManagerUpdateMetadataInvocation {
     pub metadata: HashMap<String, String>,
 }
 
-impl ScryptoNativeInvocation for ResourceManagerUpdateMetadataInvocation {
+impl SysInvocation for ResourceManagerUpdateMetadataInvocation {
     type Output = ();
+}
+
+impl ScryptoNativeInvocation for ResourceManagerUpdateMetadataInvocation {
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerUpdateMetadataInvocation {
@@ -250,8 +286,11 @@ pub struct ResourceManagerUpdateNonFungibleDataInvocation {
     pub data: Vec<u8>,
 }
 
-impl ScryptoNativeInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
+impl SysInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
     type Output = ();
+}
+
+impl ScryptoNativeInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerUpdateNonFungibleDataInvocation {
@@ -268,8 +307,11 @@ pub struct ResourceManagerNonFungibleExistsInvocation {
     pub id: NonFungibleId,
 }
 
-impl ScryptoNativeInvocation for ResourceManagerNonFungibleExistsInvocation {
+impl SysInvocation for ResourceManagerNonFungibleExistsInvocation {
     type Output = bool;
+}
+
+impl ScryptoNativeInvocation for ResourceManagerNonFungibleExistsInvocation {
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerNonFungibleExistsInvocation {
@@ -286,8 +328,11 @@ pub struct ResourceManagerGetNonFungibleInvocation {
     pub id: NonFungibleId,
 }
 
-impl ScryptoNativeInvocation for ResourceManagerGetNonFungibleInvocation {
+impl SysInvocation for ResourceManagerGetNonFungibleInvocation {
     type Output = [Vec<u8>; 2];
+}
+
+impl ScryptoNativeInvocation for ResourceManagerGetNonFungibleInvocation {
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerGetNonFungibleInvocation {
@@ -315,7 +360,7 @@ pub struct ResourceManager(pub(crate) ResourceAddress);
 
 impl ResourceManager {
     pub fn set_mintable(&mut self, access_rule: AccessRule) {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
@@ -326,7 +371,7 @@ impl ResourceManager {
     }
 
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
@@ -337,7 +382,7 @@ impl ResourceManager {
     }
 
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) -> () {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
@@ -348,7 +393,7 @@ impl ResourceManager {
     }
 
     pub fn set_depositable(&mut self, access_rule: AccessRule) {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
@@ -359,7 +404,7 @@ impl ResourceManager {
     }
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
@@ -370,7 +415,7 @@ impl ResourceManager {
     }
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
@@ -381,7 +426,7 @@ impl ResourceManager {
     }
 
     pub fn lock_mintable(&mut self) {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
@@ -391,7 +436,7 @@ impl ResourceManager {
     }
 
     pub fn lock_burnable(&mut self) {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
@@ -401,7 +446,7 @@ impl ResourceManager {
     }
 
     pub fn lock_withdrawable(&mut self) {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
@@ -411,7 +456,7 @@ impl ResourceManager {
     }
 
     pub fn lock_depositable(&mut self) {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
@@ -421,7 +466,7 @@ impl ResourceManager {
     }
 
     pub fn lock_updateable_metadata(&mut self) {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
@@ -431,7 +476,7 @@ impl ResourceManager {
     }
 
     pub fn lock_updateable_non_fungible_data(&mut self) {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
@@ -441,7 +486,7 @@ impl ResourceManager {
     }
 
     fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerMintInvocation {
                 mint_params,
@@ -451,7 +496,7 @@ impl ResourceManager {
     }
 
     fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerUpdateNonFungibleDataInvocation {
                 id,
@@ -462,7 +507,7 @@ impl ResourceManager {
     }
 
     fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerGetNonFungibleInvocation {
                 id,

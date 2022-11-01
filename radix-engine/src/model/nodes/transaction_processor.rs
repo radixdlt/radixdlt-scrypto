@@ -1,5 +1,6 @@
 use sbor::rust::borrow::Cow;
-use scrypto::engine::api::{ScryptoSyscalls, SysInvokableNative};
+use scrypto::engine::api::{Syscalls, SysInvokableNative};
+use scrypto::resource::sys::create_proof;
 use scrypto::resource::{AuthZoneDrainInvocation, ComponentAuthZone};
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
@@ -48,7 +49,7 @@ impl<'b> NativeExecutable for TransactionProcessorRunInvocation<'b> {
         Y: SystemApi
             + Invokable<ScryptoInvocation>
             + InvokableNative<'a>
-            + ScryptoSyscalls<RuntimeError>
+            + Syscalls<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
         TransactionProcessor::static_main(invocation, system_api)
@@ -226,7 +227,7 @@ impl TransactionProcessor {
     ) -> Result<Vec<Vec<u8>>, InvokeError<TransactionProcessorError>>
     where
         Y: SystemApi
-            + ScryptoSyscalls<RuntimeError>
+            + Syscalls<RuntimeError>
             + Invokable<ScryptoInvocation>
             + InvokableNative<'a>
             + SysInvokableNative<RuntimeError>,
@@ -452,9 +453,7 @@ impl TransactionProcessor {
                             ))
                     })
                     .and_then(|(new_id, real_bucket_id)| {
-                        let bucket = scrypto::resource::Bucket(real_bucket_id);
-                        bucket
-                            .sys_create_proof(system_api)
+                        create_proof(&scrypto::resource::Bucket(real_bucket_id), system_api)
                             .map_err(InvokeError::Downstream)
                             .map(|proof| {
                                 proof_id_mapping.insert(new_id, proof.0);

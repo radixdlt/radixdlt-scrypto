@@ -3,7 +3,7 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::engine::utils::*;
+use crate::engine::scrypto_env::*;
 use crate::engine::{api::*, types::*};
 
 use crate::math::Decimal;
@@ -14,8 +14,11 @@ pub struct AuthZonePopInvocation {
     pub receiver: AuthZoneId,
 }
 
-impl ScryptoNativeInvocation for AuthZonePopInvocation {
+impl SysInvocation for AuthZonePopInvocation {
     type Output = scrypto::resource::Proof;
+}
+
+impl ScryptoNativeInvocation for AuthZonePopInvocation {
 }
 
 impl Into<NativeFnInvocation> for AuthZonePopInvocation {
@@ -32,8 +35,11 @@ pub struct AuthZonePushInvocation {
     pub proof: Proof,
 }
 
-impl ScryptoNativeInvocation for AuthZonePushInvocation {
+impl SysInvocation for AuthZonePushInvocation {
     type Output = ();
+}
+
+impl ScryptoNativeInvocation for AuthZonePushInvocation {
 }
 
 impl Into<NativeFnInvocation> for AuthZonePushInvocation {
@@ -50,8 +56,11 @@ pub struct AuthZoneCreateProofInvocation {
     pub resource_address: ResourceAddress,
 }
 
-impl ScryptoNativeInvocation for AuthZoneCreateProofInvocation {
+impl SysInvocation for AuthZoneCreateProofInvocation {
     type Output = Proof;
+}
+
+impl ScryptoNativeInvocation for AuthZoneCreateProofInvocation {
 }
 
 impl Into<NativeFnInvocation> for AuthZoneCreateProofInvocation {
@@ -69,8 +78,11 @@ pub struct AuthZoneCreateProofByAmountInvocation {
     pub resource_address: ResourceAddress,
 }
 
-impl ScryptoNativeInvocation for AuthZoneCreateProofByAmountInvocation {
+impl SysInvocation for AuthZoneCreateProofByAmountInvocation {
     type Output = Proof;
+}
+
+impl ScryptoNativeInvocation for AuthZoneCreateProofByAmountInvocation {
 }
 
 impl Into<NativeFnInvocation> for AuthZoneCreateProofByAmountInvocation {
@@ -88,8 +100,11 @@ pub struct AuthZoneCreateProofByIdsInvocation {
     pub resource_address: ResourceAddress,
 }
 
-impl ScryptoNativeInvocation for AuthZoneCreateProofByIdsInvocation {
+impl SysInvocation for AuthZoneCreateProofByIdsInvocation {
     type Output = Proof;
+}
+
+impl ScryptoNativeInvocation for AuthZoneCreateProofByIdsInvocation {
 }
 
 impl Into<NativeFnInvocation> for AuthZoneCreateProofByIdsInvocation {
@@ -105,8 +120,11 @@ pub struct AuthZoneClearInvocation {
     pub receiver: AuthZoneId,
 }
 
-impl ScryptoNativeInvocation for AuthZoneClearInvocation {
+impl SysInvocation for AuthZoneClearInvocation {
     type Output = ();
+}
+
+impl ScryptoNativeInvocation for AuthZoneClearInvocation {
 }
 
 impl Into<NativeFnInvocation> for AuthZoneClearInvocation {
@@ -122,8 +140,11 @@ pub struct AuthZoneDrainInvocation {
     pub receiver: AuthZoneId,
 }
 
-impl ScryptoNativeInvocation for AuthZoneDrainInvocation {
+impl SysInvocation for AuthZoneDrainInvocation {
     type Output = Vec<scrypto::resource::Proof>;
+}
+
+impl ScryptoNativeInvocation for AuthZoneDrainInvocation {
 }
 
 impl Into<NativeFnInvocation> for AuthZoneDrainInvocation {
@@ -144,12 +165,12 @@ pub struct ComponentAuthZone {}
 impl ComponentAuthZone {
     #[cfg(target_arch = "wasm32")]
     pub fn pop() -> Proof {
-        Self::sys_pop(&mut Syscalls).unwrap()
+        Self::sys_pop(&mut ScryptoEnv).unwrap()
     }
 
     pub fn sys_pop<Y, E: Debug + TypeId + Decode>(sys_calls: &mut Y) -> Result<Proof, E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<AuthZonePopInvocation, E>,
+        Y: Syscalls<E> + SysNativeInvokable<AuthZonePopInvocation, E>,
     {
         let owned_node_ids = sys_calls.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -163,7 +184,7 @@ impl ComponentAuthZone {
 
     #[cfg(target_arch = "wasm32")]
     pub fn create_proof(resource_address: ResourceAddress) -> Proof {
-        Self::sys_create_proof(resource_address, &mut Syscalls).unwrap()
+        Self::sys_create_proof(resource_address, &mut ScryptoEnv).unwrap()
     }
 
     pub fn sys_create_proof<Y, E: Debug + TypeId + Decode>(
@@ -171,7 +192,7 @@ impl ComponentAuthZone {
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<AuthZoneCreateProofInvocation, E>,
+        Y: Syscalls<E> + SysNativeInvokable<AuthZoneCreateProofInvocation, E>,
     {
         let owned_node_ids = sys_calls.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -186,7 +207,7 @@ impl ComponentAuthZone {
 
     #[cfg(target_arch = "wasm32")]
     pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
-        Self::sys_create_proof_by_amount(amount, resource_address, &mut Syscalls).unwrap()
+        Self::sys_create_proof_by_amount(amount, resource_address, &mut ScryptoEnv).unwrap()
     }
 
     pub fn sys_create_proof_by_amount<Y, E: Debug + TypeId + Decode>(
@@ -195,7 +216,7 @@ impl ComponentAuthZone {
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<AuthZoneCreateProofByAmountInvocation, E>,
+        Y: Syscalls<E> + SysNativeInvokable<AuthZoneCreateProofByAmountInvocation, E>,
     {
         let owned_node_ids = sys_calls.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -214,7 +235,7 @@ impl ComponentAuthZone {
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
     ) -> Proof {
-        Self::sys_create_proof_by_ids(ids, resource_address, &mut Syscalls).unwrap()
+        Self::sys_create_proof_by_ids(ids, resource_address, &mut ScryptoEnv).unwrap()
     }
 
     pub fn sys_create_proof_by_ids<Y, E: Debug + TypeId + Decode>(
@@ -223,7 +244,7 @@ impl ComponentAuthZone {
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<AuthZoneCreateProofByIdsInvocation, E>,
+        Y: Syscalls<E> + SysNativeInvokable<AuthZoneCreateProofByIdsInvocation, E>,
     {
         let owned_node_ids = sys_calls.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -239,7 +260,7 @@ impl ComponentAuthZone {
 
     #[cfg(target_arch = "wasm32")]
     pub fn push<P: Into<Proof>>(proof: P) {
-        Self::sys_push(proof, &mut Syscalls).unwrap()
+        Self::sys_push(proof, &mut ScryptoEnv).unwrap()
     }
 
     pub fn sys_push<P: Into<Proof>, Y, E: Debug + TypeId + Decode>(
@@ -247,7 +268,7 @@ impl ComponentAuthZone {
         sys_calls: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<AuthZonePushInvocation, E>,
+        Y: Syscalls<E> + SysNativeInvokable<AuthZonePushInvocation, E>,
     {
         let owned_node_ids = sys_calls.sys_get_visible_nodes()?;
         let node_id = owned_node_ids

@@ -12,7 +12,7 @@ use crate::wasm::{WasmEngine, WasmInstance};
 use scrypto::core::ScryptoActor;
 use scrypto::crypto::Hash;
 use scrypto::engine::api::{
-    ScryptoNativeInvocation, ScryptoSyscalls, SysInvokable, SysInvokableNative,
+    ScryptoNativeInvocation, Syscalls, SysNativeInvokable, SysInvokableNative,
 };
 use scrypto::engine::types::{
     Level, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode,
@@ -20,7 +20,7 @@ use scrypto::engine::types::{
 };
 use scrypto::values::ScryptoValue;
 
-impl<'g, 's, W, I, R, N, T> SysInvokable<N, RuntimeError> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, I, R, N, T> SysNativeInvokable<N, RuntimeError> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -40,7 +40,7 @@ where
 {
 }
 
-impl<'g, 's, W, I, R> ScryptoSyscalls<RuntimeError> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, I, R> Syscalls<RuntimeError> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,

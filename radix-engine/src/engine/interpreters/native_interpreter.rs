@@ -5,7 +5,7 @@ use crate::types::*;
 pub struct NativeInterpreter;
 use sbor::rust::fmt::Debug;
 use sbor::*;
-use scrypto::engine::api::{ScryptoSyscalls, SysInvokableNative};
+use scrypto::engine::api::{Syscalls, SysInvokableNative};
 use scrypto::resource::AuthZoneDrainInvocation;
 use scrypto::resource::ResourceManagerBucketBurnInvocation;
 
@@ -191,7 +191,7 @@ pub trait NativeInvocation: NativeExecutable + Encode + Debug {
 }
 
 pub trait NativeExecutable: Invocation {
-    type NativeOutput: Debug;
+    type NativeOutput: Debug + Decode;
 
     fn execute<'a, Y>(
         invocation: Self,
@@ -201,7 +201,7 @@ pub trait NativeExecutable: Invocation {
         Y: SystemApi
             + Invokable<ScryptoInvocation>
             + InvokableNative<'a>
-            + ScryptoSyscalls<RuntimeError>
+            + Syscalls<RuntimeError>
             + SysInvokableNative<RuntimeError>;
 }
 
@@ -222,7 +222,7 @@ impl<N: NativeExecutable> Executor for NativeExecutor<N> {
         Y: SystemApi
             + Invokable<ScryptoInvocation>
             + InvokableNative<'a>
-            + ScryptoSyscalls<RuntimeError>
+            + Syscalls<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
         N::execute(self.0, system_api)

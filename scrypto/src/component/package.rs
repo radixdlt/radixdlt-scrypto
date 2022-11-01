@@ -2,12 +2,12 @@ use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::engine::api::ScryptoNativeInvocation;
+use scrypto::engine::api::{ScryptoNativeInvocation, SysInvocation};
 
 use crate::abi::*;
 use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
 use crate::core::*;
-use crate::engine::utils::{
+use crate::engine::scrypto_env::{
     NativeFnInvocation, NativeFunctionInvocation, PackageFunctionInvocation,
 };
 use crate::misc::*;
@@ -18,8 +18,11 @@ pub struct PackagePublishInvocation {
     pub abi: Blob,
 }
 
-impl ScryptoNativeInvocation for PackagePublishInvocation {
+impl SysInvocation for PackagePublishInvocation {
     type Output = PackageAddress;
+}
+
+impl ScryptoNativeInvocation for PackagePublishInvocation {
 }
 
 impl Into<NativeFnInvocation> for PackagePublishInvocation {

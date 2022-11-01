@@ -9,7 +9,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::crypto::*;
-use crate::engine::{api::*, types::*, utils::*};
+use crate::engine::{api::*, types::*, scrypto_env::*};
 use crate::math::*;
 use crate::misc::*;
 use crate::native_fn;
@@ -21,8 +21,11 @@ pub struct VaultPutInvocation {
     pub bucket: Bucket,
 }
 
-impl ScryptoNativeInvocation for VaultPutInvocation {
+impl SysInvocation for VaultPutInvocation {
     type Output = ();
+}
+
+impl ScryptoNativeInvocation for VaultPutInvocation {
 }
 
 impl Into<NativeFnInvocation> for VaultPutInvocation {
@@ -39,8 +42,11 @@ pub struct VaultTakeInvocation {
     pub amount: Decimal,
 }
 
-impl ScryptoNativeInvocation for VaultTakeInvocation {
+impl SysInvocation for VaultTakeInvocation {
     type Output = Bucket;
+}
+
+impl ScryptoNativeInvocation for VaultTakeInvocation {
 }
 
 impl Into<NativeFnInvocation> for VaultTakeInvocation {
@@ -57,8 +63,11 @@ pub struct VaultTakeNonFungiblesInvocation {
     pub non_fungible_ids: BTreeSet<NonFungibleId>,
 }
 
-impl ScryptoNativeInvocation for VaultTakeNonFungiblesInvocation {
+impl SysInvocation for VaultTakeNonFungiblesInvocation {
     type Output = Bucket;
+}
+
+impl ScryptoNativeInvocation for VaultTakeNonFungiblesInvocation {
 }
 
 impl Into<NativeFnInvocation> for VaultTakeNonFungiblesInvocation {
@@ -74,8 +83,11 @@ pub struct VaultGetAmountInvocation {
     pub receiver: VaultId,
 }
 
-impl ScryptoNativeInvocation for VaultGetAmountInvocation {
+impl SysInvocation for VaultGetAmountInvocation {
     type Output = Decimal;
+}
+
+impl ScryptoNativeInvocation for VaultGetAmountInvocation {
 }
 
 impl Into<NativeFnInvocation> for VaultGetAmountInvocation {
@@ -91,8 +103,11 @@ pub struct VaultGetResourceAddressInvocation {
     pub receiver: VaultId,
 }
 
-impl ScryptoNativeInvocation for VaultGetResourceAddressInvocation {
+impl SysInvocation for VaultGetResourceAddressInvocation {
     type Output = ResourceAddress;
+}
+
+impl ScryptoNativeInvocation for VaultGetResourceAddressInvocation {
 }
 
 impl Into<NativeFnInvocation> for VaultGetResourceAddressInvocation {
@@ -108,8 +123,11 @@ pub struct VaultGetNonFungibleIdsInvocation {
     pub receiver: VaultId,
 }
 
-impl ScryptoNativeInvocation for VaultGetNonFungibleIdsInvocation {
+impl SysInvocation for VaultGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
+}
+
+impl ScryptoNativeInvocation for VaultGetNonFungibleIdsInvocation {
 }
 
 impl Into<NativeFnInvocation> for VaultGetNonFungibleIdsInvocation {
@@ -125,8 +143,11 @@ pub struct VaultCreateProofInvocation {
     pub receiver: VaultId,
 }
 
-impl ScryptoNativeInvocation for VaultCreateProofInvocation {
+impl SysInvocation for VaultCreateProofInvocation {
     type Output = Proof;
+}
+
+impl ScryptoNativeInvocation for VaultCreateProofInvocation {
 }
 
 impl Into<NativeFnInvocation> for VaultCreateProofInvocation {
@@ -143,8 +164,11 @@ pub struct VaultCreateProofByAmountInvocation {
     pub amount: Decimal,
 }
 
-impl ScryptoNativeInvocation for VaultCreateProofByAmountInvocation {
+impl SysInvocation for VaultCreateProofByAmountInvocation {
     type Output = Proof;
+}
+
+impl ScryptoNativeInvocation for VaultCreateProofByAmountInvocation {
 }
 
 impl Into<NativeFnInvocation> for VaultCreateProofByAmountInvocation {
@@ -161,8 +185,11 @@ pub struct VaultCreateProofByIdsInvocation {
     pub ids: BTreeSet<NonFungibleId>,
 }
 
-impl ScryptoNativeInvocation for VaultCreateProofByIdsInvocation {
+impl SysInvocation for VaultCreateProofByIdsInvocation {
     type Output = Proof;
+}
+
+impl ScryptoNativeInvocation for VaultCreateProofByIdsInvocation {
 }
 
 impl Into<NativeFnInvocation> for VaultCreateProofByIdsInvocation {
@@ -180,8 +207,11 @@ pub struct VaultLockFeeInvocation {
     pub contingent: bool,
 }
 
-impl ScryptoNativeInvocation for VaultLockFeeInvocation {
+impl SysInvocation for VaultLockFeeInvocation {
     type Output = ();
+}
+
+impl ScryptoNativeInvocation for VaultLockFeeInvocation {
 }
 
 impl Into<NativeFnInvocation> for VaultLockFeeInvocation {
@@ -204,12 +234,12 @@ impl Vault {
     }
 
     pub fn amount(&self) -> Decimal {
-        self.sys_amount(&mut Syscalls).unwrap()
+        self.sys_amount(&mut ScryptoEnv).unwrap()
     }
 
     pub fn sys_amount<Y, E: Debug + Decode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<VaultGetAmountInvocation, E>,
+        Y: Syscalls<E> + SysNativeInvokable<VaultGetAmountInvocation, E>,
     {
         sys_calls.sys_invoke(VaultGetAmountInvocation { receiver: self.0 })
     }

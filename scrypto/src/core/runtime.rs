@@ -8,14 +8,17 @@ use crate::buffer::scrypto_decode;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
-use crate::engine::{api::*, types::*, utils::*};
+use crate::engine::{api::*, types::*, scrypto_env::*};
 use crate::native_fn;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {}
 
-impl ScryptoNativeInvocation for EpochManagerCreateInvocation {
+impl SysInvocation for EpochManagerCreateInvocation {
     type Output = SystemAddress;
+}
+
+impl ScryptoNativeInvocation for EpochManagerCreateInvocation {
 }
 
 impl Into<NativeFnInvocation> for EpochManagerCreateInvocation {
@@ -31,8 +34,11 @@ pub struct EpochManagerGetCurrentEpochInvocation {
     pub receiver: SystemAddress,
 }
 
-impl ScryptoNativeInvocation for EpochManagerGetCurrentEpochInvocation {
+impl SysInvocation for EpochManagerGetCurrentEpochInvocation {
     type Output = u64;
+}
+
+impl ScryptoNativeInvocation for EpochManagerGetCurrentEpochInvocation {
 }
 
 impl Into<NativeFnInvocation> for EpochManagerGetCurrentEpochInvocation {
@@ -49,8 +55,11 @@ pub struct EpochManagerSetEpochInvocation {
     pub epoch: u64,
 }
 
-impl ScryptoNativeInvocation for EpochManagerSetEpochInvocation {
+impl SysInvocation for EpochManagerSetEpochInvocation {
     type Output = ();
+}
+
+impl ScryptoNativeInvocation for EpochManagerSetEpochInvocation {
 }
 
 impl Into<NativeFnInvocation> for EpochManagerSetEpochInvocation {
@@ -69,7 +78,7 @@ impl Runtime {
     /// Returns the running entity, a component if within a call-method context or a
     /// blueprint if within a call-function context.
     pub fn actor() -> ScryptoActor {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls.sys_get_actor().unwrap()
     }
 
@@ -82,7 +91,7 @@ impl Runtime {
 
     /// Generates a UUID.
     pub fn generate_uuid() -> u128 {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls.sys_generate_uuid().unwrap()
     }
 
@@ -93,7 +102,7 @@ impl Runtime {
         function_name: S2,
         args: Vec<u8>,
     ) -> T {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         let rtn = syscalls
             .sys_invoke_scrypto_function(
                 ScryptoFunctionIdent {
@@ -113,7 +122,7 @@ impl Runtime {
         method: S,
         args: Vec<u8>,
     ) -> T {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         let rtn = syscalls
             .sys_invoke_scrypto_method(
                 ScryptoMethodIdent {
@@ -128,7 +137,7 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls.sys_get_transaction_hash().unwrap()
     }
 

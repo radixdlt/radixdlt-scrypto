@@ -13,7 +13,7 @@ use crate::address::*;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::{hash, Hash, PublicKey};
-use crate::engine::{api::*, types::*, utils::*};
+use crate::engine::{api::*, types::*, scrypto_env::*};
 use crate::misc::*;
 use crate::resource::AccessRules;
 
@@ -23,16 +23,19 @@ pub struct ComponentAddAccessCheckInvocation {
     pub access_rules: AccessRules,
 }
 
+impl SysInvocation for ComponentAddAccessCheckInvocation {
+    type Output = ();
+}
+
+impl ScryptoNativeInvocation for ComponentAddAccessCheckInvocation {
+}
+
 impl Into<NativeFnInvocation> for ComponentAddAccessCheckInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Component(
             ComponentMethodInvocation::AddAccessCheck(self),
         ))
     }
-}
-
-impl ScryptoNativeInvocation for ComponentAddAccessCheckInvocation {
-    type Output = ();
 }
 
 /// Represents the state of a component.
@@ -68,7 +71,7 @@ pub struct ComponentStateSubstate {
 
 impl Component {
     pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
-        let mut sys_calls = Syscalls;
+        let mut sys_calls = ScryptoEnv;
         let rtn = sys_calls
             .sys_invoke_scrypto_method(
                 ScryptoMethodIdent {
@@ -102,7 +105,7 @@ impl Component {
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        self.sys_add_access_check(access_rules, &mut Syscalls)
+        self.sys_add_access_check(access_rules, &mut ScryptoEnv)
             .unwrap()
     }
 
@@ -112,7 +115,7 @@ impl Component {
         sys_calls: &mut Y,
     ) -> Result<&mut Self, E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<ComponentAddAccessCheckInvocation, E>,
+        Y: Syscalls<E> + SysNativeInvokable<ComponentAddAccessCheckInvocation, E>,
     {
         sys_calls.sys_invoke(ComponentAddAccessCheckInvocation {
             receiver: self.0,
@@ -123,7 +126,7 @@ impl Component {
     }
 
     pub fn globalize(self) -> ComponentAddress {
-        self.sys_globalize(&mut Syscalls).unwrap()
+        self.sys_globalize(&mut ScryptoEnv).unwrap()
     }
 
     pub fn sys_globalize<Y, E: Debug + Decode>(
@@ -131,7 +134,7 @@ impl Component {
         sys_calls: &mut Y,
     ) -> Result<ComponentAddress, E>
     where
-        Y: ScryptoSyscalls<E>,
+        Y: Syscalls<E>,
     {
         let node_id: RENodeId =
             sys_calls.sys_create_node(ScryptoRENode::GlobalComponent(self.0))?;
@@ -145,7 +148,7 @@ pub struct BorrowedGlobalComponent(pub ComponentAddress);
 impl BorrowedGlobalComponent {
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         let raw = syscalls
             .sys_invoke_scrypto_method(
                 ScryptoMethodIdent {

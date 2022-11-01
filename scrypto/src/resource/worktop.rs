@@ -1,15 +1,22 @@
-use crate::engine::utils::WorktopMethodInvocation;
+use crate::engine::scrypto_env::WorktopMethodInvocation;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::engine::api::ScryptoNativeInvocation;
-use scrypto::engine::utils::{NativeFnInvocation, NativeMethodInvocation};
+use scrypto::engine::api::{ScryptoNativeInvocation, SysInvocation};
+use scrypto::engine::scrypto_env::{NativeFnInvocation, NativeMethodInvocation};
 use scrypto::math::Decimal;
 use scrypto::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopPutInvocation {
     pub bucket: Bucket,
+}
+
+impl SysInvocation for WorktopPutInvocation {
+    type Output = ();
+}
+
+impl ScryptoNativeInvocation for WorktopPutInvocation {
 }
 
 impl Into<NativeFnInvocation> for WorktopPutInvocation {
@@ -20,14 +27,18 @@ impl Into<NativeFnInvocation> for WorktopPutInvocation {
     }
 }
 
-impl ScryptoNativeInvocation for WorktopPutInvocation {
-    type Output = ();
-}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopTakeAmountInvocation {
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
+}
+
+impl SysInvocation for WorktopTakeAmountInvocation {
+    type Output = Bucket;
+}
+
+impl ScryptoNativeInvocation for WorktopTakeAmountInvocation {
 }
 
 impl Into<NativeFnInvocation> for WorktopTakeAmountInvocation {
@@ -38,14 +49,18 @@ impl Into<NativeFnInvocation> for WorktopTakeAmountInvocation {
     }
 }
 
-impl ScryptoNativeInvocation for WorktopTakeAmountInvocation {
-    type Output = Bucket;
-}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopTakeNonFungiblesInvocation {
     pub ids: BTreeSet<NonFungibleId>,
     pub resource_address: ResourceAddress,
+}
+
+impl SysInvocation for WorktopTakeNonFungiblesInvocation {
+    type Output = Bucket;
+}
+
+impl ScryptoNativeInvocation for WorktopTakeNonFungiblesInvocation {
 }
 
 impl Into<NativeFnInvocation> for WorktopTakeNonFungiblesInvocation {
@@ -56,17 +71,17 @@ impl Into<NativeFnInvocation> for WorktopTakeNonFungiblesInvocation {
     }
 }
 
-impl ScryptoNativeInvocation for WorktopTakeNonFungiblesInvocation {
-    type Output = Bucket;
-}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopTakeAllInvocation {
     pub resource_address: ResourceAddress,
 }
 
-impl ScryptoNativeInvocation for WorktopTakeAllInvocation {
+impl SysInvocation for WorktopTakeAllInvocation {
     type Output = Bucket;
+}
+
+impl ScryptoNativeInvocation for WorktopTakeAllInvocation {
 }
 
 impl Into<NativeFnInvocation> for WorktopTakeAllInvocation {
@@ -82,6 +97,13 @@ pub struct WorktopAssertContainsInvocation {
     pub resource_address: ResourceAddress,
 }
 
+impl SysInvocation for WorktopAssertContainsInvocation {
+    type Output = ();
+}
+
+impl ScryptoNativeInvocation for WorktopAssertContainsInvocation {
+}
+
 impl Into<NativeFnInvocation> for WorktopAssertContainsInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
@@ -90,14 +112,17 @@ impl Into<NativeFnInvocation> for WorktopAssertContainsInvocation {
     }
 }
 
-impl ScryptoNativeInvocation for WorktopAssertContainsInvocation {
-    type Output = ();
-}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopAssertContainsAmountInvocation {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
+}
+impl SysInvocation for WorktopAssertContainsAmountInvocation {
+    type Output = ();
+}
+
+impl ScryptoNativeInvocation for WorktopAssertContainsAmountInvocation {
 }
 
 impl Into<NativeFnInvocation> for WorktopAssertContainsAmountInvocation {
@@ -108,14 +133,17 @@ impl Into<NativeFnInvocation> for WorktopAssertContainsAmountInvocation {
     }
 }
 
-impl ScryptoNativeInvocation for WorktopAssertContainsAmountInvocation {
-    type Output = ();
-}
-
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopAssertContainsNonFungiblesInvocation {
     pub resource_address: ResourceAddress,
     pub ids: BTreeSet<NonFungibleId>,
+}
+
+impl SysInvocation for WorktopAssertContainsNonFungiblesInvocation {
+    type Output = ();
+}
+
+impl ScryptoNativeInvocation for WorktopAssertContainsNonFungiblesInvocation {
 }
 
 impl Into<NativeFnInvocation> for WorktopAssertContainsNonFungiblesInvocation {
@@ -126,15 +154,15 @@ impl Into<NativeFnInvocation> for WorktopAssertContainsNonFungiblesInvocation {
     }
 }
 
-impl ScryptoNativeInvocation for WorktopAssertContainsNonFungiblesInvocation {
-    type Output = ();
-}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopDrainInvocation {}
 
-impl ScryptoNativeInvocation for WorktopDrainInvocation {
+impl SysInvocation for WorktopDrainInvocation {
     type Output = Vec<Bucket>;
+}
+
+impl ScryptoNativeInvocation for WorktopDrainInvocation {
 }
 
 impl Into<NativeFnInvocation> for WorktopDrainInvocation {

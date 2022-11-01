@@ -1,4 +1,4 @@
-use scrypto::engine::api::{ScryptoSyscalls, SysInvokableNative};
+use scrypto::engine::api::{Syscalls, SysInvokableNative};
 use std::fmt::Debug;
 use std::mem;
 use transaction::errors::IdAllocationError;
@@ -759,7 +759,7 @@ pub trait Executor {
         Y: SystemApi
             + Invokable<ScryptoInvocation>
             + InvokableNative<'a>
-            + ScryptoSyscalls<RuntimeError>
+            + Syscalls<RuntimeError>
             + SysInvokableNative<RuntimeError>;
 }
 

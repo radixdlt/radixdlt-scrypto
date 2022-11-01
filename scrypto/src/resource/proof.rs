@@ -4,10 +4,10 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::engine::utils::{NativeFnInvocation, Syscalls};
+use scrypto::engine::scrypto_env::{NativeFnInvocation, ScryptoEnv};
 
 use crate::abi::*;
-use crate::engine::utils::{NativeMethodInvocation, ProofMethodInvocation};
+use crate::engine::scrypto_env::{NativeMethodInvocation, ProofMethodInvocation};
 use crate::engine::{api::*, types::*};
 use crate::math::*;
 use crate::misc::*;
@@ -19,8 +19,11 @@ pub struct ProofGetAmountInvocation {
     pub receiver: ProofId,
 }
 
-impl ScryptoNativeInvocation for ProofGetAmountInvocation {
+impl SysInvocation for ProofGetAmountInvocation {
     type Output = Decimal;
+}
+
+impl ScryptoNativeInvocation for ProofGetAmountInvocation {
 }
 
 impl Into<NativeFnInvocation> for ProofGetAmountInvocation {
@@ -36,8 +39,11 @@ pub struct ProofGetNonFungibleIdsInvocation {
     pub receiver: ProofId,
 }
 
-impl ScryptoNativeInvocation for ProofGetNonFungibleIdsInvocation {
+impl SysInvocation for ProofGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
+}
+
+impl ScryptoNativeInvocation for ProofGetNonFungibleIdsInvocation {
 }
 
 impl Into<NativeFnInvocation> for ProofGetNonFungibleIdsInvocation {
@@ -53,8 +59,11 @@ pub struct ProofGetResourceAddressInvocation {
     pub receiver: ProofId,
 }
 
-impl ScryptoNativeInvocation for ProofGetResourceAddressInvocation {
+impl SysInvocation for ProofGetResourceAddressInvocation {
     type Output = ResourceAddress;
+}
+
+impl ScryptoNativeInvocation for ProofGetResourceAddressInvocation {
 }
 
 impl Into<NativeFnInvocation> for ProofGetResourceAddressInvocation {
@@ -70,8 +79,11 @@ pub struct ProofCloneInvocation {
     pub receiver: ProofId,
 }
 
-impl ScryptoNativeInvocation for ProofCloneInvocation {
+impl SysInvocation for ProofCloneInvocation {
     type Output = Proof;
+}
+
+impl ScryptoNativeInvocation for ProofCloneInvocation {
 }
 
 impl Into<NativeFnInvocation> for ProofCloneInvocation {
@@ -121,7 +133,7 @@ impl From<NonFungibleAddress> for ProofValidationMode {
 
 impl Clone for Proof {
     fn clone(&self) -> Self {
-        self.sys_clone(&mut Syscalls).unwrap()
+        self.sys_clone(&mut ScryptoEnv).unwrap()
     }
 }
 
@@ -165,7 +177,7 @@ impl Proof {
 
     pub fn sys_clone<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<Proof, E>
     where
-        Y: ScryptoSyscalls<E> + SysInvokable<ProofCloneInvocation, E>,
+        Y: Syscalls<E> + SysNativeInvokable<ProofCloneInvocation, E>,
     {
         sys_calls.sys_invoke(ProofCloneInvocation { receiver: self.0 })
     }
@@ -295,12 +307,12 @@ impl Proof {
 
     #[cfg(target_arch = "wasm32")]
     pub fn drop(self) {
-        self.sys_drop(&mut Syscalls).unwrap()
+        self.sys_drop(&mut ScryptoEnv).unwrap()
     }
 
     pub fn sys_drop<Y, E: Debug + TypeId + Decode>(self, sys_calls: &mut Y) -> Result<(), E>
     where
-        Y: ScryptoSyscalls<E>,
+        Y: Syscalls<E>,
     {
         sys_calls.sys_drop_node(RENodeId::Proof(self.0))
     }

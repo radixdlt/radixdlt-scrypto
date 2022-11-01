@@ -5,7 +5,7 @@ use sbor::{Decode, Encode};
 
 use crate::buffer::*;
 use crate::component::{ComponentStateSubstate, KeyValueStoreEntrySubstate};
-use crate::engine::{api::*, types::*, utils::*};
+use crate::engine::{api::*, types::*, scrypto_env::*};
 
 pub struct DataRef<V: Encode> {
     lock_handle: LockHandle,
@@ -34,7 +34,7 @@ impl<V: Encode> Deref for DataRef<V> {
 
 impl<V: Encode> Drop for DataRef<V> {
     fn drop(&mut self) {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         syscalls.sys_drop_lock(self.lock_handle).unwrap();
     }
 }
@@ -63,7 +63,7 @@ impl<V: Encode> DataRefMut<V> {
 
 impl<V: Encode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         let bytes = scrypto_encode(&self.value);
         let substate = match &self.offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
@@ -110,7 +110,7 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
     }
 
     pub fn get(&self) -> DataRef<V> {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
 
         let lock_handle = syscalls
             .sys_lock_substate(self.node_id, self.offset.clone(), false)
@@ -142,7 +142,7 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
     }
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
 
         let lock_handle = syscalls
             .sys_lock_substate(self.node_id, self.offset.clone(), true)

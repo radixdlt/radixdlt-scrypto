@@ -1,6 +1,6 @@
 use sbor::rust::string::String;
 
-use crate::engine::{api::*, types::*, utils::*};
+use crate::engine::{api::*, types::*, scrypto_env::*};
 
 /// A utility for logging messages.
 #[derive(Debug)]
@@ -9,7 +9,7 @@ pub struct Logger {}
 impl Logger {
     /// Emits a log to console.
     pub fn log(level: Level, message: String) {
-        let mut sys_calls = Syscalls;
+        let mut sys_calls = ScryptoEnv;
         sys_calls.sys_emit_log(level, message).unwrap();
     }
 

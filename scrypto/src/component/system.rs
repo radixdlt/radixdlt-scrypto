@@ -2,7 +2,7 @@ use crate::abi::BlueprintAbi;
 use crate::buffer::*;
 use crate::component::*;
 use crate::core::Runtime;
-use crate::engine::{api::*, types::*, utils::*};
+use crate::engine::{api::*, types::*, scrypto_env::*};
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
@@ -62,7 +62,7 @@ impl ComponentSystem {
         blueprint_name: &str,
         state: T,
     ) -> Component {
-        let mut syscalls = Syscalls;
+        let mut syscalls = ScryptoEnv;
         let node_id = syscalls
             .sys_create_node(ScryptoRENode::Component(
                 Runtime::package_address(),
