@@ -1,4 +1,4 @@
-use scrypto::engine::{api::*, types::*, utils::*};
+use scrypto::engine::{types::*, utils::*};
 use scrypto::prelude::*;
 
 blueprint! {
@@ -10,8 +10,8 @@ blueprint! {
         }
 
         pub fn set_epoch(epoch_manager: SystemAddress, epoch: u64) {
-            let input = RadixEngineInput::InvokeNativeMethod(
-                NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
+            let input = RadixEngineInput::InvokeNativeFn(
+                NativeFn::Method(NativeMethod::EpochManager(EpochManagerMethod::SetEpoch)),
                 scrypto_encode(&EpochManagerSetEpochInvocation {
                     receiver: epoch_manager,
                     epoch,
