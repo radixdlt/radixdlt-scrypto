@@ -3,7 +3,6 @@ use crate::engine::{
     NativeInvocation, NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError,
     SystemApi,
 };
-use crate::fee::FeeReserve;
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
     HardResourceOrNonFungible, MethodAuthorization,
@@ -23,13 +22,12 @@ pub struct EpochManager {
 impl NativeExecutable for EpochManagerCreateInput {
     type Output = SystemAddress;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         _invocation: Self,
         system_api: &mut Y,
     ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
     {
         let node_id =
             system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
@@ -63,13 +61,12 @@ impl NativeInvocation for EpochManagerCreateInput {
 impl NativeExecutable for EpochManagerGetCurrentEpochInput {
     type Output = u64;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(u64, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -99,13 +96,12 @@ impl NativeInvocation for EpochManagerGetCurrentEpochInput {
 impl NativeExecutable for EpochManagerSetEpochInput {
     type Output = ();
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {

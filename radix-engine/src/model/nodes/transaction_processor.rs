@@ -5,7 +5,6 @@ use transaction::model::*;
 use transaction::validation::*;
 
 use crate::engine::*;
-use crate::fee::FeeReserve;
 use crate::model::resolve_native_function;
 use crate::model::resolve_native_method;
 use crate::model::{InvokeError, WorktopSubstate};
@@ -35,13 +34,12 @@ pub enum TransactionProcessorError {
 impl<'b> NativeExecutable for TransactionProcessorRunInput<'b> {
     type Output = Vec<Vec<u8>>;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
     {
         TransactionProcessor::static_main(invocation, system_api)
             .map(|rtn| (rtn, CallFrameUpdate::empty()))
@@ -115,13 +113,12 @@ impl TransactionProcessor {
         Ok(value)
     }
 
-    fn process_expressions<'s, 'a, Y, R>(
+    fn process_expressions<'a, Y>(
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
     {
         let mut value = args.dom;
         for (expression, path) in args.expressions {
@@ -165,13 +162,12 @@ impl TransactionProcessor {
             .expect("Value became invalid post expression transformation"))
     }
 
-    pub fn static_main<'s, 'a, Y, R>(
+    pub fn static_main<'a, Y>(
         input: TransactionProcessorRunInput,
         system_api: &mut Y,
     ) -> Result<Vec<Vec<u8>>, InvokeError<TransactionProcessorError>>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
     {
         let mut proof_id_mapping = HashMap::new();
         let mut bucket_id_mapping = HashMap::new();

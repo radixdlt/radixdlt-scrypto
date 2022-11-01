@@ -2,7 +2,6 @@ use crate::engine::{
     ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, RuntimeError, SystemApi,
 };
-use crate::fee::FeeReserve;
 use crate::types::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
@@ -14,13 +13,12 @@ pub enum ComponentError {
 impl NativeExecutable for ComponentAddAccessCheckInput {
     type Output = ();
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Component(input.component_id);
         let offset = SubstateOffset::Component(ComponentOffset::Info);

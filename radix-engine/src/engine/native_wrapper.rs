@@ -1,6 +1,5 @@
 use crate::engine::errors::KernelError;
 use crate::engine::*;
-use crate::fee::*;
 use crate::model::{
     TransactionProcessorRunInput, WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
     WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput,
@@ -10,14 +9,13 @@ use crate::types::*;
 use scrypto::resource::AuthZoneDrainInput;
 
 // TODO: Cleanup
-pub fn parse_and_invoke_native_function<'y, 's, 'a, Y, R>(
+pub fn parse_and_invoke_native_function<'y, 'a, Y>(
     native_function: NativeFunction,
     args: Vec<u8>,
     system_api: &'y mut Y,
 ) -> Result<ScryptoValue, RuntimeError>
 where
-    Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
-    R: FeeReserve,
+    Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
 {
     match native_function {
         NativeFunction::EpochManager(EpochManagerFunction::Create) => {
@@ -59,14 +57,13 @@ where
 }
 
 // TODO: Cleanup
-pub fn parse_and_invoke_native_method<'y, 's, 'a, Y, R>(
+pub fn parse_and_invoke_native_method<'y, 'a, Y>(
     native_method: NativeMethod,
     args: Vec<u8>,
     system_api: &'y mut Y,
 ) -> Result<ScryptoValue, RuntimeError>
 where
-    Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
-    R: FeeReserve,
+    Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
 {
     match native_method {
         NativeMethod::Bucket(bucket_method) => match bucket_method {

@@ -1,5 +1,4 @@
 use crate::engine::*;
-use crate::fee::FeeReserve;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringParams, WasmRuntime};
 
@@ -15,13 +14,12 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
         &self.args
     }
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         mut self,
         system_api: &mut Y,
     ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
     {
         let (export_name, return_type, scrypto_actor) = match system_api.get_actor() {
             REActor::Method(

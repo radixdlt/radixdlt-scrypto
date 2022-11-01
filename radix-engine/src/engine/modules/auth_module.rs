@@ -1,5 +1,4 @@
 use crate::engine::*;
-use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 
@@ -23,15 +22,14 @@ impl AuthModule {
         NonFungibleId::from_u32(1)
     }
 
-    pub fn on_before_frame_start<'s, Y, R, X>(
+    pub fn on_before_frame_start<Y, X>(
         actor: &REActor,
         executor: &X,
         system_api: &mut Y,
     ) -> Result<HashSet<RENodeId>, InvokeError<AuthError>>
     where
-        Y: SystemApi<'s, R>,
+        Y: SystemApi,
         X: Executor,
-        R: FeeReserve,
     {
         let mut new_refs = HashSet::new();
         if matches!(
@@ -203,10 +201,9 @@ impl AuthModule {
         Ok(new_refs)
     }
 
-    pub fn on_frame_end<'s, Y, R>(system_api: &mut Y) -> Result<(), InvokeError<AuthError>>
+    pub fn on_frame_end<Y>(system_api: &mut Y) -> Result<(), InvokeError<AuthError>>
     where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve,
+        Y: SystemApi,
     {
         if matches!(
             system_api.get_actor(),

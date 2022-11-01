@@ -2,7 +2,7 @@ use crate::engine::{
     ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
-use crate::fee::{FeeReserve, FeeReserveError};
+use crate::fee::FeeReserveError;
 use crate::model::{
     BucketSubstate, InvokeError, ProofError, ResourceContainerId, ResourceOperationError,
 };
@@ -24,13 +24,12 @@ pub enum VaultError {
 impl NativeExecutable for VaultTakeInput {
     type Output = scrypto::resource::Bucket;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Vault(input.vault_id);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -71,13 +70,12 @@ impl NativeInvocation for VaultTakeInput {
 impl NativeExecutable for VaultPutInput {
     type Output = ();
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Vault(input.vault_id);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -112,13 +110,12 @@ impl NativeInvocation for VaultPutInput {
 impl NativeExecutable for VaultLockFeeInput {
     type Output = ();
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Vault(input.vault_id);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -177,13 +174,12 @@ impl NativeInvocation for VaultLockFeeInput {
 impl NativeExecutable for VaultTakeNonFungiblesInput {
     type Output = scrypto::resource::Bucket;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Vault(input.vault_id);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -226,13 +222,12 @@ impl NativeInvocation for VaultTakeNonFungiblesInput {
 impl NativeExecutable for VaultGetAmountInput {
     type Output = Decimal;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Vault(input.vault_id);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -259,13 +254,12 @@ impl NativeInvocation for VaultGetAmountInput {
 impl NativeExecutable for VaultGetResourceAddressInput {
     type Output = ResourceAddress;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Vault(input.vault_id);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -295,13 +289,12 @@ impl NativeInvocation for VaultGetResourceAddressInput {
 impl NativeExecutable for VaultGetNonFungibleIdsInput {
     type Output = BTreeSet<NonFungibleId>;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Vault(input.vault_id);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -332,13 +325,12 @@ impl NativeInvocation for VaultGetNonFungibleIdsInput {
 impl NativeExecutable for VaultCreateProofInput {
     type Output = scrypto::resource::Proof;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Vault(input.vault_id);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -377,13 +369,12 @@ impl NativeInvocation for VaultCreateProofInput {
 impl NativeExecutable for VaultCreateProofByAmountInput {
     type Output = scrypto::resource::Proof;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Vault(input.vault_id);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -423,13 +414,12 @@ impl NativeInvocation for VaultCreateProofByAmountInput {
 impl NativeExecutable for VaultCreateProofByIdsInput {
     type Output = scrypto::resource::Proof;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Vault(input.vault_id);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);

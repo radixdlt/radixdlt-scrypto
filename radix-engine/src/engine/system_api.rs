@@ -1,6 +1,5 @@
 use crate::engine::node::*;
 use crate::engine::*;
-use crate::fee::FeeReserve;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use bitflags::bitflags;
@@ -38,10 +37,7 @@ where
     fn invoke(&mut self, input: I) -> Result<I::Output, RuntimeError>;
 }
 
-pub trait SystemApi<'s, R>
-where
-    R: FeeReserve,
-{
+pub trait SystemApi {
     fn execute_in_mode<X, RTN, E>(
         &mut self,
         execution_mode: ExecutionMode,

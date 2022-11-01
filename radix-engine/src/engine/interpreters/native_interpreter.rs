@@ -1,5 +1,4 @@
 use crate::engine::*;
-use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 use sbor::rust::fmt::Debug;
@@ -190,13 +189,12 @@ pub trait NativeInvocation: NativeExecutable + Encode + Debug {
 pub trait NativeExecutable: Invocation {
     type Output: Debug;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
-        R: FeeReserve;
+        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>;
 }
 
 pub struct NativeExecutor<N: NativeExecutable>(pub N, pub ScryptoValue);
@@ -208,13 +206,12 @@ impl<N: NativeExecutable> Executor for NativeExecutor<N> {
         &self.1
     }
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         self,
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
     {
         N::execute(self.0, system_api)
     }

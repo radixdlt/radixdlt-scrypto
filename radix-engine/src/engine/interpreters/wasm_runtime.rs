@@ -12,23 +12,19 @@ use crate::wasm::*;
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
+pub struct RadixEngineWasmRuntime<'y, 'a, Y>
 where
-    Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
-    R: FeeReserve,
+    Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
 {
     actor: ScryptoActor,
     system_api: &'y mut Y,
     lock_types: HashMap<LockHandle, SubstateOffset>,
-    phantom1: PhantomData<R>,
-    phantom2: PhantomData<&'s ()>,
-    phantom3: PhantomData<&'a ()>,
+    phantom: PhantomData<&'a ()>,
 }
 
-impl<'y, 's, 'a, Y, R> RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
+impl<'y, 'a, Y> RadixEngineWasmRuntime<'y, 'a, Y>
 where
-    Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
-    R: FeeReserve,
+    Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
 {
     // TODO: expose API for reading blobs
 
@@ -41,9 +37,7 @@ where
             actor,
             system_api,
             lock_types: HashMap::new(),
-            phantom1: PhantomData,
-            phantom2: PhantomData,
-            phantom3: PhantomData,
+            phantom: PhantomData,
         }
     }
 
@@ -201,10 +195,9 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'y, 's, 'a, Y, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, 'a, Y, R>
+impl<'y, 'a, Y> WasmRuntime for RadixEngineWasmRuntime<'y, 'a, Y>
 where
-    Y: SystemApi<'s, R> + Invokable<ScryptoInvocation> + InvokableNative<'a>,
-    R: FeeReserve,
+    Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {
         let input: RadixEngineInput = scrypto_decode(&input.raw)

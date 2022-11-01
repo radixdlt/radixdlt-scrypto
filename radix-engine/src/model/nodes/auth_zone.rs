@@ -2,7 +2,6 @@ use crate::engine::{
     ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
-use crate::fee::FeeReserve;
 use crate::model::{InvokeError, ProofError};
 use crate::types::*;
 use scrypto::resource::AuthZoneDrainInput;
@@ -21,13 +20,12 @@ pub enum AuthZoneError {
 impl NativeExecutable for AuthZonePopInput {
     type Output = scrypto::resource::Proof;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::AuthZoneStack(input.auth_zone_id);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -67,13 +65,12 @@ impl NativeInvocation for AuthZonePopInput {
 impl NativeExecutable for AuthZonePushInput {
     type Output = ();
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::AuthZoneStack(input.auth_zone_id);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -112,13 +109,12 @@ impl NativeInvocation for AuthZonePushInput {
 impl NativeExecutable for AuthZoneCreateProofInput {
     type Output = scrypto::resource::Proof;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::AuthZoneStack(input.auth_zone_id);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -172,13 +168,12 @@ impl NativeInvocation for AuthZoneCreateProofInput {
 impl NativeExecutable for AuthZoneCreateProofByAmountInput {
     type Output = scrypto::resource::Proof;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::AuthZoneStack(input.auth_zone_id);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -233,13 +228,12 @@ impl NativeInvocation for AuthZoneCreateProofByAmountInput {
 impl NativeExecutable for AuthZoneCreateProofByIdsInput {
     type Output = scrypto::resource::Proof;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::AuthZoneStack(input.auth_zone_id);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -294,13 +288,12 @@ impl NativeInvocation for AuthZoneCreateProofByIdsInput {
 impl NativeExecutable for AuthZoneClearInput {
     type Output = ();
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::AuthZoneStack(input.auth_zone_id);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -326,13 +319,12 @@ impl NativeInvocation for AuthZoneClearInput {
 impl NativeExecutable for AuthZoneDrainInput {
     type Output = Vec<scrypto::resource::Proof>;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Vec<scrypto::resource::Proof>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::AuthZoneStack(input.auth_zone_id);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);

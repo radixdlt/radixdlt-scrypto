@@ -2,7 +2,6 @@ use crate::engine::{
     ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
-use crate::fee::FeeReserve;
 use crate::model::{BucketSubstate, ProofError, ResourceOperationError};
 use crate::types::*;
 
@@ -21,13 +20,12 @@ pub enum BucketError {
 impl NativeExecutable for BucketTakeInput {
     type Output = scrypto::resource::Bucket;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Bucket(input.bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -63,13 +61,12 @@ impl NativeInvocation for BucketTakeInput {
 impl NativeExecutable for BucketCreateProofInput {
     type Output = scrypto::resource::Proof;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Bucket(input.bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -104,13 +101,12 @@ impl NativeInvocation for BucketCreateProofInput {
 impl NativeExecutable for BucketTakeNonFungiblesInput {
     type Output = scrypto::resource::Bucket;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Bucket(input.bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -146,13 +142,12 @@ impl NativeInvocation for BucketTakeNonFungiblesInput {
 impl NativeExecutable for BucketGetNonFungibleIdsInput {
     type Output = BTreeSet<NonFungibleId>;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Bucket(input.bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -183,13 +178,12 @@ impl NativeInvocation for BucketGetNonFungibleIdsInput {
 impl NativeExecutable for BucketGetAmountInput {
     type Output = Decimal;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Bucket(input.bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -214,13 +208,12 @@ impl NativeInvocation for BucketGetAmountInput {
 impl NativeExecutable for BucketPutInput {
     type Output = ();
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Bucket(input.bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -254,13 +247,12 @@ impl NativeInvocation for BucketPutInput {
 impl NativeExecutable for BucketGetResourceAddressInput {
     type Output = ResourceAddress;
 
-    fn execute<'s, 'a, Y, R>(
+    fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R> + InvokableNative<'a>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
         let node_id = RENodeId::Bucket(input.bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
