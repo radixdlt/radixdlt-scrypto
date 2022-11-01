@@ -30,7 +30,7 @@ impl Package {
     }
 }
 
-impl NativeExecutable for PackagePublishInput {
+impl NativeExecutable for PackagePublishInvocation {
     type Output = PackageAddress;
 
     fn execute<'a, Y>(
@@ -64,7 +64,7 @@ impl NativeExecutable for PackagePublishInput {
     }
 }
 
-impl NativeInvocation for PackagePublishInput {
+impl NativeInvocation for PackagePublishInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Function(
             NativeFunction::Package(PackageFunction::Publish),

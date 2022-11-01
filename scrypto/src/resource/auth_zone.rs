@@ -7,44 +7,44 @@ use crate::math::Decimal;
 use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZonePopInput {
-    pub auth_zone_id: AuthZoneId,
+pub struct AuthZonePopInvocation {
+    pub receiver: AuthZoneId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZonePushInput {
-    pub auth_zone_id: AuthZoneId,
+pub struct AuthZonePushInvocation {
+    pub receiver: AuthZoneId,
     pub proof: Proof,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneCreateProofInput {
-    pub auth_zone_id: AuthZoneId,
+pub struct AuthZoneCreateProofInvocation {
+    pub receiver: AuthZoneId,
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneCreateProofByAmountInput {
-    pub auth_zone_id: AuthZoneId,
+pub struct AuthZoneCreateProofByAmountInvocation {
+    pub receiver: AuthZoneId,
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneCreateProofByIdsInput {
-    pub auth_zone_id: AuthZoneId,
+pub struct AuthZoneCreateProofByIdsInvocation {
+    pub receiver: AuthZoneId,
     pub ids: BTreeSet<NonFungibleId>,
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneClearInput {
-    pub auth_zone_id: AuthZoneId,
+pub struct AuthZoneClearInvocation {
+    pub receiver: AuthZoneId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneDrainInput {
-    pub auth_zone_id: AuthZoneId,
+pub struct AuthZoneDrainInvocation {
+    pub receiver: AuthZoneId,
 }
 
 /// Represents the auth zone, which is used by system for checking
@@ -66,8 +66,8 @@ impl ComponentAuthZone {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::AuthZone(AuthZoneMethod::Pop),
             scrypto::buffer::scrypto_encode(
-                &(AuthZonePopInput {
-                    auth_zone_id: node_id.into(),
+                &(AuthZonePopInvocation {
+                    receiver: node_id.into(),
                 }),
             ),
         );
@@ -85,8 +85,8 @@ impl ComponentAuthZone {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::AuthZone(AuthZoneMethod::CreateProof),
             scrypto::buffer::scrypto_encode(
-                &(AuthZoneCreateProofInput {
-                    auth_zone_id: node_id.into(),
+                &(AuthZoneCreateProofInvocation {
+                    receiver: node_id.into(),
                     resource_address,
                 }),
             ),
@@ -105,9 +105,9 @@ impl ComponentAuthZone {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::AuthZone(AuthZoneMethod::CreateProofByAmount),
             scrypto::buffer::scrypto_encode(
-                &(AuthZoneCreateProofByAmountInput {
+                &(AuthZoneCreateProofByAmountInvocation {
                     amount,
-                    auth_zone_id: node_id.into(),
+                    receiver: node_id.into(),
                     resource_address,
                 }),
             ),
@@ -129,9 +129,9 @@ impl ComponentAuthZone {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds),
             scrypto::buffer::scrypto_encode(
-                &(AuthZoneCreateProofByIdsInput {
+                &(AuthZoneCreateProofByIdsInvocation {
                     ids: ids.clone(),
-                    auth_zone_id: node_id.into(),
+                    receiver: node_id.into(),
                     resource_address,
                 }),
             ),
@@ -151,9 +151,9 @@ impl ComponentAuthZone {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::AuthZone(AuthZoneMethod::Push),
             scrypto::buffer::scrypto_encode(
-                &(AuthZonePushInput {
+                &(AuthZonePushInvocation {
                     proof,
-                    auth_zone_id: node_id.into(),
+                    receiver: node_id.into(),
                 }),
             ),
         );

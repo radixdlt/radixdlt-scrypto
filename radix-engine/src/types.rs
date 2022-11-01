@@ -17,12 +17,12 @@ pub use sbor::{Decode, DecodeError, Encode, Type, TypeId, Value};
 pub use scrypto::abi::{BlueprintAbi, Fn, ScryptoType};
 pub use scrypto::address::{AddressError, Bech32Decoder, Bech32Encoder};
 pub use scrypto::component::{
-    ComponentAddAccessCheckInput, ComponentAddress, PackageAddress, PackagePublishInput,
+    ComponentAddAccessCheckInvocation, ComponentAddress, PackageAddress, PackagePublishInvocation,
 };
 pub use scrypto::constants::*;
 pub use scrypto::core::{
-    Blob, EpochManagerCreateInput, EpochManagerGetCurrentEpochInput, EpochManagerSetEpochInput,
-    Expression, NetworkDefinition, ScryptoActor, SystemAddress,
+    Blob, EpochManagerCreateInvocation, EpochManagerGetCurrentEpochInvocation,
+    EpochManagerSetEpochInvocation, Expression, NetworkDefinition, ScryptoActor, SystemAddress,
 };
 pub use scrypto::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
@@ -31,23 +31,26 @@ pub use scrypto::crypto::{
 pub use scrypto::engine::{api::RadixEngineInput, types::*};
 pub use scrypto::math::{Decimal, RoundingMode, I256};
 pub use scrypto::resource::{
-    AccessRule, AccessRuleNode, AccessRules, AuthZoneClearInput, AuthZoneCreateProofByAmountInput,
-    AuthZoneCreateProofByIdsInput, AuthZoneCreateProofInput, AuthZonePopInput, AuthZonePushInput,
-    BucketCreateProofInput, BucketGetAmountInput, BucketGetNonFungibleIdsInput,
-    BucketGetResourceAddressInput, BucketPutInput, BucketTakeInput, BucketTakeNonFungiblesInput,
-    MintParams, Mutability, NonFungibleAddress, NonFungibleId, ProofCloneInput,
-    ProofGetAmountInput, ProofGetNonFungibleIdsInput, ProofGetResourceAddressInput, ProofRule,
-    ResourceAddress, ResourceManagerBurnInput, ResourceManagerCreateBucketInput,
-    ResourceManagerCreateInput, ResourceManagerCreateVaultInput, ResourceManagerGetMetadataInput,
-    ResourceManagerGetNonFungibleInput, ResourceManagerGetResourceTypeInput,
-    ResourceManagerGetTotalSupplyInput, ResourceManagerLockAuthInput, ResourceManagerMintInput,
-    ResourceManagerNonFungibleExistsInput, ResourceManagerSetResourceAddressInput,
-    ResourceManagerUpdateAuthInput, ResourceManagerUpdateMetadataInput,
-    ResourceManagerUpdateNonFungibleDataInput, ResourceMethodAuthKey, ResourceType, SoftCount,
-    SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
-    VaultCreateProofByAmountInput, VaultCreateProofByIdsInput, VaultCreateProofInput,
-    VaultGetAmountInput, VaultGetNonFungibleIdsInput, VaultGetResourceAddressInput,
-    VaultLockFeeInput, VaultPutInput, VaultTakeInput, VaultTakeNonFungiblesInput, LOCKED, MUTABLE,
+    AccessRule, AccessRuleNode, AccessRules, AuthZoneClearInvocation,
+    AuthZoneCreateProofByAmountInvocation, AuthZoneCreateProofByIdsInvocation,
+    AuthZoneCreateProofInvocation, AuthZonePopInvocation, AuthZonePushInvocation,
+    BucketCreateProofInvocation, BucketGetAmountInvocation, BucketGetNonFungibleIdsInvocation,
+    BucketGetResourceAddressInvocation, BucketPutInvocation, BucketTakeInvocation,
+    BucketTakeNonFungiblesInvocation, MintParams, Mutability, NonFungibleAddress, NonFungibleId,
+    ProofCloneInvocation, ProofGetAmountInvocation, ProofGetNonFungibleIdsInvocation,
+    ProofGetResourceAddressInvocation, ProofRule, ResourceAddress, ResourceManagerBurnInvocation,
+    ResourceManagerCreateBucketInvocation, ResourceManagerCreateInvocation,
+    ResourceManagerCreateVaultInvocation, ResourceManagerGetMetadataInvocation,
+    ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation,
+    ResourceManagerGetTotalSupplyInvocation, ResourceManagerLockAuthInvocation,
+    ResourceManagerMintInvocation, ResourceManagerNonFungibleExistsInvocation,
+    ResourceManagerSetResourceAddressInvocation, ResourceManagerUpdateAuthInvocation,
+    ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation,
+    ResourceMethodAuthKey, ResourceType, SoftCount, SoftDecimal, SoftResource,
+    SoftResourceOrNonFungible, SoftResourceOrNonFungibleList, VaultCreateProofByAmountInvocation,
+    VaultCreateProofByIdsInvocation, VaultCreateProofInvocation, VaultGetAmountInvocation,
+    VaultGetNonFungibleIdsInvocation, VaultGetResourceAddressInvocation, VaultLockFeeInvocation,
+    VaultPutInvocation, VaultTakeInvocation, VaultTakeNonFungiblesInvocation, LOCKED, MUTABLE,
 };
 pub use scrypto::values::{ScryptoValue, ScryptoValueReplaceError};
 use std::fmt::Debug;

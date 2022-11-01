@@ -9,7 +9,7 @@ use crate::core::*;
 use crate::misc::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct PackagePublishInput {
+pub struct PackagePublishInvocation {
     pub code: Blob,
     pub abi: Blob,
 }

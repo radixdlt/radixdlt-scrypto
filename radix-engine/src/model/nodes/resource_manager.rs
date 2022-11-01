@@ -9,7 +9,7 @@ use crate::model::{
 };
 use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
-use scrypto::resource::ResourceManagerBucketBurnInput;
+use scrypto::resource::ResourceManagerBucketBurnInvocation;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -31,7 +31,7 @@ pub enum ResourceManagerError {
     ResourceAddressAlreadySet,
 }
 
-impl NativeExecutable for ResourceManagerBucketBurnInput {
+impl NativeExecutable for ResourceManagerBucketBurnInvocation {
     type Output = ();
 
     fn execute<'a, Y>(
@@ -49,8 +49,8 @@ impl NativeExecutable for ResourceManagerBucketBurnInput {
         let resource_address = substate_ref.bucket().resource_address();
 
         system_api.drop_lock(bucket_handle)?;
-        system_api.invoke(ResourceManagerBurnInput {
-            resource_address,
+        system_api.invoke(ResourceManagerBurnInvocation {
+            receiver: resource_address,
             bucket: invocation.bucket,
         })?;
 
@@ -58,7 +58,7 @@ impl NativeExecutable for ResourceManagerBucketBurnInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerBucketBurnInput {
+impl NativeInvocation for ResourceManagerBucketBurnInvocation {
     fn info(&self) -> NativeInvocationInfo {
         let bucket = RENodeId::Bucket(self.bucket.0);
         let mut node_refs_to_copy = HashSet::new();
@@ -83,7 +83,7 @@ impl NativeInvocation for ResourceManagerBucketBurnInput {
     }
 }
 
-impl NativeExecutable for ResourceManagerCreateInput {
+impl NativeExecutable for ResourceManagerCreateInvocation {
     type Output = (ResourceAddress, Option<scrypto::resource::Bucket>);
 
     fn execute<'a, Y>(
@@ -194,7 +194,9 @@ impl NativeExecutable for ResourceManagerCreateInput {
         let resource_address: ResourceAddress = global_node_id.into();
 
         // FIXME this is temporary workaround for the resource address resolution problem
-        system_api.invoke(ResourceManagerSetResourceAddressInput { resource_address })?;
+        system_api.invoke(ResourceManagerSetResourceAddressInvocation {
+            receiver: resource_address,
+        })?;
 
         // Mint
         let bucket = if let Some(mint_params) = invocation.mint_params {
@@ -235,7 +237,7 @@ impl NativeExecutable for ResourceManagerCreateInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerCreateInput {
+impl NativeInvocation for ResourceManagerCreateInvocation {
     fn info(&self) -> NativeInvocationInfo {
         let mut node_refs_to_copy = HashSet::new();
 
@@ -259,7 +261,7 @@ impl NativeInvocation for ResourceManagerCreateInput {
     }
 }
 
-impl NativeExecutable for ResourceManagerBurnInput {
+impl NativeExecutable for ResourceManagerBurnInvocation {
     type Output = ();
 
     fn execute<'a, Y>(
@@ -330,17 +332,17 @@ impl NativeExecutable for ResourceManagerBurnInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerBurnInput {
+impl NativeInvocation for ResourceManagerBurnInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0)),
         )
     }
 }
 
-impl NativeExecutable for ResourceManagerUpdateAuthInput {
+impl NativeExecutable for ResourceManagerUpdateAuthInvocation {
     type Output = ();
 
     fn execute<'a, Y>(
@@ -380,17 +382,17 @@ impl NativeExecutable for ResourceManagerUpdateAuthInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerUpdateAuthInput {
+impl NativeInvocation for ResourceManagerUpdateAuthInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for ResourceManagerLockAuthInput {
+impl NativeExecutable for ResourceManagerLockAuthInvocation {
     type Output = ();
 
     fn execute<'a, Y>(
@@ -430,17 +432,17 @@ impl NativeExecutable for ResourceManagerLockAuthInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerLockAuthInput {
+impl NativeInvocation for ResourceManagerLockAuthInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for ResourceManagerCreateVaultInput {
+impl NativeExecutable for ResourceManagerCreateVaultInvocation {
     type Output = scrypto::resource::Vault;
 
     fn execute<'a, Y>(
@@ -475,17 +477,17 @@ impl NativeExecutable for ResourceManagerCreateVaultInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerCreateVaultInput {
+impl NativeInvocation for ResourceManagerCreateVaultInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for ResourceManagerCreateBucketInput {
+impl NativeExecutable for ResourceManagerCreateBucketInvocation {
     type Output = scrypto::resource::Bucket;
 
     fn execute<'a, Y>(
@@ -520,17 +522,17 @@ impl NativeExecutable for ResourceManagerCreateBucketInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerCreateBucketInput {
+impl NativeInvocation for ResourceManagerCreateBucketInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for ResourceManagerMintInput {
+impl NativeExecutable for ResourceManagerMintInvocation {
     type Output = scrypto::resource::Bucket;
 
     fn execute<'a, Y>(
@@ -612,17 +614,17 @@ impl NativeExecutable for ResourceManagerMintInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerMintInput {
+impl NativeInvocation for ResourceManagerMintInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for ResourceManagerGetMetadataInput {
+impl NativeExecutable for ResourceManagerGetMetadataInvocation {
     type Output = HashMap<String, String>;
 
     fn execute<'a, Y>(
@@ -647,17 +649,17 @@ impl NativeExecutable for ResourceManagerGetMetadataInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerGetMetadataInput {
+impl NativeInvocation for ResourceManagerGetMetadataInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for ResourceManagerGetResourceTypeInput {
+impl NativeExecutable for ResourceManagerGetResourceTypeInvocation {
     type Output = ResourceType;
 
     fn execute<'a, Y>(
@@ -682,17 +684,17 @@ impl NativeExecutable for ResourceManagerGetResourceTypeInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerGetResourceTypeInput {
+impl NativeInvocation for ResourceManagerGetResourceTypeInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::ResourceManager(ResourceManagerMethod::GetResourceType),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for ResourceManagerGetTotalSupplyInput {
+impl NativeExecutable for ResourceManagerGetTotalSupplyInvocation {
     type Output = Decimal;
 
     fn execute<'a, Y>(
@@ -716,17 +718,17 @@ impl NativeExecutable for ResourceManagerGetTotalSupplyInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerGetTotalSupplyInput {
+impl NativeInvocation for ResourceManagerGetTotalSupplyInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::ResourceManager(ResourceManagerMethod::GetTotalSupply),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for ResourceManagerUpdateMetadataInput {
+impl NativeExecutable for ResourceManagerUpdateMetadataInvocation {
     type Output = ();
 
     fn execute<'a, Y>(
@@ -759,17 +761,17 @@ impl NativeExecutable for ResourceManagerUpdateMetadataInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerUpdateMetadataInput {
+impl NativeInvocation for ResourceManagerUpdateMetadataInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::ResourceManager(ResourceManagerMethod::UpdateMetadata),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for ResourceManagerUpdateNonFungibleDataInput {
+impl NativeExecutable for ResourceManagerUpdateNonFungibleDataInvocation {
     type Output = ();
 
     fn execute<'a, Y>(
@@ -824,17 +826,17 @@ impl NativeExecutable for ResourceManagerUpdateNonFungibleDataInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerUpdateNonFungibleDataInput {
+impl NativeInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for ResourceManagerNonFungibleExistsInput {
+impl NativeExecutable for ResourceManagerNonFungibleExistsInvocation {
     type Output = bool;
 
     fn execute<'a, Y>(
@@ -875,17 +877,17 @@ impl NativeExecutable for ResourceManagerNonFungibleExistsInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerNonFungibleExistsInput {
+impl NativeInvocation for ResourceManagerNonFungibleExistsInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::ResourceManager(ResourceManagerMethod::NonFungibleExists),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for ResourceManagerGetNonFungibleInput {
+impl NativeExecutable for ResourceManagerGetNonFungibleInvocation {
     type Output = [Vec<u8>; 2];
 
     fn execute<'a, Y>(
@@ -939,17 +941,17 @@ impl NativeExecutable for ResourceManagerGetNonFungibleInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerGetNonFungibleInput {
+impl NativeInvocation for ResourceManagerGetNonFungibleInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for ResourceManagerSetResourceAddressInput {
+impl NativeExecutable for ResourceManagerSetResourceAddressInvocation {
     type Output = ();
 
     fn execute<'a, Y>(
@@ -970,7 +972,7 @@ impl NativeExecutable for ResourceManagerSetResourceAddressInput {
         let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
         substate_mut
             .resource_manager()
-            .set_resource_address(input.resource_address)
+            .set_resource_address(input.receiver)
             .map_err(|e| match e {
                 InvokeError::Error(e) => {
                     RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
@@ -982,11 +984,11 @@ impl NativeExecutable for ResourceManagerSetResourceAddressInput {
     }
 }
 
-impl NativeInvocation for ResourceManagerSetResourceAddressInput {
+impl NativeInvocation for ResourceManagerSetResourceAddressInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
-            RENodeId::Global(GlobalAddress::Resource(self.resource_address)),
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }

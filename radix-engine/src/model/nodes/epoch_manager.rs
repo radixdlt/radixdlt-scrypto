@@ -19,7 +19,7 @@ pub struct EpochManager {
     pub info: EpochManagerSubstate,
 }
 
-impl NativeExecutable for EpochManagerCreateInput {
+impl NativeExecutable for EpochManagerCreateInvocation {
     type Output = SystemAddress;
 
     fn execute<'a, Y>(
@@ -49,7 +49,7 @@ impl NativeExecutable for EpochManagerCreateInput {
     }
 }
 
-impl NativeInvocation for EpochManagerCreateInput {
+impl NativeInvocation for EpochManagerCreateInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Function(
             NativeFunction::EpochManager(EpochManagerFunction::Create),
@@ -58,7 +58,7 @@ impl NativeInvocation for EpochManagerCreateInput {
     }
 }
 
-impl NativeExecutable for EpochManagerGetCurrentEpochInput {
+impl NativeExecutable for EpochManagerGetCurrentEpochInvocation {
     type Output = u64;
 
     fn execute<'a, Y>(
@@ -83,17 +83,17 @@ impl NativeExecutable for EpochManagerGetCurrentEpochInput {
     }
 }
 
-impl NativeInvocation for EpochManagerGetCurrentEpochInput {
+impl NativeInvocation for EpochManagerGetCurrentEpochInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
-            RENodeId::Global(GlobalAddress::System(self.system_address)),
+            RENodeId::Global(GlobalAddress::System(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
 }
 
-impl NativeExecutable for EpochManagerSetEpochInput {
+impl NativeExecutable for EpochManagerSetEpochInvocation {
     type Output = ();
 
     fn execute<'a, Y>(
@@ -118,11 +118,11 @@ impl NativeExecutable for EpochManagerSetEpochInput {
     }
 }
 
-impl NativeInvocation for EpochManagerSetEpochInput {
+impl NativeInvocation for EpochManagerSetEpochInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
-            RENodeId::Global(GlobalAddress::System(self.system_address)),
+            RENodeId::Global(GlobalAddress::System(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }

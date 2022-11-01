@@ -10,7 +10,7 @@ pub enum ComponentError {
     BlueprintFunctionNotFound(String),
 }
 
-impl NativeExecutable for ComponentAddAccessCheckInput {
+impl NativeExecutable for ComponentAddAccessCheckInvocation {
     type Output = ();
 
     fn execute<'a, Y>(
@@ -20,7 +20,7 @@ impl NativeExecutable for ComponentAddAccessCheckInput {
     where
         Y: SystemApi + InvokableNative<'a>,
     {
-        let node_id = RENodeId::Component(input.component_id);
+        let node_id = RENodeId::Component(input.receiver);
         let offset = SubstateOffset::Component(ComponentOffset::Info);
         let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
@@ -69,11 +69,11 @@ impl NativeExecutable for ComponentAddAccessCheckInput {
     }
 }
 
-impl NativeInvocation for ComponentAddAccessCheckInput {
+impl NativeInvocation for ComponentAddAccessCheckInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Component(ComponentMethod::AddAccessCheck),
-            RENodeId::Component(self.component_id),
+            RENodeId::Component(self.receiver),
             CallFrameUpdate::empty(),
         )
     }

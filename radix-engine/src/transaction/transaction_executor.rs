@@ -163,7 +163,7 @@ where
                 self.scrypto_interpreter,
                 modules,
             );
-            kernel.invoke(TransactionProcessorRunInput {
+            kernel.invoke(TransactionProcessorRunInvocation {
                 instructions: sbor::rust::borrow::Cow::Borrowed(&instructions),
             })
         };

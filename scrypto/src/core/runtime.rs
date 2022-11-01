@@ -11,16 +11,16 @@ use crate::crypto::*;
 use crate::engine::{api::*, types::*, utils::*};
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct EpochManagerCreateInput {}
+pub struct EpochManagerCreateInvocation {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct EpochManagerGetCurrentEpochInput {
-    pub system_address: SystemAddress,
+pub struct EpochManagerGetCurrentEpochInvocation {
+    pub receiver: SystemAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct EpochManagerSetEpochInput {
-    pub system_address: SystemAddress,
+pub struct EpochManagerSetEpochInvocation {
+    pub receiver: SystemAddress,
     pub epoch: u64,
 }
 
@@ -96,8 +96,8 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
-            scrypto_encode(&EpochManagerGetCurrentEpochInput {
-                system_address: EPOCH_MANAGER,
+            scrypto_encode(&EpochManagerGetCurrentEpochInvocation {
+                receiver: EPOCH_MANAGER,
             }),
         );
         call_engine(input)

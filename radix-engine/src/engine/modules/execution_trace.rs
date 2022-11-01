@@ -133,7 +133,7 @@ impl ExecutionTraceModule {
         vault_id: &VaultId,
         input: &ScryptoValue,
     ) {
-        if let Ok(call_data) = scrypto_decode::<VaultPutInput>(&input.raw) {
+        if let Ok(call_data) = scrypto_decode::<VaultPutInvocation>(&input.raw) {
             let bucket_id = call_data.bucket.0;
             if let Ok(bucket_substate) = heap.get_substate(
                 RENodeId::Bucket(bucket_id),
@@ -154,7 +154,7 @@ impl ExecutionTraceModule {
         vault_id: &VaultId,
         input: &ScryptoValue,
     ) {
-        if let Ok(call_data) = scrypto_decode::<VaultTakeInput>(&input.raw) {
+        if let Ok(call_data) = scrypto_decode::<VaultTakeInvocation>(&input.raw) {
             track.vault_ops.push((
                 actor.clone(),
                 vault_id.clone(),

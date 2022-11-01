@@ -17,8 +17,8 @@ use crate::misc::*;
 use crate::resource::AccessRules;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ComponentAddAccessCheckInput {
-    pub component_id: ComponentId,
+pub struct ComponentAddAccessCheckInvocation {
+    pub receiver: ComponentId,
     pub access_rules: AccessRules,
 }
 
@@ -89,9 +89,9 @@ impl Component {
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Component(ComponentMethod::AddAccessCheck),
-            scrypto_encode(&ComponentAddAccessCheckInput {
+            scrypto_encode(&ComponentAddAccessCheckInvocation {
                 access_rules,
-                component_id: self.0,
+                receiver: self.0,
             }),
         );
         let _: () = call_engine(input);
