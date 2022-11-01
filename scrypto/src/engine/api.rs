@@ -5,10 +5,9 @@ use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::core::*;
 use scrypto::engine::types::*;
-use scrypto::resource::{AuthZoneCreateProofByIdsInput, AuthZonePopInput};
+use scrypto::resource::{AuthZoneCreateProofByIdsInput, AuthZonePopInput, ProofCloneInput, VaultGetAmountInput};
 use crate::buffer::scrypto_encode;
-use crate::prelude::{AuthZoneCreateProofInput, AuthZonePushInput};
-use crate::resource::AuthZoneCreateProofByAmountInput;
+use crate::resource::*;
 
 use super::types::*;
 
@@ -37,16 +36,6 @@ pub trait ScryptoSyscalls<E: Debug> {
         method_ident: ScryptoMethodIdent,
         args: &ARGS,
     ) -> Result<V, E>;
-    fn sys_invoke_native_function<ARGS: Encode, V: Decode>(
-        &mut self,
-        native_function: NativeFunction,
-        args: &ARGS,
-    ) -> Result<V, E>;
-    fn sys_invoke_native_method<ARGS: Encode, V: Decode>(
-        &mut self,
-        native_method: NativeMethod,
-        args: &ARGS,
-    ) -> Result<V, E>;
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, E>;
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), E>;
     fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, E>;
@@ -70,5 +59,8 @@ pub trait SysInvokableNative<E>:
     + SysInvokable<AuthZoneCreateProofInput, E>
     + SysInvokable<AuthZoneCreateProofByAmountInput, E>
     + SysInvokable<AuthZoneCreateProofByIdsInput, E>
+    + SysInvokable<ResourceManagerCreateBucketInput, E>
+    + SysInvokable<ProofCloneInput, E>
+    + SysInvokable<VaultGetAmountInput, E>
 {
 }

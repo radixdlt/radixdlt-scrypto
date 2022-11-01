@@ -67,13 +67,12 @@ impl Bucket {
         sys_calls: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ScryptoSyscalls<E>,
+        Y: ScryptoSyscalls<E> + SysInvokable<ResourceManagerCreateBucketInput, E>,
     {
-        sys_calls.sys_invoke_native_method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
-            &ResourceManagerCreateBucketInput {
+        sys_calls.sys_invoke(
+            ResourceManagerCreateBucketInput {
                 resource_address,
-            },
+            }
         )
     }
 

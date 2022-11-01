@@ -303,23 +303,6 @@ impl TransactionProcessor {
                                 proof_id_mapping.insert(new_id, proof.0);
                                 ScryptoValue::from_typed(&proof)
                             })
-                            /*
-
-                        Instruction::ClearAuthZone => {
-                            proof_id_mapping.clear();
-                            system_api
-                                .invoke_native(NativeInvocation::Method(
-                                    NativeMethod::AuthZone(AuthZoneMethod::Clear),
-                                    auth_zone_ref,
-                                    ScryptoValue::from_typed(&AuthZoneClearInput {}),
-                                ))
-                                .map_err(InvokeError::Downstream)
-                        }
-                        Instruction::CreateProofFromBucket { bucket_id } => id_allocator
-                            .new_proof_id()
-                            .map_err(|e| {
-                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
-                             */
                     }),
                 Instruction::ClearAuthZone => {
                     proof_id_mapping.clear();
@@ -382,37 +365,6 @@ impl TransactionProcessor {
                                         ScryptoValue::from_typed(&p)
                                     })
                             }),
-                        Instruction::CloneProof { proof_id } => id_allocator
-                            .new_proof_id()
-                            .map_err(|e| {
-                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
-                            })
-                            .and_then(|new_id| {
-                                proof_id_mapping
-                                    .get(proof_id)
-                                    .cloned()
-                                    .map(|real_id| {
-                                        let proof = scrypto::resource::Proof(real_id);
-                                        proof
-                                            .sys_clone(system_api)
-                                            .map_err(InvokeError::Downstream)
-                                            .map(|proof| {
-                                                proof_id_mapping.insert(new_id, proof.0);
-                                                ScryptoValue::from_typed(&proof)
-                                            })
-                                    })
-                                    .unwrap_or(Err(InvokeError::Error(
-                                        TransactionProcessorError::ProofNotFound(*proof_id),
-                                    )))
-                            }),
-                        Instruction::DropProof { proof_id } => proof_id_mapping
-                            .remove(proof_id)
-                            .map(|real_id| {
-                                let proof = scrypto::resource::Proof(real_id);
-                                proof
-                                    .sys_drop(system_api)
-                                    .map(|_| ScryptoValue::unit())
-
                              */
                     }),
                 Instruction::CreateProofFromAuthZoneByIds {
@@ -470,8 +422,9 @@ impl TransactionProcessor {
                             .get(proof_id)
                             .cloned()
                             .map(|real_id| {
-                                system_api
-                                    .invoke(ProofCloneInput { proof_id: real_id })
+                                let proof = scrypto::resource::Proof(real_id);
+                                proof
+                                    .sys_clone(system_api)
                                     .map_err(InvokeError::Downstream)
                                     .map(|proof| {
                                         proof_id_mapping.insert(new_id, proof.0);
@@ -480,25 +433,14 @@ impl TransactionProcessor {
                             })
                             .unwrap_or(Err(InvokeError::Error(
                                 TransactionProcessorError::ProofNotFound(*proof_id),
-/*
-                            ))),
-                        Instruction::DropAllProofs => {
-                            for (_, real_id) in proof_id_mapping.drain() {
-                                let proof = scrypto::resource::Proof(real_id);
-                                proof
-                                    .sys_drop(system_api)
-                                    .map(|_| ScryptoValue::unit())
-                                    .map_err(InvokeError::Downstream)?;
-                            }
-
- */
                             )))
                     }),
                 Instruction::DropProof { proof_id } => proof_id_mapping
                     .remove(proof_id)
                     .map(|real_id| {
-                        system_api
-                            .drop_node(RENodeId::Proof(real_id))
+                        let proof = scrypto::resource::Proof(real_id);
+                        proof
+                            .sys_drop(system_api)
                             .map(|_| ScryptoValue::unit())
                             .map_err(InvokeError::Downstream)
                     })
@@ -507,8 +449,10 @@ impl TransactionProcessor {
                     ))),
                 Instruction::DropAllProofs => {
                     for (_, real_id) in proof_id_mapping.drain() {
-                        system_api
-                            .drop_node(RENodeId::Proof(real_id))
+                        let proof = scrypto::resource::Proof(real_id);
+                        proof
+                            .sys_drop(system_api)
+                            .map(|_| ScryptoValue::unit())
                             .map_err(InvokeError::Downstream)?;
                     }
                     system_api
@@ -534,208 +478,10 @@ impl TransactionProcessor {
                     .and_then(|result| {
                         // Auto move into auth_zone
                         for (proof_id, _) in &result.proof_ids {
-                            system_api
-                                .invoke(AuthZonePushInput {
-                                    auth_zone_id,
-                                    proof: scrypto::resource::Proof(*proof_id),
-                                })
-                                .map(|rtn| ScryptoValue::from_typed(&rtn))
+                            let proof = scrypto::resource::Proof(*proof_id);
+                            ComponentAuthZone::sys_push(proof, system_api)
                                 .map_err(InvokeError::Downstream)?;
                         }
-                        /*
-                        Instruction::CallFunction {
-                            function_ident,
-                            args,
-                        } => {
-                            Self::replace_ids(
-                                &mut proof_id_mapping,
-                                &mut bucket_id_mapping,
-                                ScryptoValue::from_slice(args)
-                                    .expect("Invalid CALL_FUNCTION arguments"),
-                            )
-                            .and_then(|args| Self::process_expressions(args, system_api))
-                            .and_then(|args| {
-                                system_api
-                                    .invoke_scrypto(ScryptoInvocation::Function(
-                                        function_ident.clone(),
-                                        args,
-                                    ))
-                                    .map_err(InvokeError::Downstream)
-                            })
-                            .and_then(|result| {
-                                // Auto move into auth_zone
-                                for (proof_id, _) in &result.proof_ids {
-                                    let proof = scrypto::resource::Proof(*proof_id);
-                                    ComponentAuthZone::sys_push(proof, system_api)
-                                        .map_err(InvokeError::Downstream)?;
-                                }
-                                // Auto move into worktop
-                                for (bucket_id, _) in &result.bucket_ids {
-                                    system_api
-                                        .invoke_native(NativeInvocation::Method(
-                                            NativeMethod::Worktop(WorktopMethod::Put),
-                                            RENodeId::Worktop,
-                                            ScryptoValue::from_typed(&WorktopPutInput {
-                                                bucket: scrypto::resource::Bucket(*bucket_id),
-                                            }),
-                                        ))
-                                        .map_err(InvokeError::Downstream)?;
-                                }
-                                Ok(result)
-                            })
-                        }
-                        Instruction::CallMethod { method_ident, args } => {
-                            Self::replace_ids(
-                                &mut proof_id_mapping,
-                                &mut bucket_id_mapping,
-                                ScryptoValue::from_slice(args)
-                                    .expect("Invalid CALL_METHOD arguments"),
-                            )
-                            .and_then(|args| Self::process_expressions(args, system_api))
-                            .and_then(|args| {
-                                system_api
-                                    .invoke_scrypto(ScryptoInvocation::Method(
-                                        method_ident.clone(),
-                                        args,
-                                    ))
-                                    .map_err(InvokeError::Downstream)
-                            })
-                            .and_then(|result| {
-                                // Auto move into auth_zone
-                                for (proof_id, _) in &result.proof_ids {
-                                    let proof = scrypto::resource::Proof(*proof_id);
-                                    ComponentAuthZone::sys_push(proof, system_api)
-                                        .map_err(InvokeError::Downstream)?;
-                                }
-                                // Auto move into worktop
-                                for (bucket_id, _) in &result.bucket_ids {
-                                    system_api
-                                        .invoke_native(NativeInvocation::Method(
-                                            NativeMethod::Worktop(WorktopMethod::Put),
-                                            RENodeId::Worktop,
-                                            ScryptoValue::from_typed(&WorktopPutInput {
-                                                bucket: scrypto::resource::Bucket(*bucket_id),
-                                            }),
-                                        ))
-                                        .map_err(InvokeError::downstream)?;
-                                }
-                                Ok(result)
-                            })
-                        }
-                        Instruction::PublishPackage { code, abi } => system_api
-                            .invoke_native(NativeInvocation::Function(
-                                NativeFunction::Package(PackageFunction::Publish),
-                                ScryptoValue::from_typed(&PackagePublishInput {
-                                    code: code.clone(),
-                                    abi: abi.clone(),
-                                }),
-                            ))
-                            .map_err(InvokeError::Downstream),
-                        Instruction::CallNativeFunction {
-                            function_ident,
-                            args,
-                        } => {
-                            Self::replace_ids(
-                                &mut proof_id_mapping,
-                                &mut bucket_id_mapping,
-                                ScryptoValue::from_slice(args)
-                                    .expect("Invalid CALL_NATIVE_FUNCTION arguments"),
-                            )
-                            .and_then(|args| Self::process_expressions(args, system_api))
-                            .and_then(|args| {
-                                system_api
-                                    .invoke_native(NativeInvocation::Function(
-                                        resolve_native_function(
-                                            &function_ident.blueprint_name,
-                                            &function_ident.function_name,
-                                        )
-                                        .ok_or(
-                                            InvokeError::Error(
-                                                TransactionProcessorError::NativeFunctionNotFound(
-                                                    function_ident.clone(),
-                                                ),
-                                            ),
-                                        )?,
-                                        args,
-                                    ))
-                                    .map_err(InvokeError::Downstream)
-                            })
-                            .and_then(|result| {
-                                // Auto move into auth_zone
-                                for (proof_id, _) in &result.proof_ids {
-                                    let proof = scrypto::resource::Proof(*proof_id);
-                                    ComponentAuthZone::sys_push(proof, system_api)
-                                        .map_err(InvokeError::Downstream)?;
-                                }
-                                // Auto move into worktop
-                                for (bucket_id, _) in &result.bucket_ids {
-                                    system_api
-                                        .invoke_native(NativeInvocation::Method(
-                                            NativeMethod::Worktop(WorktopMethod::Put),
-                                            RENodeId::Worktop,
-                                            ScryptoValue::from_typed(&WorktopPutInput {
-                                                bucket: scrypto::resource::Bucket(*bucket_id),
-                                            }),
-                                        ))
-                                        .map_err(InvokeError::Downstream)?;
-                                }
-                                Ok(result)
-                            })
-                        }
-                        Instruction::CallNativeMethod { method_ident, args } => {
-                            Self::replace_ids(
-                                &mut proof_id_mapping,
-                                &mut bucket_id_mapping,
-                                ScryptoValue::from_slice(args)
-                                    .expect("Invalid CALL_NATIVE_METHOD arguments"),
-                            )
-                            .and_then(|args| Self::process_expressions(args, system_api))
-                            .and_then(|args| {
-                                system_api
-                                    .invoke_native(NativeInvocation::Method(
-                                        resolve_native_method(
-                                            method_ident.receiver,
-                                            &method_ident.method_name,
-                                        )
-                                        .ok_or(
-                                            InvokeError::Error(
-                                                TransactionProcessorError::NativeMethodNotFound(
-                                                    method_ident.clone(),
-                                                ),
-                                            ),
-                                        )?,
-                                        Self::replace_node_id(
-                                            method_ident.receiver,
-                                            &mut proof_id_mapping,
-                                            &mut bucket_id_mapping,
-                                        )?,
-                                        args,
-                                    ))
-                                    .map_err(InvokeError::Downstream)
-                            })
-                            .and_then(|result| {
-                                // Auto move into auth_zone
-                                for (proof_id, _) in &result.proof_ids {
-                                    let proof = scrypto::resource::Proof(*proof_id);
-                                    ComponentAuthZone::sys_push(proof, system_api)
-                                        .map_err(InvokeError::Downstream)?;
-                                }
-                                // Auto move into worktop
-                                for (bucket_id, _) in &result.bucket_ids {
-                                    system_api
-                                        .invoke_native(NativeInvocation::Method(
-                                            NativeMethod::Worktop(WorktopMethod::Put),
-                                            RENodeId::Worktop,
-                                            ScryptoValue::from_typed(&WorktopPutInput {
-                                                bucket: scrypto::resource::Bucket(*bucket_id),
-                                            }),
-                                        ))
-                                        .map_err(InvokeError::downstream)?;
-                                }
-                                Ok(result)
-                            })
-
-                         */
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
                             system_api
@@ -762,12 +508,8 @@ impl TransactionProcessor {
                     .and_then(|result| {
                         // Auto move into auth_zone
                         for (proof_id, _) in &result.proof_ids {
-                            system_api
-                                .invoke(AuthZonePushInput {
-                                    auth_zone_id,
-                                    proof: scrypto::resource::Proof(*proof_id),
-                                })
-                                .map(|rtn| ScryptoValue::from_typed(&rtn))
+                            let proof = scrypto::resource::Proof(*proof_id);
+                            ComponentAuthZone::sys_push(proof, system_api)
                                 .map_err(InvokeError::Downstream)?;
                         }
                         // Auto move into worktop
@@ -815,11 +557,8 @@ impl TransactionProcessor {
                     .and_then(|result| {
                         // Auto move into auth_zone
                         for (proof_id, _) in &result.proof_ids {
-                            system_api
-                                .invoke(AuthZonePushInput {
-                                    proof: scrypto::resource::Proof(*proof_id),
-                                    auth_zone_id,
-                                })
+                            let proof = scrypto::resource::Proof(*proof_id);
+                            ComponentAuthZone::sys_push(proof, system_api)
                                 .map_err(InvokeError::Downstream)?;
                         }
                         // Auto move into worktop
@@ -856,11 +595,8 @@ impl TransactionProcessor {
                     .and_then(|result| {
                         // Auto move into auth_zone
                         for (proof_id, _) in &result.proof_ids {
-                            system_api
-                                .invoke(AuthZonePushInput {
-                                    proof: scrypto::resource::Proof(*proof_id),
-                                    auth_zone_id,
-                                })
+                            let proof = scrypto::resource::Proof(*proof_id);
+                            ComponentAuthZone::sys_push(proof, system_api)
                                 .map_err(InvokeError::Downstream)?;
                         }
                         // Auto move into worktop

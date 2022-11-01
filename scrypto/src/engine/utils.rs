@@ -68,30 +68,6 @@ impl ScryptoSyscalls<SyscallError> for Syscalls {
         Ok(rtn)
     }
 
-    fn sys_invoke_native_function<ARGS: Encode, V: Decode>(
-        &mut self,
-        native_function: NativeFunction,
-        args: &ARGS,
-    ) -> Result<V, SyscallError> {
-        let rtn = call_engine(RadixEngineInput::InvokeNativeFunction(
-            native_function,
-            scrypto_encode(args),
-        ));
-        Ok(rtn)
-    }
-
-    fn sys_invoke_native_method<ARGS: Encode, V: Decode>(
-        &mut self,
-        native_method: NativeMethod,
-        args: &ARGS,
-    ) -> Result<V, SyscallError> {
-        let rtn = call_engine(RadixEngineInput::InvokeNativeMethod(
-            native_method,
-            scrypto_encode(args),
-        ));
-        Ok(rtn)
-    }
-
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, SyscallError> {
         let rtn = call_engine(RadixEngineInput::CreateNode(node));
         Ok(rtn)

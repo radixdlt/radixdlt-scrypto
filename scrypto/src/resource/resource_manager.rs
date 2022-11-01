@@ -73,6 +73,14 @@ pub struct ResourceManagerCreateBucketInput {
     pub resource_address: ResourceAddress,
 }
 
+impl SysInvocation for ResourceManagerCreateBucketInput {
+    type Output = Bucket;
+
+    fn native_method() -> NativeMethod {
+        NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerMintInput {
     pub resource_address: ResourceAddress,

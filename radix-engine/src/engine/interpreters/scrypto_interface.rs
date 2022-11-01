@@ -63,30 +63,6 @@ where
             .map(|value| scrypto_decode(&value.raw).unwrap())
     }
 
-    fn sys_invoke_native_function<ARGS: Encode, V: Decode>(
-        &mut self,
-        native_function: NativeFunction,
-        args: &ARGS,
-    ) -> Result<V, RuntimeError> {
-        let args = ScryptoValue::from_typed(args);
-
-        // TODO: Fix
-        parse_and_invoke_native_function(native_function, args.raw, self)
-            .map(|value| scrypto_decode(&value.raw).unwrap())
-    }
-
-    fn sys_invoke_native_method<ARGS: Encode, V: Decode>(
-        &mut self,
-        native_method: NativeMethod,
-        args: &ARGS,
-    ) -> Result<V, RuntimeError> {
-        let args = ScryptoValue::from_typed(args);
-
-        // TODO: Fix
-        parse_and_invoke_native_method(native_method, args.raw, self)
-            .map(|value| scrypto_decode(&value.raw).unwrap())
-    }
-
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
         let node = match node {
             ScryptoRENode::GlobalComponent(component_id) => RENode::Global(

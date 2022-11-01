@@ -32,6 +32,14 @@ pub struct ProofCloneInput {
     pub proof_id: ProofId,
 }
 
+impl SysInvocation for ProofCloneInput {
+    type Output = Proof;
+
+    fn native_method() -> NativeMethod {
+        NativeMethod::Proof(ProofMethod::Clone)
+    }
+}
+
 /// Represents a proof of owning some resource.
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Proof(pub ProofId);
@@ -116,11 +124,10 @@ impl Proof {
 
     pub fn sys_clone<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<Proof, E>
     where
-        Y: ScryptoSyscalls<E>,
+        Y: ScryptoSyscalls<E> + SysInvokable<ProofCloneInput, E>,
     {
-        sys_calls.sys_invoke_native_method(
-            NativeMethod::Proof(ProofMethod::Clone),
-            &ProofCloneInput {
+        sys_calls.sys_invoke(
+            ProofCloneInput {
                 proof_id: self.0,
             },
         )

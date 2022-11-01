@@ -39,6 +39,13 @@ pub struct VaultGetAmountInput {
     pub vault_id: VaultId,
 }
 
+impl SysInvocation for VaultGetAmountInput {
+    type Output = Decimal;
+    fn native_method() -> NativeMethod {
+        NativeMethod::Vault(VaultMethod::GetAmount)
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultGetResourceAddressInput {
     pub vault_id: VaultId,
@@ -134,13 +141,12 @@ impl Vault {
 
     pub fn sys_amount<Y, E: Debug + Decode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
     where
-        Y: ScryptoSyscalls<E>,
+        Y: ScryptoSyscalls<E> + SysInvokable<VaultGetAmountInput, E>,
     {
-        sys_calls.sys_invoke_native_method(
-            NativeMethod::Vault(VaultMethod::GetAmount),
-            &VaultGetAmountInput {
+        sys_calls.sys_invoke(
+            VaultGetAmountInput {
                 vault_id: self.0,
-            },
+            }
         )
     }
 
