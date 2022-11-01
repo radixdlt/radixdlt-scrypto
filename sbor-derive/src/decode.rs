@@ -22,7 +22,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
         ..
     } = parse2(input)?;
     let custom_type_id = custom_type_id(&attrs);
-    let (impl_generics, ty_generics, where_clause, sbor_generics) =
+    let (impl_generics, ty_generics, where_clause, sbor_cti) =
         build_generics(&generics, custom_type_id)?;
 
     let output = match data {
@@ -37,12 +37,12 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 let s_ids = s.iter().map(|f| &f.ident);
                 let s_types = s.iter().map(|f| &f.ty);
                 quote! {
-                    impl #impl_generics ::sbor::Decode #sbor_generics for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Decode <#sbor_cti> for #ident #ty_generics #where_clause {
                         #[inline]
-                        fn check_type_id(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<(), ::sbor::DecodeError> {
+                        fn check_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<(), ::sbor::DecodeError> {
                             decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
                         }
-                        fn decode_value(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<Self, ::sbor::DecodeError> {
+                        fn decode_value(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
                             decoder.check_size(#ns_len)?;
                             Ok(Self {
@@ -65,12 +65,12 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 }
                 let ns_len = Index::from(unnamed.iter().filter(|f| !is_decode_skipped(f)).count());
                 quote! {
-                    impl #impl_generics ::sbor::Decode #sbor_generics for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Decode <#sbor_cti> for #ident #ty_generics #where_clause {
                         #[inline]
-                        fn check_type_id(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<(), ::sbor::DecodeError> {
+                        fn check_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<(), ::sbor::DecodeError> {
                             decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
                         }
-                        fn decode_value(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<Self, ::sbor::DecodeError> {
+                        fn decode_value(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
                             decoder.check_size(#ns_len)?;
                             Ok(Self (
@@ -82,12 +82,12 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl #impl_generics ::sbor::Decode #sbor_generics for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Decode <#sbor_cti> for #ident #ty_generics #where_clause {
                         #[inline]
-                        fn check_type_id(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<(), ::sbor::DecodeError> {
+                        fn check_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<(), ::sbor::DecodeError> {
                             decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
                         }
-                        fn decode_value(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<Self, ::sbor::DecodeError> {
+                        fn decode_value(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
                             decoder.check_size(0)?;
                             Ok(Self {})
                         }
@@ -155,13 +155,13 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             });
 
             quote! {
-                impl #impl_generics ::sbor::Decode #sbor_generics for #ident #ty_generics #where_clause {
+                impl #impl_generics ::sbor::Decode <#sbor_cti> for #ident #ty_generics #where_clause {
                     #[inline]
-                    fn check_type_id(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<(), ::sbor::DecodeError> {
+                    fn check_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<(), ::sbor::DecodeError> {
                         decoder.check_type_id(::sbor::type_id::SborTypeId::Enum)
                     }
                     #[inline]
-                    fn decode_value(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<Self, ::sbor::DecodeError> {
+                    fn decode_value(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
 
                         let discriminator = decoder.read_discriminator()?;
@@ -177,11 +177,11 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             return Err(Error::new(Span::call_site(), "Union is not supported!"));
         }
     };
-    trace!("handle_decode() finishes");
 
     #[cfg(feature = "trace")]
     crate::utils::print_generated_code("Decode", &output);
 
+    trace!("handle_decode() finishes");
     Ok(output)
 }
 

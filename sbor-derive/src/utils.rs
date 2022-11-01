@@ -74,23 +74,22 @@ pub fn is_encode_skipped(f: &syn::Field) -> bool {
 pub fn build_generics(
     generics: &Generics,
     custom_type_id: Option<Path>,
-) -> syn::Result<(Generics, TypeGenerics, Option<&WhereClause>, Generics)> {
+) -> syn::Result<(Generics, TypeGenerics, Option<&WhereClause>, Path)> {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     // Unwrap for mutation
     let mut impl_generics: Generics = parse_quote! { #impl_generics };
 
-    let sbor_generics = if custom_type_id.is_none() {
+    let sbor_cti = if let Some(path) = custom_type_id {
+        path
+    } else {
         // Note that this above logic requires no use of CTI generic param by the input type.
         // TODO: better to report error OR an alternative name if already exists
         impl_generics
             .params
             .push(parse_quote!(CTI: ::sbor::type_id::CustomTypeId));
-
-        parse_quote! { <CTI> }
-    } else {
-        parse_quote! { <#custom_type_id> }
+        parse_quote! { CTI }
     };
 
-    Ok((impl_generics, ty_generics, where_clause, sbor_generics))
+    Ok((impl_generics, ty_generics, where_clause, sbor_cti))
 }
