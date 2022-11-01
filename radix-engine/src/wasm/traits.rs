@@ -4,6 +4,8 @@ use scrypto::values::ScryptoValue;
 
 use crate::wasm::errors::*;
 
+use super::InstrumentedCode;
+
 /// Represents the runtime that can be invoked by Scrypto modules.
 pub trait WasmRuntime {
     fn main(&mut self, input: ScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>>;
@@ -31,5 +33,5 @@ pub trait WasmInstance {
 /// A Scrypto WASM engine validates, instruments and runs Scrypto modules.
 pub trait WasmEngine<I: WasmInstance> {
     /// Instantiate a Scrypto module.
-    fn instantiate(&mut self, code: &[u8]) -> I;
+    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> I;
 }

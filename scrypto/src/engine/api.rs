@@ -10,6 +10,13 @@ use crate::crypto::Hash;
 
 use super::types::*;
 
+
+// TODO: This should be cleaned up
+pub enum SysNativeInvocationInfo {
+    Function(NativeFunction),
+    Method(NativeMethod),
+}
+
 pub trait SysInvocation: Encode {
     type Output: Debug + Decode;
     fn native_method() -> NativeMethod;

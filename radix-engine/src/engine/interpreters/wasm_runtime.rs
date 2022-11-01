@@ -29,11 +29,6 @@ where
         + InvokableNative<'a>
         + SysInvokableNative<RuntimeError>
 {
-    // TODO: expose API for reading blobs
-
-    // TODO: do we want to allow dynamic creation of blobs?
-
-    // TODO: do we check existence of blobs when being passed as arguments/return?
 
     pub fn new(system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
@@ -49,14 +44,6 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         parse_and_invoke_native_function(native_function, args, self.system_api)
     }
-
-    fn handle_invoke_native_method(
-        &mut self,
-        native_method: NativeMethod,
-        args: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        parse_and_invoke_native_method(native_method, args, self.system_api)
-    }
 }
 
 fn encode<T: Encode>(output: T) -> Vec<u8> {
@@ -71,6 +58,10 @@ where
         + InvokableNative<'a>
         + SysInvokableNative<RuntimeError>
 {
+    // TODO: expose API for reading blobs
+    // TODO: do we want to allow dynamic creation of blobs?
+    // TODO: do we check existence of blobs when being passed as arguments/return?
+
     fn main(&mut self, input: ScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>> {
         let input: RadixEngineInput = scrypto_decode(&input.raw)
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
@@ -85,7 +76,7 @@ where
                 self.handle_invoke_native_function(native_function, args).map(|v| v.raw)?
             }
             RadixEngineInput::InvokeNativeMethod(native_method, args) => {
-                self.handle_invoke_native_method(native_method, args).map(|v| v.raw)?
+                parse_and_invoke_native_method(native_method, args, self.system_api).map(|v| v.raw)?
             }
             RadixEngineInput::CreateNode(node) => {
                 self.system_api.sys_create_node(node).map(encode)?
@@ -150,7 +141,7 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>> {
         self.fee_reserve
-            .consume(n, "run_wasm", false)
+            .consume_flat(n, "run_wasm", false)
             .map_err(|e| InvokeError::Error(WasmError::CostingError(e)))
     }
 }

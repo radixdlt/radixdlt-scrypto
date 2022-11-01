@@ -15,7 +15,7 @@ fn test_bucket_internal(method_name: &str) {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(account, 10.into())
         .call_function(package_address, "BucketTest", method_name, args!())
         .call_method(
             account,
@@ -85,7 +85,7 @@ fn test_bucket_of_badges() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(account, 10.into())
         .call_function(package_address, "BadgeTest", "combine", args!())
         .call_function(package_address, "BadgeTest", "split", args!())
         .call_function(package_address, "BadgeTest", "borrow", args!())
@@ -116,7 +116,7 @@ fn test_take_with_invalid_granularity() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(account, 10.into())
         .call_function_with_abi(
             package_address,
             "BucketTest",
@@ -161,7 +161,7 @@ fn test_take_with_negative_amount() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(account, 10.into())
         .call_function_with_abi(
             package_address,
             "BucketTest",
@@ -203,7 +203,7 @@ fn create_empty_bucket() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(account, 10.into())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.return_to_worktop(bucket_id)
         })

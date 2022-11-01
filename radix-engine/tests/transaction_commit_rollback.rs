@@ -14,8 +14,8 @@ fn test_state_track_success() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), account)
-        .withdraw_from_account(RADIX_TOKEN, account)
+        .lock_fee(account, 10u32.into())
+        .withdraw_from_account(account, RADIX_TOKEN)
         .call_method(
             other_account,
             "deposit_batch",
@@ -46,8 +46,8 @@ fn test_state_track_failure() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10u32.into(), account)
-        .withdraw_from_account(RADIX_TOKEN, account)
+        .lock_fee(account, 10u32.into())
+        .withdraw_from_account(account, RADIX_TOKEN)
         .call_method(
             other_account,
             "deposit_batch",
