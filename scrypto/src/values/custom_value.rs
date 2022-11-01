@@ -4,10 +4,11 @@ use sbor::*;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
+use crate::engine::types::*;
 use crate::math::*;
+use crate::misc::copy_u8_array;
 use crate::resource::*;
-
-use super::ScryptoCustomTypeId;
+use crate::values::ScryptoCustomTypeId;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValue {
@@ -18,11 +19,11 @@ pub enum ScryptoCustomValue {
     SystemAddress(SystemAddress),
 
     // RE nodes types
-    Component(Component),
-    KeyValueStore(KeyValueStore<(), ()>),
-    Bucket(Bucket),
-    Proof(Proof),
-    Vault(Vault),
+    Component(ComponentId),
+    KeyValueStore(KeyValueStoreId),
+    Bucket(BucketId),
+    Proof(ProofId),
+    Vault(VaultId),
 
     // Other interpreted types
     Expression(Expression),
@@ -113,11 +114,11 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
             ScryptoCustomValue::ComponentAddress(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::ResourceAddress(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::SystemAddress(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::Component(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::KeyValueStore(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::Bucket(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::Proof(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::Vault(v) => encoder.write_slice(&v.to_vec()),
+            ScryptoCustomValue::Component(v) => encoder.write_slice(v.as_slice()),
+            ScryptoCustomValue::KeyValueStore(v) => encoder.write_slice(v.as_slice()),
+            ScryptoCustomValue::Bucket(v) => encoder.write_slice(&v.to_le_bytes()),
+            ScryptoCustomValue::Proof(v) => encoder.write_slice(&v.to_le_bytes()),
+            ScryptoCustomValue::Vault(v) => encoder.write_slice(v.as_slice()),
             ScryptoCustomValue::Expression(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::Blob(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::NonFungibleAddress(v) => encoder.write_slice(&v.to_vec()),
@@ -140,102 +141,144 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
             ScryptoCustomTypeId::PackageAddress => {
                 let n = 27;
                 let slice = decoder.read_slice(n)?;
-                PackageAddress::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                PackageAddress::try_from(slice)
+                    .map_err(|_| DecodeError::InvalidCustomValue)
+                    .map(Self::PackageAddress)
             }
             ScryptoCustomTypeId::ComponentAddress => {
                 let n = 27;
                 let slice = decoder.read_slice(n)?;
-                ComponentAddress::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                ComponentAddress::try_from(slice)
+                    .map_err(|_| DecodeError::InvalidCustomValue)
+                    .map(Self::ComponentAddress)
             }
             ScryptoCustomTypeId::ResourceAddress => {
                 let n = 27;
                 let slice = decoder.read_slice(n)?;
-                ResourceAddress::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                ResourceAddress::try_from(slice)
+                    .map_err(|_| DecodeError::InvalidCustomValue)
+                    .map(Self::ResourceAddress)
             }
             ScryptoCustomTypeId::SystemAddress => {
                 let n = 27;
                 let slice = decoder.read_slice(n)?;
-                SystemAddress::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                SystemAddress::try_from(slice)
+                    .map_err(|_| DecodeError::InvalidCustomValue)
+                    .map(Self::SystemAddress)
             }
             ScryptoCustomTypeId::Component => {
                 let n = 36;
                 let slice = decoder.read_slice(n)?;
-                Component::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                Ok(Self::Component(
+                    slice
+                        .try_into()
+                        .map_err(|_| DecodeError::InvalidCustomValue)?,
+                ))
             }
             ScryptoCustomTypeId::KeyValueStore => {
                 let n = 36;
                 let slice = decoder.read_slice(n)?;
-                KeyValueStore::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                Ok(Self::KeyValueStore(
+                    slice
+                        .try_into()
+                        .map_err(|_| DecodeError::InvalidCustomValue)?,
+                ))
             }
             ScryptoCustomTypeId::Bucket => {
                 let n = 4;
                 let slice = decoder.read_slice(n)?;
-                Bucket::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                Ok(Self::Bucket(u32::from_le_bytes(copy_u8_array(slice))))
             }
             ScryptoCustomTypeId::Proof => {
                 let n = 4;
                 let slice = decoder.read_slice(n)?;
-                Proof::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                Ok(Self::Proof(u32::from_le_bytes(copy_u8_array(slice))))
             }
             ScryptoCustomTypeId::Vault => {
                 let n = 36;
                 let slice = decoder.read_slice(n)?;
-                Vault::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                Ok(Self::Vault(
+                    slice
+                        .try_into()
+                        .map_err(|_| DecodeError::InvalidCustomValue)?,
+                ))
             }
             ScryptoCustomTypeId::Expression => {
                 let n = decoder.read_size()?;
                 let slice = decoder.read_slice(n)?;
-                Expression::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                Expression::try_from(slice)
+                    .map_err(|_| DecodeError::InvalidCustomValue)
+                    .map(Self::Expression)
             }
             ScryptoCustomTypeId::Blob => {
                 let n = 32;
                 let slice = decoder.read_slice(n)?;
-                Blob::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                Blob::try_from(slice)
+                    .map_err(|_| DecodeError::InvalidCustomValue)
+                    .map(Self::Blob)
             }
             ScryptoCustomTypeId::NonFungibleAddress => {
-                let n = decoder.read_size();
+                let n = decoder.read_size()?;
                 let slice = decoder.read_slice(n)?;
-                NonFungibleAddress::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                NonFungibleAddress::try_from(slice)
+                    .map_err(|_| DecodeError::InvalidCustomValue)
+                    .map(Self::NonFungibleAddress)
             }
             ScryptoCustomTypeId::Hash => {
                 let n = 32;
                 let slice = decoder.read_slice(n)?;
-                Hash::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                Hash::try_from(slice)
+                    .map_err(|_| DecodeError::InvalidCustomValue)
+                    .map(Self::Hash)
             }
             ScryptoCustomTypeId::EcdsaSecp256k1PublicKey => {
                 let n = EcdsaSecp256k1PublicKey::LENGTH;
                 let slice = decoder.read_slice(n)?;
-                EcdsaSecp256k1PublicKey::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                EcdsaSecp256k1PublicKey::try_from(slice)
+                    .map_err(|_| DecodeError::InvalidCustomValue)
+                    .map(Self::EcdsaSecp256k1PublicKey)
             }
             ScryptoCustomTypeId::EcdsaSecp256k1Signature => {
                 let n = EcdsaSecp256k1Signature::LENGTH;
                 let slice = decoder.read_slice(n)?;
-                EcdsaSecp256k1Signature::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                EcdsaSecp256k1Signature::try_from(slice)
+                    .map_err(|_| DecodeError::InvalidCustomValue)
+                    .map(Self::EcdsaSecp256k1Signature)
             }
             ScryptoCustomTypeId::EddsaEd25519PublicKey => {
                 let n = EddsaEd25519PublicKey::LENGTH;
                 let slice = decoder.read_slice(n)?;
-                EddsaEd25519PublicKey::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                EddsaEd25519PublicKey::try_from(slice)
+                    .map_err(|_| DecodeError::InvalidCustomValue)
+                    .map(Self::EddsaEd25519PublicKey)
             }
             ScryptoCustomTypeId::EddsaEd25519Signature => {
                 let n = EddsaEd25519Signature::LENGTH;
                 let slice = decoder.read_slice(n)?;
-                EddsaEd25519Signature::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                EddsaEd25519Signature::try_from(slice)
+                    .map_err(|_| DecodeError::InvalidCustomValue)
+                    .map(Self::EddsaEd25519Signature)
             }
             ScryptoCustomTypeId::Decimal => {
                 let n = Decimal::BITS / 8;
                 let slice = decoder.read_slice(n)?;
-                Decimal::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                Decimal::try_from(slice)
+                    .map_err(|_| DecodeError::InvalidCustomValue)
+                    .map(Self::Decimal)
             }
             ScryptoCustomTypeId::PreciseDecimal => {
                 let n = PreciseDecimal::BITS / 8;
                 let slice = decoder.read_slice(n)?;
-                PreciseDecimal::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                PreciseDecimal::try_from(slice)
+                    .map_err(|_| DecodeError::InvalidCustomValue)
+                    .map(Self::PreciseDecimal)
             }
             ScryptoCustomTypeId::NonFungibleId => {
-                let n = decoder.read_size();
+                let n = decoder.read_size()?;
                 let slice = decoder.read_slice(n)?;
-                NonFungibleId::try_from(slice).map_err(DecodeError::InvalidCustomValue)
+                NonFungibleId::try_from(slice)
+                    .map_err(|_| DecodeError::InvalidCustomValue)
+                    .map(Self::NonFungibleId)
             }
         }
     }

@@ -9,12 +9,10 @@ use crate::buffer::*;
 use crate::component::*;
 use crate::core::*;
 use crate::engine::types::*;
-use crate::misc::*;
 use crate::resource::*;
-use crate::values::{ScryptoCustomTypeId, ScryptoCustomValue};
+use crate::values::*;
 
-use super::ValueFormatContext;
-
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoValueCreationError {
     DecodeError(DecodeError),
     ValueIndexingError(ValueIndexingError),
@@ -68,8 +66,10 @@ impl ScryptoValue {
         value: SborValue<ScryptoCustomTypeId, ScryptoCustomValue>,
     ) -> Result<Self, ScryptoValueCreationError> {
         let mut visitor = ScryptoCustomValueVisitor::new();
-        traverse_any(&mut SborPathBuf::new(), &value, &mut visitor)
-            .map_err(|e| ScryptoValueCreationError::ValueIndexingError)?;
+        let index_result = traverse_any(&mut SborPathBuf::new(), &value, &mut visitor);
+        if let Err(error) = index_result {
+            return Err(ScryptoValueCreationError::ValueIndexingError(error));
+        }
 
         Ok(Self {
             raw: encode_any(&value),
@@ -143,7 +143,7 @@ impl ScryptoValue {
                 .ok_or(ScryptoValueReplaceError::ProofIdNotFound(proof_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
             if let SborValue::Custom { value } = value {
-                *value = ScryptoCustomValue::Proof(scrypto::resource::Proof(next_id));
+                *value = ScryptoCustomValue::Proof(next_id);
             } else {
                 panic!("Should be a custom value");
             }
@@ -159,7 +159,7 @@ impl ScryptoValue {
                 .ok_or(ScryptoValueReplaceError::BucketIdNotFound(bucket_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
             if let SborValue::Custom { value } = value {
-                *value = ScryptoCustomValue::Bucket(scrypto::resource::Bucket(next_id));
+                *value = ScryptoCustomValue::Bucket(next_id);
             } else {
                 panic!("Should be a custom value");
             }
@@ -184,7 +184,7 @@ impl ScryptoValue {
 
 impl fmt::Debug for ScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.display(ValueFormatContext::no_context()))
+        format_value(f, &self.dom, &ValueFormatContext::no_context())
     }
 }
 
@@ -207,7 +207,6 @@ pub struct ScryptoCustomValueVisitor {
     pub non_fungible_addresses: HashSet<NonFungibleAddress>,
 }
 
-/// Represents an error when validating a Scrypto-specific value.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValueIndexingError {
     DuplicateOwnership,
@@ -243,54 +242,62 @@ impl CustomValueVisitor<ScryptoCustomTypeId, ScryptoCustomValue> for ScryptoCust
         match value {
             // Global addresses
             ScryptoCustomValue::PackageAddress(value) => {
-                self.package_addresses.insert(value);
+                self.package_addresses.insert(value.clone());
             }
             ScryptoCustomValue::ComponentAddress(value) => {
-                self.component_addresses.insert(value);
+                self.component_addresses.insert(value.clone());
             }
             ScryptoCustomValue::ResourceAddress(value) => {
-                self.resource_addresses.insert(value);
+                self.resource_addresses.insert(value.clone());
             }
             ScryptoCustomValue::SystemAddress(value) => {
-                self.system_addresses.insert(value);
+                self.system_addresses.insert(value.clone());
             }
 
             // RE nodes & references
             ScryptoCustomValue::Component(value) => {
-                if !self.components.insert(value.0) {
+                if !self.components.insert(value.clone()) {
                     return Err(ValueIndexingError::DuplicateOwnership);
                 }
             }
             ScryptoCustomValue::KeyValueStore(value) => {
-                if !self.kv_stores.insert(value.id) {
+                if !self.kv_stores.insert(value.clone()) {
                     return Err(ValueIndexingError::DuplicateOwnership);
                 }
             }
             ScryptoCustomValue::Bucket(value) => {
-                if self.buckets.insert(value.0, path.clone().into()).is_some() {
+                if self
+                    .buckets
+                    .insert(value.clone(), path.clone().into())
+                    .is_some()
+                {
                     return Err(ValueIndexingError::DuplicateOwnership);
                 }
             }
             ScryptoCustomValue::Proof(value) => {
-                if self.proofs.insert(value.0, path.clone().into()).is_some() {
+                if self
+                    .proofs
+                    .insert(value.clone(), path.clone().into())
+                    .is_some()
+                {
                     return Err(ValueIndexingError::DuplicateOwnership);
                 }
             }
             ScryptoCustomValue::Vault(value) => {
-                if !self.vaults.insert(value.0) {
+                if !self.vaults.insert(value.clone()) {
                     return Err(ValueIndexingError::DuplicateOwnership);
                 }
             }
 
             // Other interpreted
             ScryptoCustomValue::Expression(value) => {
-                self.expressions.push((value, path.clone().into()));
+                self.expressions.push((value.clone(), path.clone().into()));
             }
             ScryptoCustomValue::Blob(value) => {
-                self.blobs.push((value, path.clone().into()));
+                self.blobs.push((value.clone(), path.clone().into()));
             }
             ScryptoCustomValue::NonFungibleAddress(value) => {
-                self.non_fungible_addresses.insert(value);
+                self.non_fungible_addresses.insert(value.clone());
             }
 
             // Uninterpreted

@@ -1,7 +1,7 @@
 use sbor::*;
 
 use crate::abi::*;
-use crate::values::{ScryptoCustomTypeId, ScryptoCustomValue};
+use crate::values::*;
 
 pub fn sbor_type_id(ty: &Type) -> Option<SborTypeId<ScryptoCustomTypeId>> {
     match ty {
@@ -90,13 +90,15 @@ fn match_type_with_schema(
                 elements,
             } = value
             {
-                let element_type_matches = match element_type.id() {
+                let element_type_matches = match sbor_type_id(element_type) {
                     Some(id) => id == *element_type_id,
                     None => true,
                 };
                 element_type_matches
                     && usize::from(*length) == elements.len()
-                    && elements.iter().all(|v| element_type.matches(v))
+                    && elements
+                        .iter()
+                        .all(|v| match_type_with_schema(element_type, v))
             } else {
                 false
             }
@@ -107,7 +109,7 @@ fn match_type_with_schema(
                     && element_types
                         .iter()
                         .enumerate()
-                        .all(|(i, e)| e.matches(elements.get(i).unwrap()))
+                        .all(|(i, e)| match_type_with_schema(e, elements.get(i).unwrap()))
             } else {
                 false
             }
@@ -119,7 +121,9 @@ fn match_type_with_schema(
             } = value
             {
                 match discriminator.as_str() {
-                    OPTION_VARIANT_SOME => fields.len() == 1 && some_type.matches(&fields[0]),
+                    OPTION_VARIANT_SOME => {
+                        fields.len() == 1 && match_type_with_schema(some_type, &fields[0])
+                    }
                     OPTION_VARIANT_NONE => fields.len() == 0,
                     _ => false,
                 }
@@ -137,8 +141,12 @@ fn match_type_with_schema(
             } = value
             {
                 match discriminator.as_str() {
-                    RESULT_VARIANT_OK => fields.len() == 1 && okay_type.matches(&fields[0]),
-                    RESULT_VARIANT_ERR => fields.len() == 1 && err_type.matches(&fields[0]),
+                    RESULT_VARIANT_OK => {
+                        fields.len() == 1 && match_type_with_schema(okay_type, &fields[0])
+                    }
+                    RESULT_VARIANT_ERR => {
+                        fields.len() == 1 && match_type_with_schema(err_type, &fields[0])
+                    }
                     _ => false,
                 }
             } else {
@@ -153,11 +161,14 @@ fn match_type_with_schema(
                 elements,
             } = value
             {
-                let element_type_matches = match element_type.id() {
+                let element_type_matches = match sbor_type_id(element_type) {
                     Some(id) => id == *element_type_id,
                     None => true,
                 };
-                element_type_matches && elements.iter().all(|v| element_type.matches(v))
+                element_type_matches
+                    && elements
+                        .iter()
+                        .all(|v| match_type_with_schema(element_type, v))
             } else {
                 false
             }
@@ -179,8 +190,8 @@ fn match_type_with_schema(
                     && elements.iter().all(|e| {
                         if let SborValue::Tuple { elements } = e {
                             elements.len() == 2
-                                && key_type.matches(&elements[0])
-                                && value_type.matches(&elements[1])
+                                && match_type_with_schema(key_type, &elements[0])
+                                && match_type_with_schema(value_type, &elements[1])
                         } else {
                             false
                         }
@@ -201,14 +212,13 @@ fn match_type_with_schema(
                             && unnamed
                                 .iter()
                                 .enumerate()
-                                .all(|(i, e)| e.matches(fields.get(i).unwrap()))
+                                .all(|(i, e)| match_type_with_schema(e, fields.get(i).unwrap()))
                     }
                     Fields::Named { named } => {
                         named.len() == fields.len()
-                            && named
-                                .iter()
-                                .enumerate()
-                                .all(|(i, (_, e))| e.matches(fields.get(i).unwrap()))
+                            && named.iter().enumerate().all(|(i, (_, e))| {
+                                match_type_with_schema(e, fields.get(i).unwrap())
+                            })
                     }
                 }
             } else {
@@ -225,22 +235,20 @@ fn match_type_with_schema(
             } = value
             {
                 for variant in type_variants {
-                    if variant.name.eq(&discriminator) {
+                    if variant.name.eq(discriminator) {
                         return match &variant.fields {
                             Fields::Unit => fields.is_empty(),
                             Fields::Unnamed { unnamed } => {
                                 unnamed.len() == fields.len()
-                                    && unnamed
-                                        .iter()
-                                        .enumerate()
-                                        .all(|(i, e)| e.matches(fields.get(i).unwrap()))
+                                    && unnamed.iter().enumerate().all(|(i, e)| {
+                                        match_type_with_schema(e, fields.get(i).unwrap())
+                                    })
                             }
                             Fields::Named { named } => {
                                 named.len() == fields.len()
-                                    && named
-                                        .iter()
-                                        .enumerate()
-                                        .all(|(i, (_, e))| e.matches(fields.get(i).unwrap()))
+                                    && named.iter().enumerate().all(|(i, (_, e))| {
+                                        match_type_with_schema(e, fields.get(i).unwrap())
+                                    })
                             }
                         };
                     }
@@ -253,26 +261,36 @@ fn match_type_with_schema(
         Type::PackageAddress => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::ComponentAddress(_))
+            } else {
+                false
             }
         }
         Type::ComponentAddress => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::ComponentAddress(_))
+            } else {
+                false
             }
         }
         Type::ResourceAddress => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::ResourceAddress(_))
+            } else {
+                false
             }
         }
         Type::SystemAddress => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::SystemAddress(_))
+            } else {
+                false
             }
         }
         Type::Component => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Component(_))
+            } else {
+                false
             }
         }
         Type::KeyValueStore {
@@ -281,76 +299,106 @@ fn match_type_with_schema(
         } => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::KeyValueStore(_))
+            } else {
+                false
             }
         }
         Type::Bucket => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Bucket(_))
+            } else {
+                false
             }
         }
         Type::Proof => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Proof(_))
+            } else {
+                false
             }
         }
         Type::Vault => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Vault(_))
+            } else {
+                false
             }
         }
         Type::Expression => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Expression(_))
+            } else {
+                false
             }
         }
         Type::Blob => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Blob(_))
+            } else {
+                false
             }
         }
         Type::NonFungibleAddress => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::NonFungibleAddress(_))
+            } else {
+                false
             }
         }
         Type::Hash => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Hash(_))
+            } else {
+                false
             }
         }
         Type::EcdsaSecp256k1PublicKey => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::EcdsaSecp256k1PublicKey(_))
+            } else {
+                false
             }
         }
         Type::EcdsaSecp256k1Signature => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::EcdsaSecp256k1Signature(_))
+            } else {
+                false
             }
         }
         Type::EddsaEd25519PublicKey => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::EddsaEd25519PublicKey(_))
+            } else {
+                false
             }
         }
         Type::EddsaEd25519Signature => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::EddsaEd25519Signature(_))
+            } else {
+                false
             }
         }
         Type::Decimal => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Decimal(_))
+            } else {
+                false
             }
         }
         Type::PreciseDecimal => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::PreciseDecimal(_))
+            } else {
+                false
             }
         }
         Type::NonFungibleId => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::NonFungibleId(_))
+            } else {
+                false
             }
         }
 

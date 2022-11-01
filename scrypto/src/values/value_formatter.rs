@@ -7,7 +7,7 @@ use sbor::*;
 use crate::address::Bech32Encoder;
 use crate::engine::types::*;
 use crate::misc::*;
-use crate::values::{ScryptoCustomTypeId, ScryptoCustomValue};
+use crate::values::*;
 
 #[derive(Clone, Copy, Debug)]
 pub struct ValueFormatContext<'a> {
@@ -229,27 +229,27 @@ pub fn format_custom_value<F: fmt::Write>(
         }
         // RE node types
         ScryptoCustomValue::Component(value) => {
-            write!(f, "Component(\"{}\")", value)?;
+            write!(f, "Component(\"{}\")", hex::encode(value))?;
         }
         ScryptoCustomValue::KeyValueStore(value) => {
-            write!(f, "KeyValueStore(\"{}\")", value)?;
+            write!(f, "KeyValueStore(\"{}\")", hex::encode(value))?;
         }
         ScryptoCustomValue::Bucket(value) => {
-            if let Some(name) = context.get_bucket_name(&value.0) {
+            if let Some(name) = context.get_bucket_name(&value) {
                 write!(f, "Bucket(\"{}\")", name)?;
             } else {
-                write!(f, "Bucket({}u32)", value.0)?;
+                write!(f, "Bucket({}u32)", value)?;
             }
         }
         ScryptoCustomValue::Proof(value) => {
-            if let Some(name) = context.get_proof_name(&value.0) {
+            if let Some(name) = context.get_proof_name(&value) {
                 write!(f, "Proof(\"{}\")", name)?;
             } else {
-                write!(f, "Proof({}u32)", value.0)?;
+                write!(f, "Proof({}u32)", value)?;
             }
         }
         ScryptoCustomValue::Vault(value) => {
-            write!(f, "Vault(\"{}\")", value)?;
+            write!(f, "Vault(\"{}\")", hex::encode(value))?;
         }
         // Other interpreted types
         ScryptoCustomValue::Expression(value) => {
