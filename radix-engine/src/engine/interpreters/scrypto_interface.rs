@@ -11,7 +11,9 @@ use crate::types::ScryptoInvocation;
 use crate::wasm::{WasmEngine, WasmInstance};
 use scrypto::core::ScryptoActor;
 use scrypto::crypto::Hash;
-use scrypto::engine::api::{ScryptoSyscalls, SysInvocation, SysInvokable, SysInvokableNative};
+use scrypto::engine::api::{
+    ScryptoNativeInvocation, ScryptoSyscalls, SysInvokable, SysInvokableNative,
+};
 use scrypto::engine::types::{
     Level, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode,
     SubstateOffset,
@@ -23,7 +25,7 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
     R: FeeReserve,
-    N: SysInvocation<Output = T> + NativeInvocation<Output = T>,
+    N: ScryptoNativeInvocation<Output = T> + NativeInvocation<Output = T>,
 {
     fn sys_invoke(&mut self, input: N) -> Result<T, RuntimeError> {
         self.invoke(input)

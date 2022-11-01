@@ -1,20 +1,20 @@
 use crate::component::{ComponentAddAccessCheckInvocation, PackagePublishInvocation};
 use crate::crypto::Hash;
+use crate::engine::utils::NativeFnInvocation;
 use crate::resource::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::{Decode, Encode};
+use sbor::{Decode};
 use scrypto::core::*;
 
 use super::types::*;
 
-pub trait SysInvocation: Encode {
+pub trait ScryptoNativeInvocation: Into<NativeFnInvocation> {
     type Output: Debug + Decode;
-    fn native_fn() -> NativeFn;
 }
 
-pub trait SysInvokable<I: SysInvocation, E> {
+pub trait SysInvokable<I: ScryptoNativeInvocation, E> {
     fn sys_invoke(&mut self, invocation: I) -> Result<I::Output, E>;
 }
 
@@ -93,7 +93,6 @@ pub trait SysInvokableNative<E>:
     + SysInvokable<ResourceManagerUpdateNonFungibleDataInvocation, E>
     + SysInvokable<ResourceManagerNonFungibleExistsInvocation, E>
     + SysInvokable<ResourceManagerGetNonFungibleInvocation, E>
-    + SysInvokable<ResourceManagerSetResourceAddressInvocation, E>
     + SysInvokable<EpochManagerCreateInvocation, E>
     + SysInvokable<EpochManagerSetEpochInvocation, E>
     + SysInvokable<EpochManagerGetCurrentEpochInvocation, E>

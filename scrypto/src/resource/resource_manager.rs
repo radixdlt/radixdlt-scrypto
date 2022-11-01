@@ -6,7 +6,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::address::*;
-use crate::engine::{api::*, types::*, utils::*};
+use crate::engine::{api::*, utils::*};
 use crate::math::*;
 use crate::misc::*;
 use crate::native_fn;
@@ -38,11 +38,14 @@ pub struct ResourceManagerCreateInvocation {
     pub mint_params: Option<MintParams>,
 }
 
-impl SysInvocation for ResourceManagerCreateInvocation {
+impl ScryptoNativeInvocation for ResourceManagerCreateInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
-    fn native_fn() -> NativeFn {
-        NativeFn::Function(NativeFunction::ResourceManager(
-            ResourceManagerFunction::Create,
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerCreateInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
+            ResourceManagerFunctionInvocation::Create(self),
         ))
     }
 }
@@ -52,11 +55,14 @@ pub struct ResourceManagerBucketBurnInvocation {
     pub bucket: Bucket,
 }
 
-impl SysInvocation for ResourceManagerBucketBurnInvocation {
+impl ScryptoNativeInvocation for ResourceManagerBucketBurnInvocation {
     type Output = ();
-    fn native_fn() -> NativeFn {
-        NativeFn::Function(NativeFunction::ResourceManager(
-            ResourceManagerFunction::BurnBucket,
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerBucketBurnInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
+            ResourceManagerFunctionInvocation::BurnBucket(self),
         ))
     }
 }
@@ -67,10 +73,15 @@ pub struct ResourceManagerBurnInvocation {
     pub bucket: Bucket,
 }
 
-impl SysInvocation for ResourceManagerBurnInvocation {
+impl ScryptoNativeInvocation for ResourceManagerBurnInvocation {
     type Output = ();
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::Burn))
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerBurnInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
+            ResourceManagerMethodInvocation::Burn(self),
+        ))
     }
 }
 
@@ -81,11 +92,14 @@ pub struct ResourceManagerUpdateAuthInvocation {
     pub access_rule: AccessRule,
 }
 
-impl SysInvocation for ResourceManagerUpdateAuthInvocation {
+impl ScryptoNativeInvocation for ResourceManagerUpdateAuthInvocation {
     type Output = ();
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::UpdateAuth,
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerUpdateAuthInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
+            ResourceManagerMethodInvocation::UpdateAuth(self),
         ))
     }
 }
@@ -96,11 +110,14 @@ pub struct ResourceManagerLockAuthInvocation {
     pub method: ResourceMethodAuthKey,
 }
 
-impl SysInvocation for ResourceManagerLockAuthInvocation {
+impl ScryptoNativeInvocation for ResourceManagerLockAuthInvocation {
     type Output = ();
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::LockAuth,
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerLockAuthInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
+            ResourceManagerMethodInvocation::LockAuth(self),
         ))
     }
 }
@@ -110,11 +127,14 @@ pub struct ResourceManagerCreateVaultInvocation {
     pub receiver: ResourceAddress,
 }
 
-impl SysInvocation for ResourceManagerCreateVaultInvocation {
+impl ScryptoNativeInvocation for ResourceManagerCreateVaultInvocation {
     type Output = Vault;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::CreateVault,
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerCreateVaultInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
+            ResourceManagerMethodInvocation::CreateVault(self),
         ))
     }
 }
@@ -124,11 +144,14 @@ pub struct ResourceManagerCreateBucketInvocation {
     pub receiver: ResourceAddress,
 }
 
-impl SysInvocation for ResourceManagerCreateBucketInvocation {
+impl ScryptoNativeInvocation for ResourceManagerCreateBucketInvocation {
     type Output = Bucket;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::CreateBucket,
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerCreateBucketInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
+            ResourceManagerMethodInvocation::CreateBucket(self),
         ))
     }
 }
@@ -139,10 +162,15 @@ pub struct ResourceManagerMintInvocation {
     pub mint_params: MintParams,
 }
 
-impl SysInvocation for ResourceManagerMintInvocation {
+impl ScryptoNativeInvocation for ResourceManagerMintInvocation {
     type Output = Bucket;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::Mint))
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerMintInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
+            ResourceManagerMethodInvocation::Mint(self),
+        ))
     }
 }
 
@@ -151,11 +179,14 @@ pub struct ResourceManagerGetMetadataInvocation {
     pub receiver: ResourceAddress,
 }
 
-impl SysInvocation for ResourceManagerGetMetadataInvocation {
+impl ScryptoNativeInvocation for ResourceManagerGetMetadataInvocation {
     type Output = HashMap<String, String>;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::GetMetadata,
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerGetMetadataInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
+            ResourceManagerMethodInvocation::GetMetadata(self),
         ))
     }
 }
@@ -165,11 +196,14 @@ pub struct ResourceManagerGetResourceTypeInvocation {
     pub receiver: ResourceAddress,
 }
 
-impl SysInvocation for ResourceManagerGetResourceTypeInvocation {
+impl ScryptoNativeInvocation for ResourceManagerGetResourceTypeInvocation {
     type Output = ResourceType;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::GetResourceType,
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerGetResourceTypeInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
+            ResourceManagerMethodInvocation::GetResourceType(self),
         ))
     }
 }
@@ -179,11 +213,14 @@ pub struct ResourceManagerGetTotalSupplyInvocation {
     pub receiver: ResourceAddress,
 }
 
-impl SysInvocation for ResourceManagerGetTotalSupplyInvocation {
+impl ScryptoNativeInvocation for ResourceManagerGetTotalSupplyInvocation {
     type Output = Decimal;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::GetTotalSupply,
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerGetTotalSupplyInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
+            ResourceManagerMethodInvocation::GetTotalSupply(self),
         ))
     }
 }
@@ -194,25 +231,14 @@ pub struct ResourceManagerUpdateMetadataInvocation {
     pub metadata: HashMap<String, String>,
 }
 
-impl SysInvocation for ResourceManagerUpdateMetadataInvocation {
+impl ScryptoNativeInvocation for ResourceManagerUpdateMetadataInvocation {
     type Output = ();
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::UpdateMetadata,
-        ))
-    }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerSetResourceAddressInvocation {
-    pub receiver: ResourceAddress,
-}
-
-impl SysInvocation for ResourceManagerSetResourceAddressInvocation {
-    type Output = ();
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::SetResourceAddress,
+impl Into<NativeFnInvocation> for ResourceManagerUpdateMetadataInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
+            ResourceManagerMethodInvocation::UpdateMetadata(self),
         ))
     }
 }
@@ -224,11 +250,14 @@ pub struct ResourceManagerUpdateNonFungibleDataInvocation {
     pub data: Vec<u8>,
 }
 
-impl SysInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
+impl ScryptoNativeInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
     type Output = ();
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::UpdateNonFungibleData,
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerUpdateNonFungibleDataInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
+            ResourceManagerMethodInvocation::UpdateNonFungibleData(self),
         ))
     }
 }
@@ -239,11 +268,14 @@ pub struct ResourceManagerNonFungibleExistsInvocation {
     pub id: NonFungibleId,
 }
 
-impl SysInvocation for ResourceManagerNonFungibleExistsInvocation {
+impl ScryptoNativeInvocation for ResourceManagerNonFungibleExistsInvocation {
     type Output = bool;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::NonFungibleExists,
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerNonFungibleExistsInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
+            ResourceManagerMethodInvocation::NonFungibleExists(self),
         ))
     }
 }
@@ -254,13 +286,21 @@ pub struct ResourceManagerGetNonFungibleInvocation {
     pub id: NonFungibleId,
 }
 
-impl SysInvocation for ResourceManagerGetNonFungibleInvocation {
+impl ScryptoNativeInvocation for ResourceManagerGetNonFungibleInvocation {
     type Output = [Vec<u8>; 2];
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::GetNonFungible,
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerGetNonFungibleInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
+            ResourceManagerMethodInvocation::GetNonFungible(self),
         ))
     }
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerSetResourceAddressInvocation {
+    pub receiver: ResourceAddress,
 }
 
 /// Represents a resource address.

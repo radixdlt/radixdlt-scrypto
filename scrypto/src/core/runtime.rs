@@ -14,10 +14,15 @@ use crate::native_fn;
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {}
 
-impl SysInvocation for EpochManagerCreateInvocation {
+impl ScryptoNativeInvocation for EpochManagerCreateInvocation {
     type Output = SystemAddress;
-    fn native_fn() -> NativeFn {
-        NativeFn::Function(NativeFunction::EpochManager(EpochManagerFunction::Create))
+}
+
+impl Into<NativeFnInvocation> for EpochManagerCreateInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Function(NativeFunctionInvocation::EpochManager(
+            EpochManagerFunctionInvocation::Create(self),
+        ))
     }
 }
 
@@ -26,11 +31,14 @@ pub struct EpochManagerGetCurrentEpochInvocation {
     pub receiver: SystemAddress,
 }
 
-impl SysInvocation for EpochManagerGetCurrentEpochInvocation {
+impl ScryptoNativeInvocation for EpochManagerGetCurrentEpochInvocation {
     type Output = u64;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::EpochManager(
-            EpochManagerMethod::GetCurrentEpoch,
+}
+
+impl Into<NativeFnInvocation> for EpochManagerGetCurrentEpochInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
+            EpochManagerMethodInvocation::GetCurrentEpoch(self),
         ))
     }
 }
@@ -41,10 +49,15 @@ pub struct EpochManagerSetEpochInvocation {
     pub epoch: u64,
 }
 
-impl SysInvocation for EpochManagerSetEpochInvocation {
+impl ScryptoNativeInvocation for EpochManagerSetEpochInvocation {
     type Output = ();
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::EpochManager(EpochManagerMethod::SetEpoch))
+}
+
+impl Into<NativeFnInvocation> for EpochManagerSetEpochInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
+            EpochManagerMethodInvocation::SetEpoch(self),
+        ))
     }
 }
 

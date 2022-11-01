@@ -6,7 +6,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-#[cfg(target_arch = "wasm32")]
 use crate::engine::utils::*;
 use crate::engine::{api::*, types::*};
 use crate::math::*;
@@ -20,10 +19,15 @@ pub struct BucketTakeInvocation {
     pub amount: Decimal,
 }
 
-impl SysInvocation for BucketTakeInvocation {
+impl ScryptoNativeInvocation for BucketTakeInvocation {
     type Output = Bucket;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::Bucket(BucketMethod::Take))
+}
+
+impl Into<NativeFnInvocation> for BucketTakeInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
+            BucketMethodInvocation::Take(self),
+        ))
     }
 }
 
@@ -33,10 +37,15 @@ pub struct BucketPutInvocation {
     pub bucket: Bucket,
 }
 
-impl SysInvocation for BucketPutInvocation {
+impl ScryptoNativeInvocation for BucketPutInvocation {
     type Output = ();
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::Bucket(BucketMethod::Put))
+}
+
+impl Into<NativeFnInvocation> for BucketPutInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(BucketMethodInvocation::Put(
+            self,
+        )))
     }
 }
 
@@ -46,10 +55,15 @@ pub struct BucketTakeNonFungiblesInvocation {
     pub ids: BTreeSet<NonFungibleId>,
 }
 
-impl SysInvocation for BucketTakeNonFungiblesInvocation {
+impl ScryptoNativeInvocation for BucketTakeNonFungiblesInvocation {
     type Output = Bucket;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::Bucket(BucketMethod::TakeNonFungibles))
+}
+
+impl Into<NativeFnInvocation> for BucketTakeNonFungiblesInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
+            BucketMethodInvocation::TakeNonFungibles(self),
+        ))
     }
 }
 
@@ -58,10 +72,15 @@ pub struct BucketGetNonFungibleIdsInvocation {
     pub receiver: BucketId,
 }
 
-impl SysInvocation for BucketGetNonFungibleIdsInvocation {
+impl ScryptoNativeInvocation for BucketGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::Bucket(BucketMethod::GetNonFungibleIds))
+}
+
+impl Into<NativeFnInvocation> for BucketGetNonFungibleIdsInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
+            BucketMethodInvocation::GetNonFungibleIds(self),
+        ))
     }
 }
 
@@ -70,10 +89,15 @@ pub struct BucketGetAmountInvocation {
     pub receiver: BucketId,
 }
 
-impl SysInvocation for BucketGetAmountInvocation {
+impl ScryptoNativeInvocation for BucketGetAmountInvocation {
     type Output = Decimal;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::Bucket(BucketMethod::GetAmount))
+}
+
+impl Into<NativeFnInvocation> for BucketGetAmountInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
+            BucketMethodInvocation::GetAmount(self),
+        ))
     }
 }
 
@@ -82,10 +106,15 @@ pub struct BucketGetResourceAddressInvocation {
     pub receiver: BucketId,
 }
 
-impl SysInvocation for BucketGetResourceAddressInvocation {
+impl ScryptoNativeInvocation for BucketGetResourceAddressInvocation {
     type Output = ResourceAddress;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::Bucket(BucketMethod::GetResourceAddress))
+}
+
+impl Into<NativeFnInvocation> for BucketGetResourceAddressInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
+            BucketMethodInvocation::GetResourceAddress(self),
+        ))
     }
 }
 
@@ -94,10 +123,15 @@ pub struct BucketCreateProofInvocation {
     pub receiver: BucketId,
 }
 
-impl SysInvocation for BucketCreateProofInvocation {
+impl ScryptoNativeInvocation for BucketCreateProofInvocation {
     type Output = Proof;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::Bucket(BucketMethod::CreateProof))
+}
+
+impl Into<NativeFnInvocation> for BucketCreateProofInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
+            BucketMethodInvocation::CreateProof(self),
+        ))
     }
 }
 

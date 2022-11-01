@@ -23,11 +23,16 @@ pub struct ComponentAddAccessCheckInvocation {
     pub access_rules: AccessRules,
 }
 
-impl SysInvocation for ComponentAddAccessCheckInvocation {
-    type Output = ();
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::Component(ComponentMethod::AddAccessCheck))
+impl Into<NativeFnInvocation> for ComponentAddAccessCheckInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Component(
+            ComponentMethodInvocation::AddAccessCheck(self),
+        ))
     }
+}
+
+impl ScryptoNativeInvocation for ComponentAddAccessCheckInvocation {
+    type Output = ();
 }
 
 /// Represents the state of a component.
@@ -141,10 +146,15 @@ impl BorrowedGlobalComponent {
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
         let mut syscalls = Syscalls;
-        let raw = syscalls.sys_invoke_scrypto_method(ScryptoMethodIdent {
-            receiver: ScryptoReceiver::Global(self.0),
-            method_name: method.to_string(),
-        }, args).unwrap();
+        let raw = syscalls
+            .sys_invoke_scrypto_method(
+                ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Global(self.0),
+                    method_name: method.to_string(),
+                },
+                args,
+            )
+            .unwrap();
         scrypto_decode(&raw).unwrap()
     }
 

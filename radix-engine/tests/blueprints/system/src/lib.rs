@@ -10,13 +10,14 @@ blueprint! {
         }
 
         pub fn set_epoch(epoch_manager: SystemAddress, epoch: u64) {
-            let input = RadixEngineInput::InvokeNativeFn(
-                NativeFn::Method(NativeMethod::EpochManager(EpochManagerMethod::SetEpoch)),
-                scrypto_encode(&EpochManagerSetEpochInvocation {
-                    receiver: epoch_manager,
-                    epoch,
-                }),
-            );
+            let input = RadixEngineInput::InvokeNativeFn(NativeFnInvocation::Method(
+                NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::SetEpoch(
+                    EpochManagerSetEpochInvocation {
+                        receiver: epoch_manager,
+                        epoch,
+                    },
+                )),
+            ));
             call_engine(input)
         }
     }

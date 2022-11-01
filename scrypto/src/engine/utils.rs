@@ -1,15 +1,13 @@
+use crate::component::{ComponentAddAccessCheckInvocation, PackagePublishInvocation};
 use crate::crypto::Hash;
+use crate::resource::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::buffer::scrypto_encode;
 use scrypto::core::*;
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
-use crate::resource::*;
-use crate::component::{ComponentAddAccessCheckInvocation, PackagePublishInvocation};
-
 
 #[cfg(target_arch = "wasm32")]
 extern "C" {
@@ -56,12 +54,9 @@ pub struct SyscallError;
 
 pub struct Syscalls;
 
-impl<N: SysInvocation> SysInvokable<N, SyscallError> for Syscalls {
+impl<N: ScryptoNativeInvocation> SysInvokable<N, SyscallError> for Syscalls {
     fn sys_invoke(&mut self, input: N) -> Result<N::Output, SyscallError> {
-        let rtn = call_engine(RadixEngineInput::InvokeNativeFn(
-            N::native_fn(),
-            scrypto_encode(&input),
-        ));
+        let rtn = call_engine(RadixEngineInput::InvokeNativeFn(input.into()));
         Ok(rtn)
     }
 }
@@ -150,7 +145,7 @@ impl ScryptoSyscalls<SyscallError> for Syscalls {
 pub enum RadixEngineInput {
     InvokeScryptoFunction(ScryptoFunctionIdent, Vec<u8>),
     InvokeScryptoMethod(ScryptoMethodIdent, Vec<u8>),
-    InvokeNativeFn(NativeFn, Vec<u8>),
+    InvokeNativeFn(NativeFnInvocation),
 
     CreateNode(ScryptoRENode),
     GetVisibleNodeIds(),
@@ -178,7 +173,6 @@ macro_rules! native_fn {
         )+
     };
 }
-
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum NativeFnInvocation {
@@ -244,7 +238,7 @@ pub enum ResourceManagerMethodInvocation {
     UpdateAuth(ResourceManagerUpdateAuthInvocation),
     LockAuth(ResourceManagerLockAuthInvocation),
     Mint(ResourceManagerMintInvocation),
-    UpdateNonFungibleData(ResourceManagerUpdateAuthInvocation),
+    UpdateNonFungibleData(ResourceManagerUpdateNonFungibleDataInvocation),
     GetNonFungible(ResourceManagerGetNonFungibleInvocation),
     GetMetadata(ResourceManagerGetMetadataInvocation),
     GetResourceType(ResourceManagerGetResourceTypeInvocation),

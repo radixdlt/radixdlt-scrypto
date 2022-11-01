@@ -4,9 +4,10 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::engine::utils::Syscalls;
+use scrypto::engine::utils::{NativeFnInvocation, Syscalls};
 
 use crate::abi::*;
+use crate::engine::utils::{NativeMethodInvocation, ProofMethodInvocation};
 use crate::engine::{api::*, types::*};
 use crate::math::*;
 use crate::misc::*;
@@ -18,10 +19,15 @@ pub struct ProofGetAmountInvocation {
     pub receiver: ProofId,
 }
 
-impl SysInvocation for ProofGetAmountInvocation {
+impl ScryptoNativeInvocation for ProofGetAmountInvocation {
     type Output = Decimal;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::Proof(ProofMethod::GetAmount))
+}
+
+impl Into<NativeFnInvocation> for ProofGetAmountInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Proof(
+            ProofMethodInvocation::GetAmount(self),
+        ))
     }
 }
 
@@ -30,10 +36,15 @@ pub struct ProofGetNonFungibleIdsInvocation {
     pub receiver: ProofId,
 }
 
-impl SysInvocation for ProofGetNonFungibleIdsInvocation {
+impl ScryptoNativeInvocation for ProofGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::Proof(ProofMethod::GetNonFungibleIds))
+}
+
+impl Into<NativeFnInvocation> for ProofGetNonFungibleIdsInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Proof(
+            ProofMethodInvocation::GetNonFungibleIds(self),
+        ))
     }
 }
 
@@ -42,10 +53,15 @@ pub struct ProofGetResourceAddressInvocation {
     pub receiver: ProofId,
 }
 
-impl SysInvocation for ProofGetResourceAddressInvocation {
+impl ScryptoNativeInvocation for ProofGetResourceAddressInvocation {
     type Output = ResourceAddress;
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::Proof(ProofMethod::GetResourceAddress))
+}
+
+impl Into<NativeFnInvocation> for ProofGetResourceAddressInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Proof(
+            ProofMethodInvocation::GetResourceAddress(self),
+        ))
     }
 }
 
@@ -54,11 +70,15 @@ pub struct ProofCloneInvocation {
     pub receiver: ProofId,
 }
 
-impl SysInvocation for ProofCloneInvocation {
+impl ScryptoNativeInvocation for ProofCloneInvocation {
     type Output = Proof;
+}
 
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::Proof(ProofMethod::Clone))
+impl Into<NativeFnInvocation> for ProofCloneInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Proof(ProofMethodInvocation::Clone(
+            self,
+        )))
     }
 }
 

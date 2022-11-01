@@ -3,7 +3,6 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-#[cfg(target_arch = "wasm32")]
 use crate::engine::utils::*;
 use crate::engine::{api::*, types::*};
 
@@ -15,11 +14,15 @@ pub struct AuthZonePopInvocation {
     pub receiver: AuthZoneId,
 }
 
-impl SysInvocation for AuthZonePopInvocation {
+impl ScryptoNativeInvocation for AuthZonePopInvocation {
     type Output = scrypto::resource::Proof;
+}
 
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::AuthZone(AuthZoneMethod::Pop))
+impl Into<NativeFnInvocation> for AuthZonePopInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::AuthZone(
+            AuthZoneMethodInvocation::Pop(self),
+        ))
     }
 }
 
@@ -29,11 +32,15 @@ pub struct AuthZonePushInvocation {
     pub proof: Proof,
 }
 
-impl SysInvocation for AuthZonePushInvocation {
+impl ScryptoNativeInvocation for AuthZonePushInvocation {
     type Output = ();
+}
 
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::AuthZone(AuthZoneMethod::Push))
+impl Into<NativeFnInvocation> for AuthZonePushInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::AuthZone(
+            AuthZoneMethodInvocation::Push(self),
+        ))
     }
 }
 
@@ -43,11 +50,15 @@ pub struct AuthZoneCreateProofInvocation {
     pub resource_address: ResourceAddress,
 }
 
-impl SysInvocation for AuthZoneCreateProofInvocation {
+impl ScryptoNativeInvocation for AuthZoneCreateProofInvocation {
     type Output = Proof;
+}
 
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::AuthZone(AuthZoneMethod::CreateProof))
+impl Into<NativeFnInvocation> for AuthZoneCreateProofInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::AuthZone(
+            AuthZoneMethodInvocation::CreateProof(self),
+        ))
     }
 }
 
@@ -58,11 +69,15 @@ pub struct AuthZoneCreateProofByAmountInvocation {
     pub resource_address: ResourceAddress,
 }
 
-impl SysInvocation for AuthZoneCreateProofByAmountInvocation {
+impl ScryptoNativeInvocation for AuthZoneCreateProofByAmountInvocation {
     type Output = Proof;
+}
 
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::AuthZone(AuthZoneMethod::CreateProofByAmount))
+impl Into<NativeFnInvocation> for AuthZoneCreateProofByAmountInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::AuthZone(
+            AuthZoneMethodInvocation::CreateProofByAmount(self),
+        ))
     }
 }
 
@@ -73,11 +88,15 @@ pub struct AuthZoneCreateProofByIdsInvocation {
     pub resource_address: ResourceAddress,
 }
 
-impl SysInvocation for AuthZoneCreateProofByIdsInvocation {
+impl ScryptoNativeInvocation for AuthZoneCreateProofByIdsInvocation {
     type Output = Proof;
+}
 
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds))
+impl Into<NativeFnInvocation> for AuthZoneCreateProofByIdsInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::AuthZone(
+            AuthZoneMethodInvocation::CreateProofByIds(self),
+        ))
     }
 }
 
@@ -86,11 +105,15 @@ pub struct AuthZoneClearInvocation {
     pub receiver: AuthZoneId,
 }
 
-impl SysInvocation for AuthZoneClearInvocation {
+impl ScryptoNativeInvocation for AuthZoneClearInvocation {
     type Output = ();
+}
 
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::AuthZone(AuthZoneMethod::Clear))
+impl Into<NativeFnInvocation> for AuthZoneClearInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::AuthZone(
+            AuthZoneMethodInvocation::Clear(self),
+        ))
     }
 }
 
@@ -99,11 +122,15 @@ pub struct AuthZoneDrainInvocation {
     pub receiver: AuthZoneId,
 }
 
-impl SysInvocation for AuthZoneDrainInvocation {
+impl ScryptoNativeInvocation for AuthZoneDrainInvocation {
     type Output = Vec<scrypto::resource::Proof>;
+}
 
-    fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::AuthZone(AuthZoneMethod::Drain))
+impl Into<NativeFnInvocation> for AuthZoneDrainInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::AuthZone(
+            AuthZoneMethodInvocation::Drain(self),
+        ))
     }
 }
 
