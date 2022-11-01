@@ -392,12 +392,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let mut store = self.execution_stores.get_output_store(node_id);
         let mut receipts = Vec::new();
         for (manifest, initial_proofs) in manifests {
-            let transaction =
-                TestTransaction::new(manifest, self.next_transaction_nonce, initial_proofs);
+            let transaction = TestTransaction::new(manifest, self.next_transaction_nonce);
             self.next_transaction_nonce += 1;
             let receipt = TransactionExecutor::new(&mut store, &mut self.scrypto_interpreter)
                 .execute_and_commit(
-                    &transaction,
+                    &transaction.get_executable(initial_proofs),
                     &FeeReserveConfig {
                         cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                         system_loan: DEFAULT_SYSTEM_LOAN,

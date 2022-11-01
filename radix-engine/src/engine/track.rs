@@ -448,41 +448,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         mut self,
         transaction: &Executable,
     ) -> Result<Self, PreExecutionError> {
-        let result = self
-            .fee_reserve
-            .consume(self.fee_table.tx_base_fee(), "base_fee", true)
-            .and_then(|()| {
-                self.fee_reserve.consume(
-                    self.fee_table.tx_manifest_decoding_per_byte()
-                        * transaction.manifest_instructions_size() as u32,
-                    "decode_manifest",
-                    true,
-                )
-            })
-            .and_then(|()| {
-                self.fee_reserve.consume(
-                    self.fee_table.tx_manifest_verification_per_byte()
-                        * transaction.manifest_instructions_size() as u32,
-                    "verify_manifest",
-                    true,
-                )
-            })
-            .and_then(|()| {
-                self.fee_reserve.consume(
-                    self.fee_table.tx_signature_verification_per_sig()
-                        * transaction.auth_zone_params().initial_proofs.len() as u32,
-                    "verify_signatures",
-                    true,
-                )
-            })
-            .and_then(|()| {
-                self.fee_reserve.consume(
-                    transaction.blobs().iter().map(|b| b.len()).sum::<usize>() as u32
-                        * self.fee_table.tx_blob_price_per_byte(),
-                    "blobs",
-                    true,
-                )
-            });
+        let result = self.attempt_apply_pre_execution_costs(transaction);
 
         match result {
             Ok(()) => Ok(self),
@@ -491,6 +457,60 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 error,
             }),
         }
+    }
+
+    fn attempt_apply_pre_execution_costs(
+        &mut self,
+        transaction: &Executable,
+    ) -> Result<(), FeeReserveError> {
+        let encoded_instructions_byte_length = scrypto_encode(transaction.instructions()).len();
+        let blobs_size = {
+            let mut total_size: usize = 0;
+            for blob in transaction.blobs() {
+                total_size = total_size
+                    .checked_add(Hash::LENGTH)
+                    .ok_or(FeeReserveError::Overflow)?;
+                total_size = total_size
+                    .checked_add(blob.1.len())
+                    .ok_or(FeeReserveError::Overflow)?;
+            }
+            total_size
+        };
+
+        self.fee_reserve
+            .consume_flat(self.fee_table.tx_base_fee(), "base_fee", true)
+            .and_then(|()| {
+                self.fee_reserve.consume_sized(
+                    encoded_instructions_byte_length,
+                    self.fee_table.tx_manifest_decoding_per_byte(),
+                    "decode_manifest",
+                    true,
+                )
+            })
+            .and_then(|()| {
+                self.fee_reserve.consume_sized(
+                    encoded_instructions_byte_length,
+                    self.fee_table.tx_manifest_verification_per_byte(),
+                    "verify_manifest",
+                    true,
+                )
+            })
+            .and_then(|()| {
+                self.fee_reserve.consume_sized(
+                    transaction.auth_zone_params().initial_proofs.len(),
+                    self.fee_table.tx_signature_verification_per_sig(),
+                    "verify_signatures",
+                    true,
+                )
+            })
+            .and_then(|()| {
+                self.fee_reserve.consume_sized(
+                    blobs_size,
+                    self.fee_table.tx_blob_price_per_byte(),
+                    "blobs",
+                    true,
+                )
+            })
     }
 
     pub fn finalize(self, invoke_result: InvokeResult) -> TrackReceipt {

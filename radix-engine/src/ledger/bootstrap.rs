@@ -9,7 +9,7 @@ use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, Was
 
 use scrypto::core::SystemAddress;
 use scrypto::resource::Bucket;
-use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
+use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};
 
 const XRD_SYMBOL: &str = "XRD";
@@ -244,11 +244,10 @@ where
 
         let mut executor = TransactionExecutor::new(substate_store, &mut scrypto_interpreter);
         let genesis_transaction = create_genesis();
-        let executable: Executable = genesis_transaction.into();
         let mut fee_reserve = SystemLoanFeeReserve::default();
         fee_reserve.credit(GENESIS_CREATION_CREDIT);
         let transaction_receipt = executor.execute_with_fee_reserve(
-            &executable,
+            &genesis_transaction.get_executable(),
             &ExecutionConfig::standard(),
             fee_reserve,
         );
@@ -264,18 +263,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::constants::GENESIS_CREATION_CREDIT;
-    use crate::engine::ScryptoInterpreter;
-    use crate::fee::SystemLoanFeeReserve;
-    use crate::ledger::bootstrap::{create_genesis, genesis_result};
     use crate::ledger::TypedInMemorySubstateStore;
-    use crate::transaction::{ExecutionConfig, TransactionExecutor};
-    use crate::wasm::{
-        DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams,
-    };
-    use scrypto::constants::*;
-    use std::marker::PhantomData;
-    use transaction::model::Executable;
+
+    use super::*;
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {
@@ -292,12 +282,11 @@ mod tests {
         let mut substate_store = TypedInMemorySubstateStore::new();
         let genesis_transaction = create_genesis();
         let mut executor = TransactionExecutor::new(&mut substate_store, &mut scrypto_interpreter);
-        let executable: Executable = genesis_transaction.into();
         let mut fee_reserve = SystemLoanFeeReserve::default();
         fee_reserve.credit(GENESIS_CREATION_CREDIT);
 
         let transaction_receipt = executor.execute_with_fee_reserve(
-            &executable,
+            &genesis_transaction.get_executable(),
             &ExecutionConfig::standard(),
             fee_reserve,
         );
