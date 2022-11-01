@@ -9,6 +9,7 @@ use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::engine::{api::*, types::*, utils::*};
+use crate::values::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInput {}
@@ -50,7 +51,7 @@ impl Runtime {
     }
 
     /// Invokes a function on a blueprint.
-    pub fn call_function<S1: AsRef<str>, S2: AsRef<str>, T: Decode>(
+    pub fn call_function<S1: AsRef<str>, S2: AsRef<str>, T: Decode<ScryptoCustomTypeId>>(
         package_address: PackageAddress,
         blueprint_name: S1,
         function_name: S2,
@@ -68,7 +69,7 @@ impl Runtime {
     }
 
     /// Invokes a method on a component.
-    pub fn call_method<S: AsRef<str>, T: Decode>(
+    pub fn call_method<S: AsRef<str>, T: Decode<ScryptoCustomTypeId>>(
         component_address: ComponentAddress,
         method: S,
         args: Vec<u8>,

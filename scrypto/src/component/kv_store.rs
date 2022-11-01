@@ -3,19 +3,21 @@ use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::*;
-use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
 use crate::buffer::*;
 use crate::core::{DataRef, DataRefMut};
-use crate::crypto::*;
 use crate::engine::{api::*, types::*, utils::*};
 use crate::misc::*;
+use crate::values::*;
 
 /// A scalable key-value map which loads entries on demand.
-pub struct KeyValueStore<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> {
+pub struct KeyValueStore<
+    K: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+    V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+> {
     pub id: KeyValueStoreId,
     pub key: PhantomData<K>,
     pub value: PhantomData<V>,
@@ -25,7 +27,11 @@ pub struct KeyValueStore<K: Encode + Decode, V: 'static + Encode + Decode + Type
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct KeyValueStoreEntrySubstate(pub Option<Vec<u8>>);
 
-impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K, V> {
+impl<
+        K: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+        V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+    > KeyValueStore<K, V>
+{
     /// Creates a new key value store.
     pub fn new() -> Self {
         let input = RadixEngineInput::CreateNode(ScryptoRENode::KeyValueStore);
@@ -122,18 +128,17 @@ impl fmt::Display for ParseKeyValueStoreError {
 // binary
 //========
 
-impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> TryFrom<&[u8]>
-    for KeyValueStore<K, V>
+impl<
+        K: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+        V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+    > TryFrom<&[u8]> for KeyValueStore<K, V>
 {
     type Error = ParseKeyValueStoreError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             36 => Ok(Self {
-                id: (
-                    Hash(copy_u8_array(&slice[0..32])),
-                    u32::from_le_bytes(copy_u8_array(&slice[32..])),
-                ),
+                id: copy_u8_array(slice),
                 key: PhantomData,
                 value: PhantomData,
             }),
@@ -142,55 +147,69 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> TryFrom<&[u8]>
     }
 }
 
-impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K, V> {
+impl<
+        K: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+        V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+    > KeyValueStore<K, V>
+{
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut v = self.id.0.to_vec();
-        v.extend(self.id.1.to_le_bytes());
-        v
+        self.id.to_vec()
     }
 }
 
-impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> TypeId for KeyValueStore<K, V> {
+// TODO: extend scrypto_type! macro to support generics
+
+impl<
+        K: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+        V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+    > TypeId<ScryptoCustomTypeId> for KeyValueStore<K, V>
+{
     #[inline]
-    fn type_id() -> u8 {
-        ScryptoTypeId::KeyValueStore.id()
+    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
+        SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore)
     }
 }
 
-impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> Encode for KeyValueStore<K, V> {
+impl<
+        K: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+        V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+    > Encode<ScryptoCustomTypeId> for KeyValueStore<K, V>
+{
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder) {
+    fn encode_type_id(encoder: &mut Encoder<ScryptoCustomTypeId>) {
         encoder.write_type_id(Self::type_id());
     }
 
     #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        let bytes = self.to_vec();
-        encoder.write_size(bytes.len());
-        encoder.write_slice(&bytes);
+    fn encode_value(&self, encoder: &mut Encoder<ScryptoCustomTypeId>) {
+        encoder.write_slice(&self.to_vec());
     }
 }
 
-impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> Decode for KeyValueStore<K, V> {
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+impl<
+        K: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+        V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+    > Decode<ScryptoCustomTypeId> for KeyValueStore<K, V>
+{
+    fn check_type_id(decoder: &mut Decoder<ScryptoCustomTypeId>) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
 
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let len = decoder.read_size()?;
-        let slice = decoder.read_slice(len)?;
-        Self::try_from(slice)
-            .map_err(|_| DecodeError::CustomError("Failed to decode KeyValueStore".to_string()))
+    fn decode_value(decoder: &mut Decoder<ScryptoCustomTypeId>) -> Result<Self, DecodeError> {
+        let slice = decoder.read_slice(36)?;
+        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
     }
 }
 
-impl<K: Encode + Decode + Describe, V: 'static + Encode + Decode + TypeId + Describe> Describe
-    for KeyValueStore<K, V>
+impl<
+        K: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId> + Describe,
+        V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId> + Describe,
+    > Describe for KeyValueStore<K, V>
 {
     fn describe() -> Type {
-        Type::Custom {
-            type_id: ScryptoTypeId::KeyValueStore.id(),
-            generics: vec![K::describe(), V::describe()],
+        Type::KeyValueStore {
+            key_type: Box::new(K::describe()),
+            value_type: Box::new(V::describe()),
         }
     }
 }
@@ -199,7 +218,11 @@ impl<K: Encode + Decode + Describe, V: 'static + Encode + Decode + TypeId + Desc
 // text
 //======
 
-impl<K: Encode + Decode, V: Encode + Decode + TypeId> FromStr for KeyValueStore<K, V> {
+impl<
+        K: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+        V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+    > FromStr for KeyValueStore<K, V>
+{
     type Err = ParseKeyValueStoreError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -209,13 +232,21 @@ impl<K: Encode + Decode, V: Encode + Decode + TypeId> FromStr for KeyValueStore<
     }
 }
 
-impl<K: Encode + Decode, V: Encode + Decode + TypeId> fmt::Display for KeyValueStore<K, V> {
+impl<
+        K: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+        V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+    > fmt::Display for KeyValueStore<K, V>
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl<K: Encode + Decode, V: Encode + Decode + TypeId> fmt::Debug for KeyValueStore<K, V> {
+impl<
+        K: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+        V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+    > fmt::Debug for KeyValueStore<K, V>
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
     }

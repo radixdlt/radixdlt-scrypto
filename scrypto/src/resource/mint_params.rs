@@ -4,10 +4,12 @@ use sbor::*;
 
 use crate::math::*;
 use crate::resource::*;
+use crate::values::*;
 use crate::Describe;
 
 /// Represents the minting config
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum MintParams {
     /// To mint fungible resource, represented by an amount
     Fungible { amount: Decimal },

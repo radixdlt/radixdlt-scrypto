@@ -284,30 +284,30 @@ types! {
 
 macro_rules! sbor_codec {
     ($t:ident, $t_id:expr, $t_model:ident) => {
-        impl TypeId for $t {
+        impl<X: CustomTypeId> TypeId<X> for $t {
             #[inline]
-            fn type_id() -> u8 {
+            fn type_id() -> SborTypeId<X> {
                 $t_id
             }
         }
 
-        impl Encode for $t {
+        impl<X: CustomTypeId> Encode<X> for $t {
             #[inline]
-            fn encode_type_id(encoder: &mut Encoder) {
+            fn encode_type_id(encoder: &mut Encoder<X>) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
-            fn encode_value(&self, encoder: &mut Encoder) {
+            fn encode_value(&self, encoder: &mut Encoder<X>) {
                 encoder.write_slice(&self.to_le_bytes());
             }
         }
 
-        impl Decode for $t {
+        impl<X: CustomTypeId> Decode<X> for $t {
             #[inline]
-            fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+            fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
                 decoder.check_type_id(Self::type_id())
             }
-            fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+            fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
                 let slice = decoder.read_slice((Self::BITS / 8) as usize)?;
                 let mut bytes = [0u8; (Self::BITS / 8) as usize];
                 bytes.copy_from_slice(&slice[..]);
@@ -322,16 +322,16 @@ macro_rules! sbor_codec {
         }
     };
 }
-sbor_codec!(I8, TYPE_I8, I8);
-sbor_codec!(I16, TYPE_I16, I16);
-sbor_codec!(I32, TYPE_I32, I32);
-sbor_codec!(I64, TYPE_I64, I64);
-sbor_codec!(I128, TYPE_I128, I128);
-sbor_codec!(U8, TYPE_U8, U8);
-sbor_codec!(U16, TYPE_U16, U16);
-sbor_codec!(U32, TYPE_U32, U32);
-sbor_codec!(U64, TYPE_U64, U64);
-sbor_codec!(U128, TYPE_U128, U128);
+sbor_codec!(I8, SborTypeId::I8, I8);
+sbor_codec!(I16, SborTypeId::I16, I16);
+sbor_codec!(I32, SborTypeId::I32, I32);
+sbor_codec!(I64, SborTypeId::I64, I64);
+sbor_codec!(I128, SborTypeId::I128, I128);
+sbor_codec!(U8, SborTypeId::U8, U8);
+sbor_codec!(U16, SborTypeId::U16, U16);
+sbor_codec!(U32, SborTypeId::U32, U32);
+sbor_codec!(U64, SborTypeId::U64, U64);
+sbor_codec!(U128, SborTypeId::U128, U128);
 
 fn fmt<
     T: fmt::Display
@@ -918,8 +918,9 @@ checked_int_impl_unsigned_small! { U8, U16, U32, U64, U128 }
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::values::*;
 
-    fn encode_integers(enc: &mut Encoder) {
+    fn encode_integers<X: CustomTypeId>(enc: &mut Encoder<X>) {
         I8::by(1i8).encode(enc);
         I16::by(1i8).encode(enc);
         I32::by(1i8).encode(enc);
@@ -935,7 +936,7 @@ mod tests {
     #[test]
     fn test_integer_encoding() {
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::new(&mut bytes);
+        let mut enc = Encoder::<ScryptoCustomTypeId>::new(&mut bytes);
         encode_integers(&mut enc);
 
         assert_eq!(
@@ -958,10 +959,10 @@ mod tests {
     #[test]
     fn test_integer_decoding() {
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::new(&mut bytes);
+        let mut enc = Encoder::<ScryptoCustomTypeId>::new(&mut bytes);
         encode_integers(&mut enc);
 
-        let mut dec = Decoder::new(&bytes);
+        let mut dec = Decoder::<ScryptoCustomTypeId>::new(&bytes);
         assert_eq!(I8::by(1i8), <I8>::decode(&mut dec).unwrap());
         assert_eq!(I16::by(1i8), <I16>::decode(&mut dec).unwrap());
         assert_eq!(I32::by(1i8), <I32>::decode(&mut dec).unwrap());

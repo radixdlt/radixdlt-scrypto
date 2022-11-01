@@ -13,6 +13,7 @@ use crate::misc::*;
 use crate::native_methods;
 use crate::resource::*;
 use crate::scrypto_type;
+use crate::values::*;
 use crate::Describe;
 
 #[derive(
@@ -28,12 +29,14 @@ pub enum ResourceMethodAuthKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum Mutability {
     LOCKED,
     MUTABLE(AccessRule),
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct ResourceManagerCreateInput {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
@@ -42,11 +45,13 @@ pub struct ResourceManagerCreateInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct ResourceManagerBurnInput {
     pub bucket: Bucket,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct ResourceManagerUpdateAuthInput {
     pub method: ResourceMethodAuthKey,
     pub access_rule: AccessRule,
@@ -64,6 +69,7 @@ pub struct ResourceManagerCreateVaultInput {}
 pub struct ResourceManagerCreateBucketInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct ResourceManagerMintInput {
     pub mint_params: MintParams,
 }
@@ -83,22 +89,26 @@ pub struct ResourceManagerUpdateMetadataInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct ResourceManagerSetResourceAddressInput {
     pub address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct ResourceManagerUpdateNonFungibleDataInput {
     pub id: NonFungibleId,
     pub data: Vec<u8>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct ResourceManagerNonFungibleExistsInput {
     pub id: NonFungibleId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct ResourceManagerGetNonFungibleInput {
     pub id: NonFungibleId,
 }
@@ -391,7 +401,12 @@ impl ResourceAddress {
     }
 }
 
-scrypto_type!(ResourceAddress, ScryptoTypeId::ResourceAddress, Vec::new());
+scrypto_type!(
+    ResourceAddress,
+    ScryptoCustomTypeId::ResourceAddress,
+    Type::ResourceAddress,
+    27
+);
 
 //======
 // text

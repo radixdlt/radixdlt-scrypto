@@ -15,7 +15,7 @@ use proc_macro::TokenStream;
 ///     array: Vec<A>
 /// }
 /// ```
-#[proc_macro_derive(Describe, attributes(sbor))]
+#[proc_macro_derive(Describe, attributes(skip))]
 pub fn describe(input: TokenStream) -> TokenStream {
     describe::handle_describe(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())

@@ -8,8 +8,10 @@ use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK
 use crate::core::*;
 use crate::misc::*;
 use crate::scrypto_type;
+use crate::values::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct PackagePublishInput {
     pub code: Blob,
     pub abi: Blob,
@@ -27,7 +29,12 @@ pub struct BorrowedPackage(pub(crate) PackageAddress);
 
 impl BorrowedPackage {
     /// Invokes a function on this package.
-    pub fn call<T: Decode>(&self, blueprint_name: &str, function: &str, args: Vec<u8>) -> T {
+    pub fn call<T: Decode<ScryptoCustomTypeId>>(
+        &self,
+        blueprint_name: &str,
+        function: &str,
+        args: Vec<u8>,
+    ) -> T {
         Runtime::call_function(self.0, blueprint_name, function, args)
     }
 }
@@ -73,7 +80,12 @@ impl PackageAddress {
     }
 }
 
-scrypto_type!(PackageAddress, ScryptoTypeId::PackageAddress, Vec::new());
+scrypto_type!(
+    PackageAddress,
+    ScryptoCustomTypeId::PackageAddress,
+    Type::PackageAddress,
+    27
+);
 
 //======
 // text

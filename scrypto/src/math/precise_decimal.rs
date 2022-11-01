@@ -12,6 +12,7 @@ use sbor::*;
 use crate::abi::*;
 use crate::math::*;
 use crate::scrypto_type;
+use crate::values::*;
 
 /// `PreciseDecimal` represents a 512 bit representation of a fixed-scale decimal number.
 ///
@@ -380,7 +381,12 @@ impl PreciseDecimal {
     }
 }
 
-scrypto_type!(PreciseDecimal, ScryptoTypeId::PreciseDecimal, Vec::new());
+scrypto_type!(
+    PreciseDecimal,
+    ScryptoCustomTypeId::PreciseDecimal,
+    Type::PreciseDecimal,
+    PreciseDecimal::BITS / 8
+);
 
 //======
 // text
@@ -1065,7 +1071,7 @@ mod tests {
         let mut bytes = Vec::with_capacity(512);
         let mut enc = Encoder::new(&mut bytes);
         PreciseDecimal::encode_type_id(&mut enc);
-        assert_eq!(bytes, vec![PreciseDecimal::type_id()]);
+        assert_eq!(bytes, vec![PreciseDecimal::type_id().as_u8()]);
     }
 
     #[test]
@@ -1076,9 +1082,8 @@ mod tests {
         PreciseDecimal::encode_type_id(&mut enc);
         pdec.encode_value(&mut enc);
         assert_eq!(bytes, {
-            let mut a = [0; 69];
-            a[0] = PreciseDecimal::type_id();
-            a[1] = 64;
+            let mut a = [0; 65];
+            a[0] = PreciseDecimal::type_id().as_u8();
             a
         });
     }

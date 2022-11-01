@@ -6,10 +6,12 @@ use sbor::rust::string::ToString;
 use sbor::*;
 
 use crate::resource::*;
+use crate::values::*;
 use crate::Describe;
 
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Eq, Describe, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct AccessRules {
     method_auth: HashMap<String, AccessRule>,
     default_auth: AccessRule,

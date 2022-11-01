@@ -9,9 +9,11 @@ use crate::abi::*;
 use crate::math::Decimal;
 use crate::resource::AccessRuleNode::{AllOf, AnyOf};
 use crate::resource::*;
+use crate::values::*;
 use crate::Describe;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum SoftDecimal {
     Static(Decimal),
     Dynamic(SchemaPath),
@@ -62,6 +64,7 @@ impl From<&str> for SoftCount {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum SoftResource {
     Static(ResourceAddress),
     Dynamic(SchemaPath),
@@ -87,6 +90,7 @@ impl From<&str> for SoftResource {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleAddress),
     StaticResource(ResourceAddress),
@@ -119,6 +123,7 @@ impl From<&str> for SoftResourceOrNonFungible {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum SoftResourceOrNonFungibleList {
     Static(Vec<SoftResourceOrNonFungible>),
     Dynamic(SchemaPath),
@@ -148,6 +153,7 @@ where
 
 /// Resource Proof Rules
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, Ord, PartialOrd)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
     AmountOf(SoftDecimal, SoftResource),
@@ -180,6 +186,7 @@ macro_rules! resource_list {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum AccessRuleNode {
     ProofRule(ProofRule),
     AnyOf(Vec<AccessRuleNode>),
@@ -360,6 +367,7 @@ macro_rules! access_rule_node {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum AccessRule {
     AllowAll,
     DenyAll,

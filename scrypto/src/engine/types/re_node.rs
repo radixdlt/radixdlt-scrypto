@@ -1,7 +1,9 @@
 use super::*;
+use crate::values::*;
 
 // TODO: Remove and replace with real HeapRENodes
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum ScryptoRENode {
     GlobalComponent(ComponentId),
     Component(PackageAddress, String, Vec<u8>),
@@ -9,6 +11,7 @@ pub enum ScryptoRENode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode, TypeId, Ord, PartialOrd)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum RENodeId {
     Bucket(BucketId),
     Proof(ProofId),
@@ -25,8 +28,8 @@ pub enum RENodeId {
     EpochManager(EpochManagerId),
 }
 
-impl Into<(Hash, u32)> for RENodeId {
-    fn into(self) -> KeyValueStoreId {
+impl Into<[u8; 36]> for RENodeId {
+    fn into(self) -> [u8; 36] {
         match self {
             RENodeId::KeyValueStore(id) => id,
             RENodeId::NonFungibleStore(id) => id,
@@ -88,6 +91,7 @@ impl Into<SystemAddress> for RENodeId {
 }
 
 #[derive(Debug, Clone, Copy, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum GlobalAddress {
     Component(ComponentAddress),
     Package(PackageAddress),
@@ -154,6 +158,7 @@ pub enum KeyValueStoreOffset {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum NonFungibleStoreOffset {
     Entry(NonFungibleId),
 }
@@ -185,6 +190,7 @@ pub enum WorktopOffset {
 
 /// Specifies a specific Substate into a given RENode
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum SubstateOffset {
     Global(GlobalOffset),
     AuthZone(AuthZoneOffset),
@@ -202,4 +208,5 @@ pub enum SubstateOffset {
 
 /// TODO: separate space addresses?
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct SubstateId(pub RENodeId, pub SubstateOffset);

@@ -12,18 +12,22 @@ use crate::misc::*;
 use crate::native_methods;
 use crate::resource::*;
 use crate::scrypto_type;
+use crate::values::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct BucketTakeInput {
     pub amount: Decimal,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct BucketPutInput {
     pub bucket: scrypto::resource::Bucket,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct BucketTakeNonFungiblesInput {
     pub ids: BTreeSet<NonFungibleId>,
 }
@@ -214,4 +218,4 @@ impl Bucket {
     }
 }
 
-scrypto_type!(Bucket, ScryptoTypeId::Bucket, Vec::new());
+scrypto_type!(Bucket, ScryptoCustomTypeId::Bucket, Type::Bucket, 4);

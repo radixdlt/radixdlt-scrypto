@@ -9,25 +9,28 @@ use scrypto::engine::types::GlobalAddress;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::crypto::*;
 use crate::engine::{api::*, types::*, utils::*};
 use crate::math::*;
 use crate::misc::*;
 use crate::native_methods;
 use crate::resource::*;
 use crate::scrypto_type;
+use crate::values::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct VaultPutInput {
     pub bucket: Bucket,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct VaultTakeInput {
     pub amount: Decimal,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct VaultTakeNonFungiblesInput {
     pub non_fungible_ids: BTreeSet<NonFungibleId>,
 }
@@ -45,16 +48,19 @@ pub struct VaultGetNonFungibleIdsInput {}
 pub struct VaultCreateProofInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct VaultCreateProofByAmountInput {
     pub amount: Decimal,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct VaultCreateProofByIdsInput {
     pub ids: BTreeSet<NonFungibleId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct VaultLockFeeInput {
     pub amount: Decimal,
 }
@@ -268,10 +274,7 @@ impl TryFrom<&[u8]> for Vault {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            36 => Ok(Self((
-                Hash(copy_u8_array(&slice[0..32])),
-                u32::from_le_bytes(copy_u8_array(&slice[32..])),
-            ))),
+            36 => Ok(Self(copy_u8_array(slice))),
             _ => Err(ParseVaultError::InvalidLength(slice.len())),
         }
     }
@@ -279,13 +282,11 @@ impl TryFrom<&[u8]> for Vault {
 
 impl Vault {
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut v = self.0 .0.to_vec();
-        v.extend(self.0 .1.to_le_bytes());
-        v
+        self.0.to_vec()
     }
 }
 
-scrypto_type!(Vault, ScryptoTypeId::Vault, Vec::new());
+scrypto_type!(Vault, ScryptoCustomTypeId::Vault, Type::Vault, 36);
 
 //======
 // text

@@ -113,7 +113,7 @@ pub fn format_value<F: fmt::Write>(
             elements,
         } => {
             f.write_str("Array<")?;
-            format_type_id(f, *element_type_id)?;
+            format_type_id(f, element_type_id)?;
             f.write_str(">(")?;
             format_elements(f, elements, context)?;
             f.write_str(")")?;
@@ -133,7 +133,7 @@ pub fn format_value<F: fmt::Write>(
 
 pub fn format_type_id<F: fmt::Write>(
     f: &mut F,
-    type_id: SborTypeId<ScryptoCustomTypeId>,
+    type_id: &SborTypeId<ScryptoCustomTypeId>,
 ) -> fmt::Result {
     match type_id {
         SborTypeId::Unit => f.write_str("Unit"),

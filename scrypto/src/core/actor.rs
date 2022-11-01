@@ -3,8 +3,10 @@ use sbor::*;
 
 use crate::component::*;
 use crate::engine::types::ComponentId;
+use crate::values::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum ScryptoActor {
     Blueprint(PackageAddress, String),
     Component(ComponentId, PackageAddress, String),

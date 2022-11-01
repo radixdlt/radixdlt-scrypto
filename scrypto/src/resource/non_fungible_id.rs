@@ -10,6 +10,7 @@ use crate::abi::*;
 use crate::buffer::scrypto_encode;
 use crate::scrypto_type;
 use crate::values::ScryptoValue;
+use crate::values::*;
 
 /// Represents a key for a non-fungible resource
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -47,6 +48,7 @@ impl NonFungibleId {
 pub enum ParseNonFungibleIdError {
     InvalidHex(String),
     InvalidValue,
+    ContainsOwnedNodes,
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -67,8 +69,13 @@ impl TryFrom<&[u8]> for NonFungibleId {
     type Error = ParseNonFungibleIdError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        let value = ScryptoValue::from_slice_no_custom_values(slice)
-            .map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
+        let value =
+            ScryptoValue::from_slice(slice).map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
+        // TODO: limit types
+        if value.value_count() != 0 {
+            return Err(ParseNonFungibleIdError::ContainsOwnedNodes);
+        }
+
         Ok(Self(value.raw))
     }
 }
@@ -79,7 +86,11 @@ impl NonFungibleId {
     }
 }
 
-scrypto_type!(NonFungibleId, ScryptoTypeId::NonFungibleId, Vec::new());
+scrypto_type!(
+    NonFungibleId,
+    ScryptoCustomTypeId::NonFungibleId,
+    Type::NonFungibleId
+);
 
 //======
 // text

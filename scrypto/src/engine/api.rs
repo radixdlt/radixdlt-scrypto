@@ -3,6 +3,7 @@ use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
 
 use super::types::*;
+use crate::values::*;
 
 #[cfg(target_arch = "wasm32")]
 extern "C" {
@@ -10,6 +11,7 @@ extern "C" {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum RadixEngineInput {
     InvokeScryptoFunction(ScryptoFunctionIdent, Vec<u8>),
     InvokeScryptoMethod(ScryptoMethodIdent, Vec<u8>),

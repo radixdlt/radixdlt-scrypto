@@ -104,19 +104,19 @@ macro_rules! args {
         let mut fields = Vec::new();
         $(
             let encoded = ::scrypto::buffer::scrypto_encode(&$args);
-            fields.push(::sbor::decode_any(&encoded).unwrap());
+            fields.push(::sbor::decode_any::<::scrypto::values::ScryptoCustomTypeId, ::scrypto::values::ScryptoCustomValue>(&encoded).unwrap());
         )*
-        let input_struct = ::sbor::Value::Struct {
+        let input_struct = ::sbor::SborValue::Struct {
             fields,
         };
-        ::sbor::encode_any(&input_struct)
+        ::sbor::encode_any::<::scrypto::values::ScryptoCustomTypeId, ::scrypto::values::ScryptoCustomValue>(&input_struct)
     }};
 }
 
 #[macro_export]
 macro_rules! args_from_value_vec {
     ($args: expr) => {{
-        let input_struct = ::sbor::Value::Struct { fields: $args };
+        let input_struct = ::sbor::SborValue::Struct { fields: $args };
         ::sbor::encode_any(&input_struct)
     }};
 }
@@ -128,7 +128,7 @@ macro_rules! args_from_bytes_vec {
         for arg in $args {
             fields.push(::sbor::decode_any(&arg).unwrap());
         }
-        let input_struct = ::sbor::Value::Struct { fields };
+        let input_struct = ::sbor::SborValue::Struct { fields };
         ::sbor::encode_any(&input_struct)
     }};
 }
@@ -350,6 +350,7 @@ macro_rules! external_blueprint {
     ) => {
 
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+        #[custom_type_id(::scrypto::values::ScryptoCustomTypeId)]
         struct $blueprint_ident {
             package_address: ::scrypto::component::PackageAddress,
             blueprint_name: ::sbor::rust::string::String,
@@ -492,6 +493,7 @@ macro_rules! external_component {
     ) => {
 
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+        #[custom_type_id(::scrypto::values::ScryptoCustomTypeId)]
         struct $component_ident {
             component_address: ::scrypto::component::ComponentAddress,
         }
@@ -606,53 +608,92 @@ macro_rules! external_component_members {
     () => {}
 }
 
-/// A macro to help create a Scrypto-specific type.
+/// A macro for implementing sbor traits.
 #[macro_export]
 macro_rules! scrypto_type {
-    ($t:ty, $ct:expr, $generics: expr) => {
-        impl TypeId for $t {
+    // static size
+    ($t:ty, $type_id:expr, $schema_type: expr, $size: expr) => {
+        impl TypeId<::scrypto::values::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn type_id() -> u8 {
-                $ct.id()
+            fn type_id() -> SborTypeId<::scrypto::values::ScryptoCustomTypeId> {
+                SborTypeId::Custom($type_id)
             }
         }
 
-        impl Encode for $t {
+        impl Encode<::scrypto::values::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn encode_type_id(encoder: &mut Encoder) {
+            fn encode_type_id(encoder: &mut Encoder<::scrypto::values::ScryptoCustomTypeId>) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
-            fn encode_value(&self, encoder: &mut Encoder) {
+            fn encode_value(&self, encoder: &mut Encoder<::scrypto::values::ScryptoCustomTypeId>) {
+                encoder.write_slice(&self.to_vec());
+            }
+        }
+
+        impl Decode<::scrypto::values::ScryptoCustomTypeId> for $t {
+            fn check_type_id(
+                decoder: &mut Decoder<::scrypto::values::ScryptoCustomTypeId>,
+            ) -> Result<(), DecodeError> {
+                decoder.check_type_id(Self::type_id())
+            }
+
+            fn decode_value(
+                decoder: &mut Decoder<::scrypto::values::ScryptoCustomTypeId>,
+            ) -> Result<Self, DecodeError> {
+                let slice = decoder.read_slice($size)?;
+                Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
+            }
+        }
+
+        impl Describe for $t {
+            fn describe() -> Type {
+                $schema_type
+            }
+        }
+    };
+
+    // dynamic size
+    ($t:ty, $type_id:expr, $schema_type: expr) => {
+        impl TypeId<::scrypto::values::ScryptoCustomTypeId> for $t {
+            #[inline]
+            fn type_id() -> SborTypeId<::scrypto::values::ScryptoCustomTypeId> {
+                SborTypeId::Custom($type_id)
+            }
+        }
+
+        impl Encode<::scrypto::values::ScryptoCustomTypeId> for $t {
+            #[inline]
+            fn encode_type_id(encoder: &mut Encoder<::scrypto::values::ScryptoCustomTypeId>) {
+                encoder.write_type_id(Self::type_id());
+            }
+            #[inline]
+            fn encode_value(&self, encoder: &mut Encoder<::scrypto::values::ScryptoCustomTypeId>) {
                 let bytes = self.to_vec();
                 encoder.write_size(bytes.len());
                 encoder.write_slice(&bytes);
             }
         }
 
-        impl Decode for $t {
-            fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+        impl Decode<::scrypto::values::ScryptoCustomTypeId> for $t {
+            fn check_type_id(
+                decoder: &mut Decoder<::scrypto::values::ScryptoCustomTypeId>,
+            ) -> Result<(), DecodeError> {
                 decoder.check_type_id(Self::type_id())
             }
-            fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+
+            fn decode_value(
+                decoder: &mut Decoder<::scrypto::values::ScryptoCustomTypeId>,
+            ) -> Result<Self, DecodeError> {
                 let len = decoder.read_size()?;
                 let slice = decoder.read_slice(len)?;
-                Self::try_from(slice).map_err(|err| {
-                    DecodeError::CustomError(::sbor::rust::format!(
-                        "Failed to decode {}: {:?}",
-                        stringify!($t),
-                        err
-                    ))
-                })
+                Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
             }
         }
 
         impl Describe for $t {
             fn describe() -> Type {
-                Type::Custom {
-                    type_id: $ct.id(),
-                    generics: $generics,
-                }
+                $schema_type
             }
         }
     };

@@ -6,27 +6,32 @@ use crate::engine::{api::*, types::*, utils::*};
 use crate::math::Decimal;
 use crate::native_methods;
 use crate::resource::*;
+use crate::values::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZonePopInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct AuthZonePushInput {
     pub proof: Proof,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct AuthZoneCreateProofInput {
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct AuthZoneCreateProofByAmountInput {
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct AuthZoneCreateProofByIdsInput {
     pub ids: BTreeSet<NonFungibleId>,
     pub resource_address: ResourceAddress,

@@ -60,11 +60,11 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                         fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{type_id::*, *};
                             let mut decoder_nm = Decoder::new(immutable_data);
-                            decoder_nm.check_type_id(TYPE_STRUCT)?;
+                            decoder_nm.check_type_id(SborTypeId::<::scrypto::values::ScryptoCustomTypeId>::Struct)?;
                             decoder_nm.check_size(#im_n)?;
 
                             let mut decoder_m = Decoder::new(mutable_data);
-                            decoder_m.check_type_id(TYPE_STRUCT)?;
+                            decoder_m.check_type_id(SborTypeId::<::scrypto::values::ScryptoCustomTypeId>::Struct)?;
                             decoder_m.check_size(#m_n)?;
 
                             let decoded = Self {
@@ -83,7 +83,7 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
 
                             let mut bytes = Vec::with_capacity(512);
                             let mut encoder = Encoder::new(&mut bytes);
-                            encoder.write_type_id(TYPE_STRUCT);
+                            encoder.write_type_id(SborTypeId::<::scrypto::values::ScryptoCustomTypeId>::Struct);
                             encoder.write_size(#im_n);
                             #(
                                 self.#im_ids2.encode(&mut encoder);
@@ -98,7 +98,7 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
 
                             let mut bytes = Vec::with_capacity(512);
                             let mut encoder = Encoder::new(&mut bytes);
-                            encoder.write_type_id(TYPE_STRUCT);
+                            encoder.write_type_id(SborTypeId::<::scrypto::values::ScryptoCustomTypeId>::Struct);
                             encoder.write_size(#m_n);
                             #(
                                 self.#m_ids2.encode(&mut encoder);
@@ -152,11 +152,11 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
             return Err(Error::new(Span::call_site(), "Union is not supported!"));
         }
     };
-    trace!("handle_non_fungible_data() finishes");
 
     #[cfg(feature = "trace")]
     crate::utils::print_generated_code("NonFungibleData", &output);
 
+    trace!("handle_non_fungible_data() finishes");
     Ok(output)
 }
 
@@ -186,10 +186,10 @@ mod tests {
                     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{type_id::*, *};
                         let mut decoder_nm = Decoder::new(immutable_data);
-                        decoder_nm.check_type_id(TYPE_STRUCT)?;
+                        decoder_nm.check_type_id(SborTypeId::<::scrypto::values::ScryptoCustomTypeId>::Struct)?;
                         decoder_nm.check_size(1)?;
                         let mut decoder_m = Decoder::new(mutable_data);
-                        decoder_m.check_type_id(TYPE_STRUCT)?;
+                        decoder_m.check_type_id(SborTypeId::<::scrypto::values::ScryptoCustomTypeId>::Struct)?;
                         decoder_m.check_size(1)?;
                         let decoded = Self {
                             field_1: <u32>::decode(&mut decoder_nm)?,
@@ -203,7 +203,7 @@ mod tests {
                         use ::sbor::{type_id::*, *};
                         let mut bytes = Vec::with_capacity(512);
                         let mut encoder = Encoder::new(&mut bytes);
-                        encoder.write_type_id(TYPE_STRUCT);
+                        encoder.write_type_id(SborTypeId::<::scrypto::values::ScryptoCustomTypeId>::Struct);
                         encoder.write_size(1);
                         self.field_1.encode(&mut encoder);
                         bytes
@@ -213,7 +213,7 @@ mod tests {
                         use ::sbor::rust::vec::Vec;
                         let mut bytes = Vec::with_capacity(512);
                         let mut encoder = Encoder::new(&mut bytes);
-                        encoder.write_type_id(TYPE_STRUCT);
+                        encoder.write_type_id(SborTypeId::<::scrypto::values::ScryptoCustomTypeId>::Struct);
                         encoder.write_size(1);
                         self.field_2.encode(&mut encoder);
                         bytes

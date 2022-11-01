@@ -14,7 +14,7 @@ macro_rules! trace {
 }
 
 pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
-    trace!("Started processing blueprint macro");
+    trace!("handle_blueprint() starts");
 
     // parse blueprint struct and impl
     let bp = parse2::<ast::Blueprint>(input)?;
@@ -51,6 +51,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             use super::*;
 
             #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+            #[custom_type_id(::scrypto::values::ScryptoCustomTypeId)]
             pub struct #bp_ident #bp_fields #bp_semi_token
 
             impl #bp_ident {
@@ -122,11 +123,11 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
         #output_stubs
     };
-    trace!("Finished processing blueprint macro");
 
     #[cfg(feature = "trace")]
     crate::utils::print_generated_code("blueprint!", &output);
 
+    trace!("handle_blueprint() finishes");
     Ok(output)
 }
 
@@ -163,6 +164,7 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
             let method_input_struct: ItemStruct = parse_quote! {
                 #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                #[custom_type_id(::scrypto::values::ScryptoCustomTypeId)]
                 pub struct #input_struct_name {
                     #(#args),*
                 }
@@ -465,6 +467,7 @@ fn generate_stubs(
     let output = quote! {
         #[allow(non_camel_case_types)]
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+        #[custom_type_id(::scrypto::values::ScryptoCustomTypeId)]
         pub struct #value_ident {
             pub component: ::scrypto::component::Component,
         }
@@ -544,6 +547,7 @@ mod tests {
                     use super::*;
 
                     #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                    #[custom_type_id(::scrypto::values::ScryptoCustomTypeId)]
                     pub struct Test {
                         a: u32,
                         admin: ResourceManager
@@ -573,10 +577,12 @@ mod tests {
 
                 #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                #[custom_type_id(::scrypto::values::ScryptoCustomTypeId)]
                 pub struct Test_x_Input { arg0 : u32 }
 
                 #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                #[custom_type_id(::scrypto::values::ScryptoCustomTypeId)]
                 pub struct Test_y_Input { arg0 : u32 }
 
                 #[no_mangle]
@@ -651,6 +657,7 @@ mod tests {
 
                 #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                #[custom_type_id(::scrypto::values::ScryptoCustomTypeId)]
                 pub struct TestComponent {
                     pub component: ::scrypto::component::Component,
                 }
@@ -696,6 +703,7 @@ mod tests {
                     use super::*;
 
                     #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                    #[custom_type_id(::scrypto::values::ScryptoCustomTypeId)]
                     pub struct Test {
                     }
 
@@ -732,6 +740,7 @@ mod tests {
 
                 #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                #[custom_type_id(::scrypto::values::ScryptoCustomTypeId)]
                 pub struct TestComponent {
                     pub component: ::scrypto::component::Component,
                 }

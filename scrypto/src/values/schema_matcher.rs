@@ -63,7 +63,7 @@ pub fn sbor_type_id(ty: &Type) -> Option<SborTypeId<ScryptoCustomTypeId>> {
     }
 }
 
-fn match_type_with_schema(
+pub fn match_schema_with_value(
     ty: &Type,
     value: &SborValue<ScryptoCustomTypeId, ScryptoCustomValue>,
 ) -> bool {
@@ -98,7 +98,7 @@ fn match_type_with_schema(
                     && usize::from(*length) == elements.len()
                     && elements
                         .iter()
-                        .all(|v| match_type_with_schema(element_type, v))
+                        .all(|v| match_schema_with_value(element_type, v))
             } else {
                 false
             }
@@ -109,7 +109,7 @@ fn match_type_with_schema(
                     && element_types
                         .iter()
                         .enumerate()
-                        .all(|(i, e)| match_type_with_schema(e, elements.get(i).unwrap()))
+                        .all(|(i, e)| match_schema_with_value(e, elements.get(i).unwrap()))
             } else {
                 false
             }
@@ -122,7 +122,7 @@ fn match_type_with_schema(
             {
                 match discriminator.as_str() {
                     OPTION_VARIANT_SOME => {
-                        fields.len() == 1 && match_type_with_schema(some_type, &fields[0])
+                        fields.len() == 1 && match_schema_with_value(some_type, &fields[0])
                     }
                     OPTION_VARIANT_NONE => fields.len() == 0,
                     _ => false,
@@ -142,10 +142,10 @@ fn match_type_with_schema(
             {
                 match discriminator.as_str() {
                     RESULT_VARIANT_OK => {
-                        fields.len() == 1 && match_type_with_schema(okay_type, &fields[0])
+                        fields.len() == 1 && match_schema_with_value(okay_type, &fields[0])
                     }
                     RESULT_VARIANT_ERR => {
-                        fields.len() == 1 && match_type_with_schema(err_type, &fields[0])
+                        fields.len() == 1 && match_schema_with_value(err_type, &fields[0])
                     }
                     _ => false,
                 }
@@ -168,7 +168,7 @@ fn match_type_with_schema(
                 element_type_matches
                     && elements
                         .iter()
-                        .all(|v| match_type_with_schema(element_type, v))
+                        .all(|v| match_schema_with_value(element_type, v))
             } else {
                 false
             }
@@ -190,8 +190,8 @@ fn match_type_with_schema(
                     && elements.iter().all(|e| {
                         if let SborValue::Tuple { elements } = e {
                             elements.len() == 2
-                                && match_type_with_schema(key_type, &elements[0])
-                                && match_type_with_schema(value_type, &elements[1])
+                                && match_schema_with_value(key_type, &elements[0])
+                                && match_schema_with_value(value_type, &elements[1])
                         } else {
                             false
                         }
@@ -212,12 +212,12 @@ fn match_type_with_schema(
                             && unnamed
                                 .iter()
                                 .enumerate()
-                                .all(|(i, e)| match_type_with_schema(e, fields.get(i).unwrap()))
+                                .all(|(i, e)| match_schema_with_value(e, fields.get(i).unwrap()))
                     }
                     Fields::Named { named } => {
                         named.len() == fields.len()
                             && named.iter().enumerate().all(|(i, (_, e))| {
-                                match_type_with_schema(e, fields.get(i).unwrap())
+                                match_schema_with_value(e, fields.get(i).unwrap())
                             })
                     }
                 }
@@ -241,13 +241,13 @@ fn match_type_with_schema(
                             Fields::Unnamed { unnamed } => {
                                 unnamed.len() == fields.len()
                                     && unnamed.iter().enumerate().all(|(i, e)| {
-                                        match_type_with_schema(e, fields.get(i).unwrap())
+                                        match_schema_with_value(e, fields.get(i).unwrap())
                                     })
                             }
                             Fields::Named { named } => {
                                 named.len() == fields.len()
                                     && named.iter().enumerate().all(|(i, (_, e))| {
-                                        match_type_with_schema(e, fields.get(i).unwrap())
+                                        match_schema_with_value(e, fields.get(i).unwrap())
                                     })
                             }
                         };
@@ -294,8 +294,8 @@ fn match_type_with_schema(
             }
         }
         Type::KeyValueStore {
-            key_type,
-            value_type,
+            key_type: _,
+            value_type: _,
         } => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::KeyValueStore(_))
