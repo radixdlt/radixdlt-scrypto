@@ -6,6 +6,7 @@ use scrypto::buffer::scrypto_encode;
 use scrypto::core::*;
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
+use crate::crypto::Hash;
 
 #[cfg(target_arch = "wasm32")]
 extern "C" {
@@ -129,6 +130,11 @@ impl ScryptoSyscalls<SyscallError> for Syscalls {
 
     fn sys_get_actor(&mut self) -> Result<ScryptoActor, SyscallError> {
         let rtn = call_engine(RadixEngineInput::GetActor());
+        Ok(rtn)
+    }
+
+    fn sys_get_transaction_hash(&mut self) -> Result<Hash, SyscallError> {
+        let rtn = call_engine(RadixEngineInput::GetTransactionHash());
         Ok(rtn)
     }
 

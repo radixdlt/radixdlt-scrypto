@@ -1,7 +1,7 @@
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::fee::*;
-use crate::model::{ InvokeError, KeyValueStore, RuntimeSubstate, };
+use crate::model::{ InvokeError, };
 use crate::types::*;
 use crate::wasm::*;
 use scrypto::engine::api::ScryptoSyscalls;
@@ -62,10 +62,6 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         parse_and_invoke_native_method(native_method, args, self.system_api)
     }
-
-    fn handle_get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
-        self.system_api.read_transaction_hash()
-    }
 }
 
 fn encode<T: Encode>(output: T) -> Vec<u8> {
@@ -121,7 +117,7 @@ where
                 self.system_api.sys_get_actor().map(encode)?
             },
             RadixEngineInput::GetTransactionHash() => {
-                self.handle_get_transaction_hash().map(encode)?
+                self.system_api.sys_get_transaction_hash().map(encode)?
             }
             RadixEngineInput::GenerateUuid() => {
                 self.system_api.sys_generate_uuid().map(encode)?

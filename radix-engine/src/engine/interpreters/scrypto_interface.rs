@@ -13,6 +13,7 @@ use crate::wasm::{WasmEngine, WasmInstance};
 use sbor::{Decode, Encode};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::ScryptoActor;
+use scrypto::crypto::Hash;
 use scrypto::engine::api::{ScryptoSyscalls, SysInvocation, SysInvokable, SysInvokableNative};
 use scrypto::engine::types::{
     Level, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode,
@@ -168,6 +169,10 @@ where
         };
 
         Ok(actor)
+    }
+
+    fn sys_get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
+        self.read_transaction_hash()
     }
 
     fn sys_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
