@@ -1,4 +1,5 @@
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::fmt::Debug;
 use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -9,7 +10,6 @@ use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::engine::{api::*, scrypto_env::*, types::*};
-use crate::native_fn;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {}
@@ -72,6 +72,20 @@ impl Into<NativeFnInvocation> for EpochManagerSetEpochInvocation {
 pub struct Runtime {}
 
 impl Runtime {
+    pub fn current_epoch() -> u64 {
+        Self::sys_current_epoch(&mut ScryptoEnv).unwrap()
+    }
+
+    pub fn sys_current_epoch<Y, E>(env: &mut Y) -> Result<u64, E>
+    where
+        Y: SysNativeInvokable<EpochManagerGetCurrentEpochInvocation, E>,
+        E: Debug + TypeId + Decode,
+    {
+        env.sys_invoke(EpochManagerGetCurrentEpochInvocation {
+            receiver: EPOCH_MANAGER,
+        })
+    }
+
     /// Returns the running entity, a component if within a call-method context or a
     /// blueprint if within a call-function context.
     pub fn actor() -> ScryptoActor {
@@ -136,13 +150,5 @@ impl Runtime {
     pub fn transaction_hash() -> Hash {
         let mut syscalls = ScryptoEnv;
         syscalls.sys_get_transaction_hash().unwrap()
-    }
-
-    native_fn! {
-        pub fn current_epoch() -> u64 {
-            EpochManagerGetCurrentEpochInvocation {
-                receiver: EPOCH_MANAGER,
-            }
-        }
     }
 }

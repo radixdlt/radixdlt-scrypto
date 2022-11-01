@@ -12,8 +12,8 @@ use crate::crypto::*;
 use crate::engine::{api::*, scrypto_env::*, types::*};
 use crate::math::*;
 use crate::misc::*;
-use crate::native_fn;
 use crate::resource::*;
+use crate::scrypto_env_native_fn;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultPutInvocation {
@@ -217,7 +217,6 @@ pub struct Vault(pub VaultId);
 
 impl Vault {
     /// Creates an empty vault and fills it with an initial bucket of resource.
-    #[cfg(target_arch = "wasm32")]
     pub fn with_bucket(bucket: Bucket) -> Self {
         let mut vault = Vault::new(bucket.resource_address());
         vault.put(bucket);
@@ -235,7 +234,7 @@ impl Vault {
         sys_calls.sys_invoke(VaultGetAmountInvocation { receiver: self.0 })
     }
 
-    native_fn! {
+    scrypto_env_native_fn! {
         pub fn new(resource_address: ResourceAddress) -> Self {
             ResourceManagerCreateVaultInvocation {
                 receiver: resource_address,

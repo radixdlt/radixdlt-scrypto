@@ -9,8 +9,8 @@ use crate::address::*;
 use crate::engine::{api::*, scrypto_env::*};
 use crate::math::*;
 use crate::misc::*;
-use crate::native_fn;
 use crate::resource::*;
+use crate::scrypto_env_native_fn;
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
@@ -501,7 +501,7 @@ impl ResourceManager {
             .unwrap()
     }
 
-    native_fn! {
+    scrypto_env_native_fn! {
         pub fn metadata(&self) -> HashMap<String, String> {
             ResourceManagerGetMetadataInvocation {
                 receiver: self.0,

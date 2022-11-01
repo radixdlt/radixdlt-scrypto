@@ -10,8 +10,8 @@ use crate::engine::scrypto_env::*;
 use crate::engine::{api::*, types::*};
 use crate::math::*;
 use crate::misc::*;
-use crate::native_fn;
 use crate::resource::*;
+use crate::scrypto_env_native_fn;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketTakeInvocation {
@@ -183,12 +183,10 @@ pub mod sys {
             })
         }
 
-        pub fn sys_resource_address<Y, E: Debug + TypeId + Decode>(
-            &self,
-            env: &mut Y,
-        ) -> Result<ResourceAddress, E>
+        pub fn sys_resource_address<Y, E>(&self, env: &mut Y) -> Result<ResourceAddress, E>
         where
             Y: SysNativeInvokable<BucketGetResourceAddressInvocation, E>,
+            E: Debug + TypeId + Decode,
         {
             env.sys_invoke(BucketGetResourceAddressInvocation { receiver: self.0 })
         }
@@ -223,15 +221,15 @@ pub mod scr {
         pub fn create_proof(&self) -> Proof {
             self.sys_create_proof(&mut ScryptoEnv).unwrap()
         }
-
-        pub fn resource_address(&self) -> ResourceAddress {
-            self.sys_resource_address(&mut ScryptoEnv).unwrap()
-        }
     }
 }
 
 impl Bucket {
-    native_fn! {
+    pub fn resource_address(&self) -> ResourceAddress {
+        self.sys_resource_address(&mut ScryptoEnv).unwrap()
+    }
+
+    scrypto_env_native_fn! {
         fn take_internal(&mut self, amount: Decimal) -> Self {
             BucketTakeInvocation {
                 receiver: self.0,

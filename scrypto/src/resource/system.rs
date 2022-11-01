@@ -3,7 +3,7 @@ use sbor::rust::string::String;
 
 use crate::resource::*;
 
-use crate::native_fn;
+use crate::scrypto_env_native_fn;
 
 /// Represents the Radix Engine resource subsystem.
 ///
@@ -36,7 +36,7 @@ impl ResourceSystem {
             .or_insert(ResourceManager(resource_address))
     }
 
-    native_fn! {
+    scrypto_env_native_fn! {
         pub fn new_resource(
             &mut self,
             resource_type: ResourceType,

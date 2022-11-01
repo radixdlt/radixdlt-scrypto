@@ -11,8 +11,8 @@ use crate::engine::scrypto_env::{NativeMethodInvocation, ProofMethodInvocation};
 use crate::engine::{api::*, types::*};
 use crate::math::*;
 use crate::misc::*;
-use crate::native_fn;
 use crate::resource::*;
+use crate::scrypto_env_native_fn;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ProofGetAmountInvocation {
@@ -283,7 +283,7 @@ impl Proof {
         }
     }
 
-    native_fn! {
+    scrypto_env_native_fn! {
         fn amount(&self) -> Decimal {
             ProofGetAmountInvocation {
                 receiver: self.0
@@ -326,7 +326,7 @@ impl Clone for ValidatedProof {
 }
 
 impl ValidatedProof {
-    native_fn! {
+    scrypto_env_native_fn! {
         pub fn amount(&self) -> Decimal {
             ProofGetAmountInvocation {
                 receiver: self.proof_id(),

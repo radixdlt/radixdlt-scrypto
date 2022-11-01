@@ -163,7 +163,7 @@ pub enum RadixEngineInput {
 }
 
 #[macro_export]
-macro_rules! native_fn {
+macro_rules! scrypto_env_native_fn {
     ($($vis:vis $fn:ident $fn_name:ident ($($args:tt)*) -> $rtn:ty { $arg:expr })*) => {
         $(
             $vis $fn $fn_name ($($args)*) -> $rtn {
@@ -171,6 +171,29 @@ macro_rules! native_fn {
                 crate::engine::api::SysNativeInvokable::sys_invoke(&mut env, $arg).unwrap()
             }
         )+
+    };
+}
+
+#[macro_export]
+macro_rules! sys_env_native_fn {
+    ($vis:vis $fn:ident $fn_name:ident ($($args:tt)+) -> $rtn:ty { $invocation:ident { $($invocation_args:tt)* } }) => {
+        $vis $fn $fn_name<Y, E>($($args)*, env: &mut Y) -> Result<$rtn, E>
+        where
+            Y: crate::engine::api::SysNativeInvokable<$invocation, E>,
+            E: sbor::rust::fmt::Debug + TypeId + Decode,
+        {
+            crate::engine::api::SysNativeInvokable::sys_invoke(env, $invocation { $($invocation_args)* })
+        }
+    };
+
+    ($vis:vis $fn:ident $fn_name:ident () -> $rtn:ty { $invocation:ident { $($invocation_args:tt)* } }) => {
+        $vis $fn $fn_name<Y, E>(env: &mut Y) -> Result<$rtn, E>
+        where
+            Y: crate::engine::api::SysNativeInvokable<$invocation, E>,
+            E: sbor::rust::fmt::Debug + TypeId + Decode,
+        {
+            crate::engine::api::SysNativeInvokable::sys_invoke(env, $invocation { $($invocation_args)* })
+        }
     };
 }
 
