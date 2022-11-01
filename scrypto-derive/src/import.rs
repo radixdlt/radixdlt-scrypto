@@ -1,10 +1,9 @@
-use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 use syn::*;
 
 use scrypto_abi as abi;
 use scrypto_abi::Fields as SchemaFields;
-use scrypto_abi::ScryptoTypeId;
 use scrypto_abi::Type as SchemaType;
 
 macro_rules! trace {
@@ -316,57 +315,43 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         SchemaType::Any => {
             panic!("Any type not currently supported for importing.");
         }
-        SchemaType::Custom { type_id, generics } => {
-            // Copying the names to avoid cyclic dependency.
-            let scrypto_type = ScryptoTypeId::from_id(*type_id).ok_or(Error::new(
-                Span::call_site(),
-                format!("Invalid custom type: {}", type_id),
-            ))?;
-
-            let canonical_name = match scrypto_type {
-                // Global addresses types
-                ScryptoTypeId::PackageAddress => "::scrypto::component::PackageAddress",
-                ScryptoTypeId::ComponentAddress => "::scrypto::component::ComponentAddress",
-                ScryptoTypeId::ResourceAddress => "::scrypto::resource::ResourceAddress",
-                ScryptoTypeId::SystemAddress => "::scrypto::core::SystemAddress",
-                // RE nodes types
-                ScryptoTypeId::Component => "::scrypto::component::Component",
-                ScryptoTypeId::KeyValueStore => "::scrypto::component::KeyValueStore",
-                ScryptoTypeId::Bucket => "::scrypto::resource::Bucket",
-                ScryptoTypeId::Proof => "::scrypto::resource::Proof",
-                ScryptoTypeId::Vault => "::scrypto::resource::Vault",
-                // Other interpreted types
-                ScryptoTypeId::Expression => "::scrypto::core::Expression",
-                ScryptoTypeId::Blob => "::scrypto::core::Blob",
-                ScryptoTypeId::NonFungibleAddress => "::scrypto::resource::NonFungibleAddress",
-                // Uninterpreted
-                ScryptoTypeId::Hash => "::scrypto::crypto::Hash",
-                ScryptoTypeId::EcdsaSecp256k1PublicKey => {
-                    "::scrypto::crypto::EcdsaSecp256k1PublicKey"
-                }
-                ScryptoTypeId::EcdsaSecp256k1Signature => {
-                    "::scrypto::crypto::EcdsaSecp256k1Signature"
-                }
-                ScryptoTypeId::EddsaEd25519PublicKey => "::scrypto::crypto::EddsaEd25519PublicKey",
-                ScryptoTypeId::EddsaEd25519Signature => "::scrypto::crypto::EddsaEd25519Signature",
-                ScryptoTypeId::Decimal => "::scrypto::math::Decimal",
-                ScryptoTypeId::PreciseDecimal => "::scrypto::math::PreciseDecimal",
-                ScryptoTypeId::NonFungibleId => "::scrypto::resource::NonFungibleId",
-            };
-
-            let ty: Type = parse_str(canonical_name).unwrap();
-            if generics.is_empty() {
-                parse_quote! { #ty }
-            } else {
-                let mut types = vec![];
-                for g in generics {
-                    let (t, v) = get_native_type(g)?;
-                    types.push(t);
-                    structs.extend(v);
-                }
-                parse_quote! { #ty<#(#types),*> }
-            }
+        SchemaType::PackageAddress => parse_quote! { ::scrypto::component::PackageAddress },
+        SchemaType::ComponentAddress => parse_quote! { ::scrypto::component::ComponentAddress},
+        SchemaType::ResourceAddress => parse_quote! {::scrypto::resource::ResourceAddress },
+        SchemaType::SystemAddress => parse_quote! { ::scrypto::core::SystemAddress},
+        SchemaType::Component => parse_quote! {::scrypto::component::Component },
+        SchemaType::KeyValueStore {
+            key_type,
+            value_type,
+        } => {
+            let (k, s) = get_native_type(key_type)?;
+            structs.extend(s);
+            let (v, s) = get_native_type(value_type)?;
+            structs.extend(s);
+            parse_quote! { ::scrypto::component::KeyValueStore<#k, #v> }
         }
+        SchemaType::Bucket => parse_quote! {::scrypto::resource::Bucket },
+        SchemaType::Proof => parse_quote! { ::scrypto::resource::Proof},
+        SchemaType::Vault => parse_quote! { ::scrypto::resource::Vault},
+        SchemaType::Expression => parse_quote! {::scrypto::core::Expression },
+        SchemaType::Blob => parse_quote! { ::scrypto::core::Blob},
+        SchemaType::NonFungibleAddress => parse_quote! { ::scrypto::resource::NonFungibleAddress},
+        SchemaType::Hash => parse_quote! { ::scrypto::crypto::Hash},
+        SchemaType::EcdsaSecp256k1PublicKey => {
+            parse_quote! {::scrypto::crypto::EcdsaSecp256k1PublicKey }
+        }
+        SchemaType::EcdsaSecp256k1Signature => {
+            parse_quote! { ::scrypto::crypto::EcdsaSecp256k1Signature}
+        }
+        SchemaType::EddsaEd25519PublicKey => {
+            parse_quote! { ::scrypto::crypto::EddsaEd25519PublicKey}
+        }
+        SchemaType::EddsaEd25519Signature => {
+            parse_quote! {::scrypto::crypto::EddsaEd25519Signature }
+        }
+        SchemaType::Decimal => parse_quote! { ::scrypto::math::Decimal},
+        SchemaType::PreciseDecimal => parse_quote! {::scrypto::math::PreciseDecimal },
+        SchemaType::NonFungibleId => parse_quote! {::scrypto::resource::NonFungibleId },
     };
 
     Ok((t, structs))
@@ -412,9 +397,7 @@ mod tests {
                                     }
                                 },
                                 "output": {
-                                    "type": "Custom",
-                                    "type_id": 129,
-                                    "generics": []
+                                    "type": "ComponentAddress"
                                 },
                                 "export_name": "Simple_new_main"
                             },
@@ -430,9 +413,7 @@ mod tests {
                                     }
                                 },
                                 "output": {
-                                    "type": "Custom",
-                                    "type_id": 146,
-                                    "generics": []
+                                    "type": "Bucket"
                                 },
                                 "export_name": "Simple_free_token_main"
                             }

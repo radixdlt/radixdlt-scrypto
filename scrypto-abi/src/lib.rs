@@ -7,10 +7,6 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 mod blueprint_abi;
 mod schema;
-mod schema_path;
-mod type_ids;
 
 pub use blueprint_abi::*;
 pub use schema::*;
-pub use schema_path::*;
-pub use type_ids::*;

@@ -3,9 +3,7 @@ use sbor::rust::collections::*;
 use sbor::rust::string::String;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use sbor::type_id::*;
-use sbor::Value;
-use sbor::{Decode, Encode, TypeId};
+use sbor::*;
 
 /// Represents a SBOR type.
 #[cfg_attr(
@@ -79,246 +77,40 @@ pub enum Type {
         value_type: Box<Type>,
     },
 
-    Custom {
-        type_id: u8,
-        generics: Vec<Type>,
+    // Global address types
+    PackageAddress,
+    ComponentAddress,
+    ResourceAddress,
+    SystemAddress,
+
+    // RE nodes types
+    Component,
+    KeyValueStore {
+        key_type: Box<Type>,
+        value_type: Box<Type>,
     },
+    Bucket,
+    Proof,
+    Vault,
+
+    // Other interpreted types
+    Expression,
+    Blob,
+    NonFungibleAddress,
+
+    // Uninterpreted
+    Hash,
+    EcdsaSecp256k1PublicKey,
+    EcdsaSecp256k1Signature,
+    EddsaEd25519PublicKey,
+    EddsaEd25519Signature,
+    Decimal,
+    PreciseDecimal,
+    NonFungibleId,
 
     // TODO: remove
     // Currently used by `ProofRule` because recursion is not supported
     Any,
-}
-
-impl Type {
-    pub fn id(&self) -> Option<u8> {
-        match self {
-            Type::Unit => Some(TYPE_UNIT),
-            Type::Bool => Some(TYPE_BOOL),
-            Type::I8 => Some(TYPE_I8),
-            Type::I16 => Some(TYPE_I16),
-            Type::I32 => Some(TYPE_I32),
-            Type::I64 => Some(TYPE_I64),
-            Type::I128 => Some(TYPE_I128),
-            Type::U8 => Some(TYPE_U8),
-            Type::U16 => Some(TYPE_U16),
-            Type::U32 => Some(TYPE_U32),
-            Type::U64 => Some(TYPE_U64),
-            Type::U128 => Some(TYPE_U128),
-            Type::String => Some(TYPE_STRING),
-            Type::Array { .. } => Some(TYPE_ARRAY),
-            Type::Tuple { .. } => Some(TYPE_TUPLE),
-            Type::Struct { .. } => Some(TYPE_STRUCT),
-            Type::Enum { .. } => Some(TYPE_ENUM),
-            Type::Option { .. } => Some(TYPE_ENUM),
-            Type::Result { .. } => Some(TYPE_ENUM),
-            Type::Vec { .. } => Some(TYPE_ARRAY),
-            Type::TreeSet { .. } => Some(TYPE_ARRAY),
-            Type::TreeMap { .. } => Some(TYPE_ARRAY),
-            Type::HashSet { .. } => Some(TYPE_ARRAY),
-            Type::HashMap { .. } => Some(TYPE_ARRAY),
-            Type::Custom { type_id, .. } => Some(*type_id),
-            Type::Any => None,
-        }
-    }
-
-    pub fn matches(&self, value: &Value) -> bool {
-        match self {
-            Type::Unit => matches!(value, Value::Unit),
-            Type::Bool => matches!(value, Value::Bool { .. }),
-            Type::I8 => matches!(value, Value::I8 { .. }),
-            Type::I16 => matches!(value, Value::I16 { .. }),
-            Type::I32 => matches!(value, Value::I32 { .. }),
-            Type::I64 => matches!(value, Value::I64 { .. }),
-            Type::I128 => matches!(value, Value::I128 { .. }),
-            Type::U8 => matches!(value, Value::U8 { .. }),
-            Type::U16 => matches!(value, Value::U16 { .. }),
-            Type::U32 => matches!(value, Value::U32 { .. }),
-            Type::U64 => matches!(value, Value::U64 { .. }),
-            Type::U128 => matches!(value, Value::U128 { .. }),
-            Type::String => matches!(value, Value::String { .. }),
-            Type::Array {
-                element_type,
-                length,
-            } => {
-                if let Value::Array {
-                    element_type_id,
-                    elements,
-                } = value
-                {
-                    let element_type_matches = match element_type.id() {
-                        Some(id) => id == *element_type_id,
-                        None => true,
-                    };
-                    element_type_matches
-                        && usize::from(*length) == elements.len()
-                        && elements.iter().all(|v| element_type.matches(v))
-                } else {
-                    false
-                }
-            }
-            Type::Tuple { element_types } => {
-                if let Value::Tuple { elements } = value {
-                    element_types.len() == elements.len()
-                        && element_types
-                            .iter()
-                            .enumerate()
-                            .all(|(i, e)| e.matches(elements.get(i).unwrap()))
-                } else {
-                    false
-                }
-            }
-            Type::Option { some_type } => {
-                if let Value::Enum {
-                    discriminator,
-                    fields,
-                } = value
-                {
-                    match discriminator.as_str() {
-                        OPTION_VARIANT_SOME => fields.len() == 1 && some_type.matches(&fields[0]),
-                        OPTION_VARIANT_NONE => fields.len() == 0,
-                        _ => false,
-                    }
-                } else {
-                    false
-                }
-            }
-            Type::Result {
-                okay_type,
-                err_type,
-            } => {
-                if let Value::Enum {
-                    discriminator,
-                    fields,
-                } = value
-                {
-                    match discriminator.as_str() {
-                        RESULT_VARIANT_OK => fields.len() == 1 && okay_type.matches(&fields[0]),
-                        RESULT_VARIANT_ERR => fields.len() == 1 && err_type.matches(&fields[0]),
-                        _ => false,
-                    }
-                } else {
-                    false
-                }
-            }
-            Type::Vec { element_type }
-            | Type::HashSet { element_type }
-            | Type::TreeSet { element_type } => {
-                if let Value::Array {
-                    element_type_id,
-                    elements,
-                } = value
-                {
-                    let element_type_matches = match element_type.id() {
-                        Some(id) => id == *element_type_id,
-                        None => true,
-                    };
-                    element_type_matches && elements.iter().all(|v| element_type.matches(v))
-                } else {
-                    false
-                }
-            }
-            Type::TreeMap {
-                key_type,
-                value_type,
-            }
-            | Type::HashMap {
-                key_type,
-                value_type,
-            } => {
-                if let Value::Array {
-                    element_type_id,
-                    elements,
-                } = value
-                {
-                    *element_type_id == TYPE_TUPLE
-                        && elements.iter().all(|e| {
-                            if let Value::Tuple { elements } = e {
-                                elements.len() == 2
-                                    && key_type.matches(&elements[0])
-                                    && value_type.matches(&elements[1])
-                            } else {
-                                false
-                            }
-                        })
-                } else {
-                    false
-                }
-            }
-            Type::Struct {
-                name: _,
-                fields: type_fields,
-            } => {
-                if let Value::Struct { fields } = value {
-                    match type_fields {
-                        Fields::Unit => fields.is_empty(),
-                        Fields::Unnamed { unnamed } => {
-                            unnamed.len() == fields.len()
-                                && unnamed
-                                    .iter()
-                                    .enumerate()
-                                    .all(|(i, e)| e.matches(fields.get(i).unwrap()))
-                        }
-                        Fields::Named { named } => {
-                            named.len() == fields.len()
-                                && named
-                                    .iter()
-                                    .enumerate()
-                                    .all(|(i, (_, e))| e.matches(fields.get(i).unwrap()))
-                        }
-                    }
-                } else {
-                    false
-                }
-            }
-            Type::Enum {
-                name: _,
-                variants: type_variants,
-            } => {
-                if let Value::Enum {
-                    discriminator,
-                    fields,
-                } = value
-                {
-                    for variant in type_variants {
-                        if variant.name.eq(discriminator) {
-                            return match &variant.fields {
-                                Fields::Unit => fields.is_empty(),
-                                Fields::Unnamed { unnamed } => {
-                                    unnamed.len() == fields.len()
-                                        && unnamed
-                                            .iter()
-                                            .enumerate()
-                                            .all(|(i, e)| e.matches(fields.get(i).unwrap()))
-                                }
-                                Fields::Named { named } => {
-                                    named.len() == fields.len()
-                                        && named
-                                            .iter()
-                                            .enumerate()
-                                            .all(|(i, (_, e))| e.matches(fields.get(i).unwrap()))
-                                }
-                            };
-                        }
-                    }
-                    false
-                } else {
-                    false
-                }
-            }
-            Type::Custom {
-                type_id: type_type_id,
-                generics: _,
-            } => {
-                if let Value::Custom { type_id, bytes: _ } = value {
-                    // TODO: check generics
-                    *type_type_id == *type_id
-                } else {
-                    false
-                }
-            }
-            Type::Any => true,
-        }
-    }
 }
 
 /// Represents the type info of an enum variant.
