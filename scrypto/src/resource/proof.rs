@@ -19,8 +19,8 @@ pub struct ProofGetAmountInvocation {
 
 impl SysInvocation for ProofGetAmountInvocation {
     type Output = Decimal;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Proof(ProofMethod::GetAmount)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Proof(ProofMethod::GetAmount))
     }
 }
 
@@ -31,8 +31,8 @@ pub struct ProofGetNonFungibleIdsInvocation {
 
 impl SysInvocation for ProofGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Proof(ProofMethod::GetNonFungibleIds)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Proof(ProofMethod::GetNonFungibleIds))
     }
 }
 
@@ -43,8 +43,8 @@ pub struct ProofGetResourceAddressInvocation {
 
 impl SysInvocation for ProofGetResourceAddressInvocation {
     type Output = ResourceAddress;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Proof(ProofMethod::GetResourceAddress)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Proof(ProofMethod::GetResourceAddress))
     }
 }
 
@@ -56,8 +56,8 @@ pub struct ProofCloneInvocation {
 impl SysInvocation for ProofCloneInvocation {
     type Output = Proof;
 
-    fn native_method() -> NativeMethod {
-        NativeMethod::Proof(ProofMethod::Clone)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Proof(ProofMethod::Clone))
     }
 }
 

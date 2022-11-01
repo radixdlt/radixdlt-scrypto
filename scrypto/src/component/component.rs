@@ -27,9 +27,8 @@ pub struct ComponentAddAccessCheckInvocation {
 
 impl SysInvocation for ComponentAddAccessCheckInvocation {
     type Output = ();
-
-    fn native_method() -> NativeMethod {
-        NativeMethod::Component(ComponentMethod::AddAccessCheck)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Component(ComponentMethod::AddAccessCheck))
     }
 }
 

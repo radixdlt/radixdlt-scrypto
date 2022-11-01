@@ -21,8 +21,8 @@ pub struct BucketTakeInvocation {
 
 impl SysInvocation for BucketTakeInvocation {
     type Output = Bucket;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Bucket(BucketMethod::Take)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Bucket(BucketMethod::Take))
     }
 }
 
@@ -34,8 +34,8 @@ pub struct BucketPutInvocation {
 
 impl SysInvocation for BucketPutInvocation {
     type Output = ();
-    fn native_method() -> NativeMethod {
-        NativeMethod::Bucket(BucketMethod::Put)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Bucket(BucketMethod::Put))
     }
 }
 
@@ -47,8 +47,8 @@ pub struct BucketTakeNonFungiblesInvocation {
 
 impl SysInvocation for BucketTakeNonFungiblesInvocation {
     type Output = Bucket;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Bucket(BucketMethod::TakeNonFungibles)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Bucket(BucketMethod::TakeNonFungibles))
     }
 }
 
@@ -59,8 +59,8 @@ pub struct BucketGetNonFungibleIdsInvocation {
 
 impl SysInvocation for BucketGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Bucket(BucketMethod::GetNonFungibleIds)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Bucket(BucketMethod::GetNonFungibleIds))
     }
 }
 
@@ -71,8 +71,8 @@ pub struct BucketGetAmountInvocation {
 
 impl SysInvocation for BucketGetAmountInvocation {
     type Output = Decimal;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Bucket(BucketMethod::GetAmount)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Bucket(BucketMethod::GetAmount))
     }
 }
 
@@ -83,8 +83,8 @@ pub struct BucketGetResourceAddressInvocation {
 
 impl SysInvocation for BucketGetResourceAddressInvocation {
     type Output = ResourceAddress;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Bucket(BucketMethod::GetResourceAddress)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Bucket(BucketMethod::GetResourceAddress))
     }
 }
 
@@ -95,8 +95,8 @@ pub struct BucketCreateProofInvocation {
 
 impl SysInvocation for BucketCreateProofInvocation {
     type Output = Proof;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Bucket(BucketMethod::CreateProof)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Bucket(BucketMethod::CreateProof))
     }
 }
 
@@ -153,8 +153,8 @@ impl Bucket {
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Self {
-        let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethod::Bucket(BucketMethod::Take),
+        let input = RadixEngineInput::InvokeNativeFn(
+            NativeFn::Method(NativeMethod::Bucket(BucketMethod::Take)),
             scrypto_encode(&BucketTakeInvocation {
                 receiver: self.0,
                 amount,

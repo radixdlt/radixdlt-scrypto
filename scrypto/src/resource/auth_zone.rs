@@ -14,8 +14,8 @@ pub struct AuthZonePopInvocation {
 impl SysInvocation for AuthZonePopInvocation {
     type Output = scrypto::resource::Proof;
 
-    fn native_method() -> NativeMethod {
-        NativeMethod::AuthZone(AuthZoneMethod::Pop)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::AuthZone(AuthZoneMethod::Pop))
     }
 }
 
@@ -28,8 +28,8 @@ pub struct AuthZonePushInvocation {
 impl SysInvocation for AuthZonePushInvocation {
     type Output = ();
 
-    fn native_method() -> NativeMethod {
-        NativeMethod::AuthZone(AuthZoneMethod::Push)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::AuthZone(AuthZoneMethod::Push))
     }
 }
 
@@ -42,8 +42,8 @@ pub struct AuthZoneCreateProofInvocation {
 impl SysInvocation for AuthZoneCreateProofInvocation {
     type Output = Proof;
 
-    fn native_method() -> NativeMethod {
-        NativeMethod::AuthZone(AuthZoneMethod::CreateProof)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::AuthZone(AuthZoneMethod::CreateProof))
     }
 }
 
@@ -57,8 +57,8 @@ pub struct AuthZoneCreateProofByAmountInvocation {
 impl SysInvocation for AuthZoneCreateProofByAmountInvocation {
     type Output = Proof;
 
-    fn native_method() -> NativeMethod {
-        NativeMethod::AuthZone(AuthZoneMethod::CreateProofByAmount)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::AuthZone(AuthZoneMethod::CreateProofByAmount))
     }
 }
 
@@ -72,8 +72,8 @@ pub struct AuthZoneCreateProofByIdsInvocation {
 impl SysInvocation for AuthZoneCreateProofByIdsInvocation {
     type Output = Proof;
 
-    fn native_method() -> NativeMethod {
-        NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds))
     }
 }
 
@@ -85,8 +85,8 @@ pub struct AuthZoneClearInvocation {
 impl SysInvocation for AuthZoneClearInvocation {
     type Output = ();
 
-    fn native_method() -> NativeMethod {
-        NativeMethod::AuthZone(AuthZoneMethod::Clear)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::AuthZone(AuthZoneMethod::Clear))
     }
 }
 
@@ -99,8 +99,8 @@ pub struct AuthZoneDrainInvocation {
 impl SysInvocation for AuthZoneDrainInvocation {
     type Output = Vec<scrypto::resource::Proof>;
 
-    fn native_method() -> NativeMethod {
-        NativeMethod::AuthZone(AuthZoneMethod::Drain)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::AuthZone(AuthZoneMethod::Drain))
     }
 }
 

@@ -1,4 +1,3 @@
-use scrypto::engine::api::SysInvocation;
 use scrypto::resource::*;
 use crate::engine::{
     ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,

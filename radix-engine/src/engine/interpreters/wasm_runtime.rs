@@ -39,10 +39,17 @@ where
 
     fn handle_invoke_native_function(
         &mut self,
-        native_function: NativeFunction,
+        native_fn: NativeFn,
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        parse_and_invoke_native_function(native_function, args, self.system_api)
+        match native_fn {
+            NativeFn::Method(native_method) => {
+                parse_and_invoke_native_method(native_method, args, self.system_api)
+            }
+            NativeFn::Function(native_function) => {
+                parse_and_invoke_native_function(native_function, args, self.system_api)
+            }
+        }
     }
 }
 
@@ -72,11 +79,8 @@ where
             RadixEngineInput::InvokeScryptoMethod(method_ident, args) => {
                 self.system_api.sys_invoke_scrypto_method(method_ident, args)?
             }
-            RadixEngineInput::InvokeNativeFunction(native_function, args) => {
-                self.handle_invoke_native_function(native_function, args).map(|v| v.raw)?
-            }
-            RadixEngineInput::InvokeNativeMethod(native_method, args) => {
-                parse_and_invoke_native_method(native_method, args, self.system_api).map(|v| v.raw)?
+            RadixEngineInput::InvokeNativeFn(native_fn, args) => {
+                self.handle_invoke_native_function(native_fn, args).map(|v| v.raw)?
             }
             RadixEngineInput::CreateNode(node) => {
                 self.system_api.sys_create_node(node).map(encode)?

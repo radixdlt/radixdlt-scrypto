@@ -55,8 +55,8 @@ pub struct Syscalls;
 
 impl<N: SysInvocation> SysInvokable<N, SyscallError> for Syscalls {
     fn sys_invoke(&mut self, input: N) -> Result<N::Output, SyscallError> {
-        let rtn = call_engine(RadixEngineInput::InvokeNativeMethod(
-            N::native_method(),
+        let rtn = call_engine(RadixEngineInput::InvokeNativeFn(
+            N::native_fn(),
             scrypto_encode(&input),
         ));
         Ok(rtn)
@@ -153,8 +153,7 @@ impl ScryptoSyscalls<SyscallError> for Syscalls {
 pub enum RadixEngineInput {
     InvokeScryptoFunction(ScryptoFunctionIdent, Vec<u8>),
     InvokeScryptoMethod(ScryptoMethodIdent, Vec<u8>),
-    InvokeNativeFunction(NativeFunction, Vec<u8>),
-    InvokeNativeMethod(NativeMethod, Vec<u8>),
+    InvokeNativeFn(NativeFn, Vec<u8>),
 
     CreateNode(ScryptoRENode),
     GetVisibleNodeIds(),
@@ -176,8 +175,8 @@ macro_rules! native_methods {
     ($type_ident:expr => { $($vis:vis $fn:ident $method_name:ident ($($args:tt)*) -> $rtn:ty { $fn_ident:expr, $arg:expr })* } ) => {
         $(
             $vis $fn $method_name ($($args)*) -> $rtn {
-                let input = RadixEngineInput::InvokeNativeMethod(
-                    $type_ident($fn_ident),
+                let input = RadixEngineInput::InvokeNativeFn(
+                    NativeFn::Method($type_ident($fn_ident)),
                     scrypto::buffer::scrypto_encode(&$arg)
                 );
                 call_engine(input)

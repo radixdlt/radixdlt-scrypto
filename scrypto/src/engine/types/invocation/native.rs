@@ -14,6 +14,12 @@ pub struct NativeMethodIdent {
     pub method_name: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, PartialOrd, Ord)]
+pub enum NativeFn {
+    Method(NativeMethod),
+    Function(NativeFunction),
+}
+
 // Native function enum used by Kernel SystemAPI and WASM
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, PartialOrd, Ord)]
 pub enum NativeMethod {

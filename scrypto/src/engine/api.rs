@@ -4,22 +4,14 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode};
 use scrypto::core::*;
-use scrypto::engine::types::*;
 use crate::component::ComponentAddAccessCheckInvocation;
 use crate::crypto::Hash;
 
 use super::types::*;
 
-
-// TODO: This should be cleaned up
-pub enum SysNativeInvocationInfo {
-    Function(NativeFunction),
-    Method(NativeMethod),
-}
-
 pub trait SysInvocation: Encode {
     type Output: Debug + Decode;
-    fn native_method() -> NativeMethod;
+    fn native_fn() -> NativeFn;
 }
 
 pub trait SysInvokable<I: SysInvocation, E> {

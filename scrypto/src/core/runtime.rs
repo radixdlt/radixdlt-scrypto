@@ -21,8 +21,8 @@ pub struct EpochManagerGetCurrentEpochInvocation {
 
 impl SysInvocation for EpochManagerGetCurrentEpochInvocation {
     type Output = u64;
-    fn native_method() -> NativeMethod {
-        NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch))
     }
 }
 
@@ -34,8 +34,8 @@ pub struct EpochManagerSetEpochInvocation {
 
 impl SysInvocation for EpochManagerSetEpochInvocation {
     type Output = ();
-    fn native_method() -> NativeMethod {
-        NativeMethod::EpochManager(EpochManagerMethod::SetEpoch)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::EpochManager(EpochManagerMethod::SetEpoch))
     }
 }
 
@@ -111,8 +111,8 @@ impl Runtime {
 
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
-        let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
+        let input = RadixEngineInput::InvokeNativeFn(
+            NativeFn::Method(NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch)),
             scrypto_encode(&EpochManagerGetCurrentEpochInvocation {
                 receiver: EPOCH_MANAGER,
             }),

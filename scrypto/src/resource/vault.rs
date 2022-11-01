@@ -24,8 +24,8 @@ pub struct VaultPutInvocation {
 
 impl SysInvocation for VaultPutInvocation {
     type Output = ();
-    fn native_method() -> NativeMethod {
-        NativeMethod::Vault(VaultMethod::Put)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Vault(VaultMethod::Put))
     }
 }
 
@@ -37,8 +37,8 @@ pub struct VaultTakeInvocation {
 
 impl SysInvocation for VaultTakeInvocation {
     type Output = Bucket;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Vault(VaultMethod::Take)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Vault(VaultMethod::Take))
     }
 }
 
@@ -50,8 +50,8 @@ pub struct VaultTakeNonFungiblesInvocation {
 
 impl SysInvocation for VaultTakeNonFungiblesInvocation {
     type Output = Bucket;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Vault(VaultMethod::TakeNonFungibles)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Vault(VaultMethod::TakeNonFungibles))
     }
 }
 
@@ -62,8 +62,8 @@ pub struct VaultGetAmountInvocation {
 
 impl SysInvocation for VaultGetAmountInvocation {
     type Output = Decimal;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Vault(VaultMethod::GetAmount)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Vault(VaultMethod::GetAmount))
     }
 }
 
@@ -74,8 +74,8 @@ pub struct VaultGetResourceAddressInvocation {
 
 impl SysInvocation for VaultGetResourceAddressInvocation {
     type Output = ResourceAddress;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Vault(VaultMethod::GetResourceAddress)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Vault(VaultMethod::GetResourceAddress))
     }
 }
 
@@ -86,8 +86,8 @@ pub struct VaultGetNonFungibleIdsInvocation {
 
 impl SysInvocation for VaultGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Vault(VaultMethod::GetNonFungibleIds)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Vault(VaultMethod::GetNonFungibleIds))
     }
 }
 
@@ -98,8 +98,8 @@ pub struct VaultCreateProofInvocation {
 
 impl SysInvocation for VaultCreateProofInvocation {
     type Output = Proof;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Vault(VaultMethod::CreateProof)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Vault(VaultMethod::CreateProof))
     }
 }
 
@@ -111,8 +111,8 @@ pub struct VaultCreateProofByAmountInvocation {
 
 impl SysInvocation for VaultCreateProofByAmountInvocation {
     type Output = Proof;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Vault(VaultMethod::CreateProofByAmount)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Vault(VaultMethod::CreateProofByAmount))
     }
 }
 
@@ -124,8 +124,8 @@ pub struct VaultCreateProofByIdsInvocation {
 
 impl SysInvocation for VaultCreateProofByIdsInvocation {
     type Output = Proof;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Vault(VaultMethod::CreateProofByIds)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Vault(VaultMethod::CreateProofByIds))
     }
 }
 
@@ -138,8 +138,8 @@ pub struct VaultLockFeeInvocation {
 
 impl SysInvocation for VaultLockFeeInvocation {
     type Output = ();
-    fn native_method() -> NativeMethod {
-        NativeMethod::Vault(VaultMethod::LockFee)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Vault(VaultMethod::LockFee))
     }
 }
 
@@ -149,8 +149,8 @@ pub struct Vault(pub VaultId);
 impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault),
+        let input = RadixEngineInput::InvokeNativeFn(
+            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault)),
             scrypto_encode(&ResourceManagerCreateVaultInvocation {
                 receiver: resource_address,
             }),
@@ -166,8 +166,8 @@ impl Vault {
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Bucket {
-        let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethod::Vault(VaultMethod::Take),
+        let input = RadixEngineInput::InvokeNativeFn(
+            NativeFn::Method(NativeMethod::Vault(VaultMethod::Take)),
             scrypto_encode(&VaultTakeInvocation {
                 receiver: self.0,
                 amount,
@@ -177,8 +177,8 @@ impl Vault {
     }
 
     fn lock_fee_internal(&mut self, amount: Decimal) {
-        let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethod::Vault(VaultMethod::LockFee),
+        let input = RadixEngineInput::InvokeNativeFn(
+            NativeFn::Method(NativeMethod::Vault(VaultMethod::LockFee)),
             scrypto_encode(&VaultLockFeeInvocation {
                 receiver: self.0,
                 amount,
@@ -189,8 +189,8 @@ impl Vault {
     }
 
     fn lock_contingent_fee_internal(&mut self, amount: Decimal) {
-        let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethod::Vault(VaultMethod::LockFee),
+        let input = RadixEngineInput::InvokeNativeFn(
+            NativeFn::Method(NativeMethod::Vault(VaultMethod::LockFee)),
             scrypto_encode(&VaultLockFeeInvocation {
                 receiver: self.0,
                 amount,

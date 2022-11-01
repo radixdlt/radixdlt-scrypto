@@ -4,7 +4,7 @@ use sbor::rust::collections::BTreeSet;
 use scrypto::engine::api::SysInvocation;
 use scrypto::math::Decimal;
 use scrypto::resource::*;
-use crate::engine::types::{NativeMethod, WorktopMethod};
+use crate::engine::types::{NativeFn, NativeMethod, WorktopMethod};
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopPutInvocation {
@@ -13,8 +13,8 @@ pub struct WorktopPutInvocation {
 
 impl SysInvocation for WorktopPutInvocation {
     type Output = ();
-    fn native_method() -> NativeMethod {
-        NativeMethod::Worktop(WorktopMethod::Put)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Worktop(WorktopMethod::Put))
     }
 }
 
@@ -26,8 +26,8 @@ pub struct WorktopTakeAmountInvocation {
 
 impl SysInvocation for WorktopTakeAmountInvocation {
     type Output = Bucket;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Worktop(WorktopMethod::TakeAmount)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Worktop(WorktopMethod::TakeAmount))
     }
 }
 
@@ -39,8 +39,8 @@ pub struct WorktopTakeNonFungiblesInvocation {
 
 impl SysInvocation for WorktopTakeNonFungiblesInvocation {
     type Output = Bucket;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Worktop(WorktopMethod::TakeNonFungibles)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Worktop(WorktopMethod::TakeNonFungibles))
     }
 }
 
@@ -51,8 +51,8 @@ pub struct WorktopTakeAllInvocation {
 
 impl SysInvocation for WorktopTakeAllInvocation {
     type Output = Bucket;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Worktop(WorktopMethod::TakeAll)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Worktop(WorktopMethod::TakeAll))
     }
 }
 
@@ -63,8 +63,8 @@ pub struct WorktopAssertContainsInvocation {
 
 impl SysInvocation for WorktopAssertContainsInvocation {
     type Output = ();
-    fn native_method() -> NativeMethod {
-        NativeMethod::Worktop(WorktopMethod::AssertContains)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Worktop(WorktopMethod::AssertContains))
     }
 }
 
@@ -76,8 +76,8 @@ pub struct WorktopAssertContainsAmountInvocation {
 
 impl SysInvocation for WorktopAssertContainsAmountInvocation {
     type Output = ();
-    fn native_method() -> NativeMethod {
-        NativeMethod::Worktop(WorktopMethod::AssertContainsAmount)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Worktop(WorktopMethod::AssertContainsAmount))
     }
 }
 
@@ -89,8 +89,8 @@ pub struct WorktopAssertContainsNonFungiblesInvocation {
 
 impl SysInvocation for WorktopAssertContainsNonFungiblesInvocation {
     type Output = ();
-    fn native_method() -> NativeMethod {
-        NativeMethod::Worktop(WorktopMethod::AssertContainsNonFungibles)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Worktop(WorktopMethod::AssertContainsNonFungibles))
     }
 }
 
@@ -99,7 +99,7 @@ pub struct WorktopDrainInvocation {}
 
 impl SysInvocation for WorktopDrainInvocation {
     type Output = Vec<Bucket>;
-    fn native_method() -> NativeMethod {
-        NativeMethod::Worktop(WorktopMethod::Drain)
+    fn native_fn() -> NativeFn {
+        NativeFn::Method(NativeMethod::Worktop(WorktopMethod::Drain))
     }
 }
