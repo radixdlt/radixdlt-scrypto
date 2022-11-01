@@ -1,6 +1,6 @@
 use crate::engine::*;
 use crate::fee::*;
-use crate::model::{ InvokeError, };
+use crate::model::InvokeError;
 use crate::types::*;
 use crate::wasm::*;
 use scrypto::engine::api::{ScryptoSyscalls, SysInvokableNative};
@@ -15,7 +15,7 @@ where
         + ScryptoSyscalls<RuntimeError>
         + Invokable<ScryptoInvocation>
         + InvokableNative<'a>
-        + SysInvokableNative<RuntimeError>
+        + SysInvokableNative<RuntimeError>,
 {
     system_api: &'y mut Y,
     phantom: PhantomData<&'a ()>,
@@ -27,28 +27,12 @@ where
         + ScryptoSyscalls<RuntimeError>
         + Invokable<ScryptoInvocation>
         + InvokableNative<'a>
-        + SysInvokableNative<RuntimeError>
+        + SysInvokableNative<RuntimeError>,
 {
-
     pub fn new(system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
             system_api,
             phantom: PhantomData,
-        }
-    }
-
-    fn handle_invoke_native_function(
-        &mut self,
-        native_fn: NativeFn,
-        args: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        match native_fn {
-            NativeFn::Method(native_method) => {
-                parse_and_invoke_native_method(native_method, args, self.system_api)
-            }
-            NativeFn::Function(native_function) => {
-                parse_and_invoke_native_function(native_function, args, self.system_api)
-            }
         }
     }
 }
@@ -63,7 +47,7 @@ where
         + ScryptoSyscalls<RuntimeError>
         + Invokable<ScryptoInvocation>
         + InvokableNative<'a>
-        + SysInvokableNative<RuntimeError>
+        + SysInvokableNative<RuntimeError>,
 {
     // TODO: expose API for reading blobs
     // TODO: do we want to allow dynamic creation of blobs?
@@ -73,45 +57,40 @@ where
         let input: RadixEngineInput = scrypto_decode(&input.raw)
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         let rtn = match input {
-            RadixEngineInput::InvokeScryptoFunction(function_ident, args) => {
-                self.system_api.sys_invoke_scrypto_function(function_ident, args)?
-            }
-            RadixEngineInput::InvokeScryptoMethod(method_ident, args) => {
-                self.system_api.sys_invoke_scrypto_method(method_ident, args)?
-            }
+            RadixEngineInput::InvokeScryptoFunction(function_ident, args) => self
+                .system_api
+                .sys_invoke_scrypto_function(function_ident, args)?,
+            RadixEngineInput::InvokeScryptoMethod(method_ident, args) => self
+                .system_api
+                .sys_invoke_scrypto_method(method_ident, args)?,
             RadixEngineInput::InvokeNativeFn(native_fn, args) => {
-                self.handle_invoke_native_function(native_fn, args).map(|v| v.raw)?
+                parse_and_invoke_native_fn(native_fn, args, self.system_api).map(|v| v.raw)?
             }
             RadixEngineInput::CreateNode(node) => {
                 self.system_api.sys_create_node(node).map(encode)?
-            },
+            }
             RadixEngineInput::GetVisibleNodeIds() => {
                 self.system_api.sys_get_visible_nodes().map(encode)?
-            },
+            }
             RadixEngineInput::DropNode(node_id) => {
                 self.system_api.sys_drop_node(node_id).map(encode)?
-            },
-            RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
-                self.system_api.sys_lock_substate(node_id, offset, mutable).map(encode)?
             }
-            RadixEngineInput::Read(lock_handle) => {
-                self.system_api.sys_read(lock_handle)?
-            },
+            RadixEngineInput::LockSubstate(node_id, offset, mutable) => self
+                .system_api
+                .sys_lock_substate(node_id, offset, mutable)
+                .map(encode)?,
+            RadixEngineInput::Read(lock_handle) => self.system_api.sys_read(lock_handle)?,
             RadixEngineInput::Write(lock_handle, value) => {
                 self.system_api.sys_write(lock_handle, value).map(encode)?
-            },
+            }
             RadixEngineInput::DropLock(lock_handle) => {
                 self.system_api.sys_drop_lock(lock_handle).map(encode)?
-            },
-            RadixEngineInput::GetActor() => {
-                self.system_api.sys_get_actor().map(encode)?
-            },
+            }
+            RadixEngineInput::GetActor() => self.system_api.sys_get_actor().map(encode)?,
             RadixEngineInput::GetTransactionHash() => {
                 self.system_api.sys_get_transaction_hash().map(encode)?
             }
-            RadixEngineInput::GenerateUuid() => {
-                self.system_api.sys_generate_uuid().map(encode)?
-            },
+            RadixEngineInput::GenerateUuid() => self.system_api.sys_generate_uuid().map(encode)?,
             RadixEngineInput::EmitLog(level, message) => {
                 self.system_api.sys_emit_log(level, message).map(encode)?
             }

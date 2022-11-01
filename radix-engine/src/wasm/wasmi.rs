@@ -99,10 +99,7 @@ impl WasmiModule {
 }
 
 impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
-    pub fn send_value(
-        &mut self,
-        value: &[u8],
-    ) -> Result<RuntimeValue, InvokeError<WasmError>> {
+    pub fn send_value(&mut self, value: &[u8]) -> Result<RuntimeValue, InvokeError<WasmError>> {
         let result = self.instance.module_ref.clone().invoke_export(
             EXPORT_SCRYPTO_ALLOC,
             &[RuntimeValue::I32((value.len()) as i32)],

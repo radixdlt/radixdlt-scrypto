@@ -42,7 +42,9 @@ pub struct ResourceManagerCreateInvocation {
 impl SysInvocation for ResourceManagerCreateInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
     fn native_fn() -> NativeFn {
-        NativeFn::Function(NativeFunction::ResourceManager(ResourceManagerFunction::Create))
+        NativeFn::Function(NativeFunction::ResourceManager(
+            ResourceManagerFunction::Create,
+        ))
     }
 }
 
@@ -54,7 +56,9 @@ pub struct ResourceManagerBucketBurnInvocation {
 impl SysInvocation for ResourceManagerBucketBurnInvocation {
     type Output = ();
     fn native_fn() -> NativeFn {
-        NativeFn::Function(NativeFunction::ResourceManager(ResourceManagerFunction::BurnBucket))
+        NativeFn::Function(NativeFunction::ResourceManager(
+            ResourceManagerFunction::BurnBucket,
+        ))
     }
 }
 
@@ -81,7 +85,9 @@ pub struct ResourceManagerUpdateAuthInvocation {
 impl SysInvocation for ResourceManagerUpdateAuthInvocation {
     type Output = ();
     fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth))
+        NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::UpdateAuth,
+        ))
     }
 }
 
@@ -94,7 +100,9 @@ pub struct ResourceManagerLockAuthInvocation {
 impl SysInvocation for ResourceManagerLockAuthInvocation {
     type Output = ();
     fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth))
+        NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::LockAuth,
+        ))
     }
 }
 
@@ -106,7 +114,9 @@ pub struct ResourceManagerCreateVaultInvocation {
 impl SysInvocation for ResourceManagerCreateVaultInvocation {
     type Output = Vault;
     fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault))
+        NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::CreateVault,
+        ))
     }
 }
 
@@ -118,7 +128,9 @@ pub struct ResourceManagerCreateBucketInvocation {
 impl SysInvocation for ResourceManagerCreateBucketInvocation {
     type Output = Bucket;
     fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket))
+        NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::CreateBucket,
+        ))
     }
 }
 
@@ -143,7 +155,9 @@ pub struct ResourceManagerGetMetadataInvocation {
 impl SysInvocation for ResourceManagerGetMetadataInvocation {
     type Output = HashMap<String, String>;
     fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::GetMetadata))
+        NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::GetMetadata,
+        ))
     }
 }
 
@@ -155,7 +169,9 @@ pub struct ResourceManagerGetResourceTypeInvocation {
 impl SysInvocation for ResourceManagerGetResourceTypeInvocation {
     type Output = ResourceType;
     fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::GetResourceType))
+        NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::GetResourceType,
+        ))
     }
 }
 
@@ -167,7 +183,9 @@ pub struct ResourceManagerGetTotalSupplyInvocation {
 impl SysInvocation for ResourceManagerGetTotalSupplyInvocation {
     type Output = Decimal;
     fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::GetTotalSupply))
+        NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::GetTotalSupply,
+        ))
     }
 }
 
@@ -180,7 +198,9 @@ pub struct ResourceManagerUpdateMetadataInvocation {
 impl SysInvocation for ResourceManagerUpdateMetadataInvocation {
     type Output = ();
     fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::UpdateMetadata))
+        NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::UpdateMetadata,
+        ))
     }
 }
 
@@ -192,7 +212,9 @@ pub struct ResourceManagerSetResourceAddressInvocation {
 impl SysInvocation for ResourceManagerSetResourceAddressInvocation {
     type Output = ();
     fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress))
+        NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::SetResourceAddress,
+        ))
     }
 }
 
@@ -206,7 +228,9 @@ pub struct ResourceManagerUpdateNonFungibleDataInvocation {
 impl SysInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
     type Output = ();
     fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData))
+        NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::UpdateNonFungibleData,
+        ))
     }
 }
 
@@ -219,7 +243,9 @@ pub struct ResourceManagerNonFungibleExistsInvocation {
 impl SysInvocation for ResourceManagerNonFungibleExistsInvocation {
     type Output = bool;
     fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::NonFungibleExists))
+        NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::NonFungibleExists,
+        ))
     }
 }
 
@@ -232,7 +258,9 @@ pub struct ResourceManagerGetNonFungibleInvocation {
 impl SysInvocation for ResourceManagerGetNonFungibleInvocation {
     type Output = [Vec<u8>; 2];
     fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible))
+        NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::GetNonFungible,
+        ))
     }
 }
 
@@ -249,7 +277,9 @@ pub struct ResourceManager(pub(crate) ResourceAddress);
 impl ResourceManager {
     pub fn set_mintable(&mut self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth)),
+            NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateAuth,
+            )),
             scrypto_encode(&ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Mint,
@@ -261,7 +291,9 @@ impl ResourceManager {
 
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth)),
+            NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateAuth,
+            )),
             scrypto_encode(&ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Burn,
@@ -273,7 +305,9 @@ impl ResourceManager {
 
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth)),
+            NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateAuth,
+            )),
             scrypto_encode(&ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Withdraw,
@@ -285,7 +319,9 @@ impl ResourceManager {
 
     pub fn set_depositable(&mut self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth)),
+            NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateAuth,
+            )),
             scrypto_encode(&ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Deposit,
@@ -297,7 +333,9 @@ impl ResourceManager {
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth)),
+            NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateAuth,
+            )),
             scrypto_encode(&ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::UpdateMetadata,
@@ -309,7 +347,9 @@ impl ResourceManager {
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth)),
+            NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateAuth,
+            )),
             scrypto_encode(&ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::UpdateNonFungibleData,
@@ -321,7 +361,9 @@ impl ResourceManager {
 
     pub fn lock_mintable(&mut self) -> () {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth)),
+            NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::LockAuth,
+            )),
             scrypto_encode(&ResourceManagerLockAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Mint,
@@ -332,7 +374,9 @@ impl ResourceManager {
 
     pub fn lock_burnable(&mut self) -> () {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth)),
+            NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::LockAuth,
+            )),
             scrypto_encode(&ResourceManagerLockAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Burn,
@@ -343,7 +387,9 @@ impl ResourceManager {
 
     pub fn lock_withdrawable(&mut self) -> () {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth)),
+            NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::LockAuth,
+            )),
             scrypto_encode(&ResourceManagerLockAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Withdraw,
@@ -354,7 +400,9 @@ impl ResourceManager {
 
     pub fn lock_depositable(&mut self) -> () {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth)),
+            NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::LockAuth,
+            )),
             scrypto_encode(&ResourceManagerLockAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Deposit,
@@ -365,7 +413,9 @@ impl ResourceManager {
 
     pub fn lock_updateable_metadata(&mut self) -> () {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth)),
+            NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::LockAuth,
+            )),
             scrypto_encode(&ResourceManagerLockAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::UpdateMetadata,
@@ -376,7 +426,9 @@ impl ResourceManager {
 
     pub fn lock_updateable_non_fungible_data(&mut self) -> () {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth)),
+            NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::LockAuth,
+            )),
             scrypto_encode(&ResourceManagerLockAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::UpdateNonFungibleData,
@@ -398,7 +450,9 @@ impl ResourceManager {
 
     fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) -> () {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData)),
+            NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateNonFungibleData,
+            )),
             scrypto_encode(&ResourceManagerUpdateNonFungibleDataInvocation {
                 id,
                 data,
@@ -410,7 +464,9 @@ impl ResourceManager {
 
     fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible)),
+            NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::GetNonFungible,
+            )),
             scrypto_encode(&ResourceManagerGetNonFungibleInvocation {
                 id,
                 receiver: self.0,

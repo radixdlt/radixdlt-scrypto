@@ -49,7 +49,7 @@ impl<'b> NativeExecutable for TransactionProcessorRunInvocation<'b> {
             + Invokable<ScryptoInvocation>
             + InvokableNative<'a>
             + ScryptoSyscalls<RuntimeError>
-            + SysInvokableNative<RuntimeError>
+            + SysInvokableNative<RuntimeError>,
     {
         TransactionProcessor::static_main(invocation, system_api)
             .map(|rtn| (rtn, CallFrameUpdate::empty()))
@@ -229,7 +229,7 @@ impl TransactionProcessor {
             + ScryptoSyscalls<RuntimeError>
             + Invokable<ScryptoInvocation>
             + InvokableNative<'a>
-            + SysInvokableNative<RuntimeError>
+            + SysInvokableNative<RuntimeError>,
     {
         for request in input.runtime_validations.as_ref() {
             Self::perform_validation(request, system_api)?;
@@ -602,8 +602,12 @@ impl TransactionProcessor {
                                 function_ident.clone(),
                             ),
                         ))?;
-                        parse_and_invoke_native_function(native_function, args.raw, system_api)
-                            .map_err(InvokeError::Downstream)
+                        parse_and_invoke_native_fn(
+                            NativeFn::Function(native_function),
+                            args.raw,
+                            system_api,
+                        )
+                        .map_err(InvokeError::Downstream)
                     })
                     .and_then(|result| {
                         // Auto move into auth_zone
@@ -640,8 +644,12 @@ impl TransactionProcessor {
                                     ),
                                 ))?;
 
-                        parse_and_invoke_native_method(native_method, args.raw, system_api)
-                            .map_err(InvokeError::Downstream)
+                        parse_and_invoke_native_fn(
+                            NativeFn::Method(native_method),
+                            args.raw,
+                            system_api,
+                        )
+                        .map_err(InvokeError::Downstream)
                     })
                     .and_then(|result| {
                         // Auto move into auth_zone

@@ -1,3 +1,4 @@
+use crate::crypto::Hash;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -6,7 +7,6 @@ use scrypto::buffer::scrypto_encode;
 use scrypto::core::*;
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
-use crate::crypto::Hash;
 
 #[cfg(target_arch = "wasm32")]
 extern "C" {
@@ -69,10 +69,7 @@ impl ScryptoSyscalls<SyscallError> for Syscalls {
         fn_ident: ScryptoFunctionIdent,
         args: Vec<u8>, // TODO: Update to any
     ) -> Result<Vec<u8>, SyscallError> {
-        let rtn = call_engine_to_raw(RadixEngineInput::InvokeScryptoFunction(
-            fn_ident,
-            args,
-        ));
+        let rtn = call_engine_to_raw(RadixEngineInput::InvokeScryptoFunction(fn_ident, args));
         Ok(rtn)
     }
 
@@ -81,10 +78,7 @@ impl ScryptoSyscalls<SyscallError> for Syscalls {
         method_ident: ScryptoMethodIdent,
         args: Vec<u8>, // TODO: Update to any
     ) -> Result<Vec<u8>, SyscallError> {
-        let rtn = call_engine_to_raw(RadixEngineInput::InvokeScryptoMethod(
-            method_ident,
-            args,
-        ));
+        let rtn = call_engine_to_raw(RadixEngineInput::InvokeScryptoMethod(method_ident, args));
         Ok(rtn)
     }
 

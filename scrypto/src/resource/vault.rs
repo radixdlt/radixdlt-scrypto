@@ -150,7 +150,9 @@ impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault)),
+            NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::CreateVault,
+            )),
             scrypto_encode(&ResourceManagerCreateVaultInvocation {
                 receiver: resource_address,
             }),

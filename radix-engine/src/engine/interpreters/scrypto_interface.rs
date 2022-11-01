@@ -1,7 +1,6 @@
 use crate::engine::{
-    parse_and_invoke_native_function, parse_and_invoke_native_method, Invokable, Kernel,
-    KernelError, LockFlags, NativeInvocation, REActor, RENode, ResolvedFunction, ResolvedMethod,
-    ResolvedReceiver, RuntimeError, SystemApi,
+    Invokable, Kernel, KernelError, LockFlags, NativeInvocation, REActor, RENode, ResolvedFunction,
+    ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
 use crate::model::{

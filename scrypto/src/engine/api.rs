@@ -1,11 +1,11 @@
+use crate::component::{ComponentAddAccessCheckInvocation, PackagePublishInvocation};
+use crate::crypto::Hash;
 use crate::resource::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode};
 use scrypto::core::*;
-use crate::component::{ComponentAddAccessCheckInvocation, PackagePublishInvocation};
-use crate::crypto::Hash;
 
 use super::types::*;
 

@@ -90,7 +90,6 @@ impl SysInvocation for AuthZoneClearInvocation {
     }
 }
 
-
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZoneDrainInvocation {
     pub receiver: AuthZoneId,
@@ -103,7 +102,6 @@ impl SysInvocation for AuthZoneDrainInvocation {
         NativeFn::Method(NativeMethod::AuthZone(AuthZoneMethod::Drain))
     }
 }
-
 
 /// Represents the auth zone, which is used by system for checking
 /// if this component is allowed to

@@ -39,10 +39,7 @@ pub struct WasmerEngine {
     modules_cache: Cache<Hash, Arc<WasmerModule>>,
 }
 
-pub fn send_value(
-    instance: &Instance,
-    value: &[u8],
-) -> Result<usize, InvokeError<WasmError>> {
+pub fn send_value(instance: &Instance, value: &[u8]) -> Result<usize, InvokeError<WasmError>> {
     let n = value.len();
 
     let result = instance

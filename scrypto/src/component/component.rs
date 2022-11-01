@@ -66,13 +66,15 @@ pub struct ComponentStateSubstate {
 impl Component {
     pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
         let mut sys_calls = Syscalls;
-        let rtn = sys_calls.sys_invoke_scrypto_method(
-            ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Component(self.0),
-                method_name: method.to_string(),
-            },
-            args,
-        ).unwrap();
+        let rtn = sys_calls
+            .sys_invoke_scrypto_method(
+                ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Component(self.0),
+                    method_name: method.to_string(),
+                },
+                args,
+            )
+            .unwrap();
         scrypto_decode(&rtn).unwrap()
     }
 

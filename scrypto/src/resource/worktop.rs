@@ -1,10 +1,10 @@
-use sbor::*;
-use sbor::rust::vec::Vec;
+use crate::engine::types::{NativeFn, NativeMethod, WorktopMethod};
 use sbor::rust::collections::BTreeSet;
+use sbor::rust::vec::Vec;
+use sbor::*;
 use scrypto::engine::api::SysInvocation;
 use scrypto::math::Decimal;
 use scrypto::resource::*;
-use crate::engine::types::{NativeFn, NativeMethod, WorktopMethod};
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopPutInvocation {
@@ -90,7 +90,9 @@ pub struct WorktopAssertContainsNonFungiblesInvocation {
 impl SysInvocation for WorktopAssertContainsNonFungiblesInvocation {
     type Output = ();
     fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::Worktop(WorktopMethod::AssertContainsNonFungibles))
+        NativeFn::Method(NativeMethod::Worktop(
+            WorktopMethod::AssertContainsNonFungibles,
+        ))
     }
 }
 

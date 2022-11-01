@@ -43,7 +43,7 @@ impl NativeExecutable for ResourceManagerBucketBurnInvocation {
         Y: SystemApi
             + Invokable<ScryptoInvocation>
             + InvokableNative<'a>
-            + SysInvokableNative<RuntimeError>
+            + SysInvokableNative<RuntimeError>,
     {
         invocation.bucket.sys_burn(system_api)?;
         Ok(((), CallFrameUpdate::empty()))

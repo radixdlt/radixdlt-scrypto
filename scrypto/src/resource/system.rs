@@ -47,7 +47,9 @@ impl ResourceSystem {
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Function(NativeFunction::ResourceManager(ResourceManagerFunction::Create)),
+            NativeFn::Function(NativeFunction::ResourceManager(
+                ResourceManagerFunction::Create,
+            )),
             scrypto_encode(&ResourceManagerCreateInvocation {
                 resource_type,
                 metadata,

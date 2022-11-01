@@ -9,7 +9,6 @@ use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::engine::{api::*, types::*, utils::*};
-use crate::values::ScryptoValue;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {}
@@ -29,7 +28,9 @@ pub struct EpochManagerGetCurrentEpochInvocation {
 impl SysInvocation for EpochManagerGetCurrentEpochInvocation {
     type Output = u64;
     fn native_fn() -> NativeFn {
-        NativeFn::Method(NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch))
+        NativeFn::Method(NativeMethod::EpochManager(
+            EpochManagerMethod::GetCurrentEpoch,
+        ))
     }
 }
 
@@ -45,7 +46,6 @@ impl SysInvocation for EpochManagerSetEpochInvocation {
         NativeFn::Method(NativeMethod::EpochManager(EpochManagerMethod::SetEpoch))
     }
 }
-
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -83,14 +83,16 @@ impl Runtime {
         args: Vec<u8>,
     ) -> T {
         let mut syscalls = Syscalls;
-        let rtn = syscalls.sys_invoke_scrypto_function(
-            ScryptoFunctionIdent {
-                package: ScryptoPackage::Global(package_address),
-                blueprint_name: blueprint_name.as_ref().to_owned(),
-                function_name: function_name.as_ref().to_owned(),
-            },
-            args,
-        ).unwrap();
+        let rtn = syscalls
+            .sys_invoke_scrypto_function(
+                ScryptoFunctionIdent {
+                    package: ScryptoPackage::Global(package_address),
+                    blueprint_name: blueprint_name.as_ref().to_owned(),
+                    function_name: function_name.as_ref().to_owned(),
+                },
+                args,
+            )
+            .unwrap();
         scrypto_decode(&rtn).unwrap()
     }
 
@@ -119,7 +121,9 @@ impl Runtime {
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::InvokeNativeFn(
-            NativeFn::Method(NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch)),
+            NativeFn::Method(NativeMethod::EpochManager(
+                EpochManagerMethod::GetCurrentEpoch,
+            )),
             scrypto_encode(&EpochManagerGetCurrentEpochInvocation {
                 receiver: EPOCH_MANAGER,
             }),

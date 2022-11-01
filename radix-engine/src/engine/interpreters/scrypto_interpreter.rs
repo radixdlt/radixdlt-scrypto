@@ -24,7 +24,7 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
             + Invokable<ScryptoInvocation>
             + InvokableNative<'a>
             + ScryptoSyscalls<RuntimeError>
-            + SysInvokableNative<RuntimeError>
+            + SysInvokableNative<RuntimeError>,
     {
         let (export_name, return_type) = match system_api.get_actor() {
             REActor::Method(
