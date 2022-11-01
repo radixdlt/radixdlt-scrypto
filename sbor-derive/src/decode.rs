@@ -15,12 +15,15 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_decode() starts");
 
     let DeriveInput {
+        attrs,
         ident,
         data,
         generics,
         ..
     } = parse2(input)?;
-    let (impl_generics, ty_generics, where_clause) = extend_generics_with_cti(&generics)?;
+    let custom_type_id = custom_type_id(&attrs);
+    let (impl_generics, ty_generics, where_clause, sbor_generics) =
+        build_generics(&generics, custom_type_id)?;
 
     let output = match data {
         Data::Struct(s) => match s.fields {
@@ -34,12 +37,12 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 let s_ids = s.iter().map(|f| &f.ident);
                 let s_types = s.iter().map(|f| &f.ty);
                 quote! {
-                    impl #impl_generics ::sbor::Decode<CTI> for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Decode #sbor_generics for #ident #ty_generics #where_clause {
                         #[inline]
-                        fn check_type_id(decoder: &mut ::sbor::Decoder<CTI>) -> Result<(), ::sbor::DecodeError> {
+                        fn check_type_id(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<(), ::sbor::DecodeError> {
                             decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
                         }
-                        fn decode_value(decoder: &mut ::sbor::Decoder<CTI>) -> Result<Self, ::sbor::DecodeError> {
+                        fn decode_value(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
                             decoder.check_size(#ns_len)?;
                             Ok(Self {
@@ -62,12 +65,12 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 }
                 let ns_len = Index::from(unnamed.iter().filter(|f| !is_decode_skipped(f)).count());
                 quote! {
-                    impl #impl_generics ::sbor::Decode<CTI> for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Decode #sbor_generics for #ident #ty_generics #where_clause {
                         #[inline]
-                        fn check_type_id(decoder: &mut ::sbor::Decoder<CTI>) -> Result<(), ::sbor::DecodeError> {
+                        fn check_type_id(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<(), ::sbor::DecodeError> {
                             decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
                         }
-                        fn decode_value(decoder: &mut ::sbor::Decoder<CTI>) -> Result<Self, ::sbor::DecodeError> {
+                        fn decode_value(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
                             decoder.check_size(#ns_len)?;
                             Ok(Self (
@@ -79,12 +82,12 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl #impl_generics ::sbor::Decode<CTI> for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Decode #sbor_generics for #ident #ty_generics #where_clause {
                         #[inline]
-                        fn check_type_id(decoder: &mut ::sbor::Decoder<CTI>) -> Result<(), ::sbor::DecodeError> {
+                        fn check_type_id(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<(), ::sbor::DecodeError> {
                             decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
                         }
-                        fn decode_value(decoder: &mut ::sbor::Decoder<CTI>) -> Result<Self, ::sbor::DecodeError> {
+                        fn decode_value(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<Self, ::sbor::DecodeError> {
                             decoder.check_size(0)?;
                             Ok(Self {})
                         }
@@ -152,13 +155,13 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             });
 
             quote! {
-                impl #impl_generics ::sbor::Decode<CTI> for #ident #ty_generics #where_clause {
+                impl #impl_generics ::sbor::Decode #sbor_generics for #ident #ty_generics #where_clause {
                     #[inline]
-                    fn check_type_id(decoder: &mut ::sbor::Decoder<CTI>) -> Result<(), ::sbor::DecodeError> {
+                    fn check_type_id(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<(), ::sbor::DecodeError> {
                         decoder.check_type_id(::sbor::type_id::SborTypeId::Enum)
                     }
                     #[inline]
-                    fn decode_value(decoder: &mut ::sbor::Decoder<CTI>) -> Result<Self, ::sbor::DecodeError> {
+                    fn decode_value(decoder: &mut ::sbor::Decoder #sbor_generics) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
 
                         let discriminator = decoder.read_discriminator()?;

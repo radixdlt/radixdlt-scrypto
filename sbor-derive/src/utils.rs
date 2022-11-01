@@ -5,6 +5,7 @@ use std::process::Stdio;
 use syn::parse_quote;
 use syn::punctuated::Punctuated;
 use syn::token::Comma;
+use syn::Attribute;
 use syn::Generics;
 use syn::Path;
 use syn::TypeGenerics;
@@ -38,6 +39,17 @@ pub fn print_generated_code<S: ToString>(kind: &str, code: S) {
     }
 }
 
+pub fn custom_type_id(attrs: &Vec<Attribute>) -> Option<Path> {
+    for attr in attrs {
+        if attr.path.is_ident("custom_type_id") {
+            if let Ok(parsed) = attr.parse_args::<Path>() {
+                return Some(parsed);
+            }
+        }
+    }
+    None
+}
+
 pub fn is_skipped(f: &syn::Field, id: &str) -> bool {
     f.attrs.iter().any(|attr| {
         if attr.path.is_ident("skip") {
@@ -59,17 +71,26 @@ pub fn is_encode_skipped(f: &syn::Field) -> bool {
     is_skipped(f, "Encode")
 }
 
-pub fn extend_generics_with_cti(
+pub fn build_generics(
     generics: &Generics,
-) -> syn::Result<(Generics, TypeGenerics, Option<&WhereClause>)> {
+    custom_type_id: Option<Path>,
+) -> syn::Result<(Generics, TypeGenerics, Option<&WhereClause>, Generics)> {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    // Note that this above logic requires no use of CTI generic param by the input type.
-    // TODO: better to report error OR an alternative name if already exists
+    // Unwrap for mutation
     let mut impl_generics: Generics = parse_quote! { #impl_generics };
-    impl_generics
-        .params
-        .push(parse_quote!(CTI: ::sbor::type_id::CustomTypeId));
 
-    Ok((impl_generics, ty_generics, where_clause))
+    let sbor_generics = if custom_type_id.is_none() {
+        // Note that this above logic requires no use of CTI generic param by the input type.
+        // TODO: better to report error OR an alternative name if already exists
+        impl_generics
+            .params
+            .push(parse_quote!(CTI: ::sbor::type_id::CustomTypeId));
+
+        parse_quote! { <CTI> }
+    } else {
+        parse_quote! { <#custom_type_id> }
+    };
+
+    Ok((impl_generics, ty_generics, where_clause, sbor_generics))
 }

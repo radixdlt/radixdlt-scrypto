@@ -2,7 +2,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::*;
 
-use crate::utils::extend_generics_with_cti;
+use crate::utils::*;
 
 macro_rules! trace {
     ($($arg:expr),*) => {{
@@ -15,26 +15,29 @@ pub fn handle_type_id(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_type_id() starts");
 
     let DeriveInput {
+        attrs,
         ident,
         data,
         generics,
         ..
     } = parse2(input).expect("Unable to parse input");
-    let (impl_generics, ty_generics, where_clause) = extend_generics_with_cti(&generics)?;
+    let custom_type_id = custom_type_id(&attrs);
+    let (impl_generics, ty_generics, where_clause, sbor_generics) =
+        build_generics(&generics, custom_type_id)?;
 
     let output = match data {
         Data::Struct(_) => quote! {
-            impl #impl_generics ::sbor::TypeId<CTI> for #ident #ty_generics #where_clause {
+            impl #impl_generics ::sbor::TypeId #sbor_generics for #ident #ty_generics #where_clause {
                 #[inline]
-                fn type_id() -> ::sbor::type_id::SborTypeId<CTI> {
+                fn type_id() -> ::sbor::type_id::SborTypeId #sbor_generics {
                     ::sbor::type_id::SborTypeId::Struct
                 }
             }
         },
         Data::Enum(_) => quote! {
-            impl #impl_generics ::sbor::TypeId<CTI> for #ident #ty_generics #where_clause {
+            impl #impl_generics ::sbor::TypeId #sbor_generics for #ident #ty_generics #where_clause {
                 #[inline]
-                fn type_id() -> ::sbor::type_id::SborTypeId<CTI> {
+                fn type_id() -> ::sbor::type_id::SborTypeId #sbor_generics {
                     ::sbor::type_id::SborTypeId::Enum
                 }
             }
