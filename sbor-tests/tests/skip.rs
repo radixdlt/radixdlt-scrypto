@@ -7,13 +7,13 @@ use sbor::*;
 #[derive(Debug, PartialEq, TypeId, Encode, Decode)]
 pub struct TestStructNamed {
     #[allow(unused_variables)]
-    #[sbor(skip)]
+    #[skip(Encode, Decode)]
     pub x: u32,
     pub y: u32,
 }
 
 #[derive(Debug, PartialEq, TypeId, Encode, Decode)]
-pub struct TestStructUnnamed(#[sbor(skip)] u32, u32);
+pub struct TestStructUnnamed(#[skip(Encode, Decode)] u32, u32);
 
 #[derive(Debug, PartialEq, TypeId, Encode, Decode)]
 pub struct TestStructUnit;
@@ -21,11 +21,11 @@ pub struct TestStructUnit;
 #[derive(Debug, PartialEq, TypeId, Encode, Decode)]
 pub enum TestEnum {
     A {
-        #[sbor(skip)]
+        #[skip(Encode, Decode)]
         x: u32,
         y: u32,
     },
-    B(#[sbor(skip)] u32, u32),
+    B(#[skip(Encode, Decode)] u32, u32),
     C,
 }
 
@@ -47,11 +47,11 @@ fn test_struct_with_skip() {
           16, // struct type 
           1, 0, 0, 0, // number of fields
           9, 2, 0, 0, 0, // field value
-          
+
           16,  // struct type 
           1, 0, 0, 0,  // number of fields
           9, 4, 0, 0, 0,  // field value
-          
+
           16, // struct type
           0, 0, 0, 0,  // number of fields
         ],

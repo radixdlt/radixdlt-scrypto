@@ -3,7 +3,10 @@ use std::process::Command;
 use std::process::Stdio;
 
 use syn::parse_quote;
+use syn::punctuated::Punctuated;
+use syn::token::Comma;
 use syn::Generics;
+use syn::Path;
 use syn::TypeGenerics;
 use syn::WhereClause;
 
@@ -35,19 +38,25 @@ pub fn print_generated_code<S: ToString>(kind: &str, code: S) {
     }
 }
 
-pub fn is_skipped(f: &syn::Field) -> bool {
-    let mut skipped = false;
-    for att in &f.attrs {
-        if att.path.is_ident("sbor")
-            && att
-                .parse_args::<syn::Path>()
-                .map(|p| p.is_ident("skip"))
-                .unwrap_or(false)
-        {
-            skipped = true;
+pub fn is_skipped(f: &syn::Field, id: &str) -> bool {
+    f.attrs.iter().any(|attr| {
+        if attr.path.is_ident("skip") {
+            if let Ok(parsed) = attr.parse_args_with(Punctuated::<Path, Comma>::parse_terminated) {
+                if parsed.iter().any(|x| x.is_ident(id)) {
+                    return true;
+                }
+            }
         }
-    }
-    skipped
+        return false;
+    })
+}
+
+pub fn is_decode_skipped(f: &syn::Field) -> bool {
+    is_skipped(f, "Decode")
+}
+
+pub fn is_encode_skipped(f: &syn::Field) -> bool {
+    is_skipped(f, "Encode")
 }
 
 pub fn extend_generics_with_cti(
