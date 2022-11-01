@@ -1,10 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use sbor::rust::vec;
-use sbor::Decode;
-use sbor::DecodeError;
-use sbor::Decoder;
-use sbor::TypeId;
+use sbor::*;
 
 #[derive(TypeId, Decode, Debug, PartialEq)]
 pub struct TestStructNamed {
@@ -43,7 +40,7 @@ fn test_decode_struct() {
         0, 0, 0, 0,  // number of fields
     ];
 
-    let mut decoder = Decoder::new(&bytes);
+    let mut decoder = Decoder::<NoCustomTypeId>::new(&bytes);
     let a = TestStructNamed::decode(&mut decoder).unwrap();
     let b = TestStructUnnamed::decode(&mut decoder).unwrap();
     let c = TestStructUnit::decode(&mut decoder).unwrap();
@@ -76,7 +73,7 @@ fn test_decode_enum() {
         0, 0, 0, 0,  // number of fields
     ];
 
-    let mut decoder = Decoder::new(&bytes);
+    let mut decoder = Decoder::<NoCustomTypeId>::new(&bytes);
     let a = TestEnum::decode(&mut decoder).unwrap();
     let b = TestEnum::decode(&mut decoder).unwrap();
     let c = TestEnum::decode(&mut decoder).unwrap();
@@ -98,7 +95,7 @@ fn test_decode_empty_enum() {
         9, 3, 0, 0, 0,  // field value
     ];
 
-    let mut decoder = Decoder::new(&bytes);
+    let mut decoder = Decoder::<NoCustomTypeId>::new(&bytes);
     let result = EmptyEnum::decode(&mut decoder);
 
     assert!(matches!(result, Err(DecodeError::UnknownDiscriminator(_))));

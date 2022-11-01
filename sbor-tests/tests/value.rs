@@ -35,8 +35,8 @@ fn test_encode_as_json() {
         c: (2, vec![3, 4]),
         d: "5".to_string(),
     };
-    let bytes = sbor::encode(&sample);
-    let any = sbor::decode_any::<NoCustomValue>(&bytes).unwrap();
+    let bytes = crate::encode::<NoCustomTypeId, _>(&sample);
+    let any = crate::decode_any::<NoCustomTypeId, NoCustomValue>(&bytes).unwrap();
 
     assert_json_eq(
         any,

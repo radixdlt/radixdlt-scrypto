@@ -2,6 +2,11 @@ use std::io::Write;
 use std::process::Command;
 use std::process::Stdio;
 
+use syn::parse_quote;
+use syn::Generics;
+use syn::TypeGenerics;
+use syn::WhereClause;
+
 #[allow(dead_code)]
 pub fn print_generated_code<S: ToString>(kind: &str, code: S) {
     if let Ok(mut proc) = Command::new("rustfmt")
@@ -43,4 +48,19 @@ pub fn is_skipped(f: &syn::Field) -> bool {
         }
     }
     skipped
+}
+
+pub fn extend_generics_with_cti(
+    generics: &Generics,
+) -> syn::Result<(Generics, TypeGenerics, Option<&WhereClause>)> {
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    // Note that this above logic requires no use of CTI generic param by the input type.
+    // TODO: better to report error OR an alternative name if already exists
+    let mut impl_generics: Generics = parse_quote! { #impl_generics };
+    impl_generics
+        .params
+        .push(parse_quote!(CTI: ::sbor::type_id::CustomTypeId));
+
+    Ok((impl_generics, ty_generics, where_clause))
 }

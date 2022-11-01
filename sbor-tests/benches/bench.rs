@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate bencher;
 use bencher::Bencher;
+use sbor::NoCustomTypeId;
 
 mod adapter;
 mod data;
@@ -19,7 +20,7 @@ fn encode_simple_bincode(b: &mut Bencher) {
 
 fn encode_simple_sbor(b: &mut Bencher) {
     let t = data::get_simple_dataset(SIMPLE_REAPT);
-    b.iter(|| sbor::encode(&t));
+    b.iter(|| sbor::encode::<NoCustomTypeId, _>(&t));
 }
 
 fn decode_simple_json(b: &mut Bencher) {
@@ -36,8 +37,8 @@ fn decode_simple_bincode(b: &mut Bencher) {
 
 fn decode_simple_sbor(b: &mut Bencher) {
     let t = data::get_simple_dataset(SIMPLE_REAPT);
-    let bytes = sbor::encode(&t);
-    b.iter(|| sbor::decode::<data::simple::SimpleStruct>(&bytes));
+    let bytes = sbor::encode::<NoCustomTypeId, _>(&t);
+    b.iter(|| sbor::decode::<NoCustomTypeId, data::simple::SimpleStruct>(&bytes));
 }
 
 benchmark_group!(

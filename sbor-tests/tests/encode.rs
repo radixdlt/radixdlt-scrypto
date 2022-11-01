@@ -2,9 +2,7 @@
 
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use sbor::Encode;
-use sbor::Encoder;
-use sbor::TypeId;
+use sbor::*;
 
 #[derive(TypeId, Encode)]
 pub struct TestStructNamed {
@@ -34,7 +32,7 @@ fn test_encode_struct() {
     let c = TestStructUnit {};
 
     let mut bytes = Vec::with_capacity(512);
-    let mut encoder = Encoder::new(&mut bytes);
+    let mut encoder = Encoder::<NoCustomTypeId>::new(&mut bytes);
     a.encode(&mut encoder);
     b.encode(&mut encoder);
     c.encode(&mut encoder);
@@ -64,7 +62,7 @@ fn test_encode_enum() {
     let c = TestEnum::C;
 
     let mut bytes = Vec::with_capacity(512);
-    let mut encoder = Encoder::new(&mut bytes);
+    let mut encoder = Encoder::<NoCustomTypeId>::new(&mut bytes);
     a.encode(&mut encoder);
     b.encode(&mut encoder);
     c.encode(&mut encoder);

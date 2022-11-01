@@ -2,6 +2,8 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::*;
 
+use crate::utils::extend_generics_with_cti;
+
 macro_rules! trace {
     ($($arg:expr),*) => {{
         #[cfg(feature = "trace")]
@@ -18,22 +20,21 @@ pub fn handle_type_id(input: TokenStream) -> Result<TokenStream> {
         generics,
         ..
     } = parse2(input).expect("Unable to parse input");
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-    trace!("Encoding: {}", ident);
+    let (impl_generics, ty_generics, where_clause) = extend_generics_with_cti(&generics)?;
 
     let output = match data {
         Data::Struct(_) => quote! {
-            impl #impl_generics ::sbor::TypeId for #ident #ty_generics #where_clause {
+            impl #impl_generics ::sbor::TypeId<CTI> for #ident #ty_generics #where_clause {
                 #[inline]
-                fn type_id() -> ::sbor::type_id::SborTypeId {
+                fn type_id() -> ::sbor::type_id::SborTypeId<CTI> {
                     ::sbor::type_id::SborTypeId::Struct
                 }
             }
         },
         Data::Enum(_) => quote! {
-            impl #impl_generics ::sbor::TypeId for #ident #ty_generics #where_clause {
+            impl #impl_generics ::sbor::TypeId<CTI> for #ident #ty_generics #where_clause {
                 #[inline]
-                fn type_id() -> ::sbor::type_id::SborTypeId {
+                fn type_id() -> ::sbor::type_id::SborTypeId<CTI> {
                     ::sbor::type_id::SborTypeId::Enum
                 }
             }
@@ -69,9 +70,27 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::TypeId for Test {
+                impl <CTI: ::sbor::type_id::CustomTypeId> ::sbor::TypeId<CTI> for Test {
                     #[inline]
-                    fn type_id() -> ::sbor::type_id::SborTypeId {
+                    fn type_id() -> ::sbor::type_id::SborTypeId<CTI> {
+                        ::sbor::type_id::SborTypeId::Struct
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_type_id_struct_generics() {
+        let input = TokenStream::from_str("struct Test<A> {a: A}").unwrap();
+        let output = handle_type_id(input).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                impl <A, CTI: ::sbor::type_id::CustomTypeId> ::sbor::TypeId<CTI> for Test<A> {
+                    #[inline]
+                    fn type_id() -> ::sbor::type_id::SborTypeId<CTI> {
                         ::sbor::type_id::SborTypeId::Struct
                     }
                 }
@@ -87,9 +106,9 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::TypeId for Test {
+                impl <CTI: ::sbor::type_id::CustomTypeId> ::sbor::TypeId<CTI> for Test {
                     #[inline]
-                    fn type_id() -> ::sbor::type_id::SborTypeId {
+                    fn type_id() -> ::sbor::type_id::SborTypeId<CTI> {
                         ::sbor::type_id::SborTypeId::Enum
                     }
                 }
