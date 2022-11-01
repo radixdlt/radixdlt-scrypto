@@ -214,53 +214,44 @@ impl Vault {
     }
 
     native_methods! {
-        NativeMethod::Vault => {
-            pub fn put(&mut self, bucket: Bucket) -> () {
-                VaultMethod::Put,
-                VaultPutInvocation {
-                    receiver: self.0,
-                    bucket,
-                }
+        pub fn put(&mut self, bucket: Bucket) -> () {
+            VaultPutInvocation {
+                receiver: self.0,
+                bucket,
             }
+        }
 
-            pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
-                VaultMethod::TakeNonFungibles,
-                VaultTakeNonFungiblesInvocation {
-                    receiver: self.0,
-                    non_fungible_ids: non_fungible_ids.clone(),
-                }
+        pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
+            VaultTakeNonFungiblesInvocation {
+                receiver: self.0,
+                non_fungible_ids: non_fungible_ids.clone(),
             }
+        }
 
-            pub fn resource_address(&self) -> ResourceAddress {
-                VaultMethod::GetResourceAddress,
-                VaultGetResourceAddressInvocation {
-                    receiver: self.0,
-                }
+        pub fn resource_address(&self) -> ResourceAddress {
+            VaultGetResourceAddressInvocation {
+                receiver: self.0,
             }
+        }
 
-            pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-                VaultMethod::GetNonFungibleIds,
-                VaultGetNonFungibleIdsInvocation {
-                    receiver: self.0,
-                }
+        pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+            VaultGetNonFungibleIdsInvocation {
+                receiver: self.0,
             }
+        }
 
-            pub fn create_proof(&self) -> Proof {
-                VaultMethod::CreateProof,
-                VaultCreateProofInvocation {
-                    receiver: self.0,
-                }
+        pub fn create_proof(&self) -> Proof {
+            VaultCreateProofInvocation {
+                receiver: self.0,
             }
+        }
 
-            pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
-                VaultMethod::CreateProofByAmount,
-                VaultCreateProofByAmountInvocation { amount, receiver: self.0, }
-            }
+        pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
+            VaultCreateProofByAmountInvocation { amount, receiver: self.0, }
+        }
 
-            pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
-                VaultMethod::CreateProofByIds,
-                VaultCreateProofByIdsInvocation { ids: ids.clone(), receiver: self.0 }
-            }
+        pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
+            VaultCreateProofByIdsInvocation { ids: ids.clone(), receiver: self.0 }
         }
     }
 

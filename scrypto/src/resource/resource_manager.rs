@@ -402,45 +402,37 @@ impl ResourceManager {
     }
 
     native_methods! {
-        NativeMethod::ResourceManager => {
-            pub fn metadata(&self) -> HashMap<String, String> {
-                ResourceManagerMethod::GetMetadata,
-                ResourceManagerGetMetadataInvocation {
-                    receiver: self.0,
-                }
+        pub fn metadata(&self) -> HashMap<String, String> {
+            ResourceManagerGetMetadataInvocation {
+                receiver: self.0,
             }
-            pub fn resource_type(&self) -> ResourceType {
-                ResourceManagerMethod::GetResourceType,
-                ResourceManagerGetResourceTypeInvocation {
-                    receiver: self.0,
-                }
+        }
+        pub fn resource_type(&self) -> ResourceType {
+            ResourceManagerGetResourceTypeInvocation {
+                receiver: self.0,
             }
-            pub fn total_supply(&self) -> Decimal {
-                ResourceManagerMethod::GetTotalSupply,
-                ResourceManagerGetTotalSupplyInvocation {
-                    receiver: self.0,
-                }
+        }
+        pub fn total_supply(&self) -> Decimal {
+            ResourceManagerGetTotalSupplyInvocation {
+                receiver: self.0,
             }
-            pub fn update_metadata(&mut self, metadata: HashMap<String, String>) -> () {
-                ResourceManagerMethod::UpdateMetadata,
-                ResourceManagerUpdateMetadataInvocation {
-                    receiver: self.0,
-                    metadata,
-                }
+        }
+        pub fn update_metadata(&mut self, metadata: HashMap<String, String>) -> () {
+            ResourceManagerUpdateMetadataInvocation {
+                receiver: self.0,
+                metadata,
             }
-            pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
-                ResourceManagerMethod::NonFungibleExists,
-                ResourceManagerNonFungibleExistsInvocation {
-                    receiver: self.0,
-                    id: id.clone()
-                }
+        }
+        pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
+            ResourceManagerNonFungibleExistsInvocation {
+                receiver: self.0,
+                id: id.clone()
             }
-            pub fn burn(&mut self, bucket: Bucket) -> () {
-                ResourceManagerMethod::Burn,
-                ResourceManagerBurnInvocation {
-                    receiver: self.0,
-                    bucket
-                }
+        }
+        pub fn burn(&mut self, bucket: Bucket) -> () {
+            ResourceManagerBurnInvocation {
+                receiver: self.0,
+                bucket
             }
         }
     }

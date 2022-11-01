@@ -164,38 +164,31 @@ impl Bucket {
     }
 
     native_methods! {
-        NativeMethod::Bucket => {
-            pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
-                BucketMethod::TakeNonFungibles,
-                BucketTakeNonFungiblesInvocation {
-                    receiver: self.0,
-                    ids: non_fungible_ids.clone()
-                }
+        pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
+            BucketTakeNonFungiblesInvocation {
+                receiver: self.0,
+                ids: non_fungible_ids.clone()
             }
-            pub fn put(&mut self, other: Self) -> () {
-                BucketMethod::Put,
-                BucketPutInvocation {
-                    receiver: self.0,
-                    bucket: other,
-                }
+        }
+        pub fn put(&mut self, other: Self) -> () {
+            BucketPutInvocation {
+                receiver: self.0,
+                bucket: other,
             }
-            pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-                BucketMethod::GetNonFungibleIds,
-                BucketGetNonFungibleIdsInvocation {
-                    receiver: self.0,
-                }
+        }
+        pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+            BucketGetNonFungibleIdsInvocation {
+                receiver: self.0,
             }
-            pub fn amount(&self) -> Decimal {
-                BucketMethod::GetAmount,
-                BucketGetAmountInvocation {
-                    receiver: self.0,
-                }
+        }
+        pub fn amount(&self) -> Decimal {
+            BucketGetAmountInvocation {
+                receiver: self.0,
             }
-            pub fn resource_address(&self) -> ResourceAddress {
-                BucketMethod::GetResourceAddress,
-                BucketGetResourceAddressInvocation {
-                    receiver: self.0,
-                }
+        }
+        pub fn resource_address(&self) -> ResourceAddress {
+            BucketGetResourceAddressInvocation {
+                receiver: self.0,
             }
         }
     }

@@ -166,14 +166,11 @@ pub enum RadixEngineInput {
 
 #[macro_export]
 macro_rules! native_methods {
-    ($type_ident:expr => { $($vis:vis $fn:ident $method_name:ident ($($args:tt)*) -> $rtn:ty { $fn_ident:expr, $arg:expr })* } ) => {
+    ($($vis:vis $fn:ident $method_name:ident ($($args:tt)*) -> $rtn:ty { $arg:expr })*) => {
         $(
             $vis $fn $method_name ($($args)*) -> $rtn {
-                let input = RadixEngineInput::InvokeNativeFn(
-                    NativeFn::Method($type_ident($fn_ident)),
-                    scrypto::buffer::scrypto_encode(&$arg)
-                );
-                call_engine(input)
+                let mut syscalls = Syscalls;
+                syscalls.sys_invoke($arg).unwrap()
             }
         )+
     };

@@ -10,14 +10,12 @@ use scrypto::buffer::scrypto_decode;
 
 use crate::abi::*;
 use crate::address::*;
-use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::{hash, Hash, PublicKey};
 use crate::engine::{api::*, types::*, utils::*};
 use crate::misc::*;
 use crate::resource::AccessRules;
-use crate::values::ScryptoValue;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ComponentAddAccessCheckInvocation {

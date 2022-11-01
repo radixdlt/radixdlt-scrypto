@@ -2,7 +2,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::buffer::*;
-use crate::values::ScryptoValue;
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: Encode + ?Sized>(v: &T) -> Vec<u8> {

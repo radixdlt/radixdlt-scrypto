@@ -256,24 +256,19 @@ impl Proof {
     }
 
     native_methods! {
-        NativeMethod::Proof => {
-            fn amount(&self) -> Decimal {
-                ProofMethod::GetAmount,
-                ProofGetAmountInvocation {
-                    receiver: self.0
-                }
+        fn amount(&self) -> Decimal {
+            ProofGetAmountInvocation {
+                receiver: self.0
             }
-            fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-                ProofMethod::GetNonFungibleIds,
-                ProofGetNonFungibleIdsInvocation {
-                    receiver: self.0
-                }
+        }
+        fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+            ProofGetNonFungibleIdsInvocation {
+                receiver: self.0
             }
-            fn resource_address(&self) -> ResourceAddress {
-                ProofMethod::GetResourceAddress,
-                ProofGetResourceAddressInvocation {
-                    receiver: self.0
-                }
+        }
+        fn resource_address(&self) -> ResourceAddress {
+            ProofGetResourceAddressInvocation {
+                receiver: self.0
             }
         }
     }
@@ -304,24 +299,19 @@ impl Clone for ValidatedProof {
 
 impl ValidatedProof {
     native_methods! {
-        NativeMethod::Proof => {
-            pub fn amount(&self) -> Decimal {
-                ProofMethod::GetAmount,
-                ProofGetAmountInvocation {
-                    receiver: self.proof_id(),
-                }
+        pub fn amount(&self) -> Decimal {
+            ProofGetAmountInvocation {
+                receiver: self.proof_id(),
             }
-            pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-                ProofMethod::GetNonFungibleIds,
-                ProofGetNonFungibleIdsInvocation {
-                    receiver: self.proof_id(),
-                }
+        }
+        pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+            ProofGetNonFungibleIdsInvocation {
+                receiver: self.proof_id(),
             }
-            pub fn resource_address(&self) -> ResourceAddress {
-                ProofMethod::GetResourceAddress,
-                ProofGetResourceAddressInvocation {
-                    receiver: self.proof_id(),
-                }
+        }
+        pub fn resource_address(&self) -> ResourceAddress {
+            ProofGetResourceAddressInvocation {
+                receiver: self.proof_id(),
             }
         }
     }
