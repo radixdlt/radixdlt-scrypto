@@ -1,6 +1,6 @@
 use sbor::rust::string::String;
 
-use crate::engine::{api::*, types::*, scrypto_env::*};
+use crate::engine::{api::*, scrypto_env::*, types::*};
 
 /// A utility for logging messages.
 #[derive(Debug)]

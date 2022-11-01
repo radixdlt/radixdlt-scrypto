@@ -13,7 +13,7 @@ use crate::address::*;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::{hash, Hash, PublicKey};
-use crate::engine::{api::*, types::*, scrypto_env::*};
+use crate::engine::{api::*, scrypto_env::*, types::*};
 use crate::misc::*;
 use crate::resource::AccessRules;
 
@@ -27,8 +27,7 @@ impl SysInvocation for ComponentAddAccessCheckInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ComponentAddAccessCheckInvocation {
-}
+impl ScryptoNativeInvocation for ComponentAddAccessCheckInvocation {}
 
 impl Into<NativeFnInvocation> for ComponentAddAccessCheckInvocation {
     fn into(self) -> NativeFnInvocation {

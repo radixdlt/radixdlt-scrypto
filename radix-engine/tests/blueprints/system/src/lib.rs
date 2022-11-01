@@ -1,4 +1,4 @@
-use scrypto::engine::{types::*, utils::*};
+use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
 blueprint! {

@@ -1,6 +1,5 @@
 use sbor::rust::borrow::Cow;
-use scrypto::engine::api::{Syscalls, SysInvokableNative};
-use scrypto::resource::sys::create_proof;
+use scrypto::engine::api::{SysInvokableNative, Syscalls};
 use scrypto::resource::{AuthZoneDrainInvocation, ComponentAuthZone};
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
@@ -453,7 +452,9 @@ impl TransactionProcessor {
                             ))
                     })
                     .and_then(|(new_id, real_bucket_id)| {
-                        create_proof(&scrypto::resource::Bucket(real_bucket_id), system_api)
+                        let bucket = scrypto::resource::Bucket(real_bucket_id);
+                        bucket
+                            .sys_create_proof(system_api)
                             .map_err(InvokeError::Downstream)
                             .map(|proof| {
                                 proof_id_mapping.insert(new_id, proof.0);

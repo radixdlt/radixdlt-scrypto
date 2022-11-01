@@ -1,6 +1,6 @@
 mod access_rules;
 mod auth_zone;
-mod bucket;
+pub mod bucket;
 mod mint_params;
 mod non_fungible;
 mod non_fungible_address;

@@ -18,8 +18,7 @@ impl SysInvocation for AuthZonePopInvocation {
     type Output = scrypto::resource::Proof;
 }
 
-impl ScryptoNativeInvocation for AuthZonePopInvocation {
-}
+impl ScryptoNativeInvocation for AuthZonePopInvocation {}
 
 impl Into<NativeFnInvocation> for AuthZonePopInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -39,8 +38,7 @@ impl SysInvocation for AuthZonePushInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for AuthZonePushInvocation {
-}
+impl ScryptoNativeInvocation for AuthZonePushInvocation {}
 
 impl Into<NativeFnInvocation> for AuthZonePushInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -60,8 +58,7 @@ impl SysInvocation for AuthZoneCreateProofInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for AuthZoneCreateProofInvocation {
-}
+impl ScryptoNativeInvocation for AuthZoneCreateProofInvocation {}
 
 impl Into<NativeFnInvocation> for AuthZoneCreateProofInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -82,8 +79,7 @@ impl SysInvocation for AuthZoneCreateProofByAmountInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for AuthZoneCreateProofByAmountInvocation {
-}
+impl ScryptoNativeInvocation for AuthZoneCreateProofByAmountInvocation {}
 
 impl Into<NativeFnInvocation> for AuthZoneCreateProofByAmountInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -104,8 +100,7 @@ impl SysInvocation for AuthZoneCreateProofByIdsInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for AuthZoneCreateProofByIdsInvocation {
-}
+impl ScryptoNativeInvocation for AuthZoneCreateProofByIdsInvocation {}
 
 impl Into<NativeFnInvocation> for AuthZoneCreateProofByIdsInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -124,8 +119,7 @@ impl SysInvocation for AuthZoneClearInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for AuthZoneClearInvocation {
-}
+impl ScryptoNativeInvocation for AuthZoneClearInvocation {}
 
 impl Into<NativeFnInvocation> for AuthZoneClearInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -144,8 +138,7 @@ impl SysInvocation for AuthZoneDrainInvocation {
     type Output = Vec<scrypto::resource::Proof>;
 }
 
-impl ScryptoNativeInvocation for AuthZoneDrainInvocation {
-}
+impl ScryptoNativeInvocation for AuthZoneDrainInvocation {}
 
 impl Into<NativeFnInvocation> for AuthZoneDrainInvocation {
     fn into(self) -> NativeFnInvocation {

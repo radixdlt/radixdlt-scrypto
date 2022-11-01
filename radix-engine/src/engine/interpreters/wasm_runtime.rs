@@ -6,7 +6,7 @@ use crate::types::{
     ScryptoValue,
 };
 use crate::wasm::*;
-use scrypto::engine::api::{Syscalls, SysInvokableNative};
+use scrypto::engine::api::{SysInvokableNative, Syscalls};
 use scrypto::engine::scrypto_env::{
     AuthZoneMethodInvocation, BucketMethodInvocation, ComponentMethodInvocation,
     EpochManagerFunctionInvocation, EpochManagerMethodInvocation, NativeFnInvocation,

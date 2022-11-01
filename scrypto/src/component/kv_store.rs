@@ -11,7 +11,7 @@ use crate::abi::*;
 use crate::buffer::*;
 use crate::core::{DataRef, DataRefMut};
 use crate::crypto::*;
-use crate::engine::{api::*, types::*, scrypto_env::*};
+use crate::engine::{api::*, scrypto_env::*, types::*};
 use crate::misc::*;
 
 /// A scalable key-value map which loads entries on demand.

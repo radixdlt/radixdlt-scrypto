@@ -8,7 +8,7 @@ use crate::buffer::scrypto_decode;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
-use crate::engine::{api::*, types::*, scrypto_env::*};
+use crate::engine::{api::*, scrypto_env::*, types::*};
 use crate::native_fn;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -18,8 +18,7 @@ impl SysInvocation for EpochManagerCreateInvocation {
     type Output = SystemAddress;
 }
 
-impl ScryptoNativeInvocation for EpochManagerCreateInvocation {
-}
+impl ScryptoNativeInvocation for EpochManagerCreateInvocation {}
 
 impl Into<NativeFnInvocation> for EpochManagerCreateInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -38,8 +37,7 @@ impl SysInvocation for EpochManagerGetCurrentEpochInvocation {
     type Output = u64;
 }
 
-impl ScryptoNativeInvocation for EpochManagerGetCurrentEpochInvocation {
-}
+impl ScryptoNativeInvocation for EpochManagerGetCurrentEpochInvocation {}
 
 impl Into<NativeFnInvocation> for EpochManagerGetCurrentEpochInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -59,8 +57,7 @@ impl SysInvocation for EpochManagerSetEpochInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for EpochManagerSetEpochInvocation {
-}
+impl ScryptoNativeInvocation for EpochManagerSetEpochInvocation {}
 
 impl Into<NativeFnInvocation> for EpochManagerSetEpochInvocation {
     fn into(self) -> NativeFnInvocation {

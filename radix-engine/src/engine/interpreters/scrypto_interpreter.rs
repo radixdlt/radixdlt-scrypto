@@ -1,7 +1,7 @@
 use crate::engine::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
-use scrypto::engine::api::{Syscalls, SysInvokableNative};
+use scrypto::engine::api::{SysInvokableNative, Syscalls};
 
 pub struct ScryptoExecutor<I: WasmInstance> {
     instance: I,

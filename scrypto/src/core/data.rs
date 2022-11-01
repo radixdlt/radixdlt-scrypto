@@ -5,7 +5,7 @@ use sbor::{Decode, Encode};
 
 use crate::buffer::*;
 use crate::component::{ComponentStateSubstate, KeyValueStoreEntrySubstate};
-use crate::engine::{api::*, types::*, scrypto_env::*};
+use crate::engine::{api::*, scrypto_env::*, types::*};
 
 pub struct DataRef<V: Encode> {
     lock_handle: LockHandle,

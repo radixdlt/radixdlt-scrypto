@@ -23,8 +23,7 @@ impl SysInvocation for ProofGetAmountInvocation {
     type Output = Decimal;
 }
 
-impl ScryptoNativeInvocation for ProofGetAmountInvocation {
-}
+impl ScryptoNativeInvocation for ProofGetAmountInvocation {}
 
 impl Into<NativeFnInvocation> for ProofGetAmountInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -43,8 +42,7 @@ impl SysInvocation for ProofGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
 }
 
-impl ScryptoNativeInvocation for ProofGetNonFungibleIdsInvocation {
-}
+impl ScryptoNativeInvocation for ProofGetNonFungibleIdsInvocation {}
 
 impl Into<NativeFnInvocation> for ProofGetNonFungibleIdsInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -63,8 +61,7 @@ impl SysInvocation for ProofGetResourceAddressInvocation {
     type Output = ResourceAddress;
 }
 
-impl ScryptoNativeInvocation for ProofGetResourceAddressInvocation {
-}
+impl ScryptoNativeInvocation for ProofGetResourceAddressInvocation {}
 
 impl Into<NativeFnInvocation> for ProofGetResourceAddressInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -83,8 +80,7 @@ impl SysInvocation for ProofCloneInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for ProofCloneInvocation {
-}
+impl ScryptoNativeInvocation for ProofCloneInvocation {}
 
 impl Into<NativeFnInvocation> for ProofCloneInvocation {
     fn into(self) -> NativeFnInvocation {

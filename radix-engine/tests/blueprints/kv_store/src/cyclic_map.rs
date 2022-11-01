@@ -1,5 +1,5 @@
+use scrypto::engine::scrypto_env::*;
 use scrypto::engine::types::*;
-use scrypto::engine::utils::*;
 use scrypto::prelude::*;
 use std::marker::PhantomData;
 

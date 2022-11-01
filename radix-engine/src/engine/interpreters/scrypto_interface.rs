@@ -12,7 +12,7 @@ use crate::wasm::{WasmEngine, WasmInstance};
 use scrypto::core::ScryptoActor;
 use scrypto::crypto::Hash;
 use scrypto::engine::api::{
-    ScryptoNativeInvocation, Syscalls, SysNativeInvokable, SysInvokableNative,
+    ScryptoNativeInvocation, SysInvokableNative, SysNativeInvokable, Syscalls,
 };
 use scrypto::engine::types::{
     Level, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode,

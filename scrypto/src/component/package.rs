@@ -22,8 +22,7 @@ impl SysInvocation for PackagePublishInvocation {
     type Output = PackageAddress;
 }
 
-impl ScryptoNativeInvocation for PackagePublishInvocation {
-}
+impl ScryptoNativeInvocation for PackagePublishInvocation {}
 
 impl Into<NativeFnInvocation> for PackagePublishInvocation {
     fn into(self) -> NativeFnInvocation {

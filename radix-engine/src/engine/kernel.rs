@@ -1,4 +1,4 @@
-use scrypto::engine::api::{Syscalls, SysInvokableNative};
+use scrypto::engine::api::{SysInvokableNative, Syscalls};
 use std::fmt::Debug;
 use std::mem;
 use transaction::errors::IdAllocationError;

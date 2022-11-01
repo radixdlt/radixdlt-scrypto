@@ -5,7 +5,7 @@ use crate::types::*;
 pub struct NativeInterpreter;
 use sbor::rust::fmt::Debug;
 use sbor::*;
-use scrypto::engine::api::{Syscalls, SysInvokableNative};
+use scrypto::engine::api::{SysInvokableNative, Syscalls};
 use scrypto::resource::AuthZoneDrainInvocation;
 use scrypto::resource::ResourceManagerBucketBurnInvocation;
 

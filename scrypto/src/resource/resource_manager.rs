@@ -42,8 +42,7 @@ impl SysInvocation for ResourceManagerCreateInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateInvocation {
-}
+impl ScryptoNativeInvocation for ResourceManagerCreateInvocation {}
 
 impl Into<NativeFnInvocation> for ResourceManagerCreateInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -62,8 +61,7 @@ impl SysInvocation for ResourceManagerBucketBurnInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ResourceManagerBucketBurnInvocation {
-}
+impl ScryptoNativeInvocation for ResourceManagerBucketBurnInvocation {}
 
 impl Into<NativeFnInvocation> for ResourceManagerBucketBurnInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -83,8 +81,7 @@ impl SysInvocation for ResourceManagerBurnInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ResourceManagerBurnInvocation {
-}
+impl ScryptoNativeInvocation for ResourceManagerBurnInvocation {}
 
 impl Into<NativeFnInvocation> for ResourceManagerBurnInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -105,8 +102,7 @@ impl SysInvocation for ResourceManagerUpdateAuthInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ResourceManagerUpdateAuthInvocation {
-}
+impl ScryptoNativeInvocation for ResourceManagerUpdateAuthInvocation {}
 
 impl Into<NativeFnInvocation> for ResourceManagerUpdateAuthInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -126,8 +122,7 @@ impl SysInvocation for ResourceManagerLockAuthInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ResourceManagerLockAuthInvocation {
-}
+impl ScryptoNativeInvocation for ResourceManagerLockAuthInvocation {}
 
 impl Into<NativeFnInvocation> for ResourceManagerLockAuthInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -146,8 +141,7 @@ impl SysInvocation for ResourceManagerCreateVaultInvocation {
     type Output = Vault;
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateVaultInvocation {
-}
+impl ScryptoNativeInvocation for ResourceManagerCreateVaultInvocation {}
 
 impl Into<NativeFnInvocation> for ResourceManagerCreateVaultInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -166,8 +160,7 @@ impl SysInvocation for ResourceManagerCreateBucketInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateBucketInvocation {
-}
+impl ScryptoNativeInvocation for ResourceManagerCreateBucketInvocation {}
 
 impl Into<NativeFnInvocation> for ResourceManagerCreateBucketInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -187,8 +180,7 @@ impl SysInvocation for ResourceManagerMintInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for ResourceManagerMintInvocation {
-}
+impl ScryptoNativeInvocation for ResourceManagerMintInvocation {}
 
 impl Into<NativeFnInvocation> for ResourceManagerMintInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -207,8 +199,7 @@ impl SysInvocation for ResourceManagerGetMetadataInvocation {
     type Output = HashMap<String, String>;
 }
 
-impl ScryptoNativeInvocation for ResourceManagerGetMetadataInvocation {
-}
+impl ScryptoNativeInvocation for ResourceManagerGetMetadataInvocation {}
 
 impl Into<NativeFnInvocation> for ResourceManagerGetMetadataInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -227,8 +218,7 @@ impl SysInvocation for ResourceManagerGetResourceTypeInvocation {
     type Output = ResourceType;
 }
 
-impl ScryptoNativeInvocation for ResourceManagerGetResourceTypeInvocation {
-}
+impl ScryptoNativeInvocation for ResourceManagerGetResourceTypeInvocation {}
 
 impl Into<NativeFnInvocation> for ResourceManagerGetResourceTypeInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -247,8 +237,7 @@ impl SysInvocation for ResourceManagerGetTotalSupplyInvocation {
     type Output = Decimal;
 }
 
-impl ScryptoNativeInvocation for ResourceManagerGetTotalSupplyInvocation {
-}
+impl ScryptoNativeInvocation for ResourceManagerGetTotalSupplyInvocation {}
 
 impl Into<NativeFnInvocation> for ResourceManagerGetTotalSupplyInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -268,8 +257,7 @@ impl SysInvocation for ResourceManagerUpdateMetadataInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ResourceManagerUpdateMetadataInvocation {
-}
+impl ScryptoNativeInvocation for ResourceManagerUpdateMetadataInvocation {}
 
 impl Into<NativeFnInvocation> for ResourceManagerUpdateMetadataInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -290,8 +278,7 @@ impl SysInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
-}
+impl ScryptoNativeInvocation for ResourceManagerUpdateNonFungibleDataInvocation {}
 
 impl Into<NativeFnInvocation> for ResourceManagerUpdateNonFungibleDataInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -311,8 +298,7 @@ impl SysInvocation for ResourceManagerNonFungibleExistsInvocation {
     type Output = bool;
 }
 
-impl ScryptoNativeInvocation for ResourceManagerNonFungibleExistsInvocation {
-}
+impl ScryptoNativeInvocation for ResourceManagerNonFungibleExistsInvocation {}
 
 impl Into<NativeFnInvocation> for ResourceManagerNonFungibleExistsInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -332,8 +318,7 @@ impl SysInvocation for ResourceManagerGetNonFungibleInvocation {
     type Output = [Vec<u8>; 2];
 }
 
-impl ScryptoNativeInvocation for ResourceManagerGetNonFungibleInvocation {
-}
+impl ScryptoNativeInvocation for ResourceManagerGetNonFungibleInvocation {}
 
 impl Into<NativeFnInvocation> for ResourceManagerGetNonFungibleInvocation {
     fn into(self) -> NativeFnInvocation {

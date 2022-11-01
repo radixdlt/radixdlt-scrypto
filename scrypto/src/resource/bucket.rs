@@ -23,8 +23,7 @@ impl SysInvocation for BucketTakeInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for BucketTakeInvocation {
-}
+impl ScryptoNativeInvocation for BucketTakeInvocation {}
 
 impl Into<NativeFnInvocation> for BucketTakeInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -44,8 +43,7 @@ impl SysInvocation for BucketPutInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for BucketPutInvocation {
-}
+impl ScryptoNativeInvocation for BucketPutInvocation {}
 
 impl Into<NativeFnInvocation> for BucketPutInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -65,8 +63,7 @@ impl SysInvocation for BucketTakeNonFungiblesInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for BucketTakeNonFungiblesInvocation {
-}
+impl ScryptoNativeInvocation for BucketTakeNonFungiblesInvocation {}
 
 impl Into<NativeFnInvocation> for BucketTakeNonFungiblesInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -85,8 +82,7 @@ impl SysInvocation for BucketGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
 }
 
-impl ScryptoNativeInvocation for BucketGetNonFungibleIdsInvocation {
-}
+impl ScryptoNativeInvocation for BucketGetNonFungibleIdsInvocation {}
 
 impl Into<NativeFnInvocation> for BucketGetNonFungibleIdsInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -105,8 +101,7 @@ impl SysInvocation for BucketGetAmountInvocation {
     type Output = Decimal;
 }
 
-impl ScryptoNativeInvocation for BucketGetAmountInvocation {
-}
+impl ScryptoNativeInvocation for BucketGetAmountInvocation {}
 
 impl Into<NativeFnInvocation> for BucketGetAmountInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -125,8 +120,7 @@ impl SysInvocation for BucketGetResourceAddressInvocation {
     type Output = ResourceAddress;
 }
 
-impl ScryptoNativeInvocation for BucketGetResourceAddressInvocation {
-}
+impl ScryptoNativeInvocation for BucketGetResourceAddressInvocation {}
 
 impl Into<NativeFnInvocation> for BucketGetResourceAddressInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -145,8 +139,7 @@ impl SysInvocation for BucketCreateProofInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for BucketCreateProofInvocation {
-}
+impl ScryptoNativeInvocation for BucketCreateProofInvocation {}
 
 impl Into<NativeFnInvocation> for BucketCreateProofInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -161,68 +154,83 @@ impl Into<NativeFnInvocation> for BucketCreateProofInvocation {
 pub struct Bucket(pub BucketId);
 
 pub mod sys {
-    use sbor::*;
-    use sbor::rust::fmt::Debug;
-    use scrypto::engine::api::SysNativeInvokable;
+    use crate::resource::bucket::BucketCreateProofInvocation;
     use crate::resource::*;
+    use sbor::rust::fmt::Debug;
+    use sbor::*;
+    use scrypto::engine::api::SysNativeInvokable;
 
-    pub fn new<Y, E: Debug + TypeId + Decode> (
-        receiver: ResourceAddress,
-        sys_calls: &mut Y,
-    ) -> Result<Bucket, E>
+    impl Bucket {
+        pub fn sys_new<Y, E: Debug + TypeId + Decode>(
+            receiver: ResourceAddress,
+            sys_calls: &mut Y,
+        ) -> Result<Bucket, E>
         where
             Y: SysNativeInvokable<ResourceManagerCreateBucketInvocation, E>,
-    {
-        sys_calls.sys_invoke(ResourceManagerCreateBucketInvocation { receiver })
-    }
+        {
+            sys_calls.sys_invoke(ResourceManagerCreateBucketInvocation { receiver })
+        }
 
-    pub fn burn<Y, E: Debug + TypeId + Decode>(bucket: Bucket, sys_calls: &mut Y) -> Result<(), E>
+        pub fn sys_burn<Y, E: Debug + TypeId + Decode>(self, env: &mut Y) -> Result<(), E>
         where
-            Y: SysNativeInvokable<ResourceManagerBurnInvocation, E>,
-    {
-        let receiver = bucket.resource_address();
-        sys_calls.sys_invoke(ResourceManagerBurnInvocation {
-            receiver,
-            bucket,
-        })
-    }
+            Y: SysNativeInvokable<ResourceManagerBurnInvocation, E>
+                + SysNativeInvokable<BucketGetResourceAddressInvocation, E>,
+        {
+            let receiver = self.sys_resource_address(env)?;
+            env.sys_invoke(ResourceManagerBurnInvocation {
+                receiver,
+                bucket: self,
+            })
+        }
 
-    pub fn create_proof<Y, E: Debug + TypeId + Decode>(
-        receiver: &Bucket,
-        sys_calls: &mut Y,
-    ) -> Result<Proof, E>
+        pub fn sys_resource_address<Y, E: Debug + TypeId + Decode>(
+            &self,
+            env: &mut Y,
+        ) -> Result<ResourceAddress, E>
+        where
+            Y: SysNativeInvokable<BucketGetResourceAddressInvocation, E>,
+        {
+            env.sys_invoke(BucketGetResourceAddressInvocation { receiver: self.0 })
+        }
+
+        pub fn sys_create_proof<Y, E: Debug + TypeId + Decode>(
+            &self,
+            sys_calls: &mut Y,
+        ) -> Result<Proof, E>
         where
             Y: SysNativeInvokable<BucketCreateProofInvocation, E>,
-    {
-        sys_calls.sys_invoke(BucketCreateProofInvocation { receiver: receiver.0 })
+        {
+            sys_calls.sys_invoke(BucketCreateProofInvocation { receiver: self.0 })
+        }
     }
-
 }
 
 #[cfg(target_arch = "wasm32")]
 pub mod scr {
     use crate::engine::scrypto_env::ScryptoEnv;
     use crate::resource::*;
-    use super::sys;
 
     impl Bucket {
         /// Creates a new bucket to hold resources of the given definition.
         pub fn new(resource_address: ResourceAddress) -> Self {
-            sys::new(resource_address, &mut ScryptoEnv).unwrap()
+            Self::sys_new(resource_address, &mut ScryptoEnv).unwrap()
         }
 
         pub fn burn(self) {
-            sys::burn(self, &mut ScryptoEnv).unwrap()
+            self.sys_burn(&mut ScryptoEnv).unwrap()
         }
 
         pub fn create_proof(&self) -> Proof {
-            sys::create_proof(self, &mut ScryptoEnv).unwrap()
+            self.sys_create_proof(&mut ScryptoEnv).unwrap()
+        }
+
+        pub fn resource_address(&self) -> ResourceAddress {
+            self.sys_resource_address(&mut ScryptoEnv).unwrap()
         }
     }
 }
 
 impl Bucket {
-
     native_fn! {
         fn take_internal(&mut self, amount: Decimal) -> Self {
             BucketTakeInvocation {
@@ -250,11 +258,6 @@ impl Bucket {
         }
         pub fn amount(&self) -> Decimal {
             BucketGetAmountInvocation {
-                receiver: self.0,
-            }
-        }
-        pub fn resource_address(&self) -> ResourceAddress {
-            BucketGetResourceAddressInvocation {
                 receiver: self.0,
             }
         }
@@ -291,6 +294,7 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
+    #[cfg(target_arch = "wasm32")]
     pub fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
         let resource_address = self.resource_address();
         self.non_fungible_ids()
@@ -303,6 +307,7 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not a singleton bucket
+    #[cfg(target_arch = "wasm32")]
     pub fn non_fungible_id(&self) -> NonFungibleId {
         let non_fungible_ids = self.non_fungible_ids();
         if non_fungible_ids.len() != 1 {
@@ -315,6 +320,7 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not a singleton bucket
+    #[cfg(target_arch = "wasm32")]
     pub fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T> {
         let non_fungibles = self.non_fungibles();
         if non_fungibles.len() != 1 {

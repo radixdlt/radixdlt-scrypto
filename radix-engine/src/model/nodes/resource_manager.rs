@@ -10,7 +10,6 @@ use crate::model::{
 use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
 use scrypto::engine::api::SysInvokableNative;
-use scrypto::resource::sys::burn;
 use scrypto::resource::ResourceManagerBucketBurnInvocation;
 
 /// Represents an error when accessing a bucket.
@@ -36,17 +35,14 @@ pub enum ResourceManagerError {
 impl NativeExecutable for ResourceManagerBucketBurnInvocation {
     type NativeOutput = ();
 
-    fn execute<'a, Y>(
-        invocation: Self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(invocation: Self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
             + InvokableNative<'a>
             + SysInvokableNative<RuntimeError>,
     {
-        burn(invocation.bucket, system_api)?;
+        invocation.bucket.sys_burn(env)?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
