@@ -1,55 +1,48 @@
 use scrypto::engine::api::SysInvokableNative;
 use crate::engine::errors::KernelError;
 use crate::engine::*;
-use crate::model::{
-    TransactionProcessorRunInvocation
-};
 use crate::types::*;
-use scrypto::resource::AuthZoneDrainInvocation;
+use scrypto::resource::{AuthZoneDrainInvocation, ResourceManagerBucketBurnInvocation};
 
 // TODO: Cleanup
-pub fn parse_and_invoke_native_function<'y, 'a, Y>(
+pub fn parse_and_invoke_native_function<Y>(
     native_function: NativeFunction,
     args: Vec<u8>,
-    system_api: &'y mut Y,
+    system_api: &mut Y,
 ) -> Result<ScryptoValue, RuntimeError>
 where
-    Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
+    Y: SysInvokableNative<RuntimeError>,
 {
     match native_function {
         NativeFunction::EpochManager(EpochManagerFunction::Create) => {
             let invocation: EpochManagerCreateInvocation = scrypto_decode(&args)
                 .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
             system_api
-                .invoke(invocation)
+                .sys_invoke(invocation)
                 .map(|a| ScryptoValue::from_typed(&a))
         }
         NativeFunction::ResourceManager(ResourceManagerFunction::BurnBucket) => {
-            let invocation: ResourceManagerBurnInvocation = scrypto_decode(&args)
+            let invocation: ResourceManagerBucketBurnInvocation = scrypto_decode(&args)
                 .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
             system_api
-                .invoke(invocation)
+                .sys_invoke(invocation)
                 .map(|a| ScryptoValue::from_typed(&a))
         }
         NativeFunction::ResourceManager(ResourceManagerFunction::Create) => {
             let invocation: ResourceManagerCreateInvocation = scrypto_decode(&args)
                 .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
             system_api
-                .invoke(invocation)
+                .sys_invoke(invocation)
                 .map(|a| ScryptoValue::from_typed(&a))
         }
         NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run) => {
-            let invocation: TransactionProcessorRunInvocation = scrypto_decode(&args)
-                .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-            system_api
-                .invoke(invocation)
-                .map(|a| ScryptoValue::from_typed(&a))
+            return Err(RuntimeError::InterpreterError(InterpreterError::InvalidInvocation));
         }
         NativeFunction::Package(PackageFunction::Publish) => {
             let invocation: PackagePublishInvocation = scrypto_decode(&args)
                 .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
             system_api
-                .invoke(invocation)
+                .sys_invoke(invocation)
                 .map(|a| ScryptoValue::from_typed(&a))
         }
     }

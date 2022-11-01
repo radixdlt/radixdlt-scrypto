@@ -4,7 +4,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode};
 use scrypto::core::*;
-use crate::component::ComponentAddAccessCheckInvocation;
+use crate::component::{ComponentAddAccessCheckInvocation, PackagePublishInvocation};
 use crate::crypto::Hash;
 
 use super::types::*;
@@ -63,8 +63,6 @@ pub trait SysInvokableNative<E>:
     + SysInvokable<BucketGetAmountInvocation, E>
     + SysInvokable<BucketGetResourceAddressInvocation, E>
     + SysInvokable<BucketCreateProofInvocation, E>
-    + SysInvokable<ResourceManagerCreateBucketInvocation, E>
-    + SysInvokable<ResourceManagerBurnInvocation, E>
     + SysInvokable<BucketCreateProofInvocation, E>
     + SysInvokable<ProofCloneInvocation, E>
     + SysInvokable<ProofGetAmountInvocation, E>
@@ -80,6 +78,8 @@ pub trait SysInvokableNative<E>:
     + SysInvokable<VaultCreateProofInvocation, E>
     + SysInvokable<VaultCreateProofByAmountInvocation, E>
     + SysInvokable<VaultCreateProofByIdsInvocation, E>
+    + SysInvokable<ResourceManagerCreateInvocation, E>
+    + SysInvokable<ResourceManagerBucketBurnInvocation, E>
     + SysInvokable<ResourceManagerBurnInvocation, E>
     + SysInvokable<ResourceManagerUpdateAuthInvocation, E>
     + SysInvokable<ResourceManagerLockAuthInvocation, E>
@@ -94,6 +94,7 @@ pub trait SysInvokableNative<E>:
     + SysInvokable<ResourceManagerNonFungibleExistsInvocation, E>
     + SysInvokable<ResourceManagerGetNonFungibleInvocation, E>
     + SysInvokable<ResourceManagerSetResourceAddressInvocation, E>
+    + SysInvokable<EpochManagerCreateInvocation, E>
     + SysInvokable<EpochManagerSetEpochInvocation, E>
     + SysInvokable<EpochManagerGetCurrentEpochInvocation, E>
     + SysInvokable<WorktopPutInvocation, E>
@@ -104,5 +105,6 @@ pub trait SysInvokableNative<E>:
     + SysInvokable<WorktopAssertContainsAmountInvocation, E>
     + SysInvokable<WorktopAssertContainsNonFungiblesInvocation, E>
     + SysInvokable<WorktopDrainInvocation, E>
+    + SysInvokable<PackagePublishInvocation, E>
 {
 }

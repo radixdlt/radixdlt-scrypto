@@ -14,6 +14,13 @@ use crate::values::ScryptoValue;
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {}
 
+impl SysInvocation for EpochManagerCreateInvocation {
+    type Output = SystemAddress;
+    fn native_fn() -> NativeFn {
+        NativeFn::Function(NativeFunction::EpochManager(EpochManagerFunction::Create))
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerGetCurrentEpochInvocation {
     pub receiver: SystemAddress,

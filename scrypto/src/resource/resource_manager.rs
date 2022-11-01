@@ -39,9 +39,23 @@ pub struct ResourceManagerCreateInvocation {
     pub mint_params: Option<MintParams>,
 }
 
+impl SysInvocation for ResourceManagerCreateInvocation {
+    type Output = (ResourceAddress, Option<Bucket>);
+    fn native_fn() -> NativeFn {
+        NativeFn::Function(NativeFunction::ResourceManager(ResourceManagerFunction::Create))
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerBucketBurnInvocation {
     pub bucket: Bucket,
+}
+
+impl SysInvocation for ResourceManagerBucketBurnInvocation {
+    type Output = ();
+    fn native_fn() -> NativeFn {
+        NativeFn::Function(NativeFunction::ResourceManager(ResourceManagerFunction::BurnBucket))
+    }
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

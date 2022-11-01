@@ -2,16 +2,26 @@ use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::engine::api::SysInvocation;
+use scrypto::engine::types::PackageFunction;
 
 use crate::abi::*;
 use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
 use crate::core::*;
+use crate::engine::types::{NativeFn, NativeFunction};
 use crate::misc::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PackagePublishInvocation {
     pub code: Blob,
     pub abi: Blob,
+}
+
+impl SysInvocation for PackagePublishInvocation {
+    type Output = PackageAddress;
+    fn native_fn() -> NativeFn {
+        NativeFn::Function(NativeFunction::Package(PackageFunction::Publish))
+    }
 }
 
 /// A collection of blueprints, compiled and published as a single unit.

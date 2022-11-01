@@ -6,7 +6,7 @@ pub struct NativeInterpreter;
 use sbor::rust::fmt::Debug;
 use sbor::*;
 use scrypto::engine::api::{ScryptoSyscalls, SysInvokableNative};
-use scrypto::resource::AuthZoneDrainInvocation;
+use scrypto::resource::{AuthZoneDrainInvocation};
 use scrypto::resource::ResourceManagerBucketBurnInvocation;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
