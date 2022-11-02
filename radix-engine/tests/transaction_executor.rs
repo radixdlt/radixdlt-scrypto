@@ -143,11 +143,10 @@ fn test_normal_transaction_flow() {
     })
     .to_bytes();
 
-    let transaction =
-        NotarizedTransactionValidator::check_length_and_decode_from_slice(&raw_transaction)
-            .expect("Invalid transaction");
-
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+    let transaction = validator
+        .check_length_and_decode_from_slice(&raw_transaction)
+        .expect("Invalid transaction");
 
     let executable = validator
         .validate(&transaction, &intent_hash_manager)
