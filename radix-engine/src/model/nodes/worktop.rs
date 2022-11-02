@@ -4,39 +4,46 @@ use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct WorktopPutInput {
     pub bucket: scrypto::resource::Bucket,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct WorktopTakeAmountInput {
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct WorktopTakeNonFungiblesInput {
     pub ids: BTreeSet<NonFungibleId>,
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct WorktopTakeAllInput {
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct WorktopAssertContainsInput {
     pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct WorktopAssertContainsAmountInput {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct WorktopAssertContainsNonFungiblesInput {
     pub resource_address: ResourceAddress,
     pub ids: BTreeSet<NonFungibleId>,
@@ -46,6 +53,7 @@ pub struct WorktopAssertContainsNonFungiblesInput {
 pub struct WorktopDrainInput {}
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum WorktopError {
     InvalidRequestData(DecodeError),
     MethodNotFound(String),

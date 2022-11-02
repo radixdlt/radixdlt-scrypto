@@ -13,8 +13,8 @@ pub use sbor::rust::string::String;
 pub use sbor::rust::string::ToString;
 pub use sbor::rust::vec;
 pub use sbor::rust::vec::Vec;
-pub use sbor::{Decode, DecodeError, Encode, TypeId, Value};
-pub use scrypto::abi::{BlueprintAbi, Fields, Fn, ScryptoTypeId, Type, Variant};
+pub use sbor::{Decode, DecodeError, Encode, SborValue, TypeId};
+pub use scrypto::abi::{BlueprintAbi, Fields, Fn, Type, Variant};
 pub use scrypto::address::{AddressError, Bech32Decoder, Bech32Encoder};
 pub use scrypto::component::{
     ComponentAddAccessCheckInput, ComponentAddress, PackageAddress, PackagePublishInput,
@@ -49,6 +49,7 @@ pub use scrypto::resource::{
     VaultGetAmountInput, VaultGetNonFungibleIdsInput, VaultGetResourceAddressInput,
     VaultLockFeeInput, VaultPutInput, VaultTakeInput, VaultTakeNonFungiblesInput, LOCKED, MUTABLE,
 };
+pub use scrypto::values::*;
 pub use scrypto::values::{ScryptoValue, ScryptoValueReplaceError};
 
 // methods and macros

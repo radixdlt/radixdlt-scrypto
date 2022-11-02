@@ -2,6 +2,7 @@ use crate::model::Resource;
 use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct FeeSummary {
     /// Whether the system loan is fully repaid
     pub loan_fully_repaid: bool,

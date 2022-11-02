@@ -126,7 +126,13 @@ macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
         let mut fields = Vec::new();
         for arg in $args {
-            fields.push(::sbor::decode_any(&arg).unwrap());
+            fields.push(
+                ::sbor::decode_any::<
+                    ::scrypto::values::ScryptoCustomTypeId,
+                    ::scrypto::values::ScryptoCustomValue,
+                >(&arg)
+                .unwrap(),
+            );
         }
         let input_struct = ::sbor::SborValue::Struct { fields };
         ::sbor::encode_any(&input_struct)

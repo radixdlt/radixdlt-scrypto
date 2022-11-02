@@ -17,11 +17,13 @@ use crate::model::{
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct TransactionProcessorRunInput<'a> {
     pub instructions: Cow<'a, Vec<Instruction>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum TransactionProcessorError {
     InvalidRequestData(DecodeError),
     InvalidMethod,
@@ -145,7 +147,7 @@ impl TransactionProcessor {
         }
 
         Ok(ScryptoValue::from_value(value)
-            .expect("Value became invalid post expression transformation"))
+            .expect("SborValue became invalid post expression transformation"))
     }
 
     fn first_bucket(value: &ScryptoValue) -> BucketId {

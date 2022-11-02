@@ -4,6 +4,7 @@ use crate::model::{NonFungible, Resource, ResourceManagerError};
 use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct ResourceManagerSubstate {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
@@ -208,6 +209,7 @@ pub enum ResourceMethodRule {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct MethodAccessRule {
     pub auth: MethodAuthorization,
     pub update_auth: MethodAuthorization,

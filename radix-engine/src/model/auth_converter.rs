@@ -1,3 +1,5 @@
+use sbor::SborTypeId;
+
 use crate::model::method_authorization::{
     HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
     HardResourceOrNonFungible,
@@ -15,18 +17,10 @@ fn soft_to_hard_decimal(
         SoftDecimal::Dynamic(schema_path) => {
             if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
                 match sbor_path.get_from_value(&value.dom) {
-                    Some(Value::Custom { type_id, bytes }) => {
-                        match ScryptoTypeId::from_id(*type_id)
-                            .expect("ScryptoValue contains invalid SBOR type ID")
-                        {
-                            ScryptoTypeId::Decimal => {
-                                HardDecimal::Amount(Decimal::try_from(bytes.as_slice()).expect(
-                                    "ScryptoValue contains mismatching SBOR type ID and value",
-                                ))
-                            }
-                            _ => HardDecimal::SoftDecimalNotFound,
-                        }
-                    }
+                    Some(SborValue::Custom { value }) => match value {
+                        ScryptoCustomValue::Decimal(v) => HardDecimal::Amount(v.clone()),
+                        _ => HardDecimal::SoftDecimalNotFound,
+                    },
                     _ => HardDecimal::SoftDecimalNotFound,
                 }
             } else {
@@ -42,7 +36,7 @@ fn soft_to_hard_count(schema: &Type, soft_count: &SoftCount, value: &ScryptoValu
         SoftCount::Dynamic(schema_path) => {
             if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
                 match sbor_path.get_from_value(&value.dom) {
-                    Some(Value::U8 { value }) => HardCount::Count(value.clone()),
+                    Some(SborValue::U8 { value }) => HardCount::Count(value.clone()),
                     _ => HardCount::SoftCountNotFound,
                 }
             } else {
@@ -69,36 +63,42 @@ fn soft_to_hard_resource_list(
         SoftResourceOrNonFungibleList::Dynamic(schema_path) => {
             if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
                 match sbor_path.get_from_value(&value.dom) {
-                    Some(Value::Array {
+                    Some(SborValue::Array {
                         element_type_id,
                         elements,
-                    }) => match ScryptoTypeId::from_id(*element_type_id).expect("ScryptoValue contains invalid SBOR type ID") {
-                        ScryptoTypeId::ResourceAddress => HardProofRuleResourceList::List(
-                            elements
-                                .iter()
-                                .map(|v| {
-                                    if let Value::Custom { bytes, .. } = v {
-                                        return ResourceAddress::try_from(bytes.as_slice())
-                                            .expect("ScryptoValue contains mismatching SBOR type ID and value")
-                                            .into();
-                                    }
-                                    panic!("Unexpected type");
-                                })
-                                .collect(),
-                        ),
-                        ScryptoTypeId::NonFungibleAddress => HardProofRuleResourceList::List(
-                            elements
-                                .iter()
-                                .map(|v| {
-                                    if let Value::Custom { bytes, .. } = v {
-                                        return NonFungibleAddress::try_from(bytes.as_slice())
-                                            .expect("ScryptoValue contains mismatching SBOR type ID and value")
-                                            .into();
-                                    }
-                                    panic!("Unexpected type");
-                                })
-                                .collect(),
-                        ),
+                    }) => match element_type_id {
+                        SborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress) => {
+                            HardProofRuleResourceList::List(
+                                elements
+                                    .iter()
+                                    .map(|v| {
+                                        if let SborValue::Custom {
+                                            value: ScryptoCustomValue::ResourceAddress(address),
+                                        } = v
+                                        {
+                                            return address.clone().into();
+                                        }
+                                        panic!("Unexpected type");
+                                    })
+                                    .collect(),
+                            )
+                        }
+                        SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress) => {
+                            HardProofRuleResourceList::List(
+                                elements
+                                    .iter()
+                                    .map(|v| {
+                                        if let SborValue::Custom {
+                                            value: ScryptoCustomValue::NonFungibleAddress(address),
+                                        } = v
+                                        {
+                                            return address.clone().into();
+                                        }
+                                        panic!("Unexpected type");
+                                    })
+                                    .collect(),
+                            )
+                        }
                         _ => HardProofRuleResourceList::SoftResourceListNotFound,
                     },
                     _ => HardProofRuleResourceList::SoftResourceListNotFound,
@@ -119,20 +119,10 @@ fn soft_to_hard_resource(
         SoftResource::Dynamic(schema_path) => {
             if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
                 match sbor_path.get_from_value(&value.dom) {
-                    Some(Value::Custom { type_id, bytes }) => {
-                        match ScryptoTypeId::from_id(*type_id)
-                            .expect("ScryptoValue contains invalid SBOR type ID")
-                        {
-                            ScryptoTypeId::ResourceAddress => {
-                                ResourceAddress::try_from(bytes.as_slice())
-                                    .expect(
-                                        "ScryptoValue contains mismatching SBOR type ID and value",
-                                    )
-                                    .into()
-                            }
-                            _ => HardResourceOrNonFungible::SoftResourceNotFound,
-                        }
-                    }
+                    Some(SborValue::Custom { value }) => match value {
+                        ScryptoCustomValue::ResourceAddress(address) => address.clone().into(),
+                        _ => HardResourceOrNonFungible::SoftResourceNotFound,
+                    },
                     _ => HardResourceOrNonFungible::SoftResourceNotFound,
                 }
             } else {
@@ -154,27 +144,11 @@ fn soft_to_hard_resource_or_non_fungible(
         SoftResourceOrNonFungible::Dynamic(schema_path) => {
             if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
                 match sbor_path.get_from_value(&value.dom) {
-                    Some(Value::Custom { type_id, bytes }) => {
-                        match ScryptoTypeId::from_id(*type_id)
-                            .expect("ScryptoValue contains invalid SBOR type ID")
-                        {
-                            ScryptoTypeId::ResourceAddress => {
-                                ResourceAddress::try_from(bytes.as_slice())
-                                    .expect(
-                                        "ScryptoValue contains mismatching SBOR type ID and value",
-                                    )
-                                    .into()
-                            }
-                            ScryptoTypeId::NonFungibleAddress => {
-                                NonFungibleAddress::try_from(bytes.as_slice())
-                                    .expect(
-                                        "ScryptoValue contains mismatching SBOR type ID and value",
-                                    )
-                                    .into()
-                            }
-                            _ => HardResourceOrNonFungible::SoftResourceNotFound,
-                        }
-                    }
+                    Some(SborValue::Custom { value }) => match value {
+                        ScryptoCustomValue::ResourceAddress(address) => address.clone().into(),
+                        ScryptoCustomValue::NonFungibleAddress(address) => address.clone().into(),
+                        _ => HardResourceOrNonFungible::SoftResourceNotFound,
+                    },
                     _ => HardResourceOrNonFungible::SoftResourceNotFound,
                 }
             } else {

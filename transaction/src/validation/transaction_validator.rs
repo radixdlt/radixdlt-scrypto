@@ -12,7 +12,7 @@ use crate::validation::*;
 
 pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
 
-pub trait TransactionValidator<T: Decode> {
+pub trait TransactionValidator<T: Decode<ScryptoCustomTypeId>> {
     fn validate_from_slice<I: IntentHashManager>(
         &self,
         transaction: &[u8],
@@ -218,7 +218,7 @@ impl NotarizedTransactionValidator {
                 | Instruction::CallMethod { args, .. }
                 | Instruction::CallNativeFunction { args, .. }
                 | Instruction::CallNativeMethod { args, .. } => {
-                    // TODO: decode into Value
+                    // TODO: decode into SborValue
                     Self::validate_call_data(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
@@ -313,7 +313,7 @@ impl NotarizedTransactionValidator {
         id_validator: &mut IdValidator,
     ) -> Result<(), CallDataValidationError> {
         let value =
-            ScryptoValue::from_slice(call_data).map_err(CallDataValidationError::DecodeError)?;
+            ScryptoValue::from_slice(call_data).map_err(CallDataValidationError::InvalidValue)?;
         id_validator
             .move_resources(&value)
             .map_err(CallDataValidationError::IdValidationError)?;

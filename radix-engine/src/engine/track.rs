@@ -65,6 +65,7 @@ pub struct Track<'s, R: FeeReserve> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum TrackError {
     NotFound(SubstateId),
     SubstateLocked(SubstateId, LockState),

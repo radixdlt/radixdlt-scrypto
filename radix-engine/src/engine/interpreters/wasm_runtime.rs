@@ -51,7 +51,7 @@ where
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+            .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
         self.system_api
             .invoke_scrypto(ScryptoInvocation::Function(fn_ident, args))
     }
@@ -62,7 +62,7 @@ where
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+            .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
         self.system_api
             .invoke_scrypto(ScryptoInvocation::Method(fn_ident, args))
     }
@@ -73,7 +73,7 @@ where
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+            .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
 
         self.system_api
             .invoke_native(NativeInvocation::Function(native_function, args))
@@ -86,7 +86,7 @@ where
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let args = ScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+            .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
 
         self.system_api
             .invoke_native(NativeInvocation::Method(native_method, receiver, args))
@@ -204,7 +204,7 @@ where
     }
 }
 
-fn encode<T: Encode>(output: T) -> ScryptoValue {
+fn encode<T: Encode<ScryptoCustomTypeId>>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 

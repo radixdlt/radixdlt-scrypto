@@ -9,11 +9,12 @@ use crate::buffer::*;
 use crate::component::*;
 use crate::core::*;
 use crate::engine::types::*;
+use crate::misc::ContextualDisplay;
 use crate::resource::*;
 use crate::values::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ScryptoValueCreationError {
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+pub enum ScryptoValueDecodeError {
     DecodeError(DecodeError),
     ValueIndexingError(ValueIndexingError),
 }
@@ -57,18 +58,18 @@ impl ScryptoValue {
         Self::from_slice(&bytes).expect("Failed to convert trusted value into ScryptoValue")
     }
 
-    pub fn from_slice(slice: &[u8]) -> Result<Self, ScryptoValueCreationError> {
-        let value = decode_any(slice).map_err(ScryptoValueCreationError::DecodeError)?;
+    pub fn from_slice(slice: &[u8]) -> Result<Self, ScryptoValueDecodeError> {
+        let value = decode_any(slice).map_err(ScryptoValueDecodeError::DecodeError)?;
         Self::from_value(value)
     }
 
     pub fn from_value(
         value: SborValue<ScryptoCustomTypeId, ScryptoCustomValue>,
-    ) -> Result<Self, ScryptoValueCreationError> {
+    ) -> Result<Self, ScryptoValueDecodeError> {
         let mut visitor = ScryptoCustomValueVisitor::new();
         let index_result = traverse_any(&mut SborPathBuf::new(), &value, &mut visitor);
         if let Err(error) = index_result {
-            return Err(ScryptoValueCreationError::ValueIndexingError(error));
+            return Err(ScryptoValueDecodeError::ValueIndexingError(error));
         }
 
         Ok(Self {
@@ -184,7 +185,19 @@ impl ScryptoValue {
 
 impl fmt::Debug for ScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        format_value(f, &self.dom, &ValueFormatContext::no_context())
+        format_scrypto_value(f, &self.dom, &ScryptoValueFormatterContext::no_context())
+    }
+}
+
+impl<'a> ContextualDisplay<ScryptoValueFormatterContext<'a>> for ScryptoValue {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &ScryptoValueFormatterContext<'a>,
+    ) -> Result<(), Self::Error> {
+        format_scrypto_value(f, &self.dom, context)
     }
 }
 
@@ -207,7 +220,7 @@ pub struct ScryptoCustomValueVisitor {
     pub non_fungible_addresses: HashSet<NonFungibleAddress>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ValueIndexingError {
     DuplicateOwnership,
 }
@@ -329,7 +342,7 @@ mod tests {
         ]);
         assert_eq!(
             ScryptoValue::from_slice(&buckets),
-            Err(ScryptoValueCreationError::ValueIndexingError(
+            Err(ScryptoValueDecodeError::ValueIndexingError(
                 ValueIndexingError::DuplicateOwnership
             ))
         );

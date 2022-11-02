@@ -4,6 +4,7 @@ use crate::model::*;
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
     pub component_id: ComponentId, // TODO: support non component actor

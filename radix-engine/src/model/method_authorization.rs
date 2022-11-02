@@ -7,6 +7,7 @@ pub enum MethodAuthorizationError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum HardDecimal {
     Amount(Decimal),
     SoftDecimalNotFound,
@@ -19,6 +20,7 @@ pub enum HardCount {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum HardResourceOrNonFungible {
     NonFungible(NonFungibleAddress),
     Resource(ResourceAddress),
@@ -38,12 +40,14 @@ impl From<ResourceAddress> for HardResourceOrNonFungible {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum HardProofRuleResourceList {
     List(Vec<HardResourceOrNonFungible>),
     SoftResourceListNotFound,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum HardProofRule {
     Require(HardResourceOrNonFungible),
     AmountOf(HardDecimal, HardResourceOrNonFungible),
@@ -53,6 +57,7 @@ pub enum HardProofRule {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum HardAuthRule {
     ProofRule(HardProofRule),
     AnyOf(Vec<HardAuthRule>),
@@ -61,6 +66,7 @@ pub enum HardAuthRule {
 
 /// Authorization of a method call
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum MethodAuthorization {
     Protected(HardAuthRule),
     AllowAll,

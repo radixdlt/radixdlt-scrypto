@@ -5,8 +5,10 @@ use scrypto::core::Blob;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{NonFungibleId, ResourceAddress};
+use scrypto::values::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum Instruction {
     /// Takes resource from worktop.
     TakeFromWorktop { resource_address: ResourceAddress },

@@ -1,10 +1,9 @@
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
-use sbor::{encode_any, Value};
+use sbor::{encode_any, SborValue};
 use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::NetworkDefinition;
-use scrypto::crypto::Hash;
 use scrypto::engine::types::*;
 use scrypto::misc::ContextualDisplay;
 use scrypto::resource::{
@@ -469,7 +468,7 @@ pub fn format_args<F: fmt::Write>(
     args: &Vec<u8>,
 ) -> Result<(), DecompileError> {
     let value = ScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
-    if let Value::Struct { fields } = value.dom {
+    if let SborValue::Struct { fields } = value.dom {
         for field in fields {
             let bytes = encode_any(&field);
             let arg =
@@ -520,10 +519,8 @@ fn format_node_id(node_id: &RENodeId, context: &mut DecompilationContext) -> Str
     }
 }
 
-fn format_id(id: &(Hash, u32)) -> String {
-    let mut buf = id.0.to_vec();
-    buf.extend(id.1.to_le_bytes());
-    hex::encode(buf)
+fn format_id(id: &[u8; 36]) -> String {
+    hex::encode(id)
 }
 
 #[cfg(test)]
@@ -539,6 +536,7 @@ mod tests {
     use scrypto::resource::ResourceType;
 
     #[derive(TypeId, Encode, Decode)]
+    #[custom_type_id(ScryptoCustomTypeId)]
     struct BadResourceManagerCreateInput {
         pub resource_type: ResourceType,
         pub metadata: HashMap<String, String>,

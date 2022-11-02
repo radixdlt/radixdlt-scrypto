@@ -5,6 +5,7 @@ use crate::model::*;
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum ExportError {
     ComponentNotFound(ComponentAddress),
     PackageNotFound(PackageAddress),

@@ -13,6 +13,7 @@ impl ComponentStateSubstate {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct ComponentInfoSubstate {
     pub package_address: PackageAddress,
     pub blueprint_name: String,

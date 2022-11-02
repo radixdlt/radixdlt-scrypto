@@ -11,11 +11,13 @@ use crate::state_manager::StateDiff;
 use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct TransactionContents {
     pub instructions: Vec<Instruction>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
@@ -23,6 +25,7 @@ pub struct TransactionExecution {
 
 /// Captures whether a transaction should be committed, and its other results
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum TransactionResult {
     Commit(CommitResult),
     Reject(RejectResult),
@@ -38,6 +41,7 @@ impl TransactionResult {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct CommitResult {
     pub outcome: TransactionOutcome,
     pub state_updates: StateDiff,
@@ -47,6 +51,7 @@ pub struct CommitResult {
 
 /// Captures whether a transaction's commit outcome is Success or Failure
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum TransactionOutcome {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
@@ -69,6 +74,7 @@ impl TransactionOutcome {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
@@ -107,12 +113,14 @@ impl EntityChanges {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct RejectResult {
     pub error: RejectionError,
 }
 
 /// Represents a transaction receipt.
 #[derive(Clone, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct TransactionReceipt {
     pub contents: TransactionContents,
     pub execution: TransactionExecution, // THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
@@ -209,7 +217,7 @@ impl TransactionReceipt {
         }
     }
 
-    pub fn output<T: Decode>(&self, nth: usize) -> T {
+    pub fn output<T: Decode<ScryptoCustomTypeId>>(&self, nth: usize) -> T {
         scrypto_decode::<T>(&self.expect_commit_success()[nth][..])
             .expect("Wrong instruction output type!")
     }

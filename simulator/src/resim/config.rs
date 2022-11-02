@@ -9,6 +9,7 @@ use std::env;
 
 /// Simulator configurations.
 #[derive(Debug, Clone, TypeId, Encode, Decode, Default)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct Configs {
     pub default_account: Option<(ComponentAddress, String)>,
     pub nonce: u64,

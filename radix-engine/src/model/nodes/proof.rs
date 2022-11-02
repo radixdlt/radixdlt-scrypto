@@ -4,6 +4,7 @@ use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum ProofError {
     /// Error produced by a resource container.
     ResourceOperationError(ResourceOperationError),

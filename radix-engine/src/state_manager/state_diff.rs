@@ -3,6 +3,7 @@ use crate::state_manager::CommitReceipt;
 use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct StateDiff {
     pub up_substates: BTreeMap<SubstateId, OutputValue>,
     pub down_substates: Vec<OutputId>,

@@ -6,6 +6,7 @@ use crate::model::{
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum VaultError {
     InvalidRequestData(DecodeError),
     ResourceOperationError(ResourceOperationError),

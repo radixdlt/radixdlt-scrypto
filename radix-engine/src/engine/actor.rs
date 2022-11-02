@@ -3,6 +3,7 @@ use crate::types::*;
 /// Resolved receiver including info whether receiver was derefed
 /// or not
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct ResolvedReceiver {
     pub derefed_from: Option<RENodeId>,
     pub receiver: RENodeId,
@@ -25,6 +26,7 @@ impl ResolvedReceiver {
 }
 
 #[derive(Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum ResolvedFunction {
     Scrypto {
         package_address: PackageAddress,
@@ -39,6 +41,7 @@ pub enum ResolvedFunction {
 }
 
 #[derive(Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum ResolvedMethod {
     Scrypto {
         package_address: PackageAddress,
@@ -53,6 +56,7 @@ pub enum ResolvedMethod {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub enum REActor {
     Function(ResolvedFunction),
     Method(ResolvedMethod, ResolvedReceiver),

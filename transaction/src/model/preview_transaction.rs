@@ -1,6 +1,7 @@
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::{hash, Hash, PublicKey};
+use scrypto::values::*;
 
 use crate::model::TransactionIntent;
 
@@ -11,6 +12,7 @@ pub struct PreviewFlags {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[custom_type_id(ScryptoCustomTypeId)]
 pub struct PreviewIntent {
     pub intent: TransactionIntent,
     pub signer_public_keys: Vec<PublicKey>,
