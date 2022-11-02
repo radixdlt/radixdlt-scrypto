@@ -138,6 +138,6 @@ impl BucketSubstate {
 
     pub fn peek_resource(&self) -> Resource {
         let lockable_resource: &LockableResource = &self.borrow_resource();
-        lockable_resource.into()
+        lockable_resource.peek_resource()
     }
 }

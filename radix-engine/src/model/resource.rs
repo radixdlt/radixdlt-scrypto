@@ -569,10 +569,8 @@ impl LockableResource {
             Ok(())
         }
     }
-}
 
-impl Into<Resource> for &LockableResource {
-    fn into(self) -> Resource {
+    pub fn peek_resource(&self) -> Resource {
         match self {
             LockableResource::Fungible {
                 resource_address,

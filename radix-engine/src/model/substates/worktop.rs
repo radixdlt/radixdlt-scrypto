@@ -146,14 +146,4 @@ impl WorktopSubstate {
             .get(&resource_address)
             .map(|c| c.borrow_mut())
     }
-
-    pub fn peek_resources(&self) -> HashMap<ResourceAddress, Resource> {
-        self.resources
-            .iter()
-            .map(|(resource_address, lockable_resource)| {
-                let lockable_resource_ref: &LockableResource = &lockable_resource.borrow();
-                (resource_address.clone(), lockable_resource_ref.into())
-            })
-            .collect()
-    }
 }
