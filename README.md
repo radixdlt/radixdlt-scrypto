@@ -107,3 +107,5 @@ scrypto test
 ## Contribute
 
 To learn more about how to contribute to this project, read the [Contributing Guide](./CONTRIBUTING.md).
+
+## Test
