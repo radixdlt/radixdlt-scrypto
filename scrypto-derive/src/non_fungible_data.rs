@@ -174,7 +174,7 @@ mod tests {
     #[test]
     fn test_non_fungible() {
         let input = TokenStream::from_str(
-            "pub struct AwesomeNonFungibleData { pub field_1: u32, #[scrypto(mutable)] pub field_2: String, }",
+            "pub struct MyStruct { pub field_1: u32, #[scrypto(mutable)] pub field_2: String, }",
         )
         .unwrap();
         let output = handle_non_fungible_data(input).unwrap();
@@ -182,7 +182,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::scrypto::resource::NonFungibleData for AwesomeNonFungibleData {
+                impl ::scrypto::resource::NonFungibleData for MyStruct {
                     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{type_id::*, *};
                         let mut decoder_nm = Decoder::new(immutable_data);
@@ -223,7 +223,7 @@ mod tests {
                         use ::sbor::rust::vec;
                         use ::scrypto::abi::Describe;
                         ::scrypto::abi::Type::Struct {
-                            name: "AwesomeNonFungibleData".to_owned(),
+                            name: "MyStruct".to_owned(),
                             fields: ::scrypto::abi::Fields::Named {
                                 named: vec![("field_1".to_owned(), <u32>::describe())]
                             },
@@ -234,7 +234,7 @@ mod tests {
                         use ::sbor::rust::vec;
                         use ::scrypto::abi::Describe;
                         ::scrypto::abi::Type::Struct {
-                            name: "AwesomeNonFungibleData".to_owned(),
+                            name: "MyStruct".to_owned(),
                             fields: ::scrypto::abi::Fields::Named {
                                 named: vec![("field_2".to_owned(), <String>::describe())]
                             },
