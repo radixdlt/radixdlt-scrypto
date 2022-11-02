@@ -2,9 +2,8 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-
-#[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
     pub component_id: ComponentId, // TODO: support non component actor

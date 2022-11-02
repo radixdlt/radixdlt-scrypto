@@ -3,8 +3,8 @@ use crate::model::{convert, InvokeError, MethodAuthorization};
 use crate::model::{NonFungible, Resource, ResourceManagerError};
 use crate::types::*;
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerSubstate {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
@@ -208,8 +208,8 @@ pub enum ResourceMethodRule {
     Protected(ResourceMethodAuthKey),
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct MethodAccessRule {
     pub auth: MethodAuthorization,
     pub update_auth: MethodAuthorization,

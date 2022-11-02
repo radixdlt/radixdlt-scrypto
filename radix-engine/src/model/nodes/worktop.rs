@@ -3,47 +3,47 @@ use crate::fee::FeeReserve;
 use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopPutInput {
     pub bucket: scrypto::resource::Bucket,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopTakeAmountInput {
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopTakeNonFungiblesInput {
     pub ids: BTreeSet<NonFungibleId>,
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopTakeAllInput {
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopAssertContainsInput {
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopAssertContainsAmountInput {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopAssertContainsNonFungiblesInput {
     pub resource_address: ResourceAddress,
     pub ids: BTreeSet<NonFungibleId>,
@@ -52,8 +52,8 @@ pub struct WorktopAssertContainsNonFungiblesInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopDrainInput {}
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum WorktopError {
     InvalidRequestData(DecodeError),
     MethodNotFound(String),

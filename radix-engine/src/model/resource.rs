@@ -1,7 +1,7 @@
 use crate::types::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceOperationError {
     /// Resource addresses do not match.
     ResourceAddressNotMatching,
@@ -18,8 +18,8 @@ pub enum ResourceOperationError {
 }
 
 /// A raw record of resource persisted in the substate store
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum Resource {
     Fungible {
         /// The resource address.

@@ -14,8 +14,8 @@ use crate::types::ResourceMethodAuthKey::*;
 use crate::types::*;
 
 /// Represents an error when accessing a bucket.
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerError {
     InvalidDivisibility,
     InvalidAmount(Decimal, u8),

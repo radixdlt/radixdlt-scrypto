@@ -3,8 +3,8 @@ use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum AuthError {
     Unauthorized {
         actor: REActor,

@@ -4,8 +4,8 @@ use crate::model::{InvokeError, ProofError};
 use crate::types::*;
 use scrypto::resource::AuthZoneDrainInput;
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum AuthZoneError {
     EmptyAuthZone,
     ProofError(ProofError),

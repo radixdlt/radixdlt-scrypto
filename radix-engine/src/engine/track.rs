@@ -65,8 +65,8 @@ pub struct Track<'s, R: FeeReserve> {
     pub vault_ops: Vec<(REActor, VaultId, VaultOp)>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum TrackError {
     NotFound(SubstateId),
     SubstateLocked(SubstateId, LockState),

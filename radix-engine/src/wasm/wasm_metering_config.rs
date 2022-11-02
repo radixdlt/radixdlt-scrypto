@@ -1,8 +1,8 @@
 use super::InstructionCostRules;
 use crate::types::*;
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WasmMeteringConfig {
     params: WasmMeteringParams,
     hash: Hash,

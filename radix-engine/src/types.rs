@@ -58,6 +58,7 @@ pub use scrypto::crypto::hash;
 pub use scrypto::resource::{
     require, require_all_of, require_amount, require_any_of, require_n_of,
 };
+pub use scrypto::scrypto;
 pub use scrypto::{access_and_or, access_rule_node, args, dec, pdec, rule};
 
 pub enum Invocation {
