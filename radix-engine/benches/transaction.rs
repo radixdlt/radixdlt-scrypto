@@ -86,10 +86,9 @@ fn bench_transaction_validation(c: &mut Criterion) {
         b.iter(|| {
             let intent_hash_manager = TestIntentHashManager::new();
 
-            let transaction = NotarizedTransactionValidator::check_length_and_decode_from_slice(
-                &transaction_bytes,
-            )
-            .unwrap();
+            let transaction = validator
+                .check_length_and_decode_from_slice(&transaction_bytes)
+                .unwrap();
             validator
                 .validate(&transaction, &intent_hash_manager)
                 .unwrap();
