@@ -2,36 +2,36 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::data::*;
 use crate::engine::{api::*, types::*, utils::*};
 use crate::math::Decimal;
 use crate::native_methods;
 use crate::resource::*;
+use crate::scrypto;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZonePopInput {}
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZonePushInput {
     pub proof: Proof,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofInput {
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByAmountInput {
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByIdsInput {
     pub ids: BTreeSet<NonFungibleId>,
     pub resource_address: ResourceAddress,

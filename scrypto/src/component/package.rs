@@ -8,10 +8,11 @@ use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK
 use crate::core::*;
 use crate::data::*;
 use crate::misc::*;
+use crate::scrypto;
 use crate::scrypto_type;
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct PackagePublishInput {
     pub code: Blob,
     pub abi: Blob,

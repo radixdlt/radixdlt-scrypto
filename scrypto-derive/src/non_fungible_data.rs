@@ -136,7 +136,10 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
             }
         },
         Data::Enum(_) | Data::Union(_) => {
-            return Err(Error::new(Span::call_site(), "Union is not supported!"));
+            return Err(Error::new(
+                Span::call_site(),
+                "Enum or union can be used as non-fungible data presently!",
+            ));
         }
     };
 

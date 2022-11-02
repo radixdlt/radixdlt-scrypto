@@ -15,22 +15,23 @@ use crate::math::*;
 use crate::misc::*;
 use crate::native_methods;
 use crate::resource::*;
+use crate::scrypto;
 use crate::scrypto_type;
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultPutInput {
     pub bucket: Bucket,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultTakeInput {
     pub amount: Decimal,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultTakeNonFungiblesInput {
     pub non_fungible_ids: BTreeSet<NonFungibleId>,
 }
@@ -47,20 +48,20 @@ pub struct VaultGetNonFungibleIdsInput {}
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultCreateProofInput {}
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultCreateProofByAmountInput {
     pub amount: Decimal,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultCreateProofByIdsInput {
     pub ids: BTreeSet<NonFungibleId>,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(Describe, TypeId, Encode, Decode)]
 pub struct VaultLockFeeInput {
     pub amount: Decimal,
 }

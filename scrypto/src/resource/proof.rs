@@ -11,6 +11,7 @@ use crate::math::*;
 use crate::misc::*;
 use crate::native_methods;
 use crate::resource::*;
+use crate::scrypto;
 use crate::scrypto_type;
 
 #[derive(Debug, TypeId, Encode, Decode)]

@@ -10,6 +10,7 @@ use crate::core::*;
 use crate::crypto::*;
 use crate::data::*;
 use crate::engine::{api::*, types::*, utils::*};
+use crate::scrypto;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInput {}

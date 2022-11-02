@@ -355,8 +355,7 @@ macro_rules! external_blueprint {
         }
     ) => {
 
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-        #[custom_type_id(::scrypto::data::ScryptoCustomTypeId)]
+        #[scrypto(TypeId, Encode, Decode, Describe)]
         struct $blueprint_ident {
             package_address: ::scrypto::component::PackageAddress,
             blueprint_name: ::sbor::rust::string::String,
@@ -497,9 +496,7 @@ macro_rules! external_component {
             $($component_methods:tt)*
         }
     ) => {
-
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-        #[custom_type_id(::scrypto::data::ScryptoCustomTypeId)]
+        #[scrypto(TypeId, Encode, Decode, Describe)]
         struct $component_ident {
             component_address: ::scrypto::component::ComponentAddress,
         }

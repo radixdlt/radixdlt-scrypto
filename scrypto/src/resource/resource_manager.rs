@@ -13,6 +13,7 @@ use crate::math::*;
 use crate::misc::*;
 use crate::native_methods;
 use crate::resource::*;
+use crate::scrypto;
 use crate::scrypto_type;
 use crate::Describe;
 
@@ -28,15 +29,15 @@ pub enum ResourceMethodAuthKey {
     UpdateNonFungibleData,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum Mutability {
     LOCKED,
     MUTABLE(AccessRule),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateInput {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
@@ -44,14 +45,14 @@ pub struct ResourceManagerCreateInput {
     pub mint_params: Option<MintParams>,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerBurnInput {
     pub bucket: Bucket,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateAuthInput {
     pub method: ResourceMethodAuthKey,
     pub access_rule: AccessRule,
@@ -68,8 +69,8 @@ pub struct ResourceManagerCreateVaultInput {}
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateBucketInput {}
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerMintInput {
     pub mint_params: MintParams,
 }
@@ -88,27 +89,27 @@ pub struct ResourceManagerUpdateMetadataInput {
     pub metadata: HashMap<String, String>,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerSetResourceAddressInput {
     pub address: ResourceAddress,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateNonFungibleDataInput {
     pub id: NonFungibleId,
     pub data: Vec<u8>,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerNonFungibleExistsInput {
     pub id: NonFungibleId,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerGetNonFungibleInput {
     pub id: NonFungibleId,
 }

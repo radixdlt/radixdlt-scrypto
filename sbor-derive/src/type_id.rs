@@ -20,7 +20,7 @@ pub fn handle_type_id(input: TokenStream) -> Result<TokenStream> {
         data,
         generics,
         ..
-    } = parse2(input).expect("Unable to parse input");
+    } = parse2(input)?;
     let custom_type_id = custom_type_id(&attrs);
     let (impl_generics, ty_generics, where_clause, sbor_cti) =
         build_generics(&generics, custom_type_id)?;
