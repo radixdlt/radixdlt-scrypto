@@ -3,7 +3,7 @@ mod blueprint;
 mod describe;
 mod import;
 mod non_fungible_data;
-mod scrypto_data;
+mod scrypto;
 mod utils;
 
 use proc_macro::TokenStream;
@@ -136,22 +136,25 @@ pub fn non_fungible_data(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Derive code that encodes, decodes and describes the struct or enum, using Scrypto data and schema model.
+/// Attribute that derives code to encode, decode and/or describe the struct or enum, using Scrypto data and schema model.
 ///
 /// # Example
 ///
 /// ```ignore
 /// use scrypto::prelude::*;
 ///
-/// #[derive(ScryptoData)]
+/// #[scrypto(Encode, Decode, TypeId, Describe, NonFungibleData)]
 /// pub struct MyStruct {
 ///     pub field_1: u32,
 ///     pub field_2: String,
 /// }
 /// ```
-#[proc_macro_derive(ScryptoData)]
-pub fn scrypto_data(input: TokenStream) -> TokenStream {
-    scrypto_data::handle_scrypto_data(proc_macro2::TokenStream::from(input))
-        .unwrap_or_else(|err| err.to_compile_error())
-        .into()
+#[proc_macro_attribute]
+pub fn scrypto(attr: TokenStream, item: TokenStream) -> TokenStream {
+    scrypto::handle_scrypto(
+        proc_macro2::TokenStream::from(attr),
+        proc_macro2::TokenStream::from(item),
+    )
+    .unwrap_or_else(|err| err.to_compile_error())
+    .into()
 }

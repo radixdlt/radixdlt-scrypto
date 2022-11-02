@@ -2,6 +2,8 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::*;
 
+use crate::utils::is_mutable;
+
 macro_rules! trace {
     ($($arg:expr),*) => {{
         #[cfg(feature = "trace")]
@@ -9,25 +11,10 @@ macro_rules! trace {
     }};
 }
 
-fn is_mutable(f: &syn::Field) -> bool {
-    let mut mutable = false;
-    for att in &f.attrs {
-        if att.path.is_ident("scrypto")
-            && att
-                .parse_args::<syn::Path>()
-                .map(|p| p.is_ident("mutable"))
-                .unwrap_or(false)
-        {
-            mutable = true;
-        }
-    }
-    mutable
-}
-
 pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_non_fungible_data() starts");
 
-    let DeriveInput { ident, data, .. } = parse2(input).expect("Unable to parse input");
+    let DeriveInput { ident, data, .. } = parse2(input)?;
     let ident_str = ident.to_string();
     trace!("Processing: {}", ident_str);
 
