@@ -2,7 +2,6 @@ use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
 
-pub struct NativeInterpreter;
 use sbor::rust::fmt::Debug;
 use sbor::*;
 use scrypto::engine::api::{SysInvokableNative, Syscalls};
