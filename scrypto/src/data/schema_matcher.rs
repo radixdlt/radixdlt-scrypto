@@ -260,7 +260,7 @@ pub fn match_schema_with_value(
         }
         Type::PackageAddress => {
             if let SborValue::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::ComponentAddress(_))
+                matches!(value, ScryptoCustomValue::PackageAddress(_))
             } else {
                 false
             }

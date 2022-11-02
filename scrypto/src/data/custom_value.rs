@@ -119,9 +119,17 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
             ScryptoCustomValue::Bucket(v) => encoder.write_slice(&v.to_le_bytes()),
             ScryptoCustomValue::Proof(v) => encoder.write_slice(&v.to_le_bytes()),
             ScryptoCustomValue::Vault(v) => encoder.write_slice(v.as_slice()),
-            ScryptoCustomValue::Expression(v) => encoder.write_slice(&v.to_vec()),
+            ScryptoCustomValue::Expression(v) => {
+                let buf = v.to_vec();
+                encoder.write_size(buf.len());
+                encoder.write_slice(&buf)
+            }
             ScryptoCustomValue::Blob(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::NonFungibleAddress(v) => encoder.write_slice(&v.to_vec()),
+            ScryptoCustomValue::NonFungibleAddress(v) => {
+                let buf = v.to_vec();
+                encoder.write_size(buf.len());
+                encoder.write_slice(&buf)
+            }
             ScryptoCustomValue::Hash(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::EcdsaSecp256k1PublicKey(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::EcdsaSecp256k1Signature(v) => encoder.write_slice(&v.to_vec()),
@@ -129,7 +137,11 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
             ScryptoCustomValue::EddsaEd25519Signature(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::Decimal(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::PreciseDecimal(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::NonFungibleId(v) => encoder.write_slice(&v.to_vec()),
+            ScryptoCustomValue::NonFungibleId(v) => {
+                let buf = v.to_vec();
+                encoder.write_size(buf.len());
+                encoder.write_slice(&buf)
+            }
         }
     }
 

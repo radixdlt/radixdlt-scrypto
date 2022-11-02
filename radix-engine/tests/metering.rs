@@ -151,19 +151,19 @@ fn test_basic_transfer() {
         10000 /* base_fee */
         + 0 /* blobs */
         + 2000 /* create_node */
-        + 1284 /* decode_manifest */
+        + 1212 /* decode_manifest */
         + 5600 /* drop_lock */
         + 2000 /* drop_node */
         + 0 /* instantiate_wasm */
-        + 1230 /* invoke_native */
-        + 985 /* invoke_scrypto */
+        + 1150 /* invoke_native */
+        + 905 /* invoke_scrypto */
         + 7100 /* lock_substate */
         + 2100 /* read_owned_nodes */
         + 22000 /* read_substate */
         + 1000 /* run_native_function */
         + 2200 /* run_native_method */
-        + 343156 /* run_wasm */
-        + 428 /* verify_manifest */
+        + 357668 /* run_wasm */
+        + 404 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 17000, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed
@@ -196,7 +196,7 @@ fn test_publish_large_package() {
     receipt.expect_commit_success();
 
     // Assert
-    assert_eq!(4297189, receipt.execution.fee_summary.cost_unit_consumed);
+    assert_eq!(4299470, receipt.execution.fee_summary.cost_unit_consumed);
 }
 
 #[test]

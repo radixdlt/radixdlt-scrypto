@@ -60,7 +60,7 @@ impl NonFungibleAddress {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleAddressError {
     InvalidLength(usize),
-    InvalidResourceDefId,
+    InvalidResourceAddress,
     InvalidNonFungibleId,
     InvalidHex(String),
     InvalidPrefix,
@@ -90,7 +90,7 @@ impl TryFrom<&[u8]> for NonFungibleAddress {
 
         let (resource_address_slice, non_fungible_id_slice) = slice.split_at(27);
         let resource_address = ResourceAddress::try_from(resource_address_slice)
-            .map_err(|_| ParseNonFungibleAddressError::InvalidResourceDefId)?;
+            .map_err(|_| ParseNonFungibleAddressError::InvalidResourceAddress)?;
         let non_fungible_id = NonFungibleId::try_from(non_fungible_id_slice)
             .map_err(|_| ParseNonFungibleAddressError::InvalidNonFungibleId)?;
         Ok(NonFungibleAddress {
