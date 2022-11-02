@@ -779,9 +779,9 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    name: format!("{:?}", invocation),
-                    input_size: 0,  // TODO: Fix this
-                    value_count: 0, // TODO: Fix this
+                    name: format!("{:?}", invocation), // TODO: Better abstraction here
+                    input_size: 0,                     // TODO: Fix this
+                    value_count: 0,                    // TODO: Fix this
                     depth: self.current_frame.depth,
                 },
             )
@@ -805,7 +805,7 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::Invoke {
-                    rtn: format!("{:?}", rtn),
+                    rtn: format!("{:?}", rtn), // TODO: Better abstraction here
                 },
             )
             .map_err(RuntimeError::ModuleError)?;

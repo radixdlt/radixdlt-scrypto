@@ -51,7 +51,7 @@ impl<'b> NativeExecutable for TransactionProcessorRunInvocation<'b> {
     where
         Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
     {
-        TransactionProcessor::static_main(invocation, system_api)
+        TransactionProcessor::run(invocation, system_api)
             .map(|rtn| (rtn, CallFrameUpdate::empty()))
             .map_err(|e| e.into())
     }
@@ -220,7 +220,7 @@ impl TransactionProcessor {
         }
     }
 
-    pub fn static_main<'a, Y>(
+    pub fn run<'a, Y>(
         input: TransactionProcessorRunInvocation,
         system_api: &mut Y,
     ) -> Result<Vec<Vec<u8>>, InvokeError<TransactionProcessorError>>
