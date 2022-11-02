@@ -1,9 +1,11 @@
+use std::fmt::Debug;
 use std::mem;
 use transaction::errors::IdAllocationError;
-use transaction::model::{AuthZoneParams, Instruction};
+use transaction::model::AuthZoneParams;
 use transaction::validation::*;
 
 use crate::engine::call_frame::RENodeLocation;
+use crate::engine::system_api::Invokable;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
@@ -37,7 +39,7 @@ pub struct Kernel<
     /// The transaction hash
     transaction_hash: Hash,
     /// Blobs attached to the transaction
-    blobs: &'g HashMap<Hash, Vec<u8>>,
+    blobs: &'g HashMap<Hash, &'g [u8]>,
     /// ID allocator
     id_allocator: IdAllocator,
 
@@ -53,7 +55,7 @@ pub struct Kernel<
     track: &'g mut Track<'s, R>,
 
     /// Interpreter capable of running scrypto programs
-    scrypto_interpreter: &'g mut ScryptoInterpreter<I, W>,
+    scrypto_interpreter: &'g ScryptoInterpreter<I, W>,
 
     /// Kernel modules
     modules: Vec<Box<dyn Module<R>>>,
@@ -70,10 +72,10 @@ where
     pub fn new(
         transaction_hash: Hash,
         auth_zone_params: AuthZoneParams,
-        blobs: &'g HashMap<Hash, Vec<u8>>,
+        blobs: &'g HashMap<Hash, &'g [u8]>,
         max_depth: usize,
         track: &'g mut Track<'s, R>,
-        scrypto_interpreter: &'g mut ScryptoInterpreter<I, W>,
+        scrypto_interpreter: &'g ScryptoInterpreter<I, W>,
         modules: Vec<Box<dyn Module<R>>>,
     ) -> Self {
         let mut kernel = Self {
@@ -105,6 +107,35 @@ where
                 Ok(())
             })
             .expect("AuthModule failed to initialize");
+
+        kernel.current_frame.node_refs.insert(
+            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
+            RENodeLocation::Store,
+        );
+        kernel.current_frame.node_refs.insert(
+            RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)),
+            RENodeLocation::Store,
+        );
+        kernel.current_frame.node_refs.insert(
+            RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)),
+            RENodeLocation::Store,
+        );
+        kernel.current_frame.node_refs.insert(
+            RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)),
+            RENodeLocation::Store,
+        );
+        kernel.current_frame.node_refs.insert(
+            RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+            RENodeLocation::Store,
+        );
+        kernel.current_frame.node_refs.insert(
+            RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)),
+            RENodeLocation::Store,
+        );
+        kernel.current_frame.node_refs.insert(
+            RENodeId::Global(GlobalAddress::Package(SYS_FAUCET_PACKAGE)),
+            RENodeLocation::Store,
+        );
 
         kernel
     }
@@ -268,7 +299,7 @@ where
                 };
 
                 let access_rule = rule!(require(non_fungible_address));
-                let result = self.invoke_scrypto(ScryptoInvocation::Function(
+                let result = self.invoke(ScryptoInvocation::Function(
                     ScryptoFunctionIdent {
                         package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
                         blueprint_name: "Account".to_string(),
@@ -483,37 +514,30 @@ where
         })
     }
 
-    fn run(
+    fn run<X: Executor>(
         &mut self,
+        executor: X,
         actor: REActor,
-        input: ScryptoValue,
-        nodes_to_pass: Vec<RENodeId>,
-        mut refed_nodes: HashMap<RENodeId, RENodeLocation>,
-    ) -> Result<ScryptoValue, RuntimeError> {
+        mut call_frame_update: CallFrameUpdate,
+    ) -> Result<X::Output, RuntimeError> {
         let new_refed_nodes = self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
-            AuthModule::on_before_frame_start(&actor, &input, system_api).map_err(|e| match e {
+            AuthModule::on_before_frame_start(&actor, &executor, system_api).map_err(|e| match e {
                 InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
                 InvokeError::Downstream(runtime_error) => runtime_error,
             })
         })?;
 
         // TODO: Do this in a better way by allowing module to execute in next call frame
-        for new_refed_node in new_refed_nodes {
-            let node_pointer = self
-                .current_frame
-                .get_node_location(new_refed_node)
-                .unwrap();
-            refed_nodes.insert(new_refed_node, node_pointer);
-        }
+        call_frame_update.node_refs_to_copy.extend(new_refed_nodes);
 
-        for node_id in &nodes_to_pass {
+        for node_id in &call_frame_update.nodes_to_move {
             self.prepare_move_downstream(*node_id, &actor)?;
         }
 
         for m in &mut self.modules {
             m.on_run(
                 &actor,
-                &input,
+                executor.args(),
                 &mut self.current_frame,
                 &mut self.heap,
                 &mut self.track,
@@ -522,55 +546,25 @@ where
         }
 
         // Call Frame Push
-        let frame = CallFrame::new_child_from_parent(
-            &mut self.current_frame,
-            actor.clone(), // TODO: Remove clone
-            nodes_to_pass,
-            refed_nodes,
-        )?;
+        let frame =
+            CallFrame::new_child_from_parent(&mut self.current_frame, actor, call_frame_update)?;
 
         let parent = mem::replace(&mut self.current_frame, frame);
         self.prev_frame_stack.push(parent);
 
         // Execute
-        let output = match actor.clone() {
-            REActor::Function(ResolvedFunction::Native(native_fn)) => self
-                .execute_in_mode(ExecutionMode::Application, |system_api| {
-                    NativeInterpreter::run_function(native_fn, input, system_api)
-                }),
-            REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) => self
-                .execute_in_mode(ExecutionMode::Application, |system_api| {
-                    NativeInterpreter::run_method(
-                        native_method,
-                        resolved_receiver,
-                        input,
-                        system_api,
-                    )
-                }),
-            REActor::Function(ResolvedFunction::Scrypto { code, .. })
-            | REActor::Method(ResolvedMethod::Scrypto { code, .. }, ..) => {
-                let mut executor = self.scrypto_interpreter.create_executor(&code);
-
-                self.execute_in_mode(ExecutionMode::ScryptoInterpreter, |system_api| {
-                    executor.run(input, system_api)
-                })
-            }
-        }?;
+        let (output, update) = self.execute_in_mode(ExecutionMode::Application, |system_api| {
+            executor.execute(system_api)
+        })?;
 
         // Process return data
         let mut parent = self.prev_frame_stack.pop().unwrap();
 
-        let nodes_to_return = output.node_ids();
-        for node_id in &nodes_to_return {
+        for node_id in &update.nodes_to_move {
             self.prepare_move_upstream(*node_id)?;
         }
 
-        CallFrame::move_nodes_upstream(&mut self.current_frame, &mut parent, nodes_to_return)?;
-        CallFrame::copy_refs(
-            &mut self.current_frame,
-            &mut parent,
-            output.global_references(),
-        )?;
+        CallFrame::update_upstream(&mut self.current_frame, &mut parent, update)?;
 
         // Auto drop locks
         self.current_frame
@@ -644,275 +638,6 @@ where
         }
     }
 
-    // TODO: remove redundant code and move this method to the interpreter
-    fn resolve_scrypto_actor(
-        &mut self,
-        invocation: &ScryptoInvocation,
-    ) -> Result<(REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError> {
-        let mut additional_ref_copy = HashMap::new();
-
-        let actor = match invocation {
-            ScryptoInvocation::Function(function_ident, args) => {
-                // Load the package substate
-                // TODO: Move this in a better spot when more refactors are done
-                let package_address = match function_ident.package {
-                    ScryptoPackage::Global(address) => address,
-                };
-                let global_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
-                let package_node_id = self.node_method_deref(global_node_id)?.unwrap();
-                let package = self.execute_in_mode::<_, _, RuntimeError>(
-                    ExecutionMode::ScryptoInterpreter,
-                    |system_api| {
-                        let handle = system_api.lock_substate(
-                            package_node_id,
-                            SubstateOffset::Package(PackageOffset::Package),
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = system_api.get_ref(handle)?;
-                        let package = substate_ref.package().clone(); // TODO: Remove clone()
-                        system_api.drop_lock(handle)?;
-
-                        Ok(package)
-                    },
-                )?;
-
-                // Pass the package ref
-                // TODO: remove? currently needed for `Runtime::package_address()` API.
-                additional_ref_copy.insert(
-                    global_node_id,
-                    self.current_frame
-                        .get_node_location(global_node_id)
-                        .unwrap(),
-                );
-                additional_ref_copy.insert(
-                    package_node_id,
-                    self.current_frame
-                        .get_node_location(package_node_id)
-                        .unwrap(),
-                );
-
-                // Find the abi
-                let abi = package
-                    .blueprint_abi(&function_ident.blueprint_name)
-                    .ok_or(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoFunctionInvocation(
-                            function_ident.clone(),
-                            ScryptoFnResolvingError::BlueprintNotFound,
-                        ),
-                    ))?;
-                let fn_abi = abi.get_fn_abi(&function_ident.function_name).ok_or(
-                    RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoFunctionInvocation(
-                            function_ident.clone(),
-                            ScryptoFnResolvingError::FunctionNotFound,
-                        ),
-                    ),
-                )?;
-                if fn_abi.mutability.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoFunctionInvocation(
-                            function_ident.clone(),
-                            ScryptoFnResolvingError::FunctionNotFound,
-                        ),
-                    ));
-                }
-                // Check input against the ABI
-                if !fn_abi.input.matches(&args.dom) {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoFunctionInvocation(
-                            function_ident.clone(),
-                            ScryptoFnResolvingError::InvalidInput,
-                        ),
-                    ));
-                }
-
-                // Emit event
-                for m in &mut self.modules {
-                    m.on_wasm_instantiation(
-                        &self.current_frame,
-                        &mut self.heap,
-                        &mut self.track,
-                        package.code(),
-                    )
-                    .map_err(RuntimeError::ModuleError)?;
-                }
-
-                REActor::Function(ResolvedFunction::Scrypto {
-                    package_address,
-                    package_id: package_node_id.into(),
-                    blueprint_name: function_ident.blueprint_name.clone(),
-                    ident: function_ident.function_name.clone(),
-                    export_name: fn_abi.export_name.clone(),
-                    return_type: fn_abi.output.clone(),
-                    code: package.code,
-                })
-            }
-            ScryptoInvocation::Method(method_ident, args) => {
-                let original_node_id = match method_ident.receiver {
-                    ScryptoReceiver::Global(address) => {
-                        RENodeId::Global(GlobalAddress::Component(address))
-                    }
-                    ScryptoReceiver::Component(component_id) => RENodeId::Component(component_id),
-                };
-
-                // Deref if global
-                let resolved_receiver =
-                    if let Some(derefed) = self.node_method_deref(original_node_id)? {
-                        ResolvedReceiver::derefed(derefed, original_node_id)
-                    } else {
-                        ResolvedReceiver::new(original_node_id)
-                    };
-
-                // Load the package substate
-                // TODO: Move this in a better spot when more refactors are done
-                let component_node_id = resolved_receiver.receiver;
-                let component_info = self.execute_in_mode::<_, _, RuntimeError>(
-                    ExecutionMode::ScryptoInterpreter,
-                    |system_api| {
-                        let handle = system_api.lock_substate(
-                            component_node_id,
-                            SubstateOffset::Component(ComponentOffset::Info),
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = system_api.get_ref(handle)?;
-                        let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
-                        system_api.drop_lock(handle)?;
-
-                        Ok(component_info)
-                    },
-                )?;
-                let package_node_id = self
-                    .node_method_deref(RENodeId::Global(GlobalAddress::Package(
-                        component_info.package_address,
-                    )))?
-                    .unwrap();
-                let package = self.execute_in_mode::<_, _, RuntimeError>(
-                    ExecutionMode::ScryptoInterpreter,
-                    |system_api| {
-                        let handle = system_api.lock_substate(
-                            package_node_id,
-                            SubstateOffset::Package(PackageOffset::Package),
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = system_api.get_ref(handle)?;
-                        let package = substate_ref.package().clone(); // TODO: Remove clone()
-                        system_api.drop_lock(handle)?;
-
-                        Ok(package)
-                    },
-                )?;
-
-                // Pass the component ref
-                // TODO: remove? currently needed for `Runtime::package_address()` API.
-                let global_node_id =
-                    RENodeId::Global(GlobalAddress::Package(component_info.package_address));
-                additional_ref_copy.insert(
-                    global_node_id,
-                    self.current_frame
-                        .get_node_location(global_node_id)
-                        .unwrap(),
-                );
-                additional_ref_copy.insert(
-                    component_node_id,
-                    self.current_frame
-                        .get_node_location(component_node_id)
-                        .unwrap(),
-                );
-
-                // Find the abi
-                let abi = package
-                    .blueprint_abi(&component_info.blueprint_name)
-                    .ok_or(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoMethodInvocation(
-                            method_ident.clone(),
-                            ScryptoFnResolvingError::BlueprintNotFound,
-                        ),
-                    ))?;
-                let fn_abi = abi.get_fn_abi(&method_ident.method_name).ok_or(
-                    RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoMethodInvocation(
-                            method_ident.clone(),
-                            ScryptoFnResolvingError::MethodNotFound,
-                        ),
-                    ),
-                )?;
-                if fn_abi.mutability.is_none() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoMethodInvocation(
-                            method_ident.clone(),
-                            ScryptoFnResolvingError::MethodNotFound,
-                        ),
-                    ));
-                }
-
-                // Check input against the ABI
-                if !fn_abi.input.matches(&args.dom) {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoMethodInvocation(
-                            method_ident.clone(),
-                            ScryptoFnResolvingError::InvalidInput,
-                        ),
-                    ));
-                }
-
-                // Emit event
-                for m in &mut self.modules {
-                    m.on_wasm_instantiation(
-                        &self.current_frame,
-                        &mut self.heap,
-                        &mut self.track,
-                        package.code(),
-                    )
-                    .map_err(RuntimeError::ModuleError)?;
-                }
-
-                REActor::Method(
-                    ResolvedMethod::Scrypto {
-                        package_address: component_info.package_address,
-                        package_id: package_node_id.into(),
-                        blueprint_name: component_info.blueprint_name,
-                        ident: method_ident.method_name.clone(),
-                        export_name: fn_abi.export_name.clone(),
-                        return_type: fn_abi.output.clone(),
-                        code: package.code,
-                    },
-                    resolved_receiver,
-                )
-            }
-        };
-
-        Ok((actor, additional_ref_copy))
-    }
-
-    fn resolve_native_actor(
-        &mut self,
-        invocation: &NativeInvocation,
-    ) -> Result<(REActor, HashMap<RENodeId, RENodeLocation>), RuntimeError> {
-        let mut additional_ref_copy = HashMap::new();
-
-        let actor = match invocation {
-            NativeInvocation::Function(native_function, _) => {
-                REActor::Function(ResolvedFunction::Native(*native_function))
-            }
-            NativeInvocation::Method(native_method, node_id, _) => {
-                // Deref
-                let resolved_receiver = if let Some(derefed) = self.node_method_deref(*node_id)? {
-                    ResolvedReceiver::derefed(derefed, *node_id)
-                } else {
-                    ResolvedReceiver::new(*node_id)
-                };
-
-                let resolved_node_id = resolved_receiver.receiver;
-                let location = self.current_frame.get_node_location(resolved_node_id)?;
-                additional_ref_copy.insert(resolved_node_id, location);
-
-                REActor::Method(ResolvedMethod::Native(*native_method), resolved_receiver)
-            }
-        };
-
-        Ok((actor, additional_ref_copy))
-    }
-
     fn verify_valid_mode_transition(
         cur: &ExecutionMode,
         next: &ExecutionMode,
@@ -926,168 +651,69 @@ where
         }
     }
 
-    fn invoke(&mut self, invocation: Invocation) -> Result<ScryptoValue, RuntimeError> {
-        let depth = self.current_frame.depth;
-
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                match &invocation {
-                    Invocation::Scrypto(i) => SysCallInput::InvokeScrypto {
-                        invocation: i,
-                        depth,
-                    },
-                    Invocation::Native(i) => SysCallInput::InvokeNative {
-                        invocation: i,
-                        depth,
-                    },
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
+    fn invoke_internal<X: Executor>(
+        &mut self,
+        executor: X,
+        actor: REActor,
+        call_frame_update: CallFrameUpdate,
+    ) -> Result<X::Output, RuntimeError> {
         // check call depth
+        let depth = self.current_frame.depth;
         if depth == self.max_depth {
             return Err(RuntimeError::KernelError(
                 KernelError::MaxCallDepthLimitReached,
             ));
         }
 
-        let mut nodes_to_pass_downstream = Vec::new();
-        let mut next_node_refs = HashMap::new();
-
-        nodes_to_pass_downstream.extend(invocation.args().node_ids());
-        // Internal state update to taken values
-
-        // Move this into higher layer, e.g. transaction processor
-        if self.current_frame.depth == 0 {
-            let mut static_refs = HashSet::new();
-            static_refs.insert(GlobalAddress::Resource(RADIX_TOKEN));
-            static_refs.insert(GlobalAddress::Resource(SYSTEM_TOKEN));
-            static_refs.insert(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN));
-            static_refs.insert(GlobalAddress::System(EPOCH_MANAGER));
-            static_refs.insert(GlobalAddress::Package(ACCOUNT_PACKAGE));
-            static_refs.insert(GlobalAddress::Package(SYS_FAUCET_PACKAGE));
-
-            // Make refs visible
-            let mut global_references = invocation.args().global_references();
-            global_references.extend(static_refs.clone());
-
-            // TODO: This can be refactored out once any type in sbor is implemented
-            let maybe_txn: Result<TransactionProcessorRunInput, DecodeError> =
-                scrypto_decode(&invocation.args().raw);
-            if let Ok(input) = maybe_txn {
-                for instruction in input.instructions.as_ref() {
-                    match instruction {
-                        Instruction::CallFunction { args, .. }
-                        | Instruction::CallMethod { args, .. }
-                        | Instruction::CallNativeFunction { args, .. }
-                        | Instruction::CallNativeMethod { args, .. } => {
-                            let scrypto_value =
-                                ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
-                            global_references.extend(scrypto_value.global_references());
+        // TODO: Move to higher layer
+        if depth == 0 {
+            for node_id in &call_frame_update.node_refs_to_copy {
+                if let RENodeId::Global(global_address) = node_id {
+                    if self.current_frame.get_node_location(*node_id).is_err() {
+                        if matches!(
+                            global_address,
+                            GlobalAddress::Component(
+                                ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+                            )
+                        ) || matches!(
+                            global_address,
+                            GlobalAddress::Component(ComponentAddress::EddsaEd25519VirtualAccount(
+                                ..
+                            ))
+                        ) {
+                            self.current_frame
+                                .node_refs
+                                .insert(*node_id, RENodeLocation::Store);
+                            continue;
                         }
-                        _ => {}
+
+                        let offset = SubstateOffset::Global(GlobalOffset::Global);
+                        self.track
+                            .acquire_lock(
+                                SubstateId(*node_id, offset.clone()),
+                                LockFlags::read_only(),
+                            )
+                            .map_err(|_| KernelError::GlobalAddressNotFound(*global_address))?;
+                        self.track
+                            .release_lock(SubstateId(*node_id, offset), false)
+                            .map_err(|_| KernelError::GlobalAddressNotFound(*global_address))?;
+                        self.current_frame
+                            .node_refs
+                            .insert(*node_id, RENodeLocation::Store);
+                        continue;
                     }
                 }
             }
-
-            // Check for existence
-            for global_address in global_references {
-                let node_id = RENodeId::Global(global_address);
-                let offset = SubstateOffset::Global(GlobalOffset::Global);
-
-                // TODO: static check here is to support the current genesis transaction which
-                // TODO: requires references to dynamically created resources. Can remove
-                // TODO: when this is resolved.
-                if !static_refs.contains(&global_address)
-                    && !(matches!(
-                        global_address,
-                        GlobalAddress::Component(ComponentAddress::EcdsaSecp256k1VirtualAccount(
-                            ..
-                        ))
-                    ) || matches!(
-                        global_address,
-                        GlobalAddress::Component(ComponentAddress::EddsaEd25519VirtualAccount(..))
-                    ))
-                {
-                    self.track
-                        .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
-                        .map_err(|_| KernelError::GlobalAddressNotFound(global_address))?;
-                    self.track
-                        .release_lock(SubstateId(node_id, offset), false)
-                        .map_err(|_| KernelError::GlobalAddressNotFound(global_address))?;
-                }
-
-                self.current_frame
-                    .node_refs
-                    .insert(node_id, RENodeLocation::Store);
-                next_node_refs.insert(node_id, RENodeLocation::Store);
-            }
-        } else {
-            // Check that global references are owned by this call frame
-            let mut global_references = invocation.args().global_references();
-            global_references.insert(GlobalAddress::Resource(RADIX_TOKEN));
-            global_references.insert(GlobalAddress::System(EPOCH_MANAGER));
-            for global_address in global_references {
-                let node_id = RENodeId::Global(global_address);
-
-                // As of now, once a component is made visible to the frame, client can directly
-                // read the substates of the component. This will cause "Substate was never locked" issue.
-                // We use the following temporary solution to work around this.
-                // A better solution is to create node representation before issuing any reference.
-                // TODO: remove
-                if let Some(pointer) = self.current_frame.node_refs.get(&node_id) {
-                    next_node_refs.insert(node_id.clone(), pointer.clone());
-                } else {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::InvalidReferencePass(global_address),
-                    ));
-                }
-            }
         }
 
-        // Change to kernel mode
-        let saved_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
+        let output = self.run(executor, actor, call_frame_update)?;
 
-        let (next_actor, additional_ref_copy) = match &invocation {
-            Invocation::Scrypto(i) => self.resolve_scrypto_actor(&i)?,
-            Invocation::Native(i) => self.resolve_native_actor(&i)?,
-        };
-        next_node_refs.extend(additional_ref_copy);
-
-        let output = self.run(
-            next_actor,
-            invocation.args().clone(), // TODO: Remove clone
-            nodes_to_pass_downstream,
-            next_node_refs,
-        )?;
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                match &invocation {
-                    Invocation::Scrypto(_) => SysCallOutput::InvokeScrypto { output: &output },
-                    Invocation::Native(_) => SysCallOutput::InvokeNative { output: &output },
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // TODO: Move this into higher layer, e.g. transaction processor
-        if self.current_frame.depth == 0 {
+        // TODO: Move to higher layer
+        if depth == 0 {
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
             self.drop_nodes_in_frame()?;
         }
-
-        // Restore previous mode
-        self.execution_mode = saved_mode;
 
         Ok(output)
     }
@@ -1101,7 +727,150 @@ where
     }
 }
 
-impl<'g, 's, W, I, R> SystemApi<'s, R> for Kernel<'g, 's, W, I, R>
+pub trait MethodDeref {
+    fn deref(&mut self, node_id: RENodeId) -> Result<Option<RENodeId>, RuntimeError>;
+}
+
+impl<'g, 's, W, I, R> MethodDeref for Kernel<'g, 's, W, I, R>
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
+{
+    fn deref(&mut self, node_id: RENodeId) -> Result<Option<RENodeId>, RuntimeError> {
+        self.node_method_deref(node_id)
+    }
+}
+
+pub trait Resolver<I: Invocation> {
+    type Exec: Executor<Output = <I as Invocation>::Output>;
+
+    fn resolve<D: MethodDeref>(
+        invocation: I,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
+}
+
+pub trait Executor {
+    type Output: Debug;
+
+    // TODO: Remove
+    fn args(&self) -> &ScryptoValue;
+
+    fn execute<'a, Y>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>;
+}
+
+impl<'g, 's, 'a, W, I, R> InvokableNative<'a> for Kernel<'g, 's, W, I, R>
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
+{
+}
+
+impl<'g, 's, W, I, R, N> Invokable<N> for Kernel<'g, 's, W, I, R>
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
+    N: NativeInvocation,
+{
+    fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallInput::Invoke {
+                    info: InvocationInfo::Native(&invocation.info()),
+                    input_size: 0,  // TODO: Fix this
+                    value_count: 0, // TODO: Fix this
+                    depth: self.current_frame.depth,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        // Change to kernel mode
+        let saved_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
+
+        let (actor, call_frame_update, executor) = NativeResolver::resolve(invocation, self)?;
+
+        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
+
+        // Restore previous mode
+        self.execution_mode = saved_mode;
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallOutput::Invoke {
+                    rtn: &rtn, // TODO: Better abstraction here
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(rtn)
+    }
+}
+
+// TODO: remove redundant code and move this method to the interpreter
+impl<'g, 's, W, I, R> Invokable<ScryptoInvocation> for Kernel<'g, 's, W, I, R>
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
+{
+    fn invoke(&mut self, invocation: ScryptoInvocation) -> Result<ScryptoValue, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallInput::Invoke {
+                    info: InvocationInfo::Scrypto(&invocation),
+                    input_size: invocation.args().raw.len() as u32,
+                    value_count: invocation.args().value_count() as u32,
+                    depth: self.current_frame.depth,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        // Change to kernel mode
+        let saved_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
+
+        let (executor, actor, call_frame_update) = self.resolve(invocation)?;
+        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
+
+        // Restore previous mode
+        self.execution_mode = saved_mode;
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallOutput::Invoke { rtn: &rtn },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(rtn)
+    }
+}
+
+impl<'g, 's, W, I, R> SystemApi for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -1163,20 +932,6 @@ where
 
     fn get_actor(&self) -> &REActor {
         &self.current_frame.actor
-    }
-
-    fn invoke_scrypto(
-        &mut self,
-        invocation: ScryptoInvocation,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        self.invoke(Invocation::Scrypto(invocation))
-    }
-
-    fn invoke_native(
-        &mut self,
-        invocation: NativeInvocation,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        self.invoke(Invocation::Native(invocation))
     }
 
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
@@ -1647,5 +1402,263 @@ where
     fn emit_output_event(&mut self, _event: OutputEvent) -> Result<(), RuntimeError> {
         // TODO: add event to track
         Ok(())
+    }
+}
+
+pub trait InvocationResolver<V, X: Executor> {
+    fn resolve(&mut self, invocation: V) -> Result<(X, REActor, CallFrameUpdate), RuntimeError>;
+}
+
+impl<'g, 's, W, I, R> InvocationResolver<ScryptoInvocation, ScryptoExecutor<I>>
+    for Kernel<'g, 's, W, I, R>
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
+{
+    fn resolve(
+        &mut self,
+        invocation: ScryptoInvocation,
+    ) -> Result<(ScryptoExecutor<I>, REActor, CallFrameUpdate), RuntimeError> {
+        let mut node_refs_to_copy = HashSet::new();
+
+        let (executor, actor) = match &invocation {
+            ScryptoInvocation::Function(function_ident, args) => {
+                // Load the package substate
+                // TODO: Move this in a better spot when more refactors are done
+                let package_address = match function_ident.package {
+                    ScryptoPackage::Global(address) => address,
+                };
+                let global_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
+                let package_node_id = self.node_method_deref(global_node_id)?.unwrap();
+                let package = self.execute_in_mode::<_, _, RuntimeError>(
+                    ExecutionMode::ScryptoInterpreter,
+                    |system_api| {
+                        let handle = system_api.lock_substate(
+                            package_node_id,
+                            SubstateOffset::Package(PackageOffset::Package),
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = system_api.get_ref(handle)?;
+                        let package = substate_ref.package().clone(); // TODO: Remove clone()
+                        system_api.drop_lock(handle)?;
+
+                        Ok(package)
+                    },
+                )?;
+
+                // Pass the package ref
+                // TODO: remove? currently needed for `Runtime::package_address()` API.
+                node_refs_to_copy.insert(global_node_id);
+                node_refs_to_copy.insert(package_node_id);
+
+                // Find the abi
+                let abi = package
+                    .blueprint_abi(&function_ident.blueprint_name)
+                    .ok_or(RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoFunctionInvocation(
+                            function_ident.clone(),
+                            ScryptoFnResolvingError::BlueprintNotFound,
+                        ),
+                    ))?;
+                let fn_abi = abi.get_fn_abi(&function_ident.function_name).ok_or(
+                    RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoFunctionInvocation(
+                            function_ident.clone(),
+                            ScryptoFnResolvingError::FunctionNotFound,
+                        ),
+                    ),
+                )?;
+                if fn_abi.mutability.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoFunctionInvocation(
+                            function_ident.clone(),
+                            ScryptoFnResolvingError::FunctionNotFound,
+                        ),
+                    ));
+                }
+                // Check input against the ABI
+                if !fn_abi.input.matches(&args.dom) {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoFunctionInvocation(
+                            function_ident.clone(),
+                            ScryptoFnResolvingError::InvalidInput,
+                        ),
+                    ));
+                }
+
+                // Emit event
+                for m in &mut self.modules {
+                    m.on_wasm_instantiation(
+                        &self.current_frame,
+                        &mut self.heap,
+                        &mut self.track,
+                        package.code(),
+                    )
+                    .map_err(RuntimeError::ModuleError)?;
+                }
+
+                (
+                    self.scrypto_interpreter
+                        .create_executor(&package.code, invocation.args().clone()),
+                    REActor::Function(ResolvedFunction::Scrypto {
+                        package_address: package_address,
+                        package_id: package_node_id.into(),
+                        blueprint_name: function_ident.blueprint_name.clone(),
+                        ident: function_ident.function_name.clone(),
+                        export_name: fn_abi.export_name.clone(),
+                        return_type: fn_abi.output.clone(),
+                    }),
+                )
+            }
+            ScryptoInvocation::Method(method_ident, args) => {
+                let original_node_id = match method_ident.receiver {
+                    ScryptoReceiver::Global(address) => {
+                        RENodeId::Global(GlobalAddress::Component(address))
+                    }
+                    ScryptoReceiver::Component(component_id) => RENodeId::Component(component_id),
+                };
+
+                // Deref if global
+                let resolved_receiver =
+                    if let Some(derefed) = self.node_method_deref(original_node_id)? {
+                        ResolvedReceiver::derefed(derefed, original_node_id)
+                    } else {
+                        ResolvedReceiver::new(original_node_id)
+                    };
+
+                // Load the package substate
+                // TODO: Move this in a better spot when more refactors are done
+                let component_node_id = resolved_receiver.receiver;
+                let component_info = self.execute_in_mode::<_, _, RuntimeError>(
+                    ExecutionMode::ScryptoInterpreter,
+                    |system_api| {
+                        let handle = system_api.lock_substate(
+                            component_node_id,
+                            SubstateOffset::Component(ComponentOffset::Info),
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = system_api.get_ref(handle)?;
+                        let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
+                        system_api.drop_lock(handle)?;
+
+                        Ok(component_info)
+                    },
+                )?;
+                let package_node_id = self
+                    .node_method_deref(RENodeId::Global(GlobalAddress::Package(
+                        component_info.package_address,
+                    )))?
+                    .unwrap();
+                let package = self.execute_in_mode::<_, _, RuntimeError>(
+                    ExecutionMode::ScryptoInterpreter,
+                    |system_api| {
+                        let handle = system_api.lock_substate(
+                            package_node_id,
+                            SubstateOffset::Package(PackageOffset::Package),
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = system_api.get_ref(handle)?;
+                        let package = substate_ref.package().clone(); // TODO: Remove clone()
+                        system_api.drop_lock(handle)?;
+
+                        Ok(package)
+                    },
+                )?;
+
+                // Pass the component ref
+                // TODO: remove? currently needed for `Runtime::package_address()` API.
+                let global_node_id =
+                    RENodeId::Global(GlobalAddress::Package(component_info.package_address));
+                node_refs_to_copy.insert(global_node_id);
+                node_refs_to_copy.insert(component_node_id);
+
+                // Find the abi
+                let abi = package
+                    .blueprint_abi(&component_info.blueprint_name)
+                    .ok_or(RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoMethodInvocation(
+                            method_ident.clone(),
+                            ScryptoFnResolvingError::BlueprintNotFound,
+                        ),
+                    ))?;
+                let fn_abi = abi.get_fn_abi(&method_ident.method_name).ok_or(
+                    RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoMethodInvocation(
+                            method_ident.clone(),
+                            ScryptoFnResolvingError::MethodNotFound,
+                        ),
+                    ),
+                )?;
+                if fn_abi.mutability.is_none() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoMethodInvocation(
+                            method_ident.clone(),
+                            ScryptoFnResolvingError::MethodNotFound,
+                        ),
+                    ));
+                }
+
+                // Check input against the ABI
+                if !fn_abi.input.matches(&args.dom) {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoMethodInvocation(
+                            method_ident.clone(),
+                            ScryptoFnResolvingError::InvalidInput,
+                        ),
+                    ));
+                }
+
+                // Emit event
+                for m in &mut self.modules {
+                    m.on_wasm_instantiation(
+                        &self.current_frame,
+                        &mut self.heap,
+                        &mut self.track,
+                        package.code(),
+                    )
+                    .map_err(RuntimeError::ModuleError)?;
+                }
+
+                (
+                    self.scrypto_interpreter
+                        .create_executor(&package.code, invocation.args().clone()),
+                    REActor::Method(
+                        ResolvedMethod::Scrypto {
+                            package_address: component_info.package_address,
+                            package_id: package_node_id.into(),
+                            blueprint_name: component_info.blueprint_name,
+                            ident: method_ident.method_name.clone(),
+                            export_name: fn_abi.export_name.clone(),
+                            return_type: fn_abi.output.clone(),
+                        },
+                        resolved_receiver,
+                    ),
+                )
+            }
+        };
+
+        for global_address in invocation.args().global_references() {
+            node_refs_to_copy.insert(RENodeId::Global(global_address));
+        }
+
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            ECDSA_SECP256K1_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            EDDSA_ED25519_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+
+        Ok((
+            executor,
+            actor,
+            CallFrameUpdate {
+                nodes_to_move: invocation.args().node_ids().into_iter().collect(),
+                node_refs_to_copy,
+            },
+        ))
     }
 }

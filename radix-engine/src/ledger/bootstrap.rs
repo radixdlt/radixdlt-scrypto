@@ -2,14 +2,16 @@ use crate::constants::GENESIS_CREATION_CREDIT;
 use crate::engine::ScryptoInterpreter;
 use crate::fee::SystemLoanFeeReserve;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::transaction::{ExecutionConfig, TransactionExecutor, TransactionReceipt};
+use crate::transaction::{
+    execute_transaction_with_fee_reserve, ExecutionConfig, TransactionReceipt,
+};
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
-use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams};
+use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig};
 
 use scrypto::core::SystemAddress;
 use scrypto::resource::Bucket;
-use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
+use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};
 
 const XRD_SYMBOL: &str = "XRD";
@@ -232,27 +234,29 @@ where
         ))
         .is_none()
     {
-        let mut scrypto_interpreter = ScryptoInterpreter {
-            wasm_engine: DefaultWasmEngine::new(),
-            wasm_instrumenter: WasmInstrumenter::new(),
-            wasm_metering_params: WasmMeteringParams::new(
+        let scrypto_interpreter = ScryptoInterpreter {
+            wasm_engine: DefaultWasmEngine::default(),
+            wasm_instrumenter: WasmInstrumenter::default(),
+            wasm_metering_config: WasmMeteringConfig::new(
                 InstructionCostRules::tiered(1, 5, 10, 5000),
                 512,
             ),
             phantom: PhantomData,
         };
 
-        let mut executor = TransactionExecutor::new(substate_store, &mut scrypto_interpreter);
         let genesis_transaction = create_genesis();
-        let executable: Executable = genesis_transaction.into();
         let mut fee_reserve = SystemLoanFeeReserve::default();
         fee_reserve.credit(GENESIS_CREATION_CREDIT);
-        let transaction_receipt = executor.execute_with_fee_reserve(
-            &executable,
-            &ExecutionConfig::standard(),
+
+        let transaction_receipt = execute_transaction_with_fee_reserve(
+            substate_store,
+            &scrypto_interpreter,
             fee_reserve,
+            &ExecutionConfig::standard(),
+            &genesis_transaction.get_executable(),
         );
-        let commit_result = transaction_receipt.clone().result.expect_commit();
+
+        let commit_result = transaction_receipt.expect_commit();
         commit_result.outcome.expect_success();
         commit_result.state_updates.commit(substate_store);
 
@@ -264,45 +268,36 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::constants::GENESIS_CREATION_CREDIT;
-    use crate::engine::ScryptoInterpreter;
-    use crate::fee::SystemLoanFeeReserve;
-    use crate::ledger::bootstrap::{create_genesis, genesis_result};
     use crate::ledger::TypedInMemorySubstateStore;
-    use crate::transaction::{ExecutionConfig, TransactionExecutor};
-    use crate::wasm::{
-        DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams,
-    };
-    use scrypto::constants::*;
-    use std::marker::PhantomData;
-    use transaction::model::Executable;
+
+    use super::*;
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {
-        let wasm_engine = DefaultWasmEngine::new();
-        let wasm_instrumenter = WasmInstrumenter::new();
-        let wasm_metering_params =
-            WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512);
-        let mut scrypto_interpreter = ScryptoInterpreter {
+        let wasm_engine = DefaultWasmEngine::default();
+        let wasm_instrumenter = WasmInstrumenter::default();
+        let wasm_metering_config =
+            WasmMeteringConfig::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512);
+        let scrypto_interpreter = ScryptoInterpreter {
             wasm_engine,
             wasm_instrumenter,
-            wasm_metering_params,
+            wasm_metering_config,
             phantom: PhantomData,
         };
-        let mut substate_store = TypedInMemorySubstateStore::new();
+        let substate_store = TypedInMemorySubstateStore::new();
         let genesis_transaction = create_genesis();
-        let mut executor = TransactionExecutor::new(&mut substate_store, &mut scrypto_interpreter);
-        let executable: Executable = genesis_transaction.into();
         let mut fee_reserve = SystemLoanFeeReserve::default();
         fee_reserve.credit(GENESIS_CREATION_CREDIT);
 
-        let transaction_receipt = executor.execute_with_fee_reserve(
-            &executable,
-            &ExecutionConfig::standard(),
+        let transaction_receipt = execute_transaction_with_fee_reserve(
+            &substate_store,
+            &scrypto_interpreter,
             fee_reserve,
+            &ExecutionConfig::standard(),
+            &genesis_transaction.get_executable(),
         );
 
-        let commit_result = transaction_receipt.result.expect_commit();
+        let commit_result = transaction_receipt.expect_commit();
         let invoke_result = commit_result.outcome.expect_success();
         let genesis_receipt = genesis_result(&invoke_result);
 

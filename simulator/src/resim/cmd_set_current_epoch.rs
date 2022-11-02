@@ -1,7 +1,6 @@
 use clap::Parser;
 use radix_engine::constants::*;
-use radix_engine::engine::Track;
-use radix_engine::engine::{Kernel, SystemApi};
+use radix_engine::engine::*;
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::types::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
@@ -25,9 +24,9 @@ impl SetCurrentEpoch {
         let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
         let mut scrypto_interpreter = ScryptoInterpreter {
-            wasm_engine: DefaultWasmEngine::new(),
-            wasm_instrumenter: WasmInstrumenter::new(),
-            wasm_metering_params: WasmMeteringParams::new(
+            wasm_engine: DefaultWasmEngine::default(),
+            wasm_instrumenter: WasmInstrumenter::default(),
+            wasm_metering_config: WasmMeteringConfig::new(
                 InstructionCostRules::tiered(1, 5, 10, 5000),
                 512,
             ),
@@ -54,11 +53,10 @@ impl SetCurrentEpoch {
 
         // Invoke the system
         kernel
-            .invoke_native(NativeInvocation::Method(
-                NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
-                RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                ScryptoValue::from_typed(&EpochManagerSetEpochInput { epoch: self.epoch }),
-            ))
+            .invoke(EpochManagerSetEpochInvocation {
+                epoch: self.epoch,
+                receiver: EPOCH_MANAGER,
+            })
             .and_then(|_| {
                 kernel.finalize()?;
                 Ok(())

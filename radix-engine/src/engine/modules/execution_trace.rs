@@ -2,6 +2,8 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
+use scrypto::resource::{Bucket, Proof, Vault};
+use std::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
 pub struct ResourceChange {
@@ -22,7 +24,6 @@ pub enum VaultOp {
     Put(Decimal),    // TODO: add non-fungible support
     Take(Decimal),
     LockFee,
-    LockContingentFee,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -209,6 +210,117 @@ pub enum SysCallTraceOrigin {
     Opaque,
 }
 
+pub trait Traceable: Debug {
+    fn buckets(&self) -> Vec<BucketId>;
+    fn proofs(&self) -> Vec<ProofId>;
+}
+
+impl Traceable for ScryptoValue {
+    fn buckets(&self) -> Vec<BucketId> {
+        self.bucket_ids.keys().map(|k| k.clone()).collect()
+    }
+
+    fn proofs(&self) -> Vec<ProofId> {
+        self.proof_ids.keys().map(|k| k.clone()).collect()
+    }
+}
+
+impl Traceable for Bucket {
+    fn buckets(&self) -> Vec<BucketId> {
+        vec![self.0]
+    }
+
+    fn proofs(&self) -> Vec<ProofId> {
+        vec![]
+    }
+}
+
+impl Traceable for Proof {
+    fn buckets(&self) -> Vec<BucketId> {
+        vec![]
+    }
+
+    fn proofs(&self) -> Vec<ProofId> {
+        vec![self.0]
+    }
+}
+
+impl Traceable for (ResourceAddress, Option<Bucket>) {
+    fn buckets(&self) -> Vec<BucketId> {
+        match &self.1 {
+            Some(bucket) => vec![bucket.0.clone()],
+            None => vec![],
+        }
+    }
+
+    fn proofs(&self) -> Vec<ProofId> {
+        vec![]
+    }
+}
+
+impl Traceable for CallFrameUpdate {
+    fn buckets(&self) -> Vec<BucketId> {
+        self.nodes_to_move
+            .iter()
+            .filter_map(|node_id| match node_id {
+                RENodeId::Bucket(bucket_id) => Some(bucket_id.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    fn proofs(&self) -> Vec<ProofId> {
+        self.nodes_to_move
+            .iter()
+            .filter_map(|node_id| match node_id {
+                RENodeId::Proof(proof_id) => Some(proof_id.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+}
+
+impl<A: Traceable> Traceable for Vec<A> {
+    fn buckets(&self) -> Vec<BucketId> {
+        self.into_iter().flat_map(|t| t.buckets()).collect()
+    }
+
+    fn proofs(&self) -> Vec<ProofId> {
+        self.into_iter().flat_map(|t| t.proofs()).collect()
+    }
+}
+
+macro_rules! impl_empty_traceable {
+    (for $($t:ty),+) => {
+        $(impl Traceable for $t {
+            fn buckets(&self) -> Vec<BucketId> {
+                vec![]
+            }
+            fn proofs(&self) -> Vec<ProofId> {
+                vec![]
+            }
+        })*
+    }
+}
+
+impl_empty_traceable!(for
+    (),
+    bool,
+    u8,
+    u64,
+    [Vec<u8>; 2],
+    (String, String),
+    HashMap<String, String>,
+    Decimal,
+    Vault,
+    VaultId,
+    ResourceType,
+    BTreeSet<NonFungibleId>,
+    PackageAddress,
+    ResourceAddress,
+    SystemAddress
+);
+
 impl ExecutionTraceModule {
     pub fn new(max_sys_call_trace_depth: usize) -> ExecutionTraceModule {
         Self {
@@ -233,31 +345,30 @@ impl ExecutionTraceModule {
         }
 
         let traced_input = match input {
-            SysCallInput::InvokeScrypto { invocation, .. } => {
-                let (origin, value) = match invocation {
-                    ScryptoInvocation::Function(fn_ident, value) => {
-                        (SysCallTraceOrigin::ScryptoFunction(fn_ident.clone()), value)
-                    }
-                    ScryptoInvocation::Method(method_ident, value) => (
+            SysCallInput::Invoke { info, .. } => {
+                let (origin, trace_data) = match info {
+                    InvocationInfo::Scrypto(ScryptoInvocation::Function(fn_ident, value)) => (
+                        SysCallTraceOrigin::ScryptoFunction(fn_ident.clone()),
+                        Self::extract_trace_data(heap, value)?,
+                    ),
+                    InvocationInfo::Scrypto(ScryptoInvocation::Method(method_ident, value)) => (
                         SysCallTraceOrigin::ScryptoMethod(method_ident.clone()),
-                        value,
+                        Self::extract_trace_data(heap, value)?,
                     ),
-                };
-                let traced_data = Self::extract_trace_data(heap, value)?;
-                (traced_data, origin, self.current_instruction_index)
-            }
-            SysCallInput::InvokeNative { invocation, .. } => {
-                let (origin, value) = match invocation {
-                    NativeInvocation::Function(native_fn, value) => {
-                        (SysCallTraceOrigin::NativeFunction(native_fn.clone()), value)
-                    }
-                    NativeInvocation::Method(native_method, _, value) => (
+                    InvocationInfo::Native(NativeInvocationInfo::Function(native_fn, value)) => (
+                        SysCallTraceOrigin::NativeFunction(native_fn.clone()),
+                        Self::extract_trace_data(heap, value)?,
+                    ),
+                    InvocationInfo::Native(NativeInvocationInfo::Method(
+                        native_method,
+                        _,
+                        value,
+                    )) => (
                         SysCallTraceOrigin::NativeMethod(native_method.clone()),
-                        value,
+                        Self::extract_trace_data(heap, value)?,
                     ),
                 };
-                let traced_data = Self::extract_trace_data(heap, value)?;
-                (traced_data, origin, self.current_instruction_index)
+                (trace_data, origin, self.current_instruction_index)
             }
             SysCallInput::DropNode { node_id } => {
                 // Buckets can't be dropped, so only tracking Proofs here
@@ -320,8 +431,7 @@ impl ExecutionTraceModule {
             .expect("Sys call input stack underflow");
 
         let traced_output = match output {
-            SysCallOutput::InvokeScrypto { output } => Self::extract_trace_data(heap, output)?,
-            SysCallOutput::InvokeNative { output } => Self::extract_trace_data(heap, output)?,
+            SysCallOutput::Invoke { rtn } => Self::extract_trace_data(heap, rtn)?,
             SysCallOutput::CreateNode { node_id } => match node_id {
                 RENodeId::Bucket(bucket_id) => {
                     let bucket_resource = Self::read_bucket_resource(heap, bucket_id)?;
@@ -399,18 +509,18 @@ impl ExecutionTraceModule {
 
     fn extract_trace_data(
         heap: &mut Heap,
-        value: &ScryptoValue,
+        traceable: &dyn Traceable,
     ) -> Result<TracedSysCallData, ModuleError> {
         let mut buckets: HashMap<BucketId, Resource> = HashMap::new();
-        for bucket_id in value.bucket_ids.keys() {
-            let bucket_resource = Self::read_bucket_resource(heap, bucket_id)?;
-            buckets.insert(bucket_id.clone(), bucket_resource);
+        for bucket_id in traceable.buckets() {
+            let bucket_resource = Self::read_bucket_resource(heap, &bucket_id)?;
+            buckets.insert(bucket_id, bucket_resource);
         }
 
         let mut proofs: HashMap<ProofId, ProofSnapshot> = HashMap::new();
-        for proof_id in value.proof_ids.keys() {
-            let proof = Self::read_proof(heap, proof_id)?;
-            proofs.insert(proof_id.clone(), proof);
+        for proof_id in traceable.proofs() {
+            let proof = Self::read_proof(heap, &proof_id)?;
+            proofs.insert(proof_id, proof);
         }
 
         Ok(TracedSysCallData { buckets, proofs })
@@ -459,10 +569,6 @@ impl ExecutionTraceModule {
                 (NativeMethod::Vault(VaultMethod::LockFee), RENodeId::Vault(vault_id)) => {
                     Self::handle_vault_lock_fee(track, caller, &vault_id)
                 }
-                (
-                    NativeMethod::Vault(VaultMethod::LockContingentFee),
-                    RENodeId::Vault(vault_id),
-                ) => Self::handle_vault_lock_contingent_fee(track, caller, &vault_id),
                 _ => {}
             }
         }
@@ -475,7 +581,7 @@ impl ExecutionTraceModule {
         vault_id: &VaultId,
         input: &ScryptoValue,
     ) {
-        if let Ok(call_data) = scrypto_decode::<VaultPutInput>(&input.raw) {
+        if let Ok(call_data) = scrypto_decode::<VaultPutInvocation>(&input.raw) {
             let bucket_id = call_data.bucket.0;
             if let Ok(bucket_substate) = heap.get_substate(
                 RENodeId::Bucket(bucket_id),
@@ -496,7 +602,7 @@ impl ExecutionTraceModule {
         vault_id: &VaultId,
         input: &ScryptoValue,
     ) {
-        if let Ok(call_data) = scrypto_decode::<VaultTakeInput>(&input.raw) {
+        if let Ok(call_data) = scrypto_decode::<VaultTakeInvocation>(&input.raw) {
             track.vault_ops.push((
                 actor.clone(),
                 vault_id.clone(),
@@ -513,16 +619,6 @@ impl ExecutionTraceModule {
         track
             .vault_ops
             .push((actor.clone(), vault_id.clone(), VaultOp::LockFee));
-    }
-
-    fn handle_vault_lock_contingent_fee<'s, R: FeeReserve>(
-        track: &mut Track<'s, R>,
-        actor: &REActor,
-        vault_id: &VaultId,
-    ) {
-        track
-            .vault_ops
-            .push((actor.clone(), vault_id.clone(), VaultOp::LockContingentFee));
     }
 }
 
@@ -557,7 +653,7 @@ impl ExecutionTraceReceipt {
                                 .entry(vault_id)
                                 .or_default() -= amount;
                         }
-                        VaultOp::LockFee | VaultOp::LockContingentFee => {
+                        VaultOp::LockFee => {
                             *vault_changes
                                 .entry(component_id)
                                 .or_default()

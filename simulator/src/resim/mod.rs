@@ -52,7 +52,7 @@ use clap::{Parser, Subcommand};
 use radix_engine::constants::*;
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::model::*;
-use radix_engine::transaction::TransactionExecutor;
+use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::transaction::TransactionResult;
@@ -171,17 +171,14 @@ pub fn handle_manifest<O: std::io::Write>(
             let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
             let mut scrypto_interpreter = ScryptoInterpreter {
-                wasm_engine: DefaultWasmEngine::new(),
-                wasm_instrumenter: WasmInstrumenter::new(),
-                wasm_metering_params: WasmMeteringParams::new(
+                wasm_engine: DefaultWasmEngine::default(),
+                wasm_instrumenter: WasmInstrumenter::default(),
+                wasm_metering_config: WasmMeteringConfig::new(
                     InstructionCostRules::tiered(1, 5, 10, 5000),
                     512,
                 ),
                 phantom: PhantomData,
             };
-
-            let mut executor =
-                TransactionExecutor::new(&mut substate_store, &mut scrypto_interpreter);
 
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks
@@ -189,10 +186,11 @@ pub fn handle_manifest<O: std::io::Write>(
                 .map(|e| NonFungibleAddress::from_public_key(&e.public_key()))
                 .collect::<Vec<NonFungibleAddress>>();
             let nonce = get_nonce()?;
-            let transaction = TestTransaction::new(manifest, nonce, initial_proofs);
+            let transaction = TestTransaction::new(manifest, nonce);
 
-            let receipt = executor.execute_and_commit(
-                &transaction,
+            let receipt = execute_and_commit_transaction(
+                &mut substate_store,
+                &mut scrypto_interpreter,
                 &FeeReserveConfig {
                     cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                     system_loan: DEFAULT_SYSTEM_LOAN,
@@ -202,6 +200,7 @@ pub fn handle_manifest<O: std::io::Write>(
                     trace,
                     max_sys_call_trace_depth: 1,
                 },
+                &transaction.get_executable(initial_proofs),
             );
 
             if output_receipt {

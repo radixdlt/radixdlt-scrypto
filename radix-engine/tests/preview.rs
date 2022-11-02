@@ -22,9 +22,15 @@ fn test_transaction_preview_cost_estimate() {
     let preview_flags = PreviewFlags {
         unlimited_loan: true,
         assume_all_signature_proofs: false,
+        permit_invalid_header_epoch: false,
+        permit_duplicate_intent_hash: false,
     };
-    let (validated_transaction, preview_intent) =
-        prepare_test_tx_and_preview_intent(&test_runner, &network, manifest, &preview_flags);
+    let (notarized_transaction, preview_intent) = prepare_matching_test_tx_and_preview_intent(
+        &test_runner,
+        &network,
+        manifest,
+        &preview_flags,
+    );
 
     // Act & Assert: Execute the preview, followed by a normal execution.
     // Ensure that both succeed and that the preview result provides an accurate cost estimate
@@ -32,8 +38,8 @@ fn test_transaction_preview_cost_estimate() {
     let preview_receipt = preview_result.unwrap().receipt;
     preview_receipt.expect_commit_success();
 
-    let receipt = test_runner.execute_transaction(
-        &validated_transaction,
+    let receipt = test_runner.execute_transaction_with_config(
+        &make_executable(&network, &notarized_transaction),
         &FeeReserveConfig::standard(),
         &ExecutionConfig::standard(),
     );
@@ -61,6 +67,8 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
     let preview_flags = PreviewFlags {
         unlimited_loan: true,
         assume_all_signature_proofs: true,
+        permit_invalid_header_epoch: false,
+        permit_duplicate_intent_hash: false,
     };
 
     // Check method authorization (withdrawal) without a proof in the auth zone
@@ -74,8 +82,12 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
         )
         .build();
 
-    let (_, preview_intent) =
-        prepare_test_tx_and_preview_intent(&test_runner, &network, manifest, &preview_flags);
+    let (_, preview_intent) = prepare_matching_test_tx_and_preview_intent(
+        &test_runner,
+        &network,
+        manifest,
+        &preview_flags,
+    );
 
     // Act
     let result = test_runner.execute_preview(preview_intent, &network);
@@ -84,12 +96,12 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
     result.unwrap().receipt.expect_commit_success();
 }
 
-fn prepare_test_tx_and_preview_intent(
+fn prepare_matching_test_tx_and_preview_intent(
     test_runner: &TestRunner<TypedInMemorySubstateStore>,
     network: &NetworkDefinition,
     manifest: TransactionManifest,
     flags: &PreviewFlags,
-) -> (Executable, PreviewIntent) {
+) -> (NotarizedTransaction, PreviewIntent) {
     let notary_priv_key = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap();
     let tx_signer_priv_key = EcdsaSecp256k1PrivateKey::from_u64(3).unwrap();
 
@@ -110,22 +122,20 @@ fn prepare_test_tx_and_preview_intent(
         .notarize(&notary_priv_key)
         .build();
 
-    let validator = NotarizedTransactionValidator::new(ValidationConfig {
-        network_id: network.id,
-        current_epoch: 1,
-        max_cost_unit_limit: 10_000_000,
-        min_tip_percentage: 0,
-    });
-
-    let validated_transaction = validator
-        .validate(notarized_transaction.clone(), &TestIntentHashManager::new())
-        .unwrap();
-
     let preview_intent = PreviewIntent {
-        intent: notarized_transaction.signed_intent.intent,
+        intent: notarized_transaction.signed_intent.intent.clone(),
         signer_public_keys: vec![tx_signer_priv_key.public_key().into()],
         flags: flags.clone(),
     };
 
-    (validated_transaction, preview_intent)
+    (notarized_transaction, preview_intent)
+}
+
+fn make_executable<'a>(
+    network: &'a NetworkDefinition,
+    transaction: &'a NotarizedTransaction,
+) -> Executable<'a> {
+    NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
+        .validate(transaction, &TestIntentHashManager::new())
+        .unwrap()
 }

@@ -16,6 +16,14 @@ use super::TrackError;
 pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
+    TransactionEpochNotYetValid {
+        valid_from: u64,
+        current_epoch: u64,
+    },
+    TransactionEpochNoLongerValid {
+        valid_until: u64,
+        current_epoch: u64,
+    },
 }
 
 impl fmt::Display for RejectionError {
@@ -56,8 +64,6 @@ pub enum KernelError {
     // invocation
     WasmError(WasmError),
 
-    InvalidReferencePass(GlobalAddress),
-    InvalidReferenceReturn(GlobalAddress),
     InvalidReferenceWrite(GlobalAddress),
     GlobalAddressNotFound(GlobalAddress),
 
@@ -132,8 +138,6 @@ pub enum ScryptoFnResolvingError {
 pub enum InterpreterError {
     InvalidScryptoFunctionInvocation(ScryptoFunctionIdent, ScryptoFnResolvingError),
     InvalidScryptoMethodInvocation(ScryptoMethodIdent, ScryptoFnResolvingError),
-    InvalidNativeFunctionIdent(NativeFunctionIdent),
-    InvalidNativeMethodIdent(NativeMethodIdent),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]

@@ -10,6 +10,10 @@ echo "Building the workspace packages..."
 (set -x; cargo test --no-run)
 (set -x; cargo bench --no-run)
 
+echo "Building the engine in different configurations..."
+
+(set -x; cd radix-engine; cargo build --features wasmer)
+
 echo "Building the simulator packages..."
 
 (set -x; cd simulator; cargo build)

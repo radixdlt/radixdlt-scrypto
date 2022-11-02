@@ -4,13 +4,17 @@ use crate::fee::FeeReserve;
 use crate::model::Resource;
 use crate::types::*;
 
+#[derive(Debug)]
+pub enum InvocationInfo<'a> {
+    Native(&'a NativeInvocationInfo),
+    Scrypto(&'a ScryptoInvocation),
+}
+
 pub enum SysCallInput<'a> {
-    InvokeScrypto {
-        invocation: &'a ScryptoInvocation,
-        depth: usize,
-    },
-    InvokeNative {
-        invocation: &'a NativeInvocation,
+    Invoke {
+        info: InvocationInfo<'a>,
+        input_size: u32,
+        value_count: u32,
         depth: usize,
     },
     ReadOwnedNodes,
@@ -53,8 +57,7 @@ pub enum SysCallInput<'a> {
 
 #[derive(Debug)]
 pub enum SysCallOutput<'a> {
-    InvokeScrypto { output: &'a ScryptoValue },
-    InvokeNative { output: &'a ScryptoValue },
+    Invoke { rtn: &'a dyn Traceable },
     ReadOwnedNodes,
     BorrowNode { node_pointer: &'a RENodeLocation },
     DropNode { node: &'a HeapRENode },

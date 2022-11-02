@@ -1,5 +1,5 @@
-use radix_engine::engine::RuntimeError;
 use radix_engine::engine::{ApplicationError, KernelError, TrackError};
+use radix_engine::engine::{RejectionError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::ledger::WriteableSubstateStore;
 use radix_engine::model::KeyValueStoreEntrySubstate;
@@ -121,12 +121,11 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
             )
             .build()
     });
-
     receipt.expect_specific_rejection(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::TrackError(
-                TrackError::LockUnmodifiedBaseOnNewSubstate(..)
+            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+                KernelError::TrackError(TrackError::LockUnmodifiedBaseOnNewSubstate(..))
             ))
         )
     });
@@ -162,8 +161,8 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
     receipt.expect_specific_rejection(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::TrackError(
-                TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(..)
+            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
+                KernelError::TrackError(TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(..))
             ))
         )
     });

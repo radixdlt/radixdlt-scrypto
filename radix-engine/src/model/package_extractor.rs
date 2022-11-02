@@ -21,11 +21,11 @@ pub fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, Extract
         .into_iter()
         .filter(|s| s.ends_with("_abi"));
 
-    let mut wasm_engine = DefaultWasmEngine::new();
-    let mut wasm_instrumenter = WasmInstrumenter::new();
+    let wasm_engine = DefaultWasmEngine::default();
+    let wasm_instrumenter = WasmInstrumenter::default();
 
     let metering_params =
-        WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 50000), 512);
+        WasmMeteringConfig::new(InstructionCostRules::tiered(1, 5, 10, 50000), 512);
     let instrumented_code = wasm_instrumenter.instrument(code, &metering_params);
     let mut fee_reserve = SystemLoanFeeReserve::default();
     fee_reserve.credit(EXTRACT_ABI_CREDIT);

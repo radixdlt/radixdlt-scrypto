@@ -4,20 +4,20 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use radix_engine::constants::*;
-use radix_engine::engine::{Kernel, KernelError, ModuleError, ScryptoInterpreter};
-use radix_engine::engine::{RuntimeError, SystemApi, Track};
+use radix_engine::engine::{Invokable, Kernel, KernelError, ModuleError, ScryptoInterpreter};
+use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_abi};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
-    ExecutionConfig, FeeReserveConfig, PreviewError, PreviewExecutor, PreviewResult,
-    TransactionExecutor, TransactionReceipt, TransactionResult,
+    execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
+    FeeReserveConfig, PreviewError, PreviewResult, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{
     DefaultWasmEngine, DefaultWasmInstance, InstructionCostRules, WasmInstrumenter,
-    WasmMeteringParams,
+    WasmMeteringConfig,
 };
 use sbor::describe::*;
 use scrypto::dec;
@@ -40,12 +40,12 @@ pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
 impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn new(trace: bool, substate_store: &'s mut S) -> Self {
         let scrypto_interpreter = ScryptoInterpreter {
-            wasm_metering_params: WasmMeteringParams::new(
+            wasm_metering_config: WasmMeteringConfig::new(
                 InstructionCostRules::tiered(1, 5, 10, 5000),
                 512,
             ),
-            wasm_engine: DefaultWasmEngine::new(),
-            wasm_instrumenter: WasmInstrumenter::new(),
+            wasm_engine: DefaultWasmEngine::default(),
+            wasm_instrumenter: WasmInstrumenter::default(),
             phantom: PhantomData,
         };
         Self {
@@ -329,19 +329,28 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         self.execute_manifest(manifest, initial_proofs)
     }
 
-    pub fn execute_transaction(
+    pub fn execute_transaction(&mut self, transaction: &Executable) -> TransactionReceipt {
+        self.execute_transaction_with_config(
+            transaction,
+            &FeeReserveConfig::standard(),
+            &ExecutionConfig::standard(),
+        )
+    }
+
+    pub fn execute_transaction_with_config(
         &mut self,
         transaction: &Executable,
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
         let node_id = self.create_child_node(0);
-        let substate_store = &mut self.execution_stores.get_output_store(node_id);
 
-        TransactionExecutor::new(substate_store, &mut self.scrypto_interpreter).execute(
-            transaction,
+        execute_transaction(
+            &self.execution_stores.get_output_store(node_id),
+            &self.scrypto_interpreter,
             fee_reserve_config,
             execution_config,
+            transaction,
         )
     }
 
@@ -351,15 +360,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         network: &NetworkDefinition,
     ) -> Result<PreviewResult, PreviewError> {
         let node_id = self.create_child_node(0);
-        let substate_store = &mut self.execution_stores.get_output_store(node_id);
 
-        PreviewExecutor::new(
-            substate_store,
+        execute_preview(
+            &self.execution_stores.get_output_store(node_id),
             &mut self.scrypto_interpreter,
             &self.intent_hash_manager,
             network,
+            preview_intent,
         )
-        .execute(preview_intent)
     }
 
     pub fn execute_batch(
@@ -384,22 +392,22 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let mut store = self.execution_stores.get_output_store(node_id);
         let mut receipts = Vec::new();
         for (manifest, initial_proofs) in manifests {
-            let transaction =
-                TestTransaction::new(manifest, self.next_transaction_nonce, initial_proofs);
+            let transaction = TestTransaction::new(manifest, self.next_transaction_nonce);
             self.next_transaction_nonce += 1;
-            let receipt = TransactionExecutor::new(&mut store, &mut self.scrypto_interpreter)
-                .execute_and_commit(
-                    &transaction,
-                    &FeeReserveConfig {
-                        cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
-                        system_loan: DEFAULT_SYSTEM_LOAN,
-                    },
-                    &ExecutionConfig {
-                        max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                        trace: self.trace,
-                        max_sys_call_trace_depth: 1,
-                    },
-                );
+            let receipt = execute_and_commit_transaction(
+                &mut store,
+                &mut self.scrypto_interpreter,
+                &FeeReserveConfig {
+                    cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+                    system_loan: DEFAULT_SYSTEM_LOAN,
+                },
+                &ExecutionConfig {
+                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+                    trace: self.trace,
+                    max_sys_call_trace_depth: 1,
+                },
+                &transaction.get_executable(initial_proofs),
+            );
             receipts.push(receipt);
         }
 
@@ -722,35 +730,29 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             )],
             |kernel| {
                 kernel
-                    .invoke_native(NativeInvocation::Method(
-                        NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
-                        RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                        ScryptoValue::from_typed(&EpochManagerSetEpochInput { epoch }),
-                    ))
+                    .invoke(EpochManagerSetEpochInvocation {
+                        epoch,
+                        receiver: EPOCH_MANAGER,
+                    })
                     .unwrap()
             },
         );
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
+        self.kernel_call(vec![], |kernel| {
             kernel
-                .invoke_native(NativeInvocation::Method(
-                    NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
-                    RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                    ScryptoValue::from_typed(&EpochManagerGetCurrentEpochInput {}),
-                ))
+                .invoke(EpochManagerGetCurrentEpochInvocation {
+                    receiver: EPOCH_MANAGER,
+                })
                 .unwrap()
-        });
-        scrypto_decode(&current_epoch.raw).unwrap()
+        })
     }
 
     /// Performs a kernel call through a kernel with `is_system = true`.
-    fn kernel_call<F>(&mut self, initial_proofs: Vec<NonFungibleAddress>, fun: F) -> ScryptoValue
+    fn kernel_call<F, O>(&mut self, initial_proofs: Vec<NonFungibleAddress>, fun: F) -> O
     where
-        F: FnOnce(
-            &mut Kernel<DefaultWasmEngine, DefaultWasmInstance, SystemLoanFeeReserve>,
-        ) -> ScryptoValue,
+        F: FnOnce(&mut Kernel<DefaultWasmEngine, DefaultWasmInstance, SystemLoanFeeReserve>) -> O,
     {
         let tx_hash = hash(self.next_transaction_nonce.to_string());
         let blobs = HashMap::new();
@@ -777,7 +779,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         // Invoke the system
-        let output: ScryptoValue = fun(&mut kernel);
+        let output = fun(&mut kernel);
 
         kernel.finalize().unwrap();
 

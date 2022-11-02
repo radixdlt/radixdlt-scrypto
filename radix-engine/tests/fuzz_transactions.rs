@@ -1,13 +1,15 @@
 use radix_engine::constants::{
-    DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
+    DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::state_manager::StagedSubstateStoreManager;
-use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig, TransactionExecutor};
+use radix_engine::transaction::{
+    execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
+};
 use radix_engine::types::*;
 use radix_engine::wasm::{
-    DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams,
+    DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
 use rand::Rng;
 use rand_chacha;
@@ -22,22 +24,17 @@ use transaction::validation::{
 };
 
 fn execute_single_transaction(transaction: NotarizedTransaction) {
-    let validator = NotarizedTransactionValidator::new(ValidationConfig {
-        network_id: NetworkDefinition::simulator().id,
-        current_epoch: 1,
-        max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-        min_tip_percentage: 0,
-    });
+    let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
-    let transaction = validator
-        .validate(transaction, &TestIntentHashManager::new())
+    let executable = validator
+        .validate(&transaction, &TestIntentHashManager::new())
         .unwrap();
 
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut scrypto_interpreter = ScryptoInterpreter {
-        wasm_engine: DefaultWasmEngine::new(),
-        wasm_instrumenter: WasmInstrumenter::new(),
-        wasm_metering_params: WasmMeteringParams::new(
+        wasm_engine: DefaultWasmEngine::default(),
+        wasm_instrumenter: WasmInstrumenter::default(),
+        wasm_metering_config: WasmMeteringConfig::new(
             InstructionCostRules::tiered(1, 5, 10, 5000),
             512,
         ),
@@ -57,9 +54,13 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
     let staged_node = staged_store_manager.new_child_node(0);
 
     let mut staged_store = staged_store_manager.get_output_store(staged_node);
-    let mut transaction_executor =
-        TransactionExecutor::new(&mut staged_store, &mut scrypto_interpreter);
-    transaction_executor.execute_and_commit(&transaction, &fee_reserve_config, &execution_config);
+    execute_and_commit_transaction(
+        &mut staged_store,
+        &mut scrypto_interpreter,
+        &fee_reserve_config,
+        &execution_config,
+        &executable,
+    );
 }
 
 struct TransactionFuzzer {
