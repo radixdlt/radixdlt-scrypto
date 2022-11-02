@@ -5,7 +5,7 @@ use alloc::string::String;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
-use crate::schema::Type;
+use crate::schema_type::Type;
 use sbor::{Decode, Encode, TypeId};
 
 /// Represents a blueprint.

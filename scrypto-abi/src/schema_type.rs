@@ -9,7 +9,7 @@ use sbor::*;
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type")  // For JSON readability, see https://serde.rs/enum-representations.html
+    serde(tag = "type")  // See https://serde.rs/enum-representations.html
 )]
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode)]
 pub enum Type {
@@ -43,7 +43,7 @@ pub enum Type {
 
     Enum {
         name: String,
-        variants: Vec<Variant>, // Order matters as it decides of the variant discriminator
+        variants: Vec<Variant>,
     },
 
     Option {

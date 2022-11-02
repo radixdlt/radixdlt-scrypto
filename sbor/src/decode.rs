@@ -35,7 +35,7 @@ pub enum DecodeError {
 
     InvalidUtf8,
 
-    InvalidCustomValue,
+    InvalidCustomValue, // TODO: generify custom error codes
 }
 
 /// A data structure that can be decoded from a byte array using SBOR.

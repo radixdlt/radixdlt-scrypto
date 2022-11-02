@@ -218,7 +218,7 @@ impl NotarizedTransactionValidator {
                 | Instruction::CallMethod { args, .. }
                 | Instruction::CallNativeFunction { args, .. }
                 | Instruction::CallNativeMethod { args, .. } => {
-                    // TODO: decode into SborValue
+                    // TODO: decode into Value
                     Self::validate_call_data(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
@@ -312,8 +312,8 @@ impl NotarizedTransactionValidator {
         call_data: &[u8],
         id_validator: &mut IdValidator,
     ) -> Result<(), CallDataValidationError> {
-        let value =
-            ScryptoValue::from_slice(call_data).map_err(CallDataValidationError::InvalidValue)?;
+        let value = ScryptoValue::from_slice(call_data)
+            .map_err(CallDataValidationError::InvalidScryptoValue)?;
         id_validator
             .move_resources(&value)
             .map_err(CallDataValidationError::IdValidationError)?;

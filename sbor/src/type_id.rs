@@ -12,7 +12,7 @@ use crate::rust::vec::Vec;
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type") // For JSON readability, see https://serde.rs/enum-representations.html
+    serde(tag = "type") // See https://serde.rs/enum-representations.html
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SborTypeId<X: CustomTypeId> {

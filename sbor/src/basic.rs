@@ -3,7 +3,7 @@ use crate::*;
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type") // For JSON readability, see https://serde.rs/enum-representations.html
+    serde(tag = "type") // See https://serde.rs/enum-representations.html
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomTypeId {}
@@ -11,7 +11,7 @@ pub enum NoCustomTypeId {}
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type") // For JSON readability, see https://serde.rs/enum-representations.html
+    serde(tag = "type") // See https://serde.rs/enum-representations.html
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomValue {}

@@ -6,7 +6,7 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 mod blueprint_abi;
-mod schema;
+mod schema_type;
 
 pub use blueprint_abi::*;
-pub use schema::*;
+pub use schema_type::*;

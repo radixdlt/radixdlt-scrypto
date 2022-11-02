@@ -39,7 +39,7 @@ pub enum IdValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallDataValidationError {
-    InvalidValue(ScryptoValueDecodeError),
+    InvalidScryptoValue(ScryptoValueDecodeError),
     IdValidationError(IdValidationError),
     VaultNotAllowed(VaultId),
     KeyValueStoreNotAllowed(KeyValueStoreId),

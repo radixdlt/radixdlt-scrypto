@@ -160,7 +160,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     writeln!(
         output,
         "{}: {:?}{:?}",
-        "Key SborValue Store".green().bold(),
+        "Key Value Store".green().bold(),
         component_address,
         kv_store_id
     );

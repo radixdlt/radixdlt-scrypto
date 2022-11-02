@@ -30,7 +30,7 @@ pub use path::{SborPath, SborPathBuf};
 pub use type_id::*;
 pub use value::*;
 
-/// Encode a `T` into byte array, with type info included.
+/// Encode a `T` into byte array.
 pub fn encode<X: CustomTypeId, T: Encode<X> + ?Sized>(v: &T) -> crate::rust::vec::Vec<u8> {
     let mut buf = crate::rust::vec::Vec::with_capacity(512);
     let mut enc = Encoder::new(&mut buf);
@@ -38,7 +38,7 @@ pub fn encode<X: CustomTypeId, T: Encode<X> + ?Sized>(v: &T) -> crate::rust::vec
     buf
 }
 
-/// Decode an instance of `T` from a slice, with type info included.
+/// Decode an instance of `T` from a slice.
 pub fn decode<X: CustomTypeId, T: Decode<X>>(buf: &[u8]) -> Result<T, DecodeError> {
     let mut dec = Decoder::new(buf);
     let v = T::decode(&mut dec)?;

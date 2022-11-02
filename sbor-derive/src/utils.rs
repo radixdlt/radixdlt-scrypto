@@ -84,7 +84,7 @@ pub fn build_generics(
         path
     } else {
         // Note that this above logic requires no use of CTI generic param by the input type.
-        // TODO: better to report error OR an alternative name if already exists
+        // TODO: better to report error OR take an alternative name if already exists
         impl_generics
             .params
             .push(parse_quote!(CTI: ::sbor::type_id::CustomTypeId));

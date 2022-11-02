@@ -1,7 +1,7 @@
 use crate::rust::vec::Vec;
 use crate::{Decode, DecodeError, Decoder, Encode, Encoder};
 
-/// Encode a `T` into byte array, with type info included.
+/// Encode a `T` into byte array.
 pub fn encode<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
     let mut buf = Vec::with_capacity(512);
     let mut enc = Encoder::new(&mut buf);
@@ -9,7 +9,7 @@ pub fn encode<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
     buf
 }
 
-/// Decode an instance of `T` from a slice, with type info included.
+/// Decode an instance of `T` from a slice.
 pub fn decode<T: Decode>(buf: &[u8]) -> Result<T, DecodeError> {
     let mut dec = Decoder::new(buf);
     let v = T::decode(&mut dec)?;
