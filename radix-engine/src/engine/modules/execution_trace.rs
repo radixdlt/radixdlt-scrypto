@@ -72,102 +72,6 @@ impl From<&ProofSubstate> for ProofSnapshot {
     }
 }
 
-impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
-    fn pre_sys_call(
-        &mut self,
-        _call_frame: &CallFrame,
-        heap: &mut Heap,
-        _track: &mut Track<R>,
-        input: SysCallInput,
-    ) -> Result<(), ModuleError> {
-        self.handle_pre_sys_call(heap, input)
-    }
-
-    fn post_sys_call(
-        &mut self,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        _track: &mut Track<R>,
-        output: SysCallOutput,
-    ) -> Result<(), ModuleError> {
-        self.handle_post_sys_call(call_frame, heap, output)
-    }
-
-    fn on_run(
-        &mut self,
-        actor: &REActor,
-        input: &ScryptoValue,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
-        Self::trace_run(call_frame, heap, track, actor, input);
-        Ok(())
-    }
-
-    fn on_wasm_instantiation(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-        _code: &[u8],
-    ) -> Result<(), ModuleError> {
-        Ok(())
-    }
-
-    fn on_wasm_costing(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-        _units: u32,
-    ) -> Result<(), ModuleError> {
-        Ok(())
-    }
-
-    fn on_lock_fee(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-        _vault_id: VaultId,
-        fee: Resource,
-        _contingent: bool,
-    ) -> Result<Resource, ModuleError> {
-        Ok(fee)
-    }
-
-    fn on_application_event(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-        event: &ApplicationEvent,
-    ) -> Result<(), ModuleError> {
-        match event {
-            ApplicationEvent::PreExecuteInstruction { .. } => {
-                let next_idx = match self.current_instruction_index {
-                    Some(current_instruction_index) => current_instruction_index + 1,
-                    None => 0,
-                };
-                self.current_instruction_index = Some(next_idx);
-                Ok(())
-            }
-            _ => {
-                Ok(()) // no-op
-            }
-        }
-    }
-
-    fn on_finished_processing(
-        &mut self,
-        _heap: &mut Heap,
-        track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
-        self.handle_processing_completed(track)
-    }
-}
-
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TracedSysCallData {
     pub buckets: HashMap<BucketId, Resource>,
@@ -207,6 +111,7 @@ pub enum SysCallTraceOrigin {
     NativeMethod(NativeMethod),
     CreateNode,
     DropNode,
+    /// Anything else that isn't traced on its own, but the trace exists for its children
     Opaque,
 }
 
@@ -303,6 +208,7 @@ macro_rules! impl_empty_traceable {
     }
 }
 
+/// Remaining Traceable implementations for invocations that don't involve proofs/buckets
 impl_empty_traceable!(for
     (),
     bool,
@@ -320,6 +226,102 @@ impl_empty_traceable!(for
     ResourceAddress,
     SystemAddress
 );
+
+impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
+    fn pre_sys_call(
+        &mut self,
+        _call_frame: &CallFrame,
+        heap: &mut Heap,
+        _track: &mut Track<R>,
+        input: SysCallInput,
+    ) -> Result<(), ModuleError> {
+        self.handle_pre_sys_call(heap, input)
+    }
+
+    fn post_sys_call(
+        &mut self,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
+        _track: &mut Track<R>,
+        output: SysCallOutput,
+    ) -> Result<(), ModuleError> {
+        self.handle_post_sys_call(call_frame, heap, output)
+    }
+
+    fn on_run(
+        &mut self,
+        actor: &REActor,
+        input: &ScryptoValue,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
+        track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        Self::trace_run(call_frame, heap, track, actor, input);
+        Ok(())
+    }
+
+    fn on_wasm_instantiation(
+        &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        _code: &[u8],
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn on_wasm_costing(
+        &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        _units: u32,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn on_lock_fee(
+        &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        _vault_id: VaultId,
+        fee: Resource,
+        _contingent: bool,
+    ) -> Result<Resource, ModuleError> {
+        Ok(fee)
+    }
+
+    fn on_application_event(
+        &mut self,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        event: &ApplicationEvent,
+    ) -> Result<(), ModuleError> {
+        match event {
+            ApplicationEvent::PreExecuteInstruction { .. } => {
+                let next_idx = match self.current_instruction_index {
+                    Some(current_instruction_index) => current_instruction_index + 1,
+                    None => 0,
+                };
+                self.current_instruction_index = Some(next_idx);
+                Ok(())
+            }
+            _ => {
+                Ok(()) // no-op
+            }
+        }
+    }
+
+    fn on_finished_processing(
+        &mut self,
+        _heap: &mut Heap,
+        track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        self.handle_processing_completed(track)
+    }
+}
 
 impl ExecutionTraceModule {
     pub fn new(max_sys_call_trace_depth: usize) -> ExecutionTraceModule {
@@ -454,7 +456,7 @@ impl ExecutionTraceModule {
 
         // Only include the trace if:
         // * there's a non-empty traced input or output
-        // * there are any child traces: they need a parent regardless of whether it traces any inputs/outputs.
+        // * OR there are any child traces: they need a parent regardless of whether it traces any inputs/outputs.
         //   At some depth (up to the tracing limit) there must have been at least one traced input/output
         //   so we need to include the full path up to the root.
         if !traced_input.is_empty() || !traced_output.is_empty() || !child_traces.is_empty() {

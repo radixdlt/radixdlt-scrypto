@@ -111,7 +111,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         self.application_logs.push((level, message));
     }
 
-    /// Adds an output event..
+    /// Adds an output event. Output events are collected and returned in a receipt.
     pub fn add_output_event(&mut self, event: OutputEvent) {
         self.output_events.push(event);
     }
