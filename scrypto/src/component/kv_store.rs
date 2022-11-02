@@ -1,4 +1,5 @@
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::str::FromStr;
