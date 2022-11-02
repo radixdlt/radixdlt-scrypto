@@ -7,14 +7,12 @@ use std::collections::BTreeSet;
 use crate::builder::TransactionBuilder;
 use crate::model::*;
 
-pub struct TestTransaction {}
+pub struct TestTransaction {
+    transaction: NotarizedTransaction,
+}
 
 impl TestTransaction {
-    pub fn new(
-        manifest: TransactionManifest,
-        nonce: u64,
-        initial_proofs: Vec<NonFungibleAddress>,
-    ) -> Executable {
+    pub fn new(manifest: TransactionManifest, nonce: u64) -> Self {
         let transaction = TransactionBuilder::new()
             .header(TransactionHeader {
                 version: TRANSACTION_VERSION_V1,
@@ -31,18 +29,28 @@ impl TestTransaction {
             .notary_signature(EcdsaSecp256k1Signature([0u8; 65]).into())
             .build();
 
-        let transaction_hash = transaction.hash();
+        Self { transaction }
+    }
 
-        Executable {
-            transaction_hash,
-            instructions: transaction.signed_intent.intent.manifest.instructions,
-            auth_zone_params: AuthZoneParams {
-                initial_proofs,
-                virtualizable_proofs_resource_addresses: BTreeSet::new(),
+    pub fn get_executable<'a>(&'a self, initial_proofs: Vec<NonFungibleAddress>) -> Executable<'a> {
+        let transaction_hash = self.transaction.hash();
+        let intent = &self.transaction.signed_intent.intent;
+
+        Executable::new(
+            &intent.manifest.instructions,
+            &intent.manifest.blobs,
+            ExecutionContext {
+                transaction_hash,
+                auth_zone_params: AuthZoneParams {
+                    initial_proofs,
+                    virtualizable_proofs_resource_addresses: BTreeSet::new(),
+                },
+                fee_payment: FeePayment {
+                    cost_unit_limit: intent.header.cost_unit_limit,
+                    tip_percentage: intent.header.tip_percentage,
+                },
+                runtime_validations: vec![],
             },
-            cost_unit_limit: transaction.signed_intent.intent.header.cost_unit_limit,
-            tip_percentage: transaction.signed_intent.intent.header.tip_percentage,
-            blobs: transaction.signed_intent.intent.manifest.blobs,
-        }
+        )
     }
 }

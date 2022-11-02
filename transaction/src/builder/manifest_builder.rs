@@ -631,7 +631,7 @@ impl ManifestBuilder {
     }
 
     /// Mints resource.
-    pub fn mint(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
+    pub fn mint(&mut self, resource_address: ResourceAddress, amount: Decimal) -> &mut Self {
         self.add_instruction(Instruction::CallNativeMethod {
             method_ident: NativeMethodIdent {
                 receiver: RENodeId::Global(GlobalAddress::Resource(resource_address)),
@@ -645,7 +645,7 @@ impl ManifestBuilder {
     }
 
     /// Burns a resource.
-    pub fn burn(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
+    pub fn burn(&mut self, resource_address: ResourceAddress, amount: Decimal) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::CallNativeMethod {
@@ -715,8 +715,58 @@ impl ManifestBuilder {
         .0
     }
 
+    pub fn lock_fee_and_withdraw(
+        &mut self,
+        account: ComponentAddress,
+        amount: Decimal,
+        resource_address: ResourceAddress,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "lock_fee_and_withdraw".to_string(),
+            },
+            args: args!(amount, resource_address),
+        })
+        .0
+    }
+
+    pub fn lock_fee_and_withdraw_by_amount(
+        &mut self,
+        account: ComponentAddress,
+        amount_to_lock: Decimal,
+        amount: Decimal,
+        resource_address: ResourceAddress,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "lock_fee_and_withdraw_by_amount".to_string(),
+            },
+            args: args!(amount_to_lock, amount, resource_address),
+        })
+        .0
+    }
+
+    pub fn lock_fee_and_withdraw_by_ids(
+        &mut self,
+        account: ComponentAddress,
+        amount_to_lock: Decimal,
+        ids: BTreeSet<NonFungibleId>,
+        resource_address: ResourceAddress,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "lock_fee_and_withdraw_by_ids".to_string(),
+            },
+            args: args!(amount_to_lock, ids, resource_address),
+        })
+        .0
+    }
+
     /// Locks a fee from the XRD vault of an account.
-    pub fn lock_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
+    pub fn lock_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ScryptoMethodIdent {
                 receiver: ScryptoReceiver::Global(account),
@@ -727,7 +777,7 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn lock_contingent_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
+    pub fn lock_contingent_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ScryptoMethodIdent {
                 receiver: ScryptoReceiver::Global(account),
@@ -741,8 +791,8 @@ impl ManifestBuilder {
     /// Withdraws resource from an account.
     pub fn withdraw_from_account(
         &mut self,
-        resource_address: ResourceAddress,
         account: ComponentAddress,
+        resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ScryptoMethodIdent {
@@ -757,9 +807,9 @@ impl ManifestBuilder {
     /// Withdraws resource from an account.
     pub fn withdraw_from_account_by_amount(
         &mut self,
+        account: ComponentAddress,
         amount: Decimal,
         resource_address: ResourceAddress,
-        account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ScryptoMethodIdent {
@@ -774,9 +824,9 @@ impl ManifestBuilder {
     /// Withdraws resource from an account.
     pub fn withdraw_from_account_by_ids(
         &mut self,
+        account: ComponentAddress,
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
-        account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ScryptoMethodIdent {
@@ -791,8 +841,8 @@ impl ManifestBuilder {
     /// Creates resource proof from an account.
     pub fn create_proof_from_account(
         &mut self,
-        resource_address: ResourceAddress,
         account: ComponentAddress,
+        resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ScryptoMethodIdent {
@@ -807,9 +857,9 @@ impl ManifestBuilder {
     /// Creates resource proof from an account.
     pub fn create_proof_from_account_by_amount(
         &mut self,
+        account: ComponentAddress,
         amount: Decimal,
         resource_address: ResourceAddress,
-        account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ScryptoMethodIdent {
@@ -824,9 +874,9 @@ impl ManifestBuilder {
     /// Creates resource proof from an account.
     pub fn create_proof_from_account_by_ids(
         &mut self,
+        account: ComponentAddress,
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
-        account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ScryptoMethodIdent {
@@ -841,17 +891,17 @@ impl ManifestBuilder {
     /// Creates resource proof from an account.
     pub fn create_proof_from_account_by_resource_specifier(
         &mut self,
-        resource_specifier: String,
         account: ComponentAddress,
+        resource_specifier: String,
     ) -> Result<&mut Self, BuildArgsError> {
         let resource_specifier = parse_resource_specifier(&resource_specifier, &self.decoder)
             .map_err(|_| BuildArgsError::InvalidResourceSpecifier(resource_specifier))?;
         let builder = match resource_specifier {
             ResourceSpecifier::Amount(amount, resource_address) => {
-                self.create_proof_from_account_by_amount(amount, resource_address, account)
+                self.create_proof_from_account_by_amount(account, amount, resource_address)
             }
             ResourceSpecifier::Ids(non_fungible_ids, resource_address) => {
-                self.create_proof_from_account_by_ids(&non_fungible_ids, resource_address, account)
+                self.create_proof_from_account_by_ids(account, &non_fungible_ids, resource_address)
             }
         };
         Ok(builder)
@@ -951,9 +1001,9 @@ impl ManifestBuilder {
                                 ResourceSpecifier::Amount(amount, resource_address) => {
                                     if let Some(account) = account {
                                         self.withdraw_from_account_by_amount(
+                                            account,
                                             amount,
                                             resource_address,
-                                            account,
                                         );
                                     }
                                     self.add_instruction(Instruction::TakeFromWorktopByAmount {
@@ -966,9 +1016,9 @@ impl ManifestBuilder {
                                 ResourceSpecifier::Ids(ids, resource_address) => {
                                     if let Some(account) = account {
                                         self.withdraw_from_account_by_ids(
+                                            account,
                                             &ids,
                                             resource_address,
-                                            account,
                                         );
                                     }
                                     self.add_instruction(Instruction::TakeFromWorktopByIds {
@@ -990,9 +1040,9 @@ impl ManifestBuilder {
                                 ResourceSpecifier::Amount(amount, resource_address) => {
                                     if let Some(account) = account {
                                         self.create_proof_from_account_by_amount(
+                                            account,
                                             amount,
                                             resource_address,
-                                            account,
                                         );
                                         self.add_instruction(Instruction::PopFromAuthZone)
                                             .2
@@ -1004,9 +1054,9 @@ impl ManifestBuilder {
                                 ResourceSpecifier::Ids(ids, resource_address) => {
                                     if let Some(account) = account {
                                         self.create_proof_from_account_by_ids(
+                                            account,
                                             &ids,
                                             resource_address,
-                                            account,
                                         );
                                         self.add_instruction(Instruction::PopFromAuthZone)
                                             .2

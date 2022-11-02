@@ -2,7 +2,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::types::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
-use transaction::model::{NotarizedTransaction, TransactionHeader};
+use transaction::model::TransactionHeader;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::signing::EddsaEd25519PrivateKey;
 use transaction::validation::verify_ecdsa_secp256k1;
@@ -67,7 +67,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
         })
         .manifest(
             ManifestBuilder::new(&NetworkDefinition::simulator())
-                .withdraw_from_account_by_amount(1u32.into(), RADIX_TOKEN, account1)
+                .withdraw_from_account_by_amount(account1, 1u32.into(), RADIX_TOKEN)
                 .call_method(
                     account2,
                     "deposit_batch",
@@ -80,23 +80,19 @@ fn bench_transaction_validation(c: &mut Criterion) {
     let transaction_bytes = transaction.to_bytes();
     println!("Transaction size: {} bytes", transaction_bytes.len());
 
-    let validator = NotarizedTransactionValidator::new(ValidationConfig {
-        network_id: NetworkDefinition::simulator().id,
-        current_epoch: 1,
-        max_cost_unit_limit: 10_000_000,
-        min_tip_percentage: 0,
-    });
+    let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
     c.bench_function("Transaction validation", |b| {
         b.iter(|| {
             let intent_hash_manager = TestIntentHashManager::new();
 
-            TransactionValidator::<NotarizedTransaction>::validate_from_slice(
-                &validator,
+            let transaction = NotarizedTransactionValidator::check_length_and_decode_from_slice(
                 &transaction_bytes,
-                &intent_hash_manager,
             )
             .unwrap();
+            validator
+                .validate(&transaction, &intent_hash_manager)
+                .unwrap();
         })
     });
 }

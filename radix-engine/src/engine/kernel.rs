@@ -37,7 +37,7 @@ pub struct Kernel<
     /// The transaction hash
     transaction_hash: Hash,
     /// Blobs attached to the transaction
-    blobs: &'g HashMap<Hash, Vec<u8>>,
+    blobs: &'g HashMap<Hash, &'g [u8]>,
     /// ID allocator
     id_allocator: IdAllocator,
 
@@ -53,7 +53,7 @@ pub struct Kernel<
     track: &'g mut Track<'s, R>,
 
     /// Interpreter capable of running scrypto programs
-    scrypto_interpreter: &'g mut ScryptoInterpreter<I, W>,
+    scrypto_interpreter: &'g ScryptoInterpreter<I, W>,
 
     /// Kernel modules
     modules: Vec<Box<dyn Module<R>>>,
@@ -70,10 +70,10 @@ where
     pub fn new(
         transaction_hash: Hash,
         auth_zone_params: AuthZoneParams,
-        blobs: &'g HashMap<Hash, Vec<u8>>,
+        blobs: &'g HashMap<Hash, &'g [u8]>,
         max_depth: usize,
         track: &'g mut Track<'s, R>,
-        scrypto_interpreter: &'g mut ScryptoInterpreter<I, W>,
+        scrypto_interpreter: &'g ScryptoInterpreter<I, W>,
         modules: Vec<Box<dyn Module<R>>>,
     ) -> Self {
         let mut kernel = Self {

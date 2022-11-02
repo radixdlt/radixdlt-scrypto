@@ -11,13 +11,13 @@ use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_abi};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
-    ExecutionConfig, FeeReserveConfig, PreviewError, PreviewExecutor, PreviewResult,
-    TransactionExecutor, TransactionReceipt, TransactionResult,
+    execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
+    FeeReserveConfig, PreviewError, PreviewResult, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{
     DefaultWasmEngine, DefaultWasmInstance, InstructionCostRules, WasmInstrumenter,
-    WasmMeteringParams,
+    WasmMeteringConfig,
 };
 use scrypto::dec;
 use scrypto::math::Decimal;
@@ -39,12 +39,12 @@ pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
 impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn new(trace: bool, substate_store: &'s mut S) -> Self {
         let scrypto_interpreter = ScryptoInterpreter {
-            wasm_metering_params: WasmMeteringParams::new(
+            wasm_metering_config: WasmMeteringConfig::new(
                 InstructionCostRules::tiered(1, 5, 10, 5000),
                 512,
             ),
-            wasm_engine: DefaultWasmEngine::new(),
-            wasm_instrumenter: WasmInstrumenter::new(),
+            wasm_engine: DefaultWasmEngine::default(),
+            wasm_instrumenter: WasmInstrumenter::default(),
             phantom: PhantomData,
         };
         Self {
@@ -155,7 +155,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_method(
@@ -172,7 +172,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(withdraw_auth, bucket_id)
@@ -237,7 +237,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         abi: HashMap<String, BlueprintAbi>,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .publish_package(code, abi)
             .build();
 
@@ -328,19 +328,28 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         self.execute_manifest(manifest, initial_proofs)
     }
 
-    pub fn execute_transaction(
+    pub fn execute_transaction(&mut self, transaction: &Executable) -> TransactionReceipt {
+        self.execute_transaction_with_config(
+            transaction,
+            &FeeReserveConfig::standard(),
+            &ExecutionConfig::standard(),
+        )
+    }
+
+    pub fn execute_transaction_with_config(
         &mut self,
         transaction: &Executable,
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
         let node_id = self.create_child_node(0);
-        let substate_store = &mut self.execution_stores.get_output_store(node_id);
 
-        TransactionExecutor::new(substate_store, &mut self.scrypto_interpreter).execute(
-            transaction,
+        execute_transaction(
+            &self.execution_stores.get_output_store(node_id),
+            &self.scrypto_interpreter,
             fee_reserve_config,
             execution_config,
+            transaction,
         )
     }
 
@@ -350,15 +359,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         network: &NetworkDefinition,
     ) -> Result<PreviewResult, PreviewError> {
         let node_id = self.create_child_node(0);
-        let substate_store = &mut self.execution_stores.get_output_store(node_id);
 
-        PreviewExecutor::new(
-            substate_store,
+        execute_preview(
+            &self.execution_stores.get_output_store(node_id),
             &mut self.scrypto_interpreter,
             &self.intent_hash_manager,
             network,
+            preview_intent,
         )
-        .execute(preview_intent)
     }
 
     pub fn execute_batch(
@@ -383,21 +391,21 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let mut store = self.execution_stores.get_output_store(node_id);
         let mut receipts = Vec::new();
         for (manifest, initial_proofs) in manifests {
-            let transaction =
-                TestTransaction::new(manifest, self.next_transaction_nonce, initial_proofs);
+            let transaction = TestTransaction::new(manifest, self.next_transaction_nonce);
             self.next_transaction_nonce += 1;
-            let receipt = TransactionExecutor::new(&mut store, &mut self.scrypto_interpreter)
-                .execute_and_commit(
-                    &transaction,
-                    &FeeReserveConfig {
-                        cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
-                        system_loan: DEFAULT_SYSTEM_LOAN,
-                    },
-                    &ExecutionConfig {
-                        max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                        trace: self.trace,
-                    },
-                );
+            let receipt = execute_and_commit_transaction(
+                &mut store,
+                &mut self.scrypto_interpreter,
+                &FeeReserveConfig {
+                    cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+                    system_loan: DEFAULT_SYSTEM_LOAN,
+                },
+                &ExecutionConfig {
+                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+                    trace: self.trace,
+                },
+                &transaction.get_executable(initial_proofs),
+            );
             receipts.push(receipt);
         }
 
@@ -433,8 +441,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) {
         let package = self.compile_and_publish("./tests/blueprints/resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
-            .create_proof_from_account(auth, account)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .create_proof_from_account(account, auth)
             .call_function(package, "ResourceCreator", function, args!(token, set_auth))
             .call_method(
                 account,
@@ -492,7 +500,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
                 HashMap::new(),
@@ -537,7 +545,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
                 HashMap::new(),
@@ -577,7 +585,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
                 HashMap::new(),
@@ -623,7 +631,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
                 ResourceType::NonFungible,
                 HashMap::new(),
@@ -654,7 +662,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
                 ResourceType::Fungible { divisibility },
                 HashMap::new(),
@@ -685,7 +693,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         signer_public_key: EcdsaSecp256k1PublicKey,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100u32.into(), FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_function_with_abi(
                 package_address,
                 blueprint_name,

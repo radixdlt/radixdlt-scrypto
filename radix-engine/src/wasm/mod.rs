@@ -4,7 +4,7 @@ mod errors;
 mod prepare;
 mod traits;
 mod wasm_instrumenter;
-mod wasm_metering_params;
+mod wasm_metering_config;
 mod wasm_validator;
 #[cfg(feature = "wasmer")]
 mod wasmer;
@@ -19,7 +19,7 @@ pub use errors::*;
 pub use prepare::*;
 pub use traits::*;
 pub use wasm_instrumenter::*;
-pub use wasm_metering_params::*;
+pub use wasm_metering_config::*;
 pub use wasm_validator::*;
 
 #[cfg(feature = "wasmer")]

@@ -20,8 +20,8 @@ fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
-        .withdraw_from_account(RADIX_TOKEN, account)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .withdraw_from_account(account, RADIX_TOKEN)
         .call_method(
             other_account,
             "deposit_batch",
@@ -238,12 +238,12 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
-                builder.withdraw_from_account(RADIX_TOKEN, account);
+                builder.withdraw_from_account(account, RADIX_TOKEN);
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });
@@ -273,12 +273,12 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
-                builder.withdraw_from_account(RADIX_TOKEN, account);
+                builder.withdraw_from_account(account, RADIX_TOKEN);
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });
@@ -308,12 +308,12 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop_by_amount(Decimal::from("0.9"), RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
-                builder.withdraw_from_account(RADIX_TOKEN, account);
+                builder.withdraw_from_account(account, RADIX_TOKEN);
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });

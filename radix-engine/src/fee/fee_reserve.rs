@@ -12,9 +12,25 @@ pub enum FeeReserveError {
 }
 
 pub trait FeeReserve {
-    fn consume<T: ToString>(
+    fn consume_flat<T: ToString>(
         &mut self,
-        n: u32,
+        cost: u32,
+        reason: T,
+        deferred: bool,
+    ) -> Result<(), FeeReserveError>;
+
+    fn consume_multiplied<T: ToString>(
+        &mut self,
+        quantity: u32,
+        cost_multiplier: u32,
+        reason: T,
+        deferred: bool,
+    ) -> Result<(), FeeReserveError>;
+
+    fn consume_sized<T: ToString>(
+        &mut self,
+        length: usize,
+        cost_multiplier: u32,
         reason: T,
         deferred: bool,
     ) -> Result<(), FeeReserveError>;
@@ -100,7 +116,7 @@ impl SystemLoanFeeReserve {
 }
 
 impl FeeReserve for SystemLoanFeeReserve {
-    fn consume<T: ToString>(
+    fn consume_flat<T: ToString>(
         &mut self,
         n: u32,
         reason: T,
@@ -148,6 +164,30 @@ impl FeeReserve for SystemLoanFeeReserve {
             }
         }
         Ok(())
+    }
+
+    fn consume_multiplied<T: ToString>(
+        &mut self,
+        amount: u32,
+        cost_multiplier: u32,
+        reason: T,
+        deferred: bool,
+    ) -> Result<(), FeeReserveError> {
+        let total = cost_multiplier
+            .checked_mul(amount)
+            .ok_or(FeeReserveError::Overflow)?;
+        self.consume_flat(total, reason, deferred)
+    }
+
+    fn consume_sized<T: ToString>(
+        &mut self,
+        size: usize,
+        cost_multiplier: u32,
+        reason: T,
+        deferred: bool,
+    ) -> Result<(), FeeReserveError> {
+        let amount: u32 = size.try_into().map_err(|_| FeeReserveError::Overflow)?;
+        self.consume_multiplied(amount, cost_multiplier, reason, deferred)
     }
 
     fn repay(
@@ -256,7 +296,7 @@ mod tests {
     #[test]
     fn test_consume_and_repay() {
         let mut fee_reserve = SystemLoanFeeReserve::new(100, 0, 1.into(), 5);
-        fee_reserve.consume(2, "test", false).unwrap();
+        fee_reserve.consume_flat(2, "test", false).unwrap();
         fee_reserve.repay(TEST_VAULT_ID, xrd(3), false).unwrap();
         assert_eq!(3, fee_reserve.balance());
         assert_eq!(2, fee_reserve.consumed_instant());
@@ -268,7 +308,7 @@ mod tests {
         let mut fee_reserve = SystemLoanFeeReserve::new(100, 0, 1.into(), 5);
         assert_eq!(
             Err(FeeReserveError::OutOfCostUnit),
-            fee_reserve.consume(6, "test", false)
+            fee_reserve.consume_flat(6, "test", false)
         );
     }
 

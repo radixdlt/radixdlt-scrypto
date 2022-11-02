@@ -32,7 +32,7 @@ pub enum TransactionResult {
 }
 
 impl TransactionResult {
-    pub fn expect_commit(self) -> CommitResult {
+    pub fn expect_commit(&self) -> &CommitResult {
         match self {
             TransactionResult::Commit(c) => c,
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
@@ -58,14 +58,17 @@ pub enum TransactionOutcome {
 }
 
 impl TransactionOutcome {
-    pub fn expect_success(self) -> Vec<Vec<u8>> {
+    pub fn expect_success(&self) -> &Vec<Vec<u8>> {
         match self {
             TransactionOutcome::Success(results) => results,
             TransactionOutcome::Failure(error) => panic!("Outcome was a failure: {}", error),
         }
     }
 
-    pub fn success_or_else<E, F: FnOnce(RuntimeError) -> E>(self, f: F) -> Result<Vec<Vec<u8>>, E> {
+    pub fn success_or_else<E, F: FnOnce(&RuntimeError) -> E>(
+        &self,
+        f: F,
+    ) -> Result<&Vec<Vec<u8>>, E> {
         match self {
             TransactionOutcome::Success(results) => Ok(results),
             TransactionOutcome::Failure(error) => Err(f(error)),
@@ -152,24 +155,18 @@ impl TransactionReceipt {
 
     pub fn expect_specific_rejection<F>(&self, f: F)
     where
-        F: FnOnce(&RuntimeError) -> bool,
+        F: FnOnce(&RejectionError) -> bool,
     {
         match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was committed"),
-            TransactionResult::Reject(result) => match &result.error {
-                RejectionError::ErrorBeforeFeeLoanRepaid(err) => {
-                    if !f(&err) {
-                        panic!(
-                            "Expected specific rejection but was different error:\n{:?}",
-                            self
-                        );
-                    }
+            TransactionResult::Reject(result) => {
+                if !f(&result.error) {
+                    panic!(
+                        "Expected specific rejection but was different error:\n{:?}",
+                        self
+                    );
                 }
-                RejectionError::SuccessButFeeLoanNotRepaid => panic!(
-                    "Expected specific rejection but was different error:\n{:?}",
-                    self
-                ),
-            },
+            }
         }
     }
 

@@ -44,15 +44,15 @@ impl Mint {
         for resource_specifier in proofs {
             manifest_builder = manifest_builder
                 .create_proof_from_account_by_resource_specifier(
-                    resource_specifier,
                     default_account,
+                    resource_specifier,
                 )
                 .map_err(Error::FailedToBuildArgs)?;
         }
 
         let manifest = manifest_builder
-            .lock_fee(100.into(), FAUCET_COMPONENT)
-            .mint(self.amount, self.resource_address.0)
+            .lock_fee(FAUCET_COMPONENT, 100.into())
+            .mint(self.resource_address.0, self.amount)
             .call_method(
                 default_account,
                 "deposit_batch",

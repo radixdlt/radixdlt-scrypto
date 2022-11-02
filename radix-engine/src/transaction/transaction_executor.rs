@@ -7,6 +7,7 @@ use crate::model::*;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
+use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
 pub struct FeeReserveConfig {
@@ -53,15 +54,16 @@ impl ExecutionConfig {
 }
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'s, 'w, S, W, I>
+/// This is no longer public -- it can be removed / merged into the exposed functions in a future small PR
+/// But I'm not doing it in this PR to avoid merge conflicts in the body of execute_with_fee_reserve
+struct TransactionExecutor<'s, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    substate_store: &'s mut S,
-    scrypto_interpreter: &'w mut ScryptoInterpreter<I, W>,
-    phantom: PhantomData<I>,
+    substate_store: &'s S,
+    scrypto_interpreter: &'w ScryptoInterpreter<I, W>,
 }
 
 impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
@@ -70,14 +72,10 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    pub fn new(
-        substate_store: &'s mut S,
-        scrypto_interpreter: &'w mut ScryptoInterpreter<I, W>,
-    ) -> Self {
+    pub fn new(substate_store: &'s S, scrypto_interpreter: &'w ScryptoInterpreter<I, W>) -> Self {
         Self {
             substate_store,
             scrypto_interpreter,
-            phantom: PhantomData,
         }
     }
 
@@ -105,12 +103,8 @@ where
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
         let auth_zone_params = transaction.auth_zone_params();
-        let instructions = transaction.instructions().to_vec();
-        let blobs: HashMap<Hash, Vec<u8>> = transaction
-            .blobs()
-            .iter()
-            .map(|b| (hash(b), b.clone()))
-            .collect();
+        let instructions = transaction.instructions();
+        let blobs = transaction.blobs();
 
         #[cfg(not(feature = "alloc"))]
         if execution_config.trace {
@@ -131,7 +125,9 @@ where
             Ok(track) => track,
             Err(err) => {
                 return TransactionReceipt {
-                    contents: TransactionContents { instructions },
+                    contents: TransactionContents {
+                        instructions: instructions.to_vec(),
+                    },
                     execution: TransactionExecution {
                         fee_summary: err.fee_summary,
                         application_logs: vec![],
@@ -155,9 +151,9 @@ where
             modules.push(Box::new(ExecutionTraceModule::new()));
 
             let mut kernel = Kernel::new(
-                transaction_hash,
-                auth_zone_params,
-                &blobs,
+                transaction_hash.clone(),
+                auth_zone_params.clone(),
+                blobs,
                 execution_config.max_call_depth,
                 &mut track,
                 self.scrypto_interpreter,
@@ -167,7 +163,8 @@ where
                 .invoke_native(NativeInvocation::Function(
                     NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
                     ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                        instructions: sbor::rust::borrow::Cow::Borrowed(&instructions),
+                        runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
+                        instructions: Cow::Borrowed(instructions),
                     }),
                 ))
                 .map(|o| {
@@ -180,7 +177,9 @@ where
         let track_receipt = track.finalize(invoke_result);
 
         let receipt = TransactionReceipt {
-            contents: TransactionContents { instructions },
+            contents: TransactionContents {
+                instructions: instructions.to_vec(),
+            },
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
                 application_logs: track_receipt.application_logs,
@@ -212,22 +211,58 @@ where
     }
 }
 
-impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
-where
+pub fn execute_and_commit_transaction<
     S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine<I>,
     I: WasmInstance,
-{
-    pub fn execute_and_commit(
-        &mut self,
-        transaction: &Executable,
-        fee_reserve_config: &FeeReserveConfig,
-        execution_config: &ExecutionConfig,
-    ) -> TransactionReceipt {
-        let receipt = self.execute(transaction, fee_reserve_config, execution_config);
-        if let TransactionResult::Commit(commit) = &receipt.result {
-            commit.state_updates.commit(self.substate_store);
-        }
-        receipt
+    W: WasmEngine<I>,
+>(
+    substate_store: &mut S,
+    scrypto_interpreter: &ScryptoInterpreter<I, W>,
+    fee_reserve_config: &FeeReserveConfig,
+    execution_config: &ExecutionConfig,
+    transaction: &Executable,
+) -> TransactionReceipt {
+    let receipt = execute_transaction(
+        substate_store,
+        scrypto_interpreter,
+        fee_reserve_config,
+        execution_config,
+        transaction,
+    );
+    if let TransactionResult::Commit(commit) = &receipt.result {
+        commit.state_updates.commit(substate_store);
     }
+    receipt
+}
+
+pub fn execute_transaction<S: ReadableSubstateStore, I: WasmInstance, W: WasmEngine<I>>(
+    substate_store: &S,
+    scrypto_interpreter: &ScryptoInterpreter<I, W>,
+    fee_reserve_config: &FeeReserveConfig,
+    execution_config: &ExecutionConfig,
+    transaction: &Executable,
+) -> TransactionReceipt {
+    TransactionExecutor::new(substate_store, scrypto_interpreter).execute(
+        transaction,
+        fee_reserve_config,
+        execution_config,
+    )
+}
+
+pub fn execute_transaction_with_fee_reserve<
+    S: ReadableSubstateStore,
+    I: WasmInstance,
+    W: WasmEngine<I>,
+>(
+    substate_store: &S,
+    scrypto_interpreter: &ScryptoInterpreter<I, W>,
+    fee_reserve: impl FeeReserve,
+    execution_config: &ExecutionConfig,
+    transaction: &Executable,
+) -> TransactionReceipt {
+    TransactionExecutor::new(substate_store, scrypto_interpreter).execute_with_fee_reserve(
+        transaction,
+        execution_config,
+        fee_reserve,
+    )
 }
