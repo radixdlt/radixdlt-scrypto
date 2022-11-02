@@ -6,9 +6,9 @@ use sbor::*;
 use crate::abi::*;
 use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
 use crate::core::*;
+use crate::data::*;
 use crate::misc::*;
 use crate::scrypto_type;
-use crate::values::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 #[custom_type_id(ScryptoCustomTypeId)]

@@ -5,8 +5,8 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::*;
 
+use crate::data::*;
 use crate::resource::*;
-use crate::values::*;
 use crate::Describe;
 
 /// Method authorization rules for a component

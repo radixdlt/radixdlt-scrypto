@@ -104,12 +104,12 @@ macro_rules! args {
         let mut fields = Vec::new();
         $(
             let encoded = ::scrypto::buffer::scrypto_encode(&$args);
-            fields.push(::sbor::decode_any::<::scrypto::values::ScryptoCustomTypeId, ::scrypto::values::ScryptoCustomValue>(&encoded).unwrap());
+            fields.push(::sbor::decode_any::<::scrypto::data::ScryptoCustomTypeId, ::scrypto::data::ScryptoCustomValue>(&encoded).unwrap());
         )*
         let input_struct = ::sbor::SborValue::Struct {
             fields,
         };
-        ::sbor::encode_any::<::scrypto::values::ScryptoCustomTypeId, ::scrypto::values::ScryptoCustomValue>(&input_struct)
+        ::sbor::encode_any::<::scrypto::data::ScryptoCustomTypeId, ::scrypto::data::ScryptoCustomValue>(&input_struct)
     }};
 }
 
@@ -128,8 +128,8 @@ macro_rules! args_from_bytes_vec {
         for arg in $args {
             fields.push(
                 ::sbor::decode_any::<
-                    ::scrypto::values::ScryptoCustomTypeId,
-                    ::scrypto::values::ScryptoCustomValue,
+                    ::scrypto::data::ScryptoCustomTypeId,
+                    ::scrypto::data::ScryptoCustomValue,
                 >(&arg)
                 .unwrap(),
             );
@@ -356,7 +356,7 @@ macro_rules! external_blueprint {
     ) => {
 
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-        #[custom_type_id(::scrypto::values::ScryptoCustomTypeId)]
+        #[custom_type_id(::scrypto::data::ScryptoCustomTypeId)]
         struct $blueprint_ident {
             package_address: ::scrypto::component::PackageAddress,
             blueprint_name: ::sbor::rust::string::String,
@@ -499,7 +499,7 @@ macro_rules! external_component {
     ) => {
 
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-        #[custom_type_id(::scrypto::values::ScryptoCustomTypeId)]
+        #[custom_type_id(::scrypto::data::ScryptoCustomTypeId)]
         struct $component_ident {
             component_address: ::scrypto::component::ComponentAddress,
         }
@@ -619,33 +619,33 @@ macro_rules! external_component_members {
 macro_rules! scrypto_type {
     // static size
     ($t:ty, $type_id:expr, $schema_type: expr, $size: expr) => {
-        impl TypeId<::scrypto::values::ScryptoCustomTypeId> for $t {
+        impl TypeId<::scrypto::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn type_id() -> SborTypeId<::scrypto::values::ScryptoCustomTypeId> {
+            fn type_id() -> SborTypeId<::scrypto::data::ScryptoCustomTypeId> {
                 SborTypeId::Custom($type_id)
             }
         }
 
-        impl Encode<::scrypto::values::ScryptoCustomTypeId> for $t {
+        impl Encode<::scrypto::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn encode_type_id(encoder: &mut Encoder<::scrypto::values::ScryptoCustomTypeId>) {
+            fn encode_type_id(encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
-            fn encode_value(&self, encoder: &mut Encoder<::scrypto::values::ScryptoCustomTypeId>) {
+            fn encode_value(&self, encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
                 encoder.write_slice(&self.to_vec());
             }
         }
 
-        impl Decode<::scrypto::values::ScryptoCustomTypeId> for $t {
+        impl Decode<::scrypto::data::ScryptoCustomTypeId> for $t {
             fn check_type_id(
-                decoder: &mut Decoder<::scrypto::values::ScryptoCustomTypeId>,
+                decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
             ) -> Result<(), DecodeError> {
                 decoder.check_type_id(Self::type_id())
             }
 
             fn decode_value(
-                decoder: &mut Decoder<::scrypto::values::ScryptoCustomTypeId>,
+                decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
             ) -> Result<Self, DecodeError> {
                 let slice = decoder.read_slice($size)?;
                 Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
@@ -661,35 +661,35 @@ macro_rules! scrypto_type {
 
     // dynamic size
     ($t:ty, $type_id:expr, $schema_type: expr) => {
-        impl TypeId<::scrypto::values::ScryptoCustomTypeId> for $t {
+        impl TypeId<::scrypto::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn type_id() -> SborTypeId<::scrypto::values::ScryptoCustomTypeId> {
+            fn type_id() -> SborTypeId<::scrypto::data::ScryptoCustomTypeId> {
                 SborTypeId::Custom($type_id)
             }
         }
 
-        impl Encode<::scrypto::values::ScryptoCustomTypeId> for $t {
+        impl Encode<::scrypto::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn encode_type_id(encoder: &mut Encoder<::scrypto::values::ScryptoCustomTypeId>) {
+            fn encode_type_id(encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
-            fn encode_value(&self, encoder: &mut Encoder<::scrypto::values::ScryptoCustomTypeId>) {
+            fn encode_value(&self, encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
                 let bytes = self.to_vec();
                 encoder.write_size(bytes.len());
                 encoder.write_slice(&bytes);
             }
         }
 
-        impl Decode<::scrypto::values::ScryptoCustomTypeId> for $t {
+        impl Decode<::scrypto::data::ScryptoCustomTypeId> for $t {
             fn check_type_id(
-                decoder: &mut Decoder<::scrypto::values::ScryptoCustomTypeId>,
+                decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
             ) -> Result<(), DecodeError> {
                 decoder.check_type_id(Self::type_id())
             }
 
             fn decode_value(
-                decoder: &mut Decoder<::scrypto::values::ScryptoCustomTypeId>,
+                decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
             ) -> Result<Self, DecodeError> {
                 let len = decoder.read_size()?;
                 let slice = decoder.read_slice(len)?;

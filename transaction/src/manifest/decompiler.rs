@@ -4,12 +4,12 @@ use sbor::{encode_any, SborValue};
 use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::NetworkDefinition;
+use scrypto::data::*;
 use scrypto::engine::types::*;
 use scrypto::misc::ContextualDisplay;
 use scrypto::resource::{
     MintParams, ResourceManagerBurnInput, ResourceManagerCreateInput, ResourceManagerMintInput,
 };
-use scrypto::values::*;
 
 use crate::errors::*;
 use crate::model::*;

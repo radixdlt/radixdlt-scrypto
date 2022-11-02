@@ -5,9 +5,9 @@ use sbor::type_id::*;
 use sbor::*;
 
 use crate::address::Bech32Encoder;
+use crate::data::*;
 use crate::engine::types::*;
 use crate::misc::*;
-use crate::values::*;
 
 #[derive(Clone, Copy, Debug)]
 pub struct ScryptoValueFormatterContext<'a> {

@@ -2,8 +2,8 @@ use sbor::rust::string::String;
 use sbor::*;
 
 use crate::component::*;
+use crate::data::*;
 use crate::engine::types::ComponentId;
-use crate::values::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 #[custom_type_id(ScryptoCustomTypeId)]

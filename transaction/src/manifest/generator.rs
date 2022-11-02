@@ -11,13 +11,13 @@ use scrypto::component::PackageAddress;
 use scrypto::component::{Component, KeyValueStore};
 use scrypto::core::{Blob, Expression, SystemAddress};
 use scrypto::crypto::*;
+use scrypto::data::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{
     MintParams, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerBurnInput,
     ResourceManagerCreateInput, ResourceManagerMintInput, Vault,
 };
-use scrypto::values::*;
 use scrypto::{args, args_from_value_vec};
 
 use crate::errors::*;

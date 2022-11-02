@@ -2,8 +2,8 @@ use sbor::rust::string::String;
 use sbor::*;
 use scrypto::abi::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
+use scrypto::data::ScryptoValueDecodeError;
 use scrypto::engine::types::*;
-use scrypto::values::ScryptoValueDecodeError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HeaderValidationError {

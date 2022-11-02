@@ -3,7 +3,7 @@ use sbor::*;
 use super::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
 };
-use crate::values::*;
+use crate::data::*;
 
 /// Represents any natively supported public key.
 #[cfg_attr(

@@ -6,10 +6,10 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
+use crate::data::*;
 use crate::math::Decimal;
 use crate::resource::AccessRuleNode::{AllOf, AnyOf};
 use crate::resource::*;
-use crate::values::*;
 use crate::Describe;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]

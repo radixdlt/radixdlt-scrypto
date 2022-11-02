@@ -4,11 +4,11 @@ use sbor::*;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
+use crate::data::ScryptoCustomTypeId;
 use crate::engine::types::*;
 use crate::math::*;
 use crate::misc::copy_u8_array;
 use crate::resource::*;
-use crate::values::ScryptoCustomTypeId;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValue {

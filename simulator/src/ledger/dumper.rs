@@ -3,8 +3,8 @@ use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::types::*;
+use scrypto::data::ScryptoValueFormatterContext;
 use scrypto::misc::ContextualDisplay;
-use scrypto::values::ScryptoValueFormatterContext;
 use std::collections::VecDeque;
 
 use crate::utils::*;

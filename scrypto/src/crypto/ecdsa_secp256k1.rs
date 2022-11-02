@@ -6,9 +6,9 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
+use crate::data::*;
 use crate::misc::*;
 use crate::scrypto_type;
-use crate::values::*;
 
 /// Represents an ECDSA public key.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

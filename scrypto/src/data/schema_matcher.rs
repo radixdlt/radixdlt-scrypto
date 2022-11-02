@@ -1,7 +1,7 @@
 use sbor::*;
 
 use crate::abi::*;
-use crate::values::*;
+use crate::data::*;
 
 pub fn sbor_type_id(ty: &Type) -> Option<SborTypeId<ScryptoCustomTypeId>> {
     match ty {

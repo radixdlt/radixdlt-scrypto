@@ -1,7 +1,7 @@
 use sbor::Decode;
 
 use super::api::RadixEngineInput;
-use crate::values::*;
+use crate::data::*;
 
 /// Utility function for making a radix engine call.
 #[cfg(target_arch = "wasm32")]

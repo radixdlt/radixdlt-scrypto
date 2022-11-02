@@ -8,8 +8,8 @@ use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
+use crate::data::*;
 use crate::engine::{api::*, types::*, utils::*};
-use crate::values::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInput {}

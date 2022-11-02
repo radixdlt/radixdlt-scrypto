@@ -13,6 +13,7 @@ use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::constants::*;
 use scrypto::core::{Blob, NetworkDefinition};
 use scrypto::crypto::*;
+use scrypto::data::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{require, ResourceManagerBurnInput, LOCKED};
@@ -22,7 +23,6 @@ use scrypto::resource::{
 };
 use scrypto::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
 use scrypto::resource::{ResourceManagerMintInput, ResourceType};
-use scrypto::values::*;
 use scrypto::*;
 
 use crate::errors::*;

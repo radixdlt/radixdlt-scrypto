@@ -6,8 +6,8 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::crypto::*;
+use crate::data::*;
 use crate::scrypto_type;
-use crate::values::*;
 
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Blob(pub Hash);

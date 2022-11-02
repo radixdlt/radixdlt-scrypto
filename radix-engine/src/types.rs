@@ -28,6 +28,7 @@ pub use scrypto::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
     Hash, PublicKey, Signature,
 };
+pub use scrypto::data::*;
 pub use scrypto::engine::{api::RadixEngineInput, types::*};
 pub use scrypto::math::{Decimal, RoundingMode, I256};
 pub use scrypto::resource::{
@@ -49,7 +50,6 @@ pub use scrypto::resource::{
     VaultGetAmountInput, VaultGetNonFungibleIdsInput, VaultGetResourceAddressInput,
     VaultLockFeeInput, VaultPutInput, VaultTakeInput, VaultTakeNonFungiblesInput, LOCKED, MUTABLE,
 };
-pub use scrypto::values::*;
 
 // methods and macros
 pub use sbor::decode_any;

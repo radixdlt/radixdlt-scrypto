@@ -4,7 +4,7 @@ use std::collections::{BTreeSet, HashSet};
 use scrypto::buffer::scrypto_decode;
 use scrypto::constants::*;
 use scrypto::crypto::PublicKey;
-use scrypto::values::*;
+use scrypto::data::*;
 
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;

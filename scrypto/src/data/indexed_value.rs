@@ -8,10 +8,10 @@ use sbor::*;
 use crate::buffer::*;
 use crate::component::*;
 use crate::core::*;
+use crate::data::*;
 use crate::engine::types::*;
 use crate::misc::ContextualDisplay;
 use crate::resource::*;
-use crate::values::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ScryptoValueDecodeError {

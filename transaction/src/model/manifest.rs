@@ -1,6 +1,6 @@
 use crate::model::Instruction;
 use sbor::*;
-use scrypto::values::*;
+use scrypto::data::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 #[custom_type_id(ScryptoCustomTypeId)]

@@ -1,6 +1,6 @@
 use sbor::rust::collections::*;
+use scrypto::data::*;
 use scrypto::engine::types::*;
-use scrypto::values::*;
 
 use crate::errors::*;
 use crate::validation::*;

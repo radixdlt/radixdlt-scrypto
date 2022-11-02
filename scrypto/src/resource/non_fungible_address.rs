@@ -8,9 +8,9 @@ use sbor::*;
 use crate::abi::*;
 use crate::constants::{ECDSA_SECP256K1_TOKEN, EDDSA_ED25519_TOKEN};
 use crate::crypto::{hash, PublicKey};
+use crate::data::*;
 use crate::resource::*;
 use crate::scrypto_type;
-use crate::values::*;
 
 /// Identifier for a non-fungible unit.
 #[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]

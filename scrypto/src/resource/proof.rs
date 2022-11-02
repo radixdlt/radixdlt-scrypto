@@ -5,13 +5,13 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
+use crate::data::*;
 use crate::engine::{api::*, types::*, utils::*};
 use crate::math::*;
 use crate::misc::*;
 use crate::native_methods;
 use crate::resource::*;
 use crate::scrypto_type;
-use crate::values::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ProofGetAmountInput {}

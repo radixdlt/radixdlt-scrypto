@@ -32,6 +32,8 @@ pub mod constants;
 pub mod core;
 /// Scrypto cryptography library.
 pub mod crypto;
+/// Scrypto values.
+pub mod data;
 /// Radix engine APIs.
 pub mod engine;
 /// Scrypto math library.
@@ -43,8 +45,6 @@ pub mod misc;
 pub mod prelude;
 /// Scrypto resource library.
 pub mod resource;
-/// Scrypto values.
-pub mod values;
 
 // Export macros
 mod macros;

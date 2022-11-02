@@ -1,7 +1,7 @@
 use crate::model::{AuthModule, AuthZoneParams, Executable, TransactionManifest};
 use sbor::*;
 use scrypto::crypto::Hash;
-use scrypto::values::*;
+use scrypto::data::*;
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]

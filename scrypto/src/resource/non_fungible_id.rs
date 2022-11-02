@@ -8,9 +8,9 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
+use crate::data::ScryptoValue;
+use crate::data::*;
 use crate::scrypto_type;
-use crate::values::ScryptoValue;
-use crate::values::*;
 
 /// Represents a key for a non-fungible resource
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

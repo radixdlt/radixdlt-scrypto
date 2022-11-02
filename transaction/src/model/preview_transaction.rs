@@ -1,7 +1,7 @@
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::{hash, Hash, PublicKey};
-use scrypto::values::*;
+use scrypto::data::*;
 
 use crate::model::TransactionIntent;
 

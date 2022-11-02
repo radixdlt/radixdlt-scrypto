@@ -12,11 +12,11 @@ use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::{hash, PublicKey};
+use crate::data::*;
 use crate::engine::{api::*, types::*, utils::*};
 use crate::misc::*;
 use crate::resource::AccessRules;
 use crate::scrypto_type;
-use crate::values::*;
 use crate::Describe;
 
 #[derive(Debug, TypeId, Encode, Decode)]

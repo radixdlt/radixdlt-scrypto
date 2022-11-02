@@ -9,9 +9,9 @@ use sbor::*;
 use crate::abi::*;
 use crate::buffer::*;
 use crate::core::{DataRef, DataRefMut};
+use crate::data::*;
 use crate::engine::{api::*, types::*, utils::*};
 use crate::misc::*;
-use crate::values::*;
 
 /// A scalable key-value map which loads entries on demand.
 pub struct KeyValueStore<

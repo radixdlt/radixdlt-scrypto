@@ -5,9 +5,9 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
+use crate::data::*;
 use crate::misc::*;
 use crate::scrypto_type;
-use crate::values::*;
 
 /// A global address that points a native RE Node owned and exposed by the system, such as epoch manager.
 /// To interact with such nodes, native invocation should be used.

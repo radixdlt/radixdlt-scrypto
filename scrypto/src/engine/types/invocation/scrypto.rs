@@ -1,5 +1,5 @@
+use crate::data::*;
 use crate::engine::types::*;
-use crate::values::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 #[custom_type_id(ScryptoCustomTypeId)]

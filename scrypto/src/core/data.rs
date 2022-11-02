@@ -5,8 +5,8 @@ use sbor::{Decode, Encode};
 
 use crate::buffer::*;
 use crate::component::{ComponentStateSubstate, KeyValueStoreEntrySubstate};
+use crate::data::*;
 use crate::engine::{api::*, types::*, utils::*};
-use crate::values::*;
 
 pub struct DataRef<V: Encode<ScryptoCustomTypeId>> {
     lock_handle: LockHandle,

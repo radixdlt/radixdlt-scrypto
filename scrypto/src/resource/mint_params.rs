@@ -2,9 +2,9 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::data::*;
 use crate::math::*;
 use crate::resource::*;
-use crate::values::*;
 use crate::Describe;
 
 /// Represents the minting config

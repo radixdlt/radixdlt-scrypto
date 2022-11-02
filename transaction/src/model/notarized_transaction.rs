@@ -2,7 +2,7 @@ use sbor::*;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::{hash, Hash, PublicKey, Signature, SignatureWithPublicKey};
-use scrypto::values::*;
+use scrypto::data::*;
 
 use crate::manifest::{compile, CompileError};
 use crate::model::TransactionManifest;

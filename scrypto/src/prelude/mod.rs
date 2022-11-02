@@ -4,13 +4,13 @@ pub use crate::component::*;
 pub use crate::constants::*;
 pub use crate::core::*;
 pub use crate::crypto::*;
+pub use crate::data::*;
 pub use crate::math::integer::{
     CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedPow, CheckedRem, CheckedSub,
 };
 pub use crate::math::*;
 pub use crate::misc::*;
 pub use crate::resource::*;
-pub use crate::values::*;
 pub use crate::{
     access_and_or, access_rule_node, args, args_from_bytes_vec, args_from_value_vec, blueprint,
     borrow_component, borrow_package, borrow_resource_manager, debug, dec, error,

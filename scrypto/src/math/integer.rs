@@ -918,7 +918,7 @@ checked_int_impl_unsigned_small! { U8, U16, U32, U64, U128 }
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::values::*;
+    use crate::data::*;
 
     fn encode_integers<X: CustomTypeId>(enc: &mut Encoder<X>) {
         I8::by(1i8).encode(enc);

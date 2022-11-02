@@ -1,5 +1,5 @@
 use super::*;
-use crate::values::*;
+use crate::data::*;
 
 // TODO: Remove and replace with real HeapRENodes
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

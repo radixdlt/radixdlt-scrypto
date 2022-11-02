@@ -10,9 +10,9 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
+use crate::data::*;
 use crate::math::*;
 use crate::scrypto_type;
-use crate::values::*;
 
 /// `Decimal` represents a 256 bit representation of a fixed-scale decimal number.
 ///

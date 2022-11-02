@@ -3,7 +3,7 @@ use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
 
 use super::types::*;
-use crate::values::*;
+use crate::data::*;
 
 #[cfg(target_arch = "wasm32")]
 extern "C" {
