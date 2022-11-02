@@ -1398,11 +1398,6 @@ where
         }
         Ok(())
     }
-
-    fn emit_output_event(&mut self, _event: OutputEvent) -> Result<(), RuntimeError> {
-        // TODO: add event to track
-        Ok(())
-    }
 }
 
 pub trait InvocationResolver<V, X: Executor> {

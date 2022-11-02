@@ -26,7 +26,7 @@ impl LockFlags {
 }
 
 pub trait Invocation {
-    type Output: Traceable + 'static; // Not sure if that's okay (static)?
+    type Output: Traceable + 'static;
 }
 
 pub trait Invokable<I>
@@ -95,7 +95,4 @@ pub trait SystemApi {
     /// Emits an application event. Application events are used during the execution
     /// to exchange information between the kernel and modules. They're volatile.
     fn emit_application_event(&mut self, event: ApplicationEvent) -> Result<(), RuntimeError>;
-
-    /// Emits an output event. Output events are included in a transaction receipt.
-    fn emit_output_event(&mut self, event: OutputEvent) -> Result<(), RuntimeError>;
 }

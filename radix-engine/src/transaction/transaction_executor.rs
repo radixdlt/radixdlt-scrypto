@@ -7,7 +7,7 @@ use crate::model::*;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
-use std::borrow::Cow;
+use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
 pub struct FeeReserveConfig {
@@ -168,7 +168,7 @@ where
             kernel
                 .invoke(TransactionProcessorRunInvocation {
                     runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
-                    instructions: sbor::rust::borrow::Cow::Borrowed(instructions),
+                    instructions: Cow::Borrowed(instructions),
                 })
                 .and_then(|output| {
                     kernel.finalize()?;

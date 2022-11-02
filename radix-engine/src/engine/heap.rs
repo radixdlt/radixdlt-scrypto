@@ -123,10 +123,6 @@ impl Heap {
             .remove(&node_id)
             .ok_or(CallFrameError::RENodeNotOwned(node_id))
     }
-
-    pub fn nodes(&self) -> &HashMap<RENodeId, HeapRENode> {
-        &self.nodes
-    }
 }
 
 #[derive(Debug)]

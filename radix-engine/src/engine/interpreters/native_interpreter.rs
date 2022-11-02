@@ -189,7 +189,7 @@ pub trait NativeInvocation: NativeExecutable + Encode + Debug {
 }
 
 pub trait NativeExecutable: Invocation {
-    type Output: Traceable + 'static; // Not sure if that's okay?
+    type Output: Traceable + 'static;
 
     fn execute<'a, Y>(
         invocation: Self,
