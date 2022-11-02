@@ -397,6 +397,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                     &ExecutionConfig {
                         max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                         trace: self.trace,
+                        max_sys_call_trace_depth: 1,
                     },
                 );
             receipts.push(receipt);
@@ -777,6 +778,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
         // Invoke the system
         let output: ScryptoValue = fun(&mut kernel);
+
+        kernel.finalize().unwrap();
 
         // Commit
         self.next_transaction_nonce += 1;

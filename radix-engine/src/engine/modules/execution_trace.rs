@@ -2,7 +2,6 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use transaction::model::Instruction;
 
 #[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
 pub struct ResourceChange {
@@ -29,10 +28,28 @@ pub enum VaultOp {
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum ExecutionTraceError {
     InvalidState(String),
+    CallFrameError(CallFrameError),
 }
 
 pub struct ExecutionTraceModule {
-    snapshot_pre_current_instruction: Option<TraceHeapSnapshot>,
+    /// Maximum depth up to which sys calls are being traced.
+    max_sys_call_trace_depth: usize,
+
+    /// Current sys calls depth. Note that this doesn't necessarily correspond to the
+    /// call frame depth, as there can be nested sys calls within a single call frame
+    /// (e.g. lock_substate call inside drop_node).
+    current_sys_call_depth: usize,
+
+    /// The index of the manifest instruction currently being executed.
+    /// None for any sys calls that happen before transaction processor
+    /// starts processing instructions.
+    current_instruction_index: Option<usize>,
+
+    /// A stack of traced sys call inputs, their origin, and the instruction index.
+    traced_sys_call_inputs_stack: Vec<(TracedSysCallData, SysCallTraceOrigin, Option<usize>)>,
+
+    /// A mapping of complete SysCallTrace stacks (\w both inputs and outputs), indexed by depth.
+    sys_call_traces_stacks: HashMap<usize, Vec<SysCallTrace>>,
 }
 
 #[derive(Clone, Debug, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -54,33 +71,25 @@ impl From<&ProofSubstate> for ProofSnapshot {
     }
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct TraceHeapSnapshot {
-    pub owned_buckets: HashMap<BucketId, Resource>,
-    pub owned_proofs: HashMap<ProofId, ProofSnapshot>,
-    pub auth_zone_proofs: Vec<ProofSnapshot>,
-    pub worktop_resources: HashMap<ResourceAddress, Resource>,
-}
-
 impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     fn pre_sys_call(
         &mut self,
         _call_frame: &CallFrame,
-        _heap: &mut Heap,
+        heap: &mut Heap,
         _track: &mut Track<R>,
-        _input: SysCallInput,
+        input: SysCallInput,
     ) -> Result<(), ModuleError> {
-        Ok(())
+        self.handle_pre_sys_call(heap, input)
     }
 
     fn post_sys_call(
         &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
         _track: &mut Track<R>,
-        _output: SysCallOutput,
+        output: SysCallOutput,
     ) -> Result<(), ModuleError> {
-        Ok(())
+        self.handle_post_sys_call(call_frame, heap, output)
     }
 
     fn on_run(
@@ -130,128 +139,304 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     fn on_application_event(
         &mut self,
         _call_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track<R>,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
         event: &ApplicationEvent,
     ) -> Result<(), ModuleError> {
         match event {
-            ApplicationEvent::PreExecuteInstruction { .. } => self.pre_instruction_trace(heap),
-            ApplicationEvent::PostExecuteInstruction { instruction } => {
-                self.post_instruction_trace(heap, track, instruction)
+            ApplicationEvent::PreExecuteInstruction { .. } => {
+                let next_idx = match self.current_instruction_index {
+                    Some(current_instruction_index) => current_instruction_index + 1,
+                    None => 0,
+                };
+                self.current_instruction_index = Some(next_idx);
+                Ok(())
+            }
+            _ => {
+                Ok(()) // no-op
             }
         }
+    }
+
+    fn on_finished_processing(
+        &mut self,
+        _heap: &mut Heap,
+        track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        self.handle_processing_completed(track)
     }
 }
 
-impl ExecutionTraceModule {
-    pub fn new() -> ExecutionTraceModule {
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct TracedSysCallData {
+    pub buckets: HashMap<BucketId, Resource>,
+    pub proofs: HashMap<ProofId, ProofSnapshot>,
+}
+
+impl TracedSysCallData {
+    pub fn new_empty() -> Self {
         Self {
-            snapshot_pre_current_instruction: None,
+            buckets: HashMap::new(),
+            proofs: HashMap::new(),
         }
     }
 
-    fn pre_instruction_trace(&mut self, heap: &mut Heap) -> Result<(), ModuleError> {
-        if self.snapshot_pre_current_instruction.is_none() {
-            let pre_snapshot = ExecutionTraceModule::heap_snapshot(heap)?;
-            self.snapshot_pre_current_instruction = Some(pre_snapshot);
-            Ok(())
-        } else {
-            Err(ModuleError::ExecutionTraceError(
-                ExecutionTraceError::InvalidState("Unexpected \"pre\" trace".to_string()),
-            ))
+    pub fn is_empty(&self) -> bool {
+        self.buckets.is_empty() && self.proofs.is_empty()
+    }
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct SysCallTrace {
+    pub origin: SysCallTraceOrigin,
+    pub sys_call_depth: usize,
+    pub call_frame_actor: REActor,
+    pub call_frame_depth: usize,
+    pub instruction_index: Option<usize>,
+    pub input: TracedSysCallData,
+    pub output: TracedSysCallData,
+    pub children: Vec<SysCallTrace>,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, Eq, PartialEq)]
+pub enum SysCallTraceOrigin {
+    ScryptoFunction(ScryptoFunctionIdent),
+    ScryptoMethod(ScryptoMethodIdent),
+    NativeFunction(NativeFunction),
+    NativeMethod(NativeMethod),
+    CreateNode,
+    DropNode,
+    Opaque,
+}
+
+impl ExecutionTraceModule {
+    pub fn new(max_sys_call_trace_depth: usize) -> ExecutionTraceModule {
+        Self {
+            max_sys_call_trace_depth,
+            current_sys_call_depth: 0,
+            current_instruction_index: None,
+            traced_sys_call_inputs_stack: vec![],
+            sys_call_traces_stacks: HashMap::new(),
         }
     }
 
-    fn post_instruction_trace<'s, R: FeeReserve>(
+    fn handle_pre_sys_call(
         &mut self,
         heap: &mut Heap,
-        track: &mut Track<'s, R>,
-        instruction: &Instruction,
+        input: SysCallInput,
     ) -> Result<(), ModuleError> {
-        match self.snapshot_pre_current_instruction.take() {
-            Some(pre_snapshot) => {
-                let post_snapshot = ExecutionTraceModule::heap_snapshot(heap)?;
-
-                track.add_output_event(OutputEvent::InstructionTraceV0(
-                    instruction.clone(),
-                    pre_snapshot,
-                    post_snapshot,
-                ));
-
-                Ok(())
-            }
-            None => Err(ModuleError::ExecutionTraceError(
-                ExecutionTraceError::InvalidState("Missing \"pre\" trace".to_string()),
-            )),
+        if self.current_sys_call_depth > self.max_sys_call_trace_depth {
+            // It's important to update the depth counter,
+            // even if we don't trace at this depth anymore.
+            self.current_sys_call_depth += 1;
+            return Ok(());
         }
+
+        let traced_input = match input {
+            SysCallInput::InvokeScrypto { invocation, .. } => {
+                let (origin, value) = match invocation {
+                    ScryptoInvocation::Function(fn_ident, value) => {
+                        (SysCallTraceOrigin::ScryptoFunction(fn_ident.clone()), value)
+                    }
+                    ScryptoInvocation::Method(method_ident, value) => (
+                        SysCallTraceOrigin::ScryptoMethod(method_ident.clone()),
+                        value,
+                    ),
+                };
+                let traced_data = Self::extract_trace_data(heap, value)?;
+                (traced_data, origin, self.current_instruction_index)
+            }
+            SysCallInput::InvokeNative { invocation, .. } => {
+                let (origin, value) = match invocation {
+                    NativeInvocation::Function(native_fn, value) => {
+                        (SysCallTraceOrigin::NativeFunction(native_fn.clone()), value)
+                    }
+                    NativeInvocation::Method(native_method, _, value) => (
+                        SysCallTraceOrigin::NativeMethod(native_method.clone()),
+                        value,
+                    ),
+                };
+                let traced_data = Self::extract_trace_data(heap, value)?;
+                (traced_data, origin, self.current_instruction_index)
+            }
+            SysCallInput::DropNode { node_id } => {
+                // Buckets can't be dropped, so only tracking Proofs here
+                let data = if let RENodeId::Proof(proof_id) = node_id {
+                    let proof = Self::read_proof(heap, proof_id)?;
+                    TracedSysCallData {
+                        buckets: HashMap::new(),
+                        proofs: HashMap::from([(proof_id.clone(), proof)]),
+                    }
+                } else {
+                    // Not a proof, so nothing to trace
+                    TracedSysCallData::new_empty()
+                };
+
+                (
+                    data,
+                    SysCallTraceOrigin::DropNode,
+                    self.current_instruction_index,
+                )
+            }
+            SysCallInput::CreateNode { .. } => (
+                TracedSysCallData::new_empty(),
+                SysCallTraceOrigin::CreateNode,
+                self.current_instruction_index,
+            ),
+            _ => (
+                TracedSysCallData::new_empty(),
+                SysCallTraceOrigin::Opaque,
+                self.current_instruction_index,
+            ),
+        };
+
+        self.traced_sys_call_inputs_stack.push(traced_input);
+        self.current_sys_call_depth += 1;
+        Ok(())
     }
 
-    fn heap_snapshot(heap: &mut Heap) -> Result<TraceHeapSnapshot, ModuleError> {
-        // Trace worktop resources
-        let worktop_substate_ref = heap
-            .get_substate(
-                RENodeId::Worktop,
-                &SubstateOffset::Worktop(WorktopOffset::Worktop),
-            )
-            .expect("Worktop does not exist");
+    fn handle_post_sys_call(
+        &mut self,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
+        output: SysCallOutput,
+    ) -> Result<(), ModuleError> {
+        // Important to always update the counter (even if we're over the depth limit).
+        self.current_sys_call_depth -= 1;
 
-        let worktop_resources = worktop_substate_ref.worktop().peek_resources();
+        if self.current_sys_call_depth > self.max_sys_call_trace_depth {
+            // Nothing to trace at this depth, exit.
+            return Ok(());
+        }
 
-        // Trace proofs in AuthZone
-        let auth_zone_node = heap
-            .nodes()
-            .iter()
-            .find(|(node_id, _)| matches!(node_id, RENodeId::AuthZoneStack(..)))
-            .expect("AuthZone does not exist")
-            .1;
+        let child_traces = self
+            .sys_call_traces_stacks
+            .remove(&(self.current_sys_call_depth + 1))
+            .unwrap_or(vec![]);
 
-        let auth_zone_substate_ref = auth_zone_node
-            .substates
-            .get(&SubstateOffset::AuthZone(AuthZoneOffset::AuthZone))
-            .expect("AuthZone node does not contain an AuthZone substate")
-            .to_ref();
+        let (traced_input, origin, instruction_index) = self
+            .traced_sys_call_inputs_stack
+            .pop()
+            .expect("Sys call input stack underflow");
 
-        let auth_zone = auth_zone_substate_ref.auth_zone().cur_auth_zone();
-
-        let auth_zone_proofs: Vec<ProofSnapshot> = auth_zone
-            .proofs()
-            .iter()
-            .map(|proof| proof.into())
-            .collect();
-
-        // Trace owned Bucket and Proof nodes
-        let mut owned_buckets = HashMap::new();
-        let mut owned_proofs: HashMap<ProofId, ProofSnapshot> = HashMap::new();
-        for (owned_node_id, owned_node) in heap.nodes() {
-            match owned_node_id {
+        let traced_output = match output {
+            SysCallOutput::InvokeScrypto { output } => Self::extract_trace_data(heap, output)?,
+            SysCallOutput::InvokeNative { output } => Self::extract_trace_data(heap, output)?,
+            SysCallOutput::CreateNode { node_id } => match node_id {
                 RENodeId::Bucket(bucket_id) => {
-                    let bucket_substate_ref = owned_node
-                        .substates
-                        .get(&SubstateOffset::Bucket(BucketOffset::Bucket))
-                        .expect("Bucket node does not contain a Bucket substate")
-                        .to_ref();
-                    let resource = bucket_substate_ref.bucket().peek_resource();
-                    owned_buckets.insert(bucket_id.clone(), resource);
+                    let bucket_resource = Self::read_bucket_resource(heap, bucket_id)?;
+                    TracedSysCallData {
+                        buckets: HashMap::from([(bucket_id.clone(), bucket_resource)]),
+                        proofs: HashMap::new(),
+                    }
                 }
                 RENodeId::Proof(proof_id) => {
-                    let proof_substate_ref = owned_node
-                        .substates
-                        .get(&SubstateOffset::Proof(ProofOffset::Proof))
-                        .expect("Proof node does not contain a Proof substate")
-                        .to_ref();
-                    let proof_trace: ProofSnapshot = proof_substate_ref.proof().into();
-                    owned_proofs.insert(proof_id.clone(), proof_trace);
+                    let proof = Self::read_proof(heap, proof_id)?;
+                    TracedSysCallData {
+                        buckets: HashMap::new(),
+                        proofs: HashMap::from([(proof_id.clone(), proof)]),
+                    }
                 }
-                _ => (), // no-op
+                _ => TracedSysCallData::new_empty(),
+            },
+            _ => TracedSysCallData::new_empty(),
+        };
+
+        // Only include the trace if:
+        // * there's a non-empty traced input or output
+        // * there are any child traces: they need a parent regardless of whether it traces any inputs/outputs.
+        //   At some depth (up to the tracing limit) there must have been at least one traced input/output
+        //   so we need to include the full path up to the root.
+        if !traced_input.is_empty() || !traced_output.is_empty() || !child_traces.is_empty() {
+            let trace = SysCallTrace {
+                origin,
+                sys_call_depth: self.current_sys_call_depth,
+                call_frame_actor: call_frame.actor.clone(),
+                call_frame_depth: call_frame.depth,
+                instruction_index,
+                input: traced_input,
+                output: traced_output,
+                children: child_traces,
+            };
+
+            let siblings = self
+                .sys_call_traces_stacks
+                .entry(self.current_sys_call_depth)
+                .or_insert(vec![]);
+            siblings.push(trace);
+        }
+
+        Ok(())
+    }
+
+    fn handle_processing_completed<R: FeeReserve>(
+        &mut self,
+        track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        // Some sanity checks
+        // No leftover inputs
+        if !self.traced_sys_call_inputs_stack.is_empty() {
+            return Err(ModuleError::ExecutionTraceError(
+                ExecutionTraceError::InvalidState("Leftover sys call inputs on stack".to_string()),
+            ));
+        }
+        // At most one entry in call traces mapping (the root level)
+        if self.sys_call_traces_stacks.len() > 1 {
+            return Err(ModuleError::ExecutionTraceError(
+                ExecutionTraceError::InvalidState("Leftover sys call traces on stack".to_string()),
+            ));
+        }
+
+        for (_, traces) in self.sys_call_traces_stacks.drain() {
+            // Emit an output event for each "root" sys call trace
+            for trace in traces {
+                track.add_output_event(OutputEvent::SysCallTrace(trace));
             }
         }
 
-        Ok(TraceHeapSnapshot {
-            owned_buckets,
-            owned_proofs,
-            auth_zone_proofs,
-            worktop_resources,
-        })
+        Ok(())
+    }
+
+    fn extract_trace_data(
+        heap: &mut Heap,
+        value: &ScryptoValue,
+    ) -> Result<TracedSysCallData, ModuleError> {
+        let mut buckets: HashMap<BucketId, Resource> = HashMap::new();
+        for bucket_id in value.bucket_ids.keys() {
+            let bucket_resource = Self::read_bucket_resource(heap, bucket_id)?;
+            buckets.insert(bucket_id.clone(), bucket_resource);
+        }
+
+        let mut proofs: HashMap<ProofId, ProofSnapshot> = HashMap::new();
+        for proof_id in value.proof_ids.keys() {
+            let proof = Self::read_proof(heap, proof_id)?;
+            proofs.insert(proof_id.clone(), proof);
+        }
+
+        Ok(TracedSysCallData { buckets, proofs })
+    }
+
+    fn read_proof(heap: &mut Heap, proof_id: &ProofId) -> Result<ProofSnapshot, ModuleError> {
+        let node_id = RENodeId::Proof(proof_id.clone());
+        let substate_ref = heap
+            .get_substate(node_id, &SubstateOffset::Proof(ProofOffset::Proof))
+            .map_err(|e| {
+                ModuleError::ExecutionTraceError(ExecutionTraceError::CallFrameError(e))
+            })?;
+        Ok(substate_ref.proof().into())
+    }
+
+    fn read_bucket_resource(
+        heap: &mut Heap,
+        bucket_id: &BucketId,
+    ) -> Result<Resource, ModuleError> {
+        let node_id = RENodeId::Bucket(bucket_id.clone());
+        let substate_ref = heap
+            .get_substate(node_id, &SubstateOffset::Bucket(BucketOffset::Bucket))
+            .map_err(|e| {
+                ModuleError::ExecutionTraceError(ExecutionTraceError::CallFrameError(e))
+            })?;
+        Ok(substate_ref.bucket().peek_resource())
     }
 
     fn trace_run<'s, R: FeeReserve>(

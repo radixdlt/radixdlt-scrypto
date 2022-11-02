@@ -194,6 +194,7 @@ impl TransactionProcessor {
                 let owned_node_ids = system_api
                     .get_visible_node_ids()
                     .map_err(InvokeError::Downstream)?;
+
                 let auth_zone_node_id = owned_node_ids
                     .into_iter()
                     .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))

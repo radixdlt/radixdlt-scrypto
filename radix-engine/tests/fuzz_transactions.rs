@@ -46,6 +46,7 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
     let execution_config = ExecutionConfig {
         max_call_depth: DEFAULT_MAX_CALL_DEPTH,
         trace: false,
+        max_sys_call_trace_depth: 1,
     };
     let fee_reserve_config = FeeReserveConfig {
         cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),

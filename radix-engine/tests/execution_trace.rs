@@ -1,11 +1,10 @@
-use radix_engine::engine::{OutputEvent, TraceHeapSnapshot};
+use radix_engine::engine::{OutputEvent, SysCallTrace, SysCallTraceOrigin};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::LockedAmountOrIds;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use std::ops::Add;
 use transaction::builder::ManifestBuilder;
-use transaction::model::Instruction;
 
 #[test]
 fn test_trace_resource_transfers() {
@@ -150,7 +149,7 @@ fn test_instruction_traces() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/execution_trace");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     let manfiest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -174,135 +173,177 @@ fn test_instruction_traces() {
 
     receipt.expect_commit_success();
 
-    // Check traces for the 7 manifest instructions
-    let traces: Vec<(Instruction, TraceHeapSnapshot, TraceHeapSnapshot)> = receipt
+    let mut traces: Vec<SysCallTrace> = receipt
         .execution
         .output_events
         .into_iter()
-        .filter_map(|ev| match ev {
-            OutputEvent::InstructionTraceV0(inst, pre, post) => Some((inst, pre, post)),
-            _ => None,
+        .filter_map(|e| match e {
+            OutputEvent::SysCallTrace(trace) => Some(trace),
         })
         .collect();
 
+    // Expecting a single root trace
+    assert_eq!(1, traces.len());
+
+    let root_trace = traces.remove(0);
+    let child_traces = root_trace.children;
+
+    // Check traces for the 7 manifest instructions
     {
         // LOCK_FEE
-        let (inst, pre, post) = traces.get(0).unwrap();
-        assert_method(inst, "lock_fee");
-        assert_all_empty(pre);
-        assert_all_empty(post);
+        let traces = traces_for_instruction(&child_traces, 0);
+        assert!(traces.is_empty()); // No traces for lock_fee
     }
 
     {
         // CALL_METHOD: free
-        let prev_post = &traces.get(0).unwrap().2;
-        let (inst, pre, post) = traces.get(1).unwrap();
-        assert_method(inst, "free");
-        assert_eq!(pre, prev_post);
-        assert!(post.auth_zone_proofs.is_empty());
-        assert!(post.owned_proofs.is_empty());
-        assert!(post.owned_buckets.is_empty());
-        assert_eq!(1, post.worktop_resources.len());
+        let traces = traces_for_instruction(&child_traces, 1);
+        // Expecting two traces: an output bucket from the "free" call
+        // followed by a single input (auto-add to worktop) - in this order.
+        assert_eq!(2, traces.len());
+        let free_trace = traces.get(0).unwrap();
+        if let SysCallTraceOrigin::ScryptoMethod(method_ident) = &free_trace.origin {
+            assert_eq!("free", method_ident.method_name);
+        } else {
+            panic!("Expected a scrypto method call");
+        };
+        assert!(free_trace.input.is_empty());
+        assert!(free_trace.output.proofs.is_empty());
+        assert_eq!(1, free_trace.output.buckets.len());
+        let output_resource = free_trace.output.buckets.values().nth(0).unwrap();
+        assert_eq!(RADIX_TOKEN, output_resource.resource_address());
+        assert_eq!(dec!("1000"), output_resource.amount());
+
+        let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
-            dec!("1000"),
-            post.worktop_resources.get(&RADIX_TOKEN).unwrap().amount()
+            SysCallTraceOrigin::NativeMethod(NativeMethod::Worktop(WorktopMethod::Put)),
+            worktop_put_trace.origin
         );
+        assert!(worktop_put_trace.output.is_empty());
+        assert!(worktop_put_trace.input.proofs.is_empty());
+        assert_eq!(1, worktop_put_trace.input.buckets.len());
+        let input_resource = worktop_put_trace.input.buckets.values().nth(0).unwrap();
+        assert_eq!(RADIX_TOKEN, input_resource.resource_address());
+        assert_eq!(dec!("1000"), input_resource.amount());
+
+        // We're tracking up to depth "1" (default), so no more child traces
+        assert!(free_trace.children.is_empty());
+        assert!(worktop_put_trace.children.is_empty());
     }
 
     {
         // TAKE_FROM_WORKTOP
-        let prev_post = &traces.get(1).unwrap().2;
-        let (inst, pre, post) = traces.get(2).unwrap();
-        assert!(matches!(inst, Instruction::TakeFromWorktop { .. }));
-        assert_eq!(pre, prev_post);
+        let traces = traces_for_instruction(&child_traces, 2);
+        // Take from worktop is just a single sys call with a single bucket output
+        assert_eq!(1, traces.len());
 
-        assert!(post.auth_zone_proofs.is_empty());
-        assert!(post.owned_proofs.is_empty());
-        // TODO: fixme, currently worktop resources still contains an entry with 0 amount
-        assert_eq!(1, post.worktop_resources.len());
+        let trace = traces.get(0).unwrap();
         assert_eq!(
-            dec!("0"),
-            post.worktop_resources.get(&RADIX_TOKEN).unwrap().amount()
+            SysCallTraceOrigin::NativeMethod(NativeMethod::Worktop(WorktopMethod::TakeAll)),
+            trace.origin
         );
-        assert_eq!(1, post.owned_buckets.len());
-        let owned_resource = post.owned_buckets.iter().nth(0).unwrap().1;
-        assert_eq!(dec!("1000"), owned_resource.amount());
-        assert_eq!(RADIX_TOKEN, owned_resource.resource_address());
+
+        assert!(trace.input.is_empty());
+        assert!(trace.output.proofs.is_empty());
+        assert_eq!(1, trace.output.buckets.len());
+
+        let output_resource = trace.output.buckets.values().nth(0).unwrap();
+        assert_eq!(RADIX_TOKEN, output_resource.resource_address());
+        assert_eq!(dec!("1000"), output_resource.amount());
     }
 
     {
         // CREATE_PROOF_FROM_BUCKET
-        let prev_post = &traces.get(2).unwrap().2;
-        let (inst, pre, post) = traces.get(3).unwrap();
-        assert!(matches!(inst, Instruction::CreateProofFromBucket { .. }));
-        assert_eq!(pre, prev_post);
-
-        assert!(post.auth_zone_proofs.is_empty());
-        // TODO: fixme, currently worktop resources still contains an entry with 0 amount
-        assert_eq!(1, post.worktop_resources.len());
+        let traces = traces_for_instruction(&child_traces, 3);
+        assert_eq!(1, traces.len());
+        let trace = traces.get(0).unwrap();
         assert_eq!(
-            dec!("0"),
-            post.worktop_resources.get(&RADIX_TOKEN).unwrap().amount()
+            SysCallTraceOrigin::NativeMethod(NativeMethod::Bucket(BucketMethod::CreateProof)),
+            trace.origin
         );
-        assert_eq!(1, post.owned_buckets.len());
-        let owned_resource = post.owned_buckets.iter().nth(0).unwrap().1;
-        // Owned amount is 0
-        assert_eq!(dec!("0"), owned_resource.amount());
-        assert_eq!(RADIX_TOKEN, owned_resource.resource_address());
-        // And there is a proof
-        assert_eq!(1, post.owned_proofs.len());
-        let owned_proof = post.owned_proofs.iter().nth(0).unwrap().1;
-        assert_eq!(RADIX_TOKEN, owned_proof.resource_address);
+
+        assert!(trace.input.is_empty());
+        assert!(trace.output.buckets.is_empty());
+        assert_eq!(1, trace.output.proofs.len());
+
+        let output_proof = trace.output.proofs.values().nth(0).unwrap();
+        assert_eq!(RADIX_TOKEN, output_proof.resource_address);
         assert_eq!(
             LockedAmountOrIds::Amount(dec!("1000")),
-            owned_proof.total_locked
+            output_proof.total_locked
         );
     }
 
     {
         // DROP_PROOF
-        let (_, prev_pre, prev_post) = &traces.get(3).unwrap();
-        let (inst, pre, post) = traces.get(4).unwrap();
-        assert!(matches!(inst, Instruction::DropProof { .. }));
-        assert_eq!(pre, prev_post);
-        assert_eq!(post, prev_pre); // DropProof should simply revert CreateProof
+        let traces = traces_for_instruction(&child_traces, 4);
+        assert_eq!(1, traces.len());
+        let trace = traces.get(0).unwrap();
+        assert_eq!(SysCallTraceOrigin::DropNode, trace.origin);
+
+        assert!(trace.output.is_empty());
+        assert!(trace.input.buckets.is_empty());
+        assert_eq!(1, trace.input.proofs.len());
+
+        let input_proof = trace.input.proofs.values().nth(0).unwrap();
+        assert_eq!(RADIX_TOKEN, input_proof.resource_address);
+        assert_eq!(
+            LockedAmountOrIds::Amount(dec!("1000")),
+            input_proof.total_locked
+        );
     }
 
     {
         // RETURN_TO_WORKTOP
-        let (_, pre_take_from_worktop, _) = &traces.get(2).unwrap();
-        let (_, _, prev_post) = &traces.get(4).unwrap();
-        let (inst, pre, post) = traces.get(5).unwrap();
-        assert!(matches!(inst, Instruction::ReturnToWorktop { .. }));
-        assert_eq!(pre, prev_post);
-        assert_eq!(post, pre_take_from_worktop); // ReturnToWorktop should simply revert TakeFromWorktop
+        let traces = traces_for_instruction(&child_traces, 5);
+        assert_eq!(1, traces.len());
+        let trace = traces.get(0).unwrap();
+        assert_eq!(
+            SysCallTraceOrigin::NativeMethod(NativeMethod::Worktop(WorktopMethod::Put)),
+            trace.origin
+        );
+        assert!(trace.output.is_empty());
+        assert!(trace.input.proofs.is_empty());
+        assert_eq!(1, trace.input.buckets.len());
+
+        let input_resource = trace.input.buckets.values().nth(0).unwrap();
+        assert_eq!(RADIX_TOKEN, input_resource.resource_address());
+        assert_eq!(dec!("1000"), input_resource.amount());
     }
 
     {
         // CALL_FUNCTION: create_and_fund_a_component
-        let prev_post = &traces.get(5).unwrap().2;
-        let (inst, pre, post) = traces.get(6).unwrap();
-        assert_function(inst, "create_and_fund_a_component");
-        assert_eq!(pre, prev_post);
-        assert_all_empty(post);
+        let traces = traces_for_instruction(&child_traces, 6);
+        // Expected two traces: take from worktop and call scrypto function
+        assert_eq!(2, traces.len());
+
+        let take_trace = traces.get(0).unwrap();
+        assert_eq!(
+            SysCallTraceOrigin::NativeMethod(NativeMethod::Worktop(WorktopMethod::Drain)),
+            take_trace.origin
+        );
+
+        let call_trace = traces.get(1).unwrap();
+        if let SysCallTraceOrigin::ScryptoFunction(fn_ident) = &call_trace.origin {
+            assert_eq!("create_and_fund_a_component", fn_ident.function_name);
+        } else {
+            panic!("Expected a scrypto function call");
+        };
+        assert!(call_trace.output.is_empty());
+        assert!(call_trace.input.proofs.is_empty());
+        assert_eq!(1, call_trace.input.buckets.len());
+        let input_resource = call_trace.input.buckets.values().nth(0).unwrap();
+        assert_eq!(RADIX_TOKEN, input_resource.resource_address());
+        assert_eq!(dec!("1000"), input_resource.amount());
     }
 }
 
-fn assert_all_empty(snapshot: &TraceHeapSnapshot) {
-    assert!(snapshot.auth_zone_proofs.is_empty());
-    assert!(snapshot.worktop_resources.is_empty());
-    assert!(snapshot.owned_buckets.is_empty());
-    assert!(snapshot.owned_proofs.is_empty());
-}
-
-fn assert_function(inst: &Instruction, fn_name: &str) {
-    assert!(
-        matches!(inst, Instruction::CallFunction { function_ident, .. } if function_ident.function_name == fn_name)
-    );
-}
-
-fn assert_method(inst: &Instruction, method_name: &str) {
-    assert!(
-        matches!(inst, Instruction::CallMethod { method_ident, .. } if method_ident.method_name == method_name)
-    );
+fn traces_for_instruction(
+    traces: &Vec<SysCallTrace>,
+    instruction_index: usize,
+) -> Vec<&SysCallTrace> {
+    traces
+        .iter()
+        .filter(|t| t.instruction_index == Some(instruction_index))
+        .collect()
 }

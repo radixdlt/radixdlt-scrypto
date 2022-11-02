@@ -738,7 +738,7 @@ where
                 }
 
                 REActor::Function(ResolvedFunction::Scrypto {
-                    package_address: package_address,
+                    package_address,
                     package_id: package_node_id.into(),
                     blueprint_name: function_ident.blueprint_name.clone(),
                     ident: function_ident.function_name.clone(),
@@ -1071,7 +1071,10 @@ where
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::InvokeScrypto { output: &output },
+                match &invocation {
+                    Invocation::Scrypto(_) => SysCallOutput::InvokeScrypto { output: &output },
+                    Invocation::Native(_) => SysCallOutput::InvokeNative { output: &output },
+                },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
@@ -1087,6 +1090,14 @@ where
         self.execution_mode = saved_mode;
 
         Ok(output)
+    }
+
+    pub fn finalize(&mut self) -> Result<(), RuntimeError> {
+        for m in &mut self.modules {
+            m.on_finished_processing(&mut self.heap, &mut self.track)
+                .map_err(RuntimeError::ModuleError)?;
+        }
+        Ok(())
     }
 }
 
@@ -1180,6 +1191,16 @@ where
         }
 
         let node_ids = self.current_frame.get_visible_nodes();
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallOutput::ReadOwnedNodes,
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
         Ok(node_ids)
     }
@@ -1445,24 +1466,23 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let substate_ref =
-            self.current_frame
-                .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
-
+        // A little hacky: this post sys call is called before the sys call happens.
+        // Some modules (specifically: ExecutionTraceModule) require that all
+        // pre/post callbacks are balanced.
         // TODO: Move post sys call to substate_ref drop()
-        /*
         for m in &mut self.modules {
             m.post_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::GetRef {
-                    lock_handle,
-                },
+                SysCallOutput::GetRef { lock_handle },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
-         */
+
+        let substate_ref =
+            self.current_frame
+                .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
 
         Ok(substate_ref)
     }
@@ -1483,12 +1503,10 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let substate_ref_mut =
-            self.current_frame
-                .get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
-
+        // A little hacky: this post sys call is called before the sys call happens.
+        // Some modules (specifically: ExecutionTraceModule) require that all
+        // pre/post callbacks are balanced.
         // TODO: Move post sys call to substate_ref drop()
-        /*
         for m in &mut self.modules {
             m.post_sys_call(
                 &self.current_frame,
@@ -1498,7 +1516,10 @@ where
             )
             .map_err(RuntimeError::ModuleError)?;
         }
-         */
+
+        let substate_ref_mut =
+            self.current_frame
+                .get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
 
         Ok(substate_ref_mut)
     }

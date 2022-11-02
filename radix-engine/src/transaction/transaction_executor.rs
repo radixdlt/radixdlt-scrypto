@@ -28,6 +28,7 @@ impl FeeReserveConfig {
 pub struct ExecutionConfig {
     pub max_call_depth: usize,
     pub trace: bool,
+    pub max_sys_call_trace_depth: usize,
 }
 
 impl Default for ExecutionConfig {
@@ -41,6 +42,7 @@ impl ExecutionConfig {
         Self {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             trace: false,
+            max_sys_call_trace_depth: 1,
         }
     }
 
@@ -48,6 +50,7 @@ impl ExecutionConfig {
         Self {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             trace: true,
+            max_sys_call_trace_depth: 1,
         }
     }
 }
@@ -153,7 +156,9 @@ where
                 modules.push(Box::new(LoggerModule::new()));
             }
             modules.push(Box::new(CostingModule::default()));
-            modules.push(Box::new(ExecutionTraceModule::new()));
+            modules.push(Box::new(ExecutionTraceModule::new(
+                execution_config.max_sys_call_trace_depth,
+            )));
 
             let mut kernel = Kernel::new(
                 transaction_hash,
@@ -164,6 +169,7 @@ where
                 self.scrypto_interpreter,
                 modules,
             );
+
             kernel
                 .invoke_native(NativeInvocation::Function(
                     NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
@@ -171,9 +177,10 @@ where
                         instructions: sbor::rust::borrow::Cow::Borrowed(&instructions),
                     }),
                 ))
-                .map(|o| {
-                    scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
-                        .expect("TransactionProcessor returned data of unexpected type")
+                .and_then(|o| {
+                    kernel.finalize()?;
+                    Ok(scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
+                        .expect("TransactionProcessor returned data of unexpected type"))
                 })
         };
 

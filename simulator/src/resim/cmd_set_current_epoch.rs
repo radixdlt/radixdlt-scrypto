@@ -59,7 +59,10 @@ impl SetCurrentEpoch {
                 RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
                 ScryptoValue::from_typed(&EpochManagerSetEpochInput { epoch: self.epoch }),
             ))
-            .map(|_| ())
+            .and_then(|_| {
+                kernel.finalize()?;
+                Ok(())
+            })
             .map_err(Error::TransactionExecutionError)?;
 
         // Commit

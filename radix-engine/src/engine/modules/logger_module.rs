@@ -140,6 +140,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallOutput::ReadBlob { .. } => {}
             SysCallOutput::GenerateUuid { .. } => {}
             SysCallOutput::EmitLog { .. } => {}
+            SysCallOutput::ReadOwnedNodes { .. } => {}
         }
 
         Ok(())
@@ -194,6 +195,14 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
         _heap: &mut Heap,
         _track: &mut Track<R>,
         _event: &ApplicationEvent,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn on_finished_processing(
+        &mut self,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         Ok(())
     }

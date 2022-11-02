@@ -51,9 +51,11 @@ pub enum SysCallInput<'a> {
     },
 }
 
+#[derive(Debug)]
 pub enum SysCallOutput<'a> {
     InvokeScrypto { output: &'a ScryptoValue },
     InvokeNative { output: &'a ScryptoValue },
+    ReadOwnedNodes,
     BorrowNode { node_pointer: &'a RENodeLocation },
     DropNode { node: &'a HeapRENode },
     CreateNode { node_id: &'a RENodeId },
@@ -125,5 +127,11 @@ pub trait Module<R: FeeReserve> {
         heap: &mut Heap,
         track: &mut Track<R>,
         event: &ApplicationEvent,
+    ) -> Result<(), ModuleError>;
+
+    fn on_finished_processing(
+        &mut self,
+        heap: &mut Heap,
+        track: &mut Track<R>,
     ) -> Result<(), ModuleError>;
 }
