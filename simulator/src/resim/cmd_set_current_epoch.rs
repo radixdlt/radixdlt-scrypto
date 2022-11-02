@@ -1,7 +1,6 @@
 use clap::Parser;
 use radix_engine::constants::*;
-use radix_engine::engine::Track;
-use radix_engine::engine::{Kernel, SystemApi};
+use radix_engine::engine::*;
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::types::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
@@ -54,12 +53,10 @@ impl SetCurrentEpoch {
 
         // Invoke the system
         kernel
-            .invoke_native(NativeInvocation::Method(
-                NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
-                RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                ScryptoValue::from_typed(&EpochManagerSetEpochInput { epoch: self.epoch }),
-            ))
-            .map(|_| ())
+            .invoke(EpochManagerSetEpochInvocation {
+                epoch: self.epoch,
+                receiver: EPOCH_MANAGER,
+            })
             .map_err(Error::TransactionExecutionError)?;
 
         // Commit

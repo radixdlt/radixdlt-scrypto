@@ -3,6 +3,37 @@ use crate::fee::FeeReserve;
 use crate::model::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CallFrameUpdate {
+    pub nodes_to_move: Vec<RENodeId>,
+    pub node_refs_to_copy: HashSet<RENodeId>,
+}
+
+impl CallFrameUpdate {
+    pub fn empty() -> Self {
+        CallFrameUpdate {
+            nodes_to_move: Vec::new(),
+            node_refs_to_copy: HashSet::new(),
+        }
+    }
+
+    pub fn move_node(node_id: RENodeId) -> Self {
+        CallFrameUpdate {
+            nodes_to_move: vec![node_id],
+            node_refs_to_copy: HashSet::new(),
+        }
+    }
+
+    pub fn copy_ref(node_id: RENodeId) -> Self {
+        let mut node_refs_to_copy = HashSet::new();
+        node_refs_to_copy.insert(node_id);
+        CallFrameUpdate {
+            nodes_to_move: vec![],
+            node_refs_to_copy,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RENodeLocation {
     Heap,
@@ -216,20 +247,25 @@ impl CallFrame {
     pub fn new_child_from_parent(
         parent: &mut CallFrame,
         actor: REActor,
-        nodes_to_move: Vec<RENodeId>,
-        node_refs: HashMap<RENodeId, RENodeLocation>,
+        call_frame_update: CallFrameUpdate,
     ) -> Result<Self, RuntimeError> {
         let mut owned_heap_nodes = HashSet::new();
+        let mut next_node_refs = HashMap::new();
 
-        for node_id in nodes_to_move {
+        for node_id in call_frame_update.nodes_to_move {
             parent.take_node_internal(node_id)?;
             owned_heap_nodes.insert(node_id);
+        }
+
+        for node_id in call_frame_update.node_refs_to_copy {
+            let location = parent.get_node_location(node_id)?;
+            next_node_refs.insert(node_id, location);
         }
 
         let frame = Self {
             depth: parent.depth + 1,
             actor,
-            node_refs,
+            node_refs: next_node_refs,
             owned_root_nodes: owned_heap_nodes,
             next_lock_handle: 0u32,
             locks: HashMap::new(),
@@ -239,33 +275,24 @@ impl CallFrame {
         Ok(frame)
     }
 
-    pub fn move_nodes_upstream(
+    pub fn update_upstream(
         from: &mut CallFrame,
         to: &mut CallFrame,
-        node_ids: HashSet<RENodeId>,
+        update: CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        for node_id in node_ids {
+        for node_id in update.nodes_to_move {
             // move re nodes to upstream call frame.
             from.take_node_internal(node_id)?;
             to.owned_root_nodes.insert(node_id);
         }
 
-        Ok(())
-    }
-
-    pub fn copy_refs(
-        from: &mut CallFrame,
-        to: &mut CallFrame,
-        global_addresses: HashSet<GlobalAddress>,
-    ) -> Result<(), RuntimeError> {
-        for global_address in global_addresses {
-            let node_id = RENodeId::Global(global_address);
-            if !from.node_refs.contains_key(&node_id) {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidReferenceReturn(global_address),
-                ));
-            }
-            to.node_refs.insert(node_id, RENodeLocation::Store);
+        for node_id in update.node_refs_to_copy {
+            // Make sure not to allow owned nodes to be passed as references upstream
+            let location = from
+                .node_refs
+                .get(&node_id)
+                .ok_or(CallFrameError::RENodeNotVisible(node_id))?;
+            to.node_refs.insert(node_id, location.clone());
         }
 
         Ok(())

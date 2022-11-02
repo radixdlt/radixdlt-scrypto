@@ -1,14 +1,12 @@
 use crate::types::*;
 
-pub enum SystemApiCostingEntry<'a> {
+pub enum SystemApiCostingEntry {
     /*
      * Invocation
      */
-    InvokeScrypto {
-        invocation: &'a ScryptoInvocation,
-    },
-    InvokeNative {
-        invocation: &'a NativeInvocation,
+    Invoke {
+        input_size: u32,
+        value_count: u32,
     },
 
     /*
@@ -236,7 +234,6 @@ impl FeeTable {
                     VaultMethod::CreateProofByAmount => self.fixed_high,
                     VaultMethod::CreateProofByIds => self.fixed_high,
                     VaultMethod::LockFee => self.fixed_medium,
-                    VaultMethod::LockContingentFee => self.fixed_medium,
                 }
             }
         }
@@ -244,16 +241,11 @@ impl FeeTable {
 
     pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
         match entry {
-            SystemApiCostingEntry::InvokeScrypto { invocation, .. } => {
-                self.fixed_low
-                    + (5 * invocation.args().raw.len() + 10 * invocation.args().value_count())
-                        as u32
-            }
-            SystemApiCostingEntry::InvokeNative { invocation, .. } => {
-                self.fixed_low
-                    + (5 * invocation.args().raw.len() + 10 * invocation.args().value_count())
-                        as u32
-            }
+            SystemApiCostingEntry::Invoke {
+                input_size,
+                value_count,
+                ..
+            } => self.fixed_low + (5 * input_size + 10 * value_count) as u32,
 
             SystemApiCostingEntry::ReadOwnedNodes => self.fixed_low,
             SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,

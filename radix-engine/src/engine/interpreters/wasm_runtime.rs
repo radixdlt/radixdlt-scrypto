@@ -12,22 +12,19 @@ use crate::wasm::*;
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, 's, Y, R>
+pub struct RadixEngineWasmRuntime<'y, 'a, Y>
 where
-    Y: SystemApi<'s, R>,
-    R: FeeReserve,
+    Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
 {
     actor: ScryptoActor,
     system_api: &'y mut Y,
     lock_types: HashMap<LockHandle, SubstateOffset>,
-    phantom1: PhantomData<R>,
-    phantom2: PhantomData<&'s ()>,
+    phantom: PhantomData<&'a ()>,
 }
 
-impl<'y, 's, Y, R> RadixEngineWasmRuntime<'y, 's, Y, R>
+impl<'y, 'a, Y> RadixEngineWasmRuntime<'y, 'a, Y>
 where
-    Y: SystemApi<'s, R>,
-    R: FeeReserve,
+    Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
 {
     // TODO: expose API for reading blobs
 
@@ -40,8 +37,7 @@ where
             actor,
             system_api,
             lock_types: HashMap::new(),
-            phantom1: PhantomData,
-            phantom2: PhantomData,
+            phantom: PhantomData,
         }
     }
 
@@ -53,7 +49,7 @@ where
         let args = ScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
         self.system_api
-            .invoke_scrypto(ScryptoInvocation::Function(fn_ident, args))
+            .invoke(ScryptoInvocation::Function(fn_ident, args))
     }
 
     fn handle_invoke_scrypto_method(
@@ -64,7 +60,7 @@ where
         let args = ScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
         self.system_api
-            .invoke_scrypto(ScryptoInvocation::Method(fn_ident, args))
+            .invoke(ScryptoInvocation::Method(fn_ident, args))
     }
 
     fn handle_invoke_native_function(
@@ -72,24 +68,15 @@ where
         native_function: NativeFunction,
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let args = ScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-
-        self.system_api
-            .invoke_native(NativeInvocation::Function(native_function, args))
+        parse_and_invoke_native_function(native_function, args, self.system_api)
     }
 
     fn handle_invoke_native_method(
         &mut self,
         native_method: NativeMethod,
-        receiver: RENodeId,
         args: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let args = ScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-
-        self.system_api
-            .invoke_native(NativeInvocation::Method(native_method, receiver, args))
+        parse_and_invoke_native_method(native_method, args, self.system_api)
     }
 
     fn handle_node_create(
@@ -208,10 +195,9 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'y, 's, Y, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, Y, R>
+impl<'y, 'a, Y> WasmRuntime for RadixEngineWasmRuntime<'y, 'a, Y>
 where
-    Y: SystemApi<'s, R>,
-    R: FeeReserve,
+    Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {
         let input: RadixEngineInput = scrypto_decode(&input.raw)
@@ -226,8 +212,8 @@ where
             RadixEngineInput::InvokeNativeFunction(native_function, args) => {
                 self.handle_invoke_native_function(native_function, args)?
             }
-            RadixEngineInput::InvokeNativeMethod(native_method, receiver, args) => {
-                self.handle_invoke_native_method(native_method, receiver, args)?
+            RadixEngineInput::InvokeNativeMethod(native_method, args) => {
+                self.handle_invoke_native_method(native_method, args)?
             }
             RadixEngineInput::CreateNode(node) => self.handle_node_create(node)?,
             RadixEngineInput::GetVisibleNodeIds() => self.handle_get_visible_node_ids()?,

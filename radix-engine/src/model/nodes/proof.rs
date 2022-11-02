@@ -1,5 +1,7 @@
-use crate::engine::{LockFlags, RENode, SystemApi};
-use crate::fee::FeeReserve;
+use crate::engine::{
+    ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
+    NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
+};
 use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
 
@@ -19,50 +21,138 @@ pub enum ProofError {
     InvalidRequestData(DecodeError),
 }
 
-pub struct Proof;
+impl NativeExecutable for ProofGetAmountInvocation {
+    type Output = Decimal;
 
-impl Proof {
-    pub fn main<'s, Y, R>(
-        proof_id: ProofId,
-        method: ProofMethod,
-        args: ScryptoValue,
+    fn execute<'a, Y>(
+        input: Self,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, InvokeError<ProofError>>
+    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve,
+        Y: SystemApi + InvokableNative<'a>,
     {
-        let node_id = RENodeId::Proof(proof_id);
+        let node_id = RENodeId::Proof(input.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
         let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
         let proof = substate_ref.proof();
 
-        let rtn = match method {
-            ProofMethod::GetAmount => {
-                let _: ProofGetAmountInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
-                ScryptoValue::from_typed(&proof.total_amount())
-            }
-            ProofMethod::GetNonFungibleIds => {
-                let _: ProofGetNonFungibleIdsInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
-                ScryptoValue::from_typed(&proof.total_ids()?)
-            }
-            ProofMethod::GetResourceAddress => {
-                let _: ProofGetResourceAddressInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
-                ScryptoValue::from_typed(&proof.resource_address)
-            }
-            ProofMethod::Clone => {
-                let _: ProofCloneInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
-                let cloned_proof = proof.clone();
-                let proof_id = system_api.create_node(RENode::Proof(cloned_proof))?.into();
-                ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
-            }
-        };
+        Ok((proof.total_amount(), CallFrameUpdate::empty()))
+    }
+}
 
-        Ok(rtn)
+impl NativeInvocation for ProofGetAmountInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Proof(ProofMethod::GetAmount),
+            RENodeId::Proof(self.receiver),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+impl NativeExecutable for ProofGetNonFungibleIdsInvocation {
+    type Output = BTreeSet<NonFungibleId>;
+
+    fn execute<'a, Y>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + InvokableNative<'a>,
+    {
+        let node_id = RENodeId::Proof(input.receiver);
+        let offset = SubstateOffset::Proof(ProofOffset::Proof);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let substate_ref = system_api.get_ref(handle)?;
+        let proof = substate_ref.proof();
+        let ids = proof.total_ids().map_err(|e| match e {
+            InvokeError::Error(e) => {
+                RuntimeError::ApplicationError(ApplicationError::ProofError(e))
+            }
+            InvokeError::Downstream(runtime_error) => runtime_error,
+        })?;
+
+        Ok((ids, CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for ProofGetNonFungibleIdsInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Proof(ProofMethod::GetNonFungibleIds),
+            RENodeId::Proof(self.receiver),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+impl NativeExecutable for ProofGetResourceAddressInvocation {
+    type Output = ResourceAddress;
+
+    fn execute<'a, Y>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + InvokableNative<'a>,
+    {
+        let node_id = RENodeId::Proof(input.receiver);
+        let offset = SubstateOffset::Proof(ProofOffset::Proof);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let substate_ref = system_api.get_ref(handle)?;
+        let proof = substate_ref.proof();
+
+        Ok((
+            proof.resource_address,
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
+                proof.resource_address,
+            ))),
+        ))
+    }
+}
+
+impl NativeInvocation for ProofGetResourceAddressInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Proof(ProofMethod::GetResourceAddress),
+            RENodeId::Proof(self.receiver),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+impl NativeExecutable for ProofCloneInvocation {
+    type Output = scrypto::resource::Proof;
+
+    fn execute<'a, Y>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + InvokableNative<'a>,
+    {
+        let node_id = RENodeId::Proof(input.receiver);
+        let offset = SubstateOffset::Proof(ProofOffset::Proof);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let substate_ref = system_api.get_ref(handle)?;
+        let proof = substate_ref.proof();
+        let cloned_proof = proof.clone();
+        let proof_id = system_api.create_node(RENode::Proof(cloned_proof))?.into();
+
+        Ok((
+            scrypto::resource::Proof(proof_id),
+            CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
+        ))
+    }
+}
+
+impl NativeInvocation for ProofCloneInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Proof(ProofMethod::Clone),
+            RENodeId::Proof(self.receiver),
+            CallFrameUpdate::empty(),
+        )
     }
 }

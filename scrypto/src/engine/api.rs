@@ -14,7 +14,7 @@ pub enum RadixEngineInput {
     InvokeScryptoFunction(ScryptoFunctionIdent, Vec<u8>),
     InvokeScryptoMethod(ScryptoMethodIdent, Vec<u8>),
     InvokeNativeFunction(NativeFunction, Vec<u8>),
-    InvokeNativeMethod(NativeMethod, RENodeId, Vec<u8>),
+    InvokeNativeMethod(NativeMethod, Vec<u8>),
 
     CreateNode(ScryptoRENode),
     GetVisibleNodeIds(),
