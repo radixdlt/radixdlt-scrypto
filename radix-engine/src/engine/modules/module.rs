@@ -5,12 +5,10 @@ use crate::model::Resource;
 use crate::types::*;
 
 pub enum SysCallInput<'a> {
-    InvokeScrypto {
-        invocation: &'a ScryptoInvocation,
-        depth: usize,
-    },
-    InvokeNative {
-        invocation: &'a NativeInvocation,
+    Invoke {
+        name: String,
+        input_size: u32,
+        value_count: u32,
         depth: usize,
     },
     ReadOwnedNodes,
@@ -52,8 +50,7 @@ pub enum SysCallInput<'a> {
 }
 
 pub enum SysCallOutput<'a> {
-    InvokeScrypto { output: &'a ScryptoValue },
-    InvokeNative { output: &'a ScryptoValue },
+    Invoke { rtn: String },
     BorrowNode { node_pointer: &'a RENodeLocation },
     DropNode { node: &'a HeapRENode },
     CreateNode { node_id: &'a RENodeId },

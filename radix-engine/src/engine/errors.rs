@@ -67,8 +67,6 @@ pub enum KernelError {
     // invocation
     WasmError(WasmError),
 
-    InvalidReferencePass(GlobalAddress),
-    InvalidReferenceReturn(GlobalAddress),
     InvalidReferenceWrite(GlobalAddress),
     GlobalAddressNotFound(GlobalAddress),
 
@@ -146,8 +144,6 @@ pub enum ScryptoFnResolvingError {
 pub enum InterpreterError {
     InvalidScryptoFunctionInvocation(ScryptoFunctionIdent, ScryptoFnResolvingError),
     InvalidScryptoMethodInvocation(ScryptoMethodIdent, ScryptoFnResolvingError),
-    InvalidNativeFunctionIdent(NativeFunctionIdent),
-    InvalidNativeMethodIdent(NativeMethodIdent),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

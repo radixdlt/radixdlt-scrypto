@@ -20,33 +20,23 @@ impl<R: FeeReserve> Module<R> for CostingModule {
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
-            SysCallInput::InvokeScrypto { invocation, depth } => {
+            SysCallInput::Invoke {
+                depth,
+                input_size,
+                value_count,
+                ..
+            } => {
                 if depth > 0 {
                     track
                         .fee_reserve
                         .consume_flat(
                             track
                                 .fee_table
-                                .system_api_cost(SystemApiCostingEntry::InvokeScrypto {
-                                    invocation: &invocation,
+                                .system_api_cost(SystemApiCostingEntry::Invoke {
+                                    input_size,
+                                    value_count,
                                 }),
-                            "invoke_scrypto",
-                            false,
-                        )
-                        .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
-                }
-            }
-            SysCallInput::InvokeNative { invocation, depth } => {
-                if depth > 0 {
-                    track
-                        .fee_reserve
-                        .consume_flat(
-                            track
-                                .fee_table
-                                .system_api_cost(SystemApiCostingEntry::InvokeNative {
-                                    invocation: &invocation,
-                                }),
-                            "invoke_native",
+                            "invoke",
                             false,
                         )
                         .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
