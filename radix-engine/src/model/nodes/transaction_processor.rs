@@ -249,9 +249,14 @@ impl TransactionProcessor {
         let auth_zone_ref = auth_zone_node_id;
         let auth_zone_id: AuthZoneId = auth_zone_ref.into();
 
-        for inst in input.instructions.as_ref() {
+        system_api
+            .emit_application_event(ApplicationEvent::PreExecuteManifest)
+            .map_err(InvokeError::Downstream)?;
+
+        for (idx, inst) in input.instructions.as_ref().iter().enumerate() {
             system_api
                 .emit_application_event(ApplicationEvent::PreExecuteInstruction {
+                    instruction_index: idx,
                     instruction: &inst,
                 })
                 .map_err(InvokeError::Downstream)?;
@@ -691,10 +696,15 @@ impl TransactionProcessor {
 
             system_api
                 .emit_application_event(ApplicationEvent::PostExecuteInstruction {
+                    instruction_index: idx,
                     instruction: &inst,
                 })
                 .map_err(InvokeError::Downstream)?;
         }
+
+        system_api
+            .emit_application_event(ApplicationEvent::PostExecuteManifest)
+            .map_err(InvokeError::Downstream)?;
 
         Ok(outputs
             .into_iter()

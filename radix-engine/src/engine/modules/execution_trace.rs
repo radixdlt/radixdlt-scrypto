@@ -300,12 +300,14 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
         event: &ApplicationEvent,
     ) -> Result<(), ModuleError> {
         match event {
-            ApplicationEvent::PreExecuteInstruction { .. } => {
-                let next_idx = match self.current_instruction_index {
-                    Some(current_instruction_index) => current_instruction_index + 1,
-                    None => 0,
-                };
-                self.current_instruction_index = Some(next_idx);
+            ApplicationEvent::PreExecuteInstruction {
+                instruction_index, ..
+            } => {
+                self.current_instruction_index = Some(instruction_index.clone());
+                Ok(())
+            }
+            ApplicationEvent::PostExecuteManifest => {
+                self.current_instruction_index = None;
                 Ok(())
             }
             _ => {

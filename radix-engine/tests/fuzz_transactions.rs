@@ -40,15 +40,8 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
         ),
         phantom: PhantomData,
     };
-    let execution_config = ExecutionConfig {
-        max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-        trace: false,
-        max_sys_call_trace_depth: 1,
-    };
-    let fee_reserve_config = FeeReserveConfig {
-        cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
-        system_loan: DEFAULT_SYSTEM_LOAN,
-    };
+    let execution_config = ExecutionConfig.standard();
+    let fee_reserve_config = FeeReserveConfig.standard();
 
     let mut staged_store_manager = StagedSubstateStoreManager::new(&mut store);
     let staged_node = staged_store_manager.new_child_node(0);

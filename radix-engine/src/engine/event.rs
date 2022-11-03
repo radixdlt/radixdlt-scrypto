@@ -3,8 +3,16 @@ use sbor::{Decode, Encode, TypeId};
 use transaction::model::Instruction;
 
 pub enum ApplicationEvent<'a> {
-    PreExecuteInstruction { instruction: &'a Instruction },
-    PostExecuteInstruction { instruction: &'a Instruction },
+    PreExecuteManifest,
+    PreExecuteInstruction {
+        instruction_index: usize,
+        instruction: &'a Instruction,
+    },
+    PostExecuteInstruction {
+        instruction_index: usize,
+        instruction: &'a Instruction,
+    },
+    PostExecuteManifest,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

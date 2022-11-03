@@ -1226,10 +1226,12 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        // A little hacky: this post sys call is called before the sys call happens.
+        // A little hacky: this post sys call is called before the sys call happens due to
+        // a mutable borrow conflict for substate ref.
         // Some modules (specifically: ExecutionTraceModule) require that all
         // pre/post callbacks are balanced.
-        // TODO: Move post sys call to substate_ref drop()
+        // TODO: Move post sys call to substate_ref drop() so that it's actually
+        // after the sys call processing, not before.
         for m in &mut self.modules {
             m.post_sys_call(
                 &self.current_frame,
@@ -1263,10 +1265,12 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        // A little hacky: this post sys call is called before the sys call happens.
+        // A little hacky: this post sys call is called before the sys call happens due to
+        // a mutable borrow conflict for substate ref.
         // Some modules (specifically: ExecutionTraceModule) require that all
         // pre/post callbacks are balanced.
-        // TODO: Move post sys call to substate_ref drop()
+        // TODO: Move post sys call to substate_ref drop() so that it's actually
+        // after the sys call processing, not before.
         for m in &mut self.modules {
             m.post_sys_call(
                 &self.current_frame,
