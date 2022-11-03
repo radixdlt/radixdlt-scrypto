@@ -719,7 +719,15 @@ where
     }
 
     pub fn finalize(mut self, result: InvokeResult) -> TrackReceipt {
-        let final_result = self.finalize_modules().and_then(|_| result);
+        let final_result = match result {
+            Ok(res) => self.finalize_modules().map(|_| res),
+            Err(err) => {
+                // If there was an error, we still try to finalize the modules,
+                // but forward the original error (even if module finalizer also errors).
+                let _silently_ignored = self.finalize_modules();
+                Err(err)
+            }
+        };
         self.track.finalize(final_result)
     }
 
