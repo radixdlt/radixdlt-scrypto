@@ -1,6 +1,3 @@
-use radix_engine::constants::{
-    DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
-};
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::state_manager::StagedSubstateStoreManager;
