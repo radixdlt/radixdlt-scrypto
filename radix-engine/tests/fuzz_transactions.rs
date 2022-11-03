@@ -40,8 +40,8 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
         ),
         phantom: PhantomData,
     };
-    let execution_config = ExecutionConfig.standard();
-    let fee_reserve_config = FeeReserveConfig.standard();
+    let execution_config = ExecutionConfig::standard();
+    let fee_reserve_config = FeeReserveConfig::standard();
 
     let mut staged_store_manager = StagedSubstateStoreManager::new(&mut store);
     let staged_node = staged_store_manager.new_child_node(0);
