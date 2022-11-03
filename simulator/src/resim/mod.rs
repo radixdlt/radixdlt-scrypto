@@ -177,7 +177,6 @@ pub fn handle_manifest<O: std::io::Write>(
                     InstructionCostRules::tiered(1, 5, 10, 5000),
                     512,
                 ),
-                phantom: PhantomData,
             };
 
             let sks = get_signing_keys(signing_keys)?;
