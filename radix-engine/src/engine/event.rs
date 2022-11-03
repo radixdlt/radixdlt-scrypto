@@ -16,6 +16,6 @@ pub enum ApplicationEvent<'a> {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub enum OutputEvent {
+pub enum TrackedEvent {
     SysCallTrace(SysCallTrace),
 }

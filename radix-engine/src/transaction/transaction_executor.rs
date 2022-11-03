@@ -134,7 +134,7 @@ where
                     execution: TransactionExecution {
                         fee_summary: err.fee_summary,
                         application_logs: vec![],
-                        output_events: vec![],
+                        tracked_events: vec![],
                     },
                     result: TransactionResult::Reject(RejectResult {
                         error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
@@ -181,7 +181,7 @@ where
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
                 application_logs: track_receipt.application_logs,
-                output_events: track_receipt.output_events,
+                tracked_events: track_receipt.tracked_events,
             },
             result: track_receipt.result,
         };
