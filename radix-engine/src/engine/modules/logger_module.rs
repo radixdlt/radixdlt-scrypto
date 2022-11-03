@@ -31,31 +31,8 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
-            SysCallInput::InvokeScrypto { invocation, .. } => {
-                log!(
-                    self,
-                    "Invoking scrypto: fn = {:?}, buckets = {:?}, proofs = {:?}",
-                    match invocation {
-                        ScryptoInvocation::Function(id, _) => format!("{:?}", id),
-                        ScryptoInvocation::Method(id, _) => format!("{:?}", id),
-                    },
-                    invocation.args().bucket_ids,
-                    invocation.args().proof_ids
-                );
-
-                self.depth = self.depth + 1;
-            }
-            SysCallInput::InvokeNative { invocation, .. } => {
-                log!(
-                    self,
-                    "Invoking native: fn = {:?}, buckets = {:?}, proofs = {:?}",
-                    match invocation {
-                        NativeInvocation::Function(id, _) => format!("{:?}", id),
-                        NativeInvocation::Method(id, _, _) => format!("{:?}", id),
-                    },
-                    invocation.args().bucket_ids,
-                    invocation.args().proof_ids
-                );
+            SysCallInput::Invoke { name, .. } => {
+                log!(self, "Invoking: {:?}", name);
 
                 self.depth = self.depth + 1;
             }
@@ -121,13 +98,9 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
         output: SysCallOutput,
     ) -> Result<(), ModuleError> {
         match output {
-            SysCallOutput::InvokeScrypto { output, .. } => {
+            SysCallOutput::Invoke { rtn, .. } => {
                 self.depth = self.depth - 1;
-                log!(self, "Exiting invoke: output = {:?}", output);
-            }
-            SysCallOutput::InvokeNative { output, .. } => {
-                self.depth = self.depth - 1;
-                log!(self, "Exiting invoke: output = {:?}", output);
+                log!(self, "Exiting invoke: output = {:?}", rtn);
             }
             SysCallOutput::BorrowNode { .. } => {}
             SysCallOutput::DropNode { .. } => {}

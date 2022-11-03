@@ -23,7 +23,6 @@ pub enum VaultOp {
     Put(Decimal),    // TODO: add non-fungible support
     Take(Decimal),
     LockFee,
-    LockContingentFee,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -123,10 +122,6 @@ impl ExecutionTraceModule {
                 (NativeMethod::Vault(VaultMethod::LockFee), RENodeId::Vault(vault_id)) => {
                     Self::handle_vault_lock_fee(track, caller, &vault_id)
                 }
-                (
-                    NativeMethod::Vault(VaultMethod::LockContingentFee),
-                    RENodeId::Vault(vault_id),
-                ) => Self::handle_vault_lock_contingent_fee(track, caller, &vault_id),
                 _ => {}
             }
         }
@@ -139,7 +134,7 @@ impl ExecutionTraceModule {
         vault_id: &VaultId,
         input: &ScryptoValue,
     ) {
-        if let Ok(call_data) = scrypto_decode::<VaultPutInput>(&input.raw) {
+        if let Ok(call_data) = scrypto_decode::<VaultPutInvocation>(&input.raw) {
             let bucket_id = call_data.bucket.0;
             if let Ok(bucket_substate) = heap.get_substate(
                 RENodeId::Bucket(bucket_id),
@@ -160,7 +155,7 @@ impl ExecutionTraceModule {
         vault_id: &VaultId,
         input: &ScryptoValue,
     ) {
-        if let Ok(call_data) = scrypto_decode::<VaultTakeInput>(&input.raw) {
+        if let Ok(call_data) = scrypto_decode::<VaultTakeInvocation>(&input.raw) {
             track.vault_ops.push((
                 actor.clone(),
                 vault_id.clone(),
@@ -177,16 +172,6 @@ impl ExecutionTraceModule {
         track
             .vault_ops
             .push((actor.clone(), vault_id.clone(), VaultOp::LockFee));
-    }
-
-    fn handle_vault_lock_contingent_fee<'s, R: FeeReserve>(
-        track: &mut Track<'s, R>,
-        actor: &REActor,
-        vault_id: &VaultId,
-    ) {
-        track
-            .vault_ops
-            .push((actor.clone(), vault_id.clone(), VaultOp::LockContingentFee));
     }
 }
 
@@ -221,7 +206,7 @@ impl ExecutionTraceReceipt {
                                 .entry(vault_id)
                                 .or_default() -= amount;
                         }
-                        VaultOp::LockFee | VaultOp::LockContingentFee => {
+                        VaultOp::LockFee => {
                             *vault_changes
                                 .entry(component_id)
                                 .or_default()

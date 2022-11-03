@@ -12,7 +12,7 @@ use crate::scrypto_type;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 #[custom_type_id(ScryptoCustomTypeId)]
-pub struct PackagePublishInput {
+pub struct PackagePublishInvocation {
     pub code: Blob,
     pub abi: Blob,
 }

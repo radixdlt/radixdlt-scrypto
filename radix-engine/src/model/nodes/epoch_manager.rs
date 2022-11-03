@@ -1,8 +1,11 @@
-use crate::engine::{AuthModule, LockFlags, RENode, SystemApi};
-use crate::fee::FeeReserve;
+use crate::engine::{
+    AuthModule, CallFrameUpdate, Invokable, InvokableNative, LockFlags, NativeExecutable,
+    NativeInvocation, NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError,
+    SystemApi,
+};
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
-    HardResourceOrNonFungible, InvokeError, MethodAuthorization,
+    HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
 
@@ -14,6 +17,115 @@ pub enum EpochManagerError {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct EpochManager {
     pub info: EpochManagerSubstate,
+}
+
+impl NativeExecutable for EpochManagerCreateInvocation {
+    type Output = SystemAddress;
+
+    fn execute<'a, Y>(
+        _invocation: Self,
+        system_api: &mut Y,
+    ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
+    {
+        let node_id =
+            system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
+
+        let global_node_id = system_api.create_node(RENode::Global(
+            GlobalAddressSubstate::System(node_id.into()),
+        ))?;
+
+        let system_address: SystemAddress = global_node_id.into();
+        let mut node_refs_to_copy = HashSet::new();
+        node_refs_to_copy.insert(global_node_id);
+
+        let update = CallFrameUpdate {
+            node_refs_to_copy,
+            nodes_to_move: vec![],
+        };
+
+        Ok((system_address, update))
+    }
+}
+
+impl NativeInvocation for EpochManagerCreateInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Function(
+            NativeFunction::EpochManager(EpochManagerFunction::Create),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+impl NativeExecutable for EpochManagerGetCurrentEpochInvocation {
+    type Output = u64;
+
+    fn execute<'a, Y>(
+        _input: Self,
+        system_api: &mut Y,
+    ) -> Result<(u64, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + InvokableNative<'a>,
+    {
+        // TODO: Remove this hack and get resolved receiver in a better way
+        let node_id = match system_api.get_actor() {
+            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
+            _ => panic!("Unexpected"),
+        };
+        let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+
+        let substate_ref = system_api.get_ref(handle)?;
+        let system = substate_ref.epoch_manager();
+
+        Ok((system.epoch, CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for EpochManagerGetCurrentEpochInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
+            RENodeId::Global(GlobalAddress::System(self.receiver)),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+impl NativeExecutable for EpochManagerSetEpochInvocation {
+    type Output = ();
+
+    fn execute<'a, Y>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + InvokableNative<'a>,
+    {
+        // TODO: Remove this hack and get resolved receiver in a better way
+        let node_id = match system_api.get_actor() {
+            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
+            _ => panic!("Unexpected"),
+        };
+        let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let mut substate_mut = system_api.get_ref_mut(handle)?;
+        substate_mut.epoch_manager().epoch = input.epoch;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for EpochManagerSetEpochInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
+            RENodeId::Global(GlobalAddress::System(self.receiver)),
+            CallFrameUpdate::empty(),
+        )
+    }
 }
 
 impl EpochManager {
@@ -39,79 +151,6 @@ impl EpochManager {
                 ))]
             }
             _ => vec![],
-        }
-    }
-
-    pub fn static_main<'s, Y, R>(
-        func: EpochManagerFunction,
-        args: ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<ScryptoValue, InvokeError<EpochManagerError>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve,
-    {
-        match func {
-            EpochManagerFunction::Create => {
-                let _: EpochManagerCreateInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(EpochManagerError::InvalidRequestData(e)))?;
-
-                let node_id = system_api
-                    .create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
-
-                let global_node_id = system_api.create_node(RENode::Global(
-                    GlobalAddressSubstate::System(node_id.into()),
-                ))?;
-
-                let system_address: SystemAddress = global_node_id.into();
-
-                Ok(ScryptoValue::from_typed(&system_address))
-            }
-        }
-    }
-
-    fn method_lock_flags(method: EpochManagerMethod) -> LockFlags {
-        match method {
-            EpochManagerMethod::SetEpoch => LockFlags::MUTABLE,
-            EpochManagerMethod::GetCurrentEpoch => LockFlags::read_only(),
-        }
-    }
-
-    pub fn main<'s, Y, R>(
-        component_id: ComponentId,
-        method: EpochManagerMethod,
-        args: ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<ScryptoValue, InvokeError<EpochManagerError>>
-    where
-        Y: SystemApi<'s, R>,
-        R: FeeReserve,
-    {
-        let node_id = RENodeId::EpochManager(component_id);
-        let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let handle = system_api.lock_substate(node_id, offset, Self::method_lock_flags(method))?;
-
-        match method {
-            EpochManagerMethod::GetCurrentEpoch => {
-                let _: EpochManagerGetCurrentEpochInput = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(EpochManagerError::InvalidRequestData(e)))?;
-
-                let substate_ref = system_api.get_ref(handle)?;
-                let system = substate_ref.epoch_manager();
-
-                Ok(ScryptoValue::from_typed(&system.epoch))
-            }
-            EpochManagerMethod::SetEpoch => {
-                let EpochManagerSetEpochInput { epoch } = scrypto_decode(&args.raw)
-                    .map_err(|e| InvokeError::Error(EpochManagerError::InvalidRequestData(e)))?;
-
-                let mut substate_mut = system_api
-                    .get_ref_mut(handle)
-                    .map_err(InvokeError::Downstream)?;
-                substate_mut.epoch_manager().epoch = epoch;
-
-                Ok(ScryptoValue::from_typed(&()))
-            }
         }
     }
 }

@@ -8,7 +8,8 @@ use scrypto::data::*;
 use scrypto::engine::types::*;
 use scrypto::misc::ContextualDisplay;
 use scrypto::resource::{
-    MintParams, ResourceManagerBurnInput, ResourceManagerCreateInput, ResourceManagerMintInput,
+    MintParams, ResourceManagerBurnInvocation, ResourceManagerCreateInvocation,
+    ResourceManagerMintInvocation,
 };
 
 use crate::errors::*;
@@ -361,7 +362,7 @@ pub fn decompile_call_native_function<F: fmt::Write>(
     let function_name = &function_ident.function_name;
     match (blueprint_name.as_str(), function_name.as_ref()) {
         ("ResourceManager", "burn") => {
-            if let Ok(input) = scrypto_decode::<ResourceManagerBurnInput>(&args) {
+            if let Ok(input) = scrypto_decode::<ResourceManagerBurnInvocation>(&args) {
                 write!(
                     f,
                     "BURN_BUCKET Bucket({});",
@@ -375,7 +376,7 @@ pub fn decompile_call_native_function<F: fmt::Write>(
             }
         }
         ("ResourceManager", "create") => {
-            if let Ok(input) = scrypto_decode::<ResourceManagerCreateInput>(&args) {
+            if let Ok(input) = scrypto_decode::<ResourceManagerCreateInvocation>(&args) {
                 f.write_str(&format!(
                     "CREATE_RESOURCE {} {} {} {};",
                     ScryptoValue::from_typed(&input.resource_type)
@@ -436,7 +437,7 @@ pub fn decompile_call_native_method<F: fmt::Write>(
     // Try to recognize the invocation
     match (method_ident.receiver, method_ident.method_name.as_ref()) {
         (RENodeId::Global(GlobalAddress::Resource(resource_address)), "mint") => {
-            if let Ok(input) = scrypto_decode::<ResourceManagerMintInput>(&args) {
+            if let Ok(input) = scrypto_decode::<ResourceManagerMintInvocation>(&args) {
                 if let MintParams::Fungible { amount } = input.mint_params {
                     write!(
                         f,

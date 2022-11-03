@@ -2,7 +2,7 @@ use crate::types::*;
 
 /// Resolved receiver including info whether receiver was derefed
 /// or not
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 #[custom_type_id(ScryptoCustomTypeId)]
 pub struct ResolvedReceiver {
     pub derefed_from: Option<RENodeId>,
@@ -35,7 +35,6 @@ pub enum ResolvedFunction {
         ident: String,
         export_name: String,
         return_type: Type,
-        code: Vec<u8>,
     },
     Native(NativeFunction),
 }
@@ -50,7 +49,6 @@ pub enum ResolvedMethod {
         ident: String,
         export_name: String,
         return_type: Type,
-        code: Vec<u8>,
     },
     Native(NativeMethod),
 }

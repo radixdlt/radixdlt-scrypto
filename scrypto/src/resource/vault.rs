@@ -5,7 +5,6 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::engine::types::GlobalAddress;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
@@ -19,50 +18,65 @@ use crate::scrypto_type;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 #[custom_type_id(ScryptoCustomTypeId)]
-pub struct VaultPutInput {
+pub struct VaultPutInvocation {
+    pub receiver: VaultId,
     pub bucket: Bucket,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 #[custom_type_id(ScryptoCustomTypeId)]
-pub struct VaultTakeInput {
+pub struct VaultTakeInvocation {
+    pub receiver: VaultId,
     pub amount: Decimal,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 #[custom_type_id(ScryptoCustomTypeId)]
-pub struct VaultTakeNonFungiblesInput {
+pub struct VaultTakeNonFungiblesInvocation {
+    pub receiver: VaultId,
     pub non_fungible_ids: BTreeSet<NonFungibleId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultGetAmountInput {}
+pub struct VaultGetAmountInvocation {
+    pub receiver: VaultId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultGetResourceAddressInput {}
+pub struct VaultGetResourceAddressInvocation {
+    pub receiver: VaultId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultGetNonFungibleIdsInput {}
+pub struct VaultGetNonFungibleIdsInvocation {
+    pub receiver: VaultId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultCreateProofInput {}
+pub struct VaultCreateProofInvocation {
+    pub receiver: VaultId,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 #[custom_type_id(ScryptoCustomTypeId)]
-pub struct VaultCreateProofByAmountInput {
+pub struct VaultCreateProofByAmountInvocation {
+    pub receiver: VaultId,
     pub amount: Decimal,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 #[custom_type_id(ScryptoCustomTypeId)]
-pub struct VaultCreateProofByIdsInput {
+pub struct VaultCreateProofByIdsInvocation {
+    pub receiver: VaultId,
     pub ids: BTreeSet<NonFungibleId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 #[custom_type_id(ScryptoCustomTypeId)]
-pub struct VaultLockFeeInput {
+pub struct VaultLockFeeInvocation {
+    pub receiver: VaultId,
     pub amount: Decimal,
+    pub contingent: bool,
 }
 
 #[derive(PartialEq, Eq, Hash)]
@@ -73,8 +87,9 @@ impl Vault {
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault),
-            RENodeId::Global(GlobalAddress::Resource(resource_address)),
-            scrypto_encode(&ResourceManagerCreateVaultInput {}),
+            scrypto_encode(&ResourceManagerCreateVaultInvocation {
+                receiver: resource_address,
+            }),
         );
         call_engine(input)
     }
@@ -89,8 +104,10 @@ impl Vault {
     fn take_internal(&mut self, amount: Decimal) -> Bucket {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Vault(VaultMethod::Take),
-            RENodeId::Vault(self.0),
-            scrypto_encode(&VaultTakeInput { amount }),
+            scrypto_encode(&VaultTakeInvocation {
+                receiver: self.0,
+                amount,
+            }),
         );
         call_engine(input)
     }
@@ -98,65 +115,81 @@ impl Vault {
     fn lock_fee_internal(&mut self, amount: Decimal) {
         let input = RadixEngineInput::InvokeNativeMethod(
             NativeMethod::Vault(VaultMethod::LockFee),
-            RENodeId::Vault(self.0),
-            scrypto_encode(&VaultTakeInput { amount }),
+            scrypto_encode(&VaultLockFeeInvocation {
+                receiver: self.0,
+                amount,
+                contingent: false,
+            }),
         );
         call_engine(input)
     }
 
     fn lock_contingent_fee_internal(&mut self, amount: Decimal) {
         let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethod::Vault(VaultMethod::LockContingentFee),
-            RENodeId::Vault(self.0),
-            scrypto_encode(&VaultTakeInput { amount }),
+            NativeMethod::Vault(VaultMethod::LockFee),
+            scrypto_encode(&VaultLockFeeInvocation {
+                receiver: self.0,
+                amount,
+                contingent: true,
+            }),
         );
         call_engine(input)
     }
 
     native_methods! {
-        RENodeId::Vault(self.0), NativeMethod::Vault => {
+        NativeMethod::Vault => {
             pub fn put(&mut self, bucket: Bucket) -> () {
                 VaultMethod::Put,
-                VaultPutInput {
-                    bucket
+                VaultPutInvocation {
+                    receiver: self.0,
+                    bucket,
                 }
             }
 
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
                 VaultMethod::TakeNonFungibles,
-                VaultTakeNonFungiblesInput {
+                VaultTakeNonFungiblesInvocation {
+                    receiver: self.0,
                     non_fungible_ids: non_fungible_ids.clone(),
                 }
             }
 
             pub fn amount(&self) -> Decimal {
                 VaultMethod::GetAmount,
-                VaultGetAmountInput {}
+                VaultGetAmountInvocation {
+                    receiver: self.0,
+                }
             }
 
             pub fn resource_address(&self) -> ResourceAddress {
                 VaultMethod::GetResourceAddress,
-                VaultGetResourceAddressInput {}
+                VaultGetResourceAddressInvocation {
+                    receiver: self.0,
+                }
             }
 
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
                 VaultMethod::GetNonFungibleIds,
-                VaultGetNonFungibleIdsInput {}
+                VaultGetNonFungibleIdsInvocation {
+                    receiver: self.0,
+                }
             }
 
             pub fn create_proof(&self) -> Proof {
                 VaultMethod::CreateProof,
-                VaultCreateProofInput {}
+                VaultCreateProofInvocation {
+                    receiver: self.0,
+                }
             }
 
             pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
                 VaultMethod::CreateProofByAmount,
-                VaultCreateProofByAmountInput { amount }
+                VaultCreateProofByAmountInvocation { amount, receiver: self.0, }
             }
 
             pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
                 VaultMethod::CreateProofByIds,
-                VaultCreateProofByIdsInput { ids: ids.clone() }
+                VaultCreateProofByIdsInvocation { ids: ids.clone(), receiver: self.0 }
             }
         }
     }
