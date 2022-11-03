@@ -59,6 +59,8 @@ impl SetCurrentEpoch {
             })
             .map_err(Error::TransactionExecutionError)?;
 
+        // It's fine to use an empty Vec here since EpochManagerSetEpochInvocation
+        // outputs a unit, and this isn't really used for anything.
         let receipt = kernel.finalize(Ok(Vec::new()));
 
         // Commit

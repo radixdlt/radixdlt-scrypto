@@ -781,6 +781,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         // Invoke the system
         let output = fun(&mut kernel);
 
+        // The output is of generic type, so it isn't necessarily Vec<Vec<u8>> (the output type of TransactionProcessorRunInvocation).
+        // The receipt's output isn't really used, so it's fine to use an empty Vec here.
         let receipt = kernel.finalize(Ok(Vec::new()));
 
         // Commit
