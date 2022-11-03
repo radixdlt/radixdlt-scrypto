@@ -66,6 +66,7 @@ impl Mint {
             &self.manifest,
             self.trace,
             true,
+            false,
             out,
         )
         .map(|_| ())
