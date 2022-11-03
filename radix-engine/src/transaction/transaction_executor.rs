@@ -124,7 +124,7 @@ where
 
         // Apply pre execution costing
         let pre_execution_result = track.apply_pre_execution_costs(transaction);
-        let mut track = match pre_execution_result {
+        let track = match pre_execution_result {
             Ok(track) => track,
             Err(err) => {
                 return TransactionReceipt {
@@ -146,7 +146,7 @@ where
         };
 
         // Invoke the function/method
-        let invoke_result = {
+        let track_receipt = {
             let mut modules = Vec::<Box<dyn Module<R>>>::new();
             if execution_config.trace {
                 modules.push(Box::new(LoggerModule::new()));
@@ -161,23 +161,18 @@ where
                 auth_zone_params.clone(),
                 blobs,
                 execution_config.max_call_depth,
-                &mut track,
+                track,
                 self.scrypto_interpreter,
                 modules,
             );
-            kernel
-                .invoke(TransactionProcessorRunInvocation {
-                    runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
-                    instructions: Cow::Borrowed(instructions),
-                })
-                .and_then(|output| {
-                    kernel.finalize()?;
-                    Ok(output)
-                })
-        };
 
-        // Produce the final transaction receipt
-        let track_receipt = track.finalize(invoke_result);
+            let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
+                runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
+                instructions: Cow::Borrowed(instructions),
+            });
+
+            kernel.finalize(invoke_result)
+        };
 
         let receipt = TransactionReceipt {
             contents: TransactionContents {

@@ -46,25 +46,22 @@ impl SetCurrentEpoch {
             },
             &blobs,
             DEFAULT_MAX_CALL_DEPTH,
-            &mut track,
+            track,
             &mut scrypto_interpreter,
             Vec::new(),
         );
 
         // Invoke the system
-        kernel
+        let output = kernel
             .invoke(EpochManagerSetEpochInvocation {
                 epoch: self.epoch,
                 receiver: EPOCH_MANAGER,
             })
-            .and_then(|_| {
-                kernel.finalize()?;
-                Ok(())
-            })
             .map_err(Error::TransactionExecutionError)?;
 
+        let receipt = kernel.finalize(Ok(Vec::new()));
+
         // Commit
-        let receipt = track.finalize(Ok(Vec::new()));
         if let TransactionResult::Commit(c) = receipt.result {
             c.state_updates.commit(&mut substate_store);
         }

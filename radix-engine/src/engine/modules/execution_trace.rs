@@ -208,7 +208,7 @@ macro_rules! impl_empty_traceable {
     }
 }
 
-/// Remaining Traceable implementations for invocations that don't involve proofs/buckets
+// Remaining Traceable implementations for invocations that don't involve proofs/buckets
 impl_empty_traceable!(for
     (),
     bool,

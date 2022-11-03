@@ -757,7 +757,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let tx_hash = hash(self.next_transaction_nonce.to_string());
         let blobs = HashMap::new();
         let substate_store = self.execution_stores.get_root_store();
-        let mut track = Track::new(
+        let track = Track::new(
             substate_store,
             SystemLoanFeeReserve::default(),
             FeeTable::new(),
@@ -773,7 +773,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             auth_zone_params,
             &blobs,
             DEFAULT_MAX_CALL_DEPTH,
-            &mut track,
+            track,
             &mut self.scrypto_interpreter,
             Vec::new(),
         );
@@ -781,11 +781,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         // Invoke the system
         let output = fun(&mut kernel);
 
-        kernel.finalize().unwrap();
+        let receipt = kernel.finalize(Ok(Vec::new()));
 
         // Commit
         self.next_transaction_nonce += 1;
-        let receipt = track.finalize(Ok(Vec::new()));
         if let TransactionResult::Commit(c) = receipt.result {
             c.state_updates.commit(substate_store);
         }

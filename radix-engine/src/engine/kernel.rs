@@ -52,7 +52,7 @@ pub struct Kernel<
     /// Heap
     heap: Heap,
     /// Store
-    track: &'g mut Track<'s, R>,
+    track: Track<'s, R>,
 
     /// Interpreter capable of running scrypto programs
     scrypto_interpreter: &'g ScryptoInterpreter<I, W>,
@@ -74,7 +74,7 @@ where
         auth_zone_params: AuthZoneParams,
         blobs: &'g HashMap<Hash, &'g [u8]>,
         max_depth: usize,
-        track: &'g mut Track<'s, R>,
+        track: Track<'s, R>,
         scrypto_interpreter: &'g ScryptoInterpreter<I, W>,
         modules: Vec<Box<dyn Module<R>>>,
     ) -> Self {
@@ -718,7 +718,21 @@ where
         Ok(output)
     }
 
-    pub fn finalize(&mut self) -> Result<(), RuntimeError> {
+    pub fn finalize(mut self, result: InvokeResult) -> TrackReceipt {
+        let final_result = match result {
+            Ok(res) => self.finalize_modules().map(|_| res),
+            Err(err) => {
+                // If there was an error, we still try to finalize the modules,
+                // but forward the original error (even if module finalizer also errors).
+                let _silently_ignored = self.finalize_modules();
+                Err(err)
+            }
+        };
+
+        self.track.finalize(final_result)
+    }
+
+    fn finalize_modules(&mut self) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.on_finished_processing(&mut self.heap, &mut self.track)
                 .map_err(RuntimeError::ModuleError)?;
