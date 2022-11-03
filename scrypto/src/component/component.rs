@@ -16,11 +16,12 @@ use crate::data::*;
 use crate::engine::{api::*, types::*, utils::*};
 use crate::misc::*;
 use crate::resource::AccessRules;
+use crate::scrypto;
 use crate::scrypto_type;
 use crate::Describe;
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentAddAccessCheckInvocation {
     pub receiver: ComponentId,
     pub access_rules: AccessRules,
@@ -46,8 +47,8 @@ pub trait LocalComponent {
 pub struct Component(pub ComponentId);
 
 // TODO: de-duplication
-#[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub struct ComponentInfoSubstate {
     pub package_address: PackageAddress,
     pub blueprint_name: String,

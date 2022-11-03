@@ -52,7 +52,7 @@ pub use macros::*;
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;
-pub use scrypto_derive::{blueprint, import, Describe, NonFungibleData};
+pub use scrypto_derive::{blueprint, import, scrypto, Describe, NonFungibleData};
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502

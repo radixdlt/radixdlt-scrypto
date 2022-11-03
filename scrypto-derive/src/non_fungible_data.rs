@@ -2,6 +2,8 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::*;
 
+use crate::utils::is_mutable;
+
 macro_rules! trace {
     ($($arg:expr),*) => {{
         #[cfg(feature = "trace")]
@@ -9,25 +11,10 @@ macro_rules! trace {
     }};
 }
 
-fn is_mutable(f: &syn::Field) -> bool {
-    let mut mutable = false;
-    for att in &f.attrs {
-        if att.path.is_ident("scrypto")
-            && att
-                .parse_args::<syn::Path>()
-                .map(|p| p.is_ident("mutable"))
-                .unwrap_or(false)
-        {
-            mutable = true;
-        }
-    }
-    mutable
-}
-
 pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_non_fungible_data() starts");
 
-    let DeriveInput { ident, data, .. } = parse2(input).expect("Unable to parse input");
+    let DeriveInput { ident, data, .. } = parse2(input)?;
     let ident_str = ident.to_string();
     trace!("Processing: {}", ident_str);
 
@@ -149,7 +136,10 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
             }
         },
         Data::Enum(_) | Data::Union(_) => {
-            return Err(Error::new(Span::call_site(), "Union is not supported!"));
+            return Err(Error::new(
+                Span::call_site(),
+                "Enum or union can not be used as non-fungible data presently!",
+            ));
         }
     };
 
@@ -174,7 +164,7 @@ mod tests {
     #[test]
     fn test_non_fungible() {
         let input = TokenStream::from_str(
-            "pub struct AwesomeNonFungibleData { pub field_1: u32, #[scrypto(mutable)] pub field_2: String, }",
+            "pub struct MyStruct { pub field_1: u32, #[scrypto(mutable)] pub field_2: String, }",
         )
         .unwrap();
         let output = handle_non_fungible_data(input).unwrap();
@@ -182,7 +172,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::scrypto::resource::NonFungibleData for AwesomeNonFungibleData {
+                impl ::scrypto::resource::NonFungibleData for MyStruct {
                     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{type_id::*, *};
                         let mut decoder_nm = Decoder::new(immutable_data);
@@ -223,7 +213,7 @@ mod tests {
                         use ::sbor::rust::vec;
                         use ::scrypto::abi::Describe;
                         ::scrypto::abi::Type::Struct {
-                            name: "AwesomeNonFungibleData".to_owned(),
+                            name: "MyStruct".to_owned(),
                             fields: ::scrypto::abi::Fields::Named {
                                 named: vec![("field_1".to_owned(), <u32>::describe())]
                             },
@@ -234,7 +224,7 @@ mod tests {
                         use ::sbor::rust::vec;
                         use ::scrypto::abi::Describe;
                         ::scrypto::abi::Type::Struct {
-                            name: "AwesomeNonFungibleData".to_owned(),
+                            name: "MyStruct".to_owned(),
                             fields: ::scrypto::abi::Fields::Named {
                                 named: vec![("field_2".to_owned(), <String>::describe())]
                             },

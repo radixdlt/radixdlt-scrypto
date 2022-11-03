@@ -12,24 +12,25 @@ use crate::math::*;
 use crate::misc::*;
 use crate::native_methods;
 use crate::resource::*;
+use crate::scrypto;
 use crate::scrypto_type;
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct BucketTakeInvocation {
     pub receiver: BucketId,
     pub amount: Decimal,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct BucketPutInvocation {
     pub receiver: BucketId,
     pub bucket: scrypto::resource::Bucket,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct BucketTakeNonFungiblesInvocation {
     pub receiver: BucketId,
     pub ids: BTreeSet<NonFungibleId>,

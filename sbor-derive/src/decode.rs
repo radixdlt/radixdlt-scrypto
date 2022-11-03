@@ -29,11 +29,11 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
         Data::Struct(s) => match s.fields {
             syn::Fields::Named(FieldsNamed { named, .. }) => {
                 // ns: not skipped, s: skipped
-                let ns: Vec<&Field> = named.iter().filter(|f| !is_decode_skipped(f)).collect();
+                let ns: Vec<&Field> = named.iter().filter(|f| !is_decoding_skipped(f)).collect();
                 let ns_len = Index::from(ns.len());
                 let ns_ids = ns.iter().map(|f| &f.ident);
                 let ns_types = ns.iter().map(|f| &f.ty);
-                let s: Vec<&Field> = named.iter().filter(|f| is_decode_skipped(f)).collect();
+                let s: Vec<&Field> = named.iter().filter(|f| is_decoding_skipped(f)).collect();
                 let s_ids = s.iter().map(|f| &f.ident);
                 let s_types = s.iter().map(|f| &f.ty);
                 quote! {
@@ -57,13 +57,14 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 let mut fields = Vec::<Expr>::new();
                 for f in &unnamed {
                     let ty = &f.ty;
-                    if is_decode_skipped(f) {
+                    if is_decoding_skipped(f) {
                         fields.push(parse_quote! {<#ty>::default()})
                     } else {
                         fields.push(parse_quote! {<#ty>::decode(decoder)?})
                     }
                 }
-                let ns_len = Index::from(unnamed.iter().filter(|f| !is_decode_skipped(f)).count());
+                let ns_len =
+                    Index::from(unnamed.iter().filter(|f| !is_decoding_skipped(f)).count());
                 quote! {
                     impl #impl_generics ::sbor::Decode <#sbor_cti> for #ident #ty_generics #where_clause {
                         #[inline]
@@ -104,12 +105,12 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 match &v.fields {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
                         let ns: Vec<&Field> =
-                            named.iter().filter(|f| !is_decode_skipped(f)).collect();
+                            named.iter().filter(|f| !is_decoding_skipped(f)).collect();
                         let ns_len = Index::from(ns.len());
                         let ns_ids = ns.iter().map(|f| &f.ident);
                         let ns_types = ns.iter().map(|f| &f.ty);
                         let s: Vec<&Field> =
-                            named.iter().filter(|f| is_decode_skipped(f)).collect();
+                            named.iter().filter(|f| is_decoding_skipped(f)).collect();
                         let s_ids = s.iter().map(|f| &f.ident);
                         let s_types = s.iter().map(|f| &f.ty);
                         quote! {
@@ -126,14 +127,14 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         let mut fields = Vec::<Expr>::new();
                         for f in unnamed {
                             let ty = &f.ty;
-                            if is_decode_skipped(f) {
+                            if is_decoding_skipped(f) {
                                 fields.push(parse_quote! {<#ty>::default()})
                             } else {
                                 fields.push(parse_quote! {<#ty>::decode(decoder)?})
                             }
                         }
                         let ns_len =
-                            Index::from(unnamed.iter().filter(|f| !is_decode_skipped(f)).count());
+                            Index::from(unnamed.iter().filter(|f| !is_decoding_skipped(f)).count());
                         quote! {
                             #discriminator => {
                                 decoder.check_size(#ns_len)?;
@@ -288,7 +289,7 @@ mod tests {
 
     #[test]
     fn test_skip() {
-        let input = TokenStream::from_str("struct Test {#[skip(Encode, Decode)] a: u32}").unwrap();
+        let input = TokenStream::from_str("struct Test {#[sbor(skip)] a: u32}").unwrap();
         let output = handle_decode(input).unwrap();
 
         assert_code_eq(

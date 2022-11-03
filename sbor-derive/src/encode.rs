@@ -29,7 +29,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
         Data::Struct(s) => match s.fields {
             syn::Fields::Named(FieldsNamed { named, .. }) => {
                 // ns: not skipped
-                let ns: Vec<&Field> = named.iter().filter(|f| !is_encode_skipped(f)).collect();
+                let ns: Vec<&Field> = named.iter().filter(|f| !is_encoding_skipped(f)).collect();
                 let ns_ids = ns.iter().map(|f| &f.ident);
                 let ns_len = Index::from(ns_ids.len());
                 quote! {
@@ -50,7 +50,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
             syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
                 let mut ns_indices = Vec::new();
                 for (i, f) in unnamed.iter().enumerate() {
-                    if !is_encode_skipped(f) {
+                    if !is_encoding_skipped(f) {
                         ns_indices.push(Index::from(i));
                     }
                 }
@@ -94,7 +94,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 match &v.fields {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
                         let ns: Vec<&Field> =
-                            named.iter().filter(|f| !is_encode_skipped(f)).collect();
+                            named.iter().filter(|f| !is_encoding_skipped(f)).collect();
                         let ns_ids = ns.iter().map(|f| &f.ident);
                         let ns_ids2 = ns.iter().map(|f| &f.ident);
                         let ns_len = Index::from(ns.len());
@@ -110,7 +110,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         let args = (0..unnamed.len()).map(|i| format_ident!("a{}", i));
                         let mut ns_args = Vec::<Ident>::new();
                         for (i, f) in unnamed.iter().enumerate() {
-                            if !is_encode_skipped(f) {
+                            if !is_encoding_skipped(f) {
                                 ns_args.push(format_ident!("a{}", i));
                             }
                         }
@@ -252,7 +252,7 @@ mod tests {
 
     #[test]
     fn test_skip() {
-        let input = TokenStream::from_str("struct Test {#[skip(Encode, Decode)] a: u32}").unwrap();
+        let input = TokenStream::from_str("struct Test {#[sbor(skip)] a: u32}").unwrap();
         let output = handle_encode(input).unwrap();
 
         assert_code_eq(
@@ -276,7 +276,7 @@ mod tests {
     #[test]
     fn test_custom_type_id() {
         let input = TokenStream::from_str(
-            "#[custom_type_id(NoCustomTypeId)] struct Test {#[skip(Encode, Decode)] a: u32}",
+            "#[sbor(custom_type_id = \"NoCustomTypeId\")] struct Test {#[sbor(skip)] a: u32}",
         )
         .unwrap();
         let output = handle_encode(input).unwrap();
@@ -302,7 +302,7 @@ mod tests {
     #[test]
     fn test_custom_type_id_canonical_path() {
         let input = TokenStream::from_str(
-            "#[custom_type_id(::sbor::basic::NoCustomTypeId)] struct Test {#[skip(Encode, Decode)] a: u32}",
+            "#[sbor(custom_type_id = \"::sbor::basic::NoCustomTypeId\")] struct Test {#[sbor(skip)] a: u32}",
         )
         .unwrap();
         let output = handle_encode(input).unwrap();

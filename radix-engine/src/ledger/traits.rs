@@ -8,16 +8,16 @@ pub trait QueryableSubstateStore {
     ) -> HashMap<Vec<u8>, PersistedSubstate>;
 }
 
-#[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct OutputId {
     pub substate_id: SubstateId,
     pub substate_hash: Hash,
     pub version: u32,
 }
 
-#[derive(Debug, Clone, Encode, Decode, TypeId, PartialEq, Eq)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct OutputValue {
     pub substate: PersistedSubstate,
     pub version: u32,

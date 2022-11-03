@@ -5,8 +5,8 @@ use crate::model::{
 use crate::types::*;
 use std::ops::Deref;
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultSubstate(pub Resource);
 
 impl VaultSubstate {

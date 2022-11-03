@@ -7,13 +7,13 @@ use sbor::*;
 #[derive(Debug, PartialEq, TypeId, Encode, Decode)]
 pub struct TestStructNamed {
     #[allow(unused_variables)]
-    #[skip(Encode, Decode)]
+    #[sbor(skip)]
     pub x: u32,
     pub y: u32,
 }
 
 #[derive(Debug, PartialEq, TypeId, Encode, Decode)]
-pub struct TestStructUnnamed(#[skip(Encode, Decode)] u32, u32);
+pub struct TestStructUnnamed(#[sbor(skip)] u32, u32);
 
 #[derive(Debug, PartialEq, TypeId, Encode, Decode)]
 pub struct TestStructUnit;
@@ -21,11 +21,11 @@ pub struct TestStructUnit;
 #[derive(Debug, PartialEq, TypeId, Encode, Decode)]
 pub enum TestEnum {
     A {
-        #[skip(Encode, Decode)]
+        #[sbor(skip)]
         x: u32,
         y: u32,
     },
-    B(#[skip(Encode, Decode)] u32, u32),
+    B(#[sbor(skip)] u32, u32),
     C,
 }
 

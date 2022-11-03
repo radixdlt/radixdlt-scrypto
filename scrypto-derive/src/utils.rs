@@ -1,10 +1,15 @@
+use std::collections::HashMap;
 use std::io::Write;
 use std::process::Command;
 use std::process::Stdio;
 
 use syn::punctuated::Punctuated;
 use syn::token::Comma;
-use syn::Path;
+use syn::Attribute;
+use syn::Expr;
+use syn::ExprLit;
+use syn::Field;
+use syn::Lit;
 
 #[allow(dead_code)]
 pub fn print_generated_code<S: ToString>(kind: &str, code: S) {
@@ -34,19 +39,47 @@ pub fn print_generated_code<S: ToString>(kind: &str, code: S) {
     }
 }
 
-pub fn is_skipped(f: &syn::Field, id: &str) -> bool {
-    f.attrs.iter().any(|attr| {
-        if attr.path.is_ident("skip") {
-            if let Ok(parsed) = attr.parse_args_with(Punctuated::<Path, Comma>::parse_terminated) {
-                if parsed.iter().any(|x| x.is_ident(id)) {
-                    return true;
-                }
-            }
+pub fn extract_attributes(attrs: &[Attribute]) -> HashMap<String, Option<String>> {
+    let mut configs = HashMap::new();
+
+    for attr in attrs {
+        if !attr.path.is_ident("scrypto") {
+            continue;
         }
-        return false;
-    })
+
+        if let Ok(parsed) = attr.parse_args_with(Punctuated::<Expr, Comma>::parse_terminated) {
+            parsed.into_iter().for_each(|s| match s {
+                Expr::Assign(assign) => {
+                    if let Expr::Path(path_expr) = assign.left.as_ref() {
+                        if let Some(ident) = path_expr.path.get_ident() {
+                            if let Expr::Lit(ExprLit {
+                                lit: Lit::Str(s), ..
+                            }) = assign.right.as_ref()
+                            {
+                                configs.insert(ident.to_string(), Some(s.value()));
+                            }
+                        }
+                    }
+                }
+                Expr::Path(path_expr) => {
+                    if let Some(ident) = path_expr.path.get_ident() {
+                        configs.insert(ident.to_string(), None);
+                    }
+                }
+                _ => {}
+            })
+        }
+    }
+
+    configs
 }
 
-pub fn is_describe_skipped(f: &syn::Field) -> bool {
-    is_skipped(f, "Describe")
+pub fn is_describing_skipped(f: &Field) -> bool {
+    let parsed = extract_attributes(&f.attrs);
+    parsed.contains_key("skip") || parsed.contains_key("skip_describing")
+}
+
+pub fn is_mutable(f: &Field) -> bool {
+    let parsed = extract_attributes(&f.attrs);
+    parsed.contains_key("mutable")
 }

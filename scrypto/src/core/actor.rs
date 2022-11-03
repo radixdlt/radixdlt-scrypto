@@ -1,12 +1,11 @@
 use sbor::rust::string::String;
-use sbor::*;
 
 use crate::component::*;
-use crate::data::*;
 use crate::engine::types::ComponentId;
+use crate::scrypto;
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ScryptoActor {
     Blueprint(PackageAddress, String),
     Component(ComponentId, PackageAddress, String),

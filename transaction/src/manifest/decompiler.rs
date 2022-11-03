@@ -528,16 +528,15 @@ fn format_id(id: &[u8; 36]) -> String {
 mod tests {
     use super::*;
     use crate::manifest::*;
-    use sbor::*;
     use scrypto::buffer::scrypto_encode;
     use scrypto::core::NetworkDefinition;
     use scrypto::resource::AccessRule;
     use scrypto::resource::Mutability;
     use scrypto::resource::ResourceMethodAuthKey;
     use scrypto::resource::ResourceType;
+    use scrypto::scrypto;
 
-    #[derive(TypeId, Encode, Decode)]
-    #[custom_type_id(ScryptoCustomTypeId)]
+    #[scrypto(TypeId, Encode, Decode)]
     struct BadResourceManagerCreateInput {
         pub resource_type: ResourceType,
         pub metadata: HashMap<String, String>,

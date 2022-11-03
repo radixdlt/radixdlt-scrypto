@@ -10,18 +10,19 @@ use crate::core::*;
 use crate::crypto::*;
 use crate::data::*;
 use crate::engine::{api::*, types::*, utils::*};
+use crate::scrypto;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {}
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerGetCurrentEpochInvocation {
     pub receiver: SystemAddress,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-#[custom_type_id(ScryptoCustomTypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerSetEpochInvocation {
     pub receiver: SystemAddress,
     pub epoch: u64,
