@@ -196,7 +196,7 @@ fn test_publish_large_package() {
     receipt.expect_commit_success();
 
     // Assert
-    assert_eq!(4296349, receipt.execution.fee_summary.cost_unit_consumed);
+    assert_eq!(4296949, receipt.execution.fee_summary.cost_unit_consumed);
 }
 
 #[test]
