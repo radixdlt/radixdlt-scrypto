@@ -91,8 +91,9 @@ impl<T: Interpretation> Interpretation for [T] {
 
 impl<T: Encode> Encode for [T] {
     fn encode_value(&self, encoder: &mut Encoder) {
+        // TODO - Improve when Rust finally implements specialisation
         if T::IS_BYTE {
-            // TODO - Improve when Rust finally implements specialisation
+            // TODO - Can do this without buf if we add a specialised encoder method to read from a raw pointer
             let mut buf = Vec::<u8>::with_capacity(self.len());
             unsafe {
                 copy(self.as_ptr() as *mut u8, buf.as_mut_ptr(), self.len());

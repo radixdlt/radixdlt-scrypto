@@ -2,11 +2,19 @@ use sbor::v1::DefaultInterpretations;
 use super::decoder::{Decoder, DecodeError};
 use super::encoder::Encoder;
 
-// Traits permitting dynamic handling of interpretation (for eg use by sbor::Value)
-// These are the traits that the encoder/decoder actually require
-
+/// Provides the interpretation of the payload.
+///
+/// Most types/impls will have a fixed interpretation, and can just set the associated const INTERPRETATION.
+///
+/// Some types/impls will have a dynamic interpration, or can support decoding from multiple interpretations,
+/// and can override the get_interpretation / check_interpretation methods.
 pub trait Interpretation {
+    /// The const INTERPRETATION of the type/impl, or can be set to 0 = DefaultInterpretations::NOT_FIXED
+    /// which denotes that the interepretation of the type can be multiple values.
     const INTERPRETATION: u8;
+
+    /// This should be false for all types T except those where their Vec<T> should be turned
+    /// into RawBytes, via unsafe direct pointer access. This is only valid for u8/i8 types.
     const IS_BYTE: bool = false;
 
     #[inline]
@@ -32,9 +40,11 @@ pub trait Interpretation {
 }
 
 pub trait Encode: Interpretation {
+    /// Encodes the value (should not encode the interpretation)
     fn encode_value(&self, encoder: &mut Encoder);
 }
 
 pub trait Decode: Interpretation + Sized {
+    /// Decodes the value (the interpretation has already been decoded/checked)
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError>;
 }
