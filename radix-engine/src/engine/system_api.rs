@@ -92,7 +92,5 @@ pub trait SystemApi {
 
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError>;
 
-    /// Emits an application event. Application events are used at runtime
-    /// to exchange information between the kernel and modules.
-    fn emit_application_event(&mut self, event: ApplicationEvent) -> Result<(), RuntimeError>;
+    fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError>;
 }

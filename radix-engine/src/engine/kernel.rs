@@ -1408,11 +1408,31 @@ where
         Ok(())
     }
 
-    fn emit_application_event(&mut self, event: ApplicationEvent) -> Result<(), RuntimeError> {
+    fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
-            m.on_application_event(&self.current_frame, &mut self.heap, &mut self.track, &event)
-                .map_err(RuntimeError::ModuleError)?;
+            m.pre_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallInput::EmitEvent { event: &event },
+            )
+            .map_err(RuntimeError::ModuleError)?;
         }
+
+        if let Event::Tracked(tracked_event) = event {
+            self.track.add_event(tracked_event);
+        }
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallOutput::EmitEvent,
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
         Ok(())
     }
 }

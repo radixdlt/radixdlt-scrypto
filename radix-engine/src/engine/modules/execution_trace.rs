@@ -281,30 +281,6 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
         Ok(fee)
     }
 
-    fn on_application_event(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-        event: &ApplicationEvent,
-    ) -> Result<(), ModuleError> {
-        match event {
-            ApplicationEvent::PreExecuteInstruction {
-                instruction_index, ..
-            } => {
-                self.current_instruction_index = Some(instruction_index.clone());
-                Ok(())
-            }
-            ApplicationEvent::PostExecuteManifest => {
-                self.current_instruction_index = None;
-                Ok(())
-            }
-            _ => {
-                Ok(()) // no-op
-            }
-        }
-    }
-
     fn on_finished_processing(
         &mut self,
         _heap: &mut Heap,
@@ -336,6 +312,24 @@ impl ExecutionTraceModule {
             self.current_sys_call_depth += 1;
             return Ok(());
         }
+
+        // Handle transaction processor events
+        match input {
+            SysCallInput::EmitEvent {
+                event:
+                    Event::Runtime(RuntimeEvent::PreExecuteInstruction {
+                        instruction_index, ..
+                    }),
+            } => {
+                self.current_instruction_index = Some(instruction_index.clone());
+            }
+            SysCallInput::EmitEvent {
+                event: Event::Runtime(RuntimeEvent::PostExecuteManifest),
+            } => {
+                self.current_instruction_index = None;
+            }
+            _ => {}
+        };
 
         let traced_input = match input {
             SysCallInput::Invoke { info, .. } => {
@@ -493,7 +487,7 @@ impl ExecutionTraceModule {
         for (_, traces) in self.sys_call_traces_stacks.drain() {
             // Emit an output event for each "root" sys call trace
             for trace in traces {
-                track.add_tracked_event(TrackedEvent::SysCallTrace(trace));
+                track.add_event(TrackedEvent::Native(NativeEvent::SysCallTrace(trace)));
             }
         }
 

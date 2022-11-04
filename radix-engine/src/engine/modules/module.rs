@@ -53,6 +53,9 @@ pub enum SysCallInput<'a> {
         level: &'a Level,
         message: &'a String,
     },
+    EmitEvent {
+        event: &'a Event<'a>,
+    },
 }
 
 #[derive(Debug)]
@@ -70,6 +73,7 @@ pub enum SysCallOutput<'a> {
     ReadBlob { blob: &'a [u8] },
     GenerateUuid { uuid: u128 },
     EmitLog,
+    EmitEvent,
 }
 
 pub trait Module<R: FeeReserve> {
@@ -123,14 +127,6 @@ pub trait Module<R: FeeReserve> {
         fee: Resource,
         contingent: bool,
     ) -> Result<Resource, ModuleError>;
-
-    fn on_application_event(
-        &mut self,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-        event: &ApplicationEvent,
-    ) -> Result<(), ModuleError>;
 
     fn on_finished_processing(
         &mut self,

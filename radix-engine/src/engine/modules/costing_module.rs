@@ -279,6 +279,9 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
+            SysCallInput::EmitEvent { event } => {
+                // TODO: consume fee
+            }
         }
 
         Ok(())
@@ -371,16 +374,6 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                 .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
             _ => Ok(()),
         }
-    }
-
-    fn on_application_event(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-        _event: &ApplicationEvent,
-    ) -> Result<(), ModuleError> {
-        Ok(())
     }
 
     fn on_finished_processing(

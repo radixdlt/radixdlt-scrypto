@@ -2,7 +2,14 @@ use crate::engine::SysCallTrace;
 use sbor::{Decode, Encode, TypeId};
 use transaction::model::Instruction;
 
-pub enum ApplicationEvent<'a> {
+#[derive(Debug)]
+pub enum Event<'a> {
+    Runtime(RuntimeEvent<'a>),
+    Tracked(TrackedEvent),
+}
+
+#[derive(Debug)]
+pub enum RuntimeEvent<'a> {
     PreExecuteManifest,
     PreExecuteInstruction {
         instruction_index: usize,
@@ -17,5 +24,16 @@ pub enum ApplicationEvent<'a> {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum TrackedEvent {
+    Native(NativeEvent),
+    Scrypto(ScryptoEvent),
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub enum NativeEvent {
     SysCallTrace(SysCallTrace),
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub enum ScryptoEvent {
+    // nothing here yet
 }

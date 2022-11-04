@@ -63,7 +63,7 @@ pub struct Track<'s, R: FeeReserve> {
     pub fee_reserve: R,
     pub fee_table: FeeTable,
     pub vault_ops: Vec<(REActor, VaultId, VaultOp)>,
-    pub tracked_events: Vec<TrackedEvent>,
+    pub events: Vec<TrackedEvent>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -80,7 +80,7 @@ pub struct TrackReceipt {
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
     pub result: TransactionResult,
-    pub tracked_events: Vec<TrackedEvent>,
+    pub events: Vec<TrackedEvent>,
 }
 
 pub struct PreExecutionError {
@@ -102,7 +102,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             fee_reserve,
             fee_table,
             vault_ops: Vec::new(),
-            tracked_events: Vec::new(),
+            events: Vec::new(),
         }
     }
 
@@ -111,9 +111,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         self.application_logs.push((level, message));
     }
 
-    /// Adds an output event. Output events are collected and returned in a receipt.
-    pub fn add_tracked_event(&mut self, event: TrackedEvent) {
-        self.tracked_events.push(event);
+    pub fn add_event(&mut self, event: TrackedEvent) {
+        self.events.push(event);
     }
 
     /// Returns a copy of the substate associated with the given address, if exists
@@ -544,7 +543,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             fee_summary,
             application_logs: self.application_logs,
             result,
-            tracked_events: self.tracked_events,
+            events: self.events,
         }
     }
 }

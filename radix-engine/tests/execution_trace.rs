@@ -1,4 +1,4 @@
-use radix_engine::engine::{SysCallTrace, SysCallTraceOrigin, TrackedEvent};
+use radix_engine::engine::{NativeEvent, SysCallTrace, SysCallTraceOrigin, TrackedEvent};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::LockedAmountOrIds;
 use radix_engine::types::*;
@@ -175,10 +175,11 @@ fn test_instruction_traces() {
 
     let mut traces: Vec<SysCallTrace> = receipt
         .execution
-        .tracked_events
+        .events
         .into_iter()
         .filter_map(|e| match e {
-            TrackedEvent::SysCallTrace(trace) => Some(trace),
+            TrackedEvent::Native(NativeEvent::SysCallTrace(trace)) => Some(trace),
+            _ => None,
         })
         .collect();
 

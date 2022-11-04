@@ -19,7 +19,7 @@ pub struct TransactionContents {
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
-    pub tracked_events: Vec<TrackedEvent>,
+    pub events: Vec<TrackedEvent>,
 }
 
 /// Captures whether a transaction should be committed, and its other results
