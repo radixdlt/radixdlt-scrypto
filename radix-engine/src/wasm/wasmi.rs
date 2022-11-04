@@ -242,7 +242,9 @@ impl WasmiEngine {
     }
 }
 
-impl WasmEngine<WasmiInstance> for WasmiEngine {
+impl WasmEngine for WasmiEngine {
+    type WasmInstance = WasmiInstance;
+
     fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmiInstance {
         let code_hash = &instrumented_code.code_hash;
         if let Some(cached_module) = self.modules_cache.get(code_hash) {

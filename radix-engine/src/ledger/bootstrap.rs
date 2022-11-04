@@ -241,7 +241,6 @@ where
                 InstructionCostRules::tiered(1, 5, 10, 5000),
                 512,
             ),
-            phantom: PhantomData,
         };
 
         let genesis_transaction = create_genesis();
@@ -282,7 +281,6 @@ mod tests {
             wasm_engine,
             wasm_instrumenter,
             wasm_metering_config,
-            phantom: PhantomData,
         };
         let substate_store = TypedInMemorySubstateStore::new();
         let genesis_transaction = create_genesis();
