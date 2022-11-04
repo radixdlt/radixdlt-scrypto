@@ -30,7 +30,6 @@ impl SetCurrentEpoch {
                 InstructionCostRules::tiered(1, 5, 10, 5000),
                 512,
             ),
-            phantom: PhantomData,
         };
         let mut track = Track::new(
             &substate_store,

@@ -89,17 +89,20 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
     }
 }
 
-pub struct ScryptoInterpreter<I: WasmInstance, W: WasmEngine<I>> {
+pub struct ScryptoInterpreter<W: WasmEngine> {
     pub wasm_engine: W,
     /// WASM Instrumenter
     pub wasm_instrumenter: WasmInstrumenter,
     /// WASM metering config
     pub wasm_metering_config: WasmMeteringConfig,
-    pub phantom: PhantomData<I>,
 }
 
-impl<I: WasmInstance, W: WasmEngine<I>> ScryptoInterpreter<I, W> {
-    pub fn create_executor(&self, code: &[u8], args: ScryptoValue) -> ScryptoExecutor<I> {
+impl<W: WasmEngine> ScryptoInterpreter<W> {
+    pub fn create_executor(
+        &self,
+        code: &[u8],
+        args: ScryptoValue,
+    ) -> ScryptoExecutor<W::WasmInstance> {
         let instrumented_code = self
             .wasm_instrumenter
             .instrument(code, &self.wasm_metering_config);
@@ -109,4 +112,21 @@ impl<I: WasmInstance, W: WasmEngine<I>> ScryptoInterpreter<I, W> {
             args: args,
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::wasm::DefaultWasmEngine;
+
+    const _: () = {
+        fn assert_send<T: Send>() {}
+        fn assert_sync<T: Sync>() {}
+
+        // RFC 2056
+        fn assert_all() {
+            assert_send::<ScryptoInterpreter<DefaultWasmEngine>>();
+            assert_sync::<ScryptoInterpreter<DefaultWasmEngine>>();
+        }
+    };
 }
