@@ -61,17 +61,6 @@ pub struct ProofSnapshot {
     pub total_locked: LockedAmountOrIds,
 }
 
-impl From<&ProofSubstate> for ProofSnapshot {
-    fn from(proof: &ProofSubstate) -> ProofSnapshot {
-        ProofSnapshot {
-            resource_address: proof.resource_address,
-            resource_type: proof.resource_type,
-            restricted: proof.restricted,
-            total_locked: proof.total_locked.clone(),
-        }
-    }
-}
-
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TracedSysCallData {
     pub buckets: HashMap<BucketId, Resource>,
@@ -537,7 +526,7 @@ impl ExecutionTraceModule {
             .map_err(|e| {
                 ModuleError::ExecutionTraceError(ExecutionTraceError::CallFrameError(e))
             })?;
-        Ok(substate_ref.proof().into())
+        Ok(substate_ref.proof().snapshot())
     }
 
     fn read_bucket_resource(

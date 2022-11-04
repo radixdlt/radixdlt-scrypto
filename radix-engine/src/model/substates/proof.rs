@@ -1,3 +1,4 @@
+use crate::engine::ProofSnapshot;
 use crate::model::{
     InvokeError, LockableResource, LockedAmountOrIds, ProofError, ResourceContainerId,
 };
@@ -301,5 +302,14 @@ impl ProofSubstate {
 
     pub fn is_restricted(&self) -> bool {
         self.restricted
+    }
+
+    pub fn snapshot(&self) -> ProofSnapshot {
+        ProofSnapshot {
+            resource_address: self.resource_address,
+            resource_type: self.resource_type,
+            restricted: self.restricted,
+            total_locked: self.total_locked.clone(),
+        }
     }
 }
