@@ -165,7 +165,7 @@ fn test_basic_transfer() {
         + 428 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 17000 /* write_substate */
-        + 1200, /* emit_event */
+        + 800, /* emit_event */
         receipt.execution.fee_summary.cost_unit_consumed
     );
 }
