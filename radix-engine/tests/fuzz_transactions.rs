@@ -35,7 +35,6 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
             InstructionCostRules::tiered(1, 5, 10, 5000),
             512,
         ),
-        phantom: PhantomData,
     };
     let execution_config = ExecutionConfig::standard();
     let fee_reserve_config = FeeReserveConfig::standard();

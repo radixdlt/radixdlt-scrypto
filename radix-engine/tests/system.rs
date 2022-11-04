@@ -67,8 +67,10 @@ fn system_create_should_fail_with_supervisor_privilege() {
             args!(),
         )
         .build();
-    let receipt =
-        test_runner.execute_manifest(manifest, vec![AuthModule::validator_role_nf_address()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![AuthModule::validator_role_non_fungible_address()],
+    );
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -91,8 +93,10 @@ fn system_create_should_succeed_with_system_privilege() {
             args!(),
         )
         .build();
-    let receipt =
-        test_runner.execute_manifest(manifest, vec![AuthModule::system_role_nf_address()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![AuthModule::system_role_non_fungible_address()],
+    );
 
     // Assert
     receipt.expect_commit_success();
