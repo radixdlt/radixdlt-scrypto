@@ -3,7 +3,7 @@ use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::types::*;
-use scrypto::data::ScryptoValueFormatterContext;
+use scrypto::data::IndexedScryptoValueFormatterContext;
 use scrypto::misc::ContextualDisplay;
 use std::collections::VecDeque;
 
@@ -118,9 +118,9 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .map(|s| s.to_runtime().into())
                 .unwrap();
 
-            let state_data = ScryptoValue::from_slice(&state.raw).unwrap();
+            let state_data = IndexedScryptoValue::from_slice(&state.raw).unwrap();
             let value_display_context =
-                ScryptoValueFormatterContext::no_manifest_context(Some(&bech32_encoder));
+                IndexedScryptoValueFormatterContext::no_manifest_context(Some(&bech32_encoder));
             writeln!(
                 output,
                 "{}: {}",
@@ -165,12 +165,12 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
         kv_store_id
     );
     for (last, (k, v)) in map.iter().identify_last() {
-        let key = ScryptoValue::from_slice(k).unwrap();
+        let key = IndexedScryptoValue::from_slice(k).unwrap();
         let substate = v.clone().to_runtime();
         if let Some(v) = &substate.kv_store_entry().0 {
-            let value = ScryptoValue::from_slice(&v).unwrap();
+            let value = IndexedScryptoValue::from_slice(&v).unwrap();
             let value_display_context =
-                ScryptoValueFormatterContext::no_manifest_context(Some(&bech32_encoder));
+                IndexedScryptoValueFormatterContext::no_manifest_context(Some(&bech32_encoder));
             writeln!(
                 output,
                 "{} {} => {}",
@@ -250,13 +250,15 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                     .map(|s| s.into())
                     .unwrap();
                 if let Some(non_fungible) = non_fungible.0 {
-                    let id = ScryptoValue::from_typed(id);
+                    let id = IndexedScryptoValue::from_typed(id);
                     let immutable_data =
-                        ScryptoValue::from_slice(&non_fungible.immutable_data()).unwrap();
+                        IndexedScryptoValue::from_slice(&non_fungible.immutable_data()).unwrap();
                     let mutable_data =
-                        ScryptoValue::from_slice(&non_fungible.mutable_data()).unwrap();
+                        IndexedScryptoValue::from_slice(&non_fungible.mutable_data()).unwrap();
                     let value_display_context =
-                        ScryptoValueFormatterContext::no_manifest_context(Some(&bech32_encoder));
+                        IndexedScryptoValueFormatterContext::no_manifest_context(Some(
+                            &bech32_encoder,
+                        ));
                     writeln!(
                         output,
                         "{}  {} NonFungible {{ id: {}, immutable_data: {}, mutable_data: {} }}",

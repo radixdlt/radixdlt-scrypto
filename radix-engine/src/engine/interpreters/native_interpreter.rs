@@ -177,7 +177,7 @@ impl<N: NativeInvocation> Resolver<N> for NativeResolver {
             }
         };
 
-        let input = ScryptoValue::from_typed(&invocation);
+        let input = IndexedScryptoValue::from_typed(&invocation);
         let executor = NativeExecutor(invocation, input);
         Ok((actor, call_frame_update, executor))
     }
@@ -198,12 +198,12 @@ pub trait NativeExecutable: Invocation {
         Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>;
 }
 
-pub struct NativeExecutor<N: NativeExecutable>(pub N, pub ScryptoValue);
+pub struct NativeExecutor<N: NativeExecutable>(pub N, pub IndexedScryptoValue);
 
 impl<N: NativeExecutable> Executor for NativeExecutor<N> {
     type Output = <N as Invocation>::Output;
 
-    fn args(&self) -> &ScryptoValue {
+    fn args(&self) -> &IndexedScryptoValue {
         &self.1
     }
 

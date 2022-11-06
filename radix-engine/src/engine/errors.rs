@@ -78,7 +78,7 @@ pub enum KernelError {
     IdAllocationError(IdAllocationError),
 
     // SBOR decoding
-    InvalidScryptoValue(ScryptoValueDecodeError),
+    InvalidScryptoValue(IndexedScryptoValueDecodeError),
     InvalidSborValue(DecodeError),
 
     // RENode

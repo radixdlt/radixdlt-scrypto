@@ -8,7 +8,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::data::ScryptoValue;
+use crate::data::IndexedScryptoValue;
 use crate::data::*;
 use crate::scrypto_type;
 
@@ -69,8 +69,8 @@ impl TryFrom<&[u8]> for NonFungibleId {
     type Error = ParseNonFungibleIdError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        let value =
-            ScryptoValue::from_slice(slice).map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
+        let value = IndexedScryptoValue::from_slice(slice)
+            .map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
         // TODO: limit types
         if value.value_count() != 0 {
             return Err(ParseNonFungibleIdError::ContainsOwnedNodes);

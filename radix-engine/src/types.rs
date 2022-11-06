@@ -68,16 +68,16 @@ pub use scrypto::{access_and_or, access_rule_node, args, dec, pdec, rule};
 /// Scrypto function/method invocation.
 #[derive(Debug)]
 pub enum ScryptoInvocation {
-    Function(ScryptoFunctionIdent, ScryptoValue),
-    Method(ScryptoMethodIdent, ScryptoValue),
+    Function(ScryptoFunctionIdent, IndexedScryptoValue),
+    Method(ScryptoMethodIdent, IndexedScryptoValue),
 }
 
 impl Invocation for ScryptoInvocation {
-    type Output = ScryptoValue;
+    type Output = IndexedScryptoValue;
 }
 
 impl ScryptoInvocation {
-    pub fn args(&self) -> &ScryptoValue {
+    pub fn args(&self) -> &IndexedScryptoValue {
         match self {
             ScryptoInvocation::Function(_, args) => &args,
             ScryptoInvocation::Method(_, args) => &args,
@@ -86,14 +86,14 @@ impl ScryptoInvocation {
 }
 
 #[derive(Debug)]
-pub struct NativeMethodInvocation(pub NativeMethod, pub RENodeId, pub ScryptoValue);
+pub struct NativeMethodInvocation(pub NativeMethod, pub RENodeId, pub IndexedScryptoValue);
 
 impl Invocation for NativeMethodInvocation {
-    type Output = ScryptoValue;
+    type Output = IndexedScryptoValue;
 }
 
 impl NativeMethodInvocation {
-    pub fn args(&self) -> &ScryptoValue {
+    pub fn args(&self) -> &IndexedScryptoValue {
         &self.2
     }
 }

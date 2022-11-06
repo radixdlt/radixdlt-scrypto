@@ -113,7 +113,7 @@ impl ManifestBuilder {
             | Instruction::CallMethod { args, .. }
             | Instruction::CallNativeFunction { args, .. }
             | Instruction::CallNativeMethod { args, .. } => {
-                let scrypt_value = ScryptoValue::from_slice(&args).unwrap();
+                let scrypt_value = IndexedScryptoValue::from_slice(&args).unwrap();
                 self.id_validator.move_resources(&scrypt_value).unwrap();
             }
             Instruction::PublishPackage { .. } => {}

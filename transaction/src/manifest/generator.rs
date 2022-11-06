@@ -335,7 +335,7 @@ pub fn generate_instruction(
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             let mut fields = Vec::new();
             for arg in &args {
-                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
+                let validated_arg = IndexedScryptoValue::from_slice(arg).unwrap();
                 id_validator
                     .move_resources(&validated_arg)
                     .map_err(GeneratorError::IdValidationError)?;
@@ -361,7 +361,7 @@ pub fn generate_instruction(
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             let mut fields = Vec::new();
             for arg in &args {
-                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
+                let validated_arg = IndexedScryptoValue::from_slice(arg).unwrap();
                 id_validator
                     .move_resources(&validated_arg)
                     .map_err(GeneratorError::IdValidationError)?;
@@ -386,7 +386,7 @@ pub fn generate_instruction(
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             let mut fields = Vec::new();
             for arg in &args {
-                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
+                let validated_arg = IndexedScryptoValue::from_slice(arg).unwrap();
                 id_validator
                     .move_resources(&validated_arg)
                     .map_err(GeneratorError::IdValidationError)?;
@@ -411,7 +411,7 @@ pub fn generate_instruction(
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             let mut fields = Vec::new();
             for arg in &args {
-                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
+                let validated_arg = IndexedScryptoValue::from_slice(arg).unwrap();
                 id_validator
                     .move_resources(&validated_arg)
                     .map_err(GeneratorError::IdValidationError)?;
@@ -445,8 +445,8 @@ pub fn generate_instruction(
                 generate_value(access_rules, None, resolver, bech32_decoder, blobs)?,
                 generate_value(mint_params, None, resolver, bech32_decoder, blobs)?,
             ] {
-                let validated_arg = ScryptoValue::from_value(arg)
-                    .expect("Failed to convert value into ScryptoValue");
+                let validated_arg = IndexedScryptoValue::from_value(arg)
+                    .expect("Failed to convert value into IndexedScryptoValue");
                 id_validator
                     .move_resources(&validated_arg)
                     .map_err(GeneratorError::IdValidationError)?;

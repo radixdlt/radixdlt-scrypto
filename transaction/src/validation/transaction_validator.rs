@@ -349,7 +349,7 @@ impl NotarizedTransactionValidator {
         call_data: &[u8],
         id_validator: &mut IdValidator,
     ) -> Result<(), CallDataValidationError> {
-        let value = ScryptoValue::from_slice(call_data)
+        let value = IndexedScryptoValue::from_slice(call_data)
             .map_err(CallDataValidationError::InvalidScryptoValue)?;
         id_validator
             .move_resources(&value)

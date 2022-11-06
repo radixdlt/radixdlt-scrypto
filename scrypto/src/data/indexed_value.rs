@@ -14,18 +14,18 @@ use crate::misc::ContextualDisplay;
 use crate::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
-pub enum ScryptoValueDecodeError {
+pub enum IndexedScryptoValueDecodeError {
     DecodeError(DecodeError),
     ValueIndexingError(ValueIndexingError),
 }
 
-pub enum ScryptoValueReplaceError {
+pub enum IndexedScryptoValueReplaceError {
     ProofIdNotFound(ProofId),
     BucketIdNotFound(BucketId),
 }
 
 #[derive(Clone, PartialEq, Eq)]
-pub struct ScryptoValue {
+pub struct IndexedScryptoValue {
     pub raw: Vec<u8>,
     pub dom: SborValue<ScryptoCustomTypeId, ScryptoCustomValue>,
 
@@ -48,28 +48,28 @@ pub struct ScryptoValue {
     pub non_fungible_addresses: HashSet<NonFungibleAddress>,
 }
 
-impl ScryptoValue {
+impl IndexedScryptoValue {
     pub fn unit() -> Self {
         Self::from_typed(&())
     }
 
     pub fn from_typed<T: Encode<ScryptoCustomTypeId>>(value: &T) -> Self {
         let bytes = scrypto_encode(value);
-        Self::from_slice(&bytes).expect("Failed to convert trusted value into ScryptoValue")
+        Self::from_slice(&bytes).expect("Failed to convert trusted value into IndexedScryptoValue")
     }
 
-    pub fn from_slice(slice: &[u8]) -> Result<Self, ScryptoValueDecodeError> {
-        let value = decode_any(slice).map_err(ScryptoValueDecodeError::DecodeError)?;
+    pub fn from_slice(slice: &[u8]) -> Result<Self, IndexedScryptoValueDecodeError> {
+        let value = decode_any(slice).map_err(IndexedScryptoValueDecodeError::DecodeError)?;
         Self::from_value(value)
     }
 
     pub fn from_value(
         value: SborValue<ScryptoCustomTypeId, ScryptoCustomValue>,
-    ) -> Result<Self, ScryptoValueDecodeError> {
+    ) -> Result<Self, IndexedScryptoValueDecodeError> {
         let mut visitor = ScryptoCustomValueVisitor::new();
         let index_result = traverse_any(&mut SborPathBuf::new(), &value, &mut visitor);
         if let Err(error) = index_result {
-            return Err(ScryptoValueDecodeError::ValueIndexingError(error));
+            return Err(IndexedScryptoValueDecodeError::ValueIndexingError(error));
         }
 
         Ok(Self {
@@ -136,12 +136,12 @@ impl ScryptoValue {
         &mut self,
         proof_replacements: &mut HashMap<ProofId, ProofId>,
         bucket_replacements: &mut HashMap<BucketId, BucketId>,
-    ) -> Result<(), ScryptoValueReplaceError> {
+    ) -> Result<(), IndexedScryptoValueReplaceError> {
         let mut new_proof_ids = HashMap::new();
         for (proof_id, path) in self.proof_ids.drain() {
             let next_id = proof_replacements
                 .remove(&proof_id)
-                .ok_or(ScryptoValueReplaceError::ProofIdNotFound(proof_id))?;
+                .ok_or(IndexedScryptoValueReplaceError::ProofIdNotFound(proof_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
             if let SborValue::Custom { value } = value {
                 *value = ScryptoCustomValue::Proof(next_id);
@@ -157,7 +157,7 @@ impl ScryptoValue {
         for (bucket_id, path) in self.bucket_ids.drain() {
             let next_id = bucket_replacements
                 .remove(&bucket_id)
-                .ok_or(ScryptoValueReplaceError::BucketIdNotFound(bucket_id))?;
+                .ok_or(IndexedScryptoValueReplaceError::BucketIdNotFound(bucket_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
             if let SborValue::Custom { value } = value {
                 *value = ScryptoCustomValue::Bucket(next_id);
@@ -183,19 +183,23 @@ impl ScryptoValue {
     }
 }
 
-impl fmt::Debug for ScryptoValue {
+impl fmt::Debug for IndexedScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        format_scrypto_value(f, &self.dom, &ScryptoValueFormatterContext::no_context())
+        format_scrypto_value(
+            f,
+            &self.dom,
+            &IndexedScryptoValueFormatterContext::no_context(),
+        )
     }
 }
 
-impl<'a> ContextualDisplay<ScryptoValueFormatterContext<'a>> for ScryptoValue {
+impl<'a> ContextualDisplay<IndexedScryptoValueFormatterContext<'a>> for IndexedScryptoValue {
     type Error = fmt::Error;
 
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        context: &ScryptoValueFormatterContext<'a>,
+        context: &IndexedScryptoValueFormatterContext<'a>,
     ) -> Result<(), Self::Error> {
         format_scrypto_value(f, &self.dom, context)
     }
@@ -341,8 +345,8 @@ mod tests {
             scrypto::resource::Bucket(0),
         ]);
         assert_eq!(
-            ScryptoValue::from_slice(&buckets),
-            Err(ScryptoValueDecodeError::ValueIndexingError(
+            IndexedScryptoValue::from_slice(&buckets),
+            Err(IndexedScryptoValueDecodeError::ValueIndexingError(
                 ValueIndexingError::DuplicateOwnership
             ))
         );

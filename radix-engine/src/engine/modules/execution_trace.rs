@@ -54,7 +54,7 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     fn on_run(
         &mut self,
         actor: &REActor,
-        input: &ScryptoValue,
+        input: &IndexedScryptoValue,
         call_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track<R>,
@@ -106,7 +106,7 @@ impl ExecutionTraceModule {
         heap: &mut Heap,
         track: &mut Track<'s, R>,
         actor: &REActor,
-        input: &ScryptoValue,
+        input: &IndexedScryptoValue,
     ) {
         if let REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) = actor {
             let caller = &call_frame.actor;
@@ -131,7 +131,7 @@ impl ExecutionTraceModule {
         track: &mut Track<'s, R>,
         actor: &REActor,
         vault_id: &VaultId,
-        input: &ScryptoValue,
+        input: &IndexedScryptoValue,
     ) {
         if let Ok(call_data) = scrypto_decode::<VaultPutInvocation>(&input.raw) {
             let bucket_id = call_data.bucket.0;
@@ -152,7 +152,7 @@ impl ExecutionTraceModule {
         track: &mut Track<'s, R>,
         actor: &REActor,
         vault_id: &VaultId,
-        input: &ScryptoValue,
+        input: &IndexedScryptoValue,
     ) {
         if let Ok(call_data) = scrypto_decode::<VaultTakeInvocation>(&input.raw) {
             track.vault_ops.push((

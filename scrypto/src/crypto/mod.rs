@@ -12,10 +12,10 @@ pub use self::hash::*;
 pub use self::sha2::{sha256, sha256_twice};
 pub use self::sha3::sha3;
 
-// TODO: alias after renaming ScryptoValue to IndexedScryptoValue
+// TODO: alias after renaming IndexedScryptoValue to IndexedIndexedScryptoValue
 // ScryptoEncode = Encode<ScryptoCustomTypeId>
 // ScryptoEncoder = Encoder<ScryptoCustomTypeId>
 // ScryptoDecode = Decode<ScryptoCustomTypeId>
 // ScryptoDecoder = Decoder<ScryptoCustomTypeId>
 // ScryptoTypeId = SborTypeId<ScryptoCustomTypeId>
-// ScryptoValue = SborValue<ScryptoCustomTypeId, ScryptoCustomValue>
+// IndexedScryptoValue = SborValue<ScryptoCustomTypeId, ScryptoCustomValue>
