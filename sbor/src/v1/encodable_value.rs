@@ -4,7 +4,7 @@ use super::*;
 /// from references to partial objects.
 /// 
 /// Unlike Value, it can store references and other items which only implement Encode.
-/// It can also embed any encodable, not just other Values.
+/// It can also embed any type implementing Encode, not just other Values.
 /// 
 /// For solving a similar problem in typed SBOR, you can use the Cow smart pointer.
 /// In typed SBOR, you need a single object to support both serialization and deserialization,
@@ -67,7 +67,13 @@ impl <E: Encoder> Encode<E> for EncodableValue<E> {
                 )?;
             },
             EncodableValueContent::Sum { discriminator, value } => {
-                todo!()
+                match discriminator {
+                    EncodableValueDiscriminator::U8(d) => encoder.write_sum_type_u8_discriminator(*d, value.as_ref())?,
+                    EncodableValueDiscriminator::U16(d) => encoder.write_sum_type_u16_discriminator(*d, value.as_ref())?,
+                    EncodableValueDiscriminator::U32(d) => encoder.write_sum_type_u32_discriminator(*d, value.as_ref())?,
+                    EncodableValueDiscriminator::U64(d) => encoder.write_sum_type_u64_discriminator(*d, value.as_ref())?,
+                    EncodableValueDiscriminator::Any(d) => encoder.write_sum_type_any_discriminator(d.as_ref(), value.as_ref())?,
+                }
             },
         }
         Ok(())

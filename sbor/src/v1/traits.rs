@@ -58,6 +58,17 @@ pub trait Encode<E: Encoder>: XXInternalHasInterpretation {
 /// The trait representing a decode-target for an SBOR payload
 pub trait Decode<D: Decoder>: Interpretation + Sized {
     /// Decodes the value (the interpretation has already been decoded/checked)
+    ///
+    /// Typically `decode_value` is implemented, unless the interpretation is required
+    #[inline]
+    fn decode_value_with_interpretation(decoder: &mut D, _read_interpretation: u8) -> Result<Self, DecodeError> {
+        Self::decode_value(decoder)
+    }
+
+    /// Decodes the value (the interpretation has already been decoded/checked)
+    /// 
+    /// Typically this is the method which is implemented.
+    /// If a type implements decode_value_with_interpretation, decode_value can be implemented with a panic.
     fn decode_value(decoder: &mut D) -> Result<Self, DecodeError>;
 }
 

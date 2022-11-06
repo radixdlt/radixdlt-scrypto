@@ -11,7 +11,7 @@ impl<T, const N: usize> Interpretation for [T; N] {
 
 impl<E: Encoder, T: Encode<E>, const N: usize> Encode<E> for [T; N] {
     fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_list(self.as_ref())
+        encoder.write_list_from_slice(self.as_ref())
     }
 }
 
@@ -101,7 +101,7 @@ impl<E: Encoder, T: Encode<E> + Interpretation> Encode<E> for [T] {
             }
             encoder.write_raw_bytes(buf.as_ref())
         } else {
-            encoder.write_list(self.as_ref())
+            encoder.write_list_from_slice(self.as_ref())
         }
     }
 }

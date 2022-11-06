@@ -78,8 +78,9 @@ pub trait Decoder: Sized {
     /// For decoding the type from the buffer
     fn decode<T: Decode<Self>>(&mut self) -> Result<T, DecodeError> {
         self.track_decode_depth_increase()?;
-        T::check_interpretation(self.read_interpretation()?)?;
-        let value = T::decode_value(self);
+        let interpretation = self.read_interpretation()?;
+        T::check_interpretation(interpretation)?;
+        let value = T::decode_value_with_interpretation(self, interpretation);
         self.track_decode_depth_decrease();
         value
     }

@@ -103,7 +103,7 @@ pub trait Encoder: Sized {
     }
 
     #[inline]
-    fn write_sum_type_any_discriminator<D: Encode<Self>, V: Encode<Self>>(
+    fn write_sum_type_any_discriminator<D: Encode<Self> + ?Sized, V: Encode<Self> + ?Sized>(
         &mut self,
         discriminator: &D,
         value: &V,
@@ -115,7 +115,7 @@ pub trait Encoder: Sized {
     }
 
     #[inline]
-    fn write_list<T: Encode<Self>>(&mut self, list: &[T]) -> Result<(), EncodeError> {
+    fn write_list_from_slice<T: Encode<Self>>(&mut self, list: &[T]) -> Result<(), EncodeError> {
         let sized_length = SizedLength::from_size(list.len());
         self.append_u8(sized_length.list_encoding_id())?;
         self.write_length(sized_length)?;
@@ -140,7 +140,7 @@ pub trait Encoder: Sized {
     }
 
     #[inline]
-    fn write_map<TKey: Encode<Self>, TValue: Encode<Self>>(
+    fn write_map_from_slice<TKey: Encode<Self>, TValue: Encode<Self>>(
         &mut self,
         map: &[(TKey, TValue)],
     ) -> Result<(), EncodeError> {
