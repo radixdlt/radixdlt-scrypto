@@ -243,7 +243,7 @@ pub enum LockableResource {
 /// The locked amount or non-fungible IDs.
 ///
 /// Invariant: always consistent with resource fungibility.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum LockedAmountOrIds {
     Amount(Decimal),
     Ids(BTreeSet<NonFungibleId>),
@@ -567,6 +567,29 @@ impl LockableResource {
             Err(ResourceOperationError::InvalidAmount(amount, divisibility))
         } else {
             Ok(())
+        }
+    }
+
+    pub fn peek_resource(&self) -> Resource {
+        match self {
+            LockableResource::Fungible {
+                resource_address,
+                divisibility,
+                liquid_amount,
+                ..
+            } => Resource::Fungible {
+                resource_address: resource_address.clone(),
+                divisibility: divisibility.clone(),
+                amount: liquid_amount.clone(),
+            },
+            LockableResource::NonFungible {
+                resource_address,
+                liquid_ids,
+                ..
+            } => Resource::NonFungible {
+                resource_address: resource_address.clone(),
+                ids: liquid_ids.clone(),
+            },
         }
     }
 }

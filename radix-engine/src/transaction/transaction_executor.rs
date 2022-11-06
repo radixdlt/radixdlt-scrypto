@@ -29,6 +29,7 @@ impl FeeReserveConfig {
 pub struct ExecutionConfig {
     pub max_call_depth: usize,
     pub trace: bool,
+    pub max_sys_call_trace_depth: usize,
 }
 
 impl Default for ExecutionConfig {
@@ -42,6 +43,7 @@ impl ExecutionConfig {
         Self {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             trace: false,
+            max_sys_call_trace_depth: 1,
         }
     }
 
@@ -49,6 +51,7 @@ impl ExecutionConfig {
         Self {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             trace: true,
+            max_sys_call_trace_depth: 1,
         }
     }
 }
@@ -119,7 +122,7 @@ where
 
         // Apply pre execution costing
         let pre_execution_result = track.apply_pre_execution_costs(transaction);
-        let mut track = match pre_execution_result {
+        let track = match pre_execution_result {
             Ok(track) => track,
             Err(err) => {
                 return TransactionReceipt {
@@ -129,6 +132,7 @@ where
                     execution: TransactionExecution {
                         fee_summary: err.fee_summary,
                         application_logs: vec![],
+                        events: vec![],
                     },
                     result: TransactionResult::Reject(RejectResult {
                         error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
@@ -140,31 +144,33 @@ where
         };
 
         // Invoke the function/method
-        let invoke_result = {
+        let track_receipt = {
             let mut modules = Vec::<Box<dyn Module<R>>>::new();
             if execution_config.trace {
                 modules.push(Box::new(LoggerModule::new()));
             }
             modules.push(Box::new(CostingModule::default()));
-            modules.push(Box::new(ExecutionTraceModule::new()));
+            modules.push(Box::new(ExecutionTraceModule::new(
+                execution_config.max_sys_call_trace_depth,
+            )));
 
             let mut kernel = Kernel::new(
                 transaction_hash.clone(),
                 auth_zone_params.clone(),
                 blobs,
                 execution_config.max_call_depth,
-                &mut track,
+                track,
                 self.scrypto_interpreter,
                 modules,
             );
-            kernel.invoke(TransactionProcessorRunInvocation {
-                runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
-                instructions: sbor::rust::borrow::Cow::Borrowed(instructions),
-            })
-        };
 
-        // Produce the final transaction receipt
-        let track_receipt = track.finalize(invoke_result);
+            let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
+                runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
+                instructions: Cow::Borrowed(instructions),
+            });
+
+            kernel.finalize(invoke_result)
+        };
 
         let receipt = TransactionReceipt {
             contents: TransactionContents {
@@ -173,6 +179,7 @@ where
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
                 application_logs: track_receipt.application_logs,
+                events: track_receipt.events,
             },
             result: track_receipt.result,
         };

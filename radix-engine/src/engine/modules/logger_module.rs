@@ -31,8 +31,8 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
-            SysCallInput::Invoke { name, .. } => {
-                log!(self, "Invoking: {:?}", name);
+            SysCallInput::Invoke { info, .. } => {
+                log!(self, "Invoking: {:?}", info);
 
                 self.depth = self.depth + 1;
             }
@@ -85,6 +85,9 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::EmitLog { .. } => {
                 log!(self, "Emitting application log");
             }
+            SysCallInput::EmitEvent { .. } => {
+                log!(self, "Emitting an event");
+            }
         }
 
         Ok(())
@@ -102,6 +105,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
                 self.depth = self.depth - 1;
                 log!(self, "Exiting invoke: output = {:?}", rtn);
             }
+            SysCallOutput::ReadOwnedNodes { .. } => {}
             SysCallOutput::BorrowNode { .. } => {}
             SysCallOutput::DropNode { .. } => {}
             SysCallOutput::CreateNode { .. } => {}
@@ -113,6 +117,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallOutput::ReadBlob { .. } => {}
             SysCallOutput::GenerateUuid { .. } => {}
             SysCallOutput::EmitLog { .. } => {}
+            SysCallOutput::EmitEvent { .. } => {}
         }
 
         Ok(())
@@ -159,5 +164,13 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
         _contingent: bool,
     ) -> Result<Resource, ModuleError> {
         Ok(fee)
+    }
+
+    fn on_finished_processing(
+        &mut self,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        Ok(())
     }
 }

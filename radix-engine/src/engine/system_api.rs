@@ -3,7 +3,6 @@ use crate::engine::*;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use bitflags::bitflags;
-use std::fmt::Debug;
 
 bitflags! {
     #[derive(Encode, Decode, TypeId)]
@@ -27,7 +26,7 @@ impl LockFlags {
 }
 
 pub trait Invocation {
-    type Output: Debug;
+    type Output: Traceable + 'static;
 }
 
 pub trait Invokable<I>
@@ -92,4 +91,6 @@ pub trait SystemApi {
     fn generate_uuid(&mut self) -> Result<u128, RuntimeError>;
 
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError>;
+
+    fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError>;
 }

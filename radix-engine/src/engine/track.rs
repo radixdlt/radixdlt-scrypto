@@ -63,6 +63,7 @@ pub struct Track<'s, R: FeeReserve> {
     pub fee_reserve: R,
     pub fee_table: FeeTable,
     pub vault_ops: Vec<(REActor, VaultId, VaultOp)>,
+    pub events: Vec<TrackedEvent>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -79,6 +80,7 @@ pub struct TrackReceipt {
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
     pub result: TransactionResult,
+    pub events: Vec<TrackedEvent>,
 }
 
 pub struct PreExecutionError {
@@ -100,12 +102,17 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             fee_reserve,
             fee_table,
             vault_ops: Vec::new(),
+            events: Vec::new(),
         }
     }
 
     /// Adds a log message.
     pub fn add_log(&mut self, level: Level, message: String) {
         self.application_logs.push((level, message));
+    }
+
+    pub fn add_event(&mut self, event: TrackedEvent) {
+        self.events.push(event);
     }
 
     /// Returns a copy of the substate associated with the given address, if exists
@@ -536,6 +543,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             fee_summary,
             application_logs: self.application_logs,
             result,
+            events: self.events,
         }
     }
 }
@@ -712,7 +720,7 @@ impl<'s> FinalizingTrack<'s> {
                 0
             };
             let output_value = OutputValue {
-                substate: substate,
+                substate,
                 version: next_version,
             };
             diff.up_substates.insert(substate_id.clone(), output_value);
