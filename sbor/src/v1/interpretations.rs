@@ -49,20 +49,28 @@ impl DefaultInterpretations {
     pub const OPTION: u8 = 0x42;
 
     // LIST TYPES
-    pub const NORMAL_LIST: u8 = 0x50;
-    pub const FIXED_LENGTH_ARRAY: u8 = 0x52;
-    /// The map defines no particular ordering of values
-    pub const UNORDERED_SET: u8 = 0x5a;
-    /// The map defines a particular ordering of keys (eg insertion order), respected by the serialization
-    pub const ORDERED_SET: u8 = 0x5b;
-    /// The map denotes that the keys are sorted by some ordering on the value space
-    pub const SORTED_SET: u8 = 0x5c;
+    /// A standard ordered list (equivalently, an ordered multi-set)
+    pub const STANDARD_LIST: u8 = 0x50;
+    /// A sorted list (equivalently, a sorted multi-set)
+    pub const SORTED_LIST: u8 = 0x51;
+    /// A list which defines no particular ordering of items (equivalently, an unordered multi-set)
+    pub const UNORDERED_LIST: u8 = 0x52;
+
+    /// A known-fixed-length array
+    pub const FIXED_LENGTH_ARRAY: u8 = 0x55;
+
+    /// A set which defines a particular ordering of keys (eg insertion order), respected by the serialization
+    pub const ORDERED_SET: u8 = 0x5a;
+    /// A set whose keys are sorted by some ordering on the value space
+    pub const SORTED_SET: u8 = 0x5b;
+    /// A set which defines no particular ordering of values
+    pub const UNORDERED_SET: u8 = 0x5c;
 
     // MAP TYPES
-    /// The map defines no particular ordering of keys
-    pub const UNORDERED_MAP: u8 = 0x6a;
-    /// The map defines a particular ordering of keys (eg insertion order), respected by the serialization
-    pub const ORDERED_MAP: u8 = 0x6b;
-    /// The map denotes that the keys are sorted by some ordering on the key space
-    pub const SORTED_MAP: u8 = 0x6c;
+    /// A map which defines a particular ordering of keys (eg insertion order), respected by the serialization
+    pub const ORDERED_MAP: u8 = 0x6a;
+    /// A map whose keys are sorted by some ordering on the key space
+    pub const SORTED_MAP: u8 = 0x6b;
+    /// A map which defines no particular ordering of keys
+    pub const UNORDERED_MAP: u8 = 0x6c;
 }

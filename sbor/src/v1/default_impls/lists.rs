@@ -49,7 +49,7 @@ impl<T: Interpretation> Interpretation for Vec<T> {
     const INTERPRETATION: u8 = if T::IS_BYTE {
         DefaultInterpretations::PLAIN_RAW_BYTES
     } else {
-        DefaultInterpretations::NORMAL_LIST
+        DefaultInterpretations::STANDARD_LIST
     };
 }
 
@@ -85,7 +85,7 @@ impl<T: Interpretation> Interpretation for [T] {
     const INTERPRETATION: u8 = if T::IS_BYTE {
         DefaultInterpretations::PLAIN_RAW_BYTES
     } else {
-        DefaultInterpretations::NORMAL_LIST
+        DefaultInterpretations::STANDARD_LIST
     };
 }
 
@@ -189,7 +189,7 @@ mod test {
         assert_eq!(
             vec![
                 SBOR_V1_PREFIX_BYTE,
-                DefaultInterpretations::NORMAL_LIST, TypeEncodingClass::LIST_U8_LENGTH,
+                DefaultInterpretations::STANDARD_LIST, TypeEncodingClass::LIST_U8_LENGTH,
                 3,
                 DefaultInterpretations::U32, TypeEncodingClass::RAW_BYTES_U8_LENGTH, 4, 0, 0, 0, 0,
                 DefaultInterpretations::U32, TypeEncodingClass::RAW_BYTES_U8_LENGTH, 4, 2, 0, 0, 0,
