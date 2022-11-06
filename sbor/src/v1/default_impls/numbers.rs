@@ -5,11 +5,11 @@ impl Interpretation for u8 {
     const IS_BYTE: bool = true;
 }
 
-impl Encode for u8 {
-    fn encode_value(&self, encoder: &mut Encoder) {
+impl <E: Encoder> Encode<E> for u8 {
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_raw_bytes(
             &[*self],
-        );
+        )
     }
 }
 
@@ -26,11 +26,11 @@ macro_rules! sbor_int {
             const INTERPRETATION: u8 = $interpretation;
         }
 
-        impl Encode for $type {
-            fn encode_value(&self, encoder: &mut Encoder) {
+        impl <E: Encoder> Encode<E> for $type {
+            fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
                 encoder.write_raw_bytes(
                     &(*self).to_le_bytes(),
-                );
+                )
             }
         }
 
@@ -60,9 +60,9 @@ impl Interpretation for usize {
     const INTERPRETATION: u8 = DefaultInterpretations::USIZE;
 }
 
-impl Encode for usize {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_raw_bytes(&(*self as u64).to_le_bytes());
+impl <E: Encoder> Encode<E> for usize {
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_raw_bytes(&(*self as u64).to_le_bytes())
     }
 }
 
@@ -80,9 +80,9 @@ impl Interpretation for isize {
     const INTERPRETATION: u8 = DefaultInterpretations::ISIZE;
 }
 
-impl Encode for isize {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_raw_bytes(&(*self as i64).to_le_bytes());
+impl <E: Encoder> Encode<E> for isize {
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_raw_bytes(&(*self as i64).to_le_bytes())
     }
 }
 

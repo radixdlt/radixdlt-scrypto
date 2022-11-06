@@ -22,6 +22,12 @@ pub mod default_impls;
 /// SBOR helper types.
 pub mod helper_types;
 
+/// SBOR arbitrary value.
+pub mod value;
+
+/// SBOR arbitrary value, with support for embedding other types
+pub mod encodable_value;
+
 pub use constants::*;
 pub use traits::*;
 pub use type_classes::*;
@@ -30,3 +36,5 @@ pub use encoder::*;
 pub use decoder::*;
 pub use default_impls::*;
 pub use helper_types::*;
+pub use value::*;
+pub use encodable_value::*;

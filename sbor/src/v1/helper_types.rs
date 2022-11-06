@@ -7,9 +7,9 @@ impl Interpretation for EnumDiscriminatorString {
     const INTERPRETATION: u8 = DefaultInterpretations::UTF8_STRING_DISCRIMINATOR;
 }
 
-impl Encode for EnumDiscriminatorString {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        Encode::encode_value(&self.0, encoder);
+impl <E: Encoder> Encode<E> for EnumDiscriminatorString {
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        Encode::encode_value(&self.0, encoder)
     }
 }
 
@@ -25,10 +25,10 @@ impl Interpretation for EnumValueUnit {
     const INTERPRETATION: u8 = DefaultInterpretations::ENUM_VARIANT_UNIT;
 }
 
-impl Encode for EnumValueUnit {
+impl <E: Encoder> Encode<E> for EnumValueUnit {
     #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        Encode::encode_value(&(), encoder);
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        Encode::encode_value(&(), encoder)
     }
 }
 

@@ -5,9 +5,9 @@ impl Interpretation for () {
     const INTERPRETATION: u8 = DefaultInterpretations::UNIT;
 }
 
-impl Encode for () {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_product_type_header_u8_length(0);
+impl <E: Encoder> Encode<E> for () {
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_product_type_header_u8_length(0)
     }
 }
 
@@ -21,8 +21,8 @@ impl Interpretation for bool {
     const INTERPRETATION: u8 = DefaultInterpretations::BOOLEAN;
 }
 
-impl Encode for bool {
-    fn encode_value(&self, encoder: &mut Encoder) {
+impl <E: Encoder> Encode<E> for bool {
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_raw_bytes(
             if *self {
                 &[1]
@@ -48,9 +48,9 @@ impl Interpretation for String {
     const INTERPRETATION: u8 = DefaultInterpretations::UTF8_STRING;
 }
 
-impl Encode for String {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_raw_bytes(self.as_bytes());
+impl <E: Encoder> Encode<E> for String {
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_raw_bytes(self.as_bytes())
     }
 }
 
@@ -66,8 +66,8 @@ impl Interpretation for str {
     const INTERPRETATION: u8 = DefaultInterpretations::UTF8_STRING;
 }
 
-impl Encode for str {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_raw_bytes(self.as_bytes());
+impl <E: Encoder> Encode<E> for str {
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_raw_bytes(self.as_bytes())
     }
 }

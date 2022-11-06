@@ -1,4 +1,5 @@
 use sbor::v1::DefaultInterpretations;
+use super::EncodeError;
 use super::decoder::{Decoder, DecodeError};
 use super::encoder::Encoder;
 
@@ -30,21 +31,63 @@ pub trait Interpretation {
         if Self::INTERPRETATION == DefaultInterpretations::NOT_FIXED {
             todo!("The check_interpretation method must be overridden if the interpretation is not fixed!")
         }
-        let expected = Self::INTERPRETATION;
-        if expected == actual {
-            Ok(())
-        } else {
-            Err(DecodeError::InvalidInterpretation { expected, actual })
-        }
+        check_matching_interpretation(Self::INTERPRETATION, actual)
     }
 }
 
-pub trait Encode: Interpretation {
-    /// Encodes the value (should not encode the interpretation)
-    fn encode_value(&self, encoder: &mut Encoder);
+pub fn check_matching_interpretation(expected: u8, actual: u8) -> Result<(), DecodeError> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(DecodeError::InvalidInterpretation { expected, actual })
+    }
 }
 
+/// The trait representing that the value can be encoded with SBOR.
+/// 
+/// If implementing Encode, you should also implement Interpretation.
+///
+/// If using Encode as a type constraint, you have two options:
+/// * If the type constraint is to implement Encode, use Encode + Interpretation (to match your Intepretation bound)
+/// * If the type constraint is for a method, choose Encode + ?Sized - this enables you to take trait objects, slices etc
+pub trait Encode<E: Encoder>: XXInternalHasInterpretation {
+    /// Encodes the value (should not encode the interpretation)
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError>;
+}
+
+/// The trait representing a decode-target for an SBOR payload
 pub trait Decode: Interpretation + Sized {
     /// Decodes the value (the interpretation has already been decoded/checked)
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError>;
+}
+
+/// This trait is not intended to be implemented directly - instead, implement the
+/// Encode and Decode traits.
+pub trait Codec<E: Encoder>: Encode<E> + Decode {}
+impl<T: Encode<E> + Decode, E: Encoder> Codec<E> for T {}
+
+/// Important: This trait is never intended to be implemented directly - instead, implement
+/// the `Interpretation` trait.
+/// 
+/// The HasInterpretation trait creates some slight-redirection, so that Encode does not
+/// rely explicitly on the Interpretation trait. This ensures that Encode has no direct
+/// associated types (such as the various constants and methods on Intepretation which
+/// don't take &self), and so allows for it to be boxed in a trait object.
+/// 
+/// This means traits doing a blanket impl on T: Encode likely need a T: Encode + Implementation
+/// bound to match their T: Implementation bound of their impl of their Implementation trait.
+/// 
+/// NOTE: It might be compelling to create a ChecksInterpretation trait, and make
+/// Decode: ChecksInterpretation -- and having blanket impls only implement these traits and
+/// not the Interpretation trait. This doesn't work though - because the blanket impls potentially
+/// clash with downstream crates impls for fundamental types such as Box<T>.
+pub trait XXInternalHasInterpretation {
+    fn get_interpretation(&self) -> u8;
+}
+
+impl<T: Interpretation + ?Sized> XXInternalHasInterpretation for T {
+    #[inline]
+    fn get_interpretation(&self) -> u8 {
+        T::get_interpretation(&self)
+    }
 }

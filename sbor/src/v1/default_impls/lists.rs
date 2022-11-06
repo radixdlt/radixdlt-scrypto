@@ -9,8 +9,8 @@ impl<T, const N: usize> Interpretation for [T; N] {
     const INTERPRETATION: u8 = DefaultInterpretations::FIXED_LENGTH_ARRAY;
 }
 
-impl<T: Encode, const N: usize> Encode for [T; N] {
-    fn encode_value(&self, encoder: &mut Encoder) {
+impl<E: Encoder, T: Encode<E>, const N: usize> Encode<E> for [T; N] {
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_list(self.as_ref())
     }
 }
@@ -53,9 +53,9 @@ impl<T: Interpretation> Interpretation for Vec<T> {
     };
 }
 
-impl<T: Encode> Encode for Vec<T> {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.as_slice().encode_value(encoder);
+impl<E: Encoder, T: Encode<E> + Interpretation> Encode<E> for Vec<T> {
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.as_slice().encode_value(encoder)
     }
 }
 
@@ -89,8 +89,8 @@ impl<T: Interpretation> Interpretation for [T] {
     };
 }
 
-impl<T: Encode> Encode for [T] {
-    fn encode_value(&self, encoder: &mut Encoder) {
+impl<E: Encoder, T: Encode<E> + Interpretation> Encode<E> for [T] {
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
         // TODO - Improve when Rust finally implements specialisation
         if T::IS_BYTE {
             // TODO - Can do this without buf if we add a specialised encoder method to read from a raw pointer
@@ -99,7 +99,7 @@ impl<T: Encode> Encode for [T] {
                 copy(self.as_ptr() as *mut u8, buf.as_mut_ptr(), self.len());
                 buf.set_len(self.len());
             }
-            encoder.write_raw_bytes(buf.as_ref());
+            encoder.write_raw_bytes(buf.as_ref())
         } else {
             encoder.write_list(self.as_ref())
         }
@@ -110,11 +110,11 @@ impl<T> Interpretation for HashSet<T> {
     const INTERPRETATION: u8 = DefaultInterpretations::UNORDERED_SET;
 }
 
-impl<T: Encode + Ord + Hash> Encode for HashSet<T> {
-    fn encode_value(&self, encoder: &mut Encoder) {
+impl<E: Encoder, T: Encode<E> + Ord + Hash> Encode<E> for HashSet<T> {
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
         // Encode elements based on the order defined on the key type to generate deterministic bytes.
         let values: BTreeSet<&T> = self.iter().collect();
-        encoder.write_list_from_iterator(values.into_iter());
+        encoder.write_list_from_iterator(values.into_iter())
     }
 }
 
@@ -135,9 +135,9 @@ impl<T> Interpretation for BTreeSet<T> {
     const INTERPRETATION: u8 = DefaultInterpretations::SORTED_SET;
 }
 
-impl<T: Encode> Encode for BTreeSet<T> {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_list_from_iterator(self.into_iter());
+impl<E: Encoder, T: Encode<E>> Encode<E> for BTreeSet<T> {
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_list_from_iterator(self.into_iter())
     }
 }
 
@@ -164,8 +164,8 @@ mod test {
         let payload: Vec<u8> = vec![0, 2, 3];
 
         let mut buf = vec![];
-        let encoder = Encoder::new(&mut buf);
-        encoder.encode_payload(&payload);
+        let encoder = VecEncoder::new(&mut buf);
+        encoder.encode_payload(&payload).unwrap();
 
         assert_eq!(
             vec![
@@ -183,8 +183,8 @@ mod test {
         let payload: Vec<u32> = vec![0, 2, 3];
 
         let mut buf = vec![];
-        let encoder = Encoder::new(&mut buf);
-        encoder.encode_payload(&payload);
+        let encoder = VecEncoder::new(&mut buf);
+        encoder.encode_payload(&payload).unwrap();
 
         assert_eq!(
             vec![

@@ -20,10 +20,10 @@ impl<'a, B: ?Sized + 'a + ToOwned + Interpretation> Interpretation for Cow<'a, B
     }
 }
 
-impl<'a, B: ?Sized + 'a + ToOwned + Interpretation + Encode> Encode for Cow<'a, B> {
+impl<'a, E: Encoder, B: ?Sized + 'a + ToOwned + Interpretation + Encode<E>> Encode<E> for Cow<'a, B> {
     #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.as_ref().encode_value(encoder);
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.as_ref().encode_value(encoder)
     }
 }
 
@@ -35,7 +35,7 @@ impl<'a, B: ?Sized + 'a + ToOwned<Owned = O> + Interpretation, O: Decode> Decode
     }
 }
 
-impl<T: Interpretation> Interpretation for Box<T> {
+impl<T: Interpretation + ?Sized> Interpretation for Box<T> {
     const INTERPRETATION: u8 = DefaultInterpretations::NOT_FIXED;
 
     #[inline]
@@ -49,10 +49,10 @@ impl<T: Interpretation> Interpretation for Box<T> {
     }
 }
 
-impl<T: Encode> Encode for Box<T> {
+impl<E: Encoder, T: Encode<E> + Interpretation + ?Sized> Encode<E> for Box<T> {
     #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.as_ref().encode_value(encoder);
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.as_ref().encode_value(encoder)
     }
 }
 
@@ -63,7 +63,7 @@ impl<T: Decode> Decode for Box<T> {
     }
 }
 
-impl<T: Interpretation> Interpretation for Rc<T> {
+impl<T: Interpretation + ?Sized> Interpretation for Rc<T> {
     const INTERPRETATION: u8 = DefaultInterpretations::NOT_FIXED;
 
     #[inline]
@@ -77,10 +77,10 @@ impl<T: Interpretation> Interpretation for Rc<T> {
     }
 }
 
-impl<T: Encode> Encode for Rc<T> {
+impl<E: Encoder, T: Encode<E> + Interpretation + ?Sized> Encode<E> for Rc<T> {
     #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.as_ref().encode_value(encoder);
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.as_ref().encode_value(encoder)
     }
 }
 
@@ -90,7 +90,7 @@ impl<T: Decode> Decode for Rc<T> {
     }
 }
 
-impl<T: Interpretation> Interpretation for RefCell<T> {
+impl<T: Interpretation + ?Sized> Interpretation for RefCell<T> {
     const INTERPRETATION: u8 = DefaultInterpretations::NOT_FIXED;
 
     #[inline]
@@ -104,10 +104,10 @@ impl<T: Interpretation> Interpretation for RefCell<T> {
     }
 }
 
-impl<T: Encode> Encode for RefCell<T> {
+impl<E: Encoder, T: Encode<E> + Interpretation + ?Sized> Encode<E> for RefCell<T> {
     #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.borrow().encode_value(encoder);
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.borrow().encode_value(encoder)
     }
 }
 
@@ -118,7 +118,7 @@ impl<T: Decode> Decode for RefCell<T> {
     }
 }
 
-impl<T: Interpretation> Interpretation for Arc<T> {
+impl<T: Interpretation + ?Sized> Interpretation for Arc<T> {
     const INTERPRETATION: u8 = DefaultInterpretations::NOT_FIXED;
 
     #[inline]
@@ -132,10 +132,10 @@ impl<T: Interpretation> Interpretation for Arc<T> {
     }
 }
 
-impl<T: Encode> Encode for Arc<T> {
+impl<E: Encoder, T: Encode<E> + Interpretation + ?Sized> Encode<E> for Arc<T> {
     #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.as_ref().encode_value(encoder);
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.as_ref().encode_value(encoder)
     }
 }
 
@@ -151,7 +151,7 @@ impl<T: Decode> Decode for Arc<T> {
 use crate::rust::sync::Mutex;
 
 #[cfg(not(feature = "alloc"))]
-impl<T: Interpretation> Interpretation for Mutex<T> {
+impl<T: Interpretation + ?Sized> Interpretation for Mutex<T> {
     const INTERPRETATION: u8 = DefaultInterpretations::NOT_FIXED;
 
     #[inline]
@@ -166,10 +166,10 @@ impl<T: Interpretation> Interpretation for Mutex<T> {
 }
 
 #[cfg(not(feature = "alloc"))]
-impl<T: Encode> Encode for Mutex<T> {
+impl<E: Encoder, T: Encode<E> + Interpretation + ?Sized> Encode<E> for Mutex<T> {
     #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.lock().unwrap().encode_value(encoder);
+    fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.lock().unwrap().encode_value(encoder)
     }
 }
 
