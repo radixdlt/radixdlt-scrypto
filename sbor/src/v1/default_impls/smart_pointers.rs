@@ -27,9 +27,9 @@ impl<'a, E: Encoder, B: ?Sized + 'a + ToOwned + Interpretation + Encode<E>> Enco
     }
 }
 
-impl<'a, B: ?Sized + 'a + ToOwned<Owned = O> + Interpretation, O: Decode> Decode for Cow<'a, B> {
+impl<'a, D: Decoder, B: ?Sized + 'a + ToOwned<Owned = O> + Interpretation, O: Decode<D>> Decode<D> for Cow<'a, B> {
     #[inline]
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         let value = O::decode_value(decoder)?;
         Ok(Cow::Owned(value))
     }
@@ -56,9 +56,9 @@ impl<E: Encoder, T: Encode<E> + Interpretation + ?Sized> Encode<E> for Box<T> {
     }
 }
 
-impl<T: Decode> Decode for Box<T> {
+impl<D: Decoder, T: Decode<D>> Decode<D> for Box<T> {
     #[inline]
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Box::new(T::decode_value(decoder)?))
     }
 }
@@ -84,8 +84,8 @@ impl<E: Encoder, T: Encode<E> + Interpretation + ?Sized> Encode<E> for Rc<T> {
     }
 }
 
-impl<T: Decode> Decode for Rc<T> {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+impl<D: Decoder, T: Decode<D>> Decode<D> for Rc<T> {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Rc::new(T::decode_value(decoder)?))
     }
 }
@@ -111,9 +111,9 @@ impl<E: Encoder, T: Encode<E> + Interpretation + ?Sized> Encode<E> for RefCell<T
     }
 }
 
-impl<T: Decode> Decode for RefCell<T> {
+impl<D: Decoder, T: Decode<D>> Decode<D> for RefCell<T> {
     #[inline]
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(RefCell::new(T::decode_value(decoder)?))
     }
 }
@@ -139,9 +139,9 @@ impl<E: Encoder, T: Encode<E> + Interpretation + ?Sized> Encode<E> for Arc<T> {
     }
 }
 
-impl<T: Decode> Decode for Arc<T> {
+impl<D: Decoder, T: Decode<D>> Decode<D> for Arc<T> {
     #[inline]
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Arc::new(T::decode_value(decoder)?))
     }
 }
@@ -174,9 +174,9 @@ impl<E: Encoder, T: Encode<E> + Interpretation + ?Sized> Encode<E> for Mutex<T> 
 }
 
 #[cfg(not(feature = "alloc"))]
-impl<T: Decode> Decode for Mutex<T> {
+impl<D: Decoder, T: Decode<D>> Decode<D> for Mutex<T> {
     #[inline]
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Mutex::new(T::decode_value(decoder)?))
     }
 }

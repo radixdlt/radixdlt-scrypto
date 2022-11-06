@@ -184,13 +184,27 @@ pub trait Encoder: Sized {
         }
     }
 
-    fn append_u8(&mut self, val: u8) -> Result<(), EncodeError>;
+    #[inline]
+    fn append_u8(&mut self, val: u8) -> Result<(), EncodeError> {
+        self.append_byte(val)
+    }
 
-    fn append_u16(&mut self, val: u16) -> Result<(), EncodeError>;
+    #[inline]
+    fn append_u16(&mut self, val: u16) -> Result<(), EncodeError> {
+        self.append_bytes(&val.to_le_bytes())
+    }
 
-    fn append_u32(&mut self, val: u32) -> Result<(), EncodeError>;
+    #[inline]
+    fn append_u32(&mut self, val: u32) -> Result<(), EncodeError> {
+        self.append_bytes(&val.to_le_bytes())
+    }
 
-    fn append_u64(&mut self, val: u64) -> Result<(), EncodeError>;
+    #[inline]
+    fn append_u64(&mut self, val: u64) -> Result<(), EncodeError> {
+        self.append_bytes(&val.to_le_bytes())
+    }
+
+    fn append_byte(&mut self, val: u8) -> Result<(), EncodeError>;
 
     fn append_bytes(&mut self, bytes: &[u8]) -> Result<(), EncodeError>;
 
@@ -215,26 +229,8 @@ impl<'a> VecEncoder<'a> {
 
 impl<'a> Encoder for VecEncoder<'a> {
     #[inline]
-    fn append_u8(&mut self, val: u8) -> Result<(), EncodeError> {
+    fn append_byte(&mut self, val: u8) -> Result<(), EncodeError> {
         self.buf.push(val);
-        Ok(())
-    }
-
-    #[inline]
-    fn append_u16(&mut self, val: u16) -> Result<(), EncodeError> {
-        self.buf.extend(val.to_le_bytes());
-        Ok(())
-    }
-
-    #[inline]
-    fn append_u32(&mut self, val: u32) -> Result<(), EncodeError> {
-        self.buf.extend(val.to_le_bytes());
-        Ok(())
-    }
-
-    #[inline]
-    fn append_u64(&mut self, val: u64) -> Result<(), EncodeError> {
-        self.buf.extend(val.to_le_bytes());
         Ok(())
     }
 

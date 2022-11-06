@@ -56,15 +56,15 @@ pub trait Encode<E: Encoder>: XXInternalHasInterpretation {
 }
 
 /// The trait representing a decode-target for an SBOR payload
-pub trait Decode: Interpretation + Sized {
+pub trait Decode<D: Decoder>: Interpretation + Sized {
     /// Decodes the value (the interpretation has already been decoded/checked)
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError>;
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError>;
 }
 
 /// This trait is not intended to be implemented directly - instead, implement the
 /// Encode and Decode traits.
-pub trait Codec<E: Encoder>: Encode<E> + Decode {}
-impl<T: Encode<E> + Decode, E: Encoder> Codec<E> for T {}
+pub trait Codec<E: Encoder, D: Decoder>: Encode<E> + Decode<D> {}
+impl<T: Encode<E> + Decode<D>, E: Encoder, D: Decoder> Codec<E, D> for T {}
 
 /// Important: This trait is never intended to be implemented directly - instead, implement
 /// the `Interpretation` trait.

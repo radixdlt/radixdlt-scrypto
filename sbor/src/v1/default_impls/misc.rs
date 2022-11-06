@@ -11,8 +11,8 @@ impl <E: Encoder> Encode<E> for () {
     }
 }
 
-impl Decode for () {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+impl <D: Decoder> Decode<D> for () {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.read_product_type_header_u8_length(0)
     }
 }
@@ -33,8 +33,8 @@ impl <E: Encoder> Encode<E> for bool {
     }
 }
 
-impl Decode for bool {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+impl <D: Decoder> Decode<D> for bool {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         let bytes = decoder.read_raw_bytes_fixed_length_array::<1>()?;
         match bytes {
             [0] => Ok(false),
@@ -54,8 +54,8 @@ impl <E: Encoder> Encode<E> for String {
     }
 }
 
-impl Decode for String {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+impl <D: Decoder> Decode<D> for String {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         let slice = decoder.read_raw_bytes()?;
         String::from_utf8(slice.to_vec())
             .map_err(|_| DecodeError::InvalidUtf8)

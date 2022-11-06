@@ -13,8 +13,8 @@ impl <E: Encoder> Encode<E> for EnumDiscriminatorString {
     }
 }
 
-impl Decode for EnumDiscriminatorString {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+impl <D: Decoder> Decode<D> for EnumDiscriminatorString {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(EnumDiscriminatorString(Decode::decode_value(decoder)?))
     }
 }
@@ -32,9 +32,9 @@ impl <E: Encoder> Encode<E> for EnumValueUnit {
     }
 }
 
-impl Decode for EnumValueUnit {
+impl <D: Decoder> Decode<D> for EnumValueUnit {
     #[inline]
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         let () = Decode::decode_value(decoder)?;
         Ok(EnumValueUnit)
     }

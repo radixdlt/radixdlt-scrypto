@@ -15,8 +15,8 @@ impl<E: Encoder, T: Encode<E>, const N: usize> Encode<E> for [T; N] {
     }
 }
 
-impl<T: Decode, const N: usize> Decode for [T; N] {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+impl<D: Decoder, T: Decode<D>, const N: usize> Decode<D> for [T; N] {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         let length = decoder.read_list_type_length()?;
         if length != N {
             return Err(DecodeError::InvalidLength { expected: N, actual: length });
@@ -59,8 +59,8 @@ impl<E: Encoder, T: Encode<E> + Interpretation> Encode<E> for Vec<T> {
     }
 }
 
-impl<T: Decode> Decode for Vec<T> {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+impl<D: Decoder, T: Decode<D>> Decode<D> for Vec<T> {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         if T::IS_BYTE {
             // TODO - Improve when Rust finally implements specialisation
             let slice = decoder.read_raw_bytes()?;
@@ -118,8 +118,8 @@ impl<E: Encoder, T: Encode<E> + Ord + Hash> Encode<E> for HashSet<T> {
     }
 }
 
-impl<T: Decode + Hash + Eq> Decode for HashSet<T> {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+impl<D: Decoder, T: Decode<D> + Hash + Eq> Decode<D> for HashSet<T> {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         let length = decoder.read_list_type_length()?;
         let mut result = HashSet::<T>::with_capacity(if length <= 1024 { length } else { 1024 });
         for _ in 0..length {
@@ -141,8 +141,8 @@ impl<E: Encoder, T: Encode<E>> Encode<E> for BTreeSet<T> {
     }
 }
 
-impl<T: Decode + Hash + Ord> Decode for BTreeSet<T> {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+impl<D: Decoder, T: Decode<D> + Hash + Ord> Decode<D> for BTreeSet<T> {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         let length = decoder.read_list_type_length()?;
         let mut result = BTreeSet::<T>::new();
         for _ in 0..length {

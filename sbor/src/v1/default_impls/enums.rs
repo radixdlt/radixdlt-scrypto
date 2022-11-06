@@ -17,8 +17,8 @@ impl<E: Encoder, T: Encode<E>> Encode<E> for Option<T> {
     }
 }
 
-impl<T: Decode> Decode for Option<T> {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+impl<D: Decoder, T: Decode<D>> Decode<D> for Option<T> {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         let discriminator_type = decoder.read_sum_type_discriminator_header()?;
         Ok(match discriminator_type {
             SumTypeDiscriminator::U8 => {
@@ -64,8 +64,8 @@ impl<Enc: Encoder, T: Encode<Enc>, E: Encode<Enc>> Encode<Enc> for Result<T, E> 
     }
 }
 
-impl<T: Decode, E: Decode> Decode for Result<T, E> {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+impl<D: Decoder, T: Decode<D>, E: Decode<D>> Decode<D> for Result<T, E> {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         let discriminator_type = decoder.read_sum_type_discriminator_header()?;
         Ok(match discriminator_type {
             SumTypeDiscriminator::U8 => {

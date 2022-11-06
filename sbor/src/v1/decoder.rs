@@ -7,6 +7,7 @@ use crate::rust::string::String;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DecodeError {
 
+    ExtraTrailingBytes(usize),
     MaxDepthExceeded(u32),
 
     InvalidPayloadPrefix(u8),
@@ -61,35 +62,21 @@ pub enum DecodeError {
     CustomError(String),
 }
 
-/// A `Decoder` abstracts the logic for reading from a byte buffer.
-pub struct Decoder<'a> {
-    input: &'a [u8],
-    offset: usize,
-    decoder_stack_depth: u32,
-}
-
-impl<'a> Decoder<'a> {
-    pub fn new(input: &'a [u8]) -> Self {
-        Self {
-            input,
-            offset: 0,
-            decoder_stack_depth: 0,
-        }
-    }
-
+/// A `Decoder` abstracts the logic for reading a value
+pub trait Decoder: Sized {
     /// For decoding a full payload
-    pub fn decode_payload<T: Decode>(mut self) -> Result<T, DecodeError> {
+    fn decode_payload<T: Decode<Self>>(mut self) -> Result<T, DecodeError> {
         let prefix_byte = self.read_u8()?;
         if prefix_byte != SBOR_V1_PREFIX_BYTE {
             return Err(DecodeError::InvalidPayloadPrefix(prefix_byte));
         }
         let value = self.decode()?;
-        // TODO check bytes fully used
+        self.check_end()?;
         Ok(value)
     }
 
     /// For decoding the type from the buffer
-    pub fn decode<T: Decode>(&mut self) -> Result<T, DecodeError> {
+    fn decode<T: Decode<Self>>(&mut self) -> Result<T, DecodeError> {
         self.track_decode_depth_increase()?;
         T::check_interpretation(self.read_interpretation()?)?;
         let value = T::decode_value(self);
@@ -98,34 +85,34 @@ impl<'a> Decoder<'a> {
     }
 
     #[inline]
-    pub fn read_raw_bytes(&mut self) -> Result<&'a [u8], DecodeError> {
+    fn read_raw_bytes(&mut self) -> Result<&[u8], DecodeError> {
         let length_type = Self::expect_raw_bytes_type(self.read_type_encoding_class()?)?;
         let length = self.read_length(length_type)?;
-        Ok(self.read_variable_bytes(length)?)
+        Ok(self.consume_variable_bytes(length)?)
     }
 
     #[inline]
-    pub fn read_raw_bytes_fixed_length<const N: usize>(&mut self) -> Result<&'a [u8], DecodeError> {
-        let length_type = Self::expect_raw_bytes_type(self.read_type_encoding_class()?)?;
-        let length = self.read_length(length_type)?;
-        if length != N {
-            return Err(DecodeError::InvalidLength { expected: N, actual: length });
-        }
-        Ok(self.read_fixed_bytes::<N>()?)
-    }
-
-    #[inline]
-    pub fn read_raw_bytes_fixed_length_array<const N: usize>(&mut self) -> Result<[u8; N], DecodeError> {
+    fn read_raw_bytes_fixed_length<const N: usize>(&mut self) -> Result<&[u8], DecodeError> {
         let length_type = Self::expect_raw_bytes_type(self.read_type_encoding_class()?)?;
         let length = self.read_length(length_type)?;
         if length != N {
             return Err(DecodeError::InvalidLength { expected: N, actual: length });
         }
-        Ok(self.read_fixed_bytes_array::<N>()?)
+        Ok(self.consume_fixed_bytes::<N>()?)
     }
 
     #[inline]
-    pub fn read_product_type_header_u8_length(&mut self, expected_len: u8) -> Result<(), DecodeError> {
+    fn read_raw_bytes_fixed_length_array<const N: usize>(&mut self) -> Result<[u8; N], DecodeError> {
+        let length_type = Self::expect_raw_bytes_type(self.read_type_encoding_class()?)?;
+        let length = self.read_length(length_type)?;
+        if length != N {
+            return Err(DecodeError::InvalidLength { expected: N, actual: length });
+        }
+        Ok(self.read_fixed_bytes_into_array::<N>()?)
+    }
+
+    #[inline]
+    fn read_product_type_header_u8_length(&mut self, expected_len: u8) -> Result<(), DecodeError> {
         let length_type = Self::expect_product_type(self.read_type_encoding_class()?)?;
         let read_length = match length_type {
             ProductTypeLength::U8 => self.read_u8()?,
@@ -138,7 +125,7 @@ impl<'a> Decoder<'a> {
     }
 
     #[inline]
-    pub fn read_product_type_header_u16_length(&mut self, expected_len: u16) -> Result<(), DecodeError> {
+    fn read_product_type_header_u16_length(&mut self, expected_len: u16) -> Result<(), DecodeError> {
         let length_type = Self::expect_product_type(self.read_type_encoding_class()?)?;
         let read_length = match length_type {
             ProductTypeLength::U8 => return Err(DecodeError::UnexpectedProductLengthType),
@@ -151,45 +138,45 @@ impl<'a> Decoder<'a> {
     }
 
     #[inline]
-    pub fn read_sum_type_discriminator_header(&mut self) -> Result<SumTypeDiscriminator, DecodeError> {
+    fn read_sum_type_discriminator_header(&mut self) -> Result<SumTypeDiscriminator, DecodeError> {
         let discriminator = Self::expect_sum_type(self.read_type_encoding_class()?)?;
         Ok(discriminator)
     }
 
     #[inline]
-    pub fn read_sum_type_u8_discriminator(&mut self) -> Result<u8, DecodeError> {
+    fn read_sum_type_u8_discriminator(&mut self) -> Result<u8, DecodeError> {
         self.read_u8()
     }
 
     #[inline]
-    pub fn read_sum_type_u16_discriminator(&mut self) -> Result<u16, DecodeError> {
+    fn read_sum_type_u16_discriminator(&mut self) -> Result<u16, DecodeError> {
         self.read_u16()
     }
 
     #[inline]
-    pub fn read_sum_type_u32_discriminator(&mut self) -> Result<u32, DecodeError> {
+    fn read_sum_type_u32_discriminator(&mut self) -> Result<u32, DecodeError> {
         self.read_u32()
     }
 
     #[inline]
-    pub fn read_sum_type_u64_discriminator(&mut self) -> Result<u64, DecodeError> {
+    fn read_sum_type_u64_discriminator(&mut self) -> Result<u64, DecodeError> {
         self.read_u64()
     }
 
     #[inline]
-    pub fn read_sum_type_any_discriminator<T: Decode>(&mut self) -> Result<T, DecodeError> {
+    fn read_sum_type_any_discriminator<T: Decode<Self>>(&mut self) -> Result<T, DecodeError> {
         self.decode()
     }
 
     #[inline]
-    pub fn read_list_type_length(&mut self) -> Result<usize, DecodeError> {
+    fn read_list_type_length(&mut self) -> Result<usize, DecodeError> {
         let length_type = Self::expect_list_type(self.read_type_encoding_class()?)?;
         let length = self.read_length(length_type)?;
         Ok(length)
     }
 
     #[inline]
-    pub fn read_map_type_length(&mut self) -> Result<usize, DecodeError> {
+    fn read_map_type_length(&mut self) -> Result<usize, DecodeError> {
         let length_type = Self::expect_map_type(self.read_type_encoding_class()?)?;
         let length = self.read_length(length_type)?;
         Ok(length)
@@ -197,7 +184,7 @@ impl<'a> Decoder<'a> {
 
     #[inline]
     fn read_type_encoding_class(&mut self) -> Result<TypeEncodingClass, DecodeError> {
-        let byte = self.read_single_byte()?;
+        let byte = self.consume_single_byte()?;
         let class = TypeEncodingClass::try_from_byte(byte)
             .ok_or_else(|| DecodeError::InvalidTypeEncodingClass(byte))?;
         Ok(class)
@@ -205,7 +192,7 @@ impl<'a> Decoder<'a> {
 
     #[inline]
     fn read_interpretation(&mut self) -> Result<u8, DecodeError> {
-        self.read_single_byte()
+        self.consume_single_byte()
     }
 
     #[inline]
@@ -268,51 +255,96 @@ impl<'a> Decoder<'a> {
 
     #[inline]
     fn read_u8(&mut self) -> Result<u8, DecodeError> {
-        Ok(u8::from_le(self.read_single_byte()?))
+        Ok(u8::from_le(self.consume_single_byte()?))
     }
 
     #[inline]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
-        Ok(u16::from_le_bytes(self.read_fixed_bytes_array::<2>()?))
+        Ok(u16::from_le_bytes(self.read_fixed_bytes_into_array::<2>()?))
     }
 
     #[inline]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
-        Ok(u32::from_le_bytes(self.read_fixed_bytes_array::<4>()?))
+        Ok(u32::from_le_bytes(self.read_fixed_bytes_into_array::<4>()?))
     }
 
     #[inline]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
-        Ok(u64::from_le_bytes(self.read_fixed_bytes_array::<8>()?))
+        Ok(u64::from_le_bytes(self.read_fixed_bytes_into_array::<8>()?))
     }
 
     #[inline]
-    fn read_single_byte(&mut self) -> Result<u8, DecodeError> {
-        // TODO - add require bytes remaining
+    fn read_fixed_bytes_into_array<const N: usize>(&mut self) -> Result<[u8; N], DecodeError> {
+        let mut bytes_out = [0u8; N];
+        bytes_out.copy_from_slice(self.consume_fixed_bytes::<N>()?);
+        Ok(bytes_out)
+    }
+
+    fn consume_single_byte(&mut self) -> Result<u8, DecodeError>;
+
+    fn consume_fixed_bytes<const N: usize>(&mut self) -> Result<&[u8], DecodeError>;
+
+    fn consume_variable_bytes(&mut self, count: usize) -> Result<&[u8], DecodeError>;
+
+    fn check_end(&self) -> Result<(), DecodeError>;
+
+    fn track_decode_depth_increase(&mut self) -> Result<(), DecodeError>;
+
+    fn track_decode_depth_decrease(&mut self);
+}
+
+pub struct VecDecoder<'a> {
+    input: &'a [u8],
+    offset: usize,
+    decoder_stack_depth: u32,
+}
+
+impl<'a> VecDecoder<'a> {
+    pub fn new(input: &'a [u8]) -> Self {
+        Self {
+            input,
+            offset: 0,
+            decoder_stack_depth: 0,
+        }
+    }
+
+    pub fn require_remaining(&self, n: usize) -> Result<(), DecodeError> {
+        if self.remaining() < n {
+            Err(DecodeError::Underflow {
+                required: n,
+                remaining: self.remaining(),
+            })
+        } else {
+            Ok(())
+        }
+    }
+
+    #[inline]
+    fn remaining(&self) -> usize {
+        self.input.len() - self.offset
+    }
+}
+
+impl<'a> Decoder for VecDecoder<'a> {
+    #[inline]
+    fn consume_single_byte(&mut self) -> Result<u8, DecodeError> {
+        self.require_remaining(1)?;
         let result = self.input[self.offset];
         self.offset += 1;
         Ok(result)
     }
 
     #[inline]
-    fn read_fixed_bytes<const N: usize>(&mut self) -> Result<&'a [u8], DecodeError> {
-        // TODO - add require bytes remaining
+    fn consume_fixed_bytes<const N: usize>(&mut self) -> Result<&[u8], DecodeError> {
+        self.require_remaining(N)?;
         let slice = &self.input[self.offset..self.offset + N];
         self.offset += N;
         Ok(slice)
     }
 
     #[inline]
-    fn read_fixed_bytes_array<const N: usize>(&mut self) -> Result<[u8; N], DecodeError> {
-        // TODO - add require bytes remaining
-        let mut bytes_out = [0u8; N];
-        bytes_out.copy_from_slice(self.read_fixed_bytes::<N>()?);
-        Ok(bytes_out)
-    }
-
-    #[inline]
-    fn read_variable_bytes(&mut self, count: usize) -> Result<&'a [u8], DecodeError> {
-        // TODO - add require bytes remaining
+    fn consume_variable_bytes(&mut self, count: usize) -> Result<&[u8], DecodeError> {
+        self.require_remaining(count)?;
         let slice = &self.input[self.offset..self.offset + count];
         self.offset += count;
         Ok(slice)
@@ -330,5 +362,14 @@ impl<'a> Decoder<'a> {
     #[inline]
     fn track_decode_depth_decrease(&mut self) {
         self.decoder_stack_depth -= 1;
+    }
+
+    fn check_end(&self) -> Result<(), DecodeError> {
+        let n = self.remaining();
+        if n != 0 {
+            Err(DecodeError::ExtraTrailingBytes(n))
+        } else {
+            Ok(())
+        }
     }
 }

@@ -35,7 +35,7 @@ impl <E: Encoder> Encode<E> for EncodableValue<E> {
             // Encode bound. This means that we can't use blanket impls such as on Vec<T> and
             // Box<T>, and have to hand-roll things a little more. 
             EncodableValueContent::RawBytes { bytes } => {
-                encoder.write_raw_bytes(bytes);
+                encoder.write_raw_bytes(bytes)?;
             }
             EncodableValueContent::Product { values } => {
                 let length = values.len();

@@ -13,8 +13,8 @@ impl <E: Encoder> Encode<E> for u8 {
     }
 }
 
-impl Decode for u8 {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+impl <D: Decoder> Decode<D> for u8 {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         let bytes = decoder.read_raw_bytes_fixed_length_array::<1>()?;
         Ok(bytes[0])
     }
@@ -34,8 +34,8 @@ macro_rules! sbor_int {
             }
         }
 
-        impl Decode for $type {
-            fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        impl <D: Decoder> Decode<D> for $type {
+            fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
                 let bytes = decoder.read_raw_bytes_fixed_length_array::<$bytes_length>()?;
                 Ok(<$type>::from_le_bytes(bytes))
             }
@@ -66,8 +66,8 @@ impl <E: Encoder> Encode<E> for usize {
     }
 }
 
-impl Decode for usize {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+impl <D: Decoder> Decode<D> for usize {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         let bytes = decoder.read_raw_bytes_fixed_length_array::<8>()?;
         let size = u64::from_le_bytes(bytes)
             .try_into()
@@ -86,8 +86,8 @@ impl <E: Encoder> Encode<E> for isize {
     }
 }
 
-impl Decode for isize {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+impl <D: Decoder> Decode<D> for isize {
+    fn decode_value(decoder: &mut D) -> Result<Self, DecodeError> {
         let bytes = decoder.read_raw_bytes_fixed_length_array::<8>()?;
         let size = i64::from_le_bytes(bytes)
             .try_into()
