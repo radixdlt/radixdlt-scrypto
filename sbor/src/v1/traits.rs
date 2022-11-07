@@ -35,6 +35,36 @@ pub trait Interpretation {
     }
 }
 
+pub trait Schema {
+    /// This should denote a unique identifier for this type, in particular capturing the uniqueness of
+    /// anything which may be attached to the schema, for example:
+    /// * Decode schema - ie what it can decode successfully
+    /// * Type recreation
+    /// * Any display attachment
+    const SCHEMA_TYPE_ID: SchemaTypeId = generate_type_id(stringify!(Self), &[], &[]);
+}
+
+type SchemaTypeId = [u8; 20];
+
+pub const fn generate_type_id(name: &str, code: &[u8], dependencies: &[SchemaTypeId]) -> SchemaTypeId {
+    let buffer = const_sha1::ConstBuffer::from_slice(name.as_bytes())
+        .push_slice(&code);
+    // Const Looping isn't allowed - but we can use recursion instead: https://rust-lang.github.io/rfcs/2344-const-looping.html
+    let buffer = add_each_dependency(buffer, 0, dependencies);
+    const_sha1::sha1(&buffer).bytes()
+}
+
+const fn add_each_dependency(buffer: const_sha1::ConstBuffer, next: usize, dependencies: &[SchemaTypeId]) -> const_sha1::ConstBuffer {
+    if next == dependencies.len() {
+        return buffer;
+    }
+    add_each_dependency(
+        buffer.push_slice(dependencies[next].as_slice()),
+        next + 1,
+        dependencies
+    )
+}
+
 pub fn check_matching_interpretation(expected: u8, actual: u8) -> Result<(), DecodeError> {
     if expected == actual {
         Ok(())
@@ -85,7 +115,7 @@ impl<T: Encode<E> + Decode<D>, E: Encoder, D: Decoder> Codec<E, D> for T {}
 /// associated types (such as the various constants and methods on Intepretation which
 /// don't take &self), and so allows for it to be boxed in a trait object.
 /// 
-/// This means traits doing a blanket impl on T: Encode likely need a T: Encode + Implementation
+/// This means traits doing a blanket impl on T: Encode should actually use T: Encode + Implementation
 /// bound to match their T: Implementation bound of their impl of their Implementation trait.
 /// 
 /// NOTE: It might be compelling to create a ChecksInterpretation trait, and make

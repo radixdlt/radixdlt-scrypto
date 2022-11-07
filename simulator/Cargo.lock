@@ -272,6 +272,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "const-sha1"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb58b6451e8c2a812ad979ed1d83378caa5e927eef2622017a45f251457c2c9d"
+
+[[package]]
 name = "core-foundation-sys"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1183,6 +1189,7 @@ dependencies = [
 name = "sbor"
 version = "0.7.0"
 dependencies = [
+ "const-sha1",
  "hex",
  "sbor-derive",
  "serde",

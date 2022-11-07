@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 sbor-derive = { path = "../sbor-derive" }
+const-sha1 = { version = "0.2.0" } # Chosen because of its small size and 0 transitive dependencies
 hashbrown = { version = "0.12.1", optional = true }
 serde = { version = "1.0.137", default-features = false, optional = true, features=["derive"] }
 hex = { version = "0.4.3", default-features = false, optional = true }

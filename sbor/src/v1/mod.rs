@@ -16,6 +16,9 @@ pub mod encoder;
 /// SBOR decoding.
 pub mod decoder;
 
+/// SBOR arbitrary value, with support for embedding other types
+pub mod schema;
+
 /// SBOR implementations for basic types.
 pub mod default_impls;
 
@@ -34,6 +37,7 @@ pub use type_classes::*;
 pub use interpretations::*;
 pub use encoder::*;
 pub use decoder::*;
+pub use schema::*;
 pub use default_impls::*;
 pub use helper_types::*;
 pub use value::*;
