@@ -10,13 +10,13 @@ use crate::engine::types::*;
 use crate::misc::*;
 
 #[derive(Clone, Copy, Debug)]
-pub struct IndexedScryptoValueFormatterContext<'a> {
+pub struct ValueFormattingContext<'a> {
     bech32_encoder: Option<&'a Bech32Encoder>,
     bucket_names: Option<&'a HashMap<BucketId, String>>,
     proof_names: Option<&'a HashMap<ProofId, String>>,
 }
 
-impl<'a> IndexedScryptoValueFormatterContext<'a> {
+impl<'a> ValueFormattingContext<'a> {
     pub fn no_context() -> Self {
         Self {
             bech32_encoder: None,
@@ -56,22 +56,22 @@ impl<'a> IndexedScryptoValueFormatterContext<'a> {
     }
 }
 
-impl<'a> Into<IndexedScryptoValueFormatterContext<'a>> for &'a Bech32Encoder {
-    fn into(self) -> IndexedScryptoValueFormatterContext<'a> {
-        IndexedScryptoValueFormatterContext::no_manifest_context(Some(self))
+impl<'a> Into<ValueFormattingContext<'a>> for &'a Bech32Encoder {
+    fn into(self) -> ValueFormattingContext<'a> {
+        ValueFormattingContext::no_manifest_context(Some(self))
     }
 }
 
-impl<'a> Into<IndexedScryptoValueFormatterContext<'a>> for Option<&'a Bech32Encoder> {
-    fn into(self) -> IndexedScryptoValueFormatterContext<'a> {
-        IndexedScryptoValueFormatterContext::no_manifest_context(self)
+impl<'a> Into<ValueFormattingContext<'a>> for Option<&'a Bech32Encoder> {
+    fn into(self) -> ValueFormattingContext<'a> {
+        ValueFormattingContext::no_manifest_context(self)
     }
 }
 
 pub fn format_scrypto_value<F: fmt::Write>(
     f: &mut F,
     value: &ScryptoValue,
-    context: &IndexedScryptoValueFormatterContext,
+    context: &ValueFormattingContext,
 ) -> fmt::Result {
     match value {
         // primitive types
@@ -178,7 +178,7 @@ pub fn format_type_id<F: fmt::Write>(f: &mut F, type_id: &ScryptoTypeId) -> fmt:
 pub fn format_elements<F: fmt::Write>(
     f: &mut F,
     values: &[ScryptoValue],
-    context: &IndexedScryptoValueFormatterContext,
+    context: &ValueFormattingContext,
 ) -> fmt::Result {
     for (i, x) in values.iter().enumerate() {
         if i != 0 {
@@ -192,7 +192,7 @@ pub fn format_elements<F: fmt::Write>(
 pub fn format_custom_value<F: fmt::Write>(
     f: &mut F,
     value: &ScryptoCustomValue,
-    context: &IndexedScryptoValueFormatterContext,
+    context: &ValueFormattingContext,
 ) -> fmt::Result {
     match value {
         // Global address types

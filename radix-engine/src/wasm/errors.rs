@@ -83,7 +83,7 @@ pub enum InvalidTable {
 pub enum WasmError {
     MemoryAllocError,
     MemoryAccessError,
-    InvalidScryptoValue(IndexedScryptoValueDecodeError),
+    InvalidScryptoValue(ScryptoValueDecodeError),
     WasmError(String),
     FunctionNotFound,
     InvalidRadixEngineInput,

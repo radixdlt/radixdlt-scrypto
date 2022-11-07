@@ -3,7 +3,7 @@ use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::types::*;
-use scrypto::data::IndexedScryptoValueFormatterContext;
+use scrypto::data::ValueFormattingContext;
 use scrypto::misc::ContextualDisplay;
 use std::collections::VecDeque;
 
@@ -120,7 +120,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
             let state_data = IndexedScryptoValue::from_slice(&state.raw).unwrap();
             let value_display_context =
-                IndexedScryptoValueFormatterContext::no_manifest_context(Some(&bech32_encoder));
+                ValueFormattingContext::no_manifest_context(Some(&bech32_encoder));
             writeln!(
                 output,
                 "{}: {}",
@@ -170,7 +170,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
         if let Some(v) = &substate.kv_store_entry().0 {
             let value = IndexedScryptoValue::from_slice(&v).unwrap();
             let value_display_context =
-                IndexedScryptoValueFormatterContext::no_manifest_context(Some(&bech32_encoder));
+                ValueFormattingContext::no_manifest_context(Some(&bech32_encoder));
             writeln!(
                 output,
                 "{} {} => {}",
@@ -256,9 +256,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                     let mutable_data =
                         IndexedScryptoValue::from_slice(&non_fungible.mutable_data()).unwrap();
                     let value_display_context =
-                        IndexedScryptoValueFormatterContext::no_manifest_context(Some(
-                            &bech32_encoder,
-                        ));
+                        ValueFormattingContext::no_manifest_context(Some(&bech32_encoder));
                     writeln!(
                         output,
                         "{}  {} NonFungible {{ id: {}, immutable_data: {}, mutable_data: {} }}",

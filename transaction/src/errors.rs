@@ -2,7 +2,7 @@ use sbor::rust::string::String;
 use sbor::*;
 use scrypto::abi::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
-use scrypto::data::IndexedScryptoValueDecodeError;
+use scrypto::data::ScryptoValueDecodeError;
 use scrypto::engine::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -39,7 +39,7 @@ pub enum IdValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallDataValidationError {
-    InvalidScryptoValue(IndexedScryptoValueDecodeError),
+    InvalidScryptoValue(ScryptoValueDecodeError),
     IdValidationError(IdValidationError),
     VaultNotAllowed(VaultId),
     KeyValueStoreNotAllowed(KeyValueStoreId),

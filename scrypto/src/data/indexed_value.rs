@@ -14,12 +14,12 @@ use crate::misc::ContextualDisplay;
 use crate::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
-pub enum IndexedScryptoValueDecodeError {
+pub enum ScryptoValueDecodeError {
     DecodeError(DecodeError),
     ValueIndexingError(ValueIndexingError),
 }
 
-pub enum IndexedScryptoValueReplaceError {
+pub enum ValueReplacingError {
     ProofIdNotFound(ProofId),
     BucketIdNotFound(BucketId),
 }
@@ -58,16 +58,16 @@ impl IndexedScryptoValue {
         Self::from_slice(&bytes).expect("Failed to convert trusted value into IndexedScryptoValue")
     }
 
-    pub fn from_slice(slice: &[u8]) -> Result<Self, IndexedScryptoValueDecodeError> {
-        let value = decode_any(slice).map_err(IndexedScryptoValueDecodeError::DecodeError)?;
+    pub fn from_slice(slice: &[u8]) -> Result<Self, ScryptoValueDecodeError> {
+        let value = decode_any(slice).map_err(ScryptoValueDecodeError::DecodeError)?;
         Self::from_value(value)
     }
 
-    pub fn from_value(value: ScryptoValue) -> Result<Self, IndexedScryptoValueDecodeError> {
+    pub fn from_value(value: ScryptoValue) -> Result<Self, ScryptoValueDecodeError> {
         let mut visitor = ScryptoCustomValueVisitor::new();
         let index_result = traverse_any(&mut SborPathBuf::new(), &value, &mut visitor);
         if let Err(error) = index_result {
-            return Err(IndexedScryptoValueDecodeError::ValueIndexingError(error));
+            return Err(ScryptoValueDecodeError::ValueIndexingError(error));
         }
 
         Ok(Self {
@@ -134,12 +134,12 @@ impl IndexedScryptoValue {
         &mut self,
         proof_replacements: &mut HashMap<ProofId, ProofId>,
         bucket_replacements: &mut HashMap<BucketId, BucketId>,
-    ) -> Result<(), IndexedScryptoValueReplaceError> {
+    ) -> Result<(), ValueReplacingError> {
         let mut new_proof_ids = HashMap::new();
         for (proof_id, path) in self.proof_ids.drain() {
             let next_id = proof_replacements
                 .remove(&proof_id)
-                .ok_or(IndexedScryptoValueReplaceError::ProofIdNotFound(proof_id))?;
+                .ok_or(ValueReplacingError::ProofIdNotFound(proof_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
             if let SborValue::Custom { value } = value {
                 *value = ScryptoCustomValue::Proof(next_id);
@@ -155,7 +155,7 @@ impl IndexedScryptoValue {
         for (bucket_id, path) in self.bucket_ids.drain() {
             let next_id = bucket_replacements
                 .remove(&bucket_id)
-                .ok_or(IndexedScryptoValueReplaceError::BucketIdNotFound(bucket_id))?;
+                .ok_or(ValueReplacingError::BucketIdNotFound(bucket_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
             if let SborValue::Custom { value } = value {
                 *value = ScryptoCustomValue::Bucket(next_id);
@@ -183,21 +183,17 @@ impl IndexedScryptoValue {
 
 impl fmt::Debug for IndexedScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        format_scrypto_value(
-            f,
-            &self.dom,
-            &IndexedScryptoValueFormatterContext::no_context(),
-        )
+        format_scrypto_value(f, &self.dom, &ValueFormattingContext::no_context())
     }
 }
 
-impl<'a> ContextualDisplay<IndexedScryptoValueFormatterContext<'a>> for IndexedScryptoValue {
+impl<'a> ContextualDisplay<ValueFormattingContext<'a>> for IndexedScryptoValue {
     type Error = fmt::Error;
 
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        context: &IndexedScryptoValueFormatterContext<'a>,
+        context: &ValueFormattingContext<'a>,
     ) -> Result<(), Self::Error> {
         format_scrypto_value(f, &self.dom, context)
     }
@@ -344,7 +340,7 @@ mod tests {
         ]);
         assert_eq!(
             IndexedScryptoValue::from_slice(&buckets),
-            Err(IndexedScryptoValueDecodeError::ValueIndexingError(
+            Err(ScryptoValueDecodeError::ValueIndexingError(
                 ValueIndexingError::DuplicateOwnership
             ))
         );

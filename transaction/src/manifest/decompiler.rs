@@ -56,8 +56,8 @@ impl<'a> DecompilationContext<'a> {
         }
     }
 
-    pub fn for_value_display(&'a self) -> IndexedScryptoValueFormatterContext<'a> {
-        IndexedScryptoValueFormatterContext::with_manifest_context(
+    pub fn for_value_display(&'a self) -> ValueFormattingContext<'a> {
+        ValueFormattingContext::with_manifest_context(
             self.bech32_encoder,
             &self.bucket_names,
             &self.proof_names,

@@ -115,10 +115,10 @@ impl TransactionProcessor {
         value
             .replace_ids(proof_id_mapping, bucket_id_mapping)
             .map_err(|e| match e {
-                IndexedScryptoValueReplaceError::BucketIdNotFound(bucket_id) => {
+                ValueReplacingError::BucketIdNotFound(bucket_id) => {
                     InvokeError::Error(TransactionProcessorError::BucketNotFound(bucket_id))
                 }
-                IndexedScryptoValueReplaceError::ProofIdNotFound(proof_id) => {
+                ValueReplacingError::ProofIdNotFound(proof_id) => {
                     InvokeError::Error(TransactionProcessorError::ProofNotFound(proof_id))
                 }
             })?;
