@@ -11,11 +11,3 @@ pub use self::eddsa_ed25519::*;
 pub use self::hash::*;
 pub use self::sha2::{sha256, sha256_twice};
 pub use self::sha3::sha3;
-
-// TODO: alias after renaming IndexedScryptoValue to IndexedIndexedScryptoValue
-// ScryptoEncode = Encode<ScryptoCustomTypeId>
-// ScryptoEncoder = Encoder<ScryptoCustomTypeId>
-// ScryptoDecode = Decode<ScryptoCustomTypeId>
-// ScryptoDecoder = Decoder<ScryptoCustomTypeId>
-// ScryptoTypeId = SborTypeId<ScryptoCustomTypeId>
-// IndexedScryptoValue = SborValue<ScryptoCustomTypeId, ScryptoCustomValue>

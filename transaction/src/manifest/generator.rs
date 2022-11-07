@@ -970,7 +970,7 @@ fn generate_value(
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &HashMap<Hash, Vec<u8>>,
-) -> Result<SborValue<ScryptoCustomTypeId, ScryptoCustomValue>, GeneratorError> {
+) -> Result<ScryptoValue, GeneratorError> {
     if let Some(ty) = expected {
         if ty != value.kind() {
             return Err(GeneratorError::InvalidValue {
@@ -1112,7 +1112,7 @@ fn generate_singletons(
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &HashMap<Hash, Vec<u8>>,
-) -> Result<Vec<SborValue<ScryptoCustomTypeId, ScryptoCustomValue>>, GeneratorError> {
+) -> Result<Vec<ScryptoValue>, GeneratorError> {
     let mut result = vec![];
     for element in elements {
         result.push(generate_value(
@@ -1126,7 +1126,7 @@ fn generate_singletons(
     Ok(result)
 }
 
-fn generate_type_id(ty: &ast::Type) -> SborTypeId<ScryptoCustomTypeId> {
+fn generate_type_id(ty: &ast::Type) -> ScryptoTypeId {
     match ty {
         ast::Type::Unit => SborTypeId::Unit,
         ast::Type::Bool => SborTypeId::Bool,

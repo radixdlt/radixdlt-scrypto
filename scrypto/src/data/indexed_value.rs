@@ -27,7 +27,7 @@ pub enum IndexedScryptoValueReplaceError {
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
     pub raw: Vec<u8>,
-    pub dom: SborValue<ScryptoCustomTypeId, ScryptoCustomValue>,
+    pub dom: ScryptoValue,
 
     // Global addresses
     pub component_addresses: HashSet<ComponentAddress>,
@@ -63,9 +63,7 @@ impl IndexedScryptoValue {
         Self::from_value(value)
     }
 
-    pub fn from_value(
-        value: SborValue<ScryptoCustomTypeId, ScryptoCustomValue>,
-    ) -> Result<Self, IndexedScryptoValueDecodeError> {
+    pub fn from_value(value: ScryptoValue) -> Result<Self, IndexedScryptoValueDecodeError> {
         let mut visitor = ScryptoCustomValueVisitor::new();
         let index_result = traverse_any(&mut SborPathBuf::new(), &value, &mut visitor);
         if let Err(error) = index_result {

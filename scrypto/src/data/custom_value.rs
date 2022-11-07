@@ -5,6 +5,7 @@ use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::data::ScryptoCustomTypeId;
+use crate::data::*;
 use crate::engine::types::*;
 use crate::math::*;
 use crate::misc::copy_u8_array;
@@ -42,7 +43,7 @@ pub enum ScryptoCustomValue {
 }
 
 impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
-    fn encode_type_id(&self, encoder: &mut Encoder<ScryptoCustomTypeId>) {
+    fn encode_type_id(&self, encoder: &mut ScryptoEncoder) {
         match self {
             ScryptoCustomValue::PackageAddress(_) => {
                 encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::PackageAddress))
@@ -107,7 +108,7 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
         }
     }
 
-    fn encode_value(&self, encoder: &mut Encoder<ScryptoCustomTypeId>) {
+    fn encode_value(&self, encoder: &mut ScryptoEncoder) {
         match self {
             // TODO: vector free
             ScryptoCustomValue::PackageAddress(v) => encoder.write_slice(&v.to_vec()),
@@ -146,7 +147,7 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
     }
 
     fn decode(
-        decoder: &mut Decoder<ScryptoCustomTypeId>,
+        decoder: &mut ScryptoDecoder,
         type_id: ScryptoCustomTypeId,
     ) -> Result<Self, DecodeError> {
         match type_id {

@@ -70,7 +70,7 @@ impl<'a> Into<IndexedScryptoValueFormatterContext<'a>> for Option<&'a Bech32Enco
 
 pub fn format_scrypto_value<F: fmt::Write>(
     f: &mut F,
-    value: &SborValue<ScryptoCustomTypeId, ScryptoCustomValue>,
+    value: &ScryptoValue,
     context: &IndexedScryptoValueFormatterContext,
 ) -> fmt::Result {
     match value {
@@ -131,10 +131,7 @@ pub fn format_scrypto_value<F: fmt::Write>(
     Ok(())
 }
 
-pub fn format_type_id<F: fmt::Write>(
-    f: &mut F,
-    type_id: &SborTypeId<ScryptoCustomTypeId>,
-) -> fmt::Result {
+pub fn format_type_id<F: fmt::Write>(f: &mut F, type_id: &ScryptoTypeId) -> fmt::Result {
     match type_id {
         SborTypeId::Unit => f.write_str("Unit"),
         SborTypeId::Bool => f.write_str("Bool"),
@@ -180,7 +177,7 @@ pub fn format_type_id<F: fmt::Write>(
 
 pub fn format_elements<F: fmt::Write>(
     f: &mut F,
-    values: &[SborValue<ScryptoCustomTypeId, ScryptoCustomValue>],
+    values: &[ScryptoValue],
     context: &IndexedScryptoValueFormatterContext,
 ) -> fmt::Result {
     for (i, x) in values.iter().enumerate() {

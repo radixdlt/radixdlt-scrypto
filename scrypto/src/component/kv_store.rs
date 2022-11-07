@@ -166,7 +166,7 @@ impl<
     > TypeId<ScryptoCustomTypeId> for KeyValueStore<K, V>
 {
     #[inline]
-    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
+    fn type_id() -> ScryptoTypeId {
         SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore)
     }
 }
@@ -177,12 +177,12 @@ impl<
     > Encode<ScryptoCustomTypeId> for KeyValueStore<K, V>
 {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<ScryptoCustomTypeId>) {
+    fn encode_type_id(encoder: &mut ScryptoEncoder) {
         encoder.write_type_id(Self::type_id());
     }
 
     #[inline]
-    fn encode_value(&self, encoder: &mut Encoder<ScryptoCustomTypeId>) {
+    fn encode_value(&self, encoder: &mut ScryptoEncoder) {
         encoder.write_slice(&self.to_vec());
     }
 }
@@ -192,11 +192,11 @@ impl<
         V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
     > Decode<ScryptoCustomTypeId> for KeyValueStore<K, V>
 {
-    fn check_type_id(decoder: &mut Decoder<ScryptoCustomTypeId>) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut ScryptoDecoder) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
 
-    fn decode_value(decoder: &mut Decoder<ScryptoCustomTypeId>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut ScryptoDecoder) -> Result<Self, DecodeError> {
         let slice = decoder.read_slice(36)?;
         Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
     }
