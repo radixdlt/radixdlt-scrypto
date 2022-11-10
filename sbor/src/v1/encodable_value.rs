@@ -68,12 +68,13 @@ impl <E: Encoder> Encode<E> for EncodableValue<E> {
             },
             EncodableValueContent::Sum { discriminator, value } => {
                 match discriminator {
-                    EncodableValueDiscriminator::U8(d) => encoder.write_sum_type_u8_discriminator(*d, value.as_ref())?,
-                    EncodableValueDiscriminator::U16(d) => encoder.write_sum_type_u16_discriminator(*d, value.as_ref())?,
-                    EncodableValueDiscriminator::U32(d) => encoder.write_sum_type_u32_discriminator(*d, value.as_ref())?,
-                    EncodableValueDiscriminator::U64(d) => encoder.write_sum_type_u64_discriminator(*d, value.as_ref())?,
-                    EncodableValueDiscriminator::Any(d) => encoder.write_sum_type_any_discriminator(d.as_ref(), value.as_ref())?,
+                    EncodableValueDiscriminator::U8(d) => encoder.write_sum_type_u8_discriminator_header(*d)?,
+                    EncodableValueDiscriminator::U16(d) => encoder.write_sum_type_u16_discriminator_header(*d)?,
+                    EncodableValueDiscriminator::U32(d) => encoder.write_sum_type_u32_discriminator_header(*d)?,
+                    EncodableValueDiscriminator::U64(d) => encoder.write_sum_type_u64_discriminator_header(*d)?,
+                    EncodableValueDiscriminator::Any(d) => encoder.write_sum_type_any_discriminator_header(d.as_ref())?,
                 }
+                encoder.encode(value.as_ref())?;
             },
         }
         Ok(())

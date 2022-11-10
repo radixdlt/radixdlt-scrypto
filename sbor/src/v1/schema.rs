@@ -29,6 +29,8 @@ pub trait Schema {
     /// ```
     const SCHEMA_TYPE_ID: SchemaTypeId;
 
+    const TYPE_NAME: &'static str;
+
     /// Returns the local schema for the given type
     fn get_type_local_schema() -> LocalTypeSchema<SchemaTypeId>;
 
@@ -112,6 +114,7 @@ pub struct LocalTypeSchema<T> {
 /// This enables the type to be represented as eg JSON
 pub struct TypeNaming {
     type_name: Option<String>,
+    generic_type_names: Option<Vec<String>>,
     /// Only provided for the ProductType encoding
     field_names: Option<Vec<String>>,
 }

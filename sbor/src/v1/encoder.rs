@@ -55,62 +55,52 @@ pub trait Encoder: Sized {
     }
 
     #[inline]
-    fn write_sum_type_u8_discriminator<T: Encode<Self> + ?Sized>(
+    fn write_sum_type_u8_discriminator_header(
         &mut self,
         discriminator: u8,
-        value: &T,
     ) -> Result<(), EncodeError> {
         self.append_u8(SumTypeDiscriminator::U8.encoding_id())?;
         self.append_u8(discriminator)?;
-        self.encode(value)?;
         Ok(())
     }
 
     #[inline]
-    fn write_sum_type_u16_discriminator<T: Encode<Self> + ?Sized>(
+    fn write_sum_type_u16_discriminator_header(
         &mut self,
         discriminator: u16,
-        value: &T,
     ) -> Result<(), EncodeError> {
         self.append_u8(SumTypeDiscriminator::U16.encoding_id())?;
         self.append_u16(discriminator)?;
-        self.encode(value)?;
         Ok(())
     }
 
     #[inline]
-    fn write_sum_type_u32_discriminator<T: Encode<Self> + ?Sized>(
+    fn write_sum_type_u32_discriminator_header(
         &mut self,
         discriminator: u32,
-        value: &T,
     ) -> Result<(), EncodeError> {
         self.append_u8(SumTypeDiscriminator::U32.encoding_id())?;
         self.append_u32(discriminator)?;
-        self.encode(value)?;
         Ok(())
     }
 
     #[inline]
-    fn write_sum_type_u64_discriminator<T: Encode<Self> + ?Sized>(
+    fn write_sum_type_u64_discriminator_header(
         &mut self,
         discriminator: u64,
-        value: &T,
     ) -> Result<(), EncodeError> {
         self.append_u8(SumTypeDiscriminator::U64.encoding_id())?;
         self.append_u64(discriminator)?;
-        self.encode(value)?;
         Ok(())
     }
 
     #[inline]
-    fn write_sum_type_any_discriminator<D: Encode<Self> + ?Sized, V: Encode<Self> + ?Sized>(
+    fn write_sum_type_any_discriminator_header<D: Encode<Self> + ?Sized>(
         &mut self,
         discriminator: &D,
-        value: &V,
     ) -> Result<(), EncodeError> {
         self.append_u8(SumTypeDiscriminator::Any.encoding_id())?;
         self.encode(discriminator)?;
-        self.encode(value)?;
         Ok(())
     }
 

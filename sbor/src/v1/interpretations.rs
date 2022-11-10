@@ -40,8 +40,7 @@ impl DefaultInterpretations {
     pub const TUPLE: u8 = 0x31;
     pub const STRUCT: u8 = 0x32;
     pub const ENUM_VARIANT_UNIT: u8 = 0x33;
-    pub const ENUM_VARIANT_TUPLE: u8 = 0x34;
-    pub const ENUM_VARIANT_STRUCT: u8 = 0x35;
+    pub const ENUM_VARIANT_STRUCT: u8 = 0x34;
 
     // SUM TYPES
     pub const ENUM: u8 = 0x40;

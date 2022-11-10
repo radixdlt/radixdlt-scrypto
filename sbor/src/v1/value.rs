@@ -46,12 +46,13 @@ impl <E: Encoder> Encode<E> for Value {
             },
             ValueContent::Sum { discriminator, value } => {
                 match discriminator {
-                    Discriminator::U8(d) => encoder.write_sum_type_u8_discriminator(*d, value)?,
-                    Discriminator::U16(d) => encoder.write_sum_type_u16_discriminator(*d, value)?,
-                    Discriminator::U32(d) => encoder.write_sum_type_u32_discriminator(*d, value)?,
-                    Discriminator::U64(d) => encoder.write_sum_type_u64_discriminator(*d, value)?,
-                    Discriminator::Any(d) => encoder.write_sum_type_any_discriminator(d, value)?,
+                    Discriminator::U8(d) => encoder.write_sum_type_u8_discriminator_header(*d)?,
+                    Discriminator::U16(d) => encoder.write_sum_type_u16_discriminator_header(*d)?,
+                    Discriminator::U32(d) => encoder.write_sum_type_u32_discriminator_header(*d)?,
+                    Discriminator::U64(d) => encoder.write_sum_type_u64_discriminator_header(*d)?,
+                    Discriminator::Any(d) => encoder.write_sum_type_any_discriminator_header(d)?,
                 }
+                encoder.encode(value)?;
             },
         }
         Ok(())

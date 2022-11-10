@@ -11,9 +11,16 @@ pub const OPTION_VARIANT_NONE: u8 = 0x01;
 impl<E: Encoder, T: Encode<E>> Encode<E> for Option<T> {
     fn encode_value(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
-            Some(value) => encoder.write_sum_type_u8_discriminator(OPTION_VARIANT_SOME, value),
-            None => encoder.write_sum_type_u8_discriminator(OPTION_VARIANT_NONE, &()),
-        }
+            Some(value) => {
+                encoder.write_sum_type_u8_discriminator_header(OPTION_VARIANT_SOME)?;
+                encoder.encode(value)?;
+            },
+            None => {
+                encoder.write_sum_type_u8_discriminator_header(OPTION_VARIANT_NONE)?;
+                encoder.encode(&())?;
+            },
+        };
+        Ok(())
     }
 }
 
@@ -58,9 +65,16 @@ pub const RESULT_VARIANT_ERR: u8 = 0x01;
 impl<Enc: Encoder, T: Encode<Enc>, E: Encode<Enc>> Encode<Enc> for Result<T, E> {
     fn encode_value(&self, encoder: &mut Enc) -> Result<(), EncodeError> {
         match self {
-            Ok(value) => encoder.write_sum_type_u8_discriminator(0, value),
-            Err(err) => encoder.write_sum_type_u8_discriminator(1, err),
-        }
+            Ok(value) => {
+                encoder.write_sum_type_u8_discriminator_header(0)?;
+                encoder.encode(value)?;
+            },
+            Err(err) => {
+                encoder.write_sum_type_u8_discriminator_header(1);
+                encoder.encode(err)?;
+            },
+        };
+        Ok(())
     }
 }
 

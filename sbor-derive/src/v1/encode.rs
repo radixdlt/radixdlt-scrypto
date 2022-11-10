@@ -60,159 +60,135 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
 
     trace!("Encoding: {}", ident);
 
-    let output = match data {
-        Data::Struct(s) => match s.fields {
-            syn::Fields::Named(FieldsNamed { named, .. }) => {
-                // ns: not skipped
-                let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
-                let ns_ids = ns.iter().map(|f| &f.ident);
-                let ns_len = ns_ids.len();
-                let encode_length_statement = {
-                    if ns_len <= 255 {
-                        let ns_len = ns_len as u8;
-                        quote! {
-                            encoder.write_product_type_header_u8_length(#ns_len)?;
-                        }
-                    } else if ns_len <= u16::MAX as usize {
-                        let ns_len = ns_len as u16;
-                        quote! {
-                            encoder.write_product_type_header_u16_length(#ns_len)?;
-                        }
-                    } else {
-                        return Err(Error::new(Span::call_site(), format!("More than {} fields not supported!", u16::MAX)));
-                    }
-                };
-
-                quote! {
-                    impl #impl_generics ::sbor::v1::Encode<E> for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn encode_value(&self, encoder: &mut E) -> Result<(), ::sbor::v1::EncodeError> {
-                            use ::sbor::v1::*;
-                            #encode_length_statement
-                            #(encoder.encode(&self.#ns_ids)?;)*
-                        }
-                    }
+    let body = match data {
+        Data::Struct(s) => {
+            let fields = match s.fields {
+                syn::Fields::Named(FieldsNamed { named, .. }) => named.into_iter().collect(),
+                syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => unnamed.into_iter().collect(),
+                syn::Fields::Unit => vec![],
+            };
+            // TODO: Support transparent for length 1
+            encode_product_value(
+                fields,
+                |i, ident| {
+                    ident
+                        .map(|ident| quote! { &self.#ident })
+                        .unwrap_or_else(|| {
+                            let index = Index::from(i);
+                            quote! { &self.#index }
+                        })
                 }
-            }
-            syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                let mut ns_indices = Vec::new();
-                for (i, f) in unnamed.iter().enumerate() {
-                    if !is_skipped(f) {
-                        ns_indices.push(Index::from(i));
-                    }
-                }
-                let ns_len = Index::from(ns_indices.len());
-                quote! {
-                    impl #impl_generics ::sbor::Encode for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn encode_type_id(encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
-                        }
-                        #[inline]
-                        fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
-                            use ::sbor::{self, Encode};
-                            encoder.write_static_size(#ns_len);
-                            #(self.#ns_indices.encode(encoder);)*
-                        }
-                    }
-                }
-            }
-            syn::Fields::Unit => {
-                quote! {
-                    impl #impl_generics ::sbor::Encode for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn encode_type_id(encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
-                        }
-                        #[inline]
-                        fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_static_size(0);
-                        }
-                    }
-                }
-            }
+            )?
         },
         Data::Enum(DataEnum { variants, .. }) => {
-            let match_arms = variants.iter().map(|v| {
-                let v_id = &v.ident;
-                let name_string = v_id.to_string();
-                let name: Expr = parse_quote! { #name_string };
-
-                match &v.fields {
-                    syn::Fields::Named(FieldsNamed { named, .. }) => {
-                        let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
-                        let ns_ids = ns.iter().map(|f| &f.ident);
-                        let ns_ids2 = ns.iter().map(|f| &f.ident);
-                        let ns_len = Index::from(ns.len());
-                        quote! {
-                            Self::#v_id {#(#ns_ids,)* ..} => {
-                                encoder.write_variant_label(#name);
-                                encoder.write_static_size(#ns_len);
-                                #(#ns_ids2.encode(encoder);)*
-                            }
-                        }
-                    }
-                    syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                        let args = (0..unnamed.len()).map(|i| format_ident!("a{}", i));
-                        let mut ns_args = Vec::<Ident>::new();
-                        for (i, f) in unnamed.iter().enumerate() {
-                            if !is_skipped(f) {
-                                ns_args.push(format_ident!("a{}", i));
-                            }
-                        }
-                        let ns_len = Index::from(ns_args.len());
-                        quote! {
-                            Self::#v_id (#(#args),*) => {
-                                encoder.write_variant_label(#name);
-                                encoder.write_static_size(#ns_len);
-                                #(#ns_args.encode(encoder);)*
-                            }
-                        }
-                    }
-                    syn::Fields::Unit => {
-                        quote! {
-                            Self::#v_id => {
-                                encoder.write_variant_label(#name);
-                                encoder.write_static_size(0);
-                            }
-                        }
-                    }
-                }
-            });
-
-            if match_arms.len() == 0 {
-                quote! {
-                    impl #impl_generics ::sbor::Encode for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn encode_type_id(encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type_id(::sbor::type_id::TYPE_ENUM);
-                        }
-                        #[inline]
-                        fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
-                        }
-                    }
-                }
+            if variants.len() == 0 {
+                quote! {}
             } else {
-                quote! {
-                    impl #impl_generics ::sbor::Encode for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn encode_type_id(encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type_id(::sbor::type_id::TYPE_ENUM);
-                        }
-                        #[inline]
-                        fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
-                            use ::sbor::{self, Encode};
+                let mut match_arms: Vec<TokenStream> = Vec::new();
+                for (variant_index, variant) in variants.into_iter().enumerate() {
+                    // TODO - implement preference for strings or byte
+                    let variant_ident = variant.ident;
 
-                            match self {
-                                #(#match_arms)*
-                            }
+                    let discriminator_header = {
+                        // TODO - support different discriminator variants
+                        if variant_index > 255 {
+                            return Err(Error::new(Span::call_site(), format!("More than 255 variants not currently supported!")));
                         }
+                        let byte_variant_index = variant_index as u8;
+                        quote! {
+                            encoder.write_sum_type_u8_discriminator_header(#byte_variant_index)?;
+                        }
+                    };
+    
+                    let match_arm = match variant.fields {
+                        Fields::Named(FieldsNamed { named, .. }) => {
+                            let unskipped: Vec<_> = named.into_iter().filter(|f| !is_skipped(f)).collect();
+    
+                            let args: Vec<_> = unskipped.clone().into_iter().map(|f| f.ident.unwrap()).collect();
+                            let body_value = encode_product_value(
+                                unskipped,
+                                |_i, field_ident| {
+                                    quote! { #field_ident }
+                                }
+                            )?;
+                            // TODO: Support transparent!
+                            quote! {
+                                Self::#variant_ident {#(#args,)* ..} => {
+                                    #discriminator_header
+                                    encoder.write_interpretation(DefaultInterpretations::ENUM_VARIANT_STRUCT)?;
+                                    #body_value
+                                }
+                            }
+                        },
+                        Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
+                            let mut i: usize = 0;
+                            let arg_idents: Vec<_> = unnamed
+                                .iter()
+                                .map(|f| {
+                                    let is_skipped = is_skipped(f);
+                                    let arg_ident = if is_skipped {
+                                        quote! { _ }
+                                    } else {
+                                        let ident = format_ident!("a{}", i);
+                                        i += 1;
+                                        quote! { #ident }
+                                    };
+                                    arg_ident
+                                })
+                                .collect();
+
+                            let body_value = encode_product_value(
+                                unnamed.into_iter().collect(),
+                                |i, _| {
+                                    let ident = format_ident!("a{}", i);
+                                    quote! { #ident }
+                                }
+                            )?;
+                            quote! {
+                                Self::#variant_ident (#(#arg_idents),*) => {
+                                    #discriminator_header
+                                    encoder.write_interpretation(DefaultInterpretations::ENUM_VARIANT_STRUCT)?;
+                                    #body_value
+                                }
+                            }
+                        },
+                        Fields::Unit => {
+                            let body_value = encode_product_value(
+                                vec![],
+                                |_, _| { quote! { } }
+                            )?;
+                            quote! {
+                                Self::#variant_ident => {
+                                    #discriminator_header
+                                    encoder.write_interpretation(DefaultInterpretations::ENUM_VARIANT_UNIT)?;
+                                    #body_value
+                                }
+                            }
+                        },
+                    };
+    
+                    match_arms.push(match_arm);
+                }
+                quote! {
+                    match self {
+                        #(#match_arms,)*
                     }
+                    Ok(())
                 }
             }
         }
         Data::Union(_) => {
             return Err(Error::new(Span::call_site(), "Union is not supported!"));
+        }
+    };
+
+    let output = quote! {
+        impl #impl_generics ::sbor::v1::Encode<E> for #ident #ty_generics #where_clause {
+            #[inline]
+            fn encode_value(&self, encoder: &mut E) -> Result<(), ::sbor::v1::EncodeError> {
+                use ::sbor::v1::*;
+                #body
+            }
         }
     };
 
@@ -222,6 +198,43 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
     crate::utils::print_generated_code("Encode", &output);
 
     Ok(output)
+}
+
+fn encode_product_value(
+    unfiltered_fields: Vec<Field>,
+    map_ident: impl Fn(usize, Option<&Ident>) -> TokenStream
+) -> Result<TokenStream> {
+    let filtered_fields: Vec<_> = unfiltered_fields.iter().filter(|f| !is_skipped(f)).collect();
+    let field_count = filtered_fields.len();
+
+    let encode_length_statement = {
+        if field_count <= 255 {
+            let field_count = field_count as u8;
+            quote! {
+                encoder.write_product_type_header_u8_length(#field_count)?;
+            }
+        } else if field_count <= u16::MAX as usize {
+            let field_count = field_count as u16;
+            quote! {
+                encoder.write_product_type_header_u16_length(#field_count)?;
+            }
+        } else {
+            return Err(Error::new(Span::call_site(), format!("More than {} fields not supported!", u16::MAX)));
+        }
+    };
+
+    let mut token_stream = quote! {
+        #encode_length_statement
+    };
+
+    for (i, field) in filtered_fields.iter().enumerate() {
+        let ident_to_use = map_ident(i, field.ident.as_ref());
+        token_stream.extend(quote! {
+            encoder.encode(#ident_to_use)?;
+        });
+    }
+
+    Ok(token_stream)
 }
 
 #[cfg(test)]
@@ -263,30 +276,30 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::Encode for Test {
+                impl <E: ::sbor::v1::Encoder> ::sbor::v1::Encode<E> for Test {
                     #[inline]
-                    fn encode_type_id(encoder: &mut ::sbor::Encoder) {
-                        encoder.write_type_id(::sbor::type_id::TYPE_ENUM);
-                    }
-                    #[inline]
-                    fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
-                        use ::sbor::{self, Encode};
+                    fn encode_value(&self, encoder: &mut E) -> Result<(), ::sbor::v1::EncodeError> {
+                        use ::sbor::v1::*;
                         match self {
                             Self::A => {
-                                encoder.write_variant_label("A");
-                                encoder.write_static_size(0);
-                            }
+                                encoder.write_sum_type_u8_discriminator_header(0u8)?;
+                                encoder.write_interpretation(DefaultInterpretations::ENUM_VARIANT_TUPLE)?;
+                                encoder.write_product_type_header_u8_length(0u8)?;
+                            },
                             Self::B(a0) => {
-                                encoder.write_variant_label("B");
-                                encoder.write_static_size(1);
-                                a0.encode(encoder);
-                            }
+                                encoder.write_sum_type_u8_discriminator_header(1u8)?;
+                                encoder.write_interpretation(DefaultInterpretations::ENUM_VARIANT_TUPLE)?;
+                                encoder.write_product_type_header_u8_length(1u8)?;
+                                encoder.encode(a0)?;
+                            },
                             Self::C { x, .. } => {
-                                encoder.write_variant_label("C");
-                                encoder.write_static_size(1);
-                                x.encode(encoder);
-                            }
+                                encoder.write_sum_type_u8_discriminator_header(2u8)?;
+                                encoder.write_interpretation(DefaultInterpretations::ENUM_VARIANT_STRUCT)?;
+                                encoder.write_product_type_header_u8_length(1u8)?;
+                                encoder.encode(x)?;
+                            },
                         }
+                        Ok(())
                     }
                 }
             },
