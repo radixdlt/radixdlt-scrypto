@@ -1,5 +1,14 @@
 use scrypto::prelude::*;
 
+struct FixedResource: NoSpecificValidation {}
+struct FixedResource2: NoSpecificValidation {}
+struct PoolResource1: StructValidation {}
+struct PoolResource2: StructValidation {}
+
+struct<T: ResourceValidation> Bucket<T> {
+    type_data: PhantomData<T>
+}
+
 blueprint! {
     struct Account {
         vaults: KeyValueStore<ResourceAddress, Vault>,
@@ -22,7 +31,7 @@ blueprint! {
             account
         }
 
-        fn internal_new(withdraw_rule: AccessRule, bucket: Option<Bucket>) -> ComponentAddress {
+        fn internal_new(withdraw_rule: AccessRule, bucket: Option<Bucket2<T>>) -> ComponentAddress {
             let mut account = Self {
                 vaults: KeyValueStore::new(),
             }
@@ -45,6 +54,10 @@ blueprint! {
 
         pub fn new(withdraw_rule: AccessRule) -> ComponentAddress {
             Self::internal_new(withdraw_rule, Option::None)
+        }
+
+        pub fn roll(in_bucket: Bucket<FixedResource>) -> Bucket<FixedResource> {
+            in_bucket
         }
 
         pub fn new_with_resource(withdraw_rule: AccessRule, bucket: Bucket) -> ComponentAddress {
