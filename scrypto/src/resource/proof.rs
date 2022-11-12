@@ -5,12 +5,12 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::scrypto_env::{NativeFnInvocation, ScryptoEnv};
+use utils::misc::copy_u8_array;
 
 use crate::abi::*;
 use crate::engine::scrypto_env::{NativeMethodInvocation, ProofMethodInvocation};
 use crate::engine::{api::*, types::*};
 use crate::math::*;
-use crate::misc::*;
 use crate::resource::*;
 use crate::scrypto_env_native_fn;
 

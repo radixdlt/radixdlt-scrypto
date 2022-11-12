@@ -5,6 +5,7 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto_abi::scrypto_type;
 
 use crate::abi::*;
 use crate::misc::*;

@@ -1,5 +1,5 @@
 [package]
-name = "scrypto"
+name = "utils"
 version = "0.7.0"
 edition = "2021"
 
@@ -13,7 +13,6 @@ bech32 = { version = "0.9.0", default-features = false }
 sbor = { path = "../sbor", default-features = false }
 scrypto-abi = { path = "../scrypto-abi", default-features = false }
 scrypto-derive = { path = "../scrypto-derive", default-features = false }
-utils = { path = "../utils", default-features = false }
 forward_ref = { version = "1.0.0"}
 paste = { version = "1.0.7"}
 serde = { version = "1.0.144", default-features = false, optional = true }

@@ -6,13 +6,13 @@ use sbor::rust::string::*;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use utils::misc::copy_u8_array;
 
 use crate::abi::*;
 use crate::buffer::*;
 use crate::core::{DataRef, DataRefMut};
 use crate::crypto::*;
 use crate::engine::{api::*, scrypto_env::*, types::*};
-use crate::misc::*;
 
 /// A scalable key-value map which loads entries on demand.
 pub struct KeyValueStore<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> {

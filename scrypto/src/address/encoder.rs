@@ -2,13 +2,13 @@ use bech32::{self, ToBase32, Variant, WriteBase32};
 use sbor::rust::borrow::Cow;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
+use utils::misc::combine;
 
 use super::entity::EntityType;
 use super::errors::AddressError;
 use super::hrpset::HrpSet;
 use crate::component::{ComponentAddress, PackageAddress};
 use crate::core::{NetworkDefinition, SystemAddress};
-use crate::misc::combine;
 use crate::resource::ResourceAddress;
 
 /// Represents an encoder which understands how to encode Scrypto addresses in Bech32.

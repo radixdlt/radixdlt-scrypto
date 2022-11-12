@@ -31,7 +31,9 @@ pub mod constants;
 /// Scrypto core library, mainly process and transaction context.
 pub mod core;
 /// Scrypto cryptography library.
-pub mod crypto;
+pub mod crypto {
+    pub use utils::crypto::*;
+}
 /// Radix engine APIs.
 pub mod engine;
 /// Scrypto math library.
