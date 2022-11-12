@@ -8,6 +8,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use utils::misc::copy_u8_array;
+use utils::misc::ContextualDisplay;
 
 use crate::abi::*;
 use crate::address::*;
@@ -15,7 +16,6 @@ use crate::component::*;
 use crate::core::*;
 use crate::crypto::{hash, Hash, PublicKey};
 use crate::engine::{api::*, scrypto_env::*, types::*};
-use crate::misc::*;
 use crate::resource::AccessRules;
 
 #[derive(Debug, TypeId, Encode, Decode)]

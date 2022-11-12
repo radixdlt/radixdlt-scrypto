@@ -3,10 +3,10 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::misc::copy_u8_array;
+use utils::misc::ContextualDisplay;
 
 use crate::abi::*;
 use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
-use crate::misc::*;
 
 /// A global address that points a native RE Node owned and exposed by the system, such as epoch manager.
 /// To interact with such nodes, native invocation should be used.

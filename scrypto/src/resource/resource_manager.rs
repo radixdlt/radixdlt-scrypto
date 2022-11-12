@@ -4,12 +4,12 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::misc::copy_u8_array;
+use utils::misc::ContextualDisplay;
 
 use crate::abi::*;
 use crate::address::*;
 use crate::engine::{api::*, scrypto_env::*};
 use crate::math::*;
-use crate::misc::*;
 use crate::resource::*;
 use crate::scrypto_env_native_fn;
 

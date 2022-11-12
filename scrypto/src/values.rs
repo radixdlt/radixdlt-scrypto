@@ -8,6 +8,7 @@ use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use sbor::type_id::*;
 use sbor::{any::*, *};
+use utils::misc::ContextualDisplay;
 
 use crate::abi::*;
 use crate::address::{AddressError, Bech32Encoder};
@@ -17,7 +18,6 @@ use crate::core::*;
 use crate::crypto::*;
 use crate::engine::types::*;
 use crate::math::*;
-use crate::misc::*;
 use crate::resource::*;
 
 pub enum ScryptoValueReplaceError {
