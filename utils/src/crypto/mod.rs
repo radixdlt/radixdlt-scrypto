@@ -1,4 +1,5 @@
 mod any;
+mod blob;
 mod ecdsa_secp256k1;
 mod eddsa_ed25519;
 mod hash;
@@ -6,6 +7,7 @@ mod sha2;
 mod sha3;
 
 pub use self::any::*;
+pub use self::blob::*;
 pub use self::ecdsa_secp256k1::*;
 pub use self::eddsa_ed25519::*;
 pub use self::hash::*;

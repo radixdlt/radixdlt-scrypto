@@ -1010,6 +1010,7 @@ dependencies = [
  "sbor",
  "scrypto",
  "transaction",
+ "utils",
  "wasm-instrument",
  "wasmi",
  "wasmi-validation",
@@ -1606,6 +1607,7 @@ dependencies = [
  "scrypto",
  "secp256k1",
  "serde_with",
+ "utils",
 ]
 
 [[package]]

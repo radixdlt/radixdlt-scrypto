@@ -3,6 +3,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::api::{ScryptoNativeInvocation, SysInvocation};
+use utils::crypto::Blob;
 use utils::misc::copy_u8_array;
 use utils::misc::ContextualDisplay;
 

@@ -10,7 +10,7 @@ use scrypto::buffer::scrypto_encode;
 use scrypto::component::ComponentAddress;
 use scrypto::component::PackageAddress;
 use scrypto::component::{Component, KeyValueStore};
-use scrypto::core::{Blob, Expression, SystemAddress};
+use scrypto::core::{Expression, SystemAddress};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;

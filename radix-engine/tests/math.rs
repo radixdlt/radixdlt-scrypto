@@ -1,8 +1,8 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use scrypto::misc::ContextualDisplay;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use utils::misc::ContextualDisplay;
 
 #[test]
 fn test_integer_basic_ops() {

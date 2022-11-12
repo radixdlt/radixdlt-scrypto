@@ -6,12 +6,12 @@ use scrypto::buffer::scrypto_decode;
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::Hash;
 use scrypto::engine::types::*;
-use scrypto::misc::ContextualDisplay;
 use scrypto::resource::{
     MintParams, ResourceManagerBurnInvocation, ResourceManagerCreateInvocation,
     ResourceManagerMintInvocation,
 };
 use scrypto::values::*;
+use utils::misc::ContextualDisplay;
 
 use crate::errors::*;
 use crate::model::*;

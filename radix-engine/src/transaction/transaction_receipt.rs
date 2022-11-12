@@ -1,9 +1,9 @@
 use colored::*;
 use scrypto::address::{AddressDisplayContext, NO_NETWORK};
 use scrypto::core::SystemAddress;
-use scrypto::misc::ContextualDisplay;
 use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
 use transaction::model::*;
+use utils::misc::ContextualDisplay;
 
 use crate::engine::{RejectionError, ResourceChange, RuntimeError};
 use crate::fee::FeeSummary;

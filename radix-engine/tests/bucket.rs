@@ -2,9 +2,9 @@ use radix_engine::engine::*;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::{BucketError, ResourceOperationError};
 use radix_engine::types::*;
-use scrypto::misc::ContextualDisplay;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use utils::misc::ContextualDisplay;
 
 fn test_bucket_internal(method_name: &str) {
     // Arrange

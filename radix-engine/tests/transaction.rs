@@ -3,11 +3,11 @@ use radix_engine::engine::RejectionError;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use scrypto::core::Blob;
-use scrypto::misc::ContextualDisplay;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
+use utils::crypto::Blob;
+use utils::misc::ContextualDisplay;
 
 #[test]
 fn test_manifest_with_non_existent_resource() {

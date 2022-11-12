@@ -21,7 +21,7 @@ pub use scrypto::component::{
 };
 pub use scrypto::constants::*;
 pub use scrypto::core::{
-    Blob, EpochManagerCreateInvocation, EpochManagerGetCurrentEpochInvocation,
+    EpochManagerCreateInvocation, EpochManagerGetCurrentEpochInvocation,
     EpochManagerSetEpochInvocation, Expression, NetworkDefinition, ScryptoActor, SystemAddress,
 };
 pub use scrypto::crypto::{
@@ -58,6 +58,7 @@ pub use scrypto::resource::{
 };
 pub use scrypto::values::{ScryptoValue, ScryptoValueReplaceError};
 use std::fmt::Debug;
+pub use utils::crypto::Blob;
 
 // methods and macros
 use crate::engine::Invocation;
