@@ -1,3 +1,4 @@
+use radix_engine_lib::resource::ResourceAddress;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;

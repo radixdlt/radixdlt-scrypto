@@ -1,19 +1,19 @@
 #[macro_export]
 macro_rules! construct_address {
     (EntityType::Resource, $($bytes:expr),*) => {
-        ::scrypto::resource::ResourceAddress::Normal([$($bytes),*])
+        ::radix_engine_lib::resource::ResourceAddress::Normal([$($bytes),*])
     };
     (EntityType::Package, $($bytes:expr),*) => {
-        ::scrypto::component::PackageAddress::Normal([$($bytes),*])
+        ::radix_engine_lib::component::PackageAddress::Normal([$($bytes),*])
     };
     (EntityType::NormalComponent, $($bytes:expr),*) => {
-        ::scrypto::component::ComponentAddress::Normal([$($bytes),*])
+        ::radix_engine_lib::component::ComponentAddress::Normal([$($bytes),*])
     };
     (EntityType::AccountComponent, $($bytes:expr),*) => {
-        ::scrypto::component::ComponentAddress::Account([$($bytes),*])
+        ::radix_engine_lib::component::ComponentAddress::Account([$($bytes),*])
     };
     (EntityType::EpochManager, $($bytes:expr),*) => {
-        ::scrypto::core::SystemAddress::EpochManager([$($bytes),*])
+        ::radix_engine_lib::component::SystemAddress::EpochManager([$($bytes),*])
     };
 }
 

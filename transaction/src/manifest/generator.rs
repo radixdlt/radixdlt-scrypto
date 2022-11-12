@@ -1,3 +1,7 @@
+use radix_engine_lib::component::ComponentAddress;
+use radix_engine_lib::component::PackageAddress;
+use radix_engine_lib::component::SystemAddress;
+use radix_engine_lib::resource::ResourceAddress;
 use sbor::any::{encode_any, Value};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::HashMap;
@@ -7,15 +11,13 @@ use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
-use scrypto::component::ComponentAddress;
-use scrypto::component::PackageAddress;
 use scrypto::component::{Component, KeyValueStore};
-use scrypto::core::{Expression, SystemAddress};
+use scrypto::core::Expression;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{
-    MintParams, NonFungibleAddress, NonFungibleId, ResourceAddress,
+    MintParams, NonFungibleAddress, NonFungibleId,
     ResourceManagerBucketBurnInvocation, ResourceManagerCreateInvocation,
     ResourceManagerMintInvocation, Vault,
 };

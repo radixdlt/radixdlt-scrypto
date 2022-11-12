@@ -1,3 +1,6 @@
+use radix_engine_lib::component::ComponentAddress;
+use radix_engine_lib::component::PackageAddress;
+use radix_engine_lib::resource::ResourceAddress;
 use sbor::describe::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
@@ -10,7 +13,6 @@ use sbor::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
 use scrypto::buffer::*;
-use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::constants::*;
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
@@ -22,7 +24,7 @@ use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
 use scrypto::resource::{
     MintParams, Mutability, ResourceManagerCreateInvocation, ResourceMethodAuthKey,
 };
-use scrypto::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
+use scrypto::resource::{NonFungibleAddress, NonFungibleId};
 use scrypto::resource::{ResourceManagerMintInvocation, ResourceType};
 use scrypto::values::*;
 use scrypto::*;

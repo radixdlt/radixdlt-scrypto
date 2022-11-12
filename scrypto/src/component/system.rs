@@ -1,3 +1,5 @@
+use radix_engine_lib::component::ComponentAddress;
+use radix_engine_lib::component::PackageAddress;
 use crate::abi::BlueprintAbi;
 use crate::buffer::*;
 use crate::component::*;

@@ -1,14 +1,16 @@
 use sbor::rust::vec::Vec;
 
-use crate::component::{ComponentAddress, PackageAddress};
-use crate::core::{NetworkDefinition, SystemAddress};
-use crate::resource::ResourceAddress;
+use crate::core::{NetworkDefinition};
 
 use super::entity::EntityType;
 use super::errors::AddressError;
 use super::hrpset::HrpSet;
 
 use bech32::{self, FromBase32, Variant};
+use radix_engine_lib::component::ComponentAddress;
+use radix_engine_lib::component::PackageAddress;
+use radix_engine_lib::component::SystemAddress;
+use radix_engine_lib::resource::ResourceAddress;
 
 /// Represents a decoder which understands how to decode Scrypto addresses in Bech32.
 pub struct Bech32Decoder {
@@ -33,9 +35,12 @@ impl Bech32Decoder {
         &self,
         package_address: &str,
     ) -> Result<PackageAddress, AddressError> {
+        todo!()
+        /*
         Ok(PackageAddress::try_from(
             self.validate_and_decode(package_address)?.as_slice(),
         )?)
+         */
     }
 
     /// Decodes a system address string from a Bech32 string into a `SystemAddress` and returns an `AddressError` on
@@ -44,9 +49,12 @@ impl Bech32Decoder {
         &self,
         system_address: &str,
     ) -> Result<SystemAddress, AddressError> {
+        todo!()
+        /*
         Ok(SystemAddress::try_from(
             self.validate_and_decode(system_address)?.as_slice(),
         )?)
+         */
     }
 
     /// Decodes a component address string from a Bech32 string into a `ComponentAddress` and returns an `AddressError` on
@@ -55,9 +63,7 @@ impl Bech32Decoder {
         &self,
         component_address: &str,
     ) -> Result<ComponentAddress, AddressError> {
-        Ok(ComponentAddress::try_from(
-            self.validate_and_decode(component_address)?.as_slice(),
-        )?)
+        todo!();
     }
 
     /// Decodes a resource address string from a Bech32 string into a `ResourceAddress` and returns an `AddressError` on
@@ -66,9 +72,12 @@ impl Bech32Decoder {
         &self,
         resource_address: &str,
     ) -> Result<ResourceAddress, AddressError> {
+        todo!();
+        /*
         Ok(ResourceAddress::try_from(
             self.validate_and_decode(resource_address)?.as_slice(),
         )?)
+         */
     }
 
     /// Low level method which performs the Bech32 validation and decoding of the data.

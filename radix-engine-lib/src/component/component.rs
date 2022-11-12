@@ -3,6 +3,7 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use utils::crypto::{hash, PublicKey};
 use utils::misc::{copy_u8_array, ContextualDisplay};
 
 use crate::abi::*;
@@ -87,6 +88,19 @@ impl ComponentAddress {
         let bytes = hex::decode(hex_str).map_err(|_| AddressError::HexDecodingError)?;
 
         Self::try_from(bytes.as_ref())
+    }
+
+    pub fn virtual_account_from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> ComponentAddress {
+        match public_key.clone().into() {
+            PublicKey::EcdsaSecp256k1(public_key) => {
+                ComponentAddress::EcdsaSecp256k1VirtualAccount(
+                    hash(public_key.to_vec()).lower_26_bytes(),
+                )
+            }
+            PublicKey::EddsaEd25519(public_key) => ComponentAddress::EddsaEd25519VirtualAccount(
+                hash(public_key.to_vec()).lower_26_bytes(),
+            ),
+        }
     }
 }
 

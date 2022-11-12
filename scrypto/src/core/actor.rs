@@ -1,3 +1,4 @@
+use radix_engine_lib::component::PackageAddress;
 use sbor::rust::string::String;
 use sbor::*;
 

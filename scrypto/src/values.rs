@@ -19,6 +19,9 @@ use crate::crypto::*;
 use crate::engine::types::*;
 use crate::math::*;
 use crate::resource::*;
+use radix_engine_lib::component::{ComponentAddress, SystemAddress};
+use radix_engine_lib::component::PackageAddress;
+use radix_engine_lib::resource::ResourceAddress;
 
 pub enum ScryptoValueReplaceError {
     ProofIdNotFound(ProofId),
@@ -271,11 +274,11 @@ pub enum ScryptoCustomValueCheckError {
     UnknownTypeId(u8),
     InvalidDecimal(ParseDecimalError),
     InvalidPreciseDecimal(ParsePreciseDecimalError),
-    InvalidPackageAddress(AddressError),
+    InvalidPackageAddress(radix_engine_lib::address::AddressError),
     InvalidComponent(ParseComponentError),
-    InvalidComponentAddress(AddressError),
-    InvalidSystemAddress(AddressError),
-    InvalidResourceAddress(AddressError),
+    InvalidComponentAddress(radix_engine_lib::address::AddressError),
+    InvalidSystemAddress(radix_engine_lib::address::AddressError),
+    InvalidResourceAddress(radix_engine_lib::address::AddressError),
     InvalidHash(ParseHashError),
     InvalidEcdsaSecp256k1PublicKey(ParseEcdsaSecp256k1PublicKeyError),
     InvalidEcdsaSecp256k1Signature(ParseEcdsaSecp256k1SignatureError),
@@ -723,6 +726,8 @@ impl ScryptoValueFormatter {
         match scrypto_type.unwrap() {
             // Global address types
             ScryptoType::PackageAddress => {
+                todo!()
+                /*
                 let value = PackageAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?;
                 f.write_str("PackageAddress(\"")?;
@@ -730,8 +735,11 @@ impl ScryptoValueFormatter {
                     .format(f, context.bech32_encoder)
                     .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?;
                 f.write_str("\")")?;
+                 */
             }
             ScryptoType::ComponentAddress => {
+                panic!();
+                /*
                 let value = ComponentAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
                 f.write_str("ComponentAddress(\"")?;
@@ -739,8 +747,11 @@ impl ScryptoValueFormatter {
                     .format(f, context.bech32_encoder)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
                 f.write_str("\")")?;
+                 */
             }
             ScryptoType::ResourceAddress => {
+                panic!();
+                /*
                 let value = ResourceAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
                 f.write_str("ResourceAddress(\"")?;
@@ -748,8 +759,11 @@ impl ScryptoValueFormatter {
                     .format(f, context.bech32_encoder)
                     .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
                 f.write_str("\")")?;
+                 */
             }
             ScryptoType::SystemAddress => {
+                panic!();
+                /*
                 let value = SystemAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidSystemAddress)?;
                 f.write_str("SystemAddress(\"")?;
@@ -757,6 +771,7 @@ impl ScryptoValueFormatter {
                     .format(f, context.bech32_encoder)
                     .map_err(ScryptoCustomValueCheckError::InvalidSystemAddress)?;
                 f.write_str("\")")?;
+                 */
             }
             // RE node types
             ScryptoType::Component => {

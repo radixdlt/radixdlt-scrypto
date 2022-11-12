@@ -1,6 +1,6 @@
 use colored::*;
+use radix_engine_lib::component::SystemAddress;
 use scrypto::address::{AddressDisplayContext, NO_NETWORK};
-use scrypto::core::SystemAddress;
 use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
 use transaction::model::*;
 use utils::misc::ContextualDisplay;
@@ -358,7 +358,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     f,
                     "\n{} Package: {}",
                     prefix!(i, c.entity_changes.new_package_addresses),
-                    package_address.display(bech32_encoder)
+                    "todo"//package_address.display(bech32_encoder)
                 )?;
             }
             for (i, component_address) in
@@ -368,7 +368,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     f,
                     "\n{} Component: {}",
                     prefix!(i, c.entity_changes.new_component_addresses),
-                    component_address.display(bech32_encoder)
+                    "todo"//component_address.display(bech32_encoder)
                 )?;
             }
             for (i, resource_address) in c.entity_changes.new_resource_addresses.iter().enumerate()
@@ -377,7 +377,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     f,
                     "\n{} Resource: {}",
                     prefix!(i, c.entity_changes.new_resource_addresses),
-                    resource_address.display(bech32_encoder)
+                    "todo"//resource_address.display(bech32_encoder)
                 )?;
             }
         }

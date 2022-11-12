@@ -1,4 +1,8 @@
 use bech32::{self, ToBase32, Variant, WriteBase32};
+use radix_engine_lib::component::ComponentAddress;
+use radix_engine_lib::component::PackageAddress;
+use radix_engine_lib::component::SystemAddress;
+use radix_engine_lib::resource::ResourceAddress;
 use sbor::rust::borrow::Cow;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
@@ -7,9 +11,7 @@ use utils::misc::combine;
 use super::entity::EntityType;
 use super::errors::AddressError;
 use super::hrpset::HrpSet;
-use crate::component::{ComponentAddress, PackageAddress};
-use crate::core::{NetworkDefinition, SystemAddress};
-use crate::resource::ResourceAddress;
+use crate::core::{NetworkDefinition};
 
 /// Represents an encoder which understands how to encode Scrypto addresses in Bech32.
 #[derive(Debug)]

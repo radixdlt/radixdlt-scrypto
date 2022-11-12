@@ -1,3 +1,4 @@
+use radix_engine_lib::component::SystemAddress;
 use crate::constants::GENESIS_CREATION_CREDIT;
 use crate::engine::ScryptoInterpreter;
 use crate::fee::SystemLoanFeeReserve;
@@ -9,7 +10,6 @@ use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig};
 
-use scrypto::core::SystemAddress;
 use scrypto::resource::Bucket;
 use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};

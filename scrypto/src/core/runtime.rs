@@ -1,3 +1,5 @@
+use radix_engine_lib::component::{ComponentAddress, SystemAddress};
+use radix_engine_lib::component::PackageAddress;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::*;

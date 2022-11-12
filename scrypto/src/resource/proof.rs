@@ -1,3 +1,4 @@
+use radix_engine_lib::resource::ResourceAddress;
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;

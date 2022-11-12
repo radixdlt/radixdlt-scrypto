@@ -1,6 +1,7 @@
-use crate::component::{ComponentAddress, PackageAddress};
-use crate::core::SystemAddress;
-use crate::resource::ResourceAddress;
+use radix_engine_lib::component::ComponentAddress;
+use radix_engine_lib::component::PackageAddress;
+use radix_engine_lib::component::SystemAddress;
+use radix_engine_lib::resource::ResourceAddress;
 
 /// A unique identifier used in the addressing of Resource Addresses.
 pub const RESOURCE_ADDRESS_ENTITY_ID: u8 = 0x00;

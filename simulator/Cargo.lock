@@ -1007,6 +1007,7 @@ dependencies = [
  "indexmap",
  "moka",
  "parity-wasm",
+ "radix-engine-lib",
  "sbor",
  "scrypto",
  "transaction",
@@ -1014,6 +1015,25 @@ dependencies = [
  "wasm-instrument",
  "wasmi",
  "wasmi-validation",
+]
+
+[[package]]
+name = "radix-engine-lib"
+version = "0.7.0"
+dependencies = [
+ "bech32",
+ "forward_ref",
+ "hex",
+ "num-bigint",
+ "num-traits",
+ "paste",
+ "sbor",
+ "scrypto-abi",
+ "scrypto-derive",
+ "sha2 0.10.6",
+ "sha3",
+ "strum",
+ "utils",
 ]
 
 [[package]]
@@ -1230,6 +1250,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "paste",
+ "radix-engine-lib",
  "sbor",
  "scrypto-abi",
  "scrypto-derive",
@@ -1603,6 +1624,7 @@ dependencies = [
  "clap",
  "ed25519-dalek",
  "hex",
+ "radix-engine-lib",
  "sbor",
  "scrypto",
  "secp256k1",

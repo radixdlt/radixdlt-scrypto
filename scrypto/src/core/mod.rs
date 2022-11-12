@@ -4,7 +4,6 @@ mod expression;
 mod logger;
 mod network;
 mod runtime;
-mod system;
 
 pub use actor::ScryptoActor;
 pub use data::*;
@@ -15,4 +14,3 @@ pub use runtime::{
     EpochManagerCreateInvocation, EpochManagerGetCurrentEpochInvocation,
     EpochManagerSetEpochInvocation, Runtime,
 };
-pub use system::*;

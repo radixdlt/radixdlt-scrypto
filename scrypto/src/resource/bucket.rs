@@ -1,3 +1,4 @@
+use radix_engine_lib::resource::ResourceAddress;
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
@@ -154,6 +155,7 @@ impl Into<NativeFnInvocation> for BucketCreateProofInvocation {
 pub struct Bucket(pub BucketId);
 
 pub mod sys {
+    use radix_engine_lib::resource::ResourceAddress;
     use crate::resource::bucket::BucketCreateProofInvocation;
     use crate::resource::*;
     use sbor::rust::fmt::Debug;

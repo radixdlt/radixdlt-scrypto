@@ -1,5 +1,7 @@
-use crate::component::{ComponentAddress, PackageAddress};
-use crate::core::SystemAddress;
+use radix_engine_lib::component::ComponentAddress;
+use radix_engine_lib::component::PackageAddress;
+use radix_engine_lib::component::SystemAddress;
+use radix_engine_lib::resource::ResourceAddress;
 use crate::resource::*;
 use crate::{address, construct_address};
 

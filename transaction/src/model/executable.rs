@@ -1,8 +1,9 @@
+use radix_engine_lib::resource::ResourceAddress;
 use sbor::rust::collections::{BTreeSet, HashMap};
 use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::crypto::*;
-use scrypto::resource::{NonFungibleAddress, ResourceAddress};
+use scrypto::resource::{NonFungibleAddress};
 
 use crate::model::*;
 

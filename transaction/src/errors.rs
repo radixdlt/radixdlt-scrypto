@@ -1,7 +1,8 @@
+use radix_engine_lib::component::ComponentAddress;
+use radix_engine_lib::component::PackageAddress;
 use sbor::describe::Type;
 use sbor::rust::string::String;
 use sbor::*;
-use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::engine::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

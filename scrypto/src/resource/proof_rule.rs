@@ -1,3 +1,4 @@
+use radix_engine_lib::resource::ResourceAddress;
 use sbor::describe::{Fields, Variant};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::boxed::Box;

@@ -1,9 +1,10 @@
+use radix_engine_lib::resource::ResourceAddress;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
-use scrypto::resource::{NonFungibleId, ResourceAddress};
+use scrypto::resource::{NonFungibleId};
 use utils::crypto::Blob;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]

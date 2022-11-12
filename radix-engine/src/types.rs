@@ -17,12 +17,16 @@ pub use sbor::{Decode, DecodeError, Encode, Type, TypeId, Value};
 pub use scrypto::abi::{BlueprintAbi, Fn, ScryptoType};
 pub use scrypto::address::{AddressError, Bech32Decoder, Bech32Encoder};
 pub use scrypto::component::{
-    ComponentAddAccessCheckInvocation, ComponentAddress, PackageAddress, PackagePublishInvocation,
+    ComponentAddAccessCheckInvocation, PackagePublishInvocation,
 };
+pub use radix_engine_lib::component::ComponentAddress;
+pub use radix_engine_lib::component::PackageAddress;
+pub use radix_engine_lib::component::SystemAddress;
+pub use radix_engine_lib::resource::ResourceAddress;
 pub use scrypto::constants::*;
 pub use scrypto::core::{
     EpochManagerCreateInvocation, EpochManagerGetCurrentEpochInvocation,
-    EpochManagerSetEpochInvocation, Expression, NetworkDefinition, ScryptoActor, SystemAddress,
+    EpochManagerSetEpochInvocation, Expression, NetworkDefinition, ScryptoActor,
 };
 pub use scrypto::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
@@ -38,7 +42,7 @@ pub use scrypto::resource::{
     BucketGetResourceAddressInvocation, BucketPutInvocation, BucketTakeInvocation,
     BucketTakeNonFungiblesInvocation, MintParams, Mutability, NonFungibleAddress, NonFungibleId,
     ProofCloneInvocation, ProofGetAmountInvocation, ProofGetNonFungibleIdsInvocation,
-    ProofGetResourceAddressInvocation, ProofRule, ResourceAddress, ResourceManagerBurnInvocation,
+    ProofGetResourceAddressInvocation, ProofRule, ResourceManagerBurnInvocation,
     ResourceManagerCreateBucketInvocation, ResourceManagerCreateInvocation,
     ResourceManagerCreateVaultInvocation, ResourceManagerGetMetadataInvocation,
     ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation,

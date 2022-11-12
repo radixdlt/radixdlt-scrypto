@@ -788,12 +788,33 @@ dependencies = [
  "indexmap",
  "moka",
  "parity-wasm",
+ "radix-engine-lib",
  "sbor",
  "scrypto",
  "transaction",
+ "utils",
  "wasm-instrument",
  "wasmi",
  "wasmi-validation",
+]
+
+[[package]]
+name = "radix-engine-lib"
+version = "0.7.0"
+dependencies = [
+ "bech32",
+ "forward_ref",
+ "hex",
+ "num-bigint",
+ "num-traits",
+ "paste",
+ "sbor",
+ "scrypto-abi",
+ "scrypto-derive",
+ "sha2 0.10.2",
+ "sha3",
+ "strum",
+ "utils",
 ]
 
 [[package]]
@@ -929,6 +950,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "paste",
+ "radix-engine-lib",
  "sbor",
  "scrypto-abi",
  "scrypto-derive",
@@ -936,6 +958,7 @@ dependencies = [
  "sha2 0.10.2",
  "sha3",
  "strum",
+ "utils",
 ]
 
 [[package]]
@@ -1251,10 +1274,12 @@ dependencies = [
  "clap",
  "ed25519-dalek",
  "hex",
+ "radix-engine-lib",
  "sbor",
  "scrypto",
  "secp256k1",
  "serde_with",
+ "utils",
 ]
 
 [[package]]
@@ -1289,6 +1314,24 @@ name = "unicode-xid"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "957e51f3646910546462e67d5f7599b9e4fb8acdd304b087a6494730f9eebf04"
+
+[[package]]
+name = "utils"
+version = "0.7.0"
+dependencies = [
+ "bech32",
+ "forward_ref",
+ "hex",
+ "num-bigint",
+ "num-traits",
+ "paste",
+ "sbor",
+ "scrypto-abi",
+ "scrypto-derive",
+ "sha2 0.10.2",
+ "sha3",
+ "strum",
+]
 
 [[package]]
 name = "uuid"
