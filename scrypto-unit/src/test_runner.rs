@@ -3,7 +3,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use radix_engine::constants::*;
 use radix_engine::engine::{Invokable, Kernel, KernelError, ModuleError, ScryptoInterpreter};
 use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
@@ -18,6 +17,7 @@ use radix_engine::types::*;
 use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
+use radix_engine_constants::*;
 use sbor::describe::*;
 use scrypto::dec;
 use scrypto::math::Decimal;
