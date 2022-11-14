@@ -3,9 +3,7 @@ mod auth_zone;
 pub mod bucket;
 mod mint_params;
 mod non_fungible;
-mod non_fungible_address;
 mod non_fungible_data;
-mod non_fungible_id;
 mod proof;
 mod proof_rule;
 mod resource_builder;
@@ -21,9 +19,7 @@ pub use auth_zone::*;
 pub use bucket::*;
 pub use mint_params::MintParams;
 pub use non_fungible::NonFungible;
-pub use non_fungible_address::{NonFungibleAddress, ParseNonFungibleAddressError};
 pub use non_fungible_data::NonFungibleData;
-pub use non_fungible_id::{NonFungibleId, ParseNonFungibleIdError};
 pub use proof::*;
 pub use proof_rule::{
     require, require_all_of, require_amount, require_any_of, require_n_of, AccessRule,

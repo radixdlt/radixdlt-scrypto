@@ -21,7 +21,7 @@ use crate::math::*;
 use crate::resource::*;
 use radix_engine_lib::component::{ComponentAddress, SystemAddress};
 use radix_engine_lib::component::PackageAddress;
-use radix_engine_lib::resource::ResourceAddress;
+use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, ParseNonFungibleAddressError, ParseNonFungibleIdError, ResourceAddress};
 
 pub enum ScryptoValueReplaceError {
     ProofIdNotFound(ProofId),

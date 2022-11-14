@@ -1,4 +1,4 @@
-use radix_engine_lib::resource::ResourceAddress;
+use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
 use sbor::rust::marker::PhantomData;
 
 use crate::borrow_resource_manager;

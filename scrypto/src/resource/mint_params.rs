@@ -1,3 +1,4 @@
+use radix_engine_lib::resource::NonFungibleId;
 use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;
 use sbor::*;

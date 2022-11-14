@@ -1,4 +1,4 @@
-use radix_engine_lib::resource::ResourceAddress;
+use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt;

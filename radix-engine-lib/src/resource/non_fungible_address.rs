@@ -4,6 +4,7 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use utils::crypto::{hash, PublicKey};
 
 use crate::abi::*;
 use crate::resource::*;
@@ -64,6 +65,39 @@ impl TryFrom<&[u8]> for NonFungibleAddress {
 }
 
 impl NonFungibleAddress {
+    pub fn new(resource_address: ResourceAddress, non_fungible_id: NonFungibleId) -> Self {
+        Self {
+            resource_address,
+            non_fungible_id,
+        }
+    }
+
+    /*
+    pub fn from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self {
+        let public_key: PublicKey = public_key.clone().into();
+        match public_key {
+            PublicKey::EcdsaSecp256k1(public_key) => NonFungibleAddress::new(
+                ECDSA_SECP256K1_TOKEN,
+                NonFungibleId::from_bytes(hash(public_key.to_vec()).lower_26_bytes().into()),
+            ),
+            PublicKey::EddsaEd25519(public_key) => NonFungibleAddress::new(
+                EDDSA_ED25519_TOKEN,
+                NonFungibleId::from_bytes(hash(public_key.to_vec()).lower_26_bytes().into()),
+            ),
+        }
+    }
+     */
+
+    /// Returns the resource address.
+    pub fn resource_address(&self) -> ResourceAddress {
+        self.resource_address
+    }
+
+    /// Returns the non-fungible id.
+    pub fn non_fungible_id(&self) -> NonFungibleId {
+        self.non_fungible_id.clone()
+    }
+
     pub fn to_vec(&self) -> Vec<u8> {
         let mut vec = self.resource_address.to_vec();
         let mut other_vec = self.non_fungible_id.to_vec();

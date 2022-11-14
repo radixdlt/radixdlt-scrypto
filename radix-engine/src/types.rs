@@ -23,6 +23,8 @@ pub use radix_engine_lib::component::ComponentAddress;
 pub use radix_engine_lib::component::PackageAddress;
 pub use radix_engine_lib::component::SystemAddress;
 pub use radix_engine_lib::resource::ResourceAddress;
+pub use radix_engine_lib::resource::NonFungibleId;
+pub use radix_engine_lib::resource::NonFungibleAddress;
 pub use scrypto::constants::*;
 pub use scrypto::core::{
     EpochManagerCreateInvocation, EpochManagerGetCurrentEpochInvocation,
@@ -40,7 +42,7 @@ pub use scrypto::resource::{
     AuthZoneCreateProofInvocation, AuthZonePopInvocation, AuthZonePushInvocation,
     BucketCreateProofInvocation, BucketGetAmountInvocation, BucketGetNonFungibleIdsInvocation,
     BucketGetResourceAddressInvocation, BucketPutInvocation, BucketTakeInvocation,
-    BucketTakeNonFungiblesInvocation, MintParams, Mutability, NonFungibleAddress, NonFungibleId,
+    BucketTakeNonFungiblesInvocation, MintParams, Mutability,
     ProofCloneInvocation, ProofGetAmountInvocation, ProofGetNonFungibleIdsInvocation,
     ProofGetResourceAddressInvocation, ProofRule, ResourceManagerBurnInvocation,
     ResourceManagerCreateBucketInvocation, ResourceManagerCreateInvocation,

@@ -12,6 +12,35 @@ use crate::abi::*;
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NonFungibleId(pub Vec<u8>);
 
+impl NonFungibleId {
+    /// Creates a non-fungible ID from an arbitrary byte array.
+    pub fn from_bytes(v: Vec<u8>) -> Self {
+        let mut buf = Vec::with_capacity(512);
+        let mut enc = Encoder::with_static_info(&mut buf);
+        v.encode(&mut enc);
+
+        Self(buf)
+    }
+
+    /// Creates a non-fungible ID from a `u32` number.
+    pub fn from_u32(u: u32) -> Self {
+        let mut buf = Vec::with_capacity(512);
+        let mut enc = Encoder::with_static_info(&mut buf);
+        u.encode(&mut enc);
+
+        Self(buf)
+    }
+
+    /// Creates a non-fungible ID from a `u64` number.
+    pub fn from_u64(u: u64) -> Self {
+        let mut buf = Vec::with_capacity(512);
+        let mut enc = Encoder::with_static_info(&mut buf);
+        u.encode(&mut enc);
+
+        Self(buf)
+    }
+}
+
 //========
 // error
 //========

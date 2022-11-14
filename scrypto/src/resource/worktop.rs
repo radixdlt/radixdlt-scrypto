@@ -1,4 +1,4 @@
-use radix_engine_lib::resource::ResourceAddress;
+use radix_engine_lib::resource::{NonFungibleId, ResourceAddress};
 use crate::engine::scrypto_env::WorktopMethodInvocation;
 use crate::sys_env_native_fn;
 use sbor::rust::collections::BTreeSet;
