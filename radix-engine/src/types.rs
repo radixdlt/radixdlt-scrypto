@@ -25,10 +25,11 @@ pub use radix_engine_lib::component::SystemAddress;
 pub use radix_engine_lib::resource::ResourceAddress;
 pub use radix_engine_lib::resource::NonFungibleId;
 pub use radix_engine_lib::resource::NonFungibleAddress;
+pub use radix_engine_lib::engine::actor::ScryptoActor;
 pub use scrypto::constants::*;
 pub use scrypto::core::{
     EpochManagerCreateInvocation, EpochManagerGetCurrentEpochInvocation,
-    EpochManagerSetEpochInvocation, Expression, ScryptoActor,
+    EpochManagerSetEpochInvocation, Expression,
 };
 pub use scrypto::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,

@@ -4,7 +4,6 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::crypto::{hash, PublicKey};
 
 use crate::abi::*;
 use crate::resource::*;
@@ -71,22 +70,6 @@ impl NonFungibleAddress {
             non_fungible_id,
         }
     }
-
-    /*
-    pub fn from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self {
-        let public_key: PublicKey = public_key.clone().into();
-        match public_key {
-            PublicKey::EcdsaSecp256k1(public_key) => NonFungibleAddress::new(
-                ECDSA_SECP256K1_TOKEN,
-                NonFungibleId::from_bytes(hash(public_key.to_vec()).lower_26_bytes().into()),
-            ),
-            PublicKey::EddsaEd25519(public_key) => NonFungibleAddress::new(
-                EDDSA_ED25519_TOKEN,
-                NonFungibleId::from_bytes(hash(public_key.to_vec()).lower_26_bytes().into()),
-            ),
-        }
-    }
-     */
 
     /// Returns the resource address.
     pub fn resource_address(&self) -> ResourceAddress {

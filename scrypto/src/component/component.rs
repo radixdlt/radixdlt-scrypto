@@ -12,9 +12,8 @@ use scrypto::buffer::scrypto_decode;
 use utils::misc::copy_u8_array;
 
 use crate::abi::*;
-use crate::component::*;
 use crate::core::*;
-use crate::crypto::{hash, Hash, PublicKey};
+use crate::crypto::{Hash};
 use crate::engine::{api::*, scrypto_env::*, types::*};
 use crate::resource::AccessRules;
 

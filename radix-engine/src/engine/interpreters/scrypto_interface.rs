@@ -1,3 +1,4 @@
+use radix_engine_lib::engine::actor::ScryptoActor;
 use crate::engine::{
     Invokable, Kernel, KernelError, LockFlags, NativeInvocation, REActor, RENode, ResolvedFunction,
     ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi,
@@ -9,7 +10,6 @@ use crate::model::{
 };
 use crate::types::ScryptoInvocation;
 use crate::wasm::{WasmEngine, WasmInstance};
-use scrypto::core::ScryptoActor;
 use scrypto::crypto::Hash;
 use scrypto::engine::api::{
     ScryptoNativeInvocation, SysInvokableNative, SysNativeInvokable, Syscalls,

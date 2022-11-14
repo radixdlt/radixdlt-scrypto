@@ -1,3 +1,4 @@
+use radix_engine_lib::engine::actor::ScryptoActor;
 use crate::component::{ComponentAddAccessCheckInvocation, PackagePublishInvocation};
 use crate::crypto::Hash;
 use crate::engine::scrypto_env::NativeFnInvocation;
