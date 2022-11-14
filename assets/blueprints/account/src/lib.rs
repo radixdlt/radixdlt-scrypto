@@ -1,5 +1,62 @@
 use scrypto::prelude::*;
 
+
+struct BucketT3: NoSpecificValidation {}
+struct FixedResource2: NoSpecificValidation {}
+struct PoolResource1: StructValidation {}
+struct PoolResource2: StructValidation {}
+
+struct_resource!(ResourceA, ["pool_resource_a"])
+
+// IN
+blueprint! {
+    pub fn swap<T1, T2>(in_bucket: Bucket<T1>, buck2: Bucket<T2>, ) -> (Bucket<T2>, Bucket<T1>) {
+        (buck2, in_bucket)
+    }
+
+    pub fn ret<T1>(in_bucket: Bucket<T1>) -> Bucket<T1> {
+        in_bucket
+    }
+}
+
+
+// Becomes:
+struct Resource1: NoSpecificValidation {}
+struct Resource2: NoSpecificValidation {}
+struct ResourceA {}
+
+impl StructValdation for ResourceA {
+    const STRUCT_PATH: SchemaPath[] = ["pool_resource_a"];
+}
+
+impl EngineValidation for Bucket<T> {
+    fn get_engine_validations() {
+        EngineValidation::CheckBucketResourceAddressesAgree("A")
+    }
+}
+
+impl blah {
+    pub fn swap(in_bucket: Bucket<Resource1>, buck2: Bucket<Resource2>) -> (Bucket<Resource2>, Bucket<Resource1>) {
+        (buck2, in_bucket)
+    }
+
+    pub fn ret(in_bucket: Bucket<Resource1>) -> Bucket<Resource1> {
+        in_bucket
+    }
+}
+
+blueprint! {
+struct MySwap<A, B> {
+    vault_1: Vault<A>
+    vault_2: Vault<B>,
+    res_address_1: ResourceAddress<A>,
+}
+}
+
+struct<T: ResourceValidation> Bucket<T> {
+    type_data: PhantomData<T>
+}
+
 blueprint! {
     struct Account {
         vaults: KeyValueStore<ResourceAddress, Vault>,
@@ -22,7 +79,7 @@ blueprint! {
             account
         }
 
-        fn internal_new(withdraw_rule: AccessRule, bucket: Option<Bucket>) -> ComponentAddress {
+        fn internal_new(withdraw_rule: AccessRule, bucket: Option<Bucket2<T>>) -> ComponentAddress {
             let mut account = Self {
                 vaults: KeyValueStore::new(),
             }
@@ -45,6 +102,14 @@ blueprint! {
 
         pub fn new(withdraw_rule: AccessRule) -> ComponentAddress {
             Self::internal_new(withdraw_rule, Option::None)
+        }
+
+        pub fn roll<T>(in_bucket: Bucket<T>) -> Bucket<T> {
+            in_bucket
+        }
+
+        pub fn swap<T1, T2>(in_bucket: Bucket<T1>, buck2: Bucket<T2>) -> (Bucket<T2>, Bucket<T1>) {
+            (buck2, in_bucket)
         }
 
         pub fn new_with_resource(withdraw_rule: AccessRule, bucket: Bucket) -> ComponentAddress {
