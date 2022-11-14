@@ -1,4 +1,3 @@
-use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
 use crate::engine::Track;
 use crate::engine::*;
 use crate::fee::{FeeReserve, FeeTable, SystemLoanFeeReserve};
@@ -7,6 +6,9 @@ use crate::model::*;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
+use radix_engine_constants::{
+    DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
+};
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 

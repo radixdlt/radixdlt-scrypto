@@ -24,4 +24,5 @@ members = [
     "transaction",
     "radix-engine",
     "radix-engine-stores",
+    "radix-engine-constants",
 ]

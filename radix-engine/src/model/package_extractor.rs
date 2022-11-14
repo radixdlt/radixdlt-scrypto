@@ -1,9 +1,9 @@
-use crate::constants::EXTRACT_ABI_CREDIT;
 use crate::engine::NopWasmRuntime;
 use crate::fee::SystemLoanFeeReserve;
 use crate::model::InvokeError;
 use crate::types::*;
 use crate::wasm::*;
+use radix_engine_constants::EXTRACT_ABI_CREDIT;
 
 #[derive(Debug)]
 pub enum ExtractAbiError {
