@@ -1,7 +1,7 @@
+use radix_engine_lib::resource::AccessRule;
+use radix_engine_lib::resource::AccessRule::*;
 use crate::model::ResourceMethodRule::{Protected, Public};
-use crate::model::{convert, InvokeError, MethodAuthorization};
-use crate::model::{NonFungible, Resource, ResourceManagerError};
-use crate::types::AccessRule::*;
+use crate::model::{convert, InvokeError, MethodAuthorization, NonFungible, Resource, ResourceManagerError};
 use crate::types::ResourceMethodAuthKey::*;
 use crate::types::*;
 

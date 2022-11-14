@@ -1,11 +1,11 @@
-use radix_engine_lib::resource::{NonFungibleId, ResourceAddress};
+use radix_engine_lib::resource::{AccessRule, NonFungibleId, ResourceAddress};
+use radix_engine_lib::rule;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 
 use crate::math::*;
 use crate::resource::*;
-use crate::rule;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;

@@ -1,4 +1,6 @@
 use radix_engine_lib::component::SystemAddress;
+use radix_engine_lib::resource::AccessRule;
+use radix_engine_lib::rule;
 use crate::constants::GENESIS_CREATION_CREDIT;
 use crate::engine::ScryptoInterpreter;
 use crate::fee::SystemLoanFeeReserve;

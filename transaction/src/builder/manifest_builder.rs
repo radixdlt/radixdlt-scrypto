@@ -2,7 +2,9 @@ use radix_engine_lib::address::Bech32Decoder;
 use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
+use radix_engine_lib::resource::{require, NonFungibleAddress, NonFungibleId, ResourceAddress, LOCKED, AccessRule, AccessRuleNode};
+use radix_engine_lib::access_rule_node;
+use radix_engine_lib::rule;
 use sbor::describe::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
@@ -19,8 +21,7 @@ use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::ResourceManagerBurnInvocation;
-use scrypto::resource::{require, LOCKED};
-use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
+use scrypto::resource::{Burn, Mint, Withdraw};
 use scrypto::resource::{
     MintParams, Mutability, ResourceManagerCreateInvocation, ResourceMethodAuthKey,
 };

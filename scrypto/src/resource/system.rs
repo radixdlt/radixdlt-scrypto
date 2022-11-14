@@ -1,4 +1,4 @@
-use radix_engine_lib::resource::ResourceAddress;
+use radix_engine_lib::resource::{AccessRule, ResourceAddress};
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 

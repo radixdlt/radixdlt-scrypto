@@ -1,4 +1,4 @@
-use radix_engine_lib::resource::{NonFungibleId, ResourceAddress};
+use radix_engine_lib::resource::{AccessRule, NonFungibleId, ResourceAddress};
 use sbor::rust::collections::HashMap;
 use sbor::rust::fmt;
 use sbor::rust::string::String;

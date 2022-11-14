@@ -92,6 +92,12 @@ pub enum SoftResourceOrNonFungible {
     Dynamic(SchemaPath),
 }
 
+impl From<NonFungibleAddress> for SoftResourceOrNonFungible {
+    fn from(address: NonFungibleAddress) -> Self {
+        SoftResourceOrNonFungible::StaticNonFungible(address)
+    }
+}
+
 impl From<ResourceAddress> for SoftResourceOrNonFungible {
     fn from(resource_address: ResourceAddress) -> Self {
         SoftResourceOrNonFungible::StaticResource(resource_address)
@@ -330,7 +336,7 @@ macro_rules! access_and_or {
 #[macro_export]
 macro_rules! access_rule_node {
     // Handle leaves
-    ($rule:ident $args:tt) => {{ ::scrypto::resource::AccessRuleNode::ProofRule($rule $args) }};
+    ($rule:ident $args:tt) => {{ ::radix_engine_lib::resource::AccessRuleNode::ProofRule($rule $args) }};
 
     // Handle group
     (($($tt:tt)+)) => {{ access_rule_node!($($tt)+) }};
@@ -356,12 +362,12 @@ pub enum AccessRule {
 #[macro_export]
 macro_rules! rule {
     (allow_all) => {{
-        ::scrypto::resource::AccessRule::AllowAll
+        ::radix_engine_lib::resource::AccessRule::AllowAll
     }};
     (deny_all) => {{
-        ::scrypto::resource::AccessRule::DenyAll
+        ::radix_engine_lib::resource::AccessRule::DenyAll
     }};
     ($($tt:tt)+) => {{
-        ::scrypto::resource::AccessRule::Protected(access_rule_node!($($tt)+))
+        ::radix_engine_lib::resource::AccessRule::Protected(access_rule_node!($($tt)+))
     }};
 }

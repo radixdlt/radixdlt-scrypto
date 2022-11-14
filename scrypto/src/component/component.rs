@@ -1,5 +1,6 @@
 use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
+use radix_engine_lib::resource::AccessRules;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
@@ -15,7 +16,6 @@ use crate::abi::*;
 use crate::core::*;
 use crate::crypto::{Hash};
 use crate::engine::{api::*, scrypto_env::*, types::*};
-use crate::resource::AccessRules;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ComponentAddAccessCheckInvocation {
