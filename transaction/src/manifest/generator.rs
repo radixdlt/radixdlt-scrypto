@@ -4,6 +4,7 @@ use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use sbor::*;
 use scrypto::address::Bech32Decoder;
+use scrypto::args;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
 use scrypto::component::ComponentAddress;
@@ -19,12 +20,19 @@ use scrypto::resource::{
     ResourceManagerBucketBurnInvocation, ResourceManagerCreateInvocation,
     ResourceManagerMintInvocation, Vault,
 };
-use scrypto::{args, args_from_value_vec};
 
 use crate::errors::*;
 use crate::manifest::ast;
 use crate::model::*;
 use crate::validation::*;
+
+#[macro_export]
+macro_rules! args_from_value_vec {
+    ($args: expr) => {{
+        let input_struct = ::sbor::SborValue::Struct { fields: $args };
+        ::sbor::encode_any(&input_struct)
+    }};
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {

@@ -1,3 +1,6 @@
+use crate::data::*;
+use sbor::TypeId;
+
 /// Creates a `Decimal` from literals.
 ///
 /// # Example
@@ -90,6 +93,18 @@ macro_rules! pdec {
     };
 }
 
+#[macro_export]
+macro_rules! count {
+    () => {0usize};
+    ($a:expr) => {1usize};
+    ($a:expr, $($rest:expr),*) => {1usize + ::scrypto::count!($($rest),*)};
+}
+
+// TODO: remove after `&self` parameter is added `Encode::encode_type_id()`.
+pub fn get_type_id<T: TypeId<ScryptoCustomTypeId>>(_v: &T) -> ScryptoTypeId {
+    T::type_id()
+}
+
 /// Constructs argument list for Scrypto function/method invocation.
 ///
 /// # Example
@@ -101,41 +116,18 @@ macro_rules! pdec {
 #[macro_export]
 macro_rules! args {
     ($($args: expr),*) => {{
-        let mut fields = Vec::new();
+        use ::sbor::Encode;
+        let mut buf = ::sbor::rust::vec::Vec::new();
+        let mut encoder = ::scrypto::data::ScryptoEncoder::new(&mut buf);
+        encoder.write_type_id(::scrypto::data::ScryptoTypeId::Struct);
+        // Hack: stringify to skip ownership move semantics
+        encoder.write_size(::scrypto::count!($(stringify!($args)),*));
         $(
-            let encoded = ::scrypto::buffer::scrypto_encode(&$args);
-            fields.push(::sbor::decode_any::<::scrypto::data::ScryptoCustomTypeId, ::scrypto::data::ScryptoCustomValue>(&encoded).unwrap());
+            let arg = $args;
+            encoder.write_type_id(::scrypto::get_type_id(&arg));
+            arg.encode_value(&mut encoder);
         )*
-        let input_struct = ::sbor::SborValue::Struct {
-            fields,
-        };
-        ::sbor::encode_any::<::scrypto::data::ScryptoCustomTypeId, ::scrypto::data::ScryptoCustomValue>(&input_struct)
-    }};
-}
-
-#[macro_export]
-macro_rules! args_from_value_vec {
-    ($args: expr) => {{
-        let input_struct = ::sbor::SborValue::Struct { fields: $args };
-        ::sbor::encode_any(&input_struct)
-    }};
-}
-
-#[macro_export]
-macro_rules! args_from_bytes_vec {
-    ($args: expr) => {{
-        let mut fields = Vec::new();
-        for arg in $args {
-            fields.push(
-                ::sbor::decode_any::<
-                    ::scrypto::data::ScryptoCustomTypeId,
-                    ::scrypto::data::ScryptoCustomValue,
-                >(&arg)
-                .unwrap(),
-            );
-        }
-        let input_struct = ::sbor::SborValue::Struct { fields };
-        ::sbor::encode_any(&input_struct)
+        buf
     }};
 }
 
@@ -700,4 +692,36 @@ macro_rules! scrypto_type {
             }
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::buffer::scrypto_encode;
+    use crate::resource::NonFungibleId;
+    use crate::scrypto;
+    use sbor::rust::borrow::ToOwned;
+    use sbor::rust::collections::BTreeSet;
+
+    #[test]
+    fn test_args() {
+        #[scrypto(Encode, Decode, TypeId)]
+        struct A {
+            a: u32,
+            b: String,
+        }
+
+        assert_eq!(
+            args!(1u32, "abc"),
+            scrypto_encode(&A {
+                a: 1,
+                b: "abc".to_owned(),
+            })
+        )
+    }
+
+    #[test]
+    fn test_args_with_non_fungible_id() {
+        let id = NonFungibleId::from_u32(1);
+        let _x = args!(BTreeSet::from([id]));
+    }
 }

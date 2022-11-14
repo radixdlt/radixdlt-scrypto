@@ -8,7 +8,6 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::data::IndexedScryptoValue;
 use crate::data::*;
 use crate::scrypto_type;
 
@@ -48,7 +47,6 @@ impl NonFungibleId {
 pub enum ParseNonFungibleIdError {
     InvalidHex(String),
     InvalidValue,
-    ContainsOwnedNodes,
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -65,18 +63,38 @@ impl fmt::Display for ParseNonFungibleIdError {
 // binary
 //========
 
+fn validate_id(slice: &[u8]) -> Result<(), DecodeError> {
+    let mut decoder = ScryptoDecoder::new(slice);
+    let type_id = decoder.read_type_id()?;
+    match type_id {
+        // TODO: add more allowed types as agreed
+        SborTypeId::U32 => {
+            decoder.read_slice(4)?;
+        }
+        SborTypeId::U64 => {
+            decoder.read_slice(8)?;
+        }
+        SborTypeId::Array => {
+            let element_type_id = decoder.read_type_id()?;
+            if element_type_id == SborTypeId::U8 {
+                let size = decoder.read_size()?;
+                decoder.read_slice(size)?;
+            } else {
+                return Err(DecodeError::UnexpectedTypeId(element_type_id.as_u8()));
+            }
+        }
+        type_id => return Err(DecodeError::UnexpectedTypeId(type_id.as_u8())),
+    }
+
+    decoder.check_end()
+}
+
 impl TryFrom<&[u8]> for NonFungibleId {
     type Error = ParseNonFungibleIdError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        let value = IndexedScryptoValue::from_slice(slice)
-            .map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
-        // TODO: limit types
-        if value.value_count() != 0 {
-            return Err(ParseNonFungibleIdError::ContainsOwnedNodes);
-        }
-
-        Ok(Self(value.raw))
+        validate_id(slice).map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
+        Ok(Self(slice.to_vec()))
     }
 }
 
