@@ -90,7 +90,6 @@ pub fn decompile_instruction<F: fmt::Write>(
 ) -> Result<(), DecompileError> {
     match instruction {
         Instruction::TakeFromWorktop { resource_address } => {
-            /*
             let bucket_id = context
                 .id_allocator
                 .new_bucket_id()
@@ -103,17 +102,11 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
             context.bucket_names.insert(bucket_id, name);
-             */
-
-            todo!()
         }
         Instruction::TakeFromWorktopByAmount {
             amount,
             resource_address,
         } => {
-
-            todo!()
-            /*
             let bucket_id = context
                 .id_allocator
                 .new_bucket_id()
@@ -127,15 +120,11 @@ pub fn decompile_instruction<F: fmt::Write>(
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
-             */
         }
         Instruction::TakeFromWorktopByIds {
             ids,
             resource_address,
         } => {
-            todo!()
-
-            /*
             let bucket_id = context
                 .id_allocator
                 .new_bucket_id()
@@ -152,7 +141,6 @@ pub fn decompile_instruction<F: fmt::Write>(
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
-             */
         }
         Instruction::ReturnToWorktop { bucket_id } => {
             write!(
@@ -166,37 +154,27 @@ pub fn decompile_instruction<F: fmt::Write>(
             )?;
         }
         Instruction::AssertWorktopContains { resource_address } => {
-            todo!()
-
-            /*
             write!(
                 f,
                 "ASSERT_WORKTOP_CONTAINS ResourceAddress(\"{}\");",
                 resource_address.display(context.bech32_encoder)
             )?;
-             */
         }
         Instruction::AssertWorktopContainsByAmount {
             amount,
             resource_address,
         } => {
-            todo!()
-
-            /*
             write!(
                 f,
                 "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\");",
                 amount,
                 resource_address.display(context.bech32_encoder)
             )?;
-             */
         }
         Instruction::AssertWorktopContainsByIds {
             ids,
             resource_address,
         } => {
-            todo!()
-            /*
             write!(
                 f,
                 "ASSERT_WORKTOP_CONTAINS_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\");",
@@ -206,7 +184,6 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .join(", "),
                 resource_address.display(context.bech32_encoder)
             )?;
-             */
         }
         Instruction::PopFromAuthZone => {
             let proof_id = context
@@ -232,9 +209,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str("CLEAR_AUTH_ZONE;")?;
         }
         Instruction::CreateProofFromAuthZone { resource_address } => {
-            todo!()
-
-            /*
             let proof_id = context
                 .id_allocator
                 .new_proof_id()
@@ -247,15 +221,11 @@ pub fn decompile_instruction<F: fmt::Write>(
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
-             */
         }
         Instruction::CreateProofFromAuthZoneByAmount {
             amount,
             resource_address,
         } => {
-
-            todo!()
-            /*
             let proof_id = context
                 .id_allocator
                 .new_proof_id()
@@ -269,16 +239,11 @@ pub fn decompile_instruction<F: fmt::Write>(
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
-             */
         }
         Instruction::CreateProofFromAuthZoneByIds {
             ids,
             resource_address,
         } => {
-
-            todo!()
-
-            /*
             let proof_id = context
                 .id_allocator
                 .new_proof_id()
@@ -294,7 +259,6 @@ pub fn decompile_instruction<F: fmt::Write>(
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
-             */
         }
         Instruction::CreateProofFromBucket { bucket_id } => {
             let proof_id = context
@@ -378,9 +342,8 @@ pub fn decompile_call_function<F: fmt::Write>(
         "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
         match &function_ident.package {
             ScryptoPackage::Global(package_address) => {
-                "test"
+                package_address.display(context.bech32_encoder)
             }
-                //package_address.display(context.bech32_encoder),
         },
         function_ident.blueprint_name,
         function_ident.function_name,
@@ -451,13 +414,10 @@ pub fn decompile_call_scrypto_method<F: fmt::Write>(
 ) -> Result<(), DecompileError> {
     let receiver = match method_ident.receiver {
         ScryptoReceiver::Global(address) => {
-            todo!()
-            /*
             format!(
                 "ComponentAddress(\"{}\")",
                 address.display(context.bech32_encoder)
             )
-             */
         },
         ScryptoReceiver::Component(id) => {
             format!("Component(\"{}\")", format_id(&id))
@@ -483,15 +443,12 @@ pub fn decompile_call_native_method<F: fmt::Write>(
         (RENodeId::Global(GlobalAddress::Resource(resource_address)), "mint") => {
             if let Ok(input) = scrypto_decode::<ResourceManagerMintInvocation>(&args) {
                 if let MintParams::Fungible { amount } = input.mint_params {
-                    todo!();
-                    /*
                     write!(
                         f,
                         "MINT_FUNGIBLE ResourceAddress(\"{}\") Decimal(\"{}\");",
                         resource_address.display(context.bech32_encoder),
                         amount,
                     )?;
-                     */
                 }
                 return Ok(());
             }
@@ -535,20 +492,16 @@ fn format_node_id(node_id: &RENodeId, context: &mut DecompilationContext) -> Str
     match node_id {
         RENodeId::Global(global_address) => match global_address {
             GlobalAddress::Component(address) => {
-                todo!()
-                //format!("Global(\"{}\")", address.display(context.bech32_encoder))
+                format!("Global(\"{}\")", address.display(context.bech32_encoder))
             }
             GlobalAddress::Package(address) => {
-                todo!()
-                //format!("Global(\"{}\")", address.display(context.bech32_encoder))
+                format!("Global(\"{}\")", address.display(context.bech32_encoder))
             }
             GlobalAddress::Resource(address) => {
-                todo!()
-                //format!("Global(\"{}\")", address.display(context.bech32_encoder))
+                format!("Global(\"{}\")", address.display(context.bech32_encoder))
             }
             GlobalAddress::System(address) => {
-                todo!()
-                //format!("Global(\"{}\")", address.display(context.bech32_encoder))
+                format!("Global(\"{}\")", address.display(context.bech32_encoder))
             }
         },
         RENodeId::Bucket(id) => match context.bucket_names.get(id) {

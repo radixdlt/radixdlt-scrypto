@@ -358,7 +358,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     f,
                     "\n{} Package: {}",
                     prefix!(i, c.entity_changes.new_package_addresses),
-                    "todo"//package_address.display(bech32_encoder)
+                    package_address.display(bech32_encoder)
                 )?;
             }
             for (i, component_address) in
@@ -368,7 +368,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     f,
                     "\n{} Component: {}",
                     prefix!(i, c.entity_changes.new_component_addresses),
-                    "todo"//component_address.display(bech32_encoder)
+                    component_address.display(bech32_encoder)
                 )?;
             }
             for (i, resource_address) in c.entity_changes.new_resource_addresses.iter().enumerate()
@@ -377,7 +377,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     f,
                     "\n{} Resource: {}",
                     prefix!(i, c.entity_changes.new_resource_addresses),
-                    "todo"//resource_address.display(bech32_encoder)
+                    resource_address.display(bech32_encoder)
                 )?;
             }
         }
