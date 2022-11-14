@@ -8,7 +8,6 @@ use utils::misc::copy_u8_array;
 use utils::misc::ContextualDisplay;
 
 use crate::abi::*;
-use crate::address::*;
 use crate::engine::{api::*, scrypto_env::*};
 use crate::math::*;
 use crate::resource::*;

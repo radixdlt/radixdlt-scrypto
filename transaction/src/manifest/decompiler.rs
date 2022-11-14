@@ -1,9 +1,9 @@
+use radix_engine_lib::address::{AddressError, Bech32Encoder};
+use radix_engine_lib::core::NetworkDefinition;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use sbor::{encode_any, Value};
-use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::NetworkDefinition;
 use scrypto::crypto::Hash;
 use scrypto::engine::types::*;
 use scrypto::resource::{
@@ -579,11 +579,11 @@ fn format_id(id: &(Hash, u32)) -> String {
 
 #[cfg(test)]
 mod tests {
+    use radix_engine_lib::core::NetworkDefinition;
     use super::*;
     use crate::manifest::*;
     use sbor::*;
     use scrypto::buffer::scrypto_encode;
-    use scrypto::core::NetworkDefinition;
     use scrypto::resource::AccessRule;
     use scrypto::resource::Mutability;
     use scrypto::resource::ResourceMethodAuthKey;

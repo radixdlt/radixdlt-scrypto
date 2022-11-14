@@ -1,6 +1,6 @@
+use radix_engine_lib::core::NetworkDefinition;
 use sbor::rust::collections::{BTreeSet, HashSet};
 use sbor::Decode;
-use scrypto::core::NetworkDefinition;
 
 use scrypto::buffer::scrypto_decode;
 use scrypto::constants::*;

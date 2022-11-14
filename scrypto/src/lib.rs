@@ -20,8 +20,6 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 pub mod abi {
     pub use scrypto_abi::*;
 }
-/// Scrypto address.
-pub mod address;
 /// Scrypto data encoding, decoding and exchange.
 pub mod buffer;
 /// Scrypto component library.

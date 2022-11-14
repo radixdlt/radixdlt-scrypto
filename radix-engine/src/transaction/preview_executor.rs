@@ -1,4 +1,4 @@
-use scrypto::core::NetworkDefinition;
+use radix_engine_lib::core::NetworkDefinition;
 use transaction::errors::TransactionValidationError;
 use transaction::model::PreviewIntent;
 use transaction::validation::IntentHashManager;

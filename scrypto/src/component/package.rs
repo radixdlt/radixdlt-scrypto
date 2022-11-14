@@ -9,7 +9,6 @@ use utils::misc::copy_u8_array;
 use utils::misc::ContextualDisplay;
 
 use crate::abi::*;
-use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
 use crate::core::*;
 use crate::engine::scrypto_env::{
     NativeFnInvocation, NativeFunctionInvocation, PackageFunctionInvocation,

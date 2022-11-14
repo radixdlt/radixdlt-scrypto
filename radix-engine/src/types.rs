@@ -15,7 +15,7 @@ pub use sbor::rust::vec;
 pub use sbor::rust::vec::Vec;
 pub use sbor::{Decode, DecodeError, Encode, Type, TypeId, Value};
 pub use scrypto::abi::{BlueprintAbi, Fn, ScryptoType};
-pub use scrypto::address::{AddressError, Bech32Decoder, Bech32Encoder};
+pub use radix_engine_lib::address::{AddressError, Bech32Decoder, Bech32Encoder};
 pub use scrypto::component::{
     ComponentAddAccessCheckInvocation, PackagePublishInvocation,
 };
@@ -28,7 +28,7 @@ pub use radix_engine_lib::resource::NonFungibleAddress;
 pub use scrypto::constants::*;
 pub use scrypto::core::{
     EpochManagerCreateInvocation, EpochManagerGetCurrentEpochInvocation,
-    EpochManagerSetEpochInvocation, Expression, NetworkDefinition, ScryptoActor,
+    EpochManagerSetEpochInvocation, Expression, ScryptoActor,
 };
 pub use scrypto::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,

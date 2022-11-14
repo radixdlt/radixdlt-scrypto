@@ -1,3 +1,4 @@
+use radix_engine_lib::address::Bech32Encoder;
 use sbor::path::{MutableSborPath, SborPath};
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::HashMap;
@@ -11,7 +12,6 @@ use sbor::{any::*, *};
 use utils::misc::ContextualDisplay;
 
 use crate::abi::*;
-use crate::address::{AddressError, Bech32Encoder};
 use crate::buffer::*;
 use crate::component::*;
 use crate::core::*;

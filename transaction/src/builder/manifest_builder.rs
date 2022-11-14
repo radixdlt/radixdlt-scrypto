@@ -1,5 +1,7 @@
+use radix_engine_lib::address::Bech32Decoder;
 use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
+use radix_engine_lib::core::NetworkDefinition;
 use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
 use sbor::describe::*;
 use sbor::rust::borrow::ToOwned;
@@ -11,10 +13,8 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::abi::*;
-use scrypto::address::Bech32Decoder;
 use scrypto::buffer::*;
 use scrypto::constants::*;
-use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
