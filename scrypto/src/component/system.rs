@@ -1,10 +1,12 @@
 use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
+use radix_engine_lib::engine::api::Syscalls;
+use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
+use radix_engine_lib::engine::types::ScryptoRENode;
 use crate::abi::BlueprintAbi;
 use crate::buffer::*;
 use crate::component::*;
 use crate::core::Runtime;
-use crate::engine::{api::*, scrypto_env::*, types::*};
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;

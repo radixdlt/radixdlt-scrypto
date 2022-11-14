@@ -16,11 +16,11 @@ use crate::buffer::*;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
-use crate::engine::types::*;
 use crate::math::*;
 use crate::resource::*;
 use radix_engine_lib::component::{ComponentAddress, SystemAddress};
 use radix_engine_lib::component::PackageAddress;
+use radix_engine_lib::engine::types::{BucketId, ComponentId, GlobalAddress, KeyValueStoreId, ProofId, RENodeId, VaultId};
 use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, ParseNonFungibleAddressError, ParseNonFungibleIdError, ResourceAddress};
 
 pub enum ScryptoValueReplaceError {

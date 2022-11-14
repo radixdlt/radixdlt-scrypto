@@ -1,95 +1,19 @@
-use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
+use radix_engine_lib::engine::api::{Syscalls, SysNativeInvokable};
+use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
+use radix_engine_lib::engine::types::{ProofId, RENodeId};
+use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, ProofCloneInvocation, ProofGetAmountInvocation, ProofGetNonFungibleIdsInvocation, ProofGetResourceAddressInvocation, ResourceAddress};
+use radix_engine_lib::scrypto_env_native_fn;
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::engine::scrypto_env::{NativeFnInvocation, ScryptoEnv};
 use utils::misc::copy_u8_array;
 
 use crate::abi::*;
-use crate::engine::scrypto_env::{NativeMethodInvocation, ProofMethodInvocation};
-use crate::engine::{api::*, types::*};
 use crate::math::*;
 use crate::resource::*;
-use crate::scrypto_env_native_fn;
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofGetAmountInvocation {
-    pub receiver: ProofId,
-}
-
-impl SysInvocation for ProofGetAmountInvocation {
-    type Output = Decimal;
-}
-
-impl ScryptoNativeInvocation for ProofGetAmountInvocation {}
-
-impl Into<NativeFnInvocation> for ProofGetAmountInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Proof(
-            ProofMethodInvocation::GetAmount(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofGetNonFungibleIdsInvocation {
-    pub receiver: ProofId,
-}
-
-impl SysInvocation for ProofGetNonFungibleIdsInvocation {
-    type Output = BTreeSet<NonFungibleId>;
-}
-
-impl ScryptoNativeInvocation for ProofGetNonFungibleIdsInvocation {}
-
-impl Into<NativeFnInvocation> for ProofGetNonFungibleIdsInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Proof(
-            ProofMethodInvocation::GetNonFungibleIds(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofGetResourceAddressInvocation {
-    pub receiver: ProofId,
-}
-
-impl SysInvocation for ProofGetResourceAddressInvocation {
-    type Output = ResourceAddress;
-}
-
-impl ScryptoNativeInvocation for ProofGetResourceAddressInvocation {}
-
-impl Into<NativeFnInvocation> for ProofGetResourceAddressInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Proof(
-            ProofMethodInvocation::GetResourceAddress(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofCloneInvocation {
-    pub receiver: ProofId,
-}
-
-impl SysInvocation for ProofCloneInvocation {
-    type Output = Proof;
-}
-
-impl ScryptoNativeInvocation for ProofCloneInvocation {}
-
-impl Into<NativeFnInvocation> for ProofCloneInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Proof(ProofMethodInvocation::Clone(
-            self,
-        )))
-    }
-}
 
 /// Represents a proof of owning some resource.
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -130,7 +54,7 @@ impl From<NonFungibleAddress> for ProofValidationMode {
 
 impl Clone for Proof {
     fn clone(&self) -> Self {
-        self.sys_clone(&mut ScryptoEnv).unwrap()
+        Self(self.sys_clone(&mut ScryptoEnv).unwrap().0)
     }
 }
 
@@ -172,7 +96,7 @@ impl Proof {
         }
     }
 
-    pub fn sys_clone<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<Proof, E>
+    pub fn sys_clone<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<radix_engine_lib::resource::Proof, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<ProofCloneInvocation, E>,
     {

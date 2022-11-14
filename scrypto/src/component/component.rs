@@ -1,6 +1,9 @@
-use radix_engine_lib::component::ComponentAddress;
+use radix_engine_lib::component::{ComponentAddAccessCheckInvocation, ComponentAddress};
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::resource::AccessRules;
+use radix_engine_lib::engine::api::{Syscalls, SysNativeInvokable};
+use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
+use radix_engine_lib::engine::types::{ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoReceiver, ScryptoRENode, SubstateOffset};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
@@ -15,27 +18,6 @@ use utils::misc::copy_u8_array;
 use crate::abi::*;
 use crate::core::*;
 use crate::crypto::{Hash};
-use crate::engine::{api::*, scrypto_env::*, types::*};
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ComponentAddAccessCheckInvocation {
-    pub receiver: ComponentId,
-    pub access_rules: AccessRules,
-}
-
-impl SysInvocation for ComponentAddAccessCheckInvocation {
-    type Output = ();
-}
-
-impl ScryptoNativeInvocation for ComponentAddAccessCheckInvocation {}
-
-impl Into<NativeFnInvocation> for ComponentAddAccessCheckInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Component(
-            ComponentMethodInvocation::AddAccessCheck(self),
-        ))
-    }
-}
 
 /// Represents the state of a component.
 pub trait ComponentState<C: LocalComponent>: Encode + Decode {

@@ -1,4 +1,8 @@
-use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
+use radix_engine_lib::engine::api::{Syscalls, SysNativeInvokable};
+use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
+use radix_engine_lib::engine::types::VaultId;
+use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerCreateVaultInvocation, VaultCreateProofByAmountInvocation, VaultCreateProofByIdsInvocation, VaultCreateProofInvocation, VaultGetAmountInvocation, VaultGetNonFungibleIdsInvocation, VaultGetResourceAddressInvocation, VaultLockFeeInvocation, VaultPutInvocation, VaultTakeInvocation, VaultTakeNonFungiblesInvocation};
+use radix_engine_lib::scrypto_env_native_fn;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt;
@@ -11,207 +15,8 @@ use utils::misc::copy_u8_array;
 
 use crate::abi::*;
 use crate::crypto::*;
-use crate::engine::{api::*, scrypto_env::*, types::*};
 use crate::math::*;
 use crate::resource::*;
-use crate::scrypto_env_native_fn;
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultPutInvocation {
-    pub receiver: VaultId,
-    pub bucket: Bucket,
-}
-
-impl SysInvocation for VaultPutInvocation {
-    type Output = ();
-}
-
-impl ScryptoNativeInvocation for VaultPutInvocation {}
-
-impl Into<NativeFnInvocation> for VaultPutInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Vault(VaultMethodInvocation::Put(
-            self,
-        )))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultTakeInvocation {
-    pub receiver: VaultId,
-    pub amount: Decimal,
-}
-
-impl SysInvocation for VaultTakeInvocation {
-    type Output = Bucket;
-}
-
-impl ScryptoNativeInvocation for VaultTakeInvocation {}
-
-impl Into<NativeFnInvocation> for VaultTakeInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Vault(VaultMethodInvocation::Take(
-            self,
-        )))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultTakeNonFungiblesInvocation {
-    pub receiver: VaultId,
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
-}
-
-impl SysInvocation for VaultTakeNonFungiblesInvocation {
-    type Output = Bucket;
-}
-
-impl ScryptoNativeInvocation for VaultTakeNonFungiblesInvocation {}
-
-impl Into<NativeFnInvocation> for VaultTakeNonFungiblesInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::TakeNonFungibles(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultGetAmountInvocation {
-    pub receiver: VaultId,
-}
-
-impl SysInvocation for VaultGetAmountInvocation {
-    type Output = Decimal;
-}
-
-impl ScryptoNativeInvocation for VaultGetAmountInvocation {}
-
-impl Into<NativeFnInvocation> for VaultGetAmountInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::GetAmount(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultGetResourceAddressInvocation {
-    pub receiver: VaultId,
-}
-
-impl SysInvocation for VaultGetResourceAddressInvocation {
-    type Output = ResourceAddress;
-}
-
-impl ScryptoNativeInvocation for VaultGetResourceAddressInvocation {}
-
-impl Into<NativeFnInvocation> for VaultGetResourceAddressInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::GetResourceAddress(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultGetNonFungibleIdsInvocation {
-    pub receiver: VaultId,
-}
-
-impl SysInvocation for VaultGetNonFungibleIdsInvocation {
-    type Output = BTreeSet<NonFungibleId>;
-}
-
-impl ScryptoNativeInvocation for VaultGetNonFungibleIdsInvocation {}
-
-impl Into<NativeFnInvocation> for VaultGetNonFungibleIdsInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::GetNonFungibleIds(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultCreateProofInvocation {
-    pub receiver: VaultId,
-}
-
-impl SysInvocation for VaultCreateProofInvocation {
-    type Output = Proof;
-}
-
-impl ScryptoNativeInvocation for VaultCreateProofInvocation {}
-
-impl Into<NativeFnInvocation> for VaultCreateProofInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::CreateProof(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultCreateProofByAmountInvocation {
-    pub receiver: VaultId,
-    pub amount: Decimal,
-}
-
-impl SysInvocation for VaultCreateProofByAmountInvocation {
-    type Output = Proof;
-}
-
-impl ScryptoNativeInvocation for VaultCreateProofByAmountInvocation {}
-
-impl Into<NativeFnInvocation> for VaultCreateProofByAmountInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::CreateProofByAmount(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultCreateProofByIdsInvocation {
-    pub receiver: VaultId,
-    pub ids: BTreeSet<NonFungibleId>,
-}
-
-impl SysInvocation for VaultCreateProofByIdsInvocation {
-    type Output = Proof;
-}
-
-impl ScryptoNativeInvocation for VaultCreateProofByIdsInvocation {}
-
-impl Into<NativeFnInvocation> for VaultCreateProofByIdsInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::CreateProofByIds(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultLockFeeInvocation {
-    pub receiver: VaultId,
-    pub amount: Decimal,
-    pub contingent: bool,
-}
-
-impl SysInvocation for VaultLockFeeInvocation {
-    type Output = ();
-}
-
-impl ScryptoNativeInvocation for VaultLockFeeInvocation {}
-
-impl Into<NativeFnInvocation> for VaultLockFeeInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::LockFee(self),
-        ))
-    }
-}
 
 #[derive(PartialEq, Eq, Hash)]
 pub struct Vault(pub VaultId);
@@ -219,7 +24,8 @@ pub struct Vault(pub VaultId);
 impl Vault {
     /// Creates an empty vault and fills it with an initial bucket of resource.
     pub fn with_bucket(bucket: Bucket) -> Self {
-        let mut vault = Vault::new(bucket.resource_address());
+        let vault = Vault::new(bucket.resource_address());
+        let mut vault = Vault(vault.0);
         vault.put(bucket);
         vault
     }
@@ -236,13 +42,13 @@ impl Vault {
     }
 
     scrypto_env_native_fn! {
-        pub fn new(resource_address: ResourceAddress) -> Self {
+        pub fn new(resource_address: ResourceAddress) -> radix_engine_lib::resource::Vault {
             ResourceManagerCreateVaultInvocation {
                 receiver: resource_address,
             }
         }
 
-        fn take_internal(&mut self, amount: Decimal) -> Bucket {
+        fn take_internal(&mut self, amount: Decimal) -> radix_engine_lib::resource::Bucket {
             VaultTakeInvocation {
                 receiver: self.0,
                 amount,
@@ -268,11 +74,11 @@ impl Vault {
         pub fn put(&mut self, bucket: Bucket) -> () {
             VaultPutInvocation {
                 receiver: self.0,
-                bucket,
+                bucket: radix_engine_lib::resource::Bucket(bucket.0),
             }
         }
 
-        pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
+        pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> radix_engine_lib::resource::Bucket {
             VaultTakeNonFungiblesInvocation {
                 receiver: self.0,
                 non_fungible_ids: non_fungible_ids.clone(),
@@ -291,17 +97,17 @@ impl Vault {
             }
         }
 
-        pub fn create_proof(&self) -> Proof {
+        pub fn create_proof(&self) -> radix_engine_lib::resource::Proof {
             VaultCreateProofInvocation {
                 receiver: self.0,
             }
         }
 
-        pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
+        pub fn create_proof_by_amount(&self, amount: Decimal) -> radix_engine_lib::resource::Proof {
             VaultCreateProofByAmountInvocation { amount, receiver: self.0, }
         }
 
-        pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
+        pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> radix_engine_lib::resource::Proof {
             VaultCreateProofByIdsInvocation { ids: ids.clone(), receiver: self.0 }
         }
     }
@@ -323,7 +129,8 @@ impl Vault {
 
     /// Takes some amount of resource from this vault into a bucket.
     pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket {
-        self.take_internal(amount.into())
+        let bucket = self.take_internal(amount.into());
+        Bucket(bucket.0)
     }
 
     /// Takes all resource stored in this vault.
@@ -336,7 +143,8 @@ impl Vault {
     /// # Panics
     /// Panics if this is not a non-fungible vault or the specified non-fungible resource is not found.
     pub fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Bucket {
-        self.take_non_fungibles(&BTreeSet::from([non_fungible_id.clone()]))
+        let bucket = self.take_non_fungibles(&BTreeSet::from([non_fungible_id.clone()]));
+        Bucket(bucket.0)
     }
 
     /// Uses resources in this vault as authorization for an operation.

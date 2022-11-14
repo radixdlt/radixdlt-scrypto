@@ -32,8 +32,6 @@ pub mod core;
 pub mod crypto {
     pub use utils::crypto::*;
 }
-/// Radix engine APIs.
-pub mod engine;
 /// Scrypto math library.
 pub mod math {
     pub use utils::math::*;

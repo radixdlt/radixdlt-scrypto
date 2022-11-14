@@ -1,4 +1,7 @@
-use radix_engine_lib::resource::{NonFungibleId, ResourceAddress};
+use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
+use radix_engine_lib::engine::types::BucketId;
+use radix_engine_lib::resource::{BucketGetAmountInvocation, BucketGetNonFungibleIdsInvocation, BucketPutInvocation, BucketTakeInvocation, BucketTakeNonFungiblesInvocation, NonFungibleId, ResourceAddress};
+use radix_engine_lib::scrypto_env_native_fn;
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
@@ -8,165 +11,25 @@ use sbor::*;
 use utils::misc::copy_u8_array;
 
 use crate::abi::*;
-use crate::engine::scrypto_env::*;
-use crate::engine::{api::*, types::*};
 use crate::math::*;
 use crate::resource::*;
-use crate::scrypto_env_native_fn;
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketTakeInvocation {
-    pub receiver: BucketId,
-    pub amount: Decimal,
-}
-
-impl SysInvocation for BucketTakeInvocation {
-    type Output = Bucket;
-}
-
-impl ScryptoNativeInvocation for BucketTakeInvocation {}
-
-impl Into<NativeFnInvocation> for BucketTakeInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketMethodInvocation::Take(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketPutInvocation {
-    pub receiver: BucketId,
-    pub bucket: Bucket,
-}
-
-impl SysInvocation for BucketPutInvocation {
-    type Output = ();
-}
-
-impl ScryptoNativeInvocation for BucketPutInvocation {}
-
-impl Into<NativeFnInvocation> for BucketPutInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(BucketMethodInvocation::Put(
-            self,
-        )))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketTakeNonFungiblesInvocation {
-    pub receiver: BucketId,
-    pub ids: BTreeSet<NonFungibleId>,
-}
-
-impl SysInvocation for BucketTakeNonFungiblesInvocation {
-    type Output = Bucket;
-}
-
-impl ScryptoNativeInvocation for BucketTakeNonFungiblesInvocation {}
-
-impl Into<NativeFnInvocation> for BucketTakeNonFungiblesInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketMethodInvocation::TakeNonFungibles(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketGetNonFungibleIdsInvocation {
-    pub receiver: BucketId,
-}
-
-impl SysInvocation for BucketGetNonFungibleIdsInvocation {
-    type Output = BTreeSet<NonFungibleId>;
-}
-
-impl ScryptoNativeInvocation for BucketGetNonFungibleIdsInvocation {}
-
-impl Into<NativeFnInvocation> for BucketGetNonFungibleIdsInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketMethodInvocation::GetNonFungibleIds(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketGetAmountInvocation {
-    pub receiver: BucketId,
-}
-
-impl SysInvocation for BucketGetAmountInvocation {
-    type Output = Decimal;
-}
-
-impl ScryptoNativeInvocation for BucketGetAmountInvocation {}
-
-impl Into<NativeFnInvocation> for BucketGetAmountInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketMethodInvocation::GetAmount(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketGetResourceAddressInvocation {
-    pub receiver: BucketId,
-}
-
-impl SysInvocation for BucketGetResourceAddressInvocation {
-    type Output = ResourceAddress;
-}
-
-impl ScryptoNativeInvocation for BucketGetResourceAddressInvocation {}
-
-impl Into<NativeFnInvocation> for BucketGetResourceAddressInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketMethodInvocation::GetResourceAddress(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketCreateProofInvocation {
-    pub receiver: BucketId,
-}
-
-impl SysInvocation for BucketCreateProofInvocation {
-    type Output = Proof;
-}
-
-impl ScryptoNativeInvocation for BucketCreateProofInvocation {}
-
-impl Into<NativeFnInvocation> for BucketCreateProofInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketMethodInvocation::CreateProof(self),
-        ))
-    }
-}
 
 /// Represents a transient resource container.
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Bucket(pub BucketId);
 
 pub mod sys {
-    use radix_engine_lib::resource::ResourceAddress;
-    use crate::resource::bucket::BucketCreateProofInvocation;
+    use radix_engine_lib::engine::api::SysNativeInvokable;
+    use radix_engine_lib::resource::{BucketCreateProofInvocation, BucketGetResourceAddressInvocation, ResourceAddress, ResourceManagerBurnInvocation, ResourceManagerCreateBucketInvocation};
     use crate::resource::*;
     use sbor::rust::fmt::Debug;
     use sbor::*;
-    use scrypto::engine::api::SysNativeInvokable;
 
     impl Bucket {
         pub fn sys_new<Y, E: Debug + TypeId + Decode>(
             receiver: ResourceAddress,
             sys_calls: &mut Y,
-        ) -> Result<Bucket, E>
+        ) -> Result<radix_engine_lib::resource::Bucket, E>
         where
             Y: SysNativeInvokable<ResourceManagerCreateBucketInvocation, E>,
         {
@@ -181,7 +44,7 @@ pub mod sys {
             let receiver = self.sys_resource_address(env)?;
             env.sys_invoke(ResourceManagerBurnInvocation {
                 receiver,
-                bucket: self,
+                bucket: radix_engine_lib::resource::Bucket(self.0),
             })
         }
 
@@ -196,7 +59,7 @@ pub mod sys {
         pub fn sys_create_proof<Y, E: Debug + TypeId + Decode>(
             &self,
             sys_calls: &mut Y,
-        ) -> Result<Proof, E>
+        ) -> Result<radix_engine_lib::resource::Proof, E>
         where
             Y: SysNativeInvokable<BucketCreateProofInvocation, E>,
         {
@@ -232,14 +95,14 @@ impl Bucket {
     }
 
     scrypto_env_native_fn! {
-        fn take_internal(&mut self, amount: Decimal) -> Self {
+        fn take_internal(&mut self, amount: Decimal) -> radix_engine_lib::resource::Bucket {
             BucketTakeInvocation {
                 receiver: self.0,
                 amount,
             }
         }
 
-        pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
+        pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> radix_engine_lib::resource::Bucket {
             BucketTakeNonFungiblesInvocation {
                 receiver: self.0,
                 ids: non_fungible_ids.clone()
@@ -248,7 +111,7 @@ impl Bucket {
         pub fn put(&mut self, other: Self) -> () {
             BucketPutInvocation {
                 receiver: self.0,
-                bucket: other,
+                bucket: radix_engine_lib::resource::Bucket(other.0),
             }
         }
         pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
@@ -265,7 +128,8 @@ impl Bucket {
 
     /// Takes some amount of resources from this bucket.
     pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self {
-        self.take_internal(amount.into())
+        let bucket = self.take_internal(amount.into());
+        Bucket(bucket.0)
     }
 
     /// Takes a specific non-fungible from this bucket.
@@ -273,7 +137,8 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
     pub fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Bucket {
-        self.take_non_fungibles(&BTreeSet::from([non_fungible_id.clone()]))
+        let bucket = self.take_non_fungibles(&BTreeSet::from([non_fungible_id.clone()]));
+        Bucket(bucket.0)
     }
 
     /// Uses resources in this bucket as authorization for an operation.

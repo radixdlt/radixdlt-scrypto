@@ -1,153 +1,13 @@
-use radix_engine_lib::resource::{NonFungibleId, ResourceAddress};
+use radix_engine_lib::engine::api::{Syscalls, SysNativeInvokable};
+use radix_engine_lib::engine::types::RENodeId;
+use radix_engine_lib::resource::{AuthZoneClearInvocation, AuthZoneCreateProofByAmountInvocation, AuthZoneCreateProofByIdsInvocation, AuthZoneCreateProofInvocation, AuthZoneDrainInvocation, AuthZonePopInvocation, AuthZonePushInvocation, NonFungibleId, ResourceAddress};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::engine::scrypto_env::*;
-use crate::engine::{api::*, types::*};
-
 use crate::math::Decimal;
 use crate::resource::*;
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZonePopInvocation {
-    pub receiver: AuthZoneId,
-}
-
-impl SysInvocation for AuthZonePopInvocation {
-    type Output = scrypto::resource::Proof;
-}
-
-impl ScryptoNativeInvocation for AuthZonePopInvocation {}
-
-impl Into<NativeFnInvocation> for AuthZonePopInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AuthZone(
-            AuthZoneMethodInvocation::Pop(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZonePushInvocation {
-    pub receiver: AuthZoneId,
-    pub proof: Proof,
-}
-
-impl SysInvocation for AuthZonePushInvocation {
-    type Output = ();
-}
-
-impl ScryptoNativeInvocation for AuthZonePushInvocation {}
-
-impl Into<NativeFnInvocation> for AuthZonePushInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AuthZone(
-            AuthZoneMethodInvocation::Push(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneCreateProofInvocation {
-    pub receiver: AuthZoneId,
-    pub resource_address: ResourceAddress,
-}
-
-impl SysInvocation for AuthZoneCreateProofInvocation {
-    type Output = Proof;
-}
-
-impl ScryptoNativeInvocation for AuthZoneCreateProofInvocation {}
-
-impl Into<NativeFnInvocation> for AuthZoneCreateProofInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AuthZone(
-            AuthZoneMethodInvocation::CreateProof(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneCreateProofByAmountInvocation {
-    pub receiver: AuthZoneId,
-    pub amount: Decimal,
-    pub resource_address: ResourceAddress,
-}
-
-impl SysInvocation for AuthZoneCreateProofByAmountInvocation {
-    type Output = Proof;
-}
-
-impl ScryptoNativeInvocation for AuthZoneCreateProofByAmountInvocation {}
-
-impl Into<NativeFnInvocation> for AuthZoneCreateProofByAmountInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AuthZone(
-            AuthZoneMethodInvocation::CreateProofByAmount(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneCreateProofByIdsInvocation {
-    pub receiver: AuthZoneId,
-    pub ids: BTreeSet<NonFungibleId>,
-    pub resource_address: ResourceAddress,
-}
-
-impl SysInvocation for AuthZoneCreateProofByIdsInvocation {
-    type Output = Proof;
-}
-
-impl ScryptoNativeInvocation for AuthZoneCreateProofByIdsInvocation {}
-
-impl Into<NativeFnInvocation> for AuthZoneCreateProofByIdsInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AuthZone(
-            AuthZoneMethodInvocation::CreateProofByIds(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneClearInvocation {
-    pub receiver: AuthZoneId,
-}
-
-impl SysInvocation for AuthZoneClearInvocation {
-    type Output = ();
-}
-
-impl ScryptoNativeInvocation for AuthZoneClearInvocation {}
-
-impl Into<NativeFnInvocation> for AuthZoneClearInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AuthZone(
-            AuthZoneMethodInvocation::Clear(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneDrainInvocation {
-    pub receiver: AuthZoneId,
-}
-
-impl SysInvocation for AuthZoneDrainInvocation {
-    type Output = Vec<scrypto::resource::Proof>;
-}
-
-impl ScryptoNativeInvocation for AuthZoneDrainInvocation {}
-
-impl Into<NativeFnInvocation> for AuthZoneDrainInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AuthZone(
-            AuthZoneMethodInvocation::Drain(self),
-        ))
-    }
-}
 
 /// Represents the auth zone, which is used by system for checking
 /// if this component is allowed to
@@ -157,7 +17,7 @@ impl Into<NativeFnInvocation> for AuthZoneDrainInvocation {
 pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
-    pub fn sys_drain<Y, E: Debug + TypeId + Decode>(env: &mut Y) -> Result<Vec<Proof>, E>
+    pub fn sys_drain<Y, E: Debug + TypeId + Decode>(env: &mut Y) -> Result<Vec<radix_engine_lib::resource::Proof>, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<AuthZoneDrainInvocation, E>,
     {
@@ -185,7 +45,7 @@ impl ComponentAuthZone {
         })
     }
 
-    pub fn sys_pop<Y, E: Debug + TypeId + Decode>(env: &mut Y) -> Result<Proof, E>
+    pub fn sys_pop<Y, E: Debug + TypeId + Decode>(env: &mut Y) -> Result<radix_engine_lib::resource::Proof, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<AuthZonePopInvocation, E>,
     {
@@ -202,7 +62,7 @@ impl ComponentAuthZone {
     pub fn sys_create_proof<Y, E: Debug + TypeId + Decode>(
         resource_address: ResourceAddress,
         env: &mut Y,
-    ) -> Result<Proof, E>
+    ) -> Result<radix_engine_lib::resource::Proof, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<AuthZoneCreateProofInvocation, E>,
     {
@@ -221,7 +81,7 @@ impl ComponentAuthZone {
         amount: Decimal,
         resource_address: ResourceAddress,
         env: &mut Y,
-    ) -> Result<Proof, E>
+    ) -> Result<radix_engine_lib::resource::Proof, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<AuthZoneCreateProofByAmountInvocation, E>,
     {
@@ -241,7 +101,7 @@ impl ComponentAuthZone {
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
         env: &mut Y,
-    ) -> Result<Proof, E>
+    ) -> Result<radix_engine_lib::resource::Proof, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<AuthZoneCreateProofByIdsInvocation, E>,
     {
@@ -257,7 +117,7 @@ impl ComponentAuthZone {
         })
     }
 
-    pub fn sys_push<P: Into<Proof>, Y, E: Debug + TypeId + Decode>(
+    pub fn sys_push<P: Into<radix_engine_lib::resource::Proof>, Y, E: Debug + TypeId + Decode>(
         proof: P,
         env: &mut Y,
     ) -> Result<(), E>
@@ -270,7 +130,7 @@ impl ComponentAuthZone {
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
 
-        let proof: Proof = proof.into();
+        let proof: radix_engine_lib::resource::Proof = proof.into();
 
         env.sys_invoke(AuthZonePushInvocation {
             receiver: node_id.into(),

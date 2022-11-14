@@ -1,6 +1,9 @@
-use radix_engine_lib::component::{ComponentAddress, SystemAddress};
+use radix_engine_lib::component::{ComponentAddress, EpochManagerGetCurrentEpochInvocation, SystemAddress};
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::engine::actor::ScryptoActor;
+use radix_engine_lib::engine::api::{Syscalls, SysNativeInvokable};
+use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
+use radix_engine_lib::engine::types::{ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::*;
@@ -12,63 +15,6 @@ use crate::buffer::scrypto_decode;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
-use crate::engine::{api::*, scrypto_env::*, types::*};
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct EpochManagerCreateInvocation {}
-
-impl SysInvocation for EpochManagerCreateInvocation {
-    type Output = SystemAddress;
-}
-
-impl ScryptoNativeInvocation for EpochManagerCreateInvocation {}
-
-impl Into<NativeFnInvocation> for EpochManagerCreateInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::EpochManager(
-            EpochManagerFunctionInvocation::Create(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct EpochManagerGetCurrentEpochInvocation {
-    pub receiver: SystemAddress,
-}
-
-impl SysInvocation for EpochManagerGetCurrentEpochInvocation {
-    type Output = u64;
-}
-
-impl ScryptoNativeInvocation for EpochManagerGetCurrentEpochInvocation {}
-
-impl Into<NativeFnInvocation> for EpochManagerGetCurrentEpochInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerMethodInvocation::GetCurrentEpoch(self),
-        ))
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct EpochManagerSetEpochInvocation {
-    pub receiver: SystemAddress,
-    pub epoch: u64,
-}
-
-impl SysInvocation for EpochManagerSetEpochInvocation {
-    type Output = ();
-}
-
-impl ScryptoNativeInvocation for EpochManagerSetEpochInvocation {}
-
-impl Into<NativeFnInvocation> for EpochManagerSetEpochInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerMethodInvocation::SetEpoch(self),
-        ))
-    }
-}
 
 /// The transaction runtime.
 #[derive(Debug)]

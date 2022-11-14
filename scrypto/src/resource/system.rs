@@ -1,10 +1,9 @@
-use radix_engine_lib::resource::{AccessRule, ResourceAddress};
+use radix_engine_lib::resource::{AccessRule, MintParams, Mutability, ResourceAddress, ResourceManagerCreateInvocation, ResourceMethodAuthKey, ResourceType};
+use radix_engine_lib::scrypto_env_native_fn;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 
 use crate::resource::*;
-
-use crate::scrypto_env_native_fn;
 
 /// Represents the Radix Engine resource subsystem.
 ///
@@ -44,7 +43,7 @@ impl ResourceSystem {
             metadata: HashMap<String, String>,
             access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
             mint_params: Option<MintParams>,
-        ) -> (ResourceAddress, Option<Bucket>) {
+        ) -> (ResourceAddress, Option<radix_engine_lib::resource::Bucket>) {
             ResourceManagerCreateInvocation {
                 resource_type,
                 metadata,
