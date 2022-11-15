@@ -6,8 +6,8 @@ use radix_engine_lib::resource::{
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
+use utils::math::Decimal;
 
-use crate::math::*;
 use crate::resource::*;
 use crate::rule;
 

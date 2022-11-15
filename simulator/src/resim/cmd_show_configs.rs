@@ -1,6 +1,6 @@
 use clap::Parser;
 use colored::*;
-use scrypto::prelude::ContextualDisplay;
+use utils::misc::ContextualDisplay;
 
 use crate::resim::*;
 

@@ -28,10 +28,10 @@ use scrypto::access_rule_node;
 use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::crypto::*;
-use scrypto::math::*;
 use scrypto::rule;
 use scrypto::values::*;
 use scrypto::*;
+use utils::math::{Decimal, PreciseDecimal};
 
 use crate::errors::*;
 use crate::model::*;

@@ -3,9 +3,11 @@ use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::types::*;
-use scrypto::misc::ContextualDisplay;
+use scrypto::engine_lib::core::NetworkDefinition;
+use scrypto::engine_lib::engine::types::RENodeId;
 use scrypto::values::ScryptoValueFormatterContext;
 use std::collections::VecDeque;
+use utils::misc::ContextualDisplay;
 
 use crate::utils::*;
 

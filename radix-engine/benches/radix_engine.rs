@@ -6,6 +6,8 @@ use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
 use radix_engine::wasm::{DefaultWasmEngine, InstructionCostRules, WasmMeteringConfig};
+use radix_engine_lib::core::NetworkDefinition;
+use scrypto::prelude::non_fungible::FromPublicKey;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaSecp256k1PrivateKey;

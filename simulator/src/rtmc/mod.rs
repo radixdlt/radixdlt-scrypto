@@ -1,6 +1,6 @@
 use clap::Parser;
 use scrypto::buffer::scrypto_encode;
-use scrypto::core::{NetworkDefinition, ParseNetworkError};
+use scrypto::engine_lib::core::{NetworkDefinition, ParseNetworkError};
 use std::path::PathBuf;
 use std::str::FromStr;
 use transaction::manifest::compile;

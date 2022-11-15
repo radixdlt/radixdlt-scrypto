@@ -46,8 +46,8 @@ mod tests {
     use sbor::rust::str::FromStr;
     use scrypto::args;
     use scrypto::core::Expression;
-    use scrypto::math::*;
     use utils::crypto::Blob;
+    use utils::math::*;
 
     #[test]
     fn test_compile() {

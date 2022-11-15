@@ -1,6 +1,5 @@
 use clap::Parser;
 use regex::{Captures, Regex};
-use scrypto::core::NetworkDefinition;
 use std::env;
 use std::path::PathBuf;
 

@@ -3,11 +3,8 @@ pub use crate::component::*;
 pub use crate::constants::*;
 pub use crate::core::*;
 pub use crate::crypto::*;
-pub use crate::math::integer::{
-    CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedPow, CheckedRem, CheckedSub,
-};
-pub use crate::math::*;
 pub use crate::misc::*;
+pub use crate::resource::non_fungible::ScryptoNonFungibleId;
 pub use crate::resource::*;
 pub use crate::{
     access_and_or, access_rule_node, args, args_from_bytes_vec, args_from_value_vec, blueprint,
@@ -29,3 +26,7 @@ pub use sbor::rust::string::String;
 pub use sbor::rust::string::ToString;
 pub use sbor::rust::vec;
 pub use sbor::rust::vec::Vec;
+pub use utils::math::integer::{
+    CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedPow, CheckedRem, CheckedSub,
+};
+pub use utils::math::*;

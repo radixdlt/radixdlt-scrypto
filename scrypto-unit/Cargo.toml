@@ -8,6 +8,7 @@ radix-engine = { path = "../radix-engine" }
 radix-engine-lib = { path = "../radix-engine-lib", default-features = false }
 transaction = { path = "../transaction", default-features = false }
 scrypto = { path = "../scrypto", default-features = false }
+utils = { path = "../utils", default-features = false }
 sbor = { path = "../sbor", default-features = false }
 serde = { version = "1.0.137", default-features = false }
 serde_json = { version = "1.0.81" }

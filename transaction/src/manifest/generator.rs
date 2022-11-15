@@ -24,9 +24,9 @@ use scrypto::buffer::scrypto_encode;
 use scrypto::component::{Component, KeyValueStore};
 use scrypto::core::Expression;
 use scrypto::crypto::*;
-use scrypto::math::*;
 use scrypto::values::*;
 use scrypto::{args, args_from_value_vec};
+use utils::math::{Decimal, PreciseDecimal};
 
 use crate::errors::*;
 use crate::manifest::ast;
@@ -1309,7 +1309,8 @@ mod tests {
     use crate::manifest::parser::Parser;
     use radix_engine_lib::address::Bech32Decoder;
     use radix_engine_lib::core::NetworkDefinition;
-    use scrypto::{args, pdec};
+    use scrypto::args;
+    use utils::pdec;
 
     #[macro_export]
     macro_rules! generate_value_ok {

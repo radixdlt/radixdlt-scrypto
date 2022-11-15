@@ -2,7 +2,7 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use rand::Rng;
-use scrypto::prelude::ContextualDisplay;
+use utils::misc::ContextualDisplay;
 
 use crate::resim::Error::TransactionExecutionError;
 use crate::resim::*;

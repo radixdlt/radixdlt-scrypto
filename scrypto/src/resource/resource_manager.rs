@@ -13,8 +13,8 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
+use utils::math::Decimal;
 
-use crate::math::*;
 use crate::resource::*;
 
 /// Represents a resource manager.

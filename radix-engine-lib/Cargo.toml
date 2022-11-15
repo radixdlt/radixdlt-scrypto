@@ -21,7 +21,7 @@ strum = { version = "0.24", default-features = false, features = ["derive"] }
 
 [features]
 # You should enable either `std` or `alloc`
-default = ["std", "prelude"]
+default = ["std"]
 std = ["hex/std", "sbor/std", "scrypto-abi/std", "scrypto-derive/std", "strum/std"]
 alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "scrypto-derive/alloc"]
 
@@ -30,10 +30,6 @@ trace = ["scrypto-derive/trace"]
 
 # Enable serde derives
 serde = ["sbor/serde", "scrypto-abi/serde", "serde/derive"]
-
-# Enable prelude.
-# Note that prelude introduces duplicated symbols which may confuse rustc suggestions.
-prelude = []
 
 # Disable ABI gen in the output WASM.
 no-abi-gen = ["scrypto-derive/no-abi-gen"]

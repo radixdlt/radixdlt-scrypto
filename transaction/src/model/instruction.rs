@@ -6,8 +6,8 @@ use radix_engine_lib::resource::{NonFungibleId, ResourceAddress};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::math::*;
 use utils::crypto::Blob;
+use utils::math::Decimal;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Instruction {

@@ -12,8 +12,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
+use utils::math::Decimal;
 
-use crate::math::*;
 use crate::resource::*;
 
 pub trait SysVault {

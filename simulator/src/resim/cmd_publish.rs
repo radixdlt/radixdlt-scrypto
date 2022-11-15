@@ -2,11 +2,12 @@ use clap::Parser;
 use colored::*;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
 use radix_engine::types::*;
-use scrypto::prelude::ContextualDisplay;
+use scrypto::engine_lib::engine::types::RENodeId;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
+use utils::misc::ContextualDisplay;
 
 use crate::resim::*;
 use crate::utils::*;

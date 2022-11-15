@@ -70,11 +70,9 @@ pub use scrypto::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
     Hash, PublicKey, Signature,
 };
-pub use scrypto::math::{Decimal, RoundingMode, I256};
 pub use scrypto::rule;
 pub use scrypto::values::{ScryptoValue, ScryptoValueReplaceError};
 use std::fmt::Debug;
-pub use utils::crypto::Blob;
 
 // methods and macros
 use crate::engine::Invocation;
@@ -82,7 +80,10 @@ pub use sbor::decode_any;
 pub use scrypto::buffer::{scrypto_decode, scrypto_encode};
 pub use scrypto::crypto::hash;
 
-pub use scrypto::{args, dec, pdec};
+pub use scrypto::args;
+pub use utils::crypto::Blob;
+pub use utils::math::{Decimal, RoundingMode, I256};
+pub use utils::{dec, pdec};
 
 /// Scrypto function/method invocation.
 #[derive(Debug)]

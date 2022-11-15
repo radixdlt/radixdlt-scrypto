@@ -22,16 +22,16 @@ use radix_engine::wasm::{
 use radix_engine_lib::resource::AccessRule;
 
 use sbor::describe::*;
-use scrypto::dec;
 use scrypto::engine_lib::core::NetworkDefinition;
 use scrypto::engine_lib::engine::types::{RENodeId, ScryptoMethodIdent};
-use scrypto::math::Decimal;
 use scrypto::resource::non_fungible::FromPublicKey;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{AuthZoneParams, Executable, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
+use utils::dec;
+use utils::math::Decimal;
 
 pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
     execution_stores: StagedSubstateStoreManager<'s, S>,

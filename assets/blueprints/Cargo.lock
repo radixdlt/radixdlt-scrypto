@@ -1005,6 +1005,7 @@ dependencies = [
  "serde",
  "serde_json",
  "transaction",
+ "utils",
  "wabt",
 ]
 

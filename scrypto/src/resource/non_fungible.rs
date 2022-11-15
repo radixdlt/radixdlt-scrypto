@@ -6,6 +6,18 @@ use crate::borrow_resource_manager;
 use crate::constants::{ECDSA_SECP256K1_TOKEN, EDDSA_ED25519_TOKEN};
 use crate::resource::*;
 
+pub trait ScryptoNonFungibleId {
+    /// Creates a non-fungible ID from some uuid.
+    fn random() -> Self;
+}
+
+impl ScryptoNonFungibleId for NonFungibleId {
+    fn random() -> Self {
+        let bytes = crate::core::Runtime::generate_uuid().to_be_bytes().to_vec();
+        Self::from_bytes(bytes)
+    }
+}
+
 /// Represents a non-fungible unit.
 #[derive(Debug)]
 pub struct NonFungible<T: NonFungibleData> {

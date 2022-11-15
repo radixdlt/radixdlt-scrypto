@@ -16,7 +16,6 @@ use crate::buffer::*;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
-use crate::math::*;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::component::{ComponentAddress, SystemAddress};
 use radix_engine_lib::engine::types::{
@@ -26,6 +25,7 @@ use radix_engine_lib::resource::{
     Bucket, NonFungibleAddress, NonFungibleId, ParseBucketError, ParseNonFungibleAddressError,
     ParseNonFungibleIdError, ParseProofError, ParseVaultError, Proof, ResourceAddress, Vault,
 };
+use utils::math::{Decimal, ParseDecimalError, ParsePreciseDecimalError, PreciseDecimal};
 
 pub enum ScryptoValueReplaceError {
     ProofIdNotFound(ProofId),

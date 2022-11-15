@@ -61,7 +61,8 @@ use radix_engine::types::*;
 use radix_engine::wasm::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use scrypto::abi;
-use scrypto::misc::ContextualDisplay;
+use scrypto::engine_lib::core::NetworkDefinition;
+use scrypto::prelude::non_fungible::FromPublicKey;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -70,6 +71,7 @@ use transaction::manifest::decompile;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
+use utils::misc::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
 #[derive(Parser, Debug)]

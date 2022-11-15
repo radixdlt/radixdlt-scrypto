@@ -1,3 +1,5 @@
+use crate::resource::proof::ScryptoProof;
+use crate::resource::{ComponentAuthZone, NonFungible, NonFungibleData};
 use radix_engine_lib::engine::api::SysNativeInvokable;
 use radix_engine_lib::resource::{
     BucketCreateProofInvocation, BucketGetAmountInvocation, BucketGetNonFungibleIdsInvocation,
@@ -6,15 +8,12 @@ use radix_engine_lib::resource::{
     ResourceManagerBurnInvocation, ResourceManagerCreateBucketInvocation,
 };
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::vec::Vec;
 use sbor::rust::fmt::Debug;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-use scrypto::resource::NonFungibleData;
 use scrypto::scrypto_env_native_fn;
-
-use crate::math::*;
-use crate::resource::{ComponentAuthZone, NonFungible, ScryptoProof};
+use utils::math::Decimal;
 
 pub trait SysBucket {
     fn sys_new<Y, E: Debug + TypeId + Decode>(

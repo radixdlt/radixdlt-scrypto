@@ -11,8 +11,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
+use utils::math::Decimal;
 
-use crate::math::*;
 use crate::resource::*;
 
 // TODO: Evaluate if we should have a ProofValidationModeBuilder to construct more complex validation modes.

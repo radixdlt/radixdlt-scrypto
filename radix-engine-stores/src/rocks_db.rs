@@ -5,6 +5,7 @@ use radix_engine::ledger::*;
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
+use scrypto::engine_lib::engine::types::RENodeId;
 
 pub struct RadixEngineDB {
     db: DBWithThreadMode<SingleThreaded>,
