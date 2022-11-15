@@ -245,8 +245,8 @@ fn generate_dispatcher(
                     });
                     stmts.push(parse_quote! {
                         let mut component_data = ::scrypto::core::DataPointer::new(
-                            ::scrypto::engine::types::RENodeId::Component(component_id),
-                            ::scrypto::engine::types::SubstateOffset::Component(::scrypto::engine::types::ComponentOffset::State),
+                            ::scrypto::radix_engine_lib::engine::types::RENodeId::Component(component_id),
+                            ::scrypto::radix_engine_lib::engine::types::SubstateOffset::Component(::scrypto::radix_engine_lib::engine::types::ComponentOffset::State),
                         );
                     });
                     stmts.push(stmt);
@@ -477,7 +477,7 @@ fn generate_stubs(
             fn blueprint_name(&self) -> String {
                 self.component.blueprint_name()
             }
-            fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
+            fn add_access_check(&mut self, access_rules: ::scrypto::radix_engine_lib::resource::AccessRules) -> &mut Self {
                 self.component.add_access_check(access_rules);
                 self
             }
@@ -595,8 +595,8 @@ mod tests {
                     let actor = ::scrypto::core::Runtime::actor();
                     let (component_id, ..) = actor.as_component();
                     let mut component_data = ::scrypto::core::DataPointer::new(
-                        ::scrypto::engine::types::RENodeId::Component(component_id),
-                        ::scrypto::engine::types::SubstateOffset::Component(::scrypto::engine::types::ComponentOffset::State),
+                        ::scrypto::radix_engine_lib::engine::types::RENodeId::Component(component_id),
+                        ::scrypto::radix_engine_lib::engine::types::SubstateOffset::Component(::scrypto::radix_engine_lib::engine::types::ComponentOffset::State),
                     );
                     let state: DataRef<Test_impl::Test> = component_data.get();
 
@@ -664,7 +664,7 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
+                    fn add_access_check(&mut self, access_rules: ::scrypto::radix_engine_lib::resource::AccessRules) -> &mut Self {
                         self.component.add_access_check(access_rules);
                         self
                     }
@@ -746,7 +746,7 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
+                    fn add_access_check(&mut self, access_rules: ::scrypto::radix_engine_lib::resource::AccessRules) -> &mut Self {
                         self.component.add_access_check(access_rules);
                         self
                     }

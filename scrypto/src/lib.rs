@@ -32,6 +32,7 @@ pub mod core;
 pub mod crypto {
     pub use utils::crypto::*;
 }
+pub mod engine;
 /// Scrypto math library.
 pub mod math {
     pub use utils::math::*;
@@ -49,6 +50,10 @@ pub mod values;
 // Export macros
 mod macros;
 pub use macros::*;
+
+pub mod radix_engine_lib {
+    pub use radix_engine_lib::*;
+}
 
 // Re-export SBOR derive.
 extern crate sbor;

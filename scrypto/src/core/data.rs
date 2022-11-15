@@ -1,10 +1,10 @@
 use radix_engine_lib::engine::api::Syscalls;
-use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
 use radix_engine_lib::engine::types::{ComponentOffset, KeyValueStoreOffset, LockHandle, RENodeId, SubstateOffset};
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
 use sbor::{Decode, Encode};
+use scrypto::engine::scrypto_env::ScryptoEnv;
 
 use crate::buffer::*;
 use crate::component::{ComponentStateSubstate, KeyValueStoreEntrySubstate};

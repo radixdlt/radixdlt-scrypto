@@ -362,12 +362,12 @@ pub enum AccessRule {
 #[macro_export]
 macro_rules! rule {
     (allow_all) => {{
-        ::radix_engine_lib::resource::AccessRule::AllowAll
+        ::scrypto::radix_engine_lib::resource::AccessRule::AllowAll
     }};
     (deny_all) => {{
-        ::radix_engine_lib::resource::AccessRule::DenyAll
+        ::scrypto::radix_engine_lib::resource::AccessRule::DenyAll
     }};
     ($($tt:tt)+) => {{
-        ::radix_engine_lib::resource::AccessRule::Protected(access_rule_node!($($tt)+))
+        ::scrypto::radix_engine_lib::resource::AccessRule::Protected(access_rule_node!($($tt)+))
     }};
 }

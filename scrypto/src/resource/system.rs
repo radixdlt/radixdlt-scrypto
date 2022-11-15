@@ -1,7 +1,7 @@
 use radix_engine_lib::resource::{AccessRule, MintParams, Mutability, ResourceAddress, ResourceManagerCreateInvocation, ResourceMethodAuthKey, ResourceType};
-use radix_engine_lib::scrypto_env_native_fn;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
+use scrypto::scrypto_env_native_fn;
 
 use crate::resource::*;
 

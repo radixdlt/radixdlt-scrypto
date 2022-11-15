@@ -2,7 +2,6 @@ use radix_engine_lib::component::{ComponentAddAccessCheckInvocation, ComponentAd
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::resource::AccessRules;
 use radix_engine_lib::engine::api::{Syscalls, SysNativeInvokable};
-use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
 use radix_engine_lib::engine::types::{ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoReceiver, ScryptoRENode, SubstateOffset};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
@@ -18,6 +17,7 @@ use utils::misc::copy_u8_array;
 use crate::abi::*;
 use crate::core::*;
 use crate::crypto::{Hash};
+use crate::engine::scrypto_env::ScryptoEnv;
 
 /// Represents the state of a component.
 pub trait ComponentState<C: LocalComponent>: Encode + Decode {

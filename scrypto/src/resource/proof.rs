@@ -1,12 +1,12 @@
 use radix_engine_lib::engine::api::{Syscalls, SysNativeInvokable};
-use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
 use radix_engine_lib::engine::types::{ProofId, RENodeId};
 use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, Proof, ProofCloneInvocation, ProofGetAmountInvocation, ProofGetNonFungibleIdsInvocation, ProofGetResourceAddressInvocation, ProofValidationError, ResourceAddress};
-use radix_engine_lib::scrypto_env_native_fn;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::scrypto_env_native_fn;
 
 use crate::math::*;
 use crate::resource::*;

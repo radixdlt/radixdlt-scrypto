@@ -725,8 +725,6 @@ impl ScryptoValueFormatter {
         match scrypto_type.unwrap() {
             // Global address types
             ScryptoType::PackageAddress => {
-                todo!()
-                /*
                 let value = PackageAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?;
                 f.write_str("PackageAddress(\"")?;
@@ -734,11 +732,8 @@ impl ScryptoValueFormatter {
                     .format(f, context.bech32_encoder)
                     .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?;
                 f.write_str("\")")?;
-                 */
             }
             ScryptoType::ComponentAddress => {
-                panic!();
-                /*
                 let value = ComponentAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
                 f.write_str("ComponentAddress(\"")?;
@@ -746,11 +741,8 @@ impl ScryptoValueFormatter {
                     .format(f, context.bech32_encoder)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
                 f.write_str("\")")?;
-                 */
             }
             ScryptoType::ResourceAddress => {
-                panic!();
-                /*
                 let value = ResourceAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
                 f.write_str("ResourceAddress(\"")?;
@@ -758,11 +750,8 @@ impl ScryptoValueFormatter {
                     .format(f, context.bech32_encoder)
                     .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
                 f.write_str("\")")?;
-                 */
             }
             ScryptoType::SystemAddress => {
-                panic!();
-                /*
                 let value = SystemAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidSystemAddress)?;
                 f.write_str("SystemAddress(\"")?;
@@ -770,7 +759,6 @@ impl ScryptoValueFormatter {
                     .format(f, context.bech32_encoder)
                     .map_err(ScryptoCustomValueCheckError::InvalidSystemAddress)?;
                 f.write_str("\")")?;
-                 */
             }
             // RE node types
             ScryptoType::Component => {

@@ -1,12 +1,14 @@
 use radix_engine_lib::engine::api::SysNativeInvokable;
-use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
-use radix_engine_lib::resource::{BucketCreateProofInvocation, BucketGetAmountInvocation, BucketGetNonFungibleIdsInvocation, BucketGetResourceAddressInvocation, BucketPutInvocation, BucketTakeInvocation, BucketTakeNonFungiblesInvocation, NonFungibleId, Proof, ResourceAddress, ResourceManagerBurnInvocation, ResourceManagerCreateBucketInvocation};
-use radix_engine_lib::scrypto_env_native_fn;
+use radix_engine_lib::resource::{BucketCreateProofInvocation, BucketGetAmountInvocation, BucketGetNonFungibleIdsInvocation, BucketGetResourceAddressInvocation, BucketPutInvocation, BucketTakeInvocation, BucketTakeNonFungiblesInvocation, NonFungibleAddress, NonFungibleId, Proof, ResourceAddress, ResourceManagerBurnInvocation, ResourceManagerCreateBucketInvocation};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::*;
+use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::resource::NonFungibleData;
+use scrypto::scrypto_env_native_fn;
 
 use crate::math::*;
+use crate::resource::{ComponentAuthZone, NonFungible, ScryptoProof};
 
 pub trait SysBucket {
     fn sys_new<Y, E: Debug + TypeId + Decode>(
@@ -69,6 +71,10 @@ pub trait ScryptoBucket {
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self;
     fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Self;
     fn is_empty(&self) -> bool;
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
+    fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>>;
+    fn non_fungible_id(&self) -> NonFungibleId;
+    fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T>;
 }
 
 impl ScryptoBucket for radix_engine_lib::resource::Bucket {
@@ -137,8 +143,7 @@ impl ScryptoBucket for radix_engine_lib::resource::Bucket {
     }
 
     /// Uses resources in this bucket as authorization for an operation.
-    #[cfg(target_arch = "wasm32")]
-    pub fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
         ComponentAuthZone::push(self.create_proof());
         let output = f();
         ComponentAuthZone::pop().drop();
@@ -154,8 +159,7 @@ impl ScryptoBucket for radix_engine_lib::resource::Bucket {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
-    #[cfg(target_arch = "wasm32")]
-    pub fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
+    fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
         let resource_address = self.resource_address();
         self.non_fungible_ids()
             .iter()
@@ -167,8 +171,7 @@ impl ScryptoBucket for radix_engine_lib::resource::Bucket {
     ///
     /// # Panics
     /// Panics if this is not a singleton bucket
-    #[cfg(target_arch = "wasm32")]
-    pub fn non_fungible_id(&self) -> NonFungibleId {
+    fn non_fungible_id(&self) -> NonFungibleId {
         let non_fungible_ids = self.non_fungible_ids();
         if non_fungible_ids.len() != 1 {
             panic!("Expecting singleton NFT vault");
@@ -180,8 +183,7 @@ impl ScryptoBucket for radix_engine_lib::resource::Bucket {
     ///
     /// # Panics
     /// Panics if this is not a singleton bucket
-    #[cfg(target_arch = "wasm32")]
-    pub fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T> {
+    fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T> {
         let non_fungibles = self.non_fungibles();
         if non_fungibles.len() != 1 {
             panic!("Expecting singleton NFT bucket");

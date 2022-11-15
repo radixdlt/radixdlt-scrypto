@@ -1,10 +1,10 @@
 use radix_engine_lib::engine::api::SysNativeInvokable;
-use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
 use radix_engine_lib::resource::{AccessRule, Bucket, MintParams, NonFungibleId, ResourceAddress, ResourceManagerBurnInvocation, ResourceManagerGetMetadataInvocation, ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation, ResourceManagerGetTotalSupplyInvocation, ResourceManagerLockAuthInvocation, ResourceManagerMintInvocation, ResourceManagerNonFungibleExistsInvocation, ResourceManagerUpdateAuthInvocation, ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation, ResourceMethodAuthKey, ResourceType};
-use radix_engine_lib::scrypto_env_native_fn;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::scrypto_env_native_fn;
 
 use crate::math::*;
 use crate::resource::*;

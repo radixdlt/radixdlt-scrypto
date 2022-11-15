@@ -23,6 +23,8 @@ pub use num_traits::{
 pub use radix_engine_lib::{
     access_and_or, access_rule_node, resource_list, rule,
 };
+pub use radix_engine_lib::resource::*;
+pub use radix_engine_lib::component::*;
 pub use sbor::rust::borrow::ToOwned;
 pub use sbor::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 pub use sbor::rust::str::FromStr;
