@@ -50,7 +50,7 @@ pub struct Kernel<
     /// Heap
     heap: Heap,
     /// Store
-    track: &'g mut Track<'s, R>,
+    track: Track<'s, R>,
 
     /// Interpreter capable of running scrypto programs
     scrypto_interpreter: &'g ScryptoInterpreter<W>,
@@ -71,7 +71,7 @@ where
         auth_zone_params: AuthZoneParams,
         blobs: &'g HashMap<Hash, &'g [u8]>,
         max_depth: usize,
-        track: &'g mut Track<'s, R>,
+        track: Track<'s, R>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         modules: Vec<Box<dyn Module<R>>>,
     ) -> Self {
@@ -714,6 +714,27 @@ where
 
         Ok(output)
     }
+
+    pub fn finalize(mut self, result: InvokeResult) -> TrackReceipt {
+        let final_result = match result {
+            Ok(res) => self.finalize_modules().map(|_| res),
+            Err(err) => {
+                // If there was an error, we still try to finalize the modules,
+                // but forward the original error (even if module finalizer also errors).
+                let _silently_ignored = self.finalize_modules();
+                Err(err)
+            }
+        };
+        self.track.finalize(final_result)
+    }
+
+    fn finalize_modules(&mut self) -> Result<(), RuntimeError> {
+        for m in &mut self.modules {
+            m.on_finished_processing(&mut self.heap, &mut self.track)
+                .map_err(RuntimeError::ModuleError)?;
+        }
+        Ok(())
+    }
 }
 
 pub trait MethodDeref {
@@ -773,9 +794,9 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    name: format!("{:?}", invocation), // TODO: Better abstraction here
-                    input_size: 0,                     // TODO: Fix this
-                    value_count: 0,                    // TODO: Fix this
+                    info: InvocationInfo::Native(&invocation.info()),
+                    input_size: 0,  // TODO: Fix this
+                    value_count: 0, // TODO: Fix this
                     depth: self.current_frame.depth,
                 },
             )
@@ -799,7 +820,7 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::Invoke {
-                    rtn: format!("{:?}", rtn), // TODO: Better abstraction here
+                    rtn: &rtn, // TODO: Better abstraction here
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
@@ -822,7 +843,7 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    name: format!("{:?}", invocation),
+                    info: InvocationInfo::Scrypto(&invocation),
                     input_size: invocation.args().raw.len() as u32,
                     value_count: invocation.args().value_count() as u32,
                     depth: self.current_frame.depth,
@@ -846,9 +867,7 @@ where
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::Invoke {
-                    rtn: format!("{:?}", rtn),
-                },
+                SysCallOutput::Invoke { rtn: &rtn },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
@@ -932,6 +951,16 @@ where
         }
 
         let node_ids = self.current_frame.get_visible_nodes();
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallOutput::ReadOwnedNodes,
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
         Ok(node_ids)
     }
@@ -1197,24 +1226,25 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let substate_ref =
-            self.current_frame
-                .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
-
-        // TODO: Move post sys call to substate_ref drop()
-        /*
+        // A little hacky: this post sys call is called before the sys call happens due to
+        // a mutable borrow conflict for substate ref.
+        // Some modules (specifically: ExecutionTraceModule) require that all
+        // pre/post callbacks are balanced.
+        // TODO: Move post sys call to substate_ref drop() so that it's actually
+        // after the sys call processing, not before.
         for m in &mut self.modules {
             m.post_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::GetRef {
-                    lock_handle,
-                },
+                SysCallOutput::GetRef { lock_handle },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
-         */
+
+        let substate_ref =
+            self.current_frame
+                .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
 
         Ok(substate_ref)
     }
@@ -1235,12 +1265,12 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let substate_ref_mut =
-            self.current_frame
-                .get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
-
-        // TODO: Move post sys call to substate_ref drop()
-        /*
+        // A little hacky: this post sys call is called before the sys call happens due to
+        // a mutable borrow conflict for substate ref.
+        // Some modules (specifically: ExecutionTraceModule) require that all
+        // pre/post callbacks are balanced.
+        // TODO: Move post sys call to substate_ref drop() so that it's actually
+        // after the sys call processing, not before.
         for m in &mut self.modules {
             m.post_sys_call(
                 &self.current_frame,
@@ -1250,7 +1280,10 @@ where
             )
             .map_err(RuntimeError::ModuleError)?;
         }
-         */
+
+        let substate_ref_mut =
+            self.current_frame
+                .get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
 
         Ok(substate_ref_mut)
     }
@@ -1360,6 +1393,34 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::EmitLog,
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(())
+    }
+
+    fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallInput::EmitEvent { event: &event },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        if let Event::Tracked(tracked_event) = event {
+            self.track.add_event(tracked_event);
+        }
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallOutput::EmitEvent,
             )
             .map_err(RuntimeError::ModuleError)?;
         }

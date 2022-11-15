@@ -1,6 +1,3 @@
-use radix_engine::constants::{
-    DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
-};
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::state_manager::StagedSubstateStoreManager;
@@ -39,14 +36,8 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
             512,
         ),
     };
-    let execution_config = ExecutionConfig {
-        max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-        trace: false,
-    };
-    let fee_reserve_config = FeeReserveConfig {
-        cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
-        system_loan: DEFAULT_SYSTEM_LOAN,
-    };
+    let execution_config = ExecutionConfig::standard();
+    let fee_reserve_config = FeeReserveConfig::standard();
 
     let mut staged_store_manager = StagedSubstateStoreManager::new(&mut store);
     let staged_node = staged_store_manager.new_child_node(0);

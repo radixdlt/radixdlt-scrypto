@@ -42,9 +42,9 @@ blueprint! {
             self.vault.put(b)
         }
 
-        pub fn create_and_fund_a_component(xrd: Vec<Bucket>) {
+        pub fn create_and_fund_a_component(xrd: Vec<Bucket>) -> ComponentAddress {
             let vault = Vault::with_bucket(xrd.into_iter().nth(0).unwrap());
-            let _ = ExecutionTraceTest { vault }.instantiate().globalize();
+            ExecutionTraceTest { vault }.instantiate().globalize()
         }
 
         pub fn test_lock_contingent_fee(&mut self) {

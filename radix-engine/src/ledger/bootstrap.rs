@@ -1,4 +1,3 @@
-use crate::constants::GENESIS_CREATION_CREDIT;
 use crate::engine::ScryptoInterpreter;
 use crate::fee::SystemLoanFeeReserve;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
@@ -8,6 +7,7 @@ use crate::transaction::{
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine_constants::GENESIS_CREATION_CREDIT;
 
 use scrypto::core::SystemAddress;
 use scrypto::resource::Bucket;

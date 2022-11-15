@@ -138,6 +138,7 @@ pub trait InvokableNative<'a>:
 }
 
 // TODO: This should be cleaned up
+#[derive(Debug)]
 pub enum NativeInvocationInfo {
     Function(NativeFunction, CallFrameUpdate),
     Method(NativeMethod, RENodeId, CallFrameUpdate),
@@ -188,7 +189,7 @@ pub trait NativeInvocation: NativeExecutable + Encode<ScryptoCustomTypeId> + Deb
 }
 
 pub trait NativeExecutable: Invocation {
-    type Output: Debug;
+    type Output: Traceable + 'static;
 
     fn execute<'a, Y>(
         invocation: Self,
