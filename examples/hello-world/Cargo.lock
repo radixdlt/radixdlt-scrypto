@@ -788,6 +788,7 @@ dependencies = [
  "indexmap",
  "moka",
  "parity-wasm",
+ "radix-engine-constants",
  "radix-engine-lib",
  "sbor",
  "scrypto",
@@ -797,6 +798,10 @@ dependencies = [
  "wasmi",
  "wasmi-validation",
 ]
+
+[[package]]
+name = "radix-engine-constants"
+version = "0.7.0"
 
 [[package]]
 name = "radix-engine-lib"
@@ -988,6 +993,7 @@ name = "scrypto-unit"
 version = "0.7.0"
 dependencies = [
  "radix-engine",
+ "radix-engine-constants",
  "radix-engine-lib",
  "sbor",
  "scrypto",

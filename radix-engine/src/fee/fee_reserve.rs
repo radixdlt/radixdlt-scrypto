@@ -1,8 +1,10 @@
-use crate::constants::{DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN};
 use crate::fee::FeeSummary;
 use crate::model::Resource;
 use crate::types::*;
 use radix_engine_lib::engine::types::VaultId;
+use radix_engine_constants::{
+    DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum FeeReserveError {

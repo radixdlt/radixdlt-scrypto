@@ -1,4 +1,3 @@
-use crate::constants::GENESIS_CREATION_CREDIT;
 use crate::engine::ScryptoInterpreter;
 use crate::fee::SystemLoanFeeReserve;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
@@ -17,6 +16,7 @@ use radix_engine_lib::resource::{
     AccessRule, Bucket, MintParams, Mutability, ResourceMethodAuthKey, LOCKED,
 };
 use scrypto::rule;
+use radix_engine_constants::GENESIS_CREATION_CREDIT;
 
 use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};

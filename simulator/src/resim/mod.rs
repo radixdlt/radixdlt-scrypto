@@ -49,7 +49,6 @@ pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
-use radix_engine::constants::*;
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::model::*;
 use radix_engine::transaction::execute_and_commit_transaction;
@@ -59,6 +58,7 @@ use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::*;
+use radix_engine_constants::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use scrypto::abi;
 use scrypto::engine_lib::core::NetworkDefinition;

@@ -1,4 +1,3 @@
-use radix_engine::constants::DEFAULT_MAX_COST_UNIT_LIMIT;
 use radix_engine::engine::{ModuleError, RejectionError};
 use radix_engine::engine::{RuntimeError, ScryptoInterpreter};
 use radix_engine::ledger::TypedInMemorySubstateStore;
@@ -8,6 +7,7 @@ use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
 use radix_engine::wasm::{DefaultWasmEngine, InstructionCostRules, WasmMeteringConfig};
 use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_constants::DEFAULT_MAX_COST_UNIT_LIMIT;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
