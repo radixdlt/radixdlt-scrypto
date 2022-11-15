@@ -1,3 +1,4 @@
+use radix_engine_lib::crypto::hash;
 use radix_engine_lib::engine::types::{
     GlobalAddress, GlobalOffset, KeyValueStoreOffset, Level, NonFungibleStoreOffset, RENodeId,
     SubstateId, SubstateOffset, VaultId, VaultOffset,

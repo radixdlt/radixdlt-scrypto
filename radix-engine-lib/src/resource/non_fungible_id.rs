@@ -7,6 +7,14 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
+use crate::data::ScryptoCustomTypeId;
+use crate::scrypto_type;
+
+
+/// Encodes a data structure into byte array.
+fn scrypto_encode<T: Encode<ScryptoCustomTypeId> + ?Sized>(v: &T) -> Vec<u8> {
+    encode(v)
+}
 
 /// Represents a key for a non-fungible resource
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -15,29 +23,17 @@ pub struct NonFungibleId(pub Vec<u8>);
 impl NonFungibleId {
     /// Creates a non-fungible ID from an arbitrary byte array.
     pub fn from_bytes(v: Vec<u8>) -> Self {
-        let mut buf = Vec::with_capacity(512);
-        let mut enc = Encoder::with_static_info(&mut buf);
-        v.encode(&mut enc);
-
-        Self(buf)
+        Self(scrypto_encode(&v))
     }
 
     /// Creates a non-fungible ID from a `u32` number.
     pub fn from_u32(u: u32) -> Self {
-        let mut buf = Vec::with_capacity(512);
-        let mut enc = Encoder::with_static_info(&mut buf);
-        u.encode(&mut enc);
-
-        Self(buf)
+        Self(scrypto_encode(&u))
     }
 
     /// Creates a non-fungible ID from a `u64` number.
     pub fn from_u64(u: u64) -> Self {
-        let mut buf = Vec::with_capacity(512);
-        let mut enc = Encoder::with_static_info(&mut buf);
-        u.encode(&mut enc);
-
-        Self(buf)
+        Self(scrypto_encode(&u))
     }
 }
 

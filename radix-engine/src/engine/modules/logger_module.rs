@@ -1,7 +1,7 @@
+use radix_engine_lib::data::ScryptoValue;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;
-use crate::types::*;
 use radix_engine_lib::engine::types::VaultId;
 
 pub struct LoggerModule {

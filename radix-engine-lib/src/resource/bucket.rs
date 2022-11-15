@@ -7,10 +7,13 @@ use sbor::*;
 use utils::misc::copy_u8_array;
 
 use crate::abi::*;
+use crate::data::ScryptoCustomTypeId;
 use crate::engine::scrypto_env::*;
 use crate::engine::{api::*, types::*};
 use crate::math::*;
 use crate::resource::*;
+use crate::scrypto_type;
+use crate::scrypto;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -200,4 +203,4 @@ impl Bucket {
     }
 }
 
-scrypto_type!(Bucket, ScryptoType::Bucket, Vec::new());
+scrypto_type!(Bucket, ScryptoCustomTypeId::Bucket, Type::Bucket, 4);

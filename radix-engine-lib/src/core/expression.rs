@@ -6,8 +6,8 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::abi::*;
 use crate::data::*;
+use scrypto_abi::Type;
 use crate::scrypto_type;
 
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]

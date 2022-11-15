@@ -1,11 +1,11 @@
 use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_lib::crypto::PublicKey;
 use sbor::rust::collections::{BTreeSet, HashSet};
 use sbor::Decode;
 
 use scrypto::buffer::scrypto_decode;
 use scrypto::constants::*;
-use scrypto::crypto::PublicKey;
-use scrypto::data::*;
+use radix_engine_lib::data::*;
 
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;

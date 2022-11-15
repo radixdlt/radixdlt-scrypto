@@ -1,5 +1,6 @@
 use super::*;
 use crate::component::*;
+use crate::scrypto;
 
 // TODO: Remove and replace with real HeapRENodes
 #[derive(Debug, Clone)]

@@ -8,6 +8,8 @@ use scrypto::access_rule_node;
 use scrypto::rule;
 use std::fmt::Debug;
 use std::mem;
+use radix_engine_lib::crypto::Hash;
+use radix_engine_lib::data::{match_schema_with_value, ScryptoValue};
 use transaction::errors::IdAllocationError;
 use transaction::model::AuthZoneParams;
 use transaction::validation::*;

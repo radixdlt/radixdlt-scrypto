@@ -1,9 +1,9 @@
 use crate::engine::types::*;
 use crate::scrypto;
-use crate::Describe;
 
 // Native function identifier used by transaction model
-#[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct NativeFunctionIdent {
     pub blueprint_name: String,
     pub function_name: String,
@@ -17,14 +17,16 @@ pub struct NativeMethodIdent {
     pub method_name: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum NativeFn {
     Method(NativeMethod),
     Function(NativeFunction),
 }
 
 // Native function enum used by Kernel SystemAPI and WASM
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum NativeMethod {
     Component(ComponentMethod),
     EpochManager(EpochManagerMethod),
@@ -37,7 +39,8 @@ pub enum NativeMethod {
 }
 
 // Native method enum used by Kernel SystemAPI and WASM
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum NativeFunction {
     EpochManager(EpochManagerFunction),
     ResourceManager(ResourceManagerFunction),
@@ -52,10 +55,6 @@ pub enum NativeFunction {
     PartialEq,
     Eq,
     Hash,
-    TypeId,
-    Encode,
-    Decode,
-    Describe,
     PartialOrd,
     Ord,
     EnumString,
@@ -64,6 +63,7 @@ pub enum NativeFunction {
     AsRefStr,
     Display,
 )]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ComponentMethod {
     AddAccessCheck,
@@ -76,10 +76,6 @@ pub enum ComponentMethod {
     PartialEq,
     Eq,
     Hash,
-    TypeId,
-    Encode,
-    Decode,
-    Describe,
     PartialOrd,
     Ord,
     EnumString,
@@ -88,6 +84,7 @@ pub enum ComponentMethod {
     AsRefStr,
     Display,
 )]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum EpochManagerFunction {
     Create,
@@ -100,10 +97,6 @@ pub enum EpochManagerFunction {
     PartialEq,
     Eq,
     Hash,
-    TypeId,
-    Encode,
-    Decode,
-    Describe,
     PartialOrd,
     Ord,
     EnumString,
@@ -112,6 +105,7 @@ pub enum EpochManagerFunction {
     AsRefStr,
     Display,
 )]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum EpochManagerMethod {
     GetCurrentEpoch,
@@ -125,10 +119,6 @@ pub enum EpochManagerMethod {
     PartialEq,
     Eq,
     Hash,
-    TypeId,
-    Encode,
-    Decode,
-    Describe,
     PartialOrd,
     Ord,
     EnumString,
@@ -137,6 +127,7 @@ pub enum EpochManagerMethod {
     AsRefStr,
     Display,
 )]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum AuthZoneMethod {
     Pop,
@@ -155,10 +146,6 @@ pub enum AuthZoneMethod {
     PartialEq,
     Eq,
     Hash,
-    TypeId,
-    Encode,
-    Decode,
-    Describe,
     PartialOrd,
     Ord,
     EnumString,
@@ -167,6 +154,7 @@ pub enum AuthZoneMethod {
     AsRefStr,
     Display,
 )]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFunction {
     Create,
@@ -180,10 +168,6 @@ pub enum ResourceManagerFunction {
     PartialEq,
     Eq,
     Hash,
-    TypeId,
-    Encode,
-    Decode,
-    Describe,
     PartialOrd,
     Ord,
     EnumString,
@@ -192,6 +176,7 @@ pub enum ResourceManagerFunction {
     AsRefStr,
     Display,
 )]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerMethod {
     Burn,
@@ -217,10 +202,6 @@ pub enum ResourceManagerMethod {
     PartialEq,
     Eq,
     Hash,
-    TypeId,
-    Encode,
-    Decode,
-    Describe,
     PartialOrd,
     Ord,
     EnumString,
@@ -229,6 +210,7 @@ pub enum ResourceManagerMethod {
     AsRefStr,
     Display,
 )]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum BucketMethod {
     Take,
@@ -247,10 +229,6 @@ pub enum BucketMethod {
     PartialEq,
     Eq,
     Hash,
-    TypeId,
-    Encode,
-    Decode,
-    Describe,
     PartialOrd,
     Ord,
     EnumString,
@@ -259,6 +237,7 @@ pub enum BucketMethod {
     AsRefStr,
     Display,
 )]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum VaultMethod {
     Take,
@@ -280,10 +259,6 @@ pub enum VaultMethod {
     PartialEq,
     Eq,
     Hash,
-    TypeId,
-    Encode,
-    Decode,
-    Describe,
     PartialOrd,
     Ord,
     EnumString,
@@ -292,6 +267,7 @@ pub enum VaultMethod {
     AsRefStr,
     Display,
 )]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ProofMethod {
     Clone,
@@ -307,10 +283,6 @@ pub enum ProofMethod {
     PartialEq,
     Eq,
     Hash,
-    TypeId,
-    Encode,
-    Decode,
-    Describe,
     PartialOrd,
     Ord,
     EnumString,
@@ -319,6 +291,7 @@ pub enum ProofMethod {
     AsRefStr,
     Display,
 )]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum WorktopMethod {
     TakeAll,
@@ -338,10 +311,6 @@ pub enum WorktopMethod {
     PartialEq,
     Eq,
     Hash,
-    TypeId,
-    Encode,
-    Decode,
-    Describe,
     PartialOrd,
     Ord,
     EnumString,
@@ -350,6 +319,7 @@ pub enum WorktopMethod {
     AsRefStr,
     Display,
 )]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum PackageFunction {
     Publish,
@@ -362,10 +332,6 @@ pub enum PackageFunction {
     PartialEq,
     Eq,
     Hash,
-    TypeId,
-    Encode,
-    Decode,
-    Describe,
     PartialOrd,
     Ord,
     EnumString,
@@ -374,6 +340,7 @@ pub enum PackageFunction {
     AsRefStr,
     Display,
 )]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionProcessorFunction {
     Run,

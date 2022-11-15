@@ -1,4 +1,4 @@
-use radix_engine_lib::component::PackageAddress;
+use radix_engine_lib::component::{ComponentAddress, PackageAddress};
 use radix_engine_lib::component::{ComponentAddAccessCheckInvocation};
 use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
 use radix_engine_lib::engine::types::{
@@ -6,6 +6,9 @@ use radix_engine_lib::engine::types::{
     ScryptoReceiver, SubstateOffset,
 };
 use radix_engine_lib::resource::AccessRules;
+use radix_engine_lib::crypto::Hash;
+use radix_engine_lib::data::ScryptoCustomTypeId;
+
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
@@ -15,14 +18,14 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::data::ScryptoCustomTypeId;
 use scrypto::scrypto_type;
 use utils::misc::copy_u8_array;
 
 use crate::abi::*;
 use crate::core::*;
-use crate::crypto::Hash;
 use crate::engine::scrypto_env::ScryptoEnv;
+use crate::scrypto;
+use crate::Describe;
 
 /// Represents the state of a component.
 pub trait ComponentState<C: LocalComponent>:

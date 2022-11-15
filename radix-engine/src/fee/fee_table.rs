@@ -1,4 +1,4 @@
-use crate::types::*;
+use radix_engine_lib::data::ScryptoValue;
 use radix_engine_lib::engine::types::{
     AuthZoneMethod, BucketMethod, ComponentMethod, EpochManagerFunction, EpochManagerMethod,
     NativeFunction, NativeMethod, PackageFunction, ProofMethod, ResourceManagerFunction,

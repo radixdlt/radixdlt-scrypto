@@ -28,18 +28,13 @@ pub mod component;
 pub mod constants;
 /// Scrypto core library, mainly process and transaction context.
 pub mod core;
-/// Scrypto cryptography library.
-pub mod crypto {
-    pub use utils::crypto::*;
+
+pub mod data {
+    pub use radix_engine_lib::data::*;
 }
-/// Scrypto values.
-pub mod data;
+
 /// Radix engine APIs.
 pub mod engine;
-/// Scrypto math library.
-pub mod math {
-    pub use utils::math::*;
-}
 /// Miscellaneous functions.
 pub mod misc;
 /// Scrypto preludes.
@@ -58,7 +53,7 @@ pub mod engine_lib {
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;
-pub use scrypto_derive::{blueprint, import, scrypto, Describe, NonFungibleData};
+pub use scrypto_derive::{blueprint, Describe, import, NonFungibleData, scrypto};
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502

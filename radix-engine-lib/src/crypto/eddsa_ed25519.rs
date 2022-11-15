@@ -4,23 +4,23 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use utils::misc::copy_u8_array;
 
 use crate::abi::*;
 use crate::data::*;
-use crate::misc::*;
 use crate::scrypto_type;
 
-/// Represents an ECDSA public key.
+/// Represents an ED25519 public key.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct EcdsaSecp256k1PublicKey(
+pub struct EddsaEd25519PublicKey(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
 
-/// Represents an ECDSA signature.
+/// Represents an ED25519 signature.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct EcdsaSecp256k1Signature(
+pub struct EddsaEd25519Signature(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
 
@@ -28,50 +28,50 @@ pub struct EcdsaSecp256k1Signature(
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignatureValidationError {}
 
-/// EcdsaSecp256k1 signature verifier.
-pub struct EcdsaSecp256k1Verifier;
+/// EddsaEd25519 signature verifier.
+pub struct EddsaEd25519Verifier;
 
-impl EcdsaSecp256k1PublicKey {
-    pub const LENGTH: usize = 33;
+impl EddsaEd25519PublicKey {
+    pub const LENGTH: usize = 32;
 }
 
-impl EcdsaSecp256k1Signature {
-    pub const LENGTH: usize = 65; // recovery id + signature
+impl EddsaEd25519Signature {
+    pub const LENGTH: usize = 64;
 }
 
 //======
 // error
 //======
 
-/// Represents an error when parsing ECDSA public key from hex.
+/// Represents an error when parsing ED25519 public key from hex.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseEcdsaSecp256k1PublicKeyError {
+pub enum ParseEddsaEd25519PublicKeyError {
     InvalidHex(String),
     InvalidLength(usize),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseEcdsaSecp256k1PublicKeyError {}
+impl std::error::Error for ParseEddsaEd25519PublicKeyError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseEcdsaSecp256k1PublicKeyError {
+impl fmt::Display for ParseEddsaEd25519PublicKeyError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseEcdsaSecp256k1SignatureError {
+pub enum ParseEddsaEd25519SignatureError {
     InvalidHex(String),
     InvalidLength(usize),
 }
 
-/// Represents an error when parsing ECDSA signature from hex.
+/// Represents an error when parsing ED25519 signature from hex.
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseEcdsaSecp256k1SignatureError {}
+impl std::error::Error for ParseEddsaEd25519SignatureError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseEcdsaSecp256k1SignatureError {
+impl fmt::Display for ParseEddsaEd25519SignatureError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -81,103 +81,99 @@ impl fmt::Display for ParseEcdsaSecp256k1SignatureError {
 // binary
 //======
 
-impl TryFrom<&[u8]> for EcdsaSecp256k1PublicKey {
-    type Error = ParseEcdsaSecp256k1PublicKeyError;
+impl TryFrom<&[u8]> for EddsaEd25519PublicKey {
+    type Error = ParseEddsaEd25519PublicKeyError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != EcdsaSecp256k1PublicKey::LENGTH {
-            return Err(ParseEcdsaSecp256k1PublicKeyError::InvalidLength(
-                slice.len(),
-            ));
+        if slice.len() != EddsaEd25519PublicKey::LENGTH {
+            return Err(ParseEddsaEd25519PublicKeyError::InvalidLength(slice.len()));
         }
 
-        Ok(EcdsaSecp256k1PublicKey(copy_u8_array(slice)))
+        Ok(EddsaEd25519PublicKey(copy_u8_array(slice)))
     }
 }
 
-impl EcdsaSecp256k1PublicKey {
+impl EddsaEd25519PublicKey {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
 scrypto_type!(
-    EcdsaSecp256k1PublicKey,
-    ScryptoCustomTypeId::EcdsaSecp256k1PublicKey,
-    Type::EcdsaSecp256k1PublicKey,
-    EcdsaSecp256k1PublicKey::LENGTH
+    EddsaEd25519PublicKey,
+    ScryptoCustomTypeId::EddsaEd25519PublicKey,
+    Type::EddsaEd25519PublicKey,
+    EddsaEd25519PublicKey::LENGTH
 );
 
-impl TryFrom<&[u8]> for EcdsaSecp256k1Signature {
-    type Error = ParseEcdsaSecp256k1SignatureError;
+impl TryFrom<&[u8]> for EddsaEd25519Signature {
+    type Error = ParseEddsaEd25519SignatureError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != EcdsaSecp256k1Signature::LENGTH {
-            return Err(ParseEcdsaSecp256k1SignatureError::InvalidLength(
-                slice.len(),
-            ));
+        if slice.len() != EddsaEd25519Signature::LENGTH {
+            return Err(ParseEddsaEd25519SignatureError::InvalidLength(slice.len()));
         }
 
-        Ok(EcdsaSecp256k1Signature(copy_u8_array(slice)))
+        Ok(EddsaEd25519Signature(copy_u8_array(slice)))
     }
 }
 
-impl EcdsaSecp256k1Signature {
+impl EddsaEd25519Signature {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
 scrypto_type!(
-    EcdsaSecp256k1Signature,
-    ScryptoCustomTypeId::EcdsaSecp256k1Signature,
-    Type::EcdsaSecp256k1Signature,
-    EcdsaSecp256k1Signature::LENGTH
+    EddsaEd25519Signature,
+    ScryptoCustomTypeId::EddsaEd25519Signature,
+    Type::EddsaEd25519Signature,
+    EddsaEd25519Signature::LENGTH
 );
 
 //======
 // text
 //======
 
-impl FromStr for EcdsaSecp256k1PublicKey {
-    type Err = ParseEcdsaSecp256k1PublicKeyError;
+impl FromStr for EddsaEd25519PublicKey {
+    type Err = ParseEddsaEd25519PublicKeyError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes = hex::decode(s)
-            .map_err(|_| ParseEcdsaSecp256k1PublicKeyError::InvalidHex(s.to_owned()))?;
+            .map_err(|_| ParseEddsaEd25519PublicKeyError::InvalidHex(s.to_owned()))?;
         Self::try_from(bytes.as_slice())
     }
 }
 
-impl fmt::Display for EcdsaSecp256k1PublicKey {
+impl fmt::Display for EddsaEd25519PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl fmt::Debug for EcdsaSecp256k1PublicKey {
+impl fmt::Debug for EddsaEd25519PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
     }
 }
 
-impl FromStr for EcdsaSecp256k1Signature {
-    type Err = ParseEcdsaSecp256k1SignatureError;
+impl FromStr for EddsaEd25519Signature {
+    type Err = ParseEddsaEd25519SignatureError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes = hex::decode(s)
-            .map_err(|_| ParseEcdsaSecp256k1SignatureError::InvalidHex(s.to_owned()))?;
+            .map_err(|_| ParseEddsaEd25519SignatureError::InvalidHex(s.to_owned()))?;
         Self::try_from(bytes.as_slice())
     }
 }
 
-impl fmt::Display for EcdsaSecp256k1Signature {
+impl fmt::Display for EddsaEd25519Signature {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl fmt::Debug for EcdsaSecp256k1Signature {
+impl fmt::Debug for EddsaEd25519Signature {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
     }

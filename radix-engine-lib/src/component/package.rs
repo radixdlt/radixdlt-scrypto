@@ -3,14 +3,17 @@ use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::crypto::Blob;
 use utils::misc::{copy_u8_array, ContextualDisplay};
 
 use crate::abi::*;
 use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
+use crate::crypto::Blob;
+use crate::data::ScryptoCustomTypeId;
 use crate::engine::scrypto_env::{
     NativeFnInvocation, NativeFunctionInvocation, PackageFunctionInvocation,
 };
+use crate::scrypto_type;
+use crate::scrypto;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -80,7 +83,12 @@ impl PackageAddress {
     }
 }
 
-scrypto_type!(PackageAddress, ScryptoType::PackageAddress, Vec::new());
+scrypto_type!(
+    PackageAddress,
+    ScryptoCustomTypeId::PackageAddress,
+    Type::PackageAddress,
+    27
+);
 
 //======
 // text

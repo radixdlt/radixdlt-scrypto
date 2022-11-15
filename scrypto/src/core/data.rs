@@ -1,3 +1,4 @@
+use radix_engine_lib::data::ScryptoCustomTypeId;
 use radix_engine_lib::engine::api::Syscalls;
 use radix_engine_lib::engine::types::{
     ComponentOffset, KeyValueStoreOffset, LockHandle, RENodeId, SubstateOffset,

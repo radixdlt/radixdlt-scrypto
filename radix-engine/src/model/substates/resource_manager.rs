@@ -1,3 +1,4 @@
+use radix_engine_lib::data::ScryptoValue;
 use crate::model::ResourceMethodRule::{Protected, Public};
 use crate::model::{
     convert, InvokeError, MethodAuthorization, NonFungible, Resource, ResourceManagerError,
@@ -6,12 +7,14 @@ use crate::types::*;
 use radix_engine_lib::engine::types::{
     BucketMethod, NonFungibleStoreId, ResourceManagerMethod, VaultMethod,
 };
+use radix_engine_lib::math::Decimal;
 use radix_engine_lib::resource::AccessRule::*;
 use radix_engine_lib::resource::ResourceMethodAuthKey::*;
 use radix_engine_lib::resource::{
     AccessRule, MintParams, Mutability, ResourceManagerLockAuthInvocation,
     ResourceManagerUpdateAuthInvocation, ResourceMethodAuthKey, ResourceType, LOCKED,
 };
+use utils::dec;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]

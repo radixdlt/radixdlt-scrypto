@@ -1,9 +1,8 @@
 mod data;
-mod expression;
 mod logger;
 mod runtime;
 
 pub use data::*;
-pub use expression::*;
+pub use radix_engine_lib::core::expression::*;
 pub use logger::Logger;
 pub use runtime::*;

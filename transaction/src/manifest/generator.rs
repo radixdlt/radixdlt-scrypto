@@ -2,6 +2,7 @@ use radix_engine_lib::address::Bech32Decoder;
 use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::component::SystemAddress;
+use radix_engine_lib::crypto::{Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature, Hash};
 use radix_engine_lib::engine::types::{
     BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
     ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
@@ -10,25 +11,21 @@ use radix_engine_lib::engine::types::{
 use radix_engine_lib::resource::NonFungibleAddress;
 use radix_engine_lib::resource::NonFungibleId;
 use radix_engine_lib::resource::{
-    Bucket, MintParams, Proof, ResourceAddress, ResourceManagerBucketBurnInvocation,
+    MintParams, ResourceAddress, ResourceManagerBucketBurnInvocation,
     ResourceManagerCreateInvocation, ResourceManagerMintInvocation, Vault,
 };
-use sbor::any::{encode_any, Value};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::{encode_any, SborValue};
 use sbor::type_id::*;
-use scrypto::abi::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
 use scrypto::component::{Component, KeyValueStore};
 use scrypto::core::Expression;
-use scrypto::crypto::*;
-use scrypto::values::*;
 use scrypto::{args, args_from_value_vec};
-use scrypto::data::{ScryptoCustomTypeId, ScryptoCustomValue, ScryptoValue};
-use utils::math::{Decimal, PreciseDecimal};
+use radix_engine_lib::data::{ScryptoCustomTypeId, ScryptoCustomValue, ScryptoValue};
+use radix_engine_lib::math::{Decimal, PreciseDecimal};
 
 use crate::errors::*;
 use crate::manifest::ast;
@@ -1278,21 +1275,11 @@ mod tests {
             r#"Struct(Bucket(1u32), Proof(2u32), "bar")"#,
             SborValue::Struct {
                 fields: vec![
-<<<<<<< HEAD
-                    Value::Custom {
-                        type_id: ScryptoType::Bucket.id(),
-                        bytes: radix_engine_lib::resource::Bucket(1).to_vec()
-                    },
-                    Value::Custom {
-                        type_id: ScryptoType::Proof.id(),
-                        bytes: radix_engine_lib::resource::Proof(2).to_vec()
-=======
                     SborValue::Custom {
                         value: ScryptoCustomValue::Bucket(1)
                     },
                     SborValue::Custom {
                         value: ScryptoCustomValue::Proof(2)
->>>>>>> develop
                     },
                     SborValue::String {
                         value: "bar".into()

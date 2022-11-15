@@ -3,8 +3,6 @@ pub use crate::buffer::{scrypto_decode, scrypto_encode};
 pub use crate::component::*;
 pub use crate::constants::*;
 pub use crate::core::*;
-pub use crate::crypto::*;
-pub use crate::data::*;
 pub use crate::misc::*;
 pub use crate::resource::non_fungible::ScryptoNonFungibleId;
 pub use crate::resource::*;
@@ -18,8 +16,14 @@ pub use num_traits::{
     cast::FromPrimitive, cast::ToPrimitive, identities::One, identities::Zero, pow::Pow,
     sign::Signed,
 };
+pub use radix_engine_lib::crypto::*;
+pub use radix_engine_lib::data::*;
 pub use radix_engine_lib::component::*;
 pub use radix_engine_lib::resource::*;
+pub use radix_engine_lib::math::*;
+pub use radix_engine_lib::math::integer::{
+    CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedPow, CheckedRem, CheckedSub,
+};
 pub use sbor::rust::borrow::ToOwned;
 pub use sbor::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 pub use sbor::rust::str::FromStr;
@@ -27,8 +31,4 @@ pub use sbor::rust::string::String;
 pub use sbor::rust::string::ToString;
 pub use sbor::rust::vec;
 pub use sbor::rust::vec::Vec;
-pub use utils::math::integer::{
-    CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedPow, CheckedRem, CheckedSub,
-};
-pub use utils::math::*;
 pub use sbor::{Decode, Encode, TypeId};

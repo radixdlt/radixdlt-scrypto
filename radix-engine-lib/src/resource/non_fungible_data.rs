@@ -1,5 +1,6 @@
+use sbor::DecodeError;
 use sbor::rust::vec::Vec;
-use sbor::{describe::*, *};
+use scrypto_abi::Type;
 
 /// Represents the data structure of a non-fungible.
 pub trait NonFungibleData {

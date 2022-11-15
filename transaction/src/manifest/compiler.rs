@@ -1,7 +1,7 @@
 use radix_engine_lib::address::Bech32Decoder;
 use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_lib::crypto::hash;
 use sbor::rust::collections::HashMap;
-use scrypto::crypto::hash;
 
 use crate::manifest::*;
 use crate::model::TransactionManifest;

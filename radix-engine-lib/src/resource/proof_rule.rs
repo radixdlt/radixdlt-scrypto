@@ -1,15 +1,14 @@
-use sbor::describe::{Fields, Variant};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::boxed::Box;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use sbor::*;
 use scrypto_abi::{Describe, Fields, Type, Variant};
-use utils::math::Decimal;
+use crate::math::Decimal;
 
 use crate::resource::AccessRuleNode::{AllOf, AnyOf};
 use crate::resource::*;
+use crate::scrypto;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
@@ -89,7 +88,8 @@ impl From<&str> for SoftResource {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleAddress),
     StaticResource(ResourceAddress),
@@ -268,7 +268,8 @@ where
     ProofRule::AmountOf(amount.into(), resource.into())
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum AccessRule {
     AllowAll,
     DenyAll,

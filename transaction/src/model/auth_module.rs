@@ -1,6 +1,6 @@
 use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId};
+use radix_engine_lib::crypto::PublicKey;
 use scrypto::constants::SYSTEM_TOKEN;
-use scrypto::crypto::PublicKey;
 use scrypto::resource::non_fungible::FromPublicKey;
 
 pub struct AuthModule;

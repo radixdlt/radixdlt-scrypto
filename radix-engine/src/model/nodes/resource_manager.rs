@@ -15,6 +15,7 @@ use radix_engine_lib::engine::types::{
     RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset,
     SubstateOffset,
 };
+use radix_engine_lib::math::Decimal;
 use radix_engine_lib::resource::{
     Bucket, MintParams, ResourceManagerBucketBurnInvocation, ResourceManagerBurnInvocation,
     ResourceManagerCreateBucketInvocation, ResourceManagerCreateInvocation,
@@ -27,6 +28,7 @@ use radix_engine_lib::resource::{
     ResourceType,
 };
 use scrypto::resource::SysBucket;
+use utils::dec;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq)]

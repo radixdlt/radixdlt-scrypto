@@ -6,6 +6,8 @@ use radix_engine_lib::engine::types::{BucketOffset, ComponentId, NativeMethod, R
 use radix_engine_lib::resource::{VaultPutInvocation, VaultTakeInvocation};
 use radix_engine_lib::resource::{Bucket, Proof, Vault};
 use std::fmt::Debug;
+use radix_engine_lib::data::ScryptoValue;
+use radix_engine_lib::math::Decimal;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]

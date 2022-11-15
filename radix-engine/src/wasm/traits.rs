@@ -1,6 +1,6 @@
 use crate::model::InvokeError;
 use sbor::rust::boxed::Box;
-use scrypto::data::ScryptoValue;
+use radix_engine_lib::data::ScryptoValue;
 
 use crate::wasm::errors::*;
 

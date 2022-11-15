@@ -3,13 +3,17 @@ use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto_abi::*;
+use scrypto_abi::Type;
 use utils::misc::{copy_u8_array, ContextualDisplay};
 
 use crate::address::*;
+use crate::data::ScryptoCustomTypeId;
 use crate::engine::{api::*, scrypto_env::*};
 use crate::math::*;
 use crate::resource::*;
+use crate::scrypto_type;
+use crate::scrypto;
+use crate::Describe;
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,

@@ -10,11 +10,9 @@ use radix_engine_lib::resource::{
 };
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
-use sbor::{encode_any, SborValue, Value};
+use sbor::{encode_any, SborValue};
 use scrypto::buffer::scrypto_decode;
-use scrypto::crypto::Hash;
-use scrypto::data::{ScryptoValue, ScryptoValueFormatterContext};
-use scrypto::values::*;
+use radix_engine_lib::data::{ScryptoValue, ScryptoValueFormatterContext};
 use utils::misc::ContextualDisplay;
 
 use crate::errors::*;

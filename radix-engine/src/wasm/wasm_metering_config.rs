@@ -1,3 +1,4 @@
+use radix_engine_lib::crypto::hash;
 use super::InstructionCostRules;
 use crate::types::*;
 

@@ -3,7 +3,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::core::*;
-use crate::data::ScryptoCustomTypeId;
+use radix_engine_lib::data::ScryptoCustomTypeId;
 
 /// Represents a published package.
 #[derive(Debug)]

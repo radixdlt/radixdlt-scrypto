@@ -1,7 +1,7 @@
 use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_lib::crypto::{Hash, hash, PublicKey, Signature, SignatureWithPublicKey};
 use sbor::*;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use scrypto::crypto::{hash, Hash, PublicKey, Signature, SignatureWithPublicKey};
 use scrypto::scrypto;
 
 use crate::manifest::{compile, CompileError};

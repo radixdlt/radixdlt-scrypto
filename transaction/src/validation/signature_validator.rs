@@ -1,4 +1,4 @@
-use scrypto::crypto::*;
+use radix_engine_lib::crypto::*;
 
 pub fn recover(message: &[u8], signature: &SignatureWithPublicKey) -> Option<PublicKey> {
     match signature {

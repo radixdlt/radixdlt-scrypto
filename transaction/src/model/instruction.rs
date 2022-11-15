@@ -1,13 +1,13 @@
+use radix_engine_lib::crypto::Blob;
 use radix_engine_lib::engine::types::{
     BucketId, NativeFunctionIdent, NativeMethodIdent, ProofId, ScryptoFunctionIdent,
     ScryptoMethodIdent,
 };
+use radix_engine_lib::math::Decimal;
 use radix_engine_lib::resource::{NonFungibleId, ResourceAddress};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
-use sbor::*;
-use utils::crypto::Blob;
-use utils::math::Decimal;
+use scrypto::scrypto;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]

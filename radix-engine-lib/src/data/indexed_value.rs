@@ -5,13 +5,13 @@ use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::buffer::*;
-use crate::component::*;
-use crate::core::*;
-use crate::data::*;
 use crate::engine::types::*;
-use crate::misc::ContextualDisplay;
-use crate::resource::*;
+use utils::misc::ContextualDisplay;
+use crate::component::{ComponentAddress, PackageAddress, SystemAddress};
+use crate::core::Expression;
+use crate::crypto::Blob;
+use crate::data::{format_scrypto_value, ScryptoCustomTypeId, ScryptoCustomValue, ScryptoValueFormatterContext};
+use crate::resource::{NonFungibleAddress, ResourceAddress};
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ScryptoValueDecodeError {
@@ -54,7 +54,7 @@ impl ScryptoValue {
     }
 
     pub fn from_typed<T: Encode<ScryptoCustomTypeId>>(value: &T) -> Self {
-        let bytes = scrypto_encode(value);
+        let bytes = encode(value);
         Self::from_slice(&bytes).expect("Failed to convert trusted value into ScryptoValue")
     }
 

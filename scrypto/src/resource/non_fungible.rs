@@ -1,6 +1,6 @@
 use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
+use radix_engine_lib::crypto::{hash, PublicKey};
 use sbor::rust::marker::PhantomData;
-use utils::crypto::{hash, PublicKey};
 
 use crate::borrow_resource_manager;
 use crate::constants::{ECDSA_SECP256K1_TOKEN, EDDSA_ED25519_TOKEN};

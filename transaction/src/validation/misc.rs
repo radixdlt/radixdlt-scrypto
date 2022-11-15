@@ -1,5 +1,5 @@
+use radix_engine_lib::crypto::Hash;
 use sbor::rust::collections::HashMap;
-use scrypto::crypto::Hash;
 
 pub trait IntentHashManager {
     fn allows(&self, hash: &Hash) -> bool;

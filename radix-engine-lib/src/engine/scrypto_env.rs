@@ -4,9 +4,10 @@ use crate::resource::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::*;
+use scrypto_derive::scrypto;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum RadixEngineInput {
     InvokeScryptoFunction(ScryptoFunctionIdent, Vec<u8>),
     InvokeScryptoMethod(ScryptoMethodIdent, Vec<u8>),
@@ -27,13 +28,15 @@ pub enum RadixEngineInput {
     GetTransactionHash(),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum NativeFnInvocation {
     Method(NativeMethodInvocation),
     Function(NativeFunctionInvocation),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum NativeMethodInvocation {
     Component(ComponentMethodInvocation),
     EpochManager(EpochManagerMethodInvocation),
@@ -45,30 +48,35 @@ pub enum NativeMethodInvocation {
     Worktop(WorktopMethodInvocation),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum NativeFunctionInvocation {
     EpochManager(EpochManagerFunctionInvocation),
     ResourceManager(ResourceManagerFunctionInvocation),
     Package(PackageFunctionInvocation),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ComponentMethodInvocation {
     AddAccessCheck(ComponentAddAccessCheckInvocation),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum EpochManagerFunctionInvocation {
     Create(EpochManagerCreateInvocation),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum EpochManagerMethodInvocation {
     GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
     SetEpoch(EpochManagerSetEpochInvocation),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum AuthZoneMethodInvocation {
     Pop(AuthZonePopInvocation),
     Push(AuthZonePushInvocation),
@@ -79,13 +87,15 @@ pub enum AuthZoneMethodInvocation {
     Drain(AuthZoneDrainInvocation),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerFunctionInvocation {
     Create(ResourceManagerCreateInvocation),
     BurnBucket(ResourceManagerBucketBurnInvocation),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerMethodInvocation {
     Burn(ResourceManagerBurnInvocation),
     UpdateAuth(ResourceManagerUpdateAuthInvocation),
@@ -102,7 +112,8 @@ pub enum ResourceManagerMethodInvocation {
     CreateVault(ResourceManagerCreateVaultInvocation),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum BucketMethodInvocation {
     Take(BucketTakeInvocation),
     TakeNonFungibles(BucketTakeNonFungiblesInvocation),
@@ -113,7 +124,8 @@ pub enum BucketMethodInvocation {
     CreateProof(BucketCreateProofInvocation),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum VaultMethodInvocation {
     Take(VaultTakeInvocation),
     LockFee(VaultLockFeeInvocation),
@@ -127,7 +139,8 @@ pub enum VaultMethodInvocation {
     CreateProofByIds(VaultCreateProofByIdsInvocation),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ProofMethodInvocation {
     Clone(ProofCloneInvocation),
     GetAmount(ProofGetAmountInvocation),
@@ -135,7 +148,8 @@ pub enum ProofMethodInvocation {
     GetResourceAddress(ProofGetResourceAddressInvocation),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum WorktopMethodInvocation {
     TakeAll(WorktopTakeAllInvocation),
     TakeAmount(WorktopTakeAmountInvocation),
@@ -147,7 +161,8 @@ pub enum WorktopMethodInvocation {
     Drain(WorktopDrainInvocation),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum PackageFunctionInvocation {
     Publish(PackagePublishInvocation),
 }

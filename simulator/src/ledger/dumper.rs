@@ -7,7 +7,7 @@ use scrypto::engine_lib::core::NetworkDefinition;
 use scrypto::engine_lib::engine::types::RENodeId;
 use scrypto::values::ScryptoValueFormatterContext;
 use std::collections::VecDeque;
-use scrypto::data::{ScryptoValue, ScryptoValueFormatterContext};
+use radix_engine_lib::::{ScryptoValue, ScryptoValueFormatterContext};
 use utils::misc::ContextualDisplay;
 
 use crate::utils::*;

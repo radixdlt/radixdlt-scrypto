@@ -2,6 +2,7 @@ use radix_engine_lib::address::Bech32Decoder;
 use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_lib::crypto::{Blob, Hash, hash};
 use radix_engine_lib::engine::types::{
     BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
     ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
@@ -14,7 +15,6 @@ use radix_engine_lib::resource::{
     ResourceManagerCreateInvocation, ResourceManagerMintInvocation, ResourceMethodAuthKey,
     ResourceType, Withdraw, LOCKED,
 };
-use sbor::describe::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
@@ -27,12 +27,10 @@ use scrypto::abi::*;
 use scrypto::access_rule_node;
 use scrypto::buffer::*;
 use scrypto::constants::*;
-use scrypto::crypto::*;
 use scrypto::rule;
-use scrypto::values::*;
 use scrypto::*;
-use scrypto::data::{ScryptoCustomTypeId, ScryptoCustomValue};
-use utils::math::{Decimal, PreciseDecimal};
+use radix_engine_lib::data::{ScryptoCustomTypeId, ScryptoCustomValue, ScryptoValue};
+use radix_engine_lib::math::{Decimal, PreciseDecimal};
 
 use crate::errors::*;
 use crate::model::*;
@@ -1041,7 +1039,7 @@ impl ManifestBuilder {
                                     .unwrap()
                                 }
                             };
-                            Ok(scrypto_encode(&scrypto::resource::Bucket(bucket_id)))
+                            Ok(scrypto_encode(&radix_engine_lib::resource::Bucket(bucket_id)))
                         }
                         Type::Proof => {
                             let resource_specifier = parse_resource_specifier(arg, &self.decoder)
@@ -1078,7 +1076,7 @@ impl ManifestBuilder {
                                     }
                                 }
                             };
-                            Ok(scrypto_encode(&scrypto::resource::Proof(proof_id)))
+                            Ok(scrypto_encode(&radix_engine_lib::resource::Proof(proof_id)))
                         }
                         _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
                     };
@@ -1107,7 +1105,6 @@ impl ManifestBuilder {
             .map_err(|_| BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned()))?;
         Ok(scrypto_encode(&value))
     }
-<<<<<<< HEAD
 
     fn parse_custom_ty(
         &mut self,
@@ -1117,53 +1114,53 @@ impl ManifestBuilder {
         type_id: u8,
         account: Option<ComponentAddress>,
     ) -> Result<Vec<u8>, BuildArgsError> {
-        match ScryptoType::from_id(type_id).ok_or(BuildArgsError::UnsupportedType(i, ty.clone()))? {
-            ScryptoType::Decimal => {
+        match ScryptoCustomTypeId::from_u8(type_id).ok_or(BuildArgsError::UnsupportedType(i, ty.clone()))? {
+            ScryptoCustomTypeId::Decimal => {
                 let value = arg
                     .parse::<Decimal>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            ScryptoType::PreciseDecimal => {
+            ScryptoCustomTypeId::PreciseDecimal => {
                 let value = arg
                     .parse::<PreciseDecimal>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            ScryptoType::PackageAddress => {
+            ScryptoCustomTypeId::PackageAddress => {
                 let value = self
                     .decoder
                     .validate_and_decode_package_address(arg)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            ScryptoType::ComponentAddress => {
+            ScryptoCustomTypeId::ComponentAddress => {
                 let value = self
                     .decoder
                     .validate_and_decode_component_address(arg)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            ScryptoType::ResourceAddress => {
+            ScryptoCustomTypeId::ResourceAddress => {
                 let value = self
                     .decoder
                     .validate_and_decode_resource_address(arg)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            ScryptoType::Hash => {
+            ScryptoCustomTypeId::Hash => {
                 let value = arg
                     .parse::<Hash>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            ScryptoType::NonFungibleId => {
+            ScryptoCustomTypeId::NonFungibleId => {
                 let value = arg
                     .parse::<NonFungibleId>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            ScryptoType::Bucket => {
+            ScryptoCustomTypeId::Bucket => {
                 let resource_specifier = parse_resource_specifier(arg, &self.decoder)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 let bucket_id = match resource_specifier {
@@ -1192,7 +1189,7 @@ impl ManifestBuilder {
                 };
                 Ok(scrypto_encode(&Bucket(bucket_id)))
             }
-            ScryptoType::Proof => {
+            ScryptoCustomTypeId::Proof => {
                 let resource_specifier = parse_resource_specifier(arg, &self.decoder)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 let proof_id = match resource_specifier {
@@ -1226,8 +1223,6 @@ impl ManifestBuilder {
             _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),
         }
     }
-=======
->>>>>>> develop
 }
 
 enum ResourceSpecifier {

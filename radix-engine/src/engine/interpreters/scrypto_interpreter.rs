@@ -1,3 +1,4 @@
+use radix_engine_lib::data::{match_schema_with_value, ScryptoValue};
 use crate::engine::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};

@@ -8,12 +8,13 @@ use radix_engine_lib::resource::{
     ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation,
     ResourceMethodAuthKey, ResourceType,
 };
+use radix_engine_lib::math::Decimal;
+
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
-use utils::math::Decimal;
 
 use crate::resource::*;
 use crate::scrypto;

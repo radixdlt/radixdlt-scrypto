@@ -6,6 +6,7 @@ use radix_engine_lib::component::{
     EpochManagerGetCurrentEpochInvocation, EpochManagerSetEpochInvocation,
     PackagePublishInvocation,
 };
+use radix_engine_lib::data::{ScryptoCustomTypeId, ScryptoValue};
 use radix_engine_lib::engine::api::{SysInvokableNative, Syscalls};
 use radix_engine_lib::engine::types::{NativeFunction, NativeMethod, RENodeId};
 use radix_engine_lib::resource::{

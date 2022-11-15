@@ -3,13 +3,16 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::crypto::{hash, PublicKey};
 use utils::misc::{copy_u8_array, ContextualDisplay};
 
 use crate::abi::*;
 use crate::address::*;
+use crate::crypto::{hash, PublicKey};
+use crate::data::ScryptoCustomTypeId;
 use crate::engine::{api::*, scrypto_env::*, types::*};
 use crate::resource::AccessRules;
+use crate::scrypto_type;
+use crate::scrypto;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -107,7 +110,12 @@ impl ComponentAddress {
     }
 }
 
-scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
+scrypto_type!(
+    ComponentAddress,
+    ScryptoCustomTypeId::ComponentAddress,
+    Type::ComponentAddress,
+    27
+);
 
 //======
 // text

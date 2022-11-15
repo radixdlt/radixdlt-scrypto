@@ -7,11 +7,12 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::Decode;
+use crate::data::ScryptoCustomTypeId;
 
 use super::types::*;
 
 pub trait SysInvocation {
-    type Output: Debug + Decode;
+    type Output: Debug + Decode<ScryptoCustomTypeId>;
 }
 
 pub trait ScryptoNativeInvocation: Into<NativeFnInvocation> + SysInvocation {}

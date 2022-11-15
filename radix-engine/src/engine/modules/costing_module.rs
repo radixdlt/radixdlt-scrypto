@@ -1,3 +1,4 @@
+use radix_engine_lib::data::ScryptoValue;
 use crate::engine::*;
 use crate::fee::{FeeReserve, FeeReserveError, SystemApiCostingEntry};
 use crate::model::Resource;

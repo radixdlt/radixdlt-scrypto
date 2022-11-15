@@ -14,8 +14,8 @@ use scrypto::constants::EPOCH_MANAGER;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
 use crate::buffer::scrypto_decode;
-use crate::crypto::*;
-use crate::data::ScryptoCustomTypeId;
+use radix_engine_lib::crypto::*;
+use radix_engine_lib::data::ScryptoCustomTypeId;
 
 /// The transaction runtime.
 #[derive(Debug)]

@@ -14,11 +14,10 @@ use utils::misc::copy_u8_array;
 
 use crate::abi::*;
 use crate::buffer::*;
-use crate::core::{DataRef, DataRefMut};
-use crate::crypto::*;
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::data::*;
-use crate::engine::{api::*, types::*, utils::*};
+use radix_engine_lib::data::*;
+use radix_engine_lib::crypto::*;
+use crate::core::{DataRef, DataRefMut};
 use crate::misc::*;
 
 /// A scalable key-value map which loads entries on demand.

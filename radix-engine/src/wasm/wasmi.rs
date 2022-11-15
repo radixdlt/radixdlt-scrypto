@@ -1,9 +1,11 @@
 use moka::sync::Cache;
 use std::sync::Arc;
 use wasmi::*;
+use radix_engine_lib::crypto::Hash;
+use radix_engine_lib::data::ScryptoValue;
 
 use crate::model::InvokeError;
-use crate::types::{format, Box, Hash, ScryptoValue};
+use crate::types::{format, Box};
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;

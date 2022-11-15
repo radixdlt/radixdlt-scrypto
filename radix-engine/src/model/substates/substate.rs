@@ -1,3 +1,4 @@
+use radix_engine_lib::data::ScryptoValue;
 use crate::engine::{KernelError, RuntimeError};
 use crate::model::substates::worktop::WorktopSubstate;
 use crate::model::*;

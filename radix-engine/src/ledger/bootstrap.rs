@@ -17,6 +17,7 @@ use radix_engine_lib::resource::{
 };
 use scrypto::rule;
 use radix_engine_constants::GENESIS_CREATION_CREDIT;
+use radix_engine_lib::crypto::hash;
 
 use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};

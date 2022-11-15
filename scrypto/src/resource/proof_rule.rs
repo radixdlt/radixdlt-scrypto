@@ -90,17 +90,6 @@ macro_rules! access_rule_node {
     }};
 }
 
-<<<<<<< HEAD
-=======
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
-pub enum AccessRule {
-    AllowAll,
-    DenyAll,
-    Protected(AccessRuleNode),
-}
-
->>>>>>> develop
 #[macro_export]
 macro_rules! rule {
     (allow_all) => {{

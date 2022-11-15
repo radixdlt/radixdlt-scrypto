@@ -6,6 +6,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
+use crate::data::ScryptoCustomTypeId;
 use crate::resource::*;
 use crate::scrypto_type;
 

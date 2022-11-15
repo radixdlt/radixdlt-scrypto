@@ -9,10 +9,12 @@ use sbor::*;
 use utils::misc::copy_u8_array;
 
 use crate::abi::*;
-use crate::crypto::*;
+use crate::data::ScryptoCustomTypeId;
 use crate::engine::{api::*, scrypto_env::*, types::*};
 use crate::math::*;
 use crate::resource::*;
+use crate::scrypto_type;
+use crate::scrypto;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -267,14 +269,6 @@ impl Vault {
 }
 
 scrypto_type!(Vault, ScryptoCustomTypeId::Vault, Type::Vault, 36);
-
-impl Vault {
-    pub fn to_vec(&self) -> Vec<u8> {
-        let mut v = self.0 .0.to_vec();
-        v.extend(self.0 .1.to_le_bytes());
-        v
-    }
-}
 
 //======
 // text

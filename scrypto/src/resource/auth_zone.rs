@@ -9,9 +9,9 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::data::ScryptoCustomTypeId;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-use utils::math::Decimal;
+use radix_engine_lib::data::ScryptoCustomTypeId;
+use radix_engine_lib::math::Decimal;
 
 /// Represents the auth zone, which is used by system for checking
 /// if this component is allowed to

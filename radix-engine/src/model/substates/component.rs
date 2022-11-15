@@ -1,3 +1,4 @@
+use radix_engine_lib::data::ScryptoValue;
 use crate::model::{convert, MethodAuthorization};
 use crate::types::*;
 

@@ -1,4 +1,5 @@
-use crate::crypto::Hash;
+use radix_engine_lib::crypto::Hash;
+use radix_engine_lib::data::ScryptoCustomTypeId;
 use radix_engine_lib::engine::actor::ScryptoActor;
 use radix_engine_lib::engine::api::{ScryptoNativeInvocation, SysNativeInvokable, Syscalls};
 use radix_engine_lib::engine::scrypto_env::RadixEngineInput;
@@ -18,7 +19,7 @@ extern "C" {
 
 /// Utility function for making a radix engine call.
 #[cfg(target_arch = "wasm32")]
-pub fn call_engine<V: Decode>(input: RadixEngineInput) -> V {
+pub fn call_engine<V: Decode<ScryptoCustomTypeId>>(input: RadixEngineInput) -> V {
     use crate::buffer::{scrypto_decode_from_buffer, *};
 
     unsafe {
@@ -42,7 +43,7 @@ pub fn call_engine_to_raw(input: RadixEngineInput) -> Vec<u8> {
 
 /// Utility function for making a radix engine call.
 #[cfg(not(target_arch = "wasm32"))]
-pub fn call_engine<V: Decode>(_input: RadixEngineInput) -> V {
+pub fn call_engine<V: Decode<ScryptoCustomTypeId>>(_input: RadixEngineInput) -> V {
     todo!()
 }
 /// Utility function for making a radix engine call.
@@ -161,7 +162,7 @@ macro_rules! sys_env_native_fn {
         $vis $fn $fn_name<Y, E>($($args)*, env: &mut Y) -> Result<$rtn, E>
         where
             Y: radix_engine_lib::engine::api::SysNativeInvokable<$invocation, E>,
-            E: sbor::rust::fmt::Debug + TypeId + Decode,
+            E: sbor::rust::fmt::Debug + TypeId<radix_engine_lib::data::ScryptoCustomTypeId> + Decode<radix_engine_lib::data::ScryptoCustomTypeId>,
         {
             radix_engine_lib::engine::api::SysNativeInvokable::sys_invoke(env, $invocation { $($invocation_args)* })
         }
@@ -171,7 +172,7 @@ macro_rules! sys_env_native_fn {
         $vis $fn $fn_name<Y, E>(env: &mut Y) -> Result<$rtn, E>
         where
             Y: radix_engine_lib::engine::api::SysNativeInvokable<$invocation, E>,
-            E: sbor::rust::fmt::Debug + TypeId + Decode,
+            E: sbor::rust::fmt::Debug + TypeId<radix_engine_lib::data::ScryptoCustomTypeId> + Decode<radix_engine_lib::data::ScryptoCustomTypeId>,
         {
             radix_engine_lib::engine::api::SysNativeInvokable::sys_invoke(env, $invocation { $($invocation_args)* })
         }

@@ -1,4 +1,5 @@
 use wasmi::HostError;
+use radix_engine_lib::data::ScryptoValueDecodeError;
 
 use crate::fee::FeeReserveError;
 use crate::model::InvokeError;

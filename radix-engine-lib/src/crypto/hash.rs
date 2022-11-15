@@ -5,10 +5,11 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use utils::misc::copy_u8_array;
 
 use crate::abi::*;
 use crate::data::*;
-use crate::misc::*;
+use crate::scrypto_type;
 
 /// Represents a 32-byte hash digest.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]

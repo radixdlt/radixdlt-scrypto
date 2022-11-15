@@ -3,9 +3,9 @@ use crate::engine::scrypto_env::WorktopMethodInvocation;
 use crate::engine::scrypto_env::{NativeFnInvocation, NativeMethodInvocation};
 use crate::math::Decimal;
 use crate::resource::*;
+use crate::scrypto;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]

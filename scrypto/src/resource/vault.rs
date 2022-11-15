@@ -1,3 +1,4 @@
+use radix_engine_lib::data::ScryptoCustomTypeId;
 use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
 use radix_engine_lib::resource::{
     Bucket, NonFungibleAddress, NonFungibleId, ResourceAddress,
@@ -6,26 +7,26 @@ use radix_engine_lib::resource::{
     VaultGetNonFungibleIdsInvocation, VaultGetResourceAddressInvocation, VaultLockFeeInvocation,
     VaultPutInvocation, VaultTakeInvocation, VaultTakeNonFungiblesInvocation,
 };
+use radix_engine_lib::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
-use utils::math::Decimal;
 
 use crate::resource::*;
 use crate::scrypto;
 use crate::scrypto_type;
 
 pub trait SysVault {
-    fn sys_amount<Y, E: Debug + Decode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
+    fn sys_amount<Y, E: Debug + Decode<ScryptoCustomTypeId>>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<VaultGetAmountInvocation, E>;
 }
 
 impl SysVault for Vault {
-    fn sys_amount<Y, E: Debug + Decode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
+    fn sys_amount<Y, E: Debug + Decode<ScryptoCustomTypeId>>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<VaultGetAmountInvocation, E>,
     {

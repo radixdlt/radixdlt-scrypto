@@ -1,6 +1,6 @@
+use radix_engine_lib::crypto::{Hash, hash, PublicKey};
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
-use scrypto::crypto::{hash, Hash, PublicKey};
 use scrypto::scrypto;
 
 use crate::model::TransactionIntent;
