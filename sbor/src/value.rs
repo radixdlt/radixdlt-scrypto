@@ -219,52 +219,52 @@ fn decode_next<X: CustomTypeId, Y: CustomValue<X>>(
     known_type: Option<SborTypeId<X>>,
     decoder: &mut Decoder<X>,
 ) -> Result<SborValue<X, Y>, DecodeError> {
-    let ty = match known_type {
+    let type_id = match known_type {
         Some(t) => t,
         None => decoder.read_type_id()?,
     };
 
-    match ty {
+    match type_id {
         // primitive types
         SborTypeId::Unit => {
-            <()>::decode_value(decoder)?;
+            <()>::decode_value(decoder, type_id)?;
             Ok(SborValue::Unit)
         }
         SborTypeId::Bool => Ok(SborValue::Bool {
-            value: <bool>::decode_value(decoder)?,
+            value: <bool>::decode_value(decoder, type_id)?,
         }),
         SborTypeId::I8 => Ok(SborValue::I8 {
-            value: <i8>::decode_value(decoder)?,
+            value: <i8>::decode_value(decoder, type_id)?,
         }),
         SborTypeId::I16 => Ok(SborValue::I16 {
-            value: <i16>::decode_value(decoder)?,
+            value: <i16>::decode_value(decoder, type_id)?,
         }),
         SborTypeId::I32 => Ok(SborValue::I32 {
-            value: <i32>::decode_value(decoder)?,
+            value: <i32>::decode_value(decoder, type_id)?,
         }),
         SborTypeId::I64 => Ok(SborValue::I64 {
-            value: <i64>::decode_value(decoder)?,
+            value: <i64>::decode_value(decoder, type_id)?,
         }),
         SborTypeId::I128 => Ok(SborValue::I128 {
-            value: <i128>::decode_value(decoder)?,
+            value: <i128>::decode_value(decoder, type_id)?,
         }),
         SborTypeId::U8 => Ok(SborValue::U8 {
-            value: <u8>::decode_value(decoder)?,
+            value: <u8>::decode_value(decoder, type_id)?,
         }),
         SborTypeId::U16 => Ok(SborValue::U16 {
-            value: <u16>::decode_value(decoder)?,
+            value: <u16>::decode_value(decoder, type_id)?,
         }),
         SborTypeId::U32 => Ok(SborValue::U32 {
-            value: <u32>::decode_value(decoder)?,
+            value: <u32>::decode_value(decoder, type_id)?,
         }),
         SborTypeId::U64 => Ok(SborValue::U64 {
-            value: <u64>::decode_value(decoder)?,
+            value: <u64>::decode_value(decoder, type_id)?,
         }),
         SborTypeId::U128 => Ok(SborValue::U128 {
-            value: <u128>::decode_value(decoder)?,
+            value: <u128>::decode_value(decoder, type_id)?,
         }),
         SborTypeId::String => Ok(SborValue::String {
-            value: <String>::decode_value(decoder)?,
+            value: <String>::decode_value(decoder, type_id)?,
         }),
         // struct & enum
         SborTypeId::Struct => {
@@ -279,7 +279,7 @@ fn decode_next<X: CustomTypeId, Y: CustomValue<X>>(
         }
         SborTypeId::Enum => {
             // discriminator
-            let discriminator = <String>::decode_value(decoder)?;
+            let discriminator = <String>::decode_value(decoder, type_id)?;
             // number of fields
             let len = decoder.read_size()?;
             // fields

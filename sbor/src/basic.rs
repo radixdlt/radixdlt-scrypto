@@ -5,7 +5,7 @@ use crate::*;
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type") // See https://serde.rs/enum-representations.html
 )]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomTypeId {}
 
 #[cfg_attr(

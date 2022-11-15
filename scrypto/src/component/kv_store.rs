@@ -192,7 +192,7 @@ impl<
         V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
     > Decode<ScryptoCustomTypeId> for KeyValueStore<K, V>
 {
-    fn check_type_id(decoder: &mut ScryptoDecoder) -> Result<(), DecodeError> {
+    fn decode_type_id(decoder: &mut ScryptoDecoder) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
 

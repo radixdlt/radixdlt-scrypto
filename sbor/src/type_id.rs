@@ -305,7 +305,7 @@ impl<X: CustomTypeId, K, V> TypeId<X> for HashMap<K, V> {
     }
 }
 
-pub trait CustomTypeId: Debug + Clone + PartialEq + Eq {
+pub trait CustomTypeId: Copy + Debug + Clone + PartialEq + Eq {
     fn as_u8(&self) -> u8;
 
     fn from_u8(id: u8) -> Option<Self>;
