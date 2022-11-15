@@ -701,6 +701,7 @@ mod tests {
     use crate::scrypto;
     use sbor::rust::borrow::ToOwned;
     use sbor::rust::collections::BTreeSet;
+    use sbor::rust::string::String;
 
     #[test]
     fn test_args() {
