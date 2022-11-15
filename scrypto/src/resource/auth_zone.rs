@@ -1,4 +1,5 @@
 use radix_engine_lib::engine::api::{Syscalls, SysNativeInvokable};
+use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
 use radix_engine_lib::engine::types::RENodeId;
 use radix_engine_lib::resource::{AuthZoneClearInvocation, AuthZoneCreateProofByAmountInvocation, AuthZoneCreateProofByIdsInvocation, AuthZoneCreateProofInvocation, AuthZoneDrainInvocation, AuthZonePopInvocation, AuthZonePushInvocation, NonFungibleId, ResourceAddress};
 use sbor::rust::collections::BTreeSet;
@@ -136,37 +137,27 @@ impl ComponentAuthZone {
             proof,
         })
     }
-}
 
-#[cfg(target_arch = "wasm32")]
-pub mod wasm {
-    use crate::engine::scrypto_env::ScryptoEnv;
-    use crate::math::Decimal;
-    use crate::resource::*;
-    use sbor::rust::collections::BTreeSet;
+    pub fn pop() -> radix_engine_lib::resource::Proof {
+        Self::sys_pop(&mut ScryptoEnv).unwrap()
+    }
 
-    impl ComponentAuthZone {
-        pub fn pop() -> Proof {
-            Self::sys_pop(&mut ScryptoEnv).unwrap()
-        }
+    pub fn create_proof(resource_address: ResourceAddress) -> radix_engine_lib::resource::Proof {
+        Self::sys_create_proof(resource_address, &mut ScryptoEnv).unwrap()
+    }
 
-        pub fn create_proof(resource_address: ResourceAddress) -> Proof {
-            Self::sys_create_proof(resource_address, &mut ScryptoEnv).unwrap()
-        }
+    pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> radix_engine_lib::resource::Proof {
+        Self::sys_create_proof_by_amount(amount, resource_address, &mut ScryptoEnv).unwrap()
+    }
 
-        pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
-            Self::sys_create_proof_by_amount(amount, resource_address, &mut ScryptoEnv).unwrap()
-        }
+    pub fn create_proof_by_ids(
+        ids: &BTreeSet<NonFungibleId>,
+        resource_address: ResourceAddress,
+    ) -> radix_engine_lib::resource::Proof {
+        Self::sys_create_proof_by_ids(ids, resource_address, &mut ScryptoEnv).unwrap()
+    }
 
-        pub fn create_proof_by_ids(
-            ids: &BTreeSet<NonFungibleId>,
-            resource_address: ResourceAddress,
-        ) -> Proof {
-            Self::sys_create_proof_by_ids(ids, resource_address, &mut ScryptoEnv).unwrap()
-        }
-
-        pub fn push<P: Into<Proof>>(proof: P) {
-            Self::sys_push(proof, &mut ScryptoEnv).unwrap()
-        }
+    pub fn push<P: Into<radix_engine_lib::resource::Proof>>(proof: P) {
+        Self::sys_push(proof, &mut ScryptoEnv).unwrap()
     }
 }

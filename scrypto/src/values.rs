@@ -17,11 +17,10 @@ use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::math::*;
-use crate::resource::*;
 use radix_engine_lib::component::{ComponentAddress, SystemAddress};
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::engine::types::{BucketId, ComponentId, GlobalAddress, KeyValueStoreId, ProofId, RENodeId, VaultId};
-use radix_engine_lib::resource::{Bucket, NonFungibleAddress, NonFungibleId, ParseBucketError, ParseNonFungibleAddressError, ParseNonFungibleIdError, ResourceAddress};
+use radix_engine_lib::resource::{Bucket, NonFungibleAddress, NonFungibleId, ParseBucketError, ParseNonFungibleAddressError, ParseNonFungibleIdError, ParseProofError, ParseVaultError, Proof, ResourceAddress, Vault};
 
 pub enum ScryptoValueReplaceError {
     ProofIdNotFound(ProofId),
@@ -172,7 +171,7 @@ impl ScryptoValue {
                 ref mut bytes,
             } = value
             {
-                *bytes = scrypto::resource::Proof(next_id).to_vec();
+                *bytes = Proof(next_id).to_vec();
             } else {
                 panic!("Proof Id should be custom type");
             }

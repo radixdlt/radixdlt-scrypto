@@ -2,7 +2,7 @@ use radix_engine_lib::address::Bech32Decoder;
 use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::resource::{require, NonFungibleAddress, NonFungibleId, ResourceAddress, LOCKED, AccessRule, AccessRuleNode, ResourceManagerBurnInvocation, ResourceManagerMintInvocation, MintParams, Withdraw, ResourceMethodAuthKey, ResourceType, Mutability, ResourceManagerCreateInvocation, Bucket};
+use radix_engine_lib::resource::{require, NonFungibleAddress, NonFungibleId, ResourceAddress, LOCKED, AccessRule, AccessRuleNode, ResourceManagerBurnInvocation, ResourceManagerMintInvocation, MintParams, Withdraw, ResourceMethodAuthKey, ResourceType, Mutability, ResourceManagerCreateInvocation, Bucket, Proof};
 use radix_engine_lib::access_rule_node;
 use radix_engine_lib::engine::types::{BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver};
 use radix_engine_lib::resource::ResourceMethodAuthKey::*;
@@ -1085,7 +1085,7 @@ impl ManifestBuilder {
                         }
                     }
                 };
-                Ok(scrypto_encode(&scrypto::resource::Proof(proof_id)))
+                Ok(scrypto_encode(&Proof(proof_id)))
             }
             _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),
         }

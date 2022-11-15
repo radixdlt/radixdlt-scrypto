@@ -1,23 +1,15 @@
 use radix_engine_lib::engine::api::{Syscalls, SysNativeInvokable};
 use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
 use radix_engine_lib::engine::types::{ProofId, RENodeId};
-use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, ProofCloneInvocation, ProofGetAmountInvocation, ProofGetNonFungibleIdsInvocation, ProofGetResourceAddressInvocation, ResourceAddress};
+use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, Proof, ProofCloneInvocation, ProofGetAmountInvocation, ProofGetNonFungibleIdsInvocation, ProofGetResourceAddressInvocation, ProofValidationError, ResourceAddress};
 use radix_engine_lib::scrypto_env_native_fn;
 use sbor::rust::collections::BTreeSet;
-#[cfg(not(feature = "alloc"))]
-use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::misc::copy_u8_array;
 
-use crate::abi::*;
 use crate::math::*;
 use crate::resource::*;
-
-/// Represents a proof of owning some resource.
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Proof(pub ProofId);
 
 // TODO: Evaluate if we should have a ProofValidationModeBuilder to construct more complex validation modes.
 /// Specifies the validation mode that should be used for validating a `Proof`.
@@ -52,13 +44,70 @@ impl From<NonFungibleAddress> for ProofValidationMode {
     }
 }
 
-impl Clone for Proof {
-    fn clone(&self) -> Self {
-        Self(self.sys_clone(&mut ScryptoEnv).unwrap().0)
+pub trait SysProof {
+    fn sys_clone<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<Proof, E>
+        where
+            Y: Syscalls<E> + SysNativeInvokable<ProofCloneInvocation, E>;
+    fn sys_drop<Y, E: Debug + TypeId + Decode>(self, sys_calls: &mut Y) -> Result<(), E>
+        where
+            Y: Syscalls<E>;
+}
+
+impl SysProof for Proof {
+    fn sys_clone<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<radix_engine_lib::resource::Proof, E>
+        where
+            Y: Syscalls<E> + SysNativeInvokable<ProofCloneInvocation, E>,
+    {
+        sys_calls.sys_invoke(ProofCloneInvocation { receiver: self.0 })
+    }
+
+    fn sys_drop<Y, E: Debug + TypeId + Decode>(self, sys_calls: &mut Y) -> Result<(), E>
+        where
+            Y: Syscalls<E>,
+    {
+        sys_calls.sys_drop_node(RENodeId::Proof(self.0))
     }
 }
 
-impl Proof {
+pub trait ScryptoProof: Sized {
+    fn clone(&self) -> Self;
+    fn validate_proof<T>(
+        self,
+        validation_mode: T,
+    ) -> Result<ValidatedProof, (Self, ProofValidationError)>
+        where
+            T: Into<ProofValidationMode>;
+    fn unsafe_skip_proof_validation(self) -> ValidatedProof;
+    fn from_validated_proof(validated_proof: ValidatedProof) -> Self;
+    fn validate(&self, validation_mode: ProofValidationMode) -> Result<(), ProofValidationError>;
+    fn validate_resource_address(
+        &self,
+        resource_address: ResourceAddress,
+    ) -> Result<(), ProofValidationError>;
+    fn validate_resource_address_belongs_to(
+        &self,
+        resource_addresses: &BTreeSet<ResourceAddress>,
+    ) -> Result<(), ProofValidationError>;
+    fn validate_contains_non_fungible_id(
+        &self,
+        non_fungible_id: NonFungibleId,
+    ) -> Result<(), ProofValidationError>;
+    fn validate_contains_non_fungible_ids(
+        &self,
+        expected_non_fungible_ids: &BTreeSet<NonFungibleId>,
+    ) -> Result<(), ProofValidationError>;
+    fn validate_contains_amount(&self, amount: Decimal) -> Result<(), ProofValidationError>;
+    fn amount(&self) -> Decimal;
+    fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId>;
+    fn resource_address(&self) -> ResourceAddress;
+    fn drop(self);
+}
+
+impl ScryptoProof for Proof {
+    fn clone(&self) -> Self {
+        Self(self.sys_clone(&mut ScryptoEnv).unwrap().0)
+    }
+
     /// Validates a `Proof`'s resource address creating a `ValidatedProof` if the validation succeeds.
     ///
     /// This method takes ownership of the proof and validates that its resource address matches that expected by the
@@ -82,25 +131,17 @@ impl Proof {
     ///     },
     /// }
     /// ```
-    pub fn validate_proof<T>(
+    fn validate_proof<T>(
         self,
         validation_mode: T,
     ) -> Result<ValidatedProof, (Self, ProofValidationError)>
-    where
-        T: Into<ProofValidationMode>,
-    {
+        where
+            T: Into<ProofValidationMode> {
         let validation_mode: ProofValidationMode = validation_mode.into();
         match self.validate(validation_mode) {
             Ok(()) => Ok(ValidatedProof(self)),
             Err(error) => Err((self, error)),
         }
-    }
-
-    pub fn sys_clone<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<radix_engine_lib::resource::Proof, E>
-    where
-        Y: Syscalls<E> + SysNativeInvokable<ProofCloneInvocation, E>,
-    {
-        sys_calls.sys_invoke(ProofCloneInvocation { receiver: self.0 })
     }
 
     /// Skips the validation process of the proof producing a validated proof **WITHOUT** performing any validation.
@@ -110,12 +151,12 @@ impl Proof {
     /// This method skips the validation of the resource address of the proof. Therefore, the data, or `NonFungibleId`
     /// of of the returned `ValidatedProof` should **NOT** be trusted as the proof could potentially belong to any
     /// resource address. If you call this method, you should perform your own validation.
-    pub fn unsafe_skip_proof_validation(self) -> ValidatedProof {
+    fn unsafe_skip_proof_validation(self) -> ValidatedProof {
         ValidatedProof(self)
     }
 
     /// Converts a `ValidatedProof` into a `Proof`.
-    pub fn from_validated_proof(validated_proof: ValidatedProof) -> Self {
+    fn from_validated_proof(validated_proof: ValidatedProof) -> Self {
         validated_proof.into()
     }
 
@@ -226,16 +267,8 @@ impl Proof {
         }
     }
 
-    #[cfg(target_arch = "wasm32")]
-    pub fn drop(self) {
+    fn drop(self) {
         self.sys_drop(&mut ScryptoEnv).unwrap()
-    }
-
-    pub fn sys_drop<Y, E: Debug + TypeId + Decode>(self, sys_calls: &mut Y) -> Result<(), E>
-    where
-        Y: Syscalls<E>,
-    {
-        sys_calls.sys_drop_node(RENodeId::Proof(self.0))
     }
 }
 
@@ -346,76 +379,3 @@ impl Into<Proof> for ValidatedProof {
         self.0
     }
 }
-
-//========
-// error
-//========
-
-/// Represents an error when decoding proof.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseProofError {
-    InvalidLength(usize),
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseProofError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseProofError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-/// Represents an error when validating proof.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ProofValidationError {
-    InvalidResourceAddress(ResourceAddress),
-    ResourceAddressDoesNotBelongToList,
-    DoesNotContainOneNonFungible,
-    NonFungibleIdNotFound,
-    InvalidAmount(Decimal),
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ProofValidationError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ProofValidationError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-//========
-// binary
-//========
-
-impl TryFrom<&[u8]> for Proof {
-    type Error = ParseProofError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            4 => Ok(Self(u32::from_le_bytes(copy_u8_array(slice)))),
-            _ => Err(ParseProofError::InvalidLength(slice.len())),
-        }
-    }
-}
-
-impl Proof {
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_le_bytes().to_vec()
-    }
-}
-
-impl ValidatedProof {
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_vec()
-    }
-}
-
-// Note: Only `Proof` is a Scrypto type, `ValidatedProof` is not. This is because `ValidatedProof`s doesn't need to
-// implement the sbor::Encode and sbor::Decode traits as they are not meant to be used as arguments and returns to and
-// from methods. They are meant ot be used inside methods.
-
-scrypto_type!(Proof, ScryptoType::Proof, Vec::new());

@@ -3,7 +3,7 @@ use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::component::SystemAddress;
 use radix_engine_lib::engine::types::{BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver};
-use radix_engine_lib::resource::{Bucket, MintParams, ResourceAddress, ResourceManagerBucketBurnInvocation, ResourceManagerCreateInvocation, ResourceManagerMintInvocation};
+use radix_engine_lib::resource::{Bucket, MintParams, Proof, ResourceAddress, ResourceManagerBucketBurnInvocation, ResourceManagerCreateInvocation, ResourceManagerMintInvocation, Vault};
 use radix_engine_lib::resource::NonFungibleAddress;
 use radix_engine_lib::resource::NonFungibleId;
 use sbor::any::{encode_any, Value};
@@ -20,7 +20,6 @@ use scrypto::crypto::*;
 use scrypto::math::*;
 use scrypto::values::*;
 use scrypto::{args, args_from_value_vec};
-use scrypto::resource::Vault;
 
 use crate::errors::*;
 use crate::manifest::ast;
@@ -1125,7 +1124,7 @@ fn generate_value(
         }),
         ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| Value::Custom {
             type_id: ScryptoType::Proof.id(),
-            bytes: scrypto::resource::Proof(v).to_vec(),
+            bytes: Proof(v).to_vec(),
         }),
         ast::Value::Vault(_) => generate_vault(value).map(|v| Value::Custom {
             type_id: ScryptoType::Vault.id(),

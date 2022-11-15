@@ -4,7 +4,7 @@ use radix_engine_lib::engine::types::{BucketId, GlobalAddress, NativeFn, NativeF
 use radix_engine_lib::resource::Bucket;
 use sbor::rust::borrow::Cow;
 use scrypto::core::Runtime;
-use scrypto::resource::{ComponentAuthZone, SysBucket};
+use scrypto::resource::{ComponentAuthZone, SysBucket, SysProof};
 use scrypto::resource::Worktop;
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
@@ -422,7 +422,7 @@ impl TransactionProcessor {
                             .get(proof_id)
                             .cloned()
                             .map(|real_id| {
-                                let proof = scrypto::resource::Proof(real_id);
+                                let proof = radix_engine_lib::resource::Proof(real_id);
                                 proof
                                     .sys_clone(env)
                                     .map_err(InvokeError::Downstream)
@@ -438,7 +438,7 @@ impl TransactionProcessor {
                 Instruction::DropProof { proof_id } => proof_id_mapping
                     .remove(proof_id)
                     .map(|real_id| {
-                        let proof = scrypto::resource::Proof(real_id);
+                        let proof = radix_engine_lib::resource::Proof(real_id);
                         proof
                             .sys_drop(env)
                             .map(|_| ScryptoValue::unit())
@@ -449,7 +449,7 @@ impl TransactionProcessor {
                     ))),
                 Instruction::DropAllProofs => {
                     for (_, real_id) in proof_id_mapping.drain() {
-                        let proof = scrypto::resource::Proof(real_id);
+                        let proof = radix_engine_lib::resource::Proof(real_id);
                         proof
                             .sys_drop(env)
                             .map(|_| ScryptoValue::unit())
