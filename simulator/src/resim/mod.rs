@@ -49,7 +49,6 @@ pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
-use radix_engine::constants::*;
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::model::*;
 use radix_engine::transaction::execute_and_commit_transaction;
@@ -59,6 +58,7 @@ use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::*;
+use radix_engine_constants::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use scrypto::abi;
 use scrypto::misc::ContextualDisplay;
@@ -202,6 +202,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 &ExecutionConfig {
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     trace,
+                    max_sys_call_trace_depth: 1,
                 },
                 &transaction.get_executable(initial_proofs),
             );

@@ -1,6 +1,7 @@
 mod actor;
 mod call_frame;
 mod errors;
+mod event;
 mod heap;
 mod interpreters;
 mod kernel;
@@ -14,6 +15,7 @@ mod track;
 pub use actor::*;
 pub use call_frame::*;
 pub use errors::*;
+pub use event::*;
 pub use heap::*;
 pub use interpreters::*;
 pub use kernel::*;

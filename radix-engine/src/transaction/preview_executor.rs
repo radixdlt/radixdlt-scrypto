@@ -5,13 +5,13 @@ use transaction::validation::IntentHashManager;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
 
-use crate::constants::PREVIEW_CREDIT;
 use crate::engine::ScryptoInterpreter;
 use crate::fee::SystemLoanFeeReserve;
 use crate::ledger::*;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
 use crate::wasm::WasmEngine;
+use radix_engine_constants::PREVIEW_CREDIT;
 
 #[derive(Debug)]
 pub struct PreviewResult {
