@@ -172,17 +172,10 @@ pub enum Type {
     /* Struct and enum */
     Struct,
     Enum,
-    Option,
-    Result,
 
     /* [T; N] and (A, B, C) */
     Array,
     Tuple,
-
-    /* Collections */
-    List,
-    Set,
-    Map,
 
     // ==============
     // Custom Types
@@ -235,15 +228,8 @@ pub enum Value {
 
     Struct(Vec<Value>),
     Enum(String, Vec<Value>),
-    Option(Box<Option<Value>>),
-    Result(Box<Result<Value, Value>>),
-
     Array(Type, Vec<Value>),
     Tuple(Vec<Value>),
-
-    List(Type, Vec<Value>),
-    Set(Type, Vec<Value>),
-    Map(Type, Type, Vec<Value>),
 
     // ==============
     // Custom Types
@@ -296,13 +282,8 @@ impl Value {
             Value::String(_) => Type::String,
             Value::Struct(_) => Type::Struct,
             Value::Enum(_, _) => Type::Enum,
-            Value::Option(_) => Type::Option,
             Value::Array(_, _) => Type::Array,
             Value::Tuple(_) => Type::Tuple,
-            Value::Result(_) => Type::Result,
-            Value::List(_, _) => Type::List,
-            Value::Set(_, _) => Type::Set,
-            Value::Map(_, _, _) => Type::Map,
 
             // Global address types
             Value::PackageAddress(_) => Type::PackageAddress,

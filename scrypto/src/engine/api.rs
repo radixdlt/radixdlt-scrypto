@@ -1,15 +1,16 @@
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::{Decode, Encode, TypeId};
 
 use super::types::*;
+use crate::scrypto;
 
 #[cfg(target_arch = "wasm32")]
 extern "C" {
     pub fn radix_engine(input: *mut u8) -> *mut u8;
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum RadixEngineInput {
     InvokeScryptoFunction(ScryptoFunctionIdent, Vec<u8>),
     InvokeScryptoMethod(ScryptoMethodIdent, Vec<u8>),

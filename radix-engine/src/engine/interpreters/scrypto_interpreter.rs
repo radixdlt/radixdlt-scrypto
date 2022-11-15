@@ -69,7 +69,7 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
                 })?
         };
 
-        let rtn = if !return_type.matches(&output.dom) {
+        let rtn = if !match_schema_with_value(&return_type, &output.dom) {
             Err(RuntimeError::KernelError(
                 KernelError::InvalidScryptoFnOutput,
             ))

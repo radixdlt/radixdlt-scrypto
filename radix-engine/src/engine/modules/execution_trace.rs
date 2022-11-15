@@ -5,7 +5,8 @@ use crate::types::*;
 use scrypto::resource::{Bucket, Proof, Vault};
 use std::fmt::Debug;
 
-#[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
     pub component_id: ComponentId, // TODO: support non component actor
@@ -26,7 +27,8 @@ pub enum VaultOp {
     LockFee,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ExecutionTraceError {
     InvalidState(String),
     CallFrameError(CallFrameError),
@@ -53,7 +55,8 @@ pub struct ExecutionTraceModule {
     sys_call_traces_stacks: HashMap<usize, Vec<SysCallTrace>>,
 }
 
-#[derive(Clone, Debug, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ProofSnapshot {
     pub resource_address: ResourceAddress,
     pub resource_type: ResourceType,
@@ -61,7 +64,8 @@ pub struct ProofSnapshot {
     pub total_locked: LockedAmountOrIds,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct TracedSysCallData {
     pub buckets: HashMap<BucketId, Resource>,
     pub proofs: HashMap<ProofId, ProofSnapshot>,
@@ -80,7 +84,8 @@ impl TracedSysCallData {
     }
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct SysCallTrace {
     pub origin: SysCallTraceOrigin,
     pub sys_call_depth: usize,
@@ -92,7 +97,8 @@ pub struct SysCallTrace {
     pub children: Vec<SysCallTrace>,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum SysCallTraceOrigin {
     ScryptoFunction(ScryptoFunctionIdent),
     ScryptoMethod(ScryptoMethodIdent),

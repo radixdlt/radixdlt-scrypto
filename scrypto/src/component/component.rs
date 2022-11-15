@@ -11,19 +11,26 @@ use crate::address::*;
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
-use crate::crypto::{hash, Hash, PublicKey};
+use crate::crypto::{hash, PublicKey};
+use crate::data::*;
 use crate::engine::{api::*, types::*, utils::*};
 use crate::misc::*;
 use crate::resource::AccessRules;
+use crate::scrypto;
+use crate::scrypto_type;
+use crate::Describe;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentAddAccessCheckInvocation {
     pub receiver: ComponentId,
     pub access_rules: AccessRules,
 }
 
 /// Represents the state of a component.
-pub trait ComponentState<C: LocalComponent>: Encode + Decode {
+pub trait ComponentState<C: LocalComponent>:
+    Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>
+{
     /// Instantiates a component from this data structure.
     fn instantiate(self) -> C;
 }
@@ -40,7 +47,8 @@ pub trait LocalComponent {
 pub struct Component(pub ComponentId);
 
 // TODO: de-duplication
-#[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub struct ComponentInfoSubstate {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
@@ -55,7 +63,7 @@ pub struct ComponentStateSubstate {
 
 impl Component {
     /// Invokes a method on this component.
-    pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
+    pub fn call<T: Decode<ScryptoCustomTypeId>>(&self, method: &str, args: Vec<u8>) -> T {
         let input = RadixEngineInput::InvokeScryptoMethod(
             ScryptoMethodIdent {
                 receiver: ScryptoReceiver::Component(self.0),
@@ -111,7 +119,7 @@ pub struct BorrowedGlobalComponent(pub ComponentAddress);
 
 impl BorrowedGlobalComponent {
     /// Invokes a method on this component.
-    pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
+    pub fn call<T: Decode<ScryptoCustomTypeId>>(&self, method: &str, args: Vec<u8>) -> T {
         let input = RadixEngineInput::InvokeScryptoMethod(
             ScryptoMethodIdent {
                 receiver: ScryptoReceiver::Global(self.0),
@@ -159,10 +167,7 @@ impl TryFrom<&[u8]> for Component {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            36 => Ok(Self((
-                Hash(copy_u8_array(&slice[0..32])),
-                u32::from_le_bytes(copy_u8_array(&slice[32..])),
-            ))),
+            36 => Ok(Self(copy_u8_array(slice))),
             _ => Err(ParseComponentError::InvalidLength(slice.len())),
         }
     }
@@ -170,13 +175,16 @@ impl TryFrom<&[u8]> for Component {
 
 impl Component {
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut v = self.0 .0.to_vec();
-        v.extend(self.0 .1.to_le_bytes());
-        v
+        self.0.to_vec()
     }
 }
 
-scrypto_type!(Component, ScryptoType::Component, Vec::new());
+scrypto_type!(
+    Component,
+    ScryptoCustomTypeId::Component,
+    Type::Component,
+    36
+);
 
 //======
 // text
@@ -276,7 +284,12 @@ impl ComponentAddress {
     }
 }
 
-scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
+scrypto_type!(
+    ComponentAddress,
+    ScryptoCustomTypeId::ComponentAddress,
+    Type::ComponentAddress,
+    27
+);
 
 //======
 // text

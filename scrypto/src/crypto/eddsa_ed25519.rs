@@ -5,8 +5,10 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::abi::{scrypto_type, ScryptoType};
-use crate::misc::copy_u8_array;
+use crate::abi::*;
+use crate::data::*;
+use crate::misc::*;
+use crate::scrypto_type;
 
 /// Represents an ED25519 public key.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -99,8 +101,9 @@ impl EddsaEd25519PublicKey {
 
 scrypto_type!(
     EddsaEd25519PublicKey,
-    ScryptoType::EddsaEd25519PublicKey,
-    Vec::new()
+    ScryptoCustomTypeId::EddsaEd25519PublicKey,
+    Type::EddsaEd25519PublicKey,
+    EddsaEd25519PublicKey::LENGTH
 );
 
 impl TryFrom<&[u8]> for EddsaEd25519Signature {
@@ -123,8 +126,9 @@ impl EddsaEd25519Signature {
 
 scrypto_type!(
     EddsaEd25519Signature,
-    ScryptoType::EddsaEd25519Signature,
-    Vec::new()
+    ScryptoCustomTypeId::EddsaEd25519Signature,
+    Type::EddsaEd25519Signature,
+    EddsaEd25519Signature::LENGTH
 );
 
 //======

@@ -275,13 +275,8 @@ impl Parser {
             TokenKind::StringLiteral(value) => advance_ok!(self, Value::String(value)),
             TokenKind::Struct => self.parse_struct(),
             TokenKind::Enum => self.parse_enum(),
-            TokenKind::Some | TokenKind::None => self.parse_option(),
             TokenKind::Array => self.parse_array(),
             TokenKind::Tuple => self.parse_tuple(),
-            TokenKind::Ok | TokenKind::Err => self.parse_result(),
-            TokenKind::List => self.parse_list(),
-            TokenKind::Set => self.parse_set(),
-            TokenKind::Map => self.parse_map(),
             /* Global address */
             TokenKind:: PackageAddress |
             TokenKind:: SystemAddress |
@@ -330,15 +325,6 @@ impl Parser {
         Ok(Value::Enum(name, name_and_fields))
     }
 
-    pub fn parse_option(&mut self) -> Result<Value, ParserError> {
-        let token = self.advance()?;
-        match token.kind {
-            TokenKind::Some => Ok(Value::Option(Some(self.parse_values_one()?).into())),
-            TokenKind::None => Ok(Value::Option(None.into())),
-            _ => Err(ParserError::UnexpectedToken(token)),
-        }
-    }
-
     pub fn parse_array(&mut self) -> Result<Value, ParserError> {
         advance_match!(self, TokenKind::Array);
         let generics = self.parse_generics(1)?;
@@ -354,43 +340,6 @@ impl Parser {
             TokenKind::OpenParenthesis,
             TokenKind::CloseParenthesis,
         )?))
-    }
-
-    pub fn parse_result(&mut self) -> Result<Value, ParserError> {
-        let token = self.advance()?;
-        match token.kind {
-            TokenKind::Ok => Ok(Value::Result(Ok(self.parse_values_one()?).into())),
-            TokenKind::Err => Ok(Value::Result(Err(self.parse_values_one()?).into())),
-            _ => Err(ParserError::UnexpectedToken(token)),
-        }
-    }
-
-    pub fn parse_list(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::List);
-        let generics = self.parse_generics(1)?;
-        Ok(Value::List(
-            generics[0],
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
-        ))
-    }
-
-    pub fn parse_set(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::Set);
-        let generics = self.parse_generics(1)?;
-        Ok(Value::Set(
-            generics[0],
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
-        ))
-    }
-
-    pub fn parse_map(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::Map);
-        let generics = self.parse_generics(2)?;
-        Ok(Value::Map(
-            generics[0],
-            generics[1],
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
-        ))
     }
 
     pub fn parse_scrypto_types(&mut self) -> Result<Value, ParserError> {
@@ -512,13 +461,8 @@ impl Parser {
             TokenKind::String => Ok(Type::String),
             TokenKind::Struct => Ok(Type::Struct),
             TokenKind::Enum => Ok(Type::Enum),
-            TokenKind::Option => Ok(Type::Option),
             TokenKind::Array => Ok(Type::Array),
             TokenKind::Tuple => Ok(Type::Tuple),
-            TokenKind::Result => Ok(Type::Result),
-            TokenKind::List => Ok(Type::List),
-            TokenKind::Set => Ok(Type::Set),
-            TokenKind::Map => Ok(Type::Map),
 
             // Globals
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
@@ -634,23 +578,6 @@ mod tests {
     }
 
     #[test]
-    fn test_option_result_box() {
-        parse_value_ok!(
-            r#"Some("test")"#,
-            Value::Option(Some(Value::String("test".into())).into())
-        );
-        parse_value_ok!(r#"None"#, Value::Option(None.into()));
-        parse_value_ok!(
-            r#"Ok("test")"#,
-            Value::Result(Ok(Value::String("test".into())).into())
-        );
-        parse_value_ok!(
-            r#"Err("test")"#,
-            Value::Result(Err(Value::String("test".into())).into())
-        );
-    }
-
-    #[test]
     fn test_array_tuple() {
         parse_value_ok!(
             r#"Array<U8>(1u8, 2u8)"#,
@@ -659,48 +586,6 @@ mod tests {
         parse_value_ok!(
             r#"Tuple(1u8, 2u8)"#,
             Value::Tuple(vec![Value::U8(1), Value::U8(2)])
-        );
-    }
-
-    #[test]
-    fn test_collections() {
-        parse_value_ok!(
-            r#"Vec<String>("foo", "bar")"#,
-            Value::List(
-                Type::String,
-                vec![Value::String("foo".into()), Value::String("bar".into())]
-            )
-        );
-        parse_value_ok!(
-            r#"List<String>("foo", "bar")"#,
-            Value::List(
-                Type::String,
-                vec![Value::String("foo".into()), Value::String("bar".into())]
-            )
-        );
-        parse_value_ok!(
-            r#"Set<String>("1st", "2nd", "3rd")"#,
-            Value::Set(
-                Type::String,
-                vec![
-                    Value::String("1st".into()),
-                    Value::String("2nd".into()),
-                    Value::String("3rd".into())
-                ]
-            )
-        );
-        parse_value_ok!(
-            r#"Map<String, U32>("key1", 8u32, "key2", 100u32)"#,
-            Value::Map(
-                Type::String,
-                Type::U32,
-                vec![
-                    Value::String("key1".into()),
-                    Value::U32(8),
-                    Value::String("key2".into()),
-                    Value::U32(100)
-                ]
-            )
         );
     }
 
@@ -720,13 +605,6 @@ mod tests {
         parse_value_error!(
             r#"PackageAddress("abc", "def")"#,
             ParserError::InvalidNumberOfValues {
-                actual: 2,
-                expected: 1
-            }
-        );
-        parse_value_error!(
-            r#"List<String, String>("abc", "def")"#,
-            ParserError::InvalidNumberOfTypes {
                 actual: 2,
                 expected: 1
             }
@@ -788,7 +666,7 @@ mod tests {
         );
         parse_instruction_ok!(r#"DROP_ALL_PROOFS;"#, Instruction::DropAllProofs);
         parse_instruction_ok!(
-            r#"CALL_FUNCTION  PackageAddress("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8);"#,
+            r#"CALL_FUNCTION  PackageAddress("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32;"#,
             Instruction::CallFunction {
                 package_address: Value::PackageAddress(
                     Value::String("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c".into())
@@ -796,14 +674,7 @@ mod tests {
                 ),
                 blueprint_name: Value::String("Airdrop".into()),
                 function_name: Value::String("new".into()),
-                args: vec![
-                    Value::U32(500),
-                    Value::Map(
-                        Type::String,
-                        Type::U8,
-                        vec![Value::String("key".into()), Value::U8(1)]
-                    )
-                ]
+                args: vec![Value::U32(500),]
             }
         );
         parse_instruction_ok!(
@@ -839,15 +710,18 @@ mod tests {
     #[test]
     fn test_create_resource() {
         parse_instruction_ok!(
-            r#"CREATE_RESOURCE Enum("Fungible", 0u8) Map<String, String>() Map<Enum, Tuple>() Some(Enum("Fungible", Decimal("1.0")));"#,
+            r#"CREATE_RESOURCE Enum("Fungible", 0u8) Array<Tuple>() Array<Tuple>() Enum("Some", Enum("Fungible", Decimal("1.0")));"#,
             Instruction::CreateResource {
                 resource_type: Value::Enum("Fungible".to_string(), vec![Value::U8(0)]),
-                metadata: Value::Map(Type::String, Type::String, vec![]),
-                access_rules: Value::Map(Type::Enum, Type::Tuple, vec![]),
-                mint_params: Value::Option(Box::new(Option::Some(Value::Enum(
-                    "Fungible".to_string(),
-                    vec![Value::Decimal(Value::String("1.0".into()).into())]
-                )))),
+                metadata: Value::Array(Type::Tuple, vec![]),
+                access_rules: Value::Array(Type::Tuple, vec![]),
+                mint_params: Value::Enum(
+                    "Some".to_string(),
+                    vec![Value::Enum(
+                        "Fungible".to_string(),
+                        vec![Value::Decimal(Value::String("1.0".into()).into())]
+                    )]
+                ),
             }
         );
     }

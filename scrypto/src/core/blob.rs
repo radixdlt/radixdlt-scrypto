@@ -6,6 +6,8 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::crypto::*;
+use crate::data::*;
+use crate::scrypto_type;
 
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Blob(pub Hash);
@@ -56,7 +58,7 @@ impl Blob {
     }
 }
 
-scrypto_type!(Blob, ScryptoType::Blob, Vec::new());
+scrypto_type!(Blob, ScryptoCustomTypeId::Blob, Type::Blob, 32);
 
 //======
 // text

@@ -1,12 +1,13 @@
 use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
 use crate::math::*;
 use crate::resource::*;
+use crate::scrypto;
 
 /// Represents the minting config
-#[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
+#[derive(Debug, Clone)]
+#[scrypto(Encode, Decode, TypeId, Describe)]
 pub enum MintParams {
     /// To mint fungible resource, represented by an amount
     Fungible { amount: Decimal },

@@ -1,11 +1,12 @@
 use crate::model::{AuthModule, AuthZoneParams, Executable, TransactionManifest};
-use sbor::*;
 use scrypto::crypto::Hash;
+use scrypto::scrypto;
 use std::collections::BTreeSet;
 
 use super::{ExecutionContext, FeePayment, DEFAULT_COST_UNIT_LIMIT};
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct SystemTransaction {
     pub manifest: TransactionManifest,
 }

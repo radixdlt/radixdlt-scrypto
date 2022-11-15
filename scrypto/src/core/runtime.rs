@@ -8,17 +8,21 @@ use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
+use crate::data::*;
 use crate::engine::{api::*, types::*, utils::*};
+use crate::scrypto;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {}
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerGetCurrentEpochInvocation {
     pub receiver: SystemAddress,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerSetEpochInvocation {
     pub receiver: SystemAddress,
     pub epoch: u64,
@@ -53,7 +57,7 @@ impl Runtime {
     }
 
     /// Invokes a function on a blueprint.
-    pub fn call_function<S1: AsRef<str>, S2: AsRef<str>, T: Decode>(
+    pub fn call_function<S1: AsRef<str>, S2: AsRef<str>, T: Decode<ScryptoCustomTypeId>>(
         package_address: PackageAddress,
         blueprint_name: S1,
         function_name: S2,
@@ -71,7 +75,7 @@ impl Runtime {
     }
 
     /// Invokes a method on a component.
-    pub fn call_method<S: AsRef<str>, T: Decode>(
+    pub fn call_method<S: AsRef<str>, T: Decode<ScryptoCustomTypeId>>(
         component_address: ComponentAddress,
         method: S,
         args: Vec<u8>,

@@ -1,10 +1,11 @@
 use sbor::Decode;
 
 use super::api::RadixEngineInput;
+use crate::data::*;
 
 /// Utility function for making a radix engine call.
 #[cfg(target_arch = "wasm32")]
-pub fn call_engine<V: Decode>(input: RadixEngineInput) -> V {
+pub fn call_engine<V: Decode<ScryptoCustomTypeId>>(input: RadixEngineInput) -> V {
     use crate::buffer::{scrypto_decode_from_buffer, *};
     use crate::engine::api::radix_engine;
 
@@ -17,7 +18,7 @@ pub fn call_engine<V: Decode>(input: RadixEngineInput) -> V {
 
 /// Utility function for making a radix engine call.
 #[cfg(not(target_arch = "wasm32"))]
-pub fn call_engine<V: Decode>(_input: RadixEngineInput) -> V {
+pub fn call_engine<V: Decode<ScryptoCustomTypeId>>(_input: RadixEngineInput) -> V {
     todo!()
 }
 

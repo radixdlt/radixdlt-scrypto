@@ -1,9 +1,8 @@
-use sbor::any::{encode_any, Value};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
-use scrypto::abi::*;
+use sbor::*;
 use scrypto::address::Bech32Decoder;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
@@ -12,6 +11,7 @@ use scrypto::component::PackageAddress;
 use scrypto::component::{Component, KeyValueStore};
 use scrypto::core::{Blob, Expression, SystemAddress};
 use scrypto::crypto::*;
+use scrypto::data::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{
@@ -19,7 +19,6 @@ use scrypto::resource::{
     ResourceManagerBucketBurnInvocation, ResourceManagerCreateInvocation,
     ResourceManagerMintInvocation, Vault,
 };
-use scrypto::values::*;
 use scrypto::{args, args_from_value_vec};
 
 use crate::errors::*;
@@ -58,7 +57,6 @@ pub enum GeneratorError {
     InvalidEddsaEd25519PublicKey(String),
     InvalidEddsaEd25519Signature(String),
     BlobNotFound(String),
-    OddNumberOfElements(usize),
     NameResolverError(NameResolverError),
     IdValidationError(IdValidationError),
     InvalidBlobHash,
@@ -769,17 +767,16 @@ fn generate_re_node_id(
     }
 }
 
-fn generate_node_id(node_id: &ast::Value) -> Result<(Hash, u32), GeneratorError> {
+fn generate_node_id(node_id: &ast::Value) -> Result<[u8; 36], GeneratorError> {
     match node_id {
         ast::Value::String(s) => {
-            if s.len() != 2 * (Hash::LENGTH + 4) {
+            if s.len() != 72 {
                 return Err(GeneratorError::InvalidNodeId(s.into()));
             }
-            let hash = Hash::from_str(&s[0..Hash::LENGTH * 2])
+            let mut buf = [0u8; 36];
+            hex::decode_to_slice(s, &mut buf)
                 .map_err(|_| GeneratorError::InvalidNodeId(s.into()))?;
-            let index = u32::from_str_radix(&s[Hash::LENGTH * 2..], 16)
-                .map_err(|_| GeneratorError::InvalidNodeId(s.into()))?;
-            Ok((hash, index))
+            Ok(buf)
         }
         v => invalid_type!(v, ast::Type::String),
     }
@@ -953,7 +950,7 @@ fn generate_non_fungible_ids(
     value: &ast::Value,
 ) -> Result<BTreeSet<NonFungibleId>, GeneratorError> {
     match value {
-        ast::Value::Set(kind, values) => {
+        ast::Value::Array(kind, values) => {
             if kind != &ast::Type::NonFungibleId {
                 return Err(GeneratorError::InvalidType {
                     expected_type: ast::Type::String,
@@ -963,7 +960,7 @@ fn generate_non_fungible_ids(
 
             values.iter().map(|v| generate_non_fungible_id(v)).collect()
         }
-        v => invalid_type!(v, ast::Type::Set),
+        v => invalid_type!(v, ast::Type::Array),
     }
 }
 
@@ -973,7 +970,7 @@ fn generate_value(
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &HashMap<Hash, Vec<u8>>,
-) -> Result<Value, GeneratorError> {
+) -> Result<SborValue<ScryptoCustomTypeId, ScryptoCustomValue>, GeneratorError> {
     if let Some(ty) = expected {
         if ty != value.kind() {
             return Err(GeneratorError::InvalidValue {
@@ -984,42 +981,29 @@ fn generate_value(
     }
 
     match value {
-        ast::Value::Unit => Ok(Value::Unit),
-        ast::Value::Bool(value) => Ok(Value::Bool { value: *value }),
-        ast::Value::I8(value) => Ok(Value::I8 { value: *value }),
-        ast::Value::I16(value) => Ok(Value::I16 { value: *value }),
-        ast::Value::I32(value) => Ok(Value::I32 { value: *value }),
-        ast::Value::I64(value) => Ok(Value::I64 { value: *value }),
-        ast::Value::I128(value) => Ok(Value::I128 { value: *value }),
-        ast::Value::U8(value) => Ok(Value::U8 { value: *value }),
-        ast::Value::U16(value) => Ok(Value::U16 { value: *value }),
-        ast::Value::U32(value) => Ok(Value::U32 { value: *value }),
-        ast::Value::U64(value) => Ok(Value::U64 { value: *value }),
-        ast::Value::U128(value) => Ok(Value::U128 { value: *value }),
-        ast::Value::String(value) => Ok(Value::String {
+        ast::Value::Unit => Ok(SborValue::Unit),
+        ast::Value::Bool(value) => Ok(SborValue::Bool { value: *value }),
+        ast::Value::I8(value) => Ok(SborValue::I8 { value: *value }),
+        ast::Value::I16(value) => Ok(SborValue::I16 { value: *value }),
+        ast::Value::I32(value) => Ok(SborValue::I32 { value: *value }),
+        ast::Value::I64(value) => Ok(SborValue::I64 { value: *value }),
+        ast::Value::I128(value) => Ok(SborValue::I128 { value: *value }),
+        ast::Value::U8(value) => Ok(SborValue::U8 { value: *value }),
+        ast::Value::U16(value) => Ok(SborValue::U16 { value: *value }),
+        ast::Value::U32(value) => Ok(SborValue::U32 { value: *value }),
+        ast::Value::U64(value) => Ok(SborValue::U64 { value: *value }),
+        ast::Value::U128(value) => Ok(SborValue::U128 { value: *value }),
+        ast::Value::String(value) => Ok(SborValue::String {
             value: value.clone(),
         }),
-        ast::Value::Struct(fields) => Ok(Value::Struct {
+        ast::Value::Struct(fields) => Ok(SborValue::Struct {
             fields: generate_singletons(fields, None, resolver, bech32_decoder, blobs)?,
         }),
-        ast::Value::Enum(name, fields) => Ok(Value::Enum {
-            name: name.clone(),
+        ast::Value::Enum(discriminator, fields) => Ok(SborValue::Enum {
+            discriminator: discriminator.clone(),
             fields: generate_singletons(fields, None, resolver, bech32_decoder, blobs)?,
         }),
-        ast::Value::Option(value) => match &**value {
-            Some(inner) => Ok(Value::Option {
-                value: Some(generate_value(
-                    inner,
-                    None,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?)
-                .into(),
-            }),
-            None => Ok(Value::Option { value: None.into() }),
-        },
-        ast::Value::Array(element_type, elements) => Ok(Value::Array {
+        ast::Value::Array(element_type, elements) => Ok(SborValue::Array {
             element_type_id: generate_type_id(element_type),
             elements: generate_singletons(
                 elements,
@@ -1029,164 +1013,96 @@ fn generate_value(
                 blobs,
             )?,
         }),
-        ast::Value::Tuple(elements) => Ok(Value::Tuple {
+        ast::Value::Tuple(elements) => Ok(SborValue::Tuple {
             elements: generate_singletons(elements, None, resolver, bech32_decoder, blobs)?,
         }),
-        ast::Value::Result(value) => match &**value {
-            Ok(inner) => Ok(Value::Result {
-                value: Ok(generate_value(
-                    inner,
-                    None,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?)
-                .into(),
-            }),
-            Err(inner) => Ok(Value::Result {
-                value: Err(generate_value(
-                    inner,
-                    None,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?)
-                .into(),
-            }),
-        },
-        ast::Value::List(element_type, elements) => Ok(Value::List {
-            element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(
-                elements,
-                Some(*element_type),
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
-        }),
-        ast::Value::Set(element_type, elements) => Ok(Value::Set {
-            element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(
-                elements,
-                Some(*element_type),
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
-        }),
-        ast::Value::Map(key_type, value_type, elements) => Ok(Value::Map {
-            key_type_id: generate_type_id(key_type),
-            value_type_id: generate_type_id(value_type),
-            elements: generate_pairs(
-                elements,
-                *key_type,
-                *value_type,
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
-        }),
         ast::Value::PackageAddress(_) => {
-            generate_package_address(value, bech32_decoder).map(|v| Value::Custom {
-                type_id: ScryptoType::PackageAddress.id(),
-                bytes: v.to_vec(),
+            generate_package_address(value, bech32_decoder).map(|v| SborValue::Custom {
+                value: ScryptoCustomValue::PackageAddress(v),
             })
         }
         ast::Value::SystemAddress(_) => {
-            generate_system_address(value, bech32_decoder).map(|v| Value::Custom {
-                type_id: ScryptoType::SystemAddress.id(),
-                bytes: v.to_vec(),
+            generate_system_address(value, bech32_decoder).map(|v| SborValue::Custom {
+                value: ScryptoCustomValue::SystemAddress(v),
             })
         }
         ast::Value::ComponentAddress(_) => {
-            generate_component_address(value, bech32_decoder).map(|v| Value::Custom {
-                type_id: ScryptoType::ComponentAddress.id(),
-                bytes: v.to_vec(),
+            generate_component_address(value, bech32_decoder).map(|v| SborValue::Custom {
+                value: ScryptoCustomValue::ComponentAddress(v),
             })
         }
         ast::Value::ResourceAddress(_) => {
-            generate_resource_address(value, bech32_decoder).map(|v| Value::Custom {
-                type_id: ScryptoType::ResourceAddress.id(),
-                bytes: v.to_vec(),
+            generate_resource_address(value, bech32_decoder).map(|v| SborValue::Custom {
+                value: ScryptoCustomValue::ResourceAddress(v),
             })
         }
 
-        ast::Value::Component(_) => generate_component(value).map(|v| Value::Custom {
-            type_id: ScryptoType::Component.id(),
-            bytes: v.to_vec(),
+        ast::Value::Component(_) => generate_component(value).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Component(v.0),
         }),
-        ast::Value::KeyValueStore(_) => generate_key_value_store(value).map(|v| Value::Custom {
-            type_id: ScryptoType::KeyValueStore.id(),
-            bytes: v.to_vec(),
+        ast::Value::KeyValueStore(_) => {
+            generate_key_value_store(value).map(|v| SborValue::Custom {
+                value: ScryptoCustomValue::KeyValueStore(v.id),
+            })
+        }
+        ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Bucket(v),
         }),
-        ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| Value::Custom {
-            type_id: ScryptoType::Bucket.id(),
-            bytes: scrypto::resource::Bucket(v).to_vec(),
+        ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Proof(v),
         }),
-        ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| Value::Custom {
-            type_id: ScryptoType::Proof.id(),
-            bytes: scrypto::resource::Proof(v).to_vec(),
-        }),
-        ast::Value::Vault(_) => generate_vault(value).map(|v| Value::Custom {
-            type_id: ScryptoType::Vault.id(),
-            bytes: v.to_vec(),
+        ast::Value::Vault(_) => generate_vault(value).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Vault(v.0),
         }),
 
-        ast::Value::Expression(_) => generate_expression(value).map(|v| Value::Custom {
-            type_id: ScryptoType::Expression.id(),
-            bytes: v.to_vec(),
+        ast::Value::Expression(_) => generate_expression(value).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Expression(v),
         }),
-        ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| Value::Custom {
-            type_id: ScryptoType::Blob.id(),
-            bytes: v.to_vec(),
+        ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Blob(v),
         }),
         ast::Value::NonFungibleAddress(_) => {
-            generate_non_fungible_address(value).map(|v| Value::Custom {
-                type_id: ScryptoType::NonFungibleAddress.id(),
-                bytes: v.to_vec(),
+            generate_non_fungible_address(value).map(|v| SborValue::Custom {
+                value: ScryptoCustomValue::NonFungibleAddress(v),
             })
         }
 
-        ast::Value::Hash(_) => generate_hash(value).map(|v| Value::Custom {
-            type_id: ScryptoType::Hash.id(),
-            bytes: v.to_vec(),
+        ast::Value::Hash(_) => generate_hash(value).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Hash(v),
         }),
-        ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
-            type_id: ScryptoType::Decimal.id(),
-            bytes: v.to_vec(),
+        ast::Value::Decimal(_) => generate_decimal(value).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Decimal(v),
         }),
-        ast::Value::PreciseDecimal(_) => generate_precise_decimal(value).map(|v| Value::Custom {
-            type_id: ScryptoType::PreciseDecimal.id(),
-            bytes: v.to_vec(),
-        }),
+        ast::Value::PreciseDecimal(_) => {
+            generate_precise_decimal(value).map(|v| SborValue::Custom {
+                value: ScryptoCustomValue::PreciseDecimal(v),
+            })
+        }
         ast::Value::EcdsaSecp256k1PublicKey(_) => {
-            generate_ecdsa_secp256k1_public_key(value).map(|v| Value::Custom {
-                type_id: ScryptoType::EcdsaSecp256k1PublicKey.id(),
-                bytes: v.to_vec(),
+            generate_ecdsa_secp256k1_public_key(value).map(|v| SborValue::Custom {
+                value: ScryptoCustomValue::EcdsaSecp256k1PublicKey(v),
             })
         }
         ast::Value::EcdsaSecp256k1Signature(_) => {
-            generate_ecdsa_secp256k1_signature(value).map(|v| Value::Custom {
-                type_id: ScryptoType::EcdsaSecp256k1Signature.id(),
-                bytes: v.to_vec(),
+            generate_ecdsa_secp256k1_signature(value).map(|v| SborValue::Custom {
+                value: ScryptoCustomValue::EcdsaSecp256k1Signature(v),
             })
         }
         ast::Value::EddsaEd25519PublicKey(_) => {
-            generate_eddsa_ed25519_public_key(value).map(|v| Value::Custom {
-                type_id: ScryptoType::EddsaEd25519PublicKey.id(),
-                bytes: v.to_vec(),
+            generate_eddsa_ed25519_public_key(value).map(|v| SborValue::Custom {
+                value: ScryptoCustomValue::EddsaEd25519PublicKey(v),
             })
         }
         ast::Value::EddsaEd25519Signature(_) => {
-            generate_eddsa_ed25519_signature(value).map(|v| Value::Custom {
-                type_id: ScryptoType::EddsaEd25519Signature.id(),
-                bytes: v.to_vec(),
+            generate_eddsa_ed25519_signature(value).map(|v| SborValue::Custom {
+                value: ScryptoCustomValue::EddsaEd25519Signature(v),
             })
         }
-        ast::Value::NonFungibleId(_) => generate_non_fungible_id(value).map(|v| Value::Custom {
-            type_id: ScryptoType::NonFungibleId.id(),
-            bytes: v.to_vec(),
-        }),
+        ast::Value::NonFungibleId(_) => {
+            generate_non_fungible_id(value).map(|v| SborValue::Custom {
+                value: ScryptoCustomValue::NonFungibleId(v),
+            })
+        }
     }
 }
 
@@ -1196,7 +1112,7 @@ fn generate_singletons(
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &HashMap<Hash, Vec<u8>>,
-) -> Result<Vec<Value>, GeneratorError> {
+) -> Result<Vec<SborValue<ScryptoCustomTypeId, ScryptoCustomValue>>, GeneratorError> {
     let mut result = vec![];
     for element in elements {
         result.push(generate_value(
@@ -1210,89 +1126,63 @@ fn generate_singletons(
     Ok(result)
 }
 
-fn generate_pairs(
-    elements: &Vec<ast::Value>,
-    key_type: ast::Type,
-    value_type: ast::Type,
-    resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
-    blobs: &HashMap<Hash, Vec<u8>>,
-) -> Result<Vec<Value>, GeneratorError> {
-    if elements.len() % 2 != 0 {
-        return Err(GeneratorError::OddNumberOfElements(elements.len()));
-    }
-    let mut result = vec![];
-    for i in 0..elements.len() / 2 {
-        result.push(generate_value(
-            &elements[2 * i],
-            Some(key_type),
-            resolver,
-            bech32_decoder,
-            blobs,
-        )?);
-        result.push(generate_value(
-            &elements[2 * i + 1],
-            Some(value_type),
-            resolver,
-            bech32_decoder,
-            blobs,
-        )?);
-    }
-    Ok(result)
-}
-
-fn generate_type_id(ty: &ast::Type) -> u8 {
+fn generate_type_id(ty: &ast::Type) -> SborTypeId<ScryptoCustomTypeId> {
     match ty {
-        ast::Type::Unit => TYPE_UNIT,
-        ast::Type::Bool => TYPE_BOOL,
-        ast::Type::I8 => TYPE_I8,
-        ast::Type::I16 => TYPE_I16,
-        ast::Type::I32 => TYPE_I32,
-        ast::Type::I64 => TYPE_I64,
-        ast::Type::I128 => TYPE_I128,
-        ast::Type::U8 => TYPE_U8,
-        ast::Type::U16 => TYPE_U16,
-        ast::Type::U32 => TYPE_U32,
-        ast::Type::U64 => TYPE_U64,
-        ast::Type::U128 => TYPE_U128,
-        ast::Type::String => TYPE_STRING,
-        ast::Type::Struct => TYPE_STRUCT,
-        ast::Type::Enum => TYPE_ENUM,
-        ast::Type::Option => TYPE_OPTION,
-        ast::Type::Array => TYPE_ARRAY,
-        ast::Type::Tuple => TYPE_TUPLE,
-        ast::Type::Result => TYPE_RESULT,
-        ast::Type::List => TYPE_LIST,
-        ast::Type::Set => TYPE_SET,
-        ast::Type::Map => TYPE_MAP,
+        ast::Type::Unit => SborTypeId::Unit,
+        ast::Type::Bool => SborTypeId::Bool,
+        ast::Type::I8 => SborTypeId::I8,
+        ast::Type::I16 => SborTypeId::I16,
+        ast::Type::I32 => SborTypeId::I32,
+        ast::Type::I64 => SborTypeId::I64,
+        ast::Type::I128 => SborTypeId::I128,
+        ast::Type::U8 => SborTypeId::U8,
+        ast::Type::U16 => SborTypeId::U16,
+        ast::Type::U32 => SborTypeId::U32,
+        ast::Type::U64 => SborTypeId::U64,
+        ast::Type::U128 => SborTypeId::U128,
+        ast::Type::String => SborTypeId::String,
+        ast::Type::Struct => SborTypeId::Struct,
+        ast::Type::Enum => SborTypeId::Enum,
+        ast::Type::Array => SborTypeId::Array,
+        ast::Type::Tuple => SborTypeId::Tuple,
 
         // Globals
-        ast::Type::PackageAddress => ScryptoType::PackageAddress.id(),
-        ast::Type::ComponentAddress => ScryptoType::ComponentAddress.id(),
-        ast::Type::ResourceAddress => ScryptoType::ResourceAddress.id(),
-        ast::Type::SystemAddress => ScryptoType::SystemAddress.id(),
+        ast::Type::PackageAddress => SborTypeId::Custom(ScryptoCustomTypeId::PackageAddress),
+        ast::Type::ComponentAddress => SborTypeId::Custom(ScryptoCustomTypeId::ComponentAddress),
+        ast::Type::ResourceAddress => SborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress),
+        ast::Type::SystemAddress => SborTypeId::Custom(ScryptoCustomTypeId::SystemAddress),
 
         // RE Nodes
-        ast::Type::Component => ScryptoType::Component.id(),
-        ast::Type::KeyValueStore => ScryptoType::KeyValueStore.id(),
-        ast::Type::Bucket => ScryptoType::Bucket.id(),
-        ast::Type::Proof => ScryptoType::Proof.id(),
-        ast::Type::Vault => ScryptoType::Vault.id(),
+        ast::Type::Component => SborTypeId::Custom(ScryptoCustomTypeId::Component),
+        ast::Type::KeyValueStore => SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore),
+        ast::Type::Bucket => SborTypeId::Custom(ScryptoCustomTypeId::Bucket),
+        ast::Type::Proof => SborTypeId::Custom(ScryptoCustomTypeId::Proof),
+        ast::Type::Vault => SborTypeId::Custom(ScryptoCustomTypeId::Vault),
 
         // Other interpreted types
-        ast::Type::Expression => ScryptoType::Expression.id(),
-        ast::Type::Blob => ScryptoType::Blob.id(),
-        ast::Type::NonFungibleAddress => ScryptoType::NonFungibleAddress.id(),
+        ast::Type::Expression => SborTypeId::Custom(ScryptoCustomTypeId::Expression),
+        ast::Type::Blob => SborTypeId::Custom(ScryptoCustomTypeId::Blob),
+        ast::Type::NonFungibleAddress => {
+            SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress)
+        }
 
-        // Uninterpreted=> ScryptoType::Decimal.id(),
-        ast::Type::Hash => ScryptoType::Hash.id(),
-        ast::Type::EcdsaSecp256k1PublicKey => ScryptoType::EcdsaSecp256k1PublicKey.id(),
-        ast::Type::EcdsaSecp256k1Signature => ScryptoType::EcdsaSecp256k1Signature.id(),
-        ast::Type::EddsaEd25519PublicKey => ScryptoType::EddsaEd25519PublicKey.id(),
-        ast::Type::EddsaEd25519Signature => ScryptoType::EddsaEd25519Signature.id(),
-        ast::Type::Decimal => ScryptoType::Decimal.id(),
-        ast::Type::PreciseDecimal => ScryptoType::PreciseDecimal.id(),
-        ast::Type::NonFungibleId => ScryptoType::NonFungibleId.id(),
+        // Uninterpreted=> SborTypeId::Custom(ScryptoCustomTypeId::Decimal),
+        ast::Type::Hash => SborTypeId::Custom(ScryptoCustomTypeId::Hash),
+        ast::Type::EcdsaSecp256k1PublicKey => {
+            SborTypeId::Custom(ScryptoCustomTypeId::EcdsaSecp256k1PublicKey)
+        }
+        ast::Type::EcdsaSecp256k1Signature => {
+            SborTypeId::Custom(ScryptoCustomTypeId::EcdsaSecp256k1Signature)
+        }
+        ast::Type::EddsaEd25519PublicKey => {
+            SborTypeId::Custom(ScryptoCustomTypeId::EddsaEd25519PublicKey)
+        }
+        ast::Type::EddsaEd25519Signature => {
+            SborTypeId::Custom(ScryptoCustomTypeId::EddsaEd25519Signature)
+        }
+        ast::Type::Decimal => SborTypeId::Custom(ScryptoCustomTypeId::Decimal),
+        ast::Type::PreciseDecimal => SborTypeId::Custom(ScryptoCustomTypeId::PreciseDecimal),
+        ast::Type::NonFungibleId => SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleId),
     }
 }
 
@@ -1367,26 +1257,24 @@ mod tests {
 
     #[test]
     fn test_value() {
-        generate_value_ok!(r#"()"#, Value::Unit);
-        generate_value_ok!(r#"true"#, Value::Bool { value: true });
-        generate_value_ok!(r#"false"#, Value::Bool { value: false });
-        generate_value_ok!(r#"1i8"#, Value::I8 { value: 1 });
-        generate_value_ok!(r#"1i128"#, Value::I128 { value: 1 });
-        generate_value_ok!(r#"1u8"#, Value::U8 { value: 1 });
-        generate_value_ok!(r#"1u128"#, Value::U128 { value: 1 });
+        generate_value_ok!(r#"()"#, SborValue::Unit);
+        generate_value_ok!(r#"true"#, SborValue::Bool { value: true });
+        generate_value_ok!(r#"false"#, SborValue::Bool { value: false });
+        generate_value_ok!(r#"1i8"#, SborValue::I8 { value: 1 });
+        generate_value_ok!(r#"1i128"#, SborValue::I128 { value: 1 });
+        generate_value_ok!(r#"1u8"#, SborValue::U8 { value: 1 });
+        generate_value_ok!(r#"1u128"#, SborValue::U128 { value: 1 });
         generate_value_ok!(
             r#"Struct(Bucket(1u32), Proof(2u32), "bar")"#,
-            Value::Struct {
+            SborValue::Struct {
                 fields: vec![
-                    Value::Custom {
-                        type_id: ScryptoType::Bucket.id(),
-                        bytes: scrypto::resource::Bucket(1).to_vec()
+                    SborValue::Custom {
+                        value: ScryptoCustomValue::Bucket(1)
                     },
-                    Value::Custom {
-                        type_id: ScryptoType::Proof.id(),
-                        bytes: scrypto::resource::Proof(2).to_vec()
+                    SborValue::Custom {
+                        value: ScryptoCustomValue::Proof(2)
                     },
-                    Value::String {
+                    SborValue::String {
                         value: "bar".into()
                     }
                 ]
@@ -1394,104 +1282,45 @@ mod tests {
         );
         generate_value_ok!(
             r#"Struct(Decimal("1.0"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"))"#,
-            Value::Struct {
+            SborValue::Struct {
                 fields: vec![
-                    Value::Custom {
-                        type_id: ScryptoType::Decimal.id(),
-                        bytes: Decimal::from_str("1.0").unwrap().to_vec()
+                    SborValue::Custom {
+                        value: ScryptoCustomValue::Decimal(Decimal::from_str("1.0").unwrap())
                     },
-                    Value::Custom {
-                        type_id: ScryptoType::Hash.id(),
-                        bytes: Hash::from_str(
-                            "aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"
+                    SborValue::Custom {
+                        value: ScryptoCustomValue::Hash(
+                            Hash::from_str(
+                                "aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"
+                            )
+                            .unwrap()
                         )
-                        .unwrap()
-                        .to_vec()
                     },
                 ]
             }
         );
-        generate_value_ok!(r#"Struct()"#, Value::Struct { fields: vec![] });
+        generate_value_ok!(r#"Struct()"#, SborValue::Struct { fields: vec![] });
         generate_value_ok!(
             r#"Enum("Variant", "abc")"#,
-            Value::Enum {
-                name: "Variant".to_string(),
-                fields: vec![Value::String {
+            SborValue::Enum {
+                discriminator: "Variant".to_string(),
+                fields: vec![SborValue::String {
                     value: "abc".to_owned()
                 }]
             }
         );
         generate_value_ok!(
             r#"Enum("Variant")"#,
-            Value::Enum {
-                name: "Variant".to_string(),
+            SborValue::Enum {
+                discriminator: "Variant".to_string(),
                 fields: vec![]
             }
         );
         generate_value_ok!(
-            r#"Array<Option>(Some(1u64), None)"#,
-            Value::Array {
-                element_type_id: TYPE_OPTION,
-                elements: vec![
-                    Value::Option {
-                        value: Some(Value::U64 { value: 1 }).into()
-                    },
-                    Value::Option { value: None.into() }
-                ]
-            }
-        );
-        generate_value_ok!(
-            r#"Tuple(Ok(1u64), Err(2u64))"#,
-            Value::Tuple {
-                elements: vec![
-                    Value::Result {
-                        value: Ok(Value::U64 { value: 1 }).into()
-                    },
-                    Value::Result {
-                        value: Err(Value::U64 { value: 2 }).into()
-                    },
-                ]
-            }
-        );
-        generate_value_ok!(
-            r#"Map<Set, List>(Set<U8>(1u8), List<U8>(2u8))"#,
-            Value::Map {
-                key_type_id: TYPE_SET,
-                value_type_id: TYPE_LIST,
-                elements: vec![
-                    Value::Set {
-                        element_type_id: TYPE_U8,
-                        elements: vec![Value::U8 { value: 1 }]
-                    },
-                    Value::List {
-                        element_type_id: TYPE_U8,
-                        elements: vec![Value::U8 { value: 2 }]
-                    },
-                ]
-            }
-        );
-        generate_value_ok!(
-            r#"Map<Set, List>(Set<U8>(1u8), List<U8>(2u8))"#,
-            Value::Map {
-                key_type_id: TYPE_SET,
-                value_type_id: TYPE_LIST,
-                elements: vec![
-                    Value::Set {
-                        element_type_id: TYPE_U8,
-                        elements: vec![Value::U8 { value: 1 }]
-                    },
-                    Value::List {
-                        element_type_id: TYPE_U8,
-                        elements: vec![Value::U8 { value: 2 }]
-                    }
-                ]
-            }
-        );
-        generate_value_ok!(
             r#"Expression("ENTIRE_WORKTOP")"#,
-            Value::Custom {
-                type_id: ScryptoType::Expression.id(),
-                bytes: scrypto::core::Expression("ENTIRE_WORKTOP".to_owned()).to_vec()
+            SborValue::Custom {
+                value: ScryptoCustomValue::Expression(scrypto::core::Expression(
+                    "ENTIRE_WORKTOP".to_owned()
+                ))
             }
         );
     }
@@ -1512,10 +1341,6 @@ mod tests {
         generate_value_error!(
             r#"Decimal("invalid_decimal")"#,
             GeneratorError::InvalidDecimal("invalid_decimal".into())
-        );
-        generate_value_error!(
-            r#"Map<String, String>("abc")"#,
-            GeneratorError::OddNumberOfElements(1)
         );
     }
 
@@ -1561,7 +1386,7 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8)  PreciseDecimal("120");"#,
+            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
             Instruction::CallFunction {
                 function_ident: ScryptoFunctionIdent {
                     package: ScryptoPackage::Global(
@@ -1575,7 +1400,7 @@ mod tests {
                     blueprint_name: "Airdrop".into(),
                     function_name: "new".to_string(),
                 },
-                args: args!(500u32, HashMap::from([("key", 1u8),]), pdec!("120"))
+                args: args!(500u32, pdec!("120"))
             }
         );
         generate_instruction_ok!(

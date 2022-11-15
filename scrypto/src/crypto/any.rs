@@ -1,8 +1,7 @@
-use sbor::*;
-
 use super::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
 };
+use crate::scrypto;
 
 /// Represents any natively supported public key.
 #[cfg_attr(
@@ -10,7 +9,8 @@ use super::{
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type", content = "public_key")
 )]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum PublicKey {
     EcdsaSecp256k1(EcdsaSecp256k1PublicKey),
     EddsaEd25519(EddsaEd25519PublicKey),
@@ -22,7 +22,8 @@ pub enum PublicKey {
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type", content = "signature")
 )]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, TypeId, Encode, Decode, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum Signature {
     EcdsaSecp256k1(EcdsaSecp256k1Signature),
     EddsaEd25519(EddsaEd25519Signature),
@@ -34,7 +35,8 @@ pub enum Signature {
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type")
 )]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, TypeId, Encode, Decode, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum SignatureWithPublicKey {
     EcdsaSecp256k1 {
         signature: EcdsaSecp256k1Signature,

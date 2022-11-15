@@ -5,7 +5,8 @@ use crate::engine::{
 use crate::model::{BucketSubstate, ProofError, ResourceOperationError};
 use crate::types::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum BucketError {
     InvalidDivisibility,
     InvalidRequestData(DecodeError),

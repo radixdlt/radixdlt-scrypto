@@ -12,22 +12,19 @@ pub struct Span {
 pub enum TokenKind {
     /* Literals */
     BoolLiteral(bool),
-
     I8Literal(i8),
     I16Literal(i16),
     I32Literal(i32),
     I64Literal(i64),
     I128Literal(i128),
-
     U8Literal(u8),
     U16Literal(u16),
     U32Literal(u32),
     U64Literal(u64),
     U128Literal(u128),
-
     StringLiteral(String),
 
-    /* Types */
+    /* SBOR core types */
     Unit,
     Bool,
     I8,
@@ -41,24 +38,10 @@ pub enum TokenKind {
     U64,
     U128,
     String,
-
     Struct,
     Enum,
-    Option,
-    Result,
-
-    /* Variant */
-    Some,
-    None,
-    Ok,
-    Err,
-
     Array,
     Tuple,
-
-    List,
-    Set,
-    Map,
 
     /* Global address */
     PackageAddress,
@@ -401,19 +384,8 @@ impl Lexer {
             "String" => Ok(TokenKind::String),
             "Struct" => Ok(TokenKind::Struct),
             "Enum" => Ok(TokenKind::Enum),
-            "Option" => Ok(TokenKind::Option),
             "Array" => Ok(TokenKind::Array),
             "Tuple" => Ok(TokenKind::Tuple),
-            "Result" => Ok(TokenKind::Result),
-            "Vec" => Ok(TokenKind::List), // alias
-            "List" => Ok(TokenKind::List),
-            "Set" => Ok(TokenKind::Set),
-            "Map" => Ok(TokenKind::Map),
-
-            "Some" => Ok(TokenKind::Some),
-            "None" => Ok(TokenKind::None),
-            "Ok" => Ok(TokenKind::Ok),
-            "Err" => Ok(TokenKind::Err),
 
             "PackageAddress" => Ok(TokenKind::PackageAddress),
             "SystemAddress" => Ok(TokenKind::SystemAddress),
@@ -625,15 +597,15 @@ mod tests {
     #[test]
     fn test_mixed() {
         lex_ok!(
-            r#"CALL_FUNCTION Map<String, Array>("test", Array<String>("abc"));"#,
+            r#"CALL_FUNCTION Array<Tuple>(Tuple("test", Array<String>("abc")));"#,
             vec![
                 TokenKind::CallFunction,
-                TokenKind::Map,
-                TokenKind::LessThan,
-                TokenKind::String,
-                TokenKind::Comma,
                 TokenKind::Array,
+                TokenKind::LessThan,
+                TokenKind::Tuple,
                 TokenKind::GreaterThan,
+                TokenKind::OpenParenthesis,
+                TokenKind::Tuple,
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("test".into()),
                 TokenKind::Comma,
@@ -643,6 +615,7 @@ mod tests {
                 TokenKind::GreaterThan,
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("abc".into()),
+                TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
                 TokenKind::Semicolon,
@@ -666,9 +639,9 @@ mod tests {
     #[test]
     fn test_precise_decimal_colletion() {
         lex_ok!(
-            "List<PreciseDecimal>(PreciseDecimal(\"12\"), PreciseDecimal(\"212\"), PreciseDecimal(\"1984\"))",
+            "Array<PreciseDecimal>(PreciseDecimal(\"12\"), PreciseDecimal(\"212\"), PreciseDecimal(\"1984\"))",
             vec![
-                TokenKind::List,
+                TokenKind::Array,
                 TokenKind::LessThan,
                 TokenKind::PreciseDecimal,
                 TokenKind::GreaterThan,

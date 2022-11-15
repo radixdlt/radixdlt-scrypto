@@ -12,7 +12,8 @@ use crate::types::*;
 use scrypto::resource::ResourceManagerBucketBurnInvocation;
 
 /// Represents an error when accessing a bucket.
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerError {
     InvalidDivisibility,
     InvalidAmount(Decimal, u8),

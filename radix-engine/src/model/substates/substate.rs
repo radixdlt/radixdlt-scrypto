@@ -3,7 +3,8 @@ use crate::model::substates::worktop::WorktopSubstate;
 use crate::model::*;
 use crate::types::*;
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum PersistedSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
@@ -142,15 +143,18 @@ impl RuntimeSubstate {
     ) -> Result<Self, RuntimeError> {
         let substate = match offset {
             SubstateOffset::Component(ComponentOffset::State) => {
-                let substate = scrypto_decode(buffer).map_err(|e| KernelError::DecodeError(e))?;
+                let substate =
+                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
                 RuntimeSubstate::ComponentState(substate)
             }
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
-                let substate = scrypto_decode(buffer).map_err(|e| KernelError::DecodeError(e))?;
+                let substate =
+                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
                 RuntimeSubstate::KeyValueStoreEntry(substate)
             }
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)) => {
-                let substate = scrypto_decode(buffer).map_err(|e| KernelError::DecodeError(e))?;
+                let substate =
+                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
                 RuntimeSubstate::NonFungible(substate)
             }
             offset => {

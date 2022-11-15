@@ -1,16 +1,20 @@
-use sbor::describe::{Fields, Variant};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::boxed::Box;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::math::Decimal;
 
+use crate::abi::*;
+use crate::data::*;
+use crate::math::Decimal;
 use crate::resource::AccessRuleNode::{AllOf, AnyOf};
 use crate::resource::*;
+use crate::scrypto;
+use crate::Describe;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum SoftDecimal {
     Static(Decimal),
     Dynamic(SchemaPath),
@@ -60,7 +64,8 @@ impl From<&str> for SoftCount {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum SoftResource {
     Static(ResourceAddress),
     Dynamic(SchemaPath),
@@ -85,7 +90,8 @@ impl From<&str> for SoftResource {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleAddress),
     StaticResource(ResourceAddress),
@@ -117,7 +123,8 @@ impl From<&str> for SoftResourceOrNonFungible {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum SoftResourceOrNonFungibleList {
     Static(Vec<SoftResourceOrNonFungible>),
     Dynamic(SchemaPath),
@@ -146,7 +153,8 @@ where
 }
 
 /// Resource Proof Rules
-#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
     AmountOf(SoftDecimal, SoftResource),
@@ -178,7 +186,8 @@ macro_rules! resource_list {
   });
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum AccessRuleNode {
     ProofRule(ProofRule),
     AnyOf(Vec<AccessRuleNode>),
@@ -187,8 +196,8 @@ pub enum AccessRuleNode {
 
 // FIXME: describe types with cycles
 impl Describe for AccessRuleNode {
-    fn describe() -> sbor::describe::Type {
-        sbor::describe::Type::Enum {
+    fn describe() -> Type {
+        Type::Enum {
             name: "AccessRuleNode".to_owned(),
             variants: vec![
                 Variant {
@@ -201,7 +210,7 @@ impl Describe for AccessRuleNode {
                     name: "AnyOf".to_string(),
                     fields: Fields::Unnamed {
                         unnamed: vec![Type::Vec {
-                            element: Box::new(Type::Any),
+                            element_type: Box::new(Type::Any),
                         }],
                     },
                 },
@@ -209,7 +218,7 @@ impl Describe for AccessRuleNode {
                     name: "AllOf".to_string(),
                     fields: Fields::Unnamed {
                         unnamed: vec![Type::Vec {
-                            element: Box::new(Type::Any),
+                            element_type: Box::new(Type::Any),
                         }],
                     },
                 },
@@ -358,7 +367,8 @@ macro_rules! access_rule_node {
     }};
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum AccessRule {
     AllowAll,
     DenyAll,

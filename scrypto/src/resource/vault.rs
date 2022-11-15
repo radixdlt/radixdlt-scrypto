@@ -8,26 +8,31 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::crypto::*;
+use crate::data::*;
 use crate::engine::{api::*, types::*, utils::*};
 use crate::math::*;
 use crate::misc::*;
 use crate::native_methods;
 use crate::resource::*;
+use crate::scrypto;
+use crate::scrypto_type;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultPutInvocation {
     pub receiver: VaultId,
     pub bucket: Bucket,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultTakeInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultTakeNonFungiblesInvocation {
     pub receiver: VaultId,
     pub non_fungible_ids: BTreeSet<NonFungibleId>,
@@ -53,19 +58,22 @@ pub struct VaultCreateProofInvocation {
     pub receiver: VaultId,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultCreateProofByAmountInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultCreateProofByIdsInvocation {
     pub receiver: VaultId,
     pub ids: BTreeSet<NonFungibleId>,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultLockFeeInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,
@@ -300,10 +308,7 @@ impl TryFrom<&[u8]> for Vault {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            36 => Ok(Self((
-                Hash(copy_u8_array(&slice[0..32])),
-                u32::from_le_bytes(copy_u8_array(&slice[32..])),
-            ))),
+            36 => Ok(Self(copy_u8_array(slice))),
             _ => Err(ParseVaultError::InvalidLength(slice.len())),
         }
     }
@@ -311,13 +316,11 @@ impl TryFrom<&[u8]> for Vault {
 
 impl Vault {
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut v = self.0 .0.to_vec();
-        v.extend(self.0 .1.to_le_bytes());
-        v
+        self.0.to_vec()
     }
 }
 
-scrypto_type!(Vault, ScryptoType::Vault, Vec::new());
+scrypto_type!(Vault, ScryptoCustomTypeId::Vault, Type::Vault, 36);
 
 //======
 // text

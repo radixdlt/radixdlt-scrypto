@@ -8,7 +8,9 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::values::ScryptoValue;
+use crate::data::ScryptoValue;
+use crate::data::*;
+use crate::scrypto_type;
 
 /// Represents a key for a non-fungible resource
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -46,6 +48,7 @@ impl NonFungibleId {
 pub enum ParseNonFungibleIdError {
     InvalidHex(String),
     InvalidValue,
+    ContainsOwnedNodes,
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -66,8 +69,13 @@ impl TryFrom<&[u8]> for NonFungibleId {
     type Error = ParseNonFungibleIdError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        let value = ScryptoValue::from_slice_no_custom_values(slice)
-            .map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
+        let value =
+            ScryptoValue::from_slice(slice).map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
+        // TODO: limit types
+        if value.value_count() != 0 {
+            return Err(ParseNonFungibleIdError::ContainsOwnedNodes);
+        }
+
         Ok(Self(value.raw))
     }
 }
@@ -78,7 +86,11 @@ impl NonFungibleId {
     }
 }
 
-scrypto_type!(NonFungibleId, ScryptoType::NonFungibleId, Vec::new());
+scrypto_type!(
+    NonFungibleId,
+    ScryptoCustomTypeId::NonFungibleId,
+    Type::NonFungibleId
+);
 
 //======
 // text
@@ -114,7 +126,7 @@ mod tests {
     #[test]
     fn test_non_fungible_id_string_rep() {
         assert_eq!(
-            NonFungibleId::from_str("3007020000003575").unwrap(),
+            NonFungibleId::from_str("2007020000003575").unwrap(),
             NonFungibleId::from_bytes(vec![53u8, 117u8]),
         );
         assert_eq!(

@@ -5,32 +5,37 @@ use sbor::*;
 use crate::engine::{api::*, types::*, utils::*};
 use crate::math::Decimal;
 use crate::resource::*;
+use crate::scrypto;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZonePopInvocation {
     pub receiver: AuthZoneId,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZonePushInvocation {
     pub receiver: AuthZoneId,
     pub proof: Proof,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofInvocation {
     pub receiver: AuthZoneId,
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByAmountInvocation {
     pub receiver: AuthZoneId,
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByIdsInvocation {
     pub receiver: AuthZoneId,
     pub ids: BTreeSet<NonFungibleId>,

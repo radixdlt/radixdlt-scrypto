@@ -3,12 +3,13 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use sbor::*;
 
 use crate::resource::*;
+use crate::scrypto;
 
 /// Method authorization rules for a component
-#[derive(Debug, Clone, PartialEq, Eq, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub struct AccessRules {
     method_auth: HashMap<String, AccessRule>,
     default_auth: AccessRule,

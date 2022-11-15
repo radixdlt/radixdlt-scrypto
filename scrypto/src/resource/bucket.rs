@@ -6,25 +6,31 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
+use crate::data::*;
 use crate::engine::{api::*, types::*, utils::*};
 use crate::math::*;
 use crate::misc::*;
 use crate::native_methods;
 use crate::resource::*;
+use crate::scrypto;
+use crate::scrypto_type;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct BucketTakeInvocation {
     pub receiver: BucketId,
     pub amount: Decimal,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct BucketPutInvocation {
     pub receiver: BucketId,
     pub bucket: scrypto::resource::Bucket,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct BucketTakeNonFungiblesInvocation {
     pub receiver: BucketId,
     pub ids: BTreeSet<NonFungibleId>,
@@ -236,4 +242,4 @@ impl Bucket {
     }
 }
 
-scrypto_type!(Bucket, ScryptoType::Bucket, Vec::new());
+scrypto_type!(Bucket, ScryptoCustomTypeId::Bucket, Type::Bucket, 4);

@@ -1,4 +1,6 @@
 use crate::engine::types::*;
+use crate::scrypto;
+use crate::Describe;
 
 // Native function identifier used by transaction model
 #[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
@@ -8,7 +10,8 @@ pub struct NativeFunctionIdent {
 }
 
 // Native method identifier used by transaction model
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct NativeMethodIdent {
     pub receiver: RENodeId,
     pub method_name: String,

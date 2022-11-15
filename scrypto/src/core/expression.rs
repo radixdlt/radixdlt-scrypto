@@ -7,6 +7,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
+use crate::data::*;
+use crate::scrypto_type;
 
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Expression(pub String);
@@ -65,7 +67,11 @@ impl Expression {
     }
 }
 
-scrypto_type!(Expression, ScryptoType::Expression, Vec::new());
+scrypto_type!(
+    Expression,
+    ScryptoCustomTypeId::Expression,
+    Type::Expression
+);
 
 //======
 // text

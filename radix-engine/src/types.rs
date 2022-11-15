@@ -13,8 +13,8 @@ pub use sbor::rust::string::String;
 pub use sbor::rust::string::ToString;
 pub use sbor::rust::vec;
 pub use sbor::rust::vec::Vec;
-pub use sbor::{Decode, DecodeError, Encode, Type, TypeId, Value};
-pub use scrypto::abi::{BlueprintAbi, Fn, ScryptoType};
+pub use sbor::{Decode, DecodeError, Encode, SborPath, SborPathBuf, SborTypeId, SborValue, TypeId};
+pub use scrypto::abi::{BlueprintAbi, Fields, Fn, Type, Variant};
 pub use scrypto::address::{AddressError, Bech32Decoder, Bech32Encoder};
 pub use scrypto::component::{
     ComponentAddAccessCheckInvocation, ComponentAddress, PackageAddress, PackagePublishInvocation,
@@ -28,6 +28,7 @@ pub use scrypto::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
     Hash, PublicKey, Signature,
 };
+pub use scrypto::data::*;
 pub use scrypto::engine::{api::RadixEngineInput, types::*};
 pub use scrypto::math::{Decimal, RoundingMode, I256};
 pub use scrypto::resource::{
@@ -52,8 +53,6 @@ pub use scrypto::resource::{
     VaultGetNonFungibleIdsInvocation, VaultGetResourceAddressInvocation, VaultLockFeeInvocation,
     VaultPutInvocation, VaultTakeInvocation, VaultTakeNonFungiblesInvocation, LOCKED, MUTABLE,
 };
-pub use scrypto::values::{ScryptoValue, ScryptoValueReplaceError};
-use std::fmt::Debug;
 
 // methods and macros
 use crate::engine::Invocation;
@@ -63,6 +62,7 @@ pub use scrypto::crypto::hash;
 pub use scrypto::resource::{
     require, require_all_of, require_amount, require_any_of, require_n_of,
 };
+pub use scrypto::scrypto;
 pub use scrypto::{access_and_or, access_rule_node, args, dec, pdec, rule};
 
 /// Scrypto function/method invocation.

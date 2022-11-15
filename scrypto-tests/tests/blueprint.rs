@@ -1,10 +1,19 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use scrypto::abi::BlueprintAbi;
+use scrypto::abi::*;
 use scrypto::buffer::*;
 use scrypto::prelude::*;
 use serde::Serialize;
-use serde_json::{json, to_value, Value};
+use serde_json::{json, to_string, to_value, Value};
+
+blueprint! {
+  struct Empty {
+  }
+
+  impl Empty {
+
+  }
+}
 
 blueprint! {
     struct Simple {
@@ -34,8 +43,15 @@ blueprint! {
     }
 }
 
-fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
-    assert_eq!(to_value(&actual).unwrap(), expected);
+pub fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
+    let actual = to_value(&actual).unwrap();
+    if actual != expected {
+        panic!(
+            "Mismatching JSONs:\nActual:\n{}\nExpected:\n{}\n",
+            to_string(&actual).unwrap(),
+            to_string(&expected).unwrap()
+        );
+    }
 }
 
 #[test]
@@ -46,64 +62,44 @@ fn test_simple_abi() {
     assert_json_eq(
         abi,
         json!({
-          "structure": {
-            "type": "Struct",
-            "name": "Simple",
-            "fields": {
-              "type": "Named",
-              "named": [
-                [
-                  "state",
-                  {
-                    "type": "U32"
-                  }
-                ]
-              ]
-            }
-          },
           "fns": [
             {
+              "export_name": "Simple_new",
               "ident": "new",
-              "mutability": null,
               "input": {
-                "type": "Struct",
-                "name": "Simple_new_Input",
                 "fields": {
-                  "type": "Named",
-                  "named": []
-                }
+                  "named": [],
+                  "type": "Named"
+                },
+                "name": "Simple_new_Input",
+                "type": "Struct"
               },
+              "mutability": null,
               "output": {
-                "type": "Custom",
-                "type_id": 129,
-                "generics": []
-              },
-              "export_name": "Simple_new"
+                "type": "ComponentAddress"
+              }
             },
             {
+              "export_name": "Simple_get_state",
               "ident": "get_state",
-              "mutability": "Immutable",
               "input": {
-                "type": "Struct",
-                "name": "Simple_get_state_Input",
                 "fields": {
-                  "type": "Named",
-                  "named": []
-                }
+                  "named": [],
+                  "type": "Named"
+                },
+                "name": "Simple_get_state_Input",
+                "type": "Struct"
               },
+              "mutability": "Immutable",
               "output": {
                 "type": "U32"
-              },
-              "export_name": "Simple_get_state"
+              }
             },
             {
+              "export_name": "Simple_set_state",
               "ident": "set_state",
-              "mutability": "Mutable",
               "input": {
-                "type": "Struct",
-                "name": "Simple_set_state_Input",
                 "fields": {
-                  "type": "Named",
                   "named": [
                     [
                       "arg0",
@@ -111,75 +107,78 @@ fn test_simple_abi() {
                         "type": "U32"
                       }
                     ]
-                  ]
-                }
+                  ],
+                  "type": "Named"
+                },
+                "name": "Simple_set_state_Input",
+                "type": "Struct"
               },
+              "mutability": "Mutable",
               "output": {
                 "type": "Unit"
-              },
-              "export_name": "Simple_set_state"
+              }
             },
             {
+              "export_name": "Simple_custom_types",
               "ident": "custom_types",
-              "mutability": null,
               "input": {
-                "type": "Struct",
-                "name": "Simple_custom_types_Input",
                 "fields": {
-                  "type": "Named",
-                  "named": []
-                }
+                  "named": [],
+                  "type": "Named"
+                },
+                "name": "Simple_custom_types_Input",
+                "type": "Struct"
               },
+              "mutability": null,
               "output": {
-                "type": "Tuple",
-                "elements": [
+                "element_types": [
                   {
-                    "type": "Custom",
-                    "type_id": 181,
-                    "generics": []
+                    "type": "Decimal"
                   },
                   {
-                    "type": "Custom",
-                    "type_id": 128,
-                    "generics": []
+                    "type": "PackageAddress"
                   },
                   {
-                    "type": "Custom",
-                    "type_id": 145,
-                    "generics": [
-                      {
-                        "type": "String"
-                      },
-                      {
-                        "type": "String"
-                      }
-                    ]
+                    "key_type": {
+                      "type": "String"
+                    },
+                    "type": "KeyValueStore",
+                    "value_type": {
+                      "type": "String"
+                    }
                   },
                   {
-                    "type": "Custom",
-                    "type_id": 176,
-                    "generics": []
+                    "type": "Hash"
                   },
                   {
-                    "type": "Custom",
-                    "type_id": 146,
-                    "generics": []
+                    "type": "Bucket"
                   },
                   {
-                    "type": "Custom",
-                    "type_id": 147,
-                    "generics": []
+                    "type": "Proof"
                   },
                   {
-                    "type": "Custom",
-                    "type_id": 148,
-                    "generics": []
+                    "type": "Vault"
+                  }
+                ],
+                "type": "Tuple"
+              }
+            }
+          ],
+          "structure": {
+            "fields": {
+              "named": [
+                [
+                  "state",
+                  {
+                    "type": "U32"
                   }
                 ]
-              },
-              "export_name": "Simple_custom_types"
-            }
-          ]
+              ],
+              "type": "Named"
+            },
+            "name": "Simple",
+            "type": "Struct"
+          }
         }),
     );
 }

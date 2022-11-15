@@ -12,7 +12,8 @@ use super::ExecutionTraceError;
 use super::TrackError;
 
 /// Represents an error which causes a tranasction to be rejected.
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
@@ -33,7 +34,8 @@ impl fmt::Display for RejectionError {
 }
 
 /// Represents an error when executing a transaction.
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
@@ -57,7 +59,8 @@ impl From<KernelError> for RuntimeError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum KernelError {
     InvalidModeTransition(ExecutionMode, ExecutionMode),
 
@@ -75,7 +78,8 @@ pub enum KernelError {
     IdAllocationError(IdAllocationError),
 
     // SBOR decoding
-    DecodeError(DecodeError),
+    InvalidScryptoValue(ScryptoValueDecodeError),
+    InvalidSborValue(DecodeError),
 
     // RENode
     StoredNodeRemoved(RENodeId),
@@ -112,7 +116,8 @@ pub enum KernelError {
     CantMoveUpstream(RENodeId),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum CallFrameError {
     OffsetDoesNotExist(RENodeId, SubstateOffset),
     RENodeNotVisible(RENodeId),
@@ -134,13 +139,15 @@ pub enum ScryptoFnResolvingError {
     InvalidInput,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum InterpreterError {
     InvalidScryptoFunctionInvocation(ScryptoFunctionIdent, ScryptoFnResolvingError),
     InvalidScryptoMethodInvocation(ScryptoMethodIdent, ScryptoFnResolvingError),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ModuleError {
     AuthError(AuthError),
     CostingError(CostingError),
@@ -175,7 +182,8 @@ impl<E> InvokeError<E> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ApplicationError {
     TransactionProcessorError(TransactionProcessorError),
 
