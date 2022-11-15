@@ -280,6 +280,29 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
+            SysCallInput::EmitEvent { event } => {
+                let (native, tracked, size) = match event {
+                    Event::Runtime(_) => (true, false, 0),
+                    Event::Tracked(TrackedEvent::Native(..)) => (true, true, 0),
+                    Event::Tracked(TrackedEvent::Scrypto(value)) => {
+                        (false, true, value.len() as u32)
+                    }
+                };
+                track
+                    .fee_reserve
+                    .consume_flat(
+                        track
+                            .fee_table
+                            .system_api_cost(SystemApiCostingEntry::EmitEvent {
+                                native,
+                                tracked,
+                                size,
+                            }),
+                        "emit_event",
+                        false,
+                    )
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
+            }
         }
 
         Ok(())
@@ -372,5 +395,13 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                 .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
             _ => Ok(()),
         }
+    }
+
+    fn on_finished_processing(
+        &mut self,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        Ok(())
     }
 }

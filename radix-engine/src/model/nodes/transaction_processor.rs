@@ -235,7 +235,18 @@ impl TransactionProcessor {
             .create_node(RENode::Worktop(WorktopSubstate::new()))
             .map_err(InvokeError::Downstream)?;
 
-        for inst in input.instructions.as_ref() {
+        env
+            .emit_event(Event::Runtime(RuntimeEvent::PreExecuteManifest))
+            .map_err(InvokeError::Downstream)?;
+
+        for (idx, inst) in input.instructions.as_ref().iter().enumerate() {
+            env
+                .emit_event(Event::Runtime(RuntimeEvent::PreExecuteInstruction {
+                    instruction_index: idx,
+                    instruction: &inst,
+                }))
+                .map_err(InvokeError::Downstream)?;
+
             let result = match inst {
                 Instruction::TakeFromWorktop { resource_address } => id_allocator
                     .new_bucket_id()
@@ -604,7 +615,18 @@ impl TransactionProcessor {
                 }
             }?;
             outputs.push(result);
+
+            env
+                .emit_event(Event::Runtime(RuntimeEvent::PostExecuteInstruction {
+                    instruction_index: idx,
+                    instruction: &inst,
+                }))
+                .map_err(InvokeError::Downstream)?;
         }
+
+        env
+            .emit_event(Event::Runtime(RuntimeEvent::PostExecuteManifest))
+            .map_err(InvokeError::Downstream)?;
 
         Ok(outputs
             .into_iter()

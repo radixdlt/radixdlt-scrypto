@@ -204,6 +204,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 &ExecutionConfig {
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     trace,
+                    max_sys_call_trace_depth: 1,
                 },
                 &transaction.get_executable(initial_proofs),
             );

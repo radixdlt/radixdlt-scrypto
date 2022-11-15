@@ -7,9 +7,15 @@ use radix_engine_lib::engine::types::{
     Level, LockHandle, RENodeId, SubstateId, SubstateOffset, VaultId,
 };
 
+#[derive(Debug)]
+pub enum InvocationInfo<'a> {
+    Native(&'a NativeInvocationInfo),
+    Scrypto(&'a ScryptoInvocation),
+}
+
 pub enum SysCallInput<'a> {
     Invoke {
-        name: String,
+        info: InvocationInfo<'a>,
         input_size: u32,
         value_count: u32,
         depth: usize,
@@ -50,10 +56,15 @@ pub enum SysCallInput<'a> {
         level: &'a Level,
         message: &'a String,
     },
+    EmitEvent {
+        event: &'a Event<'a>,
+    },
 }
 
+#[derive(Debug)]
 pub enum SysCallOutput<'a> {
-    Invoke { rtn: String },
+    Invoke { rtn: &'a dyn Traceable },
+    ReadOwnedNodes,
     BorrowNode { node_pointer: &'a RENodeLocation },
     DropNode { node: &'a HeapRENode },
     CreateNode { node_id: &'a RENodeId },
@@ -65,6 +76,7 @@ pub enum SysCallOutput<'a> {
     ReadBlob { blob: &'a [u8] },
     GenerateUuid { uuid: u128 },
     EmitLog,
+    EmitEvent,
 }
 
 pub trait Module<R: FeeReserve> {
@@ -118,4 +130,10 @@ pub trait Module<R: FeeReserve> {
         fee: Resource,
         contingent: bool,
     ) -> Result<Resource, ModuleError>;
+
+    fn on_finished_processing(
+        &mut self,
+        heap: &mut Heap,
+        track: &mut Track<R>,
+    ) -> Result<(), ModuleError>;
 }

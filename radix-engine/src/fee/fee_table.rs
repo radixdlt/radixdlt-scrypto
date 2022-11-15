@@ -83,6 +83,12 @@ pub enum SystemApiCostingEntry {
     EmitLog {
         size: u32,
     },
+
+    EmitEvent {
+        native: bool,
+        tracked: bool,
+        size: u32,
+    },
 }
 
 pub struct FeeTable {
@@ -284,6 +290,16 @@ impl FeeTable {
             SystemApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
             SystemApiCostingEntry::GenerateUuid => self.fixed_low,
             SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
+            SystemApiCostingEntry::EmitEvent {
+                native,
+                tracked,
+                size,
+            } => match (native, tracked) {
+                (true, true) => self.fixed_high,
+                (true, false) => self.fixed_low,
+                (false, true) => self.fixed_low + 10 * size,
+                (false, false) => todo!("No such events yet"),
+            },
         }
     }
 }

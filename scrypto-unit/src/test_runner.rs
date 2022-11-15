@@ -407,6 +407,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 &ExecutionConfig {
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     trace: self.trace,
+                    max_sys_call_trace_depth: 1,
                 },
                 &transaction.get_executable(initial_proofs),
             );
@@ -759,7 +760,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let tx_hash = hash(self.next_transaction_nonce.to_string());
         let blobs = HashMap::new();
         let substate_store = self.execution_stores.get_root_store();
-        let mut track = Track::new(
+        let track = Track::new(
             substate_store,
             SystemLoanFeeReserve::default(),
             FeeTable::new(),
@@ -775,7 +776,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             auth_zone_params,
             &blobs,
             DEFAULT_MAX_CALL_DEPTH,
-            &mut track,
+            track,
             &mut self.scrypto_interpreter,
             Vec::new(),
         );
@@ -783,9 +784,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         // Invoke the system
         let output = fun(&mut kernel);
 
+        // The output is of generic type, so it isn't necessarily Vec<Vec<u8>> (the output type of TransactionProcessorRunInvocation).
+        // The receipt's output isn't really used, so it's fine to use an empty Vec here.
+        let receipt = kernel.finalize(Ok(Vec::new()));
+
         // Commit
         self.next_transaction_nonce += 1;
-        let receipt = track.finalize(Ok(Vec::new()));
         if let TransactionResult::Commit(c) = receipt.result {
             c.state_updates.commit(substate_store);
         }
