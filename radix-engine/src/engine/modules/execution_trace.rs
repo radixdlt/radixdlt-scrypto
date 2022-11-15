@@ -115,7 +115,7 @@ pub trait Traceable: Debug {
     fn proofs(&self) -> Vec<ProofId>;
 }
 
-impl Traceable for ScryptoValue {
+impl Traceable for IndexedScryptoValue {
     fn buckets(&self) -> Vec<BucketId> {
         self.bucket_ids.keys().map(|k| k.clone()).collect()
     }

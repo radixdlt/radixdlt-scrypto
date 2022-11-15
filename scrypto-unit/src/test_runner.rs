@@ -18,7 +18,6 @@ use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
 use radix_engine_constants::*;
-use sbor::describe::*;
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
