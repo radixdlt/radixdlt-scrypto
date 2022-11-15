@@ -1,9 +1,10 @@
 use radix_engine_lib::component::PackagePublishInvocation;
 use radix_engine_lib::engine::api::{Syscalls, SysInvokableNative};
 use radix_engine_lib::engine::types::{BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId, TransactionProcessorFunction};
+use radix_engine_lib::resource::Bucket;
 use sbor::rust::borrow::Cow;
 use scrypto::core::Runtime;
-use scrypto::resource::ComponentAuthZone;
+use scrypto::resource::{ComponentAuthZone, SysBucket};
 use scrypto::resource::Worktop;
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
@@ -402,7 +403,7 @@ impl TransactionProcessor {
                             ))
                     })
                     .and_then(|(new_id, real_bucket_id)| {
-                        let bucket = scrypto::resource::Bucket(real_bucket_id);
+                        let bucket = Bucket(real_bucket_id);
                         bucket
                             .sys_create_proof(env)
                             .map_err(InvokeError::Downstream)

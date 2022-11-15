@@ -1,6 +1,7 @@
 use radix_engine_lib::engine::api::SysInvokableNative;
 use radix_engine_lib::engine::types::{GlobalAddress, NativeFunction, NativeMethod, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset, SubstateOffset};
-use radix_engine_lib::resource::{MintParams, ResourceManagerBucketBurnInvocation, ResourceManagerBurnInvocation, ResourceManagerCreateBucketInvocation, ResourceManagerCreateInvocation, ResourceManagerCreateVaultInvocation, ResourceManagerGetMetadataInvocation, ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation, ResourceManagerGetTotalSupplyInvocation, ResourceManagerLockAuthInvocation, ResourceManagerMintInvocation, ResourceManagerNonFungibleExistsInvocation, ResourceManagerSetResourceAddressInvocation, ResourceManagerUpdateAuthInvocation, ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation, ResourceType};
+use radix_engine_lib::resource::{Bucket, MintParams, ResourceManagerBucketBurnInvocation, ResourceManagerBurnInvocation, ResourceManagerCreateBucketInvocation, ResourceManagerCreateInvocation, ResourceManagerCreateVaultInvocation, ResourceManagerGetMetadataInvocation, ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation, ResourceManagerGetTotalSupplyInvocation, ResourceManagerLockAuthInvocation, ResourceManagerMintInvocation, ResourceManagerNonFungibleExistsInvocation, ResourceManagerSetResourceAddressInvocation, ResourceManagerUpdateAuthInvocation, ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation, ResourceType};
+use scrypto::resource::SysBucket;
 use crate::engine::{
     ApplicationError, CallFrameUpdate, Invokable, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError,
@@ -43,7 +44,7 @@ impl NativeExecutable for ResourceManagerBucketBurnInvocation {
             + InvokableNative<'a>
             + SysInvokableNative<RuntimeError>,
     {
-        let bucket = scrypto::resource::Bucket(invocation.bucket.0);
+        let bucket = Bucket(invocation.bucket.0);
         bucket.sys_burn(env)?;
 
         Ok(((), CallFrameUpdate::empty()))

@@ -1,6 +1,6 @@
 use radix_engine_lib::engine::api::SysNativeInvokable;
 use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
-use radix_engine_lib::resource::{AccessRule, MintParams, NonFungibleId, ResourceAddress, ResourceManagerBurnInvocation, ResourceManagerGetMetadataInvocation, ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation, ResourceManagerGetTotalSupplyInvocation, ResourceManagerLockAuthInvocation, ResourceManagerMintInvocation, ResourceManagerNonFungibleExistsInvocation, ResourceManagerUpdateAuthInvocation, ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation, ResourceMethodAuthKey, ResourceType};
+use radix_engine_lib::resource::{AccessRule, Bucket, MintParams, NonFungibleId, ResourceAddress, ResourceManagerBurnInvocation, ResourceManagerGetMetadataInvocation, ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation, ResourceManagerGetTotalSupplyInvocation, ResourceManagerLockAuthInvocation, ResourceManagerMintInvocation, ResourceManagerNonFungibleExistsInvocation, ResourceManagerUpdateAuthInvocation, ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation, ResourceMethodAuthKey, ResourceType};
 use radix_engine_lib::scrypto_env_native_fn;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
@@ -202,7 +202,7 @@ impl ResourceManager {
         pub fn burn(&mut self, bucket: Bucket) -> () {
             ResourceManagerBurnInvocation {
                 receiver: self.0,
-                bucket: radix_engine_lib::resource::Bucket(bucket.0),
+                bucket: Bucket(bucket.0),
             }
         }
     }

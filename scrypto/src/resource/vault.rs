@@ -1,7 +1,7 @@
 use radix_engine_lib::engine::api::{Syscalls, SysNativeInvokable};
 use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
 use radix_engine_lib::engine::types::VaultId;
-use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerCreateVaultInvocation, VaultCreateProofByAmountInvocation, VaultCreateProofByIdsInvocation, VaultCreateProofInvocation, VaultGetAmountInvocation, VaultGetNonFungibleIdsInvocation, VaultGetResourceAddressInvocation, VaultLockFeeInvocation, VaultPutInvocation, VaultTakeInvocation, VaultTakeNonFungiblesInvocation};
+use radix_engine_lib::resource::{Bucket, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerCreateVaultInvocation, VaultCreateProofByAmountInvocation, VaultCreateProofByIdsInvocation, VaultCreateProofInvocation, VaultGetAmountInvocation, VaultGetNonFungibleIdsInvocation, VaultGetResourceAddressInvocation, VaultLockFeeInvocation, VaultPutInvocation, VaultTakeInvocation, VaultTakeNonFungiblesInvocation};
 use radix_engine_lib::scrypto_env_native_fn;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::BTreeSet;

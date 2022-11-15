@@ -3,7 +3,7 @@ use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::component::SystemAddress;
 use radix_engine_lib::engine::types::{BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver};
-use radix_engine_lib::resource::{MintParams, ResourceAddress, ResourceManagerBucketBurnInvocation, ResourceManagerCreateInvocation, ResourceManagerMintInvocation};
+use radix_engine_lib::resource::{Bucket, MintParams, ResourceAddress, ResourceManagerBucketBurnInvocation, ResourceManagerCreateInvocation, ResourceManagerMintInvocation};
 use radix_engine_lib::resource::NonFungibleAddress;
 use radix_engine_lib::resource::NonFungibleId;
 use sbor::any::{encode_any, Value};
@@ -1121,7 +1121,7 @@ fn generate_value(
         }),
         ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| Value::Custom {
             type_id: ScryptoType::Bucket.id(),
-            bytes: scrypto::resource::Bucket(v).to_vec(),
+            bytes: Bucket(v).to_vec(),
         }),
         ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| Value::Custom {
             type_id: ScryptoType::Proof.id(),

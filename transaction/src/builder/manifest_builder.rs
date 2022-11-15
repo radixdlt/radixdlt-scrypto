@@ -2,7 +2,7 @@ use radix_engine_lib::address::Bech32Decoder;
 use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::resource::{require, NonFungibleAddress, NonFungibleId, ResourceAddress, LOCKED, AccessRule, AccessRuleNode, ResourceManagerBurnInvocation, ResourceManagerMintInvocation, MintParams, Withdraw, ResourceMethodAuthKey, ResourceType, Mutability, ResourceManagerCreateInvocation};
+use radix_engine_lib::resource::{require, NonFungibleAddress, NonFungibleId, ResourceAddress, LOCKED, AccessRule, AccessRuleNode, ResourceManagerBurnInvocation, ResourceManagerMintInvocation, MintParams, Withdraw, ResourceMethodAuthKey, ResourceType, Mutability, ResourceManagerCreateInvocation, Bucket};
 use radix_engine_lib::access_rule_node;
 use radix_engine_lib::engine::types::{BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver};
 use radix_engine_lib::resource::ResourceMethodAuthKey::*;
@@ -711,7 +711,7 @@ impl ManifestBuilder {
                 blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
                 function_name: "new_with_resource".to_string(),
             },
-            args: args!(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)),
+            args: args!(withdraw_auth.clone(), Bucket(bucket_id)),
         })
         .0
     }
@@ -1054,7 +1054,7 @@ impl ManifestBuilder {
                         .unwrap()
                     }
                 };
-                Ok(scrypto_encode(&scrypto::resource::Bucket(bucket_id)))
+                Ok(scrypto_encode(&Bucket(bucket_id)))
             }
             ScryptoType::Proof => {
                 let resource_specifier = parse_resource_specifier(arg, &self.decoder)
