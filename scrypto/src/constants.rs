@@ -1,8 +1,8 @@
 use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::component::SystemAddress;
-use radix_engine_lib::{address, construct_address};
 use radix_engine_lib::resource::ResourceAddress;
+use radix_engine_lib::{address, construct_address};
 
 // After changing Radix Engine ID allocation, you will most likely need to update the addresses below.
 //

@@ -1,7 +1,10 @@
-use radix_engine_lib::engine::types::{AuthZoneOffset, ComponentOffset, GlobalAddress, NativeFunction, NativeMethod, PackageOffset, RENodeId, ResourceManagerOffset, SubstateOffset, VaultOffset};
 use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
+use radix_engine_lib::engine::types::{
+    AuthZoneOffset, ComponentOffset, GlobalAddress, NativeFunction, NativeMethod, PackageOffset,
+    RENodeId, ResourceManagerOffset, SubstateOffset, VaultOffset,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum AuthError {

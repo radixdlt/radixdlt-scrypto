@@ -1,12 +1,15 @@
-use radix_engine_lib::resource::{AccessRule, LOCKED, MintParams, Mutability, NonFungibleId, ResourceAddress, ResourceMethodAuthKey, ResourceType};
-use radix_engine_lib::resource::{ResourceMethodAuthKey::*};
-use radix_engine_lib::rule;
+use radix_engine_lib::resource::ResourceMethodAuthKey::*;
+use radix_engine_lib::resource::{
+    AccessRule, MintParams, Mutability, NonFungibleId, ResourceAddress, ResourceMethodAuthKey,
+    ResourceType, LOCKED,
+};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 
 use crate::math::*;
 use crate::resource::*;
+use crate::rule;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;
@@ -114,7 +117,10 @@ impl FungibleResourceBuilder {
     ///     .metadata("name", "TestToken")
     ///     .initial_supply(5);
     /// ```
-    pub fn initial_supply<T: Into<Decimal>>(&self, amount: T) -> radix_engine_lib::resource::Bucket {
+    pub fn initial_supply<T: Into<Decimal>>(
+        &self,
+        amount: T,
+    ) -> radix_engine_lib::resource::Bucket {
         self.build(Some(MintParams::fungible(amount))).1.unwrap()
     }
 
@@ -123,7 +129,10 @@ impl FungibleResourceBuilder {
         self.build(None).0
     }
 
-    fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<radix_engine_lib::resource::Bucket>) {
+    fn build(
+        &self,
+        mint_params: Option<MintParams>,
+    ) -> (ResourceAddress, Option<radix_engine_lib::resource::Bucket>) {
         let mut authorization = self.authorization.clone();
         if !authorization.contains_key(&Withdraw) {
             authorization.insert(Withdraw, (rule!(allow_all), LOCKED));
@@ -228,9 +237,7 @@ impl NonFungibleResourceBuilder {
             encoded.insert(id, (e.immutable_data(), e.mutable_data()));
         }
 
-        self.build(Some(MintParams::NonFungible {
-            entries: encoded
-        }))
+        self.build(Some(MintParams::NonFungible { entries: encoded }))
             .1
             .unwrap()
     }
@@ -240,7 +247,10 @@ impl NonFungibleResourceBuilder {
         self.build(None).0
     }
 
-    fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<radix_engine_lib::resource::Bucket>) {
+    fn build(
+        &self,
+        mint_params: Option<MintParams>,
+    ) -> (ResourceAddress, Option<radix_engine_lib::resource::Bucket>) {
         let mut authorization = self.authorization.clone();
         if !authorization.contains_key(&Withdraw) {
             authorization.insert(Withdraw, (rule!(allow_all), LOCKED));

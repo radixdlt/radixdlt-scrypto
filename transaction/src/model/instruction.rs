@@ -1,4 +1,7 @@
-use radix_engine_lib::engine::types::{BucketId, NativeFunctionIdent, NativeMethodIdent, ProofId, ScryptoFunctionIdent, ScryptoMethodIdent};
+use radix_engine_lib::engine::types::{
+    BucketId, NativeFunctionIdent, NativeMethodIdent, ProofId, ScryptoFunctionIdent,
+    ScryptoMethodIdent,
+};
 use radix_engine_lib::resource::{NonFungibleId, ResourceAddress};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;

@@ -367,7 +367,7 @@ impl NotarizedTransactionValidator {
 
 #[cfg(test)]
 mod tests {
-    use scrypto::core::NetworkDefinition;
+    use radix_engine_lib::core::NetworkDefinition;
 
     use super::*;
     use crate::{

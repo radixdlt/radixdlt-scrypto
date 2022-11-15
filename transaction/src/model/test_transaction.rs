@@ -1,8 +1,8 @@
+use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_lib::resource::NonFungibleAddress;
 use sbor::rust::vec::Vec;
 use scrypto::crypto::*;
 use std::collections::BTreeSet;
-use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::resource::NonFungibleAddress;
 
 use crate::builder::TransactionBuilder;
 use crate::model::*;

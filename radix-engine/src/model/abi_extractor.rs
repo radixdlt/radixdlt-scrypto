@@ -1,4 +1,7 @@
-use radix_engine_lib::engine::types::{ComponentOffset, GlobalAddress, GlobalOffset, PackageOffset, RENodeId, SubstateId, SubstateOffset};
+use radix_engine_lib::engine::types::{
+    ComponentOffset, GlobalAddress, GlobalOffset, PackageOffset, RENodeId, SubstateId,
+    SubstateOffset,
+};
 use scrypto::abi;
 
 use crate::ledger::*;

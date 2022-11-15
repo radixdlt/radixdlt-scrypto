@@ -1,7 +1,7 @@
-use radix_engine_lib::engine::types::SubstateId;
 use crate::ledger::*;
 use crate::state_manager::CommitReceipt;
 use crate::types::*;
+use radix_engine_lib::engine::types::SubstateId;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct StateDiff {

@@ -1,5 +1,13 @@
 use radix_engine_lib::engine::api::SysNativeInvokable;
-use radix_engine_lib::resource::{AccessRule, Bucket, MintParams, NonFungibleId, ResourceAddress, ResourceManagerBurnInvocation, ResourceManagerGetMetadataInvocation, ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation, ResourceManagerGetTotalSupplyInvocation, ResourceManagerLockAuthInvocation, ResourceManagerMintInvocation, ResourceManagerNonFungibleExistsInvocation, ResourceManagerUpdateAuthInvocation, ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation, ResourceMethodAuthKey, ResourceType};
+use radix_engine_lib::resource::{
+    AccessRule, Bucket, MintParams, NonFungibleId, ResourceAddress, ResourceManagerBurnInvocation,
+    ResourceManagerGetMetadataInvocation, ResourceManagerGetNonFungibleInvocation,
+    ResourceManagerGetResourceTypeInvocation, ResourceManagerGetTotalSupplyInvocation,
+    ResourceManagerLockAuthInvocation, ResourceManagerMintInvocation,
+    ResourceManagerNonFungibleExistsInvocation, ResourceManagerUpdateAuthInvocation,
+    ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation,
+    ResourceMethodAuthKey, ResourceType,
+};
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -215,7 +223,11 @@ impl ResourceManager {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible<T: NonFungibleData>(&mut self, id: &NonFungibleId, data: T) -> radix_engine_lib::resource::Bucket {
+    pub fn mint_non_fungible<T: NonFungibleData>(
+        &mut self,
+        id: &NonFungibleId,
+        data: T,
+    ) -> radix_engine_lib::resource::Bucket {
         let mut entries = HashMap::new();
         entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
         self.mint_internal(MintParams::NonFungible { entries })

@@ -3,8 +3,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::math::*;
-use crate::resource::*;
 use crate::resource::non_fungible_data::NonFungibleData;
+use crate::resource::*;
 
 /// Represents the minting config
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
@@ -26,9 +26,9 @@ impl MintParams {
     }
 
     pub fn non_fungible<T, V>(entries: T) -> Self
-        where
-            T: IntoIterator<Item = (NonFungibleId, V)>,
-            V: NonFungibleData,
+    where
+        T: IntoIterator<Item = (NonFungibleId, V)>,
+        V: NonFungibleData,
     {
         let mut encoded = HashMap::new();
         for (id, e) in entries {

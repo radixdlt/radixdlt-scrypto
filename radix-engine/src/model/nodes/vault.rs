@@ -1,5 +1,3 @@
-use radix_engine_lib::engine::types::{GlobalAddress, NativeMethod, RENodeId, SubstateOffset, VaultMethod, VaultOffset};
-use radix_engine_lib::resource::{VaultCreateProofByAmountInvocation, VaultCreateProofByIdsInvocation, VaultCreateProofInvocation, VaultGetAmountInvocation, VaultGetNonFungibleIdsInvocation, VaultGetResourceAddressInvocation, VaultLockFeeInvocation, VaultPutInvocation, VaultTakeInvocation, VaultTakeNonFungiblesInvocation};
 use crate::engine::{
     ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
@@ -9,6 +7,15 @@ use crate::model::{
     BucketSubstate, InvokeError, ProofError, ResourceContainerId, ResourceOperationError,
 };
 use crate::types::*;
+use radix_engine_lib::engine::types::{
+    GlobalAddress, NativeMethod, RENodeId, SubstateOffset, VaultMethod, VaultOffset,
+};
+use radix_engine_lib::resource::{
+    VaultCreateProofByAmountInvocation, VaultCreateProofByIdsInvocation,
+    VaultCreateProofInvocation, VaultGetAmountInvocation, VaultGetNonFungibleIdsInvocation,
+    VaultGetResourceAddressInvocation, VaultLockFeeInvocation, VaultPutInvocation,
+    VaultTakeInvocation, VaultTakeNonFungiblesInvocation,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum VaultError {

@@ -1,5 +1,3 @@
-use radix_engine_lib::component::{EpochManagerCreateInvocation, EpochManagerGetCurrentEpochInvocation, EpochManagerSetEpochInvocation};
-use radix_engine_lib::engine::types::{EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction, NativeMethod, RENodeId, SubstateOffset};
 use crate::engine::{
     AuthModule, CallFrameUpdate, Invokable, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError,
@@ -10,6 +8,14 @@ use crate::model::{
     HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
+use radix_engine_lib::component::{
+    EpochManagerCreateInvocation, EpochManagerGetCurrentEpochInvocation,
+    EpochManagerSetEpochInvocation,
+};
+use radix_engine_lib::engine::types::{
+    EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction,
+    NativeMethod, RENodeId, SubstateOffset,
+};
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum EpochManagerError {

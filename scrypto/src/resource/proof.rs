@@ -1,6 +1,10 @@
-use radix_engine_lib::engine::api::{Syscalls, SysNativeInvokable};
+use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
 use radix_engine_lib::engine::types::{ProofId, RENodeId};
-use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, Proof, ProofCloneInvocation, ProofGetAmountInvocation, ProofGetNonFungibleIdsInvocation, ProofGetResourceAddressInvocation, ProofValidationError, ResourceAddress};
+use radix_engine_lib::resource::{
+    NonFungibleAddress, NonFungibleId, Proof, ProofCloneInvocation, ProofGetAmountInvocation,
+    ProofGetNonFungibleIdsInvocation, ProofGetResourceAddressInvocation, ProofValidationError,
+    ResourceAddress,
+};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
@@ -46,24 +50,27 @@ impl From<NonFungibleAddress> for ProofValidationMode {
 
 pub trait SysProof {
     fn sys_clone<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<Proof, E>
-        where
-            Y: Syscalls<E> + SysNativeInvokable<ProofCloneInvocation, E>;
+    where
+        Y: Syscalls<E> + SysNativeInvokable<ProofCloneInvocation, E>;
     fn sys_drop<Y, E: Debug + TypeId + Decode>(self, sys_calls: &mut Y) -> Result<(), E>
-        where
-            Y: Syscalls<E>;
+    where
+        Y: Syscalls<E>;
 }
 
 impl SysProof for Proof {
-    fn sys_clone<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<radix_engine_lib::resource::Proof, E>
-        where
-            Y: Syscalls<E> + SysNativeInvokable<ProofCloneInvocation, E>,
+    fn sys_clone<Y, E: Debug + TypeId + Decode>(
+        &self,
+        sys_calls: &mut Y,
+    ) -> Result<radix_engine_lib::resource::Proof, E>
+    where
+        Y: Syscalls<E> + SysNativeInvokable<ProofCloneInvocation, E>,
     {
         sys_calls.sys_invoke(ProofCloneInvocation { receiver: self.0 })
     }
 
     fn sys_drop<Y, E: Debug + TypeId + Decode>(self, sys_calls: &mut Y) -> Result<(), E>
-        where
-            Y: Syscalls<E>,
+    where
+        Y: Syscalls<E>,
     {
         sys_calls.sys_drop_node(RENodeId::Proof(self.0))
     }
@@ -75,8 +82,8 @@ pub trait ScryptoProof: Sized {
         self,
         validation_mode: T,
     ) -> Result<ValidatedProof, (Self, ProofValidationError)>
-        where
-            T: Into<ProofValidationMode>;
+    where
+        T: Into<ProofValidationMode>;
     fn unsafe_skip_proof_validation(self) -> ValidatedProof;
     fn from_validated_proof(validated_proof: ValidatedProof) -> Self;
     fn validate(&self, validation_mode: ProofValidationMode) -> Result<(), ProofValidationError>;
@@ -135,8 +142,9 @@ impl ScryptoProof for Proof {
         self,
         validation_mode: T,
     ) -> Result<ValidatedProof, (Self, ProofValidationError)>
-        where
-            T: Into<ProofValidationMode> {
+    where
+        T: Into<ProofValidationMode>,
+    {
         let validation_mode: ProofValidationMode = validation_mode.into();
         match self.validate(validation_mode) {
             Ok(()) => Ok(ValidatedProof(self)),

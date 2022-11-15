@@ -1,4 +1,7 @@
-use radix_engine_lib::engine::types::{GlobalAddress, GlobalOffset, KeyValueStoreOffset, Level, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset, VaultId, VaultOffset};
+use radix_engine_lib::engine::types::{
+    GlobalAddress, GlobalOffset, KeyValueStoreOffset, Level, NonFungibleStoreOffset, RENodeId,
+    SubstateId, SubstateOffset, VaultId, VaultOffset,
+};
 use radix_engine_lib::resource::ResourceType;
 use transaction::model::Executable;
 

@@ -1,7 +1,13 @@
 use radix_engine_lib::address::{AddressError, Bech32Encoder};
 use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::engine::types::{BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver};
-use radix_engine_lib::resource::{MintParams, ResourceManagerBurnInvocation, ResourceManagerCreateInvocation, ResourceManagerMintInvocation};
+use radix_engine_lib::engine::types::{
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
+    ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
+};
+use radix_engine_lib::resource::{
+    MintParams, ResourceManagerBurnInvocation, ResourceManagerCreateInvocation,
+    ResourceManagerMintInvocation,
+};
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use sbor::{encode_any, Value};
@@ -415,7 +421,7 @@ pub fn decompile_call_scrypto_method<F: fmt::Write>(
                 "ComponentAddress(\"{}\")",
                 address.display(context.bech32_encoder)
             )
-        },
+        }
         ScryptoReceiver::Component(id) => {
             format!("Component(\"{}\")", format_id(&id))
         }
@@ -529,17 +535,13 @@ fn format_id(id: &(Hash, u32)) -> String {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::manifest::*;
     use radix_engine_lib::core::NetworkDefinition;
     use radix_engine_lib::engine::types::ResourceManagerFunction;
     use radix_engine_lib::resource::{AccessRule, Mutability, ResourceMethodAuthKey, ResourceType};
-    use super::*;
-    use crate::manifest::*;
     use sbor::*;
     use scrypto::buffer::scrypto_encode;
-    use scrypto::resource::AccessRule;
-    use scrypto::resource::Mutability;
-    use scrypto::resource::ResourceMethodAuthKey;
-    use scrypto::resource::ResourceType;
 
     #[derive(TypeId, Encode, Decode)]
     struct BadResourceManagerCreateInput {

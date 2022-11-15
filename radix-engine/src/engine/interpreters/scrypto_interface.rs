@@ -1,6 +1,3 @@
-use radix_engine_lib::engine::actor::ScryptoActor;
-use radix_engine_lib::engine::api::{ScryptoNativeInvocation, Syscalls, SysInvokableNative, SysNativeInvokable};
-use radix_engine_lib::engine::types::{Level, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode, SubstateOffset};
 use crate::engine::{
     Invokable, Kernel, KernelError, LockFlags, NativeInvocation, REActor, RENode, ResolvedFunction,
     ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi,
@@ -12,6 +9,14 @@ use crate::model::{
 };
 use crate::types::ScryptoInvocation;
 use crate::wasm::{WasmEngine, WasmInstance};
+use radix_engine_lib::engine::actor::ScryptoActor;
+use radix_engine_lib::engine::api::{
+    ScryptoNativeInvocation, SysInvokableNative, SysNativeInvokable, Syscalls,
+};
+use radix_engine_lib::engine::types::{
+    Level, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode,
+    SubstateOffset,
+};
 use scrypto::crypto::Hash;
 use scrypto::values::ScryptoValue;
 

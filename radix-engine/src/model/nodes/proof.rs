@@ -1,11 +1,16 @@
-use radix_engine_lib::engine::types::{GlobalAddress, NativeMethod, ProofMethod, ProofOffset, RENodeId, SubstateOffset};
-use radix_engine_lib::resource::{ProofCloneInvocation, ProofGetAmountInvocation, ProofGetNonFungibleIdsInvocation, ProofGetResourceAddressInvocation};
 use crate::engine::{
     ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
+use radix_engine_lib::engine::types::{
+    GlobalAddress, NativeMethod, ProofMethod, ProofOffset, RENodeId, SubstateOffset,
+};
+use radix_engine_lib::resource::{
+    ProofCloneInvocation, ProofGetAmountInvocation, ProofGetNonFungibleIdsInvocation,
+    ProofGetResourceAddressInvocation,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ProofError {

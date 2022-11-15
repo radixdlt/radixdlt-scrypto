@@ -19,9 +19,14 @@ use radix_engine::wasm::{
     DefaultWasmEngine, DefaultWasmInstance, InstructionCostRules, WasmInstrumenter,
     WasmMeteringConfig,
 };
+use radix_engine_lib::resource::AccessRule;
+
 use sbor::describe::*;
 use scrypto::dec;
+use scrypto::engine_lib::core::NetworkDefinition;
+use scrypto::engine_lib::engine::types::{RENodeId, ScryptoMethodIdent};
 use scrypto::math::Decimal;
+use scrypto::resource::non_fungible::FromPublicKey;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{AuthZoneParams, Executable, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
@@ -162,7 +167,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 builder.call_method(
                     account_address,
                     "deposit",
-                    args!(scrypto::resource::Bucket(bucket_id)),
+                    args!(radix_engine_lib::resource::Bucket(bucket_id)),
                 )
             })
             .build();

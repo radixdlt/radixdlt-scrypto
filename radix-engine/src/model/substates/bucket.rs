@@ -1,10 +1,10 @@
-use radix_engine_lib::engine::types::BucketId;
-use radix_engine_lib::resource::ResourceType;
 use crate::model::{
     LockableResource, ProofError, ProofSubstate, Resource, ResourceContainerId,
     ResourceOperationError,
 };
 use crate::types::*;
+use radix_engine_lib::engine::types::BucketId;
+use radix_engine_lib::resource::ResourceType;
 
 /// A transient resource container.
 #[derive(Debug)]

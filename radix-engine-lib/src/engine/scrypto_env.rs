@@ -27,7 +27,6 @@ pub enum RadixEngineInput {
     GetTransactionHash(),
 }
 
-
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum NativeFnInvocation {
     Method(NativeMethodInvocation),

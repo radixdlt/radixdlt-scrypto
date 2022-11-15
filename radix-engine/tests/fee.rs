@@ -6,6 +6,8 @@ use radix_engine::model::KeyValueStoreEntrySubstate;
 use radix_engine::model::WorktopError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine_lib::core::NetworkDefinition;
+use scrypto::resource::non_fungible::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
@@ -23,14 +25,14 @@ where
     let package_address = test_runner.compile_and_publish("./tests/blueprints/fee");
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(account, 10.into())
+            .lock_fee(account, 10u32.into())
             .withdraw_from_account_by_amount(account, 10u32.into(), RADIX_TOKEN)
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_function(
                     package_address,
                     "Fee",
                     "new",
-                    args!(scrypto::resource::Bucket(bucket_id)),
+                    args!(radix_engine_lib::resource::Bucket(bucket_id)),
                 );
                 builder
             })

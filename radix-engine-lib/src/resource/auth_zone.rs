@@ -3,12 +3,12 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::engine::api::*;
 use crate::engine::scrypto_env::*;
+use crate::engine::types::AuthZoneId;
+use crate::resource::NonFungibleId;
 use crate::resource::Proof;
 use crate::resource::ResourceAddress;
-use crate::resource::NonFungibleId;
-use crate::engine::{api::*};
-use crate::engine::types::AuthZoneId;
 
 use crate::math::Decimal;
 

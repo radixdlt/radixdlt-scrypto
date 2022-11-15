@@ -999,6 +999,7 @@ name = "scrypto-unit"
 version = "0.7.0"
 dependencies = [
  "radix-engine",
+ "radix-engine-lib",
  "sbor",
  "scrypto",
  "serde",

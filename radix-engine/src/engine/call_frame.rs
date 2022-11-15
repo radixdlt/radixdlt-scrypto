@@ -1,9 +1,12 @@
-use radix_engine_lib::engine::types::{GlobalAddress, LockHandle, NativeFunction, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset, TransactionProcessorFunction};
 use crate::engine::system_api::LockInfo;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::{SubstateRef, SubstateRefMut};
 use crate::types::*;
+use radix_engine_lib::engine::types::{
+    GlobalAddress, LockHandle, NativeFunction, NonFungibleStoreOffset, RENodeId, SubstateId,
+    SubstateOffset, TransactionProcessorFunction,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallFrameUpdate {

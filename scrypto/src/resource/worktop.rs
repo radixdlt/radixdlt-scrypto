@@ -1,9 +1,9 @@
+use crate::sys_env_native_fn;
 use radix_engine_lib::resource::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::math::Decimal;
-use crate::sys_env_native_fn;
 
 pub struct Worktop;
 

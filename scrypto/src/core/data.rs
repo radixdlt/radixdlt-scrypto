@@ -1,5 +1,7 @@
 use radix_engine_lib::engine::api::Syscalls;
-use radix_engine_lib::engine::types::{ComponentOffset, KeyValueStoreOffset, LockHandle, RENodeId, SubstateOffset};
+use radix_engine_lib::engine::types::{
+    ComponentOffset, KeyValueStoreOffset, LockHandle, RENodeId, SubstateOffset,
+};
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};

@@ -1,6 +1,6 @@
+use crate::types::*;
 use radix_engine_lib::engine::types::{BucketId, VaultId};
 use radix_engine_lib::resource::ResourceType;
-use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ResourceOperationError {

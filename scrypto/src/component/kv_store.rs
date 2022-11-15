@@ -1,5 +1,7 @@
 use radix_engine_lib::engine::api::Syscalls;
-use radix_engine_lib::engine::types::{KeyValueStoreId, KeyValueStoreOffset, RENodeId, ScryptoRENode, SubstateOffset};
+use radix_engine_lib::engine::types::{
+    KeyValueStoreId, KeyValueStoreOffset, RENodeId, ScryptoRENode, SubstateOffset,
+};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;

@@ -1,5 +1,6 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use radix_engine_lib::core::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -36,7 +37,7 @@ fn test_external_bridges() {
 
     // Part 3 - Get the caller component address
     let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(
             caller_package_address,
             "ExternalBlueprintCaller",
@@ -54,7 +55,7 @@ fn test_external_bridges() {
 
     // ACT
     let manifest3 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(
             caller_component_address,
             "run_tests_with_external_blueprint",
@@ -68,7 +69,7 @@ fn test_external_bridges() {
 
     // ACT
     let manifest4 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(
             caller_component_address,
             "run_tests_with_external_component",

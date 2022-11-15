@@ -1,10 +1,13 @@
-use radix_engine_lib::resource::{AccessRule, AccessRuleNode, ProofRule, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList};
 use crate::model::method_authorization::{
     HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
     HardResourceOrNonFungible,
 };
 use crate::model::MethodAuthorization;
 use crate::types::*;
+use radix_engine_lib::resource::{
+    AccessRule, AccessRuleNode, ProofRule, SoftCount, SoftDecimal, SoftResource,
+    SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+};
 
 fn soft_to_hard_decimal(
     schema: &Type,

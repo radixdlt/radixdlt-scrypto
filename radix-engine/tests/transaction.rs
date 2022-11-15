@@ -3,6 +3,8 @@ use radix_engine::engine::RejectionError;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use radix_engine_lib::core::NetworkDefinition;
+use scrypto::resource::non_fungible::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
@@ -19,12 +21,12 @@ fn test_manifest_with_non_existent_resource() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(account, 10.into())
+        .lock_fee(account, 10u32.into())
         .take_from_worktop(non_existent_resource, |builder, bucket_id| {
             builder.call_method(
                 account,
                 "deposit",
-                args!(scrypto::resource::Bucket(bucket_id)),
+                args!(radix_engine_lib::resource::Bucket(bucket_id)),
             )
         })
         .build();

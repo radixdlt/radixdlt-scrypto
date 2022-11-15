@@ -36,18 +36,18 @@ pub fn compile(
 mod tests {
     use super::*;
     use crate::model::Instruction;
+    use radix_engine_lib::engine::types::{
+        NativeFunctionIdent, ResourceManagerFunction, ScryptoMethodIdent, ScryptoReceiver,
+    };
+    use radix_engine_lib::resource::{
+        AccessRule, MintParams, Mutability, NonFungibleId, ResourceMethodAuthKey, ResourceType,
+    };
     use sbor::rust::collections::*;
     use sbor::rust::str::FromStr;
-    use scrypto::address::Bech32Decoder;
     use scrypto::args;
-    use scrypto::core::Blob;
-    use scrypto::core::NetworkDefinition;
-    use scrypto::engine::types::*;
+    use scrypto::core::Expression;
     use scrypto::math::*;
-    use scrypto::resource::{
-        AccessRule, MintParams, Mutability, ResourceMethodAuthKey, ResourceType,
-    };
-    use scrypto::{core::Expression, resource::NonFungibleId};
+    use utils::crypto::Blob;
 
     #[test]
     fn test_compile() {
@@ -103,7 +103,7 @@ mod tests {
                         receiver: ScryptoReceiver::Global(component2),
                         method_name: "buy_gumball".to_string(),
                     },
-                    args: args!(scrypto::resource::Bucket(512))
+                    args: args!(radix_engine_lib::resource::Bucket(512))
                 },
                 Instruction::AssertWorktopContainsByAmount {
                     amount: Decimal::from(3),

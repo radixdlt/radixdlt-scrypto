@@ -2,11 +2,18 @@ use radix_engine_lib::address::Bech32Decoder;
 use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::resource::{require, NonFungibleAddress, NonFungibleId, ResourceAddress, LOCKED, AccessRule, AccessRuleNode, ResourceManagerBurnInvocation, ResourceManagerMintInvocation, MintParams, Withdraw, ResourceMethodAuthKey, ResourceType, Mutability, ResourceManagerCreateInvocation, Bucket, Proof};
-use radix_engine_lib::access_rule_node;
-use radix_engine_lib::engine::types::{BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver};
+use radix_engine_lib::engine::types::{
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
+    ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
+    ScryptoPackage, ScryptoReceiver,
+};
 use radix_engine_lib::resource::ResourceMethodAuthKey::*;
-use radix_engine_lib::rule;
+use radix_engine_lib::resource::{
+    require, AccessRule, AccessRuleNode, Bucket, MintParams, Mutability, NonFungibleAddress,
+    NonFungibleId, Proof, ResourceAddress, ResourceManagerBurnInvocation,
+    ResourceManagerCreateInvocation, ResourceManagerMintInvocation, ResourceMethodAuthKey,
+    ResourceType, Withdraw, LOCKED,
+};
 use sbor::describe::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
@@ -17,10 +24,12 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::abi::*;
+use scrypto::access_rule_node;
 use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::crypto::*;
 use scrypto::math::*;
+use scrypto::rule;
 use scrypto::values::*;
 use scrypto::*;
 

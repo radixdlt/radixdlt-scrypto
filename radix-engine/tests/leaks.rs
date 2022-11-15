@@ -1,6 +1,8 @@
 use radix_engine::engine::{ExecutionMode, KernelError, REActor, ResolvedFunction, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_lib::engine::types::RENodeId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

@@ -1,9 +1,12 @@
-use radix_engine_lib::engine::types::{BucketOffset, ComponentId, NativeMethod, RENodeId, SubstateId, SubstateOffset, VaultId, VaultMethod, VaultOffset};
-use radix_engine_lib::resource::{VaultPutInvocation, VaultTakeInvocation};
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
+use radix_engine_lib::engine::types::{
+    BucketOffset, ComponentId, NativeMethod, RENodeId, SubstateId, SubstateOffset, VaultId,
+    VaultMethod, VaultOffset,
+};
+use radix_engine_lib::resource::{VaultPutInvocation, VaultTakeInvocation};
 
 #[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
 pub struct ResourceChange {

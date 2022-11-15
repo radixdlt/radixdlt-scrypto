@@ -1,5 +1,5 @@
-use radix_engine_lib::engine::types::RENodeId;
 use crate::model::GlobalAddressSubstate;
+use radix_engine_lib::engine::types::RENodeId;
 
 #[derive(Debug)]
 pub struct GlobalRENode {

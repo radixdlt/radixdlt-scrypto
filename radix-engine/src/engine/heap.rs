@@ -1,4 +1,3 @@
-use radix_engine_lib::engine::types::{BucketOffset, ProofOffset, RENodeId, SubstateId, SubstateOffset};
 use crate::engine::{CallFrameError, Track};
 use crate::fee::FeeReserve;
 use crate::model::{
@@ -6,6 +5,9 @@ use crate::model::{
     RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
 use crate::types::{HashMap, HashSet};
+use radix_engine_lib::engine::types::{
+    BucketOffset, ProofOffset, RENodeId, SubstateId, SubstateOffset,
+};
 
 pub struct Heap {
     nodes: HashMap<RENodeId, HeapRENode>,

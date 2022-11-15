@@ -17,10 +17,15 @@ use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::math::*;
-use radix_engine_lib::component::{ComponentAddress, SystemAddress};
 use radix_engine_lib::component::PackageAddress;
-use radix_engine_lib::engine::types::{BucketId, ComponentId, GlobalAddress, KeyValueStoreId, ProofId, RENodeId, VaultId};
-use radix_engine_lib::resource::{Bucket, NonFungibleAddress, NonFungibleId, ParseBucketError, ParseNonFungibleAddressError, ParseNonFungibleIdError, ParseProofError, ParseVaultError, Proof, ResourceAddress, Vault};
+use radix_engine_lib::component::{ComponentAddress, SystemAddress};
+use radix_engine_lib::engine::types::{
+    BucketId, ComponentId, GlobalAddress, KeyValueStoreId, ProofId, RENodeId, VaultId,
+};
+use radix_engine_lib::resource::{
+    Bucket, NonFungibleAddress, NonFungibleId, ParseBucketError, ParseNonFungibleAddressError,
+    ParseNonFungibleIdError, ParseProofError, ParseVaultError, Proof, ResourceAddress, Vault,
+};
 
 pub enum ScryptoValueReplaceError {
     ProofIdNotFound(ProofId),
@@ -866,8 +871,8 @@ mod tests {
     #[test]
     fn should_reject_duplicate_ids() {
         let buckets = scrypto_encode(&vec![
-            scrypto::resource::Bucket(0),
-            scrypto::resource::Bucket(0),
+            radix_engine_lib::resource::Bucket(0),
+            radix_engine_lib::resource::Bucket(0),
         ]);
         let error = ScryptoValue::from_slice(&buckets).expect_err("Should be an error");
         assert_eq!(error, DecodeError::CustomError("DuplicateIds".to_string()));

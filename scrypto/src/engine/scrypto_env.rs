@@ -1,8 +1,11 @@
-use radix_engine_lib::engine::actor::ScryptoActor;
-use radix_engine_lib::engine::api::{ScryptoNativeInvocation, Syscalls, SysNativeInvokable};
-use radix_engine_lib::engine::scrypto_env::RadixEngineInput;
-use radix_engine_lib::engine::types::{Level, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode, SubstateOffset};
 use crate::crypto::Hash;
+use radix_engine_lib::engine::actor::ScryptoActor;
+use radix_engine_lib::engine::api::{ScryptoNativeInvocation, SysNativeInvokable, Syscalls};
+use radix_engine_lib::engine::scrypto_env::RadixEngineInput;
+use radix_engine_lib::engine::types::{
+    Level, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode,
+    SubstateOffset,
+};
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -139,7 +142,6 @@ impl Syscalls<SyscallError> for ScryptoEnv {
         Ok(rtn)
     }
 }
-
 
 #[macro_export]
 macro_rules! scrypto_env_native_fn {

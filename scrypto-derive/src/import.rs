@@ -64,7 +64,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
             fns.push(parse_quote! {
                 pub fn #func_indent(#(#func_args: #func_types),*) -> #func_output {
                     ::scrypto::core::Runtime::call_function(
-                        ::scrypto::component::PackageAddress::try_from_hex(#package_address).unwrap(),
+                        ::scrypto::engine_lib::component::PackageAddress::try_from_hex(#package_address).unwrap(),
                         #blueprint_name,
                         #func_name,
                         ::scrypto::args!(#(#func_args),*)
@@ -89,23 +89,23 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
 
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
         pub struct #ident {
-            component_address: ::scrypto::component::ComponentAddress,
+            component_address: ::scrypto::engine_lib::component::ComponentAddress,
         }
 
         impl #ident {
             #(#fns)*
         }
 
-        impl From<::scrypto::component::ComponentAddress> for #ident {
-            fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
+        impl From<::scrypto::engine_lib::component::ComponentAddress> for #ident {
+            fn from(component_address: ::scrypto::engine_lib::component::ComponentAddress) -> Self {
                 Self {
                     component_address
                 }
             }
         }
 
-        impl From<#ident> for ::scrypto::component::ComponentAddress {
-            fn from(a: #ident) -> ::scrypto::component::ComponentAddress {
+        impl From<#ident> for ::scrypto::engine_lib::component::ComponentAddress {
+            fn from(a: #ident) -> ::scrypto::engine_lib::component::ComponentAddress {
                 a.component_address
             }
         }
@@ -312,20 +312,24 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
 
             let canonical_name = match scrypto_type {
                 // Global addresses types
-                ScryptoType::PackageAddress => "::scrypto::component::PackageAddress",
-                ScryptoType::ComponentAddress => "::scrypto::component::ComponentAddress",
-                ScryptoType::ResourceAddress => "::scrypto::resource::ResourceAddress",
-                ScryptoType::SystemAddress => "::scrypto::core::SystemAddress",
+                ScryptoType::PackageAddress => "::scrypto::engine_lib::component::PackageAddress",
+                ScryptoType::ComponentAddress => {
+                    "::scrypto::engine_lib::component::ComponentAddress"
+                }
+                ScryptoType::ResourceAddress => "::scrypto::engine_lib::resource::ResourceAddress",
+                ScryptoType::SystemAddress => "::scrypto::engine_lib::component::SystemAddress",
                 // RE nodes types
                 ScryptoType::Component => "::scrypto::component::Component",
                 ScryptoType::KeyValueStore => "::scrypto::component::KeyValueStore",
-                ScryptoType::Bucket => "::scrypto::resource::Bucket",
-                ScryptoType::Proof => "::scrypto::resource::Proof",
-                ScryptoType::Vault => "::scrypto::resource::Vault",
+                ScryptoType::Bucket => "::scrypto::engine_lib::resource::Bucket",
+                ScryptoType::Proof => "::scrypto::engine_lib::resource::Proof",
+                ScryptoType::Vault => "::scrypto::engine_lib::resource::Vault",
                 // Other interpreted types
                 ScryptoType::Expression => "::scrypto::core::Expression",
-                ScryptoType::Blob => "::scrypto::core::Blob",
-                ScryptoType::NonFungibleAddress => "::scrypto::resource::NonFungibleAddress",
+                ScryptoType::Blob => "::scrypto::engine_lib::crypto::Blob",
+                ScryptoType::NonFungibleAddress => {
+                    "::scrypto::engine_lib::resource::NonFungibleAddress"
+                }
                 // Uninterpreted
                 ScryptoType::Hash => "::scrypto::crypto::Hash",
                 ScryptoType::EcdsaSecp256k1PublicKey => {
@@ -338,7 +342,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 ScryptoType::EddsaEd25519Signature => "::scrypto::crypto::EddsaEd25519Signature",
                 ScryptoType::Decimal => "::scrypto::math::Decimal",
                 ScryptoType::PreciseDecimal => "::scrypto::math::PreciseDecimal",
-                ScryptoType::NonFungibleId => "::scrypto::resource::NonFungibleId",
+                ScryptoType::NonFungibleId => "::scrypto::engine_lib::resource::NonFungibleId",
             };
 
             let ty: Type = parse_str(canonical_name).unwrap();
@@ -437,18 +441,18 @@ mod tests {
             quote! {
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct Simple {
-                    component_address: ::scrypto::component::ComponentAddress,
+                    component_address: ::scrypto::engine_lib::component::ComponentAddress,
                 }
                 impl Simple {
-                    pub fn new() -> ::scrypto::component::ComponentAddress {
+                    pub fn new() -> ::scrypto::engine_lib::component::ComponentAddress {
                         ::scrypto::core::Runtime::call_function(
-                            ::scrypto::component::PackageAddress::try_from_hex("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7").unwrap(),
+                            ::scrypto::engine_lib::component::PackageAddress::try_from_hex("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7").unwrap(),
                             "Simple",
                             "new",
                             ::scrypto::args!()
                         )
                     }
-                    pub fn free_token(&self) -> ::scrypto::resource::Bucket {
+                    pub fn free_token(&self) -> ::scrypto::engine_lib::resource::Bucket {
                         ::scrypto::core::Runtime::call_method(
                             self.component_address,
                             "free_token",
@@ -456,15 +460,15 @@ mod tests {
                         )
                     }
                 }
-                impl From<::scrypto::component::ComponentAddress> for Simple {
-                    fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
+                impl From<::scrypto::engine_lib::component::ComponentAddress> for Simple {
+                    fn from(component_address: ::scrypto::engine_lib::component::ComponentAddress) -> Self {
                         Self {
                             component_address
                         }
                     }
                 }
-                impl From<Simple> for ::scrypto::component::ComponentAddress {
-                    fn from(a: Simple) -> ::scrypto::component::ComponentAddress {
+                impl From<Simple> for ::scrypto::engine_lib::component::ComponentAddress {
+                    fn from(a: Simple) -> ::scrypto::engine_lib::component::ComponentAddress {
                         a.component_address
                     }
                 }

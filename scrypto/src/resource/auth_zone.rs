@@ -1,6 +1,10 @@
-use radix_engine_lib::engine::api::{Syscalls, SysNativeInvokable};
+use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
 use radix_engine_lib::engine::types::RENodeId;
-use radix_engine_lib::resource::{AuthZoneClearInvocation, AuthZoneCreateProofByAmountInvocation, AuthZoneCreateProofByIdsInvocation, AuthZoneCreateProofInvocation, AuthZoneDrainInvocation, AuthZonePopInvocation, AuthZonePushInvocation, NonFungibleId, ResourceAddress};
+use radix_engine_lib::resource::{
+    AuthZoneClearInvocation, AuthZoneCreateProofByAmountInvocation,
+    AuthZoneCreateProofByIdsInvocation, AuthZoneCreateProofInvocation, AuthZoneDrainInvocation,
+    AuthZonePopInvocation, AuthZonePushInvocation, NonFungibleId, ResourceAddress,
+};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
@@ -17,7 +21,9 @@ use crate::math::Decimal;
 pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
-    pub fn sys_drain<Y, E: Debug + TypeId + Decode>(env: &mut Y) -> Result<Vec<radix_engine_lib::resource::Proof>, E>
+    pub fn sys_drain<Y, E: Debug + TypeId + Decode>(
+        env: &mut Y,
+    ) -> Result<Vec<radix_engine_lib::resource::Proof>, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<AuthZoneDrainInvocation, E>,
     {
@@ -45,7 +51,9 @@ impl ComponentAuthZone {
         })
     }
 
-    pub fn sys_pop<Y, E: Debug + TypeId + Decode>(env: &mut Y) -> Result<radix_engine_lib::resource::Proof, E>
+    pub fn sys_pop<Y, E: Debug + TypeId + Decode>(
+        env: &mut Y,
+    ) -> Result<radix_engine_lib::resource::Proof, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<AuthZonePopInvocation, E>,
     {
@@ -146,7 +154,10 @@ impl ComponentAuthZone {
         Self::sys_create_proof(resource_address, &mut ScryptoEnv).unwrap()
     }
 
-    pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> radix_engine_lib::resource::Proof {
+    pub fn create_proof_by_amount(
+        amount: Decimal,
+        resource_address: ResourceAddress,
+    ) -> radix_engine_lib::resource::Proof {
         Self::sys_create_proof_by_amount(amount, resource_address, &mut ScryptoEnv).unwrap()
     }
 

@@ -1,5 +1,11 @@
-use radix_engine_lib::engine::api::{Syscalls, SysNativeInvokable};
-use radix_engine_lib::resource::{Bucket, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerCreateVaultInvocation, Vault, VaultCreateProofByAmountInvocation, VaultCreateProofByIdsInvocation, VaultCreateProofInvocation, VaultGetAmountInvocation, VaultGetNonFungibleIdsInvocation, VaultGetResourceAddressInvocation, VaultLockFeeInvocation, VaultPutInvocation, VaultTakeInvocation, VaultTakeNonFungiblesInvocation};
+use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
+use radix_engine_lib::resource::{
+    Bucket, NonFungibleAddress, NonFungibleId, ResourceAddress,
+    ResourceManagerCreateVaultInvocation, Vault, VaultCreateProofByAmountInvocation,
+    VaultCreateProofByIdsInvocation, VaultCreateProofInvocation, VaultGetAmountInvocation,
+    VaultGetNonFungibleIdsInvocation, VaultGetResourceAddressInvocation, VaultLockFeeInvocation,
+    VaultPutInvocation, VaultTakeInvocation, VaultTakeNonFungiblesInvocation,
+};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
@@ -12,14 +18,14 @@ use crate::resource::*;
 
 pub trait SysVault {
     fn sys_amount<Y, E: Debug + Decode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
-        where
-            Y: Syscalls<E> + SysNativeInvokable<VaultGetAmountInvocation, E>;
+    where
+        Y: Syscalls<E> + SysNativeInvokable<VaultGetAmountInvocation, E>;
 }
 
 impl SysVault for Vault {
     fn sys_amount<Y, E: Debug + Decode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
-        where
-            Y: Syscalls<E> + SysNativeInvokable<VaultGetAmountInvocation, E>,
+    where
+        Y: Syscalls<E> + SysNativeInvokable<VaultGetAmountInvocation, E>,
     {
         sys_calls.sys_invoke(VaultGetAmountInvocation { receiver: self.0 })
     }
@@ -38,7 +44,10 @@ pub trait ScryptoVault {
     fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId>;
     fn create_proof(&self) -> radix_engine_lib::resource::Proof;
     fn create_proof_by_amount(&self, amount: Decimal) -> radix_engine_lib::resource::Proof;
-    fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> radix_engine_lib::resource::Proof;
+    fn create_proof_by_ids(
+        &self,
+        ids: &BTreeSet<NonFungibleId>,
+    ) -> radix_engine_lib::resource::Proof;
     fn lock_fee<A: Into<Decimal>>(&mut self, amount: A);
     fn lock_contingent_fee<A: Into<Decimal>>(&mut self, amount: A);
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket;

@@ -1,10 +1,17 @@
-use radix_engine_lib::engine::types::{BucketMethod, NonFungibleStoreId, ResourceManagerMethod, VaultMethod};
-use radix_engine_lib::resource::{AccessRule, LOCKED, MintParams, Mutability, ResourceManagerLockAuthInvocation, ResourceManagerUpdateAuthInvocation, ResourceMethodAuthKey, ResourceType};
-use radix_engine_lib::resource::ResourceMethodAuthKey::*;
-use radix_engine_lib::resource::AccessRule::*;
 use crate::model::ResourceMethodRule::{Protected, Public};
-use crate::model::{convert, InvokeError, MethodAuthorization, NonFungible, Resource, ResourceManagerError};
+use crate::model::{
+    convert, InvokeError, MethodAuthorization, NonFungible, Resource, ResourceManagerError,
+};
 use crate::types::*;
+use radix_engine_lib::engine::types::{
+    BucketMethod, NonFungibleStoreId, ResourceManagerMethod, VaultMethod,
+};
+use radix_engine_lib::resource::AccessRule::*;
+use radix_engine_lib::resource::ResourceMethodAuthKey::*;
+use radix_engine_lib::resource::{
+    AccessRule, MintParams, Mutability, ResourceManagerLockAuthInvocation,
+    ResourceManagerUpdateAuthInvocation, ResourceMethodAuthKey, ResourceType, LOCKED,
+};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct ResourceManagerSubstate {

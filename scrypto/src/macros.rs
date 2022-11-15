@@ -144,7 +144,7 @@ macro_rules! args_from_bytes_vec {
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine::types::Level::Error, ::sbor::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::engine_lib::engine::types::Level::Error, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -159,7 +159,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine::types::Level::Warn, ::sbor::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::engine_lib::engine::types::Level::Warn, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -174,7 +174,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine::types::Level::Info, ::sbor::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::engine_lib::engine::types::Level::Info, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -189,7 +189,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine::types::Level::Debug, ::sbor::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::engine_lib::engine::types::Level::Debug, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -204,7 +204,7 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine::types::Level::Trace, ::sbor::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::engine_lib::engine::types::Level::Trace, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -293,8 +293,8 @@ macro_rules! include_abi {
 ///
 /// # Examples
 /// ```no_run
+/// use radix_engine_lib::address::Bech32Decoder;
 /// use scrypto::prelude::*;
-/// use scrypto::address::Bech32Decoder;
 /// use sbor::{TypeId, Encode, Decode, Describe};
 ///
 /// external_blueprint! {
@@ -341,14 +341,14 @@ macro_rules! external_blueprint {
 
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
         struct $blueprint_ident {
-            package_address: ::scrypto::component::PackageAddress,
+            package_address: ::scrypto::engine_lib::component::PackageAddress,
             blueprint_name: ::sbor::rust::string::String,
         }
 
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $blueprint_ident {
-            fn at<S>(package_address: ::scrypto::component::PackageAddress, blueprint_name: S) -> Self
+            fn at<S>(package_address: ::scrypto::engine_lib::component::PackageAddress, blueprint_name: S) -> Self
             where
                 S: Into<::sbor::rust::string::String>
             {
@@ -363,8 +363,8 @@ macro_rules! external_blueprint {
             );
         }
 
-        impl From<$blueprint_ident> for ::scrypto::component::PackageAddress {
-            fn from(a: $blueprint_ident) -> ::scrypto::component::PackageAddress {
+        impl From<$blueprint_ident> for ::scrypto::engine_lib::component::PackageAddress {
+            fn from(a: $blueprint_ident) -> ::scrypto::engine_lib::component::PackageAddress {
                 a.package_address
             }
         }
@@ -447,7 +447,6 @@ macro_rules! external_blueprint_members {
 /// # Examples
 /// ```no_run
 /// use scrypto::prelude::*;
-/// use scrypto::address::Bech32Decoder;
 /// use sbor::{TypeId, Encode, Decode, Describe};
 ///
 /// #[derive(TypeId, Encode, Decode, Describe)]
@@ -484,13 +483,13 @@ macro_rules! external_component {
 
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
         struct $component_ident {
-            component_address: ::scrypto::component::ComponentAddress,
+            component_address: ::scrypto::engine_lib::component::ComponentAddress,
         }
 
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $component_ident {
-            fn at(component_address: ::scrypto::component::ComponentAddress) -> Self {
+            fn at(component_address: ::scrypto::engine_lib::component::ComponentAddress) -> Self {
                 Self {
                     component_address,
                 }
@@ -499,16 +498,16 @@ macro_rules! external_component {
             ::scrypto::external_component_members!($($component_methods)*);
         }
 
-        impl From<::scrypto::component::ComponentAddress> for $component_ident {
-            fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
+        impl From<::scrypto::engine_lib::component::ComponentAddress> for $component_ident {
+            fn from(component_address: ::scrypto::engine_lib::component::ComponentAddress) -> Self {
                 Self {
                     component_address
                 }
             }
         }
 
-        impl From<$component_ident> for ::scrypto::component::ComponentAddress {
-            fn from(a: $component_ident) -> ::scrypto::component::ComponentAddress {
+        impl From<$component_ident> for ::scrypto::engine_lib::component::ComponentAddress {
+            fn from(a: $component_ident) -> ::scrypto::engine_lib::component::ComponentAddress {
                 a.component_address
             }
         }

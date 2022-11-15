@@ -90,7 +90,9 @@ impl ComponentAddress {
         Self::try_from(bytes.as_ref())
     }
 
-    pub fn virtual_account_from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> ComponentAddress {
+    pub fn virtual_account_from_public_key<P: Into<PublicKey> + Clone>(
+        public_key: &P,
+    ) -> ComponentAddress {
         match public_key.clone().into() {
             PublicKey::EcdsaSecp256k1(public_key) => {
                 ComponentAddress::EcdsaSecp256k1VirtualAccount(

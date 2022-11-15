@@ -51,7 +51,7 @@ pub mod values;
 mod macros;
 pub use macros::*;
 
-pub mod radix_engine_lib {
+pub mod engine_lib {
     pub use radix_engine_lib::*;
 }
 

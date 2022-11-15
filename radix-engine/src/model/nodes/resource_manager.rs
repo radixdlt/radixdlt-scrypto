@@ -1,7 +1,3 @@
-use radix_engine_lib::engine::api::SysInvokableNative;
-use radix_engine_lib::engine::types::{GlobalAddress, NativeFunction, NativeMethod, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset, SubstateOffset};
-use radix_engine_lib::resource::{Bucket, MintParams, ResourceManagerBucketBurnInvocation, ResourceManagerBurnInvocation, ResourceManagerCreateBucketInvocation, ResourceManagerCreateInvocation, ResourceManagerCreateVaultInvocation, ResourceManagerGetMetadataInvocation, ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation, ResourceManagerGetTotalSupplyInvocation, ResourceManagerLockAuthInvocation, ResourceManagerMintInvocation, ResourceManagerNonFungibleExistsInvocation, ResourceManagerSetResourceAddressInvocation, ResourceManagerUpdateAuthInvocation, ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation, ResourceType};
-use scrypto::resource::SysBucket;
 use crate::engine::{
     ApplicationError, CallFrameUpdate, Invokable, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError,
@@ -13,6 +9,24 @@ use crate::model::{
 };
 use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
+use radix_engine_lib::engine::api::SysInvokableNative;
+use radix_engine_lib::engine::types::{
+    GlobalAddress, NativeFunction, NativeMethod, NonFungibleStoreId, NonFungibleStoreOffset,
+    RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset,
+    SubstateOffset,
+};
+use radix_engine_lib::resource::{
+    Bucket, MintParams, ResourceManagerBucketBurnInvocation, ResourceManagerBurnInvocation,
+    ResourceManagerCreateBucketInvocation, ResourceManagerCreateInvocation,
+    ResourceManagerCreateVaultInvocation, ResourceManagerGetMetadataInvocation,
+    ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation,
+    ResourceManagerGetTotalSupplyInvocation, ResourceManagerLockAuthInvocation,
+    ResourceManagerMintInvocation, ResourceManagerNonFungibleExistsInvocation,
+    ResourceManagerSetResourceAddressInvocation, ResourceManagerUpdateAuthInvocation,
+    ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation,
+    ResourceType,
+};
+use scrypto::resource::SysBucket;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]

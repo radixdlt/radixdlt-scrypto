@@ -1,8 +1,8 @@
-use radix_engine_lib::engine::types::VaultId;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;
 use crate::types::*;
+use radix_engine_lib::engine::types::VaultId;
 
 pub struct LoggerModule {
     depth: usize,

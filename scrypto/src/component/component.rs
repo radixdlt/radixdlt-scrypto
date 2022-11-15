@@ -1,8 +1,11 @@
-use radix_engine_lib::component::{ComponentAddAccessCheckInvocation, ComponentAddress};
 use radix_engine_lib::component::PackageAddress;
+use radix_engine_lib::component::{ComponentAddAccessCheckInvocation, ComponentAddress};
+use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
+use radix_engine_lib::engine::types::{
+    ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoRENode,
+    ScryptoReceiver, SubstateOffset,
+};
 use radix_engine_lib::resource::AccessRules;
-use radix_engine_lib::engine::api::{Syscalls, SysNativeInvokable};
-use radix_engine_lib::engine::types::{ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoReceiver, ScryptoRENode, SubstateOffset};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
@@ -16,7 +19,7 @@ use utils::misc::copy_u8_array;
 
 use crate::abi::*;
 use crate::core::*;
-use crate::crypto::{Hash};
+use crate::crypto::Hash;
 use crate::engine::scrypto_env::ScryptoEnv;
 
 /// Represents the state of a component.
@@ -222,4 +225,3 @@ impl fmt::Debug for Component {
         write!(f, "{:?}", self.0)
     }
 }
-

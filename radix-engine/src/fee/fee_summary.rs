@@ -1,6 +1,6 @@
-use radix_engine_lib::engine::types::VaultId;
 use crate::model::Resource;
 use crate::types::*;
+use radix_engine_lib::engine::types::VaultId;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct FeeSummary {
