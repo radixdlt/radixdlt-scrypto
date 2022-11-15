@@ -23,7 +23,6 @@ fn bench_transfer(c: &mut Criterion) {
             InstructionCostRules::tiered(1, 5, 10, 5000),
             512,
         ),
-        phantom: PhantomData,
     };
 
     // Create a key pair

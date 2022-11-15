@@ -8,7 +8,7 @@ use crate::model::{
     RuntimeSubstate,
 };
 use crate::types::ScryptoInvocation;
-use crate::wasm::{WasmEngine, WasmInstance};
+use crate::wasm::WasmEngine;
 use radix_engine_lib::engine::actor::ScryptoActor;
 use radix_engine_lib::engine::api::{
     ScryptoNativeInvocation, SysInvokableNative, SysNativeInvokable, Syscalls,
@@ -20,10 +20,9 @@ use radix_engine_lib::engine::types::{
 use scrypto::crypto::Hash;
 use scrypto::values::ScryptoValue;
 
-impl<'g, 's, W, I, R, N, T> SysNativeInvokable<N, RuntimeError> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, R, N, T> SysNativeInvokable<N, RuntimeError> for Kernel<'g, 's, W, R>
 where
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    W: WasmEngine,
     R: FeeReserve,
     N: ScryptoNativeInvocation<Output = T> + NativeInvocation<Output = T>,
 {
@@ -32,18 +31,16 @@ where
     }
 }
 
-impl<'g, 's, W, I, R> SysInvokableNative<RuntimeError> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, R> SysInvokableNative<RuntimeError> for Kernel<'g, 's, W, R>
 where
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    W: WasmEngine,
     R: FeeReserve,
 {
 }
 
-impl<'g, 's, W, I, R> Syscalls<RuntimeError> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, R> Syscalls<RuntimeError> for Kernel<'g, 's, W, R>
 where
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    W: WasmEngine,
     R: FeeReserve,
 {
     fn sys_invoke_scrypto_function(

@@ -35,11 +35,9 @@ pub struct Kernel<
     'g, // Lifetime of values outliving all frames
     's, // Substate store lifetime
     W,  // WASM engine type
-    I,  // WASM instance type
     R,  // Fee reserve type
 > where
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    W: WasmEngine,
     R: FeeReserve,
 {
     /// Current execution mode, specifies permissions into state/invocations
@@ -64,7 +62,7 @@ pub struct Kernel<
     track: &'g mut Track<'s, R>,
 
     /// Interpreter capable of running scrypto programs
-    scrypto_interpreter: &'g ScryptoInterpreter<I, W>,
+    scrypto_interpreter: &'g ScryptoInterpreter<W>,
 
     /// Kernel modules
     modules: Vec<Box<dyn Module<R>>>,
@@ -72,10 +70,9 @@ pub struct Kernel<
     max_depth: usize,
 }
 
-impl<'g, 's, W, I, R> Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, R> Kernel<'g, 's, W, R>
 where
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    W: WasmEngine,
     R: FeeReserve,
 {
     pub fn new(
@@ -84,7 +81,7 @@ where
         blobs: &'g HashMap<Hash, &'g [u8]>,
         max_depth: usize,
         track: &'g mut Track<'s, R>,
-        scrypto_interpreter: &'g ScryptoInterpreter<I, W>,
+        scrypto_interpreter: &'g ScryptoInterpreter<W>,
         modules: Vec<Box<dyn Module<R>>>,
     ) -> Self {
         let mut kernel = Self {
@@ -732,10 +729,9 @@ pub trait MethodDeref {
     fn deref(&mut self, node_id: RENodeId) -> Result<Option<RENodeId>, RuntimeError>;
 }
 
-impl<'g, 's, W, I, R> MethodDeref for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, R> MethodDeref for Kernel<'g, 's, W, R>
 where
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    W: WasmEngine,
     R: FeeReserve,
 {
     fn deref(&mut self, node_id: RENodeId) -> Result<Option<RENodeId>, RuntimeError> {
@@ -770,18 +766,16 @@ pub trait Executor {
             + SysInvokableNative<RuntimeError>;
 }
 
-impl<'g, 's, 'a, W, I, R> InvokableNative<'a> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, 'a, W, R> InvokableNative<'a> for Kernel<'g, 's, W, R>
 where
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    W: WasmEngine,
     R: FeeReserve,
 {
 }
 
-impl<'g, 's, W, I, R, N> Invokable<N> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, R, N> Invokable<N> for Kernel<'g, 's, W, R>
 where
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    W: WasmEngine,
     R: FeeReserve,
     N: NativeInvocation,
 {
@@ -829,10 +823,9 @@ where
 }
 
 // TODO: remove redundant code and move this method to the interpreter
-impl<'g, 's, W, I, R> Invokable<ScryptoInvocation> for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, R> Invokable<ScryptoInvocation> for Kernel<'g, 's, W, R>
 where
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    W: WasmEngine,
     R: FeeReserve,
 {
     fn invoke(&mut self, invocation: ScryptoInvocation) -> Result<ScryptoValue, RuntimeError> {
@@ -877,10 +870,9 @@ where
     }
 }
 
-impl<'g, 's, W, I, R> SystemApi for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, R> SystemApi for Kernel<'g, 's, W, R>
 where
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    W: WasmEngine,
     R: FeeReserve,
 {
     fn execute_in_mode<X, RTN, E>(
@@ -1397,17 +1389,16 @@ pub trait InvocationResolver<V, X: Executor> {
     fn resolve(&mut self, invocation: V) -> Result<(X, REActor, CallFrameUpdate), RuntimeError>;
 }
 
-impl<'g, 's, W, I, R> InvocationResolver<ScryptoInvocation, ScryptoExecutor<I>>
-    for Kernel<'g, 's, W, I, R>
+impl<'g, 's, W, R> InvocationResolver<ScryptoInvocation, ScryptoExecutor<W::WasmInstance>>
+    for Kernel<'g, 's, W, R>
 where
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    W: WasmEngine,
     R: FeeReserve,
 {
     fn resolve(
         &mut self,
         invocation: ScryptoInvocation,
-    ) -> Result<(ScryptoExecutor<I>, REActor, CallFrameUpdate), RuntimeError> {
+    ) -> Result<(ScryptoExecutor<W::WasmInstance>, REActor, CallFrameUpdate), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
 
         let (executor, actor) = match &invocation {

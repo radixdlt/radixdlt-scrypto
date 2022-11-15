@@ -16,8 +16,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{
-    DefaultWasmEngine, DefaultWasmInstance, InstructionCostRules, WasmInstrumenter,
-    WasmMeteringConfig,
+    DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
 use radix_engine_lib::resource::AccessRule;
 
@@ -35,7 +34,7 @@ use utils::math::Decimal;
 
 pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
     execution_stores: StagedSubstateStoreManager<'s, S>,
-    scrypto_interpreter: ScryptoInterpreter<DefaultWasmInstance, DefaultWasmEngine>,
+    scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
     intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
     next_transaction_nonce: u64,
@@ -51,7 +50,6 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             ),
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
-            phantom: PhantomData,
         };
         Self {
             execution_stores: StagedSubstateStoreManager::new(substate_store),
@@ -756,7 +754,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     /// Performs a kernel call through a kernel with `is_system = true`.
     fn kernel_call<F, O>(&mut self, initial_proofs: Vec<NonFungibleAddress>, fun: F) -> O
     where
-        F: FnOnce(&mut Kernel<DefaultWasmEngine, DefaultWasmInstance, SystemLoanFeeReserve>) -> O,
+        F: FnOnce(&mut Kernel<DefaultWasmEngine, SystemLoanFeeReserve>) -> O,
     {
         let tx_hash = hash(self.next_transaction_nonce.to_string());
         let blobs = HashMap::new();

@@ -131,7 +131,6 @@ fn test_normal_transaction_flow() {
             InstructionCostRules::tiered(1, 5, 10, 5000),
             512,
         ),
-        phantom: PhantomData,
     };
 
     let intent_hash_manager = TestIntentHashManager::new();

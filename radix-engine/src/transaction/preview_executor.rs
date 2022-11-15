@@ -11,7 +11,7 @@ use crate::fee::SystemLoanFeeReserve;
 use crate::ledger::*;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
-use crate::wasm::{WasmEngine, WasmInstance};
+use crate::wasm::WasmEngine;
 
 #[derive(Debug)]
 pub struct PreviewResult {
@@ -24,14 +24,9 @@ pub enum PreviewError {
     TransactionValidationError(TransactionValidationError),
 }
 
-pub fn execute_preview<
-    S: ReadableSubstateStore,
-    I: WasmInstance,
-    W: WasmEngine<I>,
-    IHM: IntentHashManager,
->(
+pub fn execute_preview<S: ReadableSubstateStore, W: WasmEngine, IHM: IntentHashManager>(
     substate_store: &S,
-    scrypto_interpreter: &ScryptoInterpreter<I, W>,
+    scrypto_interpreter: &ScryptoInterpreter<W>,
     intent_hash_manager: &IHM,
     network: &NetworkDefinition,
     preview_intent: PreviewIntent,
