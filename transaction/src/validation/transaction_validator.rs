@@ -5,7 +5,7 @@ use sbor::Decode;
 use scrypto::buffer::scrypto_decode;
 use scrypto::constants::*;
 use scrypto::crypto::PublicKey;
-use scrypto::values::*;
+use scrypto::data::*;
 
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
@@ -13,8 +13,9 @@ use crate::validation::*;
 
 pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
 
-pub trait TransactionValidator<T: Decode> {
+pub trait TransactionValidator<T: Decode<ScryptoCustomTypeId>> {
     fn check_length_and_decode_from_slice(
+        &self,
         transaction: &[u8],
     ) -> Result<T, TransactionValidationError> {
         if transaction.len() > MAX_PAYLOAD_SIZE {
@@ -348,8 +349,8 @@ impl NotarizedTransactionValidator {
         call_data: &[u8],
         id_validator: &mut IdValidator,
     ) -> Result<(), CallDataValidationError> {
-        let value =
-            ScryptoValue::from_slice(call_data).map_err(CallDataValidationError::DecodeError)?;
+        let value = ScryptoValue::from_slice(call_data)
+            .map_err(CallDataValidationError::InvalidScryptoValue)?;
         id_validator
             .move_resources(&value)
             .map_err(CallDataValidationError::IdValidationError)?;

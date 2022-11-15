@@ -12,7 +12,8 @@ use crate::engine::scrypto_env::{
     NativeFnInvocation, NativeFunctionInvocation, PackageFunctionInvocation,
 };
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct PackagePublishInvocation {
     pub code: Blob,
     pub abi: Blob,

@@ -14,7 +14,8 @@ use crate::engine::{api::*, scrypto_env::*, types::*};
 use crate::math::*;
 use crate::resource::*;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultPutInvocation {
     pub receiver: VaultId,
     pub bucket: Bucket,
@@ -34,7 +35,8 @@ impl Into<NativeFnInvocation> for VaultPutInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultTakeInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,
@@ -54,7 +56,8 @@ impl Into<NativeFnInvocation> for VaultTakeInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultTakeNonFungiblesInvocation {
     pub receiver: VaultId,
     pub non_fungible_ids: BTreeSet<NonFungibleId>,
@@ -74,7 +77,8 @@ impl Into<NativeFnInvocation> for VaultTakeNonFungiblesInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultGetAmountInvocation {
     pub receiver: VaultId,
 }
@@ -93,7 +97,8 @@ impl Into<NativeFnInvocation> for VaultGetAmountInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultGetResourceAddressInvocation {
     pub receiver: VaultId,
 }
@@ -112,7 +117,8 @@ impl Into<NativeFnInvocation> for VaultGetResourceAddressInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultGetNonFungibleIdsInvocation {
     pub receiver: VaultId,
 }
@@ -131,7 +137,8 @@ impl Into<NativeFnInvocation> for VaultGetNonFungibleIdsInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultCreateProofInvocation {
     pub receiver: VaultId,
 }
@@ -150,7 +157,8 @@ impl Into<NativeFnInvocation> for VaultCreateProofInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultCreateProofByAmountInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,
@@ -170,7 +178,8 @@ impl Into<NativeFnInvocation> for VaultCreateProofByAmountInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultCreateProofByIdsInvocation {
     pub receiver: VaultId,
     pub ids: BTreeSet<NonFungibleId>,
@@ -190,7 +199,8 @@ impl Into<NativeFnInvocation> for VaultCreateProofByIdsInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultLockFeeInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,
@@ -244,14 +254,19 @@ impl TryFrom<&[u8]> for Vault {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            36 => Ok(Self((
-                Hash(copy_u8_array(&slice[0..32])),
-                u32::from_le_bytes(copy_u8_array(&slice[32..])),
-            ))),
+            36 => Ok(Self(copy_u8_array(slice))),
             _ => Err(ParseVaultError::InvalidLength(slice.len())),
         }
     }
 }
+
+impl Vault {
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
+scrypto_type!(Vault, ScryptoCustomTypeId::Vault, Type::Vault, 36);
 
 impl Vault {
     pub fn to_vec(&self) -> Vec<u8> {
@@ -260,8 +275,6 @@ impl Vault {
         v
     }
 }
-
-scrypto_type!(Vault, ScryptoType::Vault, Vec::new());
 
 //======
 // text

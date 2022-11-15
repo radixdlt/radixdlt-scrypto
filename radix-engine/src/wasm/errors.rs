@@ -78,11 +78,12 @@ pub enum InvalidTable {
 }
 
 /// Represents an error when invoking an export of a Scrypto module.
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum WasmError {
     MemoryAllocError,
     MemoryAccessError,
-    InvalidScryptoValue(DecodeError),
+    InvalidScryptoValue(ScryptoValueDecodeError),
     WasmError(String),
     FunctionNotFound,
     InvalidRadixEngineInput,

@@ -1,4 +1,3 @@
-use sbor::describe::Fields;
 use sbor::path::SborPath;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
@@ -7,7 +6,9 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::resource::schema_path::SchemaSubPath::{Field, Index};
+use self::SchemaSubPath::{Field, Index};
+use crate::abi::*;
+use crate::Describe;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
 pub enum SchemaSubPath {
@@ -59,12 +60,15 @@ impl SchemaPath {
         for sub_path in &self.0 {
             match sub_path {
                 SchemaSubPath::Index(index) => match cur_type {
-                    Type::Vec { element } => {
-                        cur_type = element.as_ref();
+                    Type::Vec { element_type } => {
+                        cur_type = element_type.as_ref();
                         sbor_path.push(*index);
                     }
-                    Type::Array { element, length: _ } => {
-                        cur_type = element.as_ref();
+                    Type::Array {
+                        element_type,
+                        length: _,
+                    } => {
+                        cur_type = element_type.as_ref();
                         sbor_path.push(*index);
                     }
                     _ => return Option::None,

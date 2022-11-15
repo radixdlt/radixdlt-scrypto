@@ -7,7 +7,8 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopPutInvocation {
     pub bucket: Bucket,
 }
@@ -26,7 +27,8 @@ impl Into<NativeFnInvocation> for WorktopPutInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopTakeAmountInvocation {
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
@@ -46,7 +48,8 @@ impl Into<NativeFnInvocation> for WorktopTakeAmountInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopTakeNonFungiblesInvocation {
     pub ids: BTreeSet<NonFungibleId>,
     pub resource_address: ResourceAddress,
@@ -66,7 +69,8 @@ impl Into<NativeFnInvocation> for WorktopTakeNonFungiblesInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopTakeAllInvocation {
     pub resource_address: ResourceAddress,
 }
@@ -85,7 +89,8 @@ impl Into<NativeFnInvocation> for WorktopTakeAllInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopAssertContainsInvocation {
     pub resource_address: ResourceAddress,
 }
@@ -104,7 +109,8 @@ impl Into<NativeFnInvocation> for WorktopAssertContainsInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopAssertContainsAmountInvocation {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
@@ -123,7 +129,8 @@ impl Into<NativeFnInvocation> for WorktopAssertContainsAmountInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopAssertContainsNonFungiblesInvocation {
     pub resource_address: ResourceAddress,
     pub ids: BTreeSet<NonFungibleId>,
@@ -143,7 +150,8 @@ impl Into<NativeFnInvocation> for WorktopAssertContainsNonFungiblesInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopDrainInvocation {}
 
 impl SysInvocation for WorktopDrainInvocation {

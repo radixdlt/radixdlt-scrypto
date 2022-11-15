@@ -118,7 +118,11 @@ impl RadixEngineDB {
             .collect()
     }
 
-    fn list_items<T: Decode>(&self, start: &[u8], inclusive_end: &[u8]) -> Vec<T> {
+    fn list_items<T: Decode<ScryptoCustomTypeId>>(
+        &self,
+        start: &[u8],
+        inclusive_end: &[u8],
+    ) -> Vec<T> {
         let mut iter = self
             .db
             .iterator(IteratorMode::From(start, Direction::Forward));

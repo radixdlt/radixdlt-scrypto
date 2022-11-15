@@ -23,13 +23,15 @@ pub enum ResourceMethodAuthKey {
     UpdateNonFungibleData,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum Mutability {
     LOCKED,
     MUTABLE(AccessRule),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateInvocation {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
@@ -51,7 +53,8 @@ impl Into<NativeFnInvocation> for ResourceManagerCreateInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerBucketBurnInvocation {
     pub bucket: Bucket,
 }
@@ -70,7 +73,8 @@ impl Into<NativeFnInvocation> for ResourceManagerBucketBurnInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerBurnInvocation {
     pub receiver: ResourceAddress,
     pub bucket: Bucket,
@@ -90,7 +94,8 @@ impl Into<NativeFnInvocation> for ResourceManagerBurnInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateAuthInvocation {
     pub receiver: ResourceAddress,
     pub method: ResourceMethodAuthKey,
@@ -111,7 +116,8 @@ impl Into<NativeFnInvocation> for ResourceManagerUpdateAuthInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerLockAuthInvocation {
     pub receiver: ResourceAddress,
     pub method: ResourceMethodAuthKey,
@@ -131,7 +137,8 @@ impl Into<NativeFnInvocation> for ResourceManagerLockAuthInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateVaultInvocation {
     pub receiver: ResourceAddress,
 }
@@ -150,7 +157,8 @@ impl Into<NativeFnInvocation> for ResourceManagerCreateVaultInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateBucketInvocation {
     pub receiver: ResourceAddress,
 }
@@ -169,7 +177,8 @@ impl Into<NativeFnInvocation> for ResourceManagerCreateBucketInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerMintInvocation {
     pub receiver: ResourceAddress,
     pub mint_params: MintParams,
@@ -189,7 +198,8 @@ impl Into<NativeFnInvocation> for ResourceManagerMintInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerGetMetadataInvocation {
     pub receiver: ResourceAddress,
 }
@@ -208,7 +218,8 @@ impl Into<NativeFnInvocation> for ResourceManagerGetMetadataInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerGetResourceTypeInvocation {
     pub receiver: ResourceAddress,
 }
@@ -227,7 +238,8 @@ impl Into<NativeFnInvocation> for ResourceManagerGetResourceTypeInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerGetTotalSupplyInvocation {
     pub receiver: ResourceAddress,
 }
@@ -246,7 +258,8 @@ impl Into<NativeFnInvocation> for ResourceManagerGetTotalSupplyInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateMetadataInvocation {
     pub receiver: ResourceAddress,
     pub metadata: HashMap<String, String>,
@@ -266,7 +279,8 @@ impl Into<NativeFnInvocation> for ResourceManagerUpdateMetadataInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateNonFungibleDataInvocation {
     pub receiver: ResourceAddress,
     pub id: NonFungibleId,
@@ -287,7 +301,8 @@ impl Into<NativeFnInvocation> for ResourceManagerUpdateNonFungibleDataInvocation
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerNonFungibleExistsInvocation {
     pub receiver: ResourceAddress,
     pub id: NonFungibleId,
@@ -307,7 +322,8 @@ impl Into<NativeFnInvocation> for ResourceManagerNonFungibleExistsInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerGetNonFungibleInvocation {
     pub receiver: ResourceAddress,
     pub id: NonFungibleId,
@@ -327,7 +343,8 @@ impl Into<NativeFnInvocation> for ResourceManagerGetNonFungibleInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerSetResourceAddressInvocation {
     pub receiver: ResourceAddress,
 }
@@ -379,7 +396,12 @@ impl ResourceAddress {
     }
 }
 
-scrypto_type!(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
+scrypto_type!(
+    ResourceAddress,
+    ScryptoCustomTypeId::ResourceAddress,
+    Type::ResourceAddress,
+    27
+);
 
 //======
 // text

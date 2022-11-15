@@ -1,9 +1,11 @@
+use radix_engine_lib::abi::Type;
 use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::engine::types::{BucketId, KeyValueStoreId, ProofId, VaultId};
 use sbor::describe::Type;
 use sbor::rust::string::String;
 use sbor::*;
+use scrypto::data::ScryptoValueDecodeError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HeaderValidationError {
@@ -39,7 +41,7 @@ pub enum IdValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallDataValidationError {
-    DecodeError(DecodeError),
+    InvalidScryptoValue(ScryptoValueDecodeError),
     IdValidationError(IdValidationError),
     VaultNotAllowed(VaultId),
     KeyValueStoreNotAllowed(KeyValueStoreId),

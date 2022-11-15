@@ -17,7 +17,8 @@ use radix_engine_lib::resource::{
     VaultTakeInvocation, VaultTakeNonFungiblesInvocation,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum VaultError {
     InvalidRequestData(DecodeError),
     ResourceOperationError(ResourceOperationError),

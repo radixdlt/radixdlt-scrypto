@@ -288,9 +288,9 @@ impl Default for SystemLoanFeeReserve {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use scrypto::{constants::RADIX_TOKEN, crypto::Hash};
+    use scrypto::constants::RADIX_TOKEN;
 
-    const TEST_VAULT_ID: VaultId = (Hash([0u8; 32]), 1);
+    const TEST_VAULT_ID: VaultId = [0u8; 36];
 
     fn xrd<T: Into<Decimal>>(amount: T) -> Resource {
         Resource::new_fungible(RADIX_TOKEN, 18, amount.into())

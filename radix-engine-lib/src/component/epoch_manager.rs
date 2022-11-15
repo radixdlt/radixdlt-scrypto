@@ -9,7 +9,8 @@ use crate::abi::*;
 use crate::address::*;
 use crate::engine::{api::*, scrypto_env::*};
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {}
 
 impl SysInvocation for EpochManagerCreateInvocation {
@@ -26,7 +27,8 @@ impl Into<NativeFnInvocation> for EpochManagerCreateInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerGetCurrentEpochInvocation {
     pub receiver: SystemAddress,
 }
@@ -45,7 +47,8 @@ impl Into<NativeFnInvocation> for EpochManagerGetCurrentEpochInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerSetEpochInvocation {
     pub receiver: SystemAddress,
     pub epoch: u64,
@@ -111,7 +114,12 @@ impl SystemAddress {
     }
 }
 
-scrypto_type!(SystemAddress, ScryptoType::SystemAddress, Vec::new());
+scrypto_type!(
+    SystemAddress,
+    ScryptoCustomTypeId::SystemAddress,
+    Type::SystemAddress,
+    27
+);
 
 //======
 // text

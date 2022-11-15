@@ -10,7 +10,9 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
+use crate::data::*;
 use crate::math::*;
+use crate::scrypto_type;
 
 /// `Decimal` represents a 256 bit representation of a fixed-scale decimal number.
 ///
@@ -401,7 +403,12 @@ impl Decimal {
     }
 }
 
-scrypto_type!(Decimal, ScryptoType::Decimal, Vec::new());
+scrypto_type!(
+    Decimal,
+    ScryptoCustomTypeId::Decimal,
+    Type::Decimal,
+    Decimal::BITS / 8
+);
 
 //======
 // text
@@ -1038,22 +1045,21 @@ mod tests {
     #[test]
     fn test_encode_decimal_type_decimal() {
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_static_info(&mut bytes);
+        let mut enc = Encoder::new(&mut bytes);
         Decimal::encode_type_id(&mut enc);
-        assert_eq!(bytes, vec![Decimal::type_id()]);
+        assert_eq!(bytes, vec![Decimal::type_id().as_u8()]);
     }
 
     #[test]
     fn test_encode_decimal_value_decimal() {
         let dec = dec!("0");
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_static_info(&mut bytes);
+        let mut enc = Encoder::new(&mut bytes);
         Decimal::encode_type_id(&mut enc);
         dec.encode_value(&mut enc);
         assert_eq!(bytes, {
-            let mut a = [0; 37];
-            a[0] = Decimal::type_id();
-            a[1] = 32;
+            let mut a = [0; 33];
+            a[0] = Decimal::type_id().as_u8();
             a
         });
     }
@@ -1061,10 +1067,10 @@ mod tests {
     #[test]
     fn test_decode_decimal_type_decimal() {
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_static_info(&mut bytes);
+        let mut enc = Encoder::new(&mut bytes);
         Decimal::encode_type_id(&mut enc);
-        let mut decoder = Decoder::new(&bytes, true);
-        let typ = decoder.read_type().unwrap();
+        let mut decoder = Decoder::new(&bytes);
+        let typ = decoder.read_type_id().unwrap();
         assert_eq!(typ, Decimal::type_id());
     }
 
@@ -1072,10 +1078,10 @@ mod tests {
     fn test_decode_decimal_value_decimal() {
         let dec = dec!("1.23456789");
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_static_info(&mut bytes);
+        let mut enc = Encoder::new(&mut bytes);
         Decimal::encode_type_id(&mut enc);
         dec.encode_value(&mut enc);
-        let mut decoder = Decoder::new(&bytes, true);
+        let mut decoder = Decoder::new(&bytes);
         Decimal::check_type_id(&mut decoder).unwrap();
         let val = Decimal::decode_value(&mut decoder).unwrap();
         assert_eq!(val, dec!("1.23456789"));

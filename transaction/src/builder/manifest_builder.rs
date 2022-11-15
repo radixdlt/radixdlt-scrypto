@@ -31,6 +31,7 @@ use scrypto::crypto::*;
 use scrypto::rule;
 use scrypto::values::*;
 use scrypto::*;
+use scrypto::data::{ScryptoCustomTypeId, ScryptoCustomValue};
 use utils::math::{Decimal, PreciseDecimal};
 
 use crate::errors::*;
@@ -401,9 +402,10 @@ impl ManifestBuilder {
 
         let mut fields = Vec::new();
         for arg in arguments {
-            fields.push(::sbor::decode_any(&arg).unwrap());
+            fields
+                .push(::sbor::decode_any::<ScryptoCustomTypeId, ScryptoCustomValue>(&arg).unwrap());
         }
-        let input_struct = ::sbor::Value::Struct { fields };
+        let input_struct = ::sbor::SborValue::Struct { fields };
         let bytes = ::sbor::encode_any(&input_struct);
 
         Ok(self
@@ -930,7 +932,7 @@ impl ManifestBuilder {
         let mut encoded = Vec::new();
 
         match arg_type {
-            sbor::Type::Struct {
+            Type::Struct {
                 name: _,
                 fields: Fields::Named { named },
             } => {
@@ -951,8 +953,132 @@ impl ManifestBuilder {
                         Type::U64 => self.parse_basic_ty::<u64>(i, t, arg),
                         Type::U128 => self.parse_basic_ty::<u128>(i, t, arg),
                         Type::String => self.parse_basic_ty::<String>(i, t, arg),
-                        Type::Custom { type_id, .. } => {
-                            self.parse_custom_ty(i, t, arg, *type_id, account)
+                        Type::Decimal => {
+                            let value = arg.parse::<Decimal>().map_err(|_| {
+                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                            })?;
+                            Ok(scrypto_encode(&value))
+                        }
+                        Type::PreciseDecimal => {
+                            let value = arg.parse::<PreciseDecimal>().map_err(|_| {
+                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                            })?;
+                            Ok(scrypto_encode(&value))
+                        }
+                        Type::PackageAddress => {
+                            let value = self
+                                .decoder
+                                .validate_and_decode_package_address(arg)
+                                .map_err(|_| {
+                                    BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                                })?;
+                            Ok(scrypto_encode(&value))
+                        }
+                        Type::ComponentAddress => {
+                            let value = self
+                                .decoder
+                                .validate_and_decode_component_address(arg)
+                                .map_err(|_| {
+                                    BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                                })?;
+                            Ok(scrypto_encode(&value))
+                        }
+                        Type::ResourceAddress => {
+                            let value = self
+                                .decoder
+                                .validate_and_decode_resource_address(arg)
+                                .map_err(|_| {
+                                    BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                                })?;
+                            Ok(scrypto_encode(&value))
+                        }
+                        Type::Hash => {
+                            let value = arg.parse::<Hash>().map_err(|_| {
+                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                            })?;
+                            Ok(scrypto_encode(&value))
+                        }
+                        Type::NonFungibleId => {
+                            let value = arg.parse::<NonFungibleId>().map_err(|_| {
+                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                            })?;
+                            Ok(scrypto_encode(&value))
+                        }
+                        Type::Bucket => {
+                            let resource_specifier = parse_resource_specifier(arg, &self.decoder)
+                                .map_err(|_| {
+                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                            })?;
+                            let bucket_id = match resource_specifier {
+                                ResourceSpecifier::Amount(amount, resource_address) => {
+                                    if let Some(account) = account {
+                                        self.withdraw_from_account_by_amount(
+                                            account,
+                                            amount,
+                                            resource_address,
+                                        );
+                                    }
+                                    self.add_instruction(Instruction::TakeFromWorktopByAmount {
+                                        amount,
+                                        resource_address,
+                                    })
+                                    .1
+                                    .unwrap()
+                                }
+                                ResourceSpecifier::Ids(ids, resource_address) => {
+                                    if let Some(account) = account {
+                                        self.withdraw_from_account_by_ids(
+                                            account,
+                                            &ids,
+                                            resource_address,
+                                        );
+                                    }
+                                    self.add_instruction(Instruction::TakeFromWorktopByIds {
+                                        ids,
+                                        resource_address,
+                                    })
+                                    .1
+                                    .unwrap()
+                                }
+                            };
+                            Ok(scrypto_encode(&scrypto::resource::Bucket(bucket_id)))
+                        }
+                        Type::Proof => {
+                            let resource_specifier = parse_resource_specifier(arg, &self.decoder)
+                                .map_err(|_| {
+                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                            })?;
+                            let proof_id = match resource_specifier {
+                                ResourceSpecifier::Amount(amount, resource_address) => {
+                                    if let Some(account) = account {
+                                        self.create_proof_from_account_by_amount(
+                                            account,
+                                            amount,
+                                            resource_address,
+                                        );
+                                        self.add_instruction(Instruction::PopFromAuthZone)
+                                            .2
+                                            .unwrap()
+                                    } else {
+                                        todo!("Take from worktop and create proof")
+                                    }
+                                }
+                                ResourceSpecifier::Ids(ids, resource_address) => {
+                                    if let Some(account) = account {
+                                        self.create_proof_from_account_by_ids(
+                                            account,
+                                            &ids,
+                                            resource_address,
+                                        );
+                                        self.add_instruction(Instruction::PopFromAuthZone)
+                                            .2
+                                            .unwrap()
+                                    } else {
+                                        todo!("Take from worktop and create proof")
+                                    }
+                                }
+                            };
+                            Ok(scrypto_encode(&scrypto::resource::Proof(proof_id)))
                         }
                         _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
                     };
@@ -969,18 +1095,19 @@ impl ManifestBuilder {
     fn parse_basic_ty<T>(
         &mut self,
         i: usize,
-        ty: &Type,
+        t: &Type,
         arg: &str,
     ) -> Result<Vec<u8>, BuildArgsError>
     where
-        T: FromStr + Encode,
+        T: FromStr + Encode<ScryptoCustomTypeId>,
         T::Err: fmt::Debug,
     {
         let value = arg
             .parse::<T>()
-            .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+            .map_err(|_| BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned()))?;
         Ok(scrypto_encode(&value))
     }
+<<<<<<< HEAD
 
     fn parse_custom_ty(
         &mut self,
@@ -1099,6 +1226,8 @@ impl ManifestBuilder {
             _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),
         }
     }
+=======
+>>>>>>> develop
 }
 
 enum ResourceSpecifier {

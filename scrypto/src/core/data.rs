@@ -11,24 +11,24 @@ use scrypto::engine::scrypto_env::ScryptoEnv;
 use crate::buffer::*;
 use crate::component::{ComponentStateSubstate, KeyValueStoreEntrySubstate};
 
-pub struct DataRef<V: Encode> {
+pub struct DataRef<V: Encode<ScryptoCustomTypeId>> {
     lock_handle: LockHandle,
     value: V,
 }
 
-impl<V: fmt::Display + Encode> fmt::Display for DataRef<V> {
+impl<V: fmt::Display + Encode<ScryptoCustomTypeId>> fmt::Display for DataRef<V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.value.fmt(f)
     }
 }
 
-impl<V: Encode> DataRef<V> {
+impl<V: Encode<ScryptoCustomTypeId>> DataRef<V> {
     pub fn new(lock_handle: LockHandle, value: V) -> DataRef<V> {
         DataRef { lock_handle, value }
     }
 }
 
-impl<V: Encode> Deref for DataRef<V> {
+impl<V: Encode<ScryptoCustomTypeId>> Deref for DataRef<V> {
     type Target = V;
 
     fn deref(&self) -> &Self::Target {
@@ -36,26 +36,26 @@ impl<V: Encode> Deref for DataRef<V> {
     }
 }
 
-impl<V: Encode> Drop for DataRef<V> {
+impl<V: Encode<ScryptoCustomTypeId>> Drop for DataRef<V> {
     fn drop(&mut self) {
         let mut syscalls = ScryptoEnv;
         syscalls.sys_drop_lock(self.lock_handle).unwrap();
     }
 }
 
-pub struct DataRefMut<V: Encode> {
+pub struct DataRefMut<V: Encode<ScryptoCustomTypeId>> {
     lock_handle: LockHandle,
     offset: SubstateOffset,
     value: V,
 }
 
-impl<V: fmt::Display + Encode> fmt::Display for DataRefMut<V> {
+impl<V: fmt::Display + Encode<ScryptoCustomTypeId>> fmt::Display for DataRefMut<V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.value.fmt(f)
     }
 }
 
-impl<V: Encode> DataRefMut<V> {
+impl<V: Encode<ScryptoCustomTypeId>> DataRefMut<V> {
     pub fn new(lock_handle: LockHandle, offset: SubstateOffset, value: V) -> DataRefMut<V> {
         DataRefMut {
             lock_handle,
@@ -65,7 +65,7 @@ impl<V: Encode> DataRefMut<V> {
     }
 }
 
-impl<V: Encode> Drop for DataRefMut<V> {
+impl<V: Encode<ScryptoCustomTypeId>> Drop for DataRefMut<V> {
     fn drop(&mut self) {
         let mut syscalls = ScryptoEnv;
         let bytes = scrypto_encode(&self.value);
@@ -84,7 +84,7 @@ impl<V: Encode> Drop for DataRefMut<V> {
     }
 }
 
-impl<V: Encode> Deref for DataRefMut<V> {
+impl<V: Encode<ScryptoCustomTypeId>> Deref for DataRefMut<V> {
     type Target = V;
 
     fn deref(&self) -> &Self::Target {
@@ -92,19 +92,19 @@ impl<V: Encode> Deref for DataRefMut<V> {
     }
 }
 
-impl<V: Encode> DerefMut for DataRefMut<V> {
+impl<V: Encode<ScryptoCustomTypeId>> DerefMut for DataRefMut<V> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.value
     }
 }
 
-pub struct DataPointer<V: 'static + Encode + Decode> {
+pub struct DataPointer<V: 'static + Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>> {
     node_id: RENodeId,
     offset: SubstateOffset,
     phantom_data: PhantomData<V>,
 }
 
-impl<V: 'static + Encode + Decode> DataPointer<V> {
+impl<V: 'static + Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>> DataPointer<V> {
     pub fn new(node_id: RENodeId, offset: SubstateOffset) -> Self {
         Self {
             node_id,

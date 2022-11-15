@@ -15,6 +15,7 @@ use scrypto::engine::scrypto_env::ScryptoEnv;
 
 use crate::buffer::scrypto_decode;
 use crate::crypto::*;
+use crate::data::ScryptoCustomTypeId;
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -28,7 +29,7 @@ impl Runtime {
     pub fn sys_current_epoch<Y, E>(env: &mut Y) -> Result<u64, E>
     where
         Y: SysNativeInvokable<EpochManagerGetCurrentEpochInvocation, E>,
-        E: Debug + TypeId + Decode,
+        E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
     {
         env.sys_invoke(EpochManagerGetCurrentEpochInvocation {
             receiver: EPOCH_MANAGER,
@@ -56,7 +57,7 @@ impl Runtime {
     }
 
     /// Invokes a function on a blueprint.
-    pub fn call_function<S1: AsRef<str>, S2: AsRef<str>, T: Decode>(
+    pub fn call_function<S1: AsRef<str>, S2: AsRef<str>, T: Decode<ScryptoCustomTypeId>>(
         package_address: PackageAddress,
         blueprint_name: S1,
         function_name: S2,
@@ -77,7 +78,7 @@ impl Runtime {
     }
 
     /// Invokes a method on a component.
-    pub fn call_method<S: AsRef<str>, T: Decode>(
+    pub fn call_method<S: AsRef<str>, T: Decode<ScryptoCustomTypeId>>(
         component_address: ComponentAddress,
         method: S,
         args: Vec<u8>,

@@ -15,7 +15,8 @@ use radix_engine_lib::resource::{
 };
 use sbor::rust::vec::Vec;
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum AuthZoneError {
     EmptyAuthZone,
     ProofError(ProofError),

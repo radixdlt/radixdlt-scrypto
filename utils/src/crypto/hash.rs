@@ -5,9 +5,9 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto_abi::scrypto_type;
 
 use crate::abi::*;
+use crate::data::*;
 use crate::misc::*;
 
 /// Represents a 32-byte hash digest.
@@ -88,7 +88,7 @@ impl Hash {
     }
 }
 
-scrypto_type!(Hash, ScryptoType::Hash, Vec::new());
+scrypto_type!(Hash, ScryptoCustomTypeId::Hash, Type::Hash, 32);
 
 //======
 // text

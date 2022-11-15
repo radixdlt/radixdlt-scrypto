@@ -1,32 +1,33 @@
+use crate::constants::*;
 use crate::rust::borrow::Cow;
 use crate::rust::borrow::ToOwned;
 use crate::rust::boxed::Box;
 use crate::rust::cell::RefCell;
 use crate::rust::collections::*;
 use crate::rust::hash::Hash;
+use crate::rust::marker::PhantomData;
 use crate::rust::mem::MaybeUninit;
 use crate::rust::ptr::copy;
 use crate::rust::rc::Rc;
 use crate::rust::string::String;
-use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
-use sbor::*;
+use crate::*;
 
 /// Represents an error ocurred during decoding.
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum DecodeError {
     ExtraTrailingBytes(usize),
 
-    Underflow { required: usize, remaining: usize },
+    BufferUnderflow { required: usize, remaining: usize },
 
-    InvalidType { expected: Option<u8>, actual: u8 },
+    UnexpectedTypeId(u8),
 
-    InvalidSize { expected: usize, actual: usize },
+    UnexpectedSize { expected: usize, actual: usize },
 
-    InvalidVariantIndex(u8),
+    UnknownTypeId(u8),
 
-    InvalidVariantLabel(String),
+    UnknownDiscriminator(String),
 
     InvalidUnit(u8),
 
@@ -34,43 +35,35 @@ pub enum DecodeError {
 
     InvalidUtf8,
 
-    CustomError(String),
+    InvalidCustomValue, // TODO: generify custom error codes
 }
 
 /// A data structure that can be decoded from a byte array using SBOR.
-pub trait Decode: Sized {
-    fn decode(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+pub trait Decode<X: CustomTypeId>: Sized {
+    fn decode(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
         Self::check_type_id(decoder)?;
         Self::decode_value(decoder)
     }
 
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError>;
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError>;
 
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError>;
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError>;
 }
 
 /// A `Decoder` abstracts the logic for decoding basic types.
-pub struct Decoder<'de> {
+pub struct Decoder<'de, X: CustomTypeId> {
     input: &'de [u8],
     offset: usize,
-    with_static_info: bool,
+    phantom: PhantomData<X>,
 }
 
-impl<'de> Decoder<'de> {
-    pub fn new(input: &'de [u8], with_static_info: bool) -> Self {
+impl<'de, X: CustomTypeId> Decoder<'de, X> {
+    pub fn new(input: &'de [u8]) -> Self {
         Self {
             input,
             offset: 0,
-            with_static_info,
+            phantom: PhantomData,
         }
-    }
-
-    pub fn with_static_info(input: &'de [u8]) -> Self {
-        Self::new(input, true)
-    }
-
-    pub fn no_static_info(input: &'de [u8]) -> Self {
-        Self::new(input, false)
     }
 
     #[inline]
@@ -80,7 +73,7 @@ impl<'de> Decoder<'de> {
 
     pub fn require(&self, n: usize) -> Result<(), DecodeError> {
         if self.remaining() < n {
-            Err(DecodeError::Underflow {
+            Err(DecodeError::BufferUnderflow {
                 required: n,
                 remaining: self.remaining(),
             })
@@ -89,29 +82,20 @@ impl<'de> Decoder<'de> {
         }
     }
 
-    pub fn read_type(&mut self) -> Result<u8, DecodeError> {
-        self.read_byte()
+    pub fn read_type_id(&mut self) -> Result<SborTypeId<X>, DecodeError> {
+        let id = self.read_byte()?;
+        SborTypeId::from_u8(id).ok_or(DecodeError::UnknownTypeId(id))
     }
 
-    pub fn read_variant_index(&mut self) -> Result<u8, DecodeError> {
-        self.read_byte()
-    }
-
-    pub fn read_variant_label(&mut self) -> Result<String, DecodeError> {
-        let n = self.read_dynamic_size()?;
-        let slice = self.read_bytes(n)?;
+    pub fn read_discriminator(&mut self) -> Result<String, DecodeError> {
+        let n = self.read_size()?;
+        let slice = self.read_slice(n)?;
         String::from_utf8(slice.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
     }
 
-    pub fn read_static_size(&mut self) -> Result<usize, DecodeError> {
+    pub fn read_size(&mut self) -> Result<usize, DecodeError> {
         let mut bytes = [0u8; 4];
-        bytes.copy_from_slice(self.read_bytes(4)?);
-        Ok(u32::from_le_bytes(bytes) as usize)
-    }
-
-    pub fn read_dynamic_size(&mut self) -> Result<usize, DecodeError> {
-        let mut bytes = [0u8; 4];
-        bytes.copy_from_slice(self.read_bytes(4)?);
+        bytes.copy_from_slice(self.read_slice(4)?);
         Ok(u32::from_le_bytes(bytes) as usize)
     }
 
@@ -122,36 +106,29 @@ impl<'de> Decoder<'de> {
         Ok(result)
     }
 
-    pub fn read_bytes(&mut self, n: usize) -> Result<&'de [u8], DecodeError> {
+    pub fn read_slice(&mut self, n: usize) -> Result<&'de [u8], DecodeError> {
         self.require(n)?;
         let slice = &self.input[self.offset..self.offset + n];
         self.offset += n;
         Ok(slice)
     }
 
-    pub fn check_type_id(&mut self, expected: u8) -> Result<(), DecodeError> {
-        if self.with_static_info {
-            let ty = self.read_type()?;
-            if ty != expected {
-                return Err(DecodeError::InvalidType {
-                    expected: Some(expected),
-                    actual: ty,
-                });
-            }
+    pub fn check_type_id(&mut self, expected: SborTypeId<X>) -> Result<(), DecodeError> {
+        let ty = self.read_type_id()?;
+        if ty != expected {
+            return Err(DecodeError::UnexpectedTypeId(ty.as_u8()));
         }
 
         Ok(())
     }
 
-    pub fn check_static_size(&mut self, expected: usize) -> Result<(), DecodeError> {
-        if self.with_static_info {
-            let len = self.read_static_size()?;
-            if len != expected {
-                return Err(DecodeError::InvalidSize {
-                    expected,
-                    actual: len,
-                });
-            }
+    pub fn check_size(&mut self, expected: usize) -> Result<(), DecodeError> {
+        let len = self.read_size()?;
+        if len != expected {
+            return Err(DecodeError::UnexpectedSize {
+                expected,
+                actual: len,
+            });
         }
 
         Ok(())
@@ -167,12 +144,12 @@ impl<'de> Decoder<'de> {
     }
 }
 
-impl Decode for () {
+impl<X: CustomTypeId> Decode<X> for () {
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
         let value = decoder.read_byte()?;
         match value {
             0 => Ok(()),
@@ -181,12 +158,12 @@ impl Decode for () {
     }
 }
 
-impl Decode for bool {
+impl<X: CustomTypeId> Decode<X> for bool {
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
         let value = decoder.read_byte()?;
         match value {
             0 => Ok(false),
@@ -196,23 +173,23 @@ impl Decode for bool {
     }
 }
 
-impl Decode for i8 {
+impl<X: CustomTypeId> Decode<X> for i8 {
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
         let value = decoder.read_byte()?;
         Ok(value as i8)
     }
 }
 
-impl Decode for u8 {
+impl<X: CustomTypeId> Decode<X> for u8 {
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
         let value = decoder.read_byte()?;
         Ok(value)
     }
@@ -220,13 +197,13 @@ impl Decode for u8 {
 
 macro_rules! decode_int {
     ($type:ident, $type_id:ident, $n:expr) => {
-        impl Decode for $type {
+        impl<X: CustomTypeId> Decode<X> for $type {
             #[inline]
-            fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+            fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
                 decoder.check_type_id(Self::type_id())
             }
-            fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-                let slice = decoder.read_bytes($n)?;
+            fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
+                let slice = decoder.read_slice($n)?;
                 let mut bytes = [0u8; $n];
                 bytes.copy_from_slice(&slice[..]);
                 Ok(<$type>::from_le_bytes(bytes))
@@ -244,106 +221,92 @@ decode_int!(u32, TYPE_U32, 4);
 decode_int!(u64, TYPE_U64, 8);
 decode_int!(u128, TYPE_U128, 16);
 
-impl Decode for isize {
+impl<X: CustomTypeId> Decode<X> for isize {
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
         i64::decode_value(decoder).map(|i| i as isize)
     }
 }
 
-impl Decode for usize {
+impl<X: CustomTypeId> Decode<X> for usize {
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
         u64::decode_value(decoder).map(|i| i as usize)
     }
 }
 
-impl Decode for String {
+impl<X: CustomTypeId> Decode<X> for String {
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let len = decoder.read_dynamic_size()?;
-        let slice = decoder.read_bytes(len)?;
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
+        let len = decoder.read_size()?;
+        let slice = decoder.read_slice(len)?;
         String::from_utf8(slice.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
     }
 }
 
-impl<T: Decode> Decode for Option<T> {
+impl<'a, X: CustomTypeId, B: ?Sized + 'a + ToOwned<Owned = O>, O: Decode<X> + TypeId<X>> Decode<X>
+    for Cow<'a, B>
+{
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
-        decoder.check_type_id(Self::type_id())
-    }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let index = decoder.read_variant_index()?;
-
-        match index {
-            OPTION_VARIANT_SOME => Ok(Some(T::decode(decoder)?)),
-            OPTION_VARIANT_NONE => Ok(None),
-            _ => Err(DecodeError::InvalidVariantIndex(index)),
-        }
-    }
-}
-
-impl<'a, B: ?Sized + 'a + ToOwned<Owned = O>, O: Decode + TypeId> Decode for Cow<'a, B> {
-    #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(O::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
         let v = O::decode_value(decoder)?;
         Ok(Cow::Owned(v))
     }
 }
 
-impl<T: Decode + TypeId> Decode for Box<T> {
+impl<X: CustomTypeId, T: Decode<X> + TypeId<X>> Decode<X> for Box<T> {
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(T::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
         let v = T::decode_value(decoder)?;
         Ok(Box::new(v))
     }
 }
 
-impl<T: Decode + TypeId> Decode for Rc<T> {
+impl<X: CustomTypeId, T: Decode<X> + TypeId<X>> Decode<X> for Rc<T> {
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(T::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
         let v = T::decode_value(decoder)?;
         Ok(Rc::new(v))
     }
 }
 
-impl<T: Decode + TypeId> Decode for RefCell<T> {
+impl<X: CustomTypeId, T: Decode<X> + TypeId<X>> Decode<X> for RefCell<T> {
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(T::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
         let v = T::decode_value(decoder)?;
         Ok(RefCell::new(v))
     }
 }
 
-impl<T: Decode + TypeId, const N: usize> Decode for [T; N] {
+impl<X: CustomTypeId, T: Decode<X> + TypeId<X>, const N: usize> Decode<X> for [T; N] {
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
         decoder.check_type_id(T::type_id())?;
-        decoder.check_static_size(N)?;
+        decoder.check_size(N)?;
 
         // Please read:
         // * https://doc.rust-lang.org/stable/std/mem/union.MaybeUninit.html#initializing-an-array-element-by-element
@@ -370,13 +333,13 @@ impl<T: Decode + TypeId, const N: usize> Decode for [T; N] {
 
 macro_rules! decode_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {
-        impl<$($name: Decode),+> Decode for ($($name,)+) {
+        impl<X: CustomTypeId, $($name: Decode<X>),+> Decode<X> for ($($name,)+) {
             #[inline]
-            fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+            fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
                 decoder.check_type_id(Self::type_id())
             }
-            fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-                decoder.check_static_size($n)?;
+            fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
+                decoder.check_size($n)?;
 
                 Ok(($($name::decode(decoder)?),+))
             }
@@ -394,32 +357,62 @@ decode_tuple! { 8 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H }
 decode_tuple! { 9 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I }
 decode_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 
-impl<T: Decode + TypeId, E: Decode + TypeId> Decode for Result<T, E> {
+impl<X: CustomTypeId, T: Decode<X>> Decode<X> for Option<T> {
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let index = decoder.read_variant_index()?;
-        match index {
-            RESULT_VARIANT_OK => Ok(Ok(T::decode(decoder)?)),
-            RESULT_VARIANT_ERR => Ok(Err(E::decode(decoder)?)),
-            _ => Err(DecodeError::InvalidVariantIndex(index)),
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
+        let discriminator = decoder.read_discriminator()?;
+
+        match discriminator.as_ref() {
+            OPTION_VARIANT_SOME => {
+                decoder.check_size(1)?;
+                Ok(Some(T::decode(decoder)?))
+            }
+            OPTION_VARIANT_NONE => {
+                decoder.check_size(0)?;
+                Ok(None)
+            }
+            _ => Err(DecodeError::UnknownDiscriminator(discriminator)),
         }
     }
 }
 
-impl<T: Decode + TypeId> Decode for Vec<T> {
+impl<X: CustomTypeId, T: Decode<X> + TypeId<X>, E: Decode<X> + TypeId<X>> Decode<X>
+    for Result<T, E>
+{
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        decoder.check_type_id(T::type_id())?;
-        let len = decoder.read_dynamic_size()?;
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
+        let discriminator = decoder.read_discriminator()?;
+        match discriminator.as_ref() {
+            RESULT_VARIANT_OK => {
+                decoder.check_size(1)?;
+                Ok(Ok(T::decode(decoder)?))
+            }
+            RESULT_VARIANT_ERR => {
+                decoder.check_size(1)?;
+                Ok(Err(E::decode(decoder)?))
+            }
+            _ => Err(DecodeError::UnknownDiscriminator(discriminator)),
+        }
+    }
+}
 
-        if T::type_id() == TYPE_U8 || T::type_id() == TYPE_I8 {
-            let slice = decoder.read_bytes(len)?; // length is checked here
+impl<X: CustomTypeId, T: Decode<X> + TypeId<X>> Decode<X> for Vec<T> {
+    #[inline]
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
+        decoder.check_type_id(Self::type_id())
+    }
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
+        decoder.check_type_id(T::type_id())?;
+        let len = decoder.read_size()?;
+
+        if T::type_id() == SborTypeId::U8 || T::type_id() == SborTypeId::I8 {
+            let slice = decoder.read_slice(len)?; // length is checked here
             let mut result = Vec::<T>::with_capacity(len);
             unsafe {
                 copy(slice.as_ptr(), result.as_mut_ptr() as *mut u8, slice.len());
@@ -436,97 +429,51 @@ impl<T: Decode + TypeId> Decode for Vec<T> {
     }
 }
 
-impl<T: Decode + TypeId + Ord> Decode for BTreeSet<T> {
+impl<X: CustomTypeId, T: Decode<X> + TypeId<X> + Ord> Decode<X> for BTreeSet<T> {
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        decoder.check_type_id(T::type_id())?;
-        let len = decoder.read_dynamic_size()?;
-
-        let mut result = BTreeSet::new();
-        for _ in 0..len {
-            if !result.insert(T::decode_value(decoder)?) {
-                // This is a custom error because key duplication logic is defined by the application
-                return Err(DecodeError::CustomError(
-                    "Duplicate BTreeSet entries".to_string(),
-                ));
-            }
-        }
-        Ok(result)
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
+        let elements: Vec<T> = Vec::<T>::decode_value(decoder)?;
+        Ok(elements.into_iter().collect())
     }
 }
 
-impl<K: Decode + TypeId + Ord, V: Decode + TypeId> Decode for BTreeMap<K, V> {
+impl<X: CustomTypeId, T: Decode<X> + TypeId<X> + Hash + Eq> Decode<X> for HashSet<T> {
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        decoder.check_type_id(K::type_id())?;
-        decoder.check_type_id(V::type_id())?;
-        let len = decoder.read_dynamic_size()?;
-        let mut map = BTreeMap::new();
-        for _ in 0..len {
-            if map
-                .insert(K::decode_value(decoder)?, V::decode_value(decoder)?)
-                .is_some()
-            {
-                // This is a custom error because key duplication logic is defined by the application
-                return Err(DecodeError::CustomError(
-                    "Duplicate BTreeMap entries".to_string(),
-                ));
-            }
-        }
-        Ok(map)
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
+        let elements: Vec<T> = Vec::<T>::decode_value(decoder)?;
+        Ok(elements.into_iter().collect())
     }
 }
 
-impl<T: Decode + TypeId + Hash + Eq> Decode for HashSet<T> {
+impl<X: CustomTypeId, K: Decode<X> + TypeId<X> + Ord, V: Decode<X> + TypeId<X>> Decode<X>
+    for BTreeMap<K, V>
+{
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        decoder.check_type_id(T::type_id())?;
-        let len = decoder.read_dynamic_size()?;
-
-        let mut result = HashSet::new();
-        for _ in 0..len {
-            if !result.insert(T::decode_value(decoder)?) {
-                // This is a custom error because key duplication logic is defined by the application
-                return Err(DecodeError::CustomError(
-                    "Duplicate HashSet entries".to_string(),
-                ));
-            }
-        }
-        Ok(result)
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
+        let elements = Vec::<(K, V)>::decode_value(decoder)?;
+        Ok(elements.into_iter().collect())
     }
 }
 
-impl<K: Decode + TypeId + Hash + Eq, V: Decode + TypeId> Decode for HashMap<K, V> {
+impl<X: CustomTypeId, K: Decode<X> + TypeId<X> + Hash + Eq, V: Decode<X> + TypeId<X>> Decode<X>
+    for HashMap<K, V>
+{
     #[inline]
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        decoder.check_type_id(K::type_id())?;
-        decoder.check_type_id(V::type_id())?;
-        let len = decoder.read_dynamic_size()?;
-        let mut map = HashMap::new();
-        for _ in 0..len {
-            if map
-                .insert(K::decode_value(decoder)?, V::decode_value(decoder)?)
-                .is_some()
-            {
-                // This is a custom error because key duplication logic is defined by the application
-                return Err(DecodeError::CustomError(
-                    "Duplicate HashMap entries".to_string(),
-                ));
-            }
-        }
-        Ok(map)
+    fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
+        let elements: Vec<(K, V)> = Vec::<(K, V)>::decode_value(decoder)?;
+        Ok(elements.into_iter().collect())
     }
 }
 
@@ -538,7 +485,7 @@ mod tests {
     use crate::rust::borrow::ToOwned;
     use crate::rust::vec;
 
-    fn assert_decoding(dec: &mut Decoder) {
+    fn assert_decoding<X: CustomTypeId>(dec: &mut Decoder<X>) {
         <()>::decode(dec).unwrap();
         assert_eq!(true, <bool>::decode(dec).unwrap());
         assert_eq!(1, <i8>::decode(dec).unwrap());
@@ -553,14 +500,6 @@ mod tests {
         assert_eq!(1, <u128>::decode(dec).unwrap());
         assert_eq!("hello", <String>::decode(dec).unwrap());
 
-        assert_eq!(Some(1u32), <Option<u32>>::decode(dec).unwrap());
-        assert_eq!(None, <Option<u32>>::decode(dec).unwrap());
-        assert_eq!(Ok(1u32), <Result<u32, String>>::decode(dec).unwrap());
-        assert_eq!(
-            Err("hello".to_owned()),
-            <Result<u32, String>>::decode(dec).unwrap()
-        );
-
         assert_eq!([1u32, 2u32, 3u32], <[u32; 3]>::decode(dec).unwrap());
         assert_eq!((1u32, 2u32), <(u32, u32)>::decode(dec).unwrap());
 
@@ -573,6 +512,14 @@ mod tests {
         map.insert(1, 2);
         map.insert(3, 4);
         assert_eq!(map, <BTreeMap<u8, u8>>::decode(dec).unwrap());
+
+        assert_eq!(Some(1u32), <Option<u32>>::decode(dec).unwrap());
+        assert_eq!(None, <Option<u32>>::decode(dec).unwrap());
+        assert_eq!(Ok(1u32), <Result<u32, String>>::decode(dec).unwrap());
+        assert_eq!(
+            Err("hello".to_owned()),
+            <Result<u32, String>>::decode(dec).unwrap()
+        );
     }
 
     #[test]
@@ -591,54 +538,25 @@ mod tests {
             10, 1, 0, 0, 0, 0, 0, 0, 0, // u64
             11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
             12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // string
-            18, 0, 9, 1, 0, 0, 0, // option
-            18, 1, // option
-            19, 0, 9, 1, 0, 0, 0, // result
-            19, 1, 12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // result
             32, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
             33, 2, 0, 0, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
-            48, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // list
-            49, 7, 2, 0, 0, 0, 1, 2, // set
-            50, 7, 7, 2, 0, 0, 0, 1, 2, 3, 4, // map
+            32, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
+            32, 7, 2, 0, 0, 0, 1, 2, // set
+            32, 33, 2, 0, 0, 0, 2, 0, 0, 0, 7, 1, 7, 2, 2, 0, 0, 0, 7, 3, 7, 4, // map
+            17, 4, 0, 0, 0, 83, 111, 109, 101, 1, 0, 0, 0, 9, 1, 0, 0, 0, // Some<T>
+            17, 4, 0, 0, 0, 78, 111, 110, 101, 0, 0, 0, 0, // None
+            17, 2, 0, 0, 0, 79, 107, 1, 0, 0, 0, 9, 1, 0, 0, 0, // Ok<T>
+            17, 3, 0, 0, 0, 69, 114, 114, 1, 0, 0, 0, 12, 5, 0, 0, 0, 104, 101, 108, 108,
+            111, // Err<T>
         ];
-        let mut dec = Decoder::with_static_info(&bytes);
-        assert_decoding(&mut dec);
-    }
-
-    #[test]
-    pub fn test_decoding_no_static_info() {
-        let bytes = vec![
-            0, // unit
-            1, // bool
-            1, // i8
-            1, 0, // i16
-            1, 0, 0, 0, // i32
-            1, 0, 0, 0, 0, 0, 0, 0, // i64
-            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // i128
-            1, // u8
-            1, 0, // u16
-            1, 0, 0, 0, // u32
-            1, 0, 0, 0, 0, 0, 0, 0, // u64
-            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
-            5, 0, 0, 0, 104, 101, 108, 108, 111, // string
-            0, 1, 0, 0, 0, // option
-            1, // option
-            0, 1, 0, 0, 0, // result
-            1, 5, 0, 0, 0, 104, 101, 108, 108, 111, // result
-            1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
-            1, 0, 0, 0, 2, 0, 0, 0, // tuple
-            3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // list
-            2, 0, 0, 0, 1, 2, // set
-            2, 0, 0, 0, 1, 2, 3, 4, // map
-        ];
-        let mut dec = Decoder::no_static_info(&bytes);
+        let mut dec = Decoder::<NoCustomTypeId>::new(&bytes);
         assert_decoding(&mut dec);
     }
 
     #[test]
     pub fn test_decode_box() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = Decoder::with_static_info(&bytes);
+        let mut dec = Decoder::<NoCustomTypeId>::new(&bytes);
         let x = <Box<u8>>::decode(&mut dec).unwrap();
         assert_eq!(Box::new(5u8), x);
     }
@@ -646,7 +564,7 @@ mod tests {
     #[test]
     pub fn test_decode_rc() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = Decoder::with_static_info(&bytes);
+        let mut dec = Decoder::<NoCustomTypeId>::new(&bytes);
         let x = <Rc<u8>>::decode(&mut dec).unwrap();
         assert_eq!(Rc::new(5u8), x);
     }
@@ -654,7 +572,7 @@ mod tests {
     #[test]
     pub fn test_decode_ref_cell() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = Decoder::with_static_info(&bytes);
+        let mut dec = Decoder::<NoCustomTypeId>::new(&bytes);
         let x = <RefCell<u8>>::decode(&mut dec).unwrap();
         assert_eq!(RefCell::new(5u8), x);
     }
@@ -680,10 +598,10 @@ mod tests {
 
         // Encode
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_static_info(&mut bytes);
+        let mut enc = Encoder::<NoCustomTypeId>::new(&mut bytes);
         value1.encode(&mut enc);
 
-        let mut dec = Decoder::with_static_info(&bytes);
+        let mut dec = Decoder::<NoCustomTypeId>::new(&bytes);
         let value2 = <[NFA; 2]>::decode(&mut dec).unwrap();
         assert_eq!(value1, value2);
     }

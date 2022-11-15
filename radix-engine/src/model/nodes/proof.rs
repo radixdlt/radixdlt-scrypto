@@ -12,7 +12,8 @@ use radix_engine_lib::resource::{
     ProofGetResourceAddressInvocation,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ProofError {
     /// Error produced by a resource container.
     ResourceOperationError(ResourceOperationError),

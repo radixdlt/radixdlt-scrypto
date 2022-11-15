@@ -14,16 +14,17 @@ use sbor::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
 use utils::math::Decimal;
+use crate::data::ScryptoCustomTypeId;
 
 pub trait SysBucket {
-    fn sys_new<Y, E: Debug + TypeId + Decode>(
+    fn sys_new<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
         receiver: ResourceAddress,
         sys_calls: &mut Y,
     ) -> Result<radix_engine_lib::resource::Bucket, E>
     where
         Y: SysNativeInvokable<ResourceManagerCreateBucketInvocation, E>;
 
-    fn sys_burn<Y, E: Debug + TypeId + Decode>(self, env: &mut Y) -> Result<(), E>
+    fn sys_burn<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(self, env: &mut Y) -> Result<(), E>
     where
         Y: SysNativeInvokable<ResourceManagerBurnInvocation, E>
             + SysNativeInvokable<BucketGetResourceAddressInvocation, E>;
@@ -31,9 +32,9 @@ pub trait SysBucket {
     fn sys_resource_address<Y, E>(&self, env: &mut Y) -> Result<ResourceAddress, E>
     where
         Y: SysNativeInvokable<BucketGetResourceAddressInvocation, E>,
-        E: Debug + TypeId + Decode;
+        E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>;
 
-    fn sys_create_proof<Y, E: Debug + TypeId + Decode>(
+    fn sys_create_proof<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
         &self,
         sys_calls: &mut Y,
     ) -> Result<radix_engine_lib::resource::Proof, E>
@@ -42,7 +43,7 @@ pub trait SysBucket {
 }
 
 impl SysBucket for radix_engine_lib::resource::Bucket {
-    fn sys_new<Y, E: Debug + TypeId + Decode>(
+    fn sys_new<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
         receiver: ResourceAddress,
         sys_calls: &mut Y,
     ) -> Result<radix_engine_lib::resource::Bucket, E>
@@ -52,7 +53,7 @@ impl SysBucket for radix_engine_lib::resource::Bucket {
         sys_calls.sys_invoke(ResourceManagerCreateBucketInvocation { receiver })
     }
 
-    fn sys_burn<Y, E: Debug + TypeId + Decode>(self, env: &mut Y) -> Result<(), E>
+    fn sys_burn<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(self, env: &mut Y) -> Result<(), E>
     where
         Y: SysNativeInvokable<ResourceManagerBurnInvocation, E>
             + SysNativeInvokable<BucketGetResourceAddressInvocation, E>,
@@ -67,12 +68,12 @@ impl SysBucket for radix_engine_lib::resource::Bucket {
     fn sys_resource_address<Y, E>(&self, env: &mut Y) -> Result<ResourceAddress, E>
     where
         Y: SysNativeInvokable<BucketGetResourceAddressInvocation, E>,
-        E: Debug + TypeId + Decode,
+        E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
     {
         env.sys_invoke(BucketGetResourceAddressInvocation { receiver: self.0 })
     }
 
-    fn sys_create_proof<Y, E: Debug + TypeId + Decode>(&self, sys_calls: &mut Y) -> Result<Proof, E>
+    fn sys_create_proof<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(&self, sys_calls: &mut Y) -> Result<Proof, E>
     where
         Y: SysNativeInvokable<BucketCreateProofInvocation, E>,
     {

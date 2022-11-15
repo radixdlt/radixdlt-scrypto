@@ -11,7 +11,8 @@ use crate::address::*;
 use crate::engine::{api::*, scrypto_env::*, types::*};
 use crate::resource::AccessRules;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentAddAccessCheckInvocation {
     pub receiver: ComponentId,
     pub access_rules: AccessRules,

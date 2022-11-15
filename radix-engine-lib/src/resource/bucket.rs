@@ -12,7 +12,8 @@ use crate::engine::{api::*, types::*};
 use crate::math::*;
 use crate::resource::*;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct BucketTakeInvocation {
     pub receiver: BucketId,
     pub amount: Decimal,
@@ -32,7 +33,8 @@ impl Into<NativeFnInvocation> for BucketTakeInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct BucketPutInvocation {
     pub receiver: BucketId,
     pub bucket: Bucket,
@@ -52,7 +54,8 @@ impl Into<NativeFnInvocation> for BucketPutInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct BucketTakeNonFungiblesInvocation {
     pub receiver: BucketId,
     pub ids: BTreeSet<NonFungibleId>,
@@ -72,7 +75,8 @@ impl Into<NativeFnInvocation> for BucketTakeNonFungiblesInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct BucketGetNonFungibleIdsInvocation {
     pub receiver: BucketId,
 }
@@ -91,7 +95,8 @@ impl Into<NativeFnInvocation> for BucketGetNonFungibleIdsInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct BucketGetAmountInvocation {
     pub receiver: BucketId,
 }
@@ -110,7 +115,8 @@ impl Into<NativeFnInvocation> for BucketGetAmountInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct BucketGetResourceAddressInvocation {
     pub receiver: BucketId,
 }
@@ -129,7 +135,8 @@ impl Into<NativeFnInvocation> for BucketGetResourceAddressInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct BucketCreateProofInvocation {
     pub receiver: BucketId,
 }

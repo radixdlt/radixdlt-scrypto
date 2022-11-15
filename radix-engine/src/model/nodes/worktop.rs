@@ -14,7 +14,8 @@ use radix_engine_lib::resource::{
     WorktopTakeAllInvocation, WorktopTakeAmountInvocation, WorktopTakeNonFungiblesInvocation,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum WorktopError {
     InvalidRequestData(DecodeError),
     MethodNotFound(String),

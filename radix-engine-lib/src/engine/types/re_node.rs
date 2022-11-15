@@ -2,14 +2,16 @@ use super::*;
 use crate::component::*;
 
 // TODO: Remove and replace with real HeapRENodes
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ScryptoRENode {
     GlobalComponent(ComponentId),
     Component(PackageAddress, String, Vec<u8>),
     KeyValueStore,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode, TypeId, Ord, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum RENodeId {
     Bucket(BucketId),
     Proof(ProofId),
@@ -26,8 +28,8 @@ pub enum RENodeId {
     EpochManager(EpochManagerId),
 }
 
-impl Into<(Hash, u32)> for RENodeId {
-    fn into(self) -> KeyValueStoreId {
+impl Into<[u8; 36]> for RENodeId {
+    fn into(self) -> [u8; 36] {
         match self {
             RENodeId::KeyValueStore(id) => id,
             RENodeId::NonFungibleStore(id) => id,
@@ -88,7 +90,8 @@ impl Into<SystemAddress> for RENodeId {
     }
 }
 
-#[derive(Debug, Clone, Copy, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum GlobalAddress {
     Component(ComponentAddress),
     Package(PackageAddress),
@@ -154,7 +157,8 @@ pub enum KeyValueStoreOffset {
     Entry(Vec<u8>),
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum NonFungibleStoreOffset {
     Entry(NonFungibleId),
 }
@@ -185,7 +189,8 @@ pub enum WorktopOffset {
 }
 
 /// Specifies a specific Substate into a given RENode
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum SubstateOffset {
     Global(GlobalOffset),
     AuthZone(AuthZoneOffset),
@@ -202,5 +207,6 @@ pub enum SubstateOffset {
 }
 
 /// TODO: separate space addresses?
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct SubstateId(pub RENodeId, pub SubstateOffset);

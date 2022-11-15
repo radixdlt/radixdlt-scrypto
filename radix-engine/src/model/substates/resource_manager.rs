@@ -13,7 +13,8 @@ use radix_engine_lib::resource::{
     ResourceManagerUpdateAuthInvocation, ResourceMethodAuthKey, ResourceType, LOCKED,
 };
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerSubstate {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
@@ -287,7 +288,8 @@ pub enum ResourceMethodRule {
     Protected(ResourceMethodAuthKey),
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct MethodAccessRule {
     pub auth: MethodAuthorization,
     pub update_auth: MethodAuthorization,

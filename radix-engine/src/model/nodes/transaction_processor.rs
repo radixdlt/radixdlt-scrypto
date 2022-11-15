@@ -19,13 +19,15 @@ use crate::model::resolve_native_method;
 use crate::model::{InvokeError, WorktopSubstate};
 use crate::types::*;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInvocation<'a> {
     pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
     pub instructions: Cow<'a, [Instruction]>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum TransactionProcessorError {
     TransactionEpochNotYetValid {
         valid_from: u64,
@@ -165,7 +167,7 @@ impl TransactionProcessor {
         }
 
         Ok(ScryptoValue::from_value(value)
-            .expect("Value became invalid post expression transformation"))
+            .expect("SborValue became invalid post expression transformation"))
     }
 
     fn perform_validation<'a, Y>(

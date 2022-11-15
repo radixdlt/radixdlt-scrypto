@@ -6,7 +6,8 @@ use radix_engine_lib::engine::types::{
     RENodeId, ResourceManagerOffset, SubstateOffset, VaultOffset,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum AuthError {
     Unauthorized {
         actor: REActor,

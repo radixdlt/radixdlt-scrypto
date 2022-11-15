@@ -214,7 +214,7 @@ impl<N: NativeInvocation> Resolver<N> for NativeResolver {
     }
 }
 
-pub trait NativeInvocation: NativeExecutable + Encode + Debug {
+pub trait NativeInvocation: NativeExecutable + Encode<ScryptoCustomTypeId> + Debug {
     fn info(&self) -> NativeInvocationInfo;
 }
 

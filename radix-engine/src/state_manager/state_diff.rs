@@ -3,7 +3,8 @@ use crate::state_manager::CommitReceipt;
 use crate::types::*;
 use radix_engine_lib::engine::types::SubstateId;
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct StateDiff {
     pub up_substates: BTreeMap<SubstateId, OutputValue>,
     pub down_substates: Vec<OutputId>,

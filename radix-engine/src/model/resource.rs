@@ -2,7 +2,8 @@ use crate::types::*;
 use radix_engine_lib::engine::types::{BucketId, VaultId};
 use radix_engine_lib::resource::ResourceType;
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceOperationError {
     /// Resource addresses do not match.
     ResourceAddressNotMatching,
@@ -19,7 +20,8 @@ pub enum ResourceOperationError {
 }
 
 /// A raw record of resource persisted in the substate store
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum Resource {
     Fungible {
         /// The resource address.
@@ -245,7 +247,8 @@ pub enum LockableResource {
 /// The locked amount or non-fungible IDs.
 ///
 /// Invariant: always consistent with resource fungibility.
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum LockedAmountOrIds {
     Amount(Decimal),
     Ids(BTreeSet<NonFungibleId>),

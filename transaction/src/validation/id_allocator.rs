@@ -47,6 +47,13 @@ impl IdAllocator {
         }
     }
 
+    fn next_id(&mut self, transaction_hash: Hash) -> Result<[u8; 36], IdAllocationError> {
+        let mut buf = [0u8; 36];
+        (&mut buf[0..32]).copy_from_slice(&transaction_hash.0);
+        (&mut buf[32..]).copy_from_slice(&self.next()?.to_le_bytes());
+        Ok(buf)
+    }
+
     /// Creates a new package ID.
     pub fn new_package_address(
         &mut self,
@@ -128,14 +135,14 @@ impl IdAllocator {
 
     /// Creates a new vault ID.
     pub fn new_vault_id(&mut self, transaction_hash: Hash) -> Result<VaultId, IdAllocationError> {
-        Ok((transaction_hash, self.next()?))
+        self.next_id(transaction_hash)
     }
 
     pub fn new_component_id(
         &mut self,
         transaction_hash: Hash,
     ) -> Result<ComponentId, IdAllocationError> {
-        Ok((transaction_hash, self.next()?))
+        self.next_id(transaction_hash)
     }
 
     /// Creates a new key value store ID.
@@ -143,7 +150,7 @@ impl IdAllocator {
         &mut self,
         transaction_hash: Hash,
     ) -> Result<KeyValueStoreId, IdAllocationError> {
-        Ok((transaction_hash, self.next()?))
+        self.next_id(transaction_hash)
     }
 
     /// Creates a new non-fungible store ID.
@@ -151,20 +158,20 @@ impl IdAllocator {
         &mut self,
         transaction_hash: Hash,
     ) -> Result<NonFungibleStoreId, IdAllocationError> {
-        Ok((transaction_hash, self.next()?))
+        self.next_id(transaction_hash)
     }
 
     pub fn new_resource_manager_id(
         &mut self,
         transaction_hash: Hash,
     ) -> Result<ResourceManagerId, IdAllocationError> {
-        Ok((transaction_hash, self.next()?))
+        self.next_id(transaction_hash)
     }
 
     pub fn new_package_id(
         &mut self,
         transaction_hash: Hash,
     ) -> Result<PackageId, IdAllocationError> {
-        Ok((transaction_hash, self.next()?))
+        self.next_id(transaction_hash)
     }
 }

@@ -9,7 +9,8 @@ use sbor::*;
 use utils::crypto::Blob;
 use utils::math::Decimal;
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum Instruction {
     /// Takes resource from worktop.
     TakeFromWorktop { resource_address: ResourceAddress },

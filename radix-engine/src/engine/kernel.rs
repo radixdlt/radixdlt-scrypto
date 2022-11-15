@@ -1518,7 +1518,7 @@ where
                     ));
                 }
                 // Check input against the ABI
-                if !fn_abi.input.matches(&args.dom) {
+                if !match_schema_with_value(&fn_abi.input, &args.dom) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
                             function_ident.clone(),
@@ -1640,7 +1640,7 @@ where
                 }
 
                 // Check input against the ABI
-                if !fn_abi.input.matches(&args.dom) {
+                if !match_schema_with_value(&fn_abi.input, &args.dom) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoMethodInvocation(
                             method_ident.clone(),

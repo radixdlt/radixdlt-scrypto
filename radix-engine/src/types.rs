@@ -60,10 +60,11 @@ pub use sbor::rust::string::String;
 pub use sbor::rust::string::ToString;
 pub use sbor::rust::vec;
 pub use sbor::rust::vec::Vec;
-pub use sbor::{Decode, DecodeError, Encode, Type, TypeId, Value};
-pub use scrypto::abi::{BlueprintAbi, Fn, ScryptoType};
+pub use sbor::{Decode, DecodeError, Encode, SborPath, SborPathBuf, SborTypeId, SborValue, TypeId};
+pub use scrypto::abi::{BlueprintAbi, Fields, Fn, Type, Variant};
 pub use scrypto::access_and_or;
 pub use scrypto::access_rule_node;
+
 pub use scrypto::constants::*;
 pub use scrypto::core::Expression;
 pub use scrypto::crypto::{
@@ -81,6 +82,7 @@ pub use scrypto::buffer::{scrypto_decode, scrypto_encode};
 pub use scrypto::crypto::hash;
 
 pub use scrypto::args;
+use scrypto::data::ScryptoValue;
 pub use utils::crypto::Blob;
 pub use utils::math::{Decimal, RoundingMode, I256};
 pub use utils::{dec, pdec};

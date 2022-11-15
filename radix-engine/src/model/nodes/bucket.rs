@@ -13,7 +13,8 @@ use radix_engine_lib::resource::{
     BucketTakeNonFungiblesInvocation,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum BucketError {
     InvalidDivisibility,
     InvalidRequestData(DecodeError),

@@ -6,13 +6,15 @@ use scrypto::crypto::*;
 
 use crate::model::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneParams {
     pub initial_proofs: Vec<NonFungibleAddress>,
     pub virtualizable_proofs_resource_addresses: BTreeSet<ResourceAddress>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ExecutionContext {
     pub transaction_hash: Hash,
     pub auth_zone_params: AuthZoneParams,
@@ -34,7 +36,8 @@ pub struct Executable<'a> {
     context: ExecutionContext,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct RuntimeValidationRequest {
     /// The validation to perform
     pub validation: RuntimeValidation,
@@ -43,7 +46,8 @@ pub struct RuntimeValidationRequest {
     pub skip_assertion: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum RuntimeValidation {
     /// To ensure we don't commit a duplicate intent hash
     IntentHashUniqueness { intent_hash: Hash },

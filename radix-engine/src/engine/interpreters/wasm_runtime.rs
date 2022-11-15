@@ -13,6 +13,7 @@ use radix_engine_lib::engine::scrypto_env::{
     ProofMethodInvocation, RadixEngineInput, ResourceManagerFunctionInvocation,
     ResourceManagerMethodInvocation, VaultMethodInvocation, WorktopMethodInvocation,
 };
+use scrypto::data::ScryptoCustomTypeId;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
 ///
@@ -306,8 +307,8 @@ where
     }
 }
 
-fn encode<T: Encode>(output: T) -> Vec<u8> {
-    scrypto_encode(&output)
+fn encode<T: Encode<ScryptoCustomTypeId>>(output: T) -> Vec<u8> {
+    scrypto_encode( & output)
 }
 
 impl<'y, 'a, Y> WasmRuntime for RadixEngineWasmRuntime<'y, 'a, Y>

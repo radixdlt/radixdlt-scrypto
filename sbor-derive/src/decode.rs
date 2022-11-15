@@ -15,34 +15,36 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_decode() starts");
 
     let DeriveInput {
+        attrs,
         ident,
         data,
         generics,
         ..
     } = parse2(input)?;
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-    trace!("Decoding: {}", ident);
+    let custom_type_id = custom_type_id(&attrs);
+    let (impl_generics, ty_generics, where_clause, sbor_cti) =
+        build_generics(&generics, custom_type_id)?;
 
     let output = match data {
         Data::Struct(s) => match s.fields {
             syn::Fields::Named(FieldsNamed { named, .. }) => {
                 // ns: not skipped, s: skipped
-                let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
+                let ns: Vec<&Field> = named.iter().filter(|f| !is_decoding_skipped(f)).collect();
                 let ns_len = Index::from(ns.len());
                 let ns_ids = ns.iter().map(|f| &f.ident);
                 let ns_types = ns.iter().map(|f| &f.ty);
-                let s: Vec<&Field> = named.iter().filter(|f| is_skipped(f)).collect();
+                let s: Vec<&Field> = named.iter().filter(|f| is_decoding_skipped(f)).collect();
                 let s_ids = s.iter().map(|f| &f.ident);
                 let s_types = s.iter().map(|f| &f.ty);
                 quote! {
-                    impl #impl_generics ::sbor::Decode for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Decode <#sbor_cti> for #ident #ty_generics #where_clause {
                         #[inline]
-                        fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                            decoder.check_type_id(::sbor::type_id::TYPE_STRUCT)
+                        fn check_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<(), ::sbor::DecodeError> {
+                            decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
                         }
-                        fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
+                        fn decode_value(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
-                            decoder.check_static_size(#ns_len)?;
+                            decoder.check_size(#ns_len)?;
                             Ok(Self {
                                 #(#ns_ids: <#ns_types>::decode(decoder)?,)*
                                 #(#s_ids: <#s_types>::default()),*
@@ -55,22 +57,23 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 let mut fields = Vec::<Expr>::new();
                 for f in &unnamed {
                     let ty = &f.ty;
-                    if is_skipped(f) {
+                    if is_decoding_skipped(f) {
                         fields.push(parse_quote! {<#ty>::default()})
                     } else {
                         fields.push(parse_quote! {<#ty>::decode(decoder)?})
                     }
                 }
-                let ns_len = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
+                let ns_len =
+                    Index::from(unnamed.iter().filter(|f| !is_decoding_skipped(f)).count());
                 quote! {
-                    impl #impl_generics ::sbor::Decode for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Decode <#sbor_cti> for #ident #ty_generics #where_clause {
                         #[inline]
-                        fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                            decoder.check_type_id(::sbor::type_id::TYPE_STRUCT)
+                        fn check_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<(), ::sbor::DecodeError> {
+                            decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
                         }
-                        fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
+                        fn decode_value(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
-                            decoder.check_static_size(#ns_len)?;
+                            decoder.check_size(#ns_len)?;
                             Ok(Self (
                                 #(#fields,)*
                             ))
@@ -80,13 +83,13 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl #impl_generics ::sbor::Decode for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Decode <#sbor_cti> for #ident #ty_generics #where_clause {
                         #[inline]
-                        fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                            decoder.check_type_id(::sbor::type_id::TYPE_STRUCT)
+                        fn check_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<(), ::sbor::DecodeError> {
+                            decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
                         }
-                        fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
-                            decoder.check_static_size(0)?;
+                        fn decode_value(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
+                            decoder.check_size(0)?;
                             Ok(Self {})
                         }
                     }
@@ -96,21 +99,23 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
         Data::Enum(DataEnum { variants, .. }) => {
             let match_arms = variants.iter().map(|v| {
                 let v_id = &v.ident;
-                let name_string = v_id.to_string();
-                let name: Expr = parse_quote! { #name_string };
+                let discriminator_string = v_id.to_string();
+                let discriminator: Expr = parse_quote! { #discriminator_string };
 
                 match &v.fields {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
-                        let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
+                        let ns: Vec<&Field> =
+                            named.iter().filter(|f| !is_decoding_skipped(f)).collect();
                         let ns_len = Index::from(ns.len());
                         let ns_ids = ns.iter().map(|f| &f.ident);
                         let ns_types = ns.iter().map(|f| &f.ty);
-                        let s: Vec<&Field> = named.iter().filter(|f| is_skipped(f)).collect();
+                        let s: Vec<&Field> =
+                            named.iter().filter(|f| is_decoding_skipped(f)).collect();
                         let s_ids = s.iter().map(|f| &f.ident);
                         let s_types = s.iter().map(|f| &f.ty);
                         quote! {
-                            #name => {
-                                decoder.check_static_size(#ns_len)?;
+                            #discriminator => {
+                                decoder.check_size(#ns_len)?;
                                 Ok(Self::#v_id {
                                     #(#ns_ids: <#ns_types>::decode(decoder)?,)*
                                     #(#s_ids: <#s_types>::default(),)*
@@ -122,16 +127,17 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         let mut fields = Vec::<Expr>::new();
                         for f in unnamed {
                             let ty = &f.ty;
-                            if is_skipped(f) {
+                            if is_decoding_skipped(f) {
                                 fields.push(parse_quote! {<#ty>::default()})
                             } else {
                                 fields.push(parse_quote! {<#ty>::decode(decoder)?})
                             }
                         }
-                        let ns_len = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
+                        let ns_len =
+                            Index::from(unnamed.iter().filter(|f| !is_decoding_skipped(f)).count());
                         quote! {
-                            #name => {
-                                decoder.check_static_size(#ns_len)?;
+                            #discriminator => {
+                                decoder.check_size(#ns_len)?;
                                 Ok(Self::#v_id (
                                     #(#fields),*
                                 ))
@@ -140,8 +146,8 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     }
                     syn::Fields::Unit => {
                         quote! {
-                            #name => {
-                                decoder.check_static_size(0)?;
+                            #discriminator => {
+                                decoder.check_size(0)?;
                                 Ok(Self::#v_id)
                             }
                         }
@@ -150,19 +156,19 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             });
 
             quote! {
-                impl #impl_generics ::sbor::Decode for #ident #ty_generics #where_clause {
+                impl #impl_generics ::sbor::Decode <#sbor_cti> for #ident #ty_generics #where_clause {
                     #[inline]
-                    fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                        decoder.check_type_id(::sbor::type_id::TYPE_ENUM)
+                    fn check_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<(), ::sbor::DecodeError> {
+                        decoder.check_type_id(::sbor::type_id::SborTypeId::Enum)
                     }
                     #[inline]
-                    fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
+                    fn decode_value(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
 
-                        let name = decoder.read_variant_label()?;
-                        match name.as_str() {
+                        let discriminator = decoder.read_discriminator()?;
+                        match discriminator.as_str() {
                             #(#match_arms,)*
-                            _ => Err(::sbor::DecodeError::InvalidVariantLabel(name))
+                            _ => Err(::sbor::DecodeError::UnknownDiscriminator(discriminator))
                         }
                     }
                 }
@@ -172,11 +178,11 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             return Err(Error::new(Span::call_site(), "Union is not supported!"));
         }
     };
-    trace!("handle_decode() finishes");
 
     #[cfg(feature = "trace")]
     crate::utils::print_generated_code("Decode", &output);
 
+    trace!("handle_decode() finishes");
     Ok(output)
 }
 
@@ -199,14 +205,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::Decode for Test {
+                impl <CTI: ::sbor::type_id::CustomTypeId> ::sbor::Decode<CTI> for Test {
                     #[inline]
-                    fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                        decoder.check_type_id(::sbor::type_id::TYPE_STRUCT)
+                    fn check_type_id(decoder: &mut ::sbor::Decoder<CTI>) -> Result<(), ::sbor::DecodeError> {
+                        decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
                     }
-                    fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
+                    fn decode_value(decoder: &mut ::sbor::Decoder<CTI>) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-                        decoder.check_static_size(1)?;
+                        decoder.check_size(1)?;
                         Ok(Self {
                             a: <u32>::decode(decoder)?,
                         })
@@ -224,14 +230,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <'a> ::sbor::Decode for Test<'a> {
+                impl <'a, CTI: ::sbor::type_id::CustomTypeId> ::sbor::Decode<CTI> for Test<'a> {
                     #[inline]
-                    fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                        decoder.check_type_id(::sbor::type_id::TYPE_STRUCT)
+                    fn check_type_id(decoder: &mut ::sbor::Decoder<CTI>) -> Result<(), ::sbor::DecodeError> {
+                        decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
                     }
-                    fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
+                    fn decode_value(decoder: &mut ::sbor::Decoder<CTI>) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-                        decoder.check_static_size(1)?;
+                        decoder.check_size(1)?;
                         Ok(Self {
                             a: <&'a u32>::decode(decoder)?,
                         })
@@ -249,32 +255,57 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::Decode for Test {
+                impl <CTI: ::sbor::type_id::CustomTypeId> ::sbor::Decode<CTI> for Test {
                     #[inline]
-                    fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                        decoder.check_type_id(::sbor::type_id::TYPE_ENUM)
+                    fn check_type_id(decoder: &mut ::sbor::Decoder<CTI>) -> Result<(), ::sbor::DecodeError> {
+                        decoder.check_type_id(::sbor::type_id::SborTypeId::Enum)
                     }
                     #[inline]
-                    fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
+                    fn decode_value(decoder: &mut ::sbor::Decoder<CTI>) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-                        let name = decoder.read_variant_label()?;
-                        match name.as_str() {
+                        let discriminator = decoder.read_discriminator()?;
+                        match discriminator.as_str() {
                             "A" => {
-                                decoder.check_static_size(0)?;
+                                decoder.check_size(0)?;
                                 Ok(Self::A)
                             },
                             "B" => {
-                                decoder.check_static_size(1)?;
+                                decoder.check_size(1)?;
                                 Ok(Self::B(<u32>::decode(decoder)?))
                             },
                             "C" => {
-                                decoder.check_static_size(1)?;
+                                decoder.check_size(1)?;
                                 Ok(Self::C {
                                     x: <u8>::decode(decoder)?,
                                 })
                             },
-                            _ => Err(::sbor::DecodeError::InvalidVariantLabel(name))
+                            _ => Err(::sbor::DecodeError::UnknownDiscriminator(discriminator))
                         }
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_skip() {
+        let input = TokenStream::from_str("struct Test {#[sbor(skip)] a: u32}").unwrap();
+        let output = handle_decode(input).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                impl <CTI: ::sbor::type_id::CustomTypeId> ::sbor::Decode<CTI> for Test {
+                    #[inline]
+                    fn check_type_id(decoder: &mut ::sbor::Decoder<CTI>) -> Result<(), ::sbor::DecodeError> {
+                        decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
+                    }
+                    fn decode_value(decoder: &mut ::sbor::Decoder<CTI>) -> Result<Self, ::sbor::DecodeError> {
+                        use ::sbor::{self, Decode};
+                        decoder.check_size(0)?;
+                        Ok(Self {
+                            a: <u32>::default()
+                        })
                     }
                 }
             },

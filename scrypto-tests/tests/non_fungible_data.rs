@@ -1,6 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sbor::describe::*;
 use scrypto::prelude::*;
 
 #[derive(NonFungibleData, Debug, Eq, PartialEq)]

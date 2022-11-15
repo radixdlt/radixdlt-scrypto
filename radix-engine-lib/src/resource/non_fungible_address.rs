@@ -7,6 +7,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::resource::*;
+use crate::scrypto_type;
 
 /// Identifier for a non-fungible unit.
 #[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
@@ -23,7 +24,7 @@ pub struct NonFungibleAddress {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleAddressError {
     InvalidLength(usize),
-    InvalidResourceDefId,
+    InvalidResourceAddress,
     InvalidNonFungibleId,
     InvalidHex(String),
     InvalidPrefix,
@@ -53,7 +54,7 @@ impl TryFrom<&[u8]> for NonFungibleAddress {
 
         let (resource_address_slice, non_fungible_id_slice) = slice.split_at(27);
         let resource_address = ResourceAddress::try_from(resource_address_slice)
-            .map_err(|_| ParseNonFungibleAddressError::InvalidResourceDefId)?;
+            .map_err(|_| ParseNonFungibleAddressError::InvalidResourceAddress)?;
         let non_fungible_id = NonFungibleId::try_from(non_fungible_id_slice)
             .map_err(|_| ParseNonFungibleAddressError::InvalidNonFungibleId)?;
         Ok(NonFungibleAddress {
@@ -91,8 +92,8 @@ impl NonFungibleAddress {
 
 scrypto_type!(
     NonFungibleAddress,
-    ScryptoType::NonFungibleAddress,
-    Vec::new()
+    ScryptoCustomTypeId::NonFungibleAddress,
+    Type::NonFungibleAddress
 );
 
 //======
@@ -130,7 +131,8 @@ impl fmt::Debug for NonFungibleAddress {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{address::Bech32Decoder, sbor::rust::string::ToString};
+    use crate::address::Bech32Decoder;
+    use sbor::rust::string::ToString;
 
     #[test]
     pub fn non_fungible_address_from_and_to_string_succeeds() {
@@ -140,7 +142,7 @@ mod tests {
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p",
             )
             .expect("Resource address from str failed.");
-        let non_fungible_id = NonFungibleId(
+        let non_fungible_id = NonFungibleId::from_bytes(
             hex::decode("30071000000071dba5dd36e30de857049805fd1553cd")
                 .expect("Invalid NonFungibleId hex"),
         );

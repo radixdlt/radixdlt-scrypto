@@ -12,7 +12,8 @@ use crate::resource::ResourceAddress;
 
 use crate::math::Decimal;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZonePopInvocation {
     pub receiver: AuthZoneId,
 }
@@ -31,7 +32,8 @@ impl Into<NativeFnInvocation> for AuthZonePopInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZonePushInvocation {
     pub receiver: AuthZoneId,
     pub proof: Proof,
@@ -51,7 +53,8 @@ impl Into<NativeFnInvocation> for AuthZonePushInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofInvocation {
     pub receiver: AuthZoneId,
     pub resource_address: ResourceAddress,
@@ -71,7 +74,8 @@ impl Into<NativeFnInvocation> for AuthZoneCreateProofInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByAmountInvocation {
     pub receiver: AuthZoneId,
     pub amount: Decimal,
@@ -92,7 +96,8 @@ impl Into<NativeFnInvocation> for AuthZoneCreateProofByAmountInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByIdsInvocation {
     pub receiver: AuthZoneId,
     pub ids: BTreeSet<NonFungibleId>,
@@ -113,7 +118,8 @@ impl Into<NativeFnInvocation> for AuthZoneCreateProofByIdsInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneClearInvocation {
     pub receiver: AuthZoneId,
 }
@@ -132,7 +138,8 @@ impl Into<NativeFnInvocation> for AuthZoneClearInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneDrainInvocation {
     pub receiver: AuthZoneId,
 }

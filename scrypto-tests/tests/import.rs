@@ -5,8 +5,8 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::component::*;
-use scrypto::prelude::ComponentAddress;
 use scrypto::{blueprint, import};
+use scrypto::prelude::*;
 
 // base directory: `scrypto-derive`
 import! {
@@ -38,183 +38,6 @@ import! {
                     "type": "U32"
                 },
                 "export_name": "Simple_stateless_func_main"
-            },
-            {
-                "ident": "test_custom_types",
-                "input": {
-                    "type": "Struct",
-                    "name": "",
-                    "fields": {
-                        "type": "Named",
-                        "named": [
-                            [
-                                "arg0",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 128,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg1",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 129,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg2",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 130,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg3",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 144,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg4",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 145,
-                                    "generics": [
-                                        {
-                                            "type": "String"
-                                        },
-                                        {
-                                            "type": "String"
-                                        }
-                                    ]
-                                }
-                            ],
-                            [
-                                "arg5",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 146,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg6",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 147,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg7",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 148,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg8",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 160,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg9",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 161,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg10",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 162,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg11",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 176,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg12",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 177,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg13",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 178,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg14",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 179,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg16",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 180,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg17",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 181,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg18",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 182,
-                                    "generics": []
-                                }
-                            ],
-                            [
-                                "arg19",
-                                {
-                                    "type": "Custom",
-                                    "type_id": 183,
-                                    "generics": []
-                                }
-                            ]
-                        ]
-                    }
-                },
-                "output": {
-                    "type": "Custom",
-                    "type_id": 128,
-                    "generics": []
-                },
-                "export_name": "Simple_test_custom_types_main"
             },
             {
                 "ident": "calculate_volume",
@@ -253,7 +76,7 @@ import! {
                                 "arg1",
                                 {
                                     "type": "Tuple",
-                                    "elements": [
+                                    "element_types": [
                                         {
                                             "type": "U8"
                                         },
@@ -267,7 +90,7 @@ import! {
                                 "arg2",
                                 {
                                     "type": "Vec",
-                                    "element": {
+                                    "element_type": {
                                         "type": "String"
                                     }
                                 }
@@ -322,7 +145,7 @@ import! {
                                 "arg5",
                                 {
                                     "type": "Array",
-                                    "element": {
+                                    "element_type": {
                                         "type": "String"
                                     },
                                     "length": 2

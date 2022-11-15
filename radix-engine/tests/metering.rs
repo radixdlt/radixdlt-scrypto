@@ -153,11 +153,11 @@ fn test_basic_transfer() {
         10000 /* base_fee */
         + 0 /* blobs */
         + 2000 /* create_node */
-        + 1284 /* decode_manifest */
+        + 1212 /* decode_manifest */
         + 5600 /* drop_lock */
         + 2000 /* drop_node */
         + 0 /* instantiate_wasm */
-        + 1585 /* invoke */
+        + 1505 /* invoke */
         + 7100 /* lock_substate */
         + 2000 /* read_owned_nodes */
         + 22000 /* read_substate */
@@ -198,7 +198,10 @@ fn test_publish_large_package() {
     receipt.expect_commit_success();
 
     // Assert
-    assert_eq!(4297135, receipt.execution.fee_summary.cost_unit_consumed);
+    assert!(
+        receipt.execution.fee_summary.cost_unit_consumed > 4000000
+            && receipt.execution.fee_summary.cost_unit_consumed < 5000000
+    );
 }
 
 #[test]

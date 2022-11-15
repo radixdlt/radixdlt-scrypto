@@ -1,5 +1,5 @@
 use radix_engine_lib::component::PackageAddress;
-use radix_engine_lib::component::{ComponentAddAccessCheckInvocation, ComponentAddress};
+use radix_engine_lib::component::{ComponentAddAccessCheckInvocation};
 use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
 use radix_engine_lib::engine::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoRENode,
@@ -15,6 +15,8 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
+use scrypto::data::ScryptoCustomTypeId;
+use scrypto::scrypto_type;
 use utils::misc::copy_u8_array;
 
 use crate::abi::*;
@@ -23,7 +25,9 @@ use crate::crypto::Hash;
 use crate::engine::scrypto_env::ScryptoEnv;
 
 /// Represents the state of a component.
-pub trait ComponentState<C: LocalComponent>: Encode + Decode {
+pub trait ComponentState<C: LocalComponent>:
+    Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>
+{
     /// Instantiates a component from this data structure.
     fn instantiate(self) -> C;
 }
@@ -40,7 +44,8 @@ pub trait LocalComponent {
 pub struct Component(pub ComponentId);
 
 // TODO: de-duplication
-#[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub struct ComponentInfoSubstate {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
@@ -54,7 +59,8 @@ pub struct ComponentStateSubstate {
 }
 
 impl Component {
-    pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
+    /// Invokes a method on this component.
+    pub fn call<T: Decode<ScryptoCustomTypeId>>(&self, method: &str, args: Vec<u8>) -> T {
         let mut sys_calls = ScryptoEnv;
         let rtn = sys_calls
             .sys_invoke_scrypto_method(
@@ -93,7 +99,7 @@ impl Component {
             .unwrap()
     }
 
-    pub fn sys_add_access_check<Y, E: Debug + Decode>(
+    pub fn sys_add_access_check<Y, E: Debug + Decode<ScryptoCustomTypeId>>(
         &mut self,
         access_rules: AccessRules,
         sys_calls: &mut Y,
@@ -113,7 +119,7 @@ impl Component {
         self.sys_globalize(&mut ScryptoEnv).unwrap()
     }
 
-    pub fn sys_globalize<Y, E: Debug + Decode>(
+    pub fn sys_globalize<Y, E: Debug + Decode<ScryptoCustomTypeId>>(
         self,
         sys_calls: &mut Y,
     ) -> Result<ComponentAddress, E>
@@ -131,7 +137,7 @@ pub struct BorrowedGlobalComponent(pub ComponentAddress);
 
 impl BorrowedGlobalComponent {
     /// Invokes a method on this component.
-    pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
+    pub fn call<T: Decode<ScryptoCustomTypeId>>(&self, method: &str, args: Vec<u8>) -> T {
         let mut syscalls = ScryptoEnv;
         let raw = syscalls
             .sys_invoke_scrypto_method(
@@ -182,10 +188,7 @@ impl TryFrom<&[u8]> for Component {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            36 => Ok(Self((
-                Hash(copy_u8_array(&slice[0..32])),
-                u32::from_le_bytes(copy_u8_array(&slice[32..])),
-            ))),
+            36 => Ok(Self(copy_u8_array(slice))),
             _ => Err(ParseComponentError::InvalidLength(slice.len())),
         }
     }
@@ -193,13 +196,16 @@ impl TryFrom<&[u8]> for Component {
 
 impl Component {
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut v = self.0 .0.to_vec();
-        v.extend(self.0 .1.to_le_bytes());
-        v
+        self.0.to_vec()
     }
 }
 
-scrypto_type!(Component, ScryptoType::Component, Vec::new());
+scrypto_type!(
+    Component,
+    ScryptoCustomTypeId::Component,
+    Type::Component,
+    36
+);
 
 //======
 // text

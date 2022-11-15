@@ -2,7 +2,8 @@ use crate::model::Resource;
 use crate::types::*;
 use radix_engine_lib::engine::types::VaultId;
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct FeeSummary {
     /// Whether the system loan is fully repaid
     pub loan_fully_repaid: bool,

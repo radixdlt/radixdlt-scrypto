@@ -610,15 +610,15 @@ mod tests {
         blueprint_abis.insert(
             "Test".to_string(),
             BlueprintAbi {
-                structure: sbor::Type::Unit,
+                structure: scrypto::abi::Type::Unit,
                 fns: vec![abi::Fn {
                     ident: "f".to_string(),
                     mutability: Option::None,
-                    input: sbor::Type::Struct {
+                    input: scrypto::abi::Type::Struct {
                         name: "Any".to_string(),
-                        fields: sbor::describe::Fields::Named { named: vec![] },
+                        fields: scrypto::abi::Fields::Named { named: vec![] },
                     },
-                    output: sbor::Type::Unit,
+                    output: scrypto::abi::Type::Unit,
                     export_name: "Test_f".to_string(),
                 }],
             },

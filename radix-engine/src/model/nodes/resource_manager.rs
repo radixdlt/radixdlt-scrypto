@@ -29,7 +29,8 @@ use radix_engine_lib::resource::{
 use scrypto::resource::SysBucket;
 
 /// Represents an error when accessing a bucket.
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerError {
     InvalidDivisibility,
     InvalidAmount(Decimal, u8),
