@@ -14,11 +14,11 @@ use crate::type_id::*;
 /// A data structure that can be serialized into a byte array using SBOR.
 pub trait Encode<X: CustomTypeId> {
     fn encode(&self, encoder: &mut Encoder<X>) {
-        Self::encode_type_id(encoder);
+        self.encode_type_id(encoder);
         self.encode_value(encoder);
     }
 
-    fn encode_type_id(encoder: &mut Encoder<X>);
+    fn encode_type_id(&self, encoder: &mut Encoder<X>);
 
     fn encode_value(&self, encoder: &mut Encoder<X>);
 }
@@ -61,7 +61,7 @@ impl<'a, X: CustomTypeId> Encoder<'a, X> {
 
 impl<X: CustomTypeId> Encode<X> for () {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -72,7 +72,7 @@ impl<X: CustomTypeId> Encode<X> for () {
 
 impl<X: CustomTypeId> Encode<X> for bool {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -83,7 +83,7 @@ impl<X: CustomTypeId> Encode<X> for bool {
 
 impl<X: CustomTypeId> Encode<X> for i8 {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -94,7 +94,7 @@ impl<X: CustomTypeId> Encode<X> for i8 {
 
 impl<X: CustomTypeId> Encode<X> for u8 {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -107,7 +107,7 @@ macro_rules! encode_int {
     ($type:ident, $type_id:ident) => {
         impl<X: CustomTypeId> Encode<X> for $type {
             #[inline]
-            fn encode_type_id(encoder: &mut Encoder<X>) {
+            fn encode_type_id(&self, encoder: &mut Encoder<X>) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
@@ -129,7 +129,7 @@ encode_int!(u128, TYPE_U128);
 
 impl<X: CustomTypeId> Encode<X> for isize {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -140,7 +140,7 @@ impl<X: CustomTypeId> Encode<X> for isize {
 
 impl<X: CustomTypeId> Encode<X> for usize {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -151,7 +151,7 @@ impl<X: CustomTypeId> Encode<X> for usize {
 
 impl<X: CustomTypeId> Encode<X> for str {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -163,7 +163,7 @@ impl<X: CustomTypeId> Encode<X> for str {
 
 impl<X: CustomTypeId> Encode<X> for &str {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -175,7 +175,7 @@ impl<X: CustomTypeId> Encode<X> for &str {
 
 impl<X: CustomTypeId> Encode<X> for String {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -184,10 +184,12 @@ impl<X: CustomTypeId> Encode<X> for String {
     }
 }
 
-impl<'a, X: CustomTypeId, B: ?Sized + 'a + ToOwned + Encode<X>> Encode<X> for Cow<'a, B> {
+impl<'a, X: CustomTypeId, B: ?Sized + 'a + ToOwned + Encode<X> + TypeId<X>> Encode<X>
+    for Cow<'a, B>
+{
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
-        B::encode_type_id(encoder)
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
+        encoder.write_type_id(B::type_id())
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder<X>) {
@@ -195,10 +197,10 @@ impl<'a, X: CustomTypeId, B: ?Sized + 'a + ToOwned + Encode<X>> Encode<X> for Co
     }
 }
 
-impl<X: CustomTypeId, T: Encode<X>> Encode<X> for Box<T> {
+impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for Box<T> {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
-        T::encode_type_id(encoder)
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
+        encoder.write_type_id(T::type_id())
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder<X>) {
@@ -206,10 +208,10 @@ impl<X: CustomTypeId, T: Encode<X>> Encode<X> for Box<T> {
     }
 }
 
-impl<X: CustomTypeId, T: Encode<X>> Encode<X> for RefCell<T> {
+impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for RefCell<T> {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
-        T::encode_type_id(encoder)
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
+        encoder.write_type_id(T::type_id())
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder<X>) {
@@ -219,7 +221,7 @@ impl<X: CustomTypeId, T: Encode<X>> Encode<X> for RefCell<T> {
 
 impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for [T] {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -243,7 +245,7 @@ impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for [T] {
 
 impl<X: CustomTypeId, T: Encode<X> + TypeId<X>, const N: usize> Encode<X> for [T; N] {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -256,7 +258,7 @@ macro_rules! encode_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {
         impl<X: CustomTypeId, $($name: Encode<X>),+> Encode<X> for ($($name,)+) {
             #[inline]
-            fn encode_type_id(encoder: &mut Encoder<X>) {
+            fn encode_type_id(&self, encoder: &mut Encoder<X>) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
@@ -281,7 +283,7 @@ encode_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 
 impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for Option<T> {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -302,7 +304,7 @@ impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for Option<T> {
 
 impl<X: CustomTypeId, T: Encode<X>, E: Encode<X>> Encode<X> for Result<T, E> {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -324,7 +326,7 @@ impl<X: CustomTypeId, T: Encode<X>, E: Encode<X>> Encode<X> for Result<T, E> {
 
 impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for Vec<T> {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -335,7 +337,7 @@ impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for Vec<T> {
 
 impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for BTreeSet<T> {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -350,7 +352,7 @@ impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for BTreeSet<T> {
 
 impl<X: CustomTypeId, T: Encode<X> + TypeId<X> + Ord + Hash> Encode<X> for HashSet<T> {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -367,7 +369,7 @@ impl<X: CustomTypeId, K: Encode<X> + TypeId<X>, V: Encode<X> + TypeId<X>> Encode
     for BTreeMap<K, V>
 {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
@@ -386,7 +388,7 @@ impl<X: CustomTypeId, K: Encode<X> + TypeId<X> + Ord + Hash, V: Encode<X> + Type
     for HashMap<K, V>
 {
     #[inline]
-    fn encode_type_id(encoder: &mut Encoder<X>) {
+    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]

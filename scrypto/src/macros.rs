@@ -1,6 +1,3 @@
-use crate::data::*;
-use sbor::TypeId;
-
 /// Creates a `Decimal` from literals.
 ///
 /// # Example
@@ -100,11 +97,6 @@ macro_rules! count {
     ($a:expr, $($rest:expr),*) => {1usize + ::scrypto::count!($($rest),*)};
 }
 
-// TODO: remove after `&self` parameter is added `Encode::encode_type_id()`.
-pub fn get_type_id<T: TypeId<ScryptoCustomTypeId>>(_v: &T) -> ScryptoTypeId {
-    T::type_id()
-}
-
 /// Constructs argument list for Scrypto function/method invocation.
 ///
 /// # Example
@@ -124,7 +116,7 @@ macro_rules! args {
         encoder.write_size(::scrypto::count!($(stringify!($args)),*));
         $(
             let arg = $args;
-            encoder.write_type_id(::scrypto::get_type_id(&arg));
+            arg.encode_type_id(&mut encoder);
             arg.encode_value(&mut encoder);
         )*
         buf
@@ -617,7 +609,7 @@ macro_rules! scrypto_type {
 
         impl Encode<::scrypto::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn encode_type_id(encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
+            fn encode_type_id(&self, encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
@@ -659,7 +651,7 @@ macro_rules! scrypto_type {
 
         impl Encode<::scrypto::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn encode_type_id(encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
+            fn encode_type_id(&self, encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]

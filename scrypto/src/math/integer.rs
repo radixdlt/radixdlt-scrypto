@@ -293,7 +293,7 @@ macro_rules! sbor_codec {
 
         impl<X: CustomTypeId> Encode<X> for $t {
             #[inline]
-            fn encode_type_id(encoder: &mut Encoder<X>) {
+            fn encode_type_id(&self, encoder: &mut Encoder<X>) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]

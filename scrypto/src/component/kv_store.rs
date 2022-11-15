@@ -177,7 +177,7 @@ impl<
     > Encode<ScryptoCustomTypeId> for KeyValueStore<K, V>
 {
     #[inline]
-    fn encode_type_id(encoder: &mut ScryptoEncoder) {
+    fn encode_type_id(&self, encoder: &mut ScryptoEncoder) {
         encoder.write_type_id(Self::type_id());
     }
 
