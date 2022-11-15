@@ -1,3 +1,5 @@
+use radix_engine_lib::engine::types::BucketId;
+use radix_engine_lib::resource::ResourceType;
 use crate::model::{
     LockableResource, ProofError, ProofSubstate, Resource, ResourceContainerId,
     ResourceOperationError,

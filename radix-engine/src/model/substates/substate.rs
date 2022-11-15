@@ -1,3 +1,4 @@
+use radix_engine_lib::engine::types::{ComponentOffset, GlobalAddress, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateOffset};
 use crate::engine::{KernelError, RuntimeError};
 use crate::model::substates::worktop::WorktopSubstate;
 use crate::model::*;

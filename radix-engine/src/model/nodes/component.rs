@@ -1,3 +1,5 @@
+use radix_engine_lib::component::ComponentAddAccessCheckInvocation;
+use radix_engine_lib::engine::types::{ComponentMethod, ComponentOffset, GlobalAddress, NativeMethod, PackageOffset, RENodeId, SubstateOffset};
 use crate::engine::{
     ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, RuntimeError, SystemApi,

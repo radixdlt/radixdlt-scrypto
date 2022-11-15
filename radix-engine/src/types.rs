@@ -16,9 +16,6 @@ pub use sbor::rust::vec::Vec;
 pub use sbor::{Decode, DecodeError, Encode, Type, TypeId, Value};
 pub use scrypto::abi::{BlueprintAbi, Fn, ScryptoType};
 pub use radix_engine_lib::address::{AddressError, Bech32Decoder, Bech32Encoder};
-pub use scrypto::component::{
-    ComponentAddAccessCheckInvocation, PackagePublishInvocation,
-};
 pub use radix_engine_lib::component::ComponentAddress;
 pub use radix_engine_lib::component::PackageAddress;
 pub use radix_engine_lib::component::SystemAddress;
@@ -34,17 +31,18 @@ pub use radix_engine_lib::resource::{
     require, require_all_of, require_amount, require_any_of, require_n_of,
 };
 pub use scrypto::constants::*;
-pub use scrypto::core::{
+pub use radix_engine_lib::component::{
     EpochManagerCreateInvocation, EpochManagerGetCurrentEpochInvocation,
-    EpochManagerSetEpochInvocation, Expression,
+    EpochManagerSetEpochInvocation,
 };
+pub use scrypto::core::Expression;
 pub use scrypto::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
     Hash, PublicKey, Signature,
 };
-pub use scrypto::engine::{scrypto_env::RadixEngineInput, types::*};
 pub use scrypto::math::{Decimal, RoundingMode, I256};
-pub use scrypto::resource::{
+pub use radix_engine_lib::engine::{scrypto_env::RadixEngineInput, types::*};
+pub use radix_engine_lib::resource::{
     AuthZoneClearInvocation,
     AuthZoneCreateProofByAmountInvocation, AuthZoneCreateProofByIdsInvocation,
     AuthZoneCreateProofInvocation, AuthZonePopInvocation, AuthZonePushInvocation,
@@ -71,6 +69,7 @@ pub use scrypto::resource::{
 };
 pub use scrypto::values::{ScryptoValue, ScryptoValueReplaceError};
 use std::fmt::Debug;
+use radix_engine_lib::engine::types::{NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent};
 pub use utils::crypto::Blob;
 
 // methods and macros

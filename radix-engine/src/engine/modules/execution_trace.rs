@@ -1,3 +1,5 @@
+use radix_engine_lib::engine::types::{BucketOffset, ComponentId, NativeMethod, RENodeId, SubstateId, SubstateOffset, VaultId, VaultMethod, VaultOffset};
+use radix_engine_lib::resource::{VaultPutInvocation, VaultTakeInvocation};
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;

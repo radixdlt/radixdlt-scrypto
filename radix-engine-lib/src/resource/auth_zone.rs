@@ -4,10 +4,13 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::engine::scrypto_env::*;
-use crate::engine::{api::*, types::*};
+use crate::resource::Proof;
+use crate::resource::ResourceAddress;
+use crate::resource::NonFungibleId;
+use crate::engine::{api::*};
+use crate::engine::types::AuthZoneId;
 
 use crate::math::Decimal;
-use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZonePopInvocation {

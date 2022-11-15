@@ -1,3 +1,4 @@
+use radix_engine_lib::engine::types::{NativeFunction, NativeMethod, PackageId, RENodeId, TransactionProcessorFunction};
 use crate::types::*;
 
 /// Resolved receiver including info whether receiver was derefed

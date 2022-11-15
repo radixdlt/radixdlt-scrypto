@@ -1,3 +1,4 @@
+use radix_engine_lib::engine::types::VaultId;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;

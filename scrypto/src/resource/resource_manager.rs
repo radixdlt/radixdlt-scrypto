@@ -3,14 +3,9 @@ use radix_engine_lib::engine::scrypto_env::ScryptoEnv;
 use radix_engine_lib::resource::{AccessRule, MintParams, NonFungibleId, ResourceAddress, ResourceManagerBurnInvocation, ResourceManagerGetMetadataInvocation, ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation, ResourceManagerGetTotalSupplyInvocation, ResourceManagerLockAuthInvocation, ResourceManagerMintInvocation, ResourceManagerNonFungibleExistsInvocation, ResourceManagerUpdateAuthInvocation, ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation, ResourceMethodAuthKey, ResourceType};
 use radix_engine_lib::scrypto_env_native_fn;
 use sbor::rust::collections::HashMap;
-use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::*;
-use utils::misc::copy_u8_array;
-use utils::misc::ContextualDisplay;
 
-use crate::abi::*;
 use crate::math::*;
 use crate::resource::*;
 

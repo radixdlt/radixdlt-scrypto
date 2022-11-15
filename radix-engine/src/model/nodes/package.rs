@@ -1,4 +1,6 @@
 use core::fmt::Debug;
+use radix_engine_lib::component::PackagePublishInvocation;
+use radix_engine_lib::engine::types::{NativeFunction, PackageFunction, PackageId};
 
 use crate::engine::*;
 use crate::model::{GlobalAddressSubstate, PackageSubstate};

@@ -1,4 +1,4 @@
-use radix_engine_lib::component::{ComponentAddress, EpochManagerGetCurrentEpochInvocation, SystemAddress};
+use radix_engine_lib::component::{ComponentAddress, EpochManagerGetCurrentEpochInvocation};
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::engine::actor::ScryptoActor;
 use radix_engine_lib::engine::api::{Syscalls, SysNativeInvokable};
@@ -12,8 +12,6 @@ use sbor::*;
 use scrypto::constants::EPOCH_MANAGER;
 
 use crate::buffer::scrypto_decode;
-use crate::component::*;
-use crate::core::*;
 use crate::crypto::*;
 
 /// The transaction runtime.

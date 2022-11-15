@@ -1,3 +1,5 @@
+use radix_engine_lib::engine::types::{GlobalAddress, NativeMethod, RENodeId, SubstateOffset, VaultMethod, VaultOffset};
+use radix_engine_lib::resource::{VaultCreateProofByAmountInvocation, VaultCreateProofByIdsInvocation, VaultCreateProofInvocation, VaultGetAmountInvocation, VaultGetNonFungibleIdsInvocation, VaultGetResourceAddressInvocation, VaultLockFeeInvocation, VaultPutInvocation, VaultTakeInvocation, VaultTakeNonFungiblesInvocation};
 use crate::engine::{
     ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
@@ -22,12 +24,12 @@ pub enum VaultError {
 }
 
 impl NativeExecutable for VaultTakeInvocation {
-    type NativeOutput = scrypto::resource::Bucket;
+    type NativeOutput = radix_engine_lib::resource::Bucket;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -51,7 +53,7 @@ impl NativeExecutable for VaultTakeInvocation {
             .into();
 
         Ok((
-            scrypto::resource::Bucket(bucket_id),
+            radix_engine_lib::resource::Bucket(bucket_id),
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }
@@ -172,12 +174,12 @@ impl NativeInvocation for VaultLockFeeInvocation {
 }
 
 impl NativeExecutable for VaultTakeNonFungiblesInvocation {
-    type NativeOutput = scrypto::resource::Bucket;
+    type NativeOutput = radix_engine_lib::resource::Bucket;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -203,7 +205,7 @@ impl NativeExecutable for VaultTakeNonFungiblesInvocation {
             .into();
 
         Ok((
-            scrypto::resource::Bucket(bucket_id),
+            radix_engine_lib::resource::Bucket(bucket_id),
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }
@@ -323,12 +325,12 @@ impl NativeInvocation for VaultGetNonFungibleIdsInvocation {
 }
 
 impl NativeExecutable for VaultCreateProofInvocation {
-    type NativeOutput = scrypto::resource::Proof;
+    type NativeOutput = radix_engine_lib::resource::Proof;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -350,7 +352,7 @@ impl NativeExecutable for VaultCreateProofInvocation {
         let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
 
         Ok((
-            scrypto::resource::Proof(proof_id),
+            radix_engine_lib::resource::Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
         ))
     }
@@ -367,12 +369,12 @@ impl NativeInvocation for VaultCreateProofInvocation {
 }
 
 impl NativeExecutable for VaultCreateProofByAmountInvocation {
-    type NativeOutput = scrypto::resource::Proof;
+    type NativeOutput = radix_engine_lib::resource::Proof;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -395,7 +397,7 @@ impl NativeExecutable for VaultCreateProofByAmountInvocation {
         let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
 
         Ok((
-            scrypto::resource::Proof(proof_id),
+            radix_engine_lib::resource::Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
         ))
     }
@@ -412,12 +414,12 @@ impl NativeInvocation for VaultCreateProofByAmountInvocation {
 }
 
 impl NativeExecutable for VaultCreateProofByIdsInvocation {
-    type NativeOutput = scrypto::resource::Proof;
+    type NativeOutput = radix_engine_lib::resource::Proof;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -440,7 +442,7 @@ impl NativeExecutable for VaultCreateProofByIdsInvocation {
         let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
 
         Ok((
-            scrypto::resource::Proof(proof_id),
+            radix_engine_lib::resource::Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
         ))
     }

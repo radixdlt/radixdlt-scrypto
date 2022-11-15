@@ -2,7 +2,8 @@ use radix_engine_lib::address::Bech32Decoder;
 use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::component::SystemAddress;
-use radix_engine_lib::resource::ResourceAddress;
+use radix_engine_lib::engine::types::{BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver};
+use radix_engine_lib::resource::{MintParams, ResourceAddress, ResourceManagerBucketBurnInvocation, ResourceManagerCreateInvocation, ResourceManagerMintInvocation};
 use radix_engine_lib::resource::NonFungibleAddress;
 use radix_engine_lib::resource::NonFungibleId;
 use sbor::any::{encode_any, Value};
@@ -16,15 +17,10 @@ use scrypto::buffer::scrypto_encode;
 use scrypto::component::{Component, KeyValueStore};
 use scrypto::core::Expression;
 use scrypto::crypto::*;
-use scrypto::engine::types::*;
 use scrypto::math::*;
-use scrypto::resource::{
-    MintParams,
-    ResourceManagerBucketBurnInvocation, ResourceManagerCreateInvocation,
-    ResourceManagerMintInvocation, Vault,
-};
 use scrypto::values::*;
 use scrypto::{args, args_from_value_vec};
+use scrypto::resource::Vault;
 
 use crate::errors::*;
 use crate::manifest::ast;
@@ -481,7 +477,7 @@ pub fn generate_instruction(
                     function_name: ResourceManagerFunction::BurnBucket.to_string(),
                 },
                 args: scrypto_encode(&ResourceManagerBucketBurnInvocation {
-                    bucket: scrypto::resource::Bucket(bucket_id),
+                    bucket: radix_engine_lib::resource::Bucket(bucket_id),
                 }),
             }
         }

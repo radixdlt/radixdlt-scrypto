@@ -1,3 +1,4 @@
+use radix_engine_lib::engine::types::{KeyValueStoreId, SubstateId};
 use crate::model::PersistedSubstate;
 use crate::types::*;
 

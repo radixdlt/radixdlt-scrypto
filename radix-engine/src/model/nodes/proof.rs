@@ -1,3 +1,5 @@
+use radix_engine_lib::engine::types::{GlobalAddress, NativeMethod, ProofMethod, ProofOffset, RENodeId, SubstateOffset};
+use radix_engine_lib::resource::{ProofCloneInvocation, ProofGetAmountInvocation, ProofGetNonFungibleIdsInvocation, ProofGetResourceAddressInvocation};
 use crate::engine::{
     ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
@@ -123,12 +125,12 @@ impl NativeInvocation for ProofGetResourceAddressInvocation {
 }
 
 impl NativeExecutable for ProofCloneInvocation {
-    type NativeOutput = scrypto::resource::Proof;
+    type NativeOutput = radix_engine_lib::resource::Proof;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -141,7 +143,7 @@ impl NativeExecutable for ProofCloneInvocation {
         let proof_id = system_api.create_node(RENode::Proof(cloned_proof))?.into();
 
         Ok((
-            scrypto::resource::Proof(proof_id),
+            radix_engine_lib::resource::Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
         ))
     }

@@ -1,3 +1,4 @@
+use radix_engine_lib::engine::types::{RENodeId, VaultId};
 use crate::engine::*;
 use crate::fee::{FeeReserve, FeeReserveError, SystemApiCostingEntry};
 use crate::model::Resource;

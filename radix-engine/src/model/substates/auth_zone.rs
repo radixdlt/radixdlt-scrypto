@@ -1,3 +1,4 @@
+use radix_engine_lib::engine::types::{GlobalAddress, RENodeId};
 use crate::engine::{REActor, ResolvedReceiver};
 use crate::model::MethodAuthorizationError::NotAuthorized;
 use crate::model::{

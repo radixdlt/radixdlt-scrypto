@@ -1,7 +1,6 @@
+use radix_engine_lib::engine::types::SubstateId;
 use crate::ledger::*;
 use crate::types::*;
-
-use scrypto::engine::types::SubstateId;
 
 /// Nodes form an acyclic graph towards the parent
 struct StagedSubstateStoreNode {

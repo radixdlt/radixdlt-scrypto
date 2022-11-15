@@ -1,7 +1,8 @@
+use radix_engine_lib::engine::api::{Syscalls, SysInvokableNative};
+use radix_engine_lib::engine::types::RENodeId;
 use crate::engine::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
-use scrypto::engine::api::{SysInvokableNative, Syscalls};
 
 pub struct ScryptoExecutor<I: WasmInstance> {
     instance: I,

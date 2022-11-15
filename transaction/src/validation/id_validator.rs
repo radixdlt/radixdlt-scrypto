@@ -1,5 +1,5 @@
+use radix_engine_lib::engine::types::{BucketId, ProofId};
 use sbor::rust::collections::*;
-use scrypto::engine::types::*;
 use scrypto::values::*;
 
 use crate::errors::*;

@@ -1,3 +1,4 @@
+use radix_engine_lib::engine::types::{EpochManagerId, PackageId, RENodeId, ResourceManagerId};
 use crate::types::*;
 
 // TODO: clean up after `Owned(RENodeId)`?

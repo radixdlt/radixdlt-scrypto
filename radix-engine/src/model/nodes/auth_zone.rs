@@ -1,3 +1,5 @@
+use radix_engine_lib::engine::types::{AuthZoneMethod, AuthZoneOffset, GlobalAddress, NativeMethod, ProofId, ProofOffset, RENodeId, ResourceManagerOffset, SubstateOffset};
+use radix_engine_lib::resource::{AuthZoneClearInvocation, AuthZoneCreateProofByAmountInvocation, AuthZoneCreateProofByIdsInvocation, AuthZoneCreateProofInvocation, AuthZoneDrainInvocation, AuthZonePopInvocation, AuthZonePushInvocation};
 use crate::engine::{
     ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
@@ -5,7 +7,6 @@ use crate::engine::{
 use crate::model::{InvokeError, ProofError};
 use crate::types::*;
 use sbor::rust::vec::Vec;
-use scrypto::resource::AuthZoneDrainInvocation;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum AuthZoneError {
@@ -19,12 +20,12 @@ pub enum AuthZoneError {
 }
 
 impl NativeExecutable for AuthZonePopInvocation {
-    type NativeOutput = scrypto::resource::Proof;
+    type NativeOutput = radix_engine_lib::resource::Proof;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -47,7 +48,7 @@ impl NativeExecutable for AuthZonePopInvocation {
         let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
 
         Ok((
-            scrypto::resource::Proof(proof_id),
+            radix_engine_lib::resource::Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
         ))
     }
@@ -108,12 +109,12 @@ impl NativeInvocation for AuthZonePushInvocation {
 }
 
 impl NativeExecutable for AuthZoneCreateProofInvocation {
-    type NativeOutput = scrypto::resource::Proof;
+    type NativeOutput = radix_engine_lib::resource::Proof;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -148,7 +149,7 @@ impl NativeExecutable for AuthZoneCreateProofInvocation {
         let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
 
         Ok((
-            scrypto::resource::Proof(proof_id),
+            radix_engine_lib::resource::Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
         ))
     }
@@ -167,12 +168,12 @@ impl NativeInvocation for AuthZoneCreateProofInvocation {
 }
 
 impl NativeExecutable for AuthZoneCreateProofByAmountInvocation {
-    type NativeOutput = scrypto::resource::Proof;
+    type NativeOutput = radix_engine_lib::resource::Proof;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -208,7 +209,7 @@ impl NativeExecutable for AuthZoneCreateProofByAmountInvocation {
         let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
 
         Ok((
-            scrypto::resource::Proof(proof_id),
+            radix_engine_lib::resource::Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
         ))
     }
@@ -227,12 +228,12 @@ impl NativeInvocation for AuthZoneCreateProofByAmountInvocation {
 }
 
 impl NativeExecutable for AuthZoneCreateProofByIdsInvocation {
-    type NativeOutput = scrypto::resource::Proof;
+    type NativeOutput = radix_engine_lib::resource::Proof;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Proof, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -268,7 +269,7 @@ impl NativeExecutable for AuthZoneCreateProofByIdsInvocation {
         let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
 
         Ok((
-            scrypto::resource::Proof(proof_id),
+            radix_engine_lib::resource::Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
         ))
     }
@@ -318,12 +319,12 @@ impl NativeInvocation for AuthZoneClearInvocation {
 }
 
 impl NativeExecutable for AuthZoneDrainInvocation {
-    type NativeOutput = Vec<scrypto::resource::Proof>;
+    type NativeOutput = Vec<radix_engine_lib::resource::Proof>;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(Vec<scrypto::resource::Proof>, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Vec<radix_engine_lib::resource::Proof>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -338,11 +339,11 @@ impl NativeExecutable for AuthZoneDrainInvocation {
             proofs
         };
 
-        let mut proof_ids: Vec<scrypto::resource::Proof> = Vec::new();
+        let mut proof_ids: Vec<radix_engine_lib::resource::Proof> = Vec::new();
         let mut nodes_to_move = Vec::new();
         for proof in proofs {
             let proof_id: ProofId = system_api.create_node(RENode::Proof(proof))?.into();
-            proof_ids.push(scrypto::resource::Proof(proof_id));
+            proof_ids.push(radix_engine_lib::resource::Proof(proof_id));
             nodes_to_move.push(RENodeId::Proof(proof_id));
         }
 

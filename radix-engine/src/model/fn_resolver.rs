@@ -1,3 +1,4 @@
+use radix_engine_lib::engine::types::{AuthZoneMethod, BucketMethod, ComponentMethod, EpochManagerFunction, EpochManagerMethod, GlobalAddress, NativeFunction, NativeMethod, PackageFunction, ProofMethod, RENodeId, ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod, WorktopMethod};
 use crate::types::*;
 
 pub fn resolve_native_function(

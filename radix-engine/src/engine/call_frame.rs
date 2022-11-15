@@ -1,3 +1,4 @@
+use radix_engine_lib::engine::types::{GlobalAddress, LockHandle, NativeFunction, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset, TransactionProcessorFunction};
 use crate::engine::system_api::LockInfo;
 use crate::engine::*;
 use crate::fee::FeeReserve;

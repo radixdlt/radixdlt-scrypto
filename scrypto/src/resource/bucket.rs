@@ -12,7 +12,6 @@ use utils::misc::copy_u8_array;
 
 use crate::abi::*;
 use crate::math::*;
-use crate::resource::*;
 
 /// Represents a transient resource container.
 #[derive(Debug, PartialEq, Eq, Hash)]

@@ -1,10 +1,11 @@
+use radix_engine_lib::engine::types::{GlobalAddress, NativeMethod, RENodeId, ResourceManagerOffset, SubstateOffset, WorktopMethod, WorktopOffset};
+use radix_engine_lib::resource::{WorktopAssertContainsAmountInvocation, WorktopAssertContainsInvocation, WorktopAssertContainsNonFungiblesInvocation, WorktopDrainInvocation, WorktopPutInvocation, WorktopTakeAllInvocation, WorktopTakeAmountInvocation, WorktopTakeNonFungiblesInvocation};
 use crate::engine::{
     ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
-use scrypto::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum WorktopError {
@@ -58,12 +59,12 @@ impl NativeInvocation for WorktopPutInvocation {
 }
 
 impl NativeExecutable for WorktopTakeAmountInvocation {
-    type NativeOutput = scrypto::resource::Bucket;
+    type NativeOutput = radix_engine_lib::resource::Bucket;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -104,7 +105,7 @@ impl NativeExecutable for WorktopTakeAmountInvocation {
             .create_node(RENode::Bucket(BucketSubstate::new(resource_resource)))?
             .into();
         Ok((
-            scrypto::resource::Bucket(bucket_id),
+            radix_engine_lib::resource::Bucket(bucket_id),
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }
@@ -123,12 +124,12 @@ impl NativeInvocation for WorktopTakeAmountInvocation {
 }
 
 impl NativeExecutable for WorktopTakeAllInvocation {
-    type NativeOutput = scrypto::resource::Bucket;
+    type NativeOutput = radix_engine_lib::resource::Bucket;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -168,7 +169,7 @@ impl NativeExecutable for WorktopTakeAllInvocation {
             .into();
 
         Ok((
-            scrypto::resource::Bucket(bucket_id),
+            radix_engine_lib::resource::Bucket(bucket_id),
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }
@@ -187,12 +188,12 @@ impl NativeInvocation for WorktopTakeAllInvocation {
 }
 
 impl NativeExecutable for WorktopTakeNonFungiblesInvocation {
-    type NativeOutput = scrypto::resource::Bucket;
+    type NativeOutput = radix_engine_lib::resource::Bucket;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -234,7 +235,7 @@ impl NativeExecutable for WorktopTakeNonFungiblesInvocation {
             .into();
 
         Ok((
-            scrypto::resource::Bucket(bucket_id),
+            radix_engine_lib::resource::Bucket(bucket_id),
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }
@@ -375,12 +376,12 @@ impl NativeInvocation for WorktopAssertContainsNonFungiblesInvocation {
 }
 
 impl NativeExecutable for WorktopDrainInvocation {
-    type NativeOutput = Vec<scrypto::resource::Bucket>;
+    type NativeOutput = Vec<radix_engine_lib::resource::Bucket>;
 
     fn execute<'a, Y>(
         _input: Self,
         system_api: &mut Y,
-    ) -> Result<(Vec<scrypto::resource::Bucket>, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Vec<radix_engine_lib::resource::Bucket>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -410,7 +411,7 @@ impl NativeExecutable for WorktopDrainInvocation {
             let bucket_id = system_api
                 .create_node(RENode::Bucket(BucketSubstate::new(resource)))?
                 .into();
-            buckets.push(scrypto::resource::Bucket(bucket_id));
+            buckets.push(radix_engine_lib::resource::Bucket(bucket_id));
             nodes_to_move.push(RENodeId::Bucket(bucket_id));
         }
 

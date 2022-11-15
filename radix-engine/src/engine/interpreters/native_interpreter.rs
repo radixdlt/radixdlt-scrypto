@@ -1,12 +1,13 @@
+use radix_engine_lib::component::{ComponentAddAccessCheckInvocation, EpochManagerCreateInvocation, EpochManagerGetCurrentEpochInvocation, EpochManagerSetEpochInvocation, PackagePublishInvocation};
+use radix_engine_lib::engine::api::{Syscalls, SysInvokableNative};
+use radix_engine_lib::engine::types::{NativeFunction, NativeMethod, RENodeId};
+use radix_engine_lib::resource::{AuthZoneClearInvocation, AuthZoneCreateProofByAmountInvocation, AuthZoneCreateProofByIdsInvocation, AuthZoneCreateProofInvocation, AuthZoneDrainInvocation, AuthZonePopInvocation, AuthZonePushInvocation, BucketCreateProofInvocation, BucketGetAmountInvocation, BucketGetNonFungibleIdsInvocation, BucketGetResourceAddressInvocation, BucketPutInvocation, BucketTakeInvocation, BucketTakeNonFungiblesInvocation, ProofCloneInvocation, ProofGetAmountInvocation, ProofGetNonFungibleIdsInvocation, ProofGetResourceAddressInvocation, ResourceManagerBucketBurnInvocation, ResourceManagerBurnInvocation, ResourceManagerCreateBucketInvocation, ResourceManagerCreateInvocation, ResourceManagerCreateVaultInvocation, ResourceManagerGetMetadataInvocation, ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation, ResourceManagerGetTotalSupplyInvocation, ResourceManagerLockAuthInvocation, ResourceManagerMintInvocation, ResourceManagerNonFungibleExistsInvocation, ResourceManagerSetResourceAddressInvocation, ResourceManagerUpdateAuthInvocation, ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation, VaultCreateProofByAmountInvocation, VaultCreateProofByIdsInvocation, VaultCreateProofInvocation, VaultGetAmountInvocation, VaultGetNonFungibleIdsInvocation, VaultGetResourceAddressInvocation, VaultLockFeeInvocation, VaultPutInvocation, VaultTakeInvocation, VaultTakeNonFungiblesInvocation, WorktopAssertContainsAmountInvocation, WorktopAssertContainsInvocation, WorktopAssertContainsNonFungiblesInvocation, WorktopDrainInvocation, WorktopPutInvocation, WorktopTakeAllInvocation, WorktopTakeAmountInvocation, WorktopTakeNonFungiblesInvocation};
 use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
 
 use sbor::rust::fmt::Debug;
 use sbor::*;
-use scrypto::engine::api::{SysInvokableNative, Syscalls};
-use scrypto::resource::AuthZoneDrainInvocation;
-use scrypto::resource::ResourceManagerBucketBurnInvocation;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
     fn into(self) -> RuntimeError {

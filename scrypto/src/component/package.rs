@@ -1,7 +1,6 @@
 use radix_engine_lib::component::PackageAddress;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::crypto::Blob;
 
 use crate::core::*;
 

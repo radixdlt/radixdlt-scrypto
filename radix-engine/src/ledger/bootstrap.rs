@@ -1,5 +1,6 @@
 use radix_engine_lib::component::SystemAddress;
-use radix_engine_lib::resource::AccessRule;
+use radix_engine_lib::engine::types::{EpochManagerFunction, GlobalAddress, NativeFunctionIdent, RENodeId, ResourceManagerFunction, ResourceManagerOffset, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset};
+use radix_engine_lib::resource::{AccessRule, LOCKED, MintParams, Mutability, ResourceMethodAuthKey};
 use radix_engine_lib::rule;
 use crate::constants::GENESIS_CREATION_CREDIT;
 use crate::engine::ScryptoInterpreter;

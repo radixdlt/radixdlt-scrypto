@@ -1,5 +1,4 @@
 use radix_engine_lib::resource::*;
-use radix_engine_lib::engine::api::SysNativeInvokable;
 use radix_engine_lib::sys_env_native_fn;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;

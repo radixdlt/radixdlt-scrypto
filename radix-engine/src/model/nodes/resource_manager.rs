@@ -1,3 +1,6 @@
+use radix_engine_lib::engine::api::SysInvokableNative;
+use radix_engine_lib::engine::types::{GlobalAddress, NativeFunction, NativeMethod, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset, SubstateOffset};
+use radix_engine_lib::resource::{MintParams, ResourceManagerBucketBurnInvocation, ResourceManagerBurnInvocation, ResourceManagerCreateBucketInvocation, ResourceManagerCreateInvocation, ResourceManagerCreateVaultInvocation, ResourceManagerGetMetadataInvocation, ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation, ResourceManagerGetTotalSupplyInvocation, ResourceManagerLockAuthInvocation, ResourceManagerMintInvocation, ResourceManagerNonFungibleExistsInvocation, ResourceManagerSetResourceAddressInvocation, ResourceManagerUpdateAuthInvocation, ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation, ResourceType};
 use crate::engine::{
     ApplicationError, CallFrameUpdate, Invokable, InvokableNative, LockFlags, NativeExecutable,
     NativeInvocation, NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError,
@@ -9,8 +12,6 @@ use crate::model::{
 };
 use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
-use scrypto::engine::api::SysInvokableNative;
-use scrypto::resource::ResourceManagerBucketBurnInvocation;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -42,7 +43,8 @@ impl NativeExecutable for ResourceManagerBucketBurnInvocation {
             + InvokableNative<'a>
             + SysInvokableNative<RuntimeError>,
     {
-        invocation.bucket.sys_burn(env)?;
+        let bucket = scrypto::resource::Bucket(invocation.bucket.0);
+        bucket.sys_burn(env)?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -74,14 +76,14 @@ impl NativeInvocation for ResourceManagerBucketBurnInvocation {
 }
 
 impl NativeExecutable for ResourceManagerCreateInvocation {
-    type NativeOutput = (ResourceAddress, Option<scrypto::resource::Bucket>);
+    type NativeOutput = (ResourceAddress, Option<radix_engine_lib::resource::Bucket>);
 
     fn execute<'a, Y>(
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<
         (
-            (ResourceAddress, Option<scrypto::resource::Bucket>),
+            (ResourceAddress, Option<radix_engine_lib::resource::Bucket>),
             CallFrameUpdate,
         ),
         RuntimeError,
@@ -204,7 +206,7 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
             let bucket_id = system_api
                 .create_node(RENode::Bucket(BucketSubstate::new(container)))?
                 .into();
-            Some(scrypto::resource::Bucket(bucket_id))
+            Some(radix_engine_lib::resource::Bucket(bucket_id))
         } else {
             None
         };
@@ -433,12 +435,12 @@ impl NativeInvocation for ResourceManagerLockAuthInvocation {
 }
 
 impl NativeExecutable for ResourceManagerCreateVaultInvocation {
-    type NativeOutput = scrypto::resource::Vault;
+    type NativeOutput = radix_engine_lib::resource::Vault;
 
     fn execute<'a, Y>(
         _input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Vault, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Vault, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -461,7 +463,7 @@ impl NativeExecutable for ResourceManagerCreateVaultInvocation {
             .into();
 
         Ok((
-            scrypto::resource::Vault(vault_id),
+            radix_engine_lib::resource::Vault(vault_id),
             CallFrameUpdate::move_node(RENodeId::Vault(vault_id)),
         ))
     }
@@ -478,12 +480,12 @@ impl NativeInvocation for ResourceManagerCreateVaultInvocation {
 }
 
 impl NativeExecutable for ResourceManagerCreateBucketInvocation {
-    type NativeOutput = scrypto::resource::Bucket;
+    type NativeOutput = radix_engine_lib::resource::Bucket;
 
     fn execute<'a, Y>(
         _input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -506,7 +508,7 @@ impl NativeExecutable for ResourceManagerCreateBucketInvocation {
             .into();
 
         Ok((
-            scrypto::resource::Bucket(bucket_id),
+            radix_engine_lib::resource::Bucket(bucket_id),
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }
@@ -523,12 +525,12 @@ impl NativeInvocation for ResourceManagerCreateBucketInvocation {
 }
 
 impl NativeExecutable for ResourceManagerMintInvocation {
-    type NativeOutput = scrypto::resource::Bucket;
+    type NativeOutput = radix_engine_lib::resource::Bucket;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(scrypto::resource::Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableNative<'a>,
     {
@@ -598,7 +600,7 @@ impl NativeExecutable for ResourceManagerMintInvocation {
         }
 
         Ok((
-            scrypto::resource::Bucket(bucket_id),
+            radix_engine_lib::resource::Bucket(bucket_id),
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }

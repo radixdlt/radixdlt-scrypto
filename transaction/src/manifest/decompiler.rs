@@ -1,15 +1,12 @@
 use radix_engine_lib::address::{AddressError, Bech32Encoder};
 use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_lib::engine::types::{BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver};
+use radix_engine_lib::resource::{MintParams, ResourceManagerBurnInvocation, ResourceManagerCreateInvocation, ResourceManagerMintInvocation};
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use sbor::{encode_any, Value};
 use scrypto::buffer::scrypto_decode;
 use scrypto::crypto::Hash;
-use scrypto::engine::types::*;
-use scrypto::resource::{
-    MintParams, ResourceManagerBurnInvocation, ResourceManagerCreateInvocation,
-    ResourceManagerMintInvocation,
-};
 use scrypto::values::*;
 use utils::misc::ContextualDisplay;
 
@@ -533,6 +530,8 @@ fn format_id(id: &(Hash, u32)) -> String {
 #[cfg(test)]
 mod tests {
     use radix_engine_lib::core::NetworkDefinition;
+    use radix_engine_lib::engine::types::ResourceManagerFunction;
+    use radix_engine_lib::resource::{AccessRule, Mutability, ResourceMethodAuthKey, ResourceType};
     use super::*;
     use crate::manifest::*;
     use sbor::*;
