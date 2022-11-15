@@ -68,6 +68,7 @@ use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
 use transaction::manifest::decompile;
+use transaction::model::AuthModule;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
@@ -142,16 +143,17 @@ pub fn handle_manifest<O: std::io::Write>(
     manifest: TransactionManifest,
     signing_keys: &Option<String>,
     network: &Option<String>,
-    manifest_path: &Option<PathBuf>,
+    write_manifest: &Option<PathBuf>,
     trace: bool,
-    output_receipt: bool,
+    print_receipt: bool,
+    with_system_privilege: bool,
     out: &mut O,
 ) -> Result<Option<TransactionReceipt>, Error> {
     let network = match network {
         Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
         None => NetworkDefinition::simulator(),
     };
-    match manifest_path {
+    match write_manifest {
         Some(path) => {
             if !env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
                 let manifest_str =
@@ -182,10 +184,13 @@ pub fn handle_manifest<O: std::io::Write>(
             };
 
             let sks = get_signing_keys(signing_keys)?;
-            let initial_proofs = sks
+            let mut initial_proofs = sks
                 .into_iter()
                 .map(|e| NonFungibleAddress::from_public_key(&e.public_key()))
                 .collect::<Vec<NonFungibleAddress>>();
+            if with_system_privilege {
+                initial_proofs.push(AuthModule::system_role_non_fungible_address());
+            }
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce);
 
@@ -203,7 +208,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 &transaction.get_executable(initial_proofs),
             );
 
-            if output_receipt {
+            if print_receipt {
                 writeln!(out, "{}", receipt.display(&Bech32Encoder::new(&network)))
                     .map_err(Error::IOError)?;
             }

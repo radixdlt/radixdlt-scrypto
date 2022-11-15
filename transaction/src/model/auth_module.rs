@@ -7,11 +7,11 @@ pub struct AuthModule;
 
 // TODO: Integrate with AuthModule in radix-engine
 impl AuthModule {
-    pub fn system_role_nf_address() -> NonFungibleAddress {
+    pub fn system_role_non_fungible_address() -> NonFungibleAddress {
         NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::from_u32(1))
     }
 
-    pub fn validator_role_nf_address() -> NonFungibleAddress {
+    pub fn validator_role_non_fungible_address() -> NonFungibleAddress {
         NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::from_u32(0))
     }
 
