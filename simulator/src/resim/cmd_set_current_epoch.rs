@@ -1,5 +1,6 @@
 use clap::Parser;
 use radix_engine::types::*;
+use scrypto::engine_lib::engine::types::RENodeId;
 
 use crate::resim::*;
 

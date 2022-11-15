@@ -19,7 +19,7 @@ pub use proof::*;
 pub use proof_rule::*;
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
 pub use resource_manager::*;
-pub use schema_path::SchemaPath;
+pub use schema_path::*;
 pub use system::{init_resource_system, resource_system, ResourceSystem};
 pub use vault::*;
 pub use worktop::*;
