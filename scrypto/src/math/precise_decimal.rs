@@ -1106,8 +1106,7 @@ mod tests {
         pdec.encode_type_id(&mut enc);
         pdec.encode_value(&mut enc);
         let mut decoder = Decoder::new(&bytes);
-        PreciseDecimal::check_type_id(&mut decoder).unwrap();
-        let val = PreciseDecimal::decode_value(&mut decoder).unwrap();
+        let val = PreciseDecimal::decode(&mut decoder).unwrap();
         assert_eq!(val, pdec!("1.23456789"));
     }
 

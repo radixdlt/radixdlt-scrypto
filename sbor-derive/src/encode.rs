@@ -274,7 +274,7 @@ mod tests {
     }
 
     #[test]
-    fn test_custom_type_id() {
+    fn test_encode_struct_with_custom_type_id() {
         let input = TokenStream::from_str(
             "#[sbor(custom_type_id = \"NoCustomTypeId\")] struct Test {#[sbor(skip)] a: u32}",
         )

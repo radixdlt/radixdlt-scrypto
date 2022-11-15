@@ -192,11 +192,11 @@ impl<
         V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
     > Decode<ScryptoCustomTypeId> for KeyValueStore<K, V>
 {
-    fn decode_type_id(decoder: &mut ScryptoDecoder) -> Result<(), DecodeError> {
-        decoder.check_type_id(Self::type_id())
-    }
-
-    fn decode_value(decoder: &mut ScryptoDecoder) -> Result<Self, DecodeError> {
+    fn decode_value(
+        decoder: &mut ScryptoDecoder,
+        type_id: ScryptoTypeId,
+    ) -> Result<Self, DecodeError> {
+        type_id.assert_eq(Self::type_id())?;
         let slice = decoder.read_slice(36)?;
         Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
     }

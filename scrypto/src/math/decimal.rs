@@ -1082,8 +1082,7 @@ mod tests {
         dec.encode_type_id(&mut enc);
         dec.encode_value(&mut enc);
         let mut decoder = Decoder::new(&bytes);
-        Decimal::check_type_id(&mut decoder).unwrap();
-        let val = Decimal::decode_value(&mut decoder).unwrap();
+        let val = Decimal::decode(&mut decoder).unwrap();
         assert_eq!(val, dec!("1.23456789"));
     }
 

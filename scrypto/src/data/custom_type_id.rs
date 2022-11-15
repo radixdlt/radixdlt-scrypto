@@ -21,7 +21,7 @@ pub const TYPE_DECIMAL: u8 = 0xb5;
 pub const TYPE_PRECISE_DECIMAL: u8 = 0xb6;
 pub const TYPE_NON_FUNGIBLE_ID: u8 = 0xb7;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomTypeId {
     // Global address types
     PackageAddress,

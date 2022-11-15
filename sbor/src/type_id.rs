@@ -8,6 +8,7 @@ use crate::rust::fmt::Debug;
 use crate::rust::rc::Rc;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
+use crate::DecodeError;
 
 #[cfg_attr(
     feature = "serde",
@@ -37,6 +38,17 @@ pub enum SborTypeId<X: CustomTypeId> {
 }
 
 impl<X: CustomTypeId> SborTypeId<X> {
+    pub fn assert_eq(&self, expected: SborTypeId<X>) -> Result<(), DecodeError> {
+        if self == &expected {
+            Ok(())
+        } else {
+            Err(DecodeError::UnexpectedTypeId {
+                actual: self.as_u8(),
+                expected: expected.as_u8(),
+            })
+        }
+    }
+
     pub fn as_u8(&self) -> u8 {
         match self {
             SborTypeId::Unit => TYPE_UNIT,

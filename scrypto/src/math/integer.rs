@@ -303,14 +303,11 @@ macro_rules! sbor_codec {
         }
 
         impl<X: CustomTypeId> Decode<X> for $t {
-            #[inline]
-            fn decode_type_id(decoder: &mut Decoder<X>) -> Result<SborTypeId<X>, DecodeError> {
-                decoder.check_type_id(Self::type_id())
-            }
             fn decode_value(
                 decoder: &mut Decoder<X>,
                 type_id: SborTypeId<X>,
             ) -> Result<Self, DecodeError> {
+                type_id.assert_eq(Self::type_id())?;
                 let slice = decoder.read_slice((Self::BITS / 8) as usize)?;
                 let mut bytes = [0u8; (Self::BITS / 8) as usize];
                 bytes.copy_from_slice(&slice[..]);

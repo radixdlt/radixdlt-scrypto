@@ -223,6 +223,7 @@ fn decode_next<X: CustomTypeId, Y: CustomValue<X>>(
         Some(t) => t,
         None => decoder.read_type_id()?,
     };
+    println!("{:?}", type_id);
 
     match type_id {
         // primitive types
@@ -279,7 +280,7 @@ fn decode_next<X: CustomTypeId, Y: CustomValue<X>>(
         }
         SborTypeId::Enum => {
             // discriminator
-            let discriminator = <String>::decode_value(decoder, type_id)?;
+            let discriminator = <String>::decode_value(decoder, String::type_id())?;
             // number of fields
             let len = decoder.read_size()?;
             // fields
