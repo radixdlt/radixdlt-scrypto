@@ -3,7 +3,7 @@ use std::sync::Arc;
 use wasmi::*;
 
 use crate::model::InvokeError;
-use crate::types::{format, Box, Hash, ScryptoValue};
+use crate::types::{format, Box, Hash, IndexedScryptoValue};
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
@@ -101,7 +101,7 @@ impl WasmiModule {
 impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
     pub fn send_value(
         &mut self,
-        value: &ScryptoValue,
+        value: &IndexedScryptoValue,
     ) -> Result<RuntimeValue, InvokeError<WasmError>> {
         let result = self.instance.module_ref.clone().invoke_export(
             EXPORT_SCRYPTO_ALLOC,
@@ -130,7 +130,7 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
         }
     }
 
-    pub fn read_value(&self, ptr: usize) -> Result<ScryptoValue, WasmError> {
+    pub fn read_value(&self, ptr: usize) -> Result<IndexedScryptoValue, WasmError> {
         let len = self
             .instance
             .memory_ref
@@ -146,7 +146,7 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
             return Err(WasmError::MemoryAccessError);
         }
 
-        ScryptoValue::from_slice(&buffer[start..end]).map_err(WasmError::InvalidScryptoValue)
+        IndexedScryptoValue::from_slice(&buffer[start..end]).map_err(WasmError::InvalidScryptoValue)
     }
 }
 
@@ -181,9 +181,9 @@ impl WasmInstance for WasmiInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        args: &ScryptoValue,
+        args: &IndexedScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<ScryptoValue, InvokeError<WasmError>> {
+    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
         let mut externals = WasmiExternals {
             instance: self,
             runtime,

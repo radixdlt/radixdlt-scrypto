@@ -96,7 +96,7 @@ pub trait Module<R: FeeReserve> {
     fn on_run(
         &mut self,
         actor: &REActor,
-        input: &ScryptoValue,
+        input: &IndexedScryptoValue,
         call_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track<R>,

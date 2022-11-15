@@ -366,7 +366,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
     fn on_run(
         &mut self,
         actor: &REActor,
-        input: &ScryptoValue,
+        input: &IndexedScryptoValue,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
         track: &mut Track<R>,

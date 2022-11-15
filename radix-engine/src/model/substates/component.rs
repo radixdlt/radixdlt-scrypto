@@ -39,7 +39,7 @@ impl ComponentInfoSubstate {
         schema: &Type,
         method_name: &str,
     ) -> Vec<MethodAuthorization> {
-        let data = ScryptoValue::from_slice(&component_state.raw)
+        let data = IndexedScryptoValue::from_slice(&component_state.raw)
             .expect("Failed to decode component state");
 
         let mut authorizations = Vec::new();

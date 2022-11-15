@@ -17,3 +17,10 @@ pub use indexed_value::*;
 pub use schema_matcher::*;
 pub use schema_path::*;
 pub use value_formatter::*;
+
+// TODO: add trait alias for `Encode` and `Decode` as well, once it becomes stable.
+
+pub type ScryptoEncoder<'a> = sbor::Encoder<'a, ScryptoCustomTypeId>;
+pub type ScryptoDecoder<'a> = sbor::Decoder<'a, ScryptoCustomTypeId>;
+pub type ScryptoTypeId = sbor::SborTypeId<ScryptoCustomTypeId>;
+pub type ScryptoValue = sbor::SborValue<ScryptoCustomTypeId, ScryptoCustomValue>;

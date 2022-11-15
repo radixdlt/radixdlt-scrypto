@@ -344,7 +344,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                         f,
                         "\n{} {}",
                         prefix!(i, outputs),
-                        ScryptoValue::from_slice(output)
+                        IndexedScryptoValue::from_slice(output)
                             .expect("Failed to parse return data")
                             .display(decompilation_context.for_value_display())
                     )?;

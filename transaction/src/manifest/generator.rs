@@ -335,7 +335,7 @@ pub fn generate_instruction(
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             let mut fields = Vec::new();
             for arg in &args {
-                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
+                let validated_arg = IndexedScryptoValue::from_slice(arg).unwrap();
                 id_validator
                     .move_resources(&validated_arg)
                     .map_err(GeneratorError::IdValidationError)?;
@@ -361,7 +361,7 @@ pub fn generate_instruction(
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             let mut fields = Vec::new();
             for arg in &args {
-                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
+                let validated_arg = IndexedScryptoValue::from_slice(arg).unwrap();
                 id_validator
                     .move_resources(&validated_arg)
                     .map_err(GeneratorError::IdValidationError)?;
@@ -386,7 +386,7 @@ pub fn generate_instruction(
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             let mut fields = Vec::new();
             for arg in &args {
-                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
+                let validated_arg = IndexedScryptoValue::from_slice(arg).unwrap();
                 id_validator
                     .move_resources(&validated_arg)
                     .map_err(GeneratorError::IdValidationError)?;
@@ -411,7 +411,7 @@ pub fn generate_instruction(
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             let mut fields = Vec::new();
             for arg in &args {
-                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
+                let validated_arg = IndexedScryptoValue::from_slice(arg).unwrap();
                 id_validator
                     .move_resources(&validated_arg)
                     .map_err(GeneratorError::IdValidationError)?;
@@ -445,8 +445,8 @@ pub fn generate_instruction(
                 generate_value(access_rules, None, resolver, bech32_decoder, blobs)?,
                 generate_value(mint_params, None, resolver, bech32_decoder, blobs)?,
             ] {
-                let validated_arg = ScryptoValue::from_value(arg)
-                    .expect("Failed to convert value into ScryptoValue");
+                let validated_arg = IndexedScryptoValue::from_value(arg)
+                    .expect("Failed to convert value into IndexedScryptoValue");
                 id_validator
                     .move_resources(&validated_arg)
                     .map_err(GeneratorError::IdValidationError)?;
@@ -970,7 +970,7 @@ fn generate_value(
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &HashMap<Hash, Vec<u8>>,
-) -> Result<SborValue<ScryptoCustomTypeId, ScryptoCustomValue>, GeneratorError> {
+) -> Result<ScryptoValue, GeneratorError> {
     if let Some(ty) = expected {
         if ty != value.kind() {
             return Err(GeneratorError::InvalidValue {
@@ -1112,7 +1112,7 @@ fn generate_singletons(
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &HashMap<Hash, Vec<u8>>,
-) -> Result<Vec<SborValue<ScryptoCustomTypeId, ScryptoCustomValue>>, GeneratorError> {
+) -> Result<Vec<ScryptoValue>, GeneratorError> {
     let mut result = vec![];
     for element in elements {
         result.push(generate_value(
@@ -1126,7 +1126,7 @@ fn generate_singletons(
     Ok(result)
 }
 
-fn generate_type_id(ty: &ast::Type) -> SborTypeId<ScryptoCustomTypeId> {
+fn generate_type_id(ty: &ast::Type) -> ScryptoTypeId {
     match ty {
         ast::Type::Unit => SborTypeId::Unit,
         ast::Type::Bool => SborTypeId::Bool,

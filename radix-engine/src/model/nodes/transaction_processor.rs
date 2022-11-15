@@ -63,7 +63,7 @@ impl<'a> NativeInvocation for TransactionProcessorRunInvocation<'a> {
     fn info(&self) -> NativeInvocationInfo {
         let mut node_refs_to_copy = HashSet::new();
         // TODO: Remove serialization
-        let value = ScryptoValue::from_typed(self);
+        let value = IndexedScryptoValue::from_typed(self);
         for global_address in value.global_references() {
             node_refs_to_copy.insert(RENodeId::Global(global_address));
         }
@@ -76,7 +76,7 @@ impl<'a> NativeInvocation for TransactionProcessorRunInvocation<'a> {
                 | Instruction::CallNativeFunction { args, .. }
                 | Instruction::CallNativeMethod { args, .. } => {
                     let scrypto_value =
-                        ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
+                        IndexedScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                     for global_address in scrypto_value.global_references() {
                         node_refs_to_copy.insert(RENodeId::Global(global_address));
                     }
@@ -110,15 +110,15 @@ impl TransactionProcessor {
     fn replace_ids(
         proof_id_mapping: &mut HashMap<ProofId, ProofId>,
         bucket_id_mapping: &mut HashMap<BucketId, BucketId>,
-        mut value: ScryptoValue,
-    ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>> {
+        mut value: IndexedScryptoValue,
+    ) -> Result<IndexedScryptoValue, InvokeError<TransactionProcessorError>> {
         value
             .replace_ids(proof_id_mapping, bucket_id_mapping)
             .map_err(|e| match e {
-                ScryptoValueReplaceError::BucketIdNotFound(bucket_id) => {
+                ValueReplacingError::BucketIdNotFound(bucket_id) => {
                     InvokeError::Error(TransactionProcessorError::BucketNotFound(bucket_id))
                 }
-                ScryptoValueReplaceError::ProofIdNotFound(proof_id) => {
+                ValueReplacingError::ProofIdNotFound(proof_id) => {
                     InvokeError::Error(TransactionProcessorError::ProofNotFound(proof_id))
                 }
             })?;
@@ -126,9 +126,9 @@ impl TransactionProcessor {
     }
 
     fn process_expressions<'a, Y>(
-        args: ScryptoValue,
+        args: IndexedScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
+    ) -> Result<IndexedScryptoValue, InvokeError<TransactionProcessorError>>
     where
         Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
     {
@@ -172,7 +172,7 @@ impl TransactionProcessor {
             }
         }
 
-        Ok(ScryptoValue::from_value(value)
+        Ok(IndexedScryptoValue::from_value(value)
             .expect("SborValue became invalid post expression transformation"))
     }
 
@@ -277,7 +277,7 @@ impl TransactionProcessor {
                             .map_err(InvokeError::Downstream)
                             .map(|bucket| {
                                 bucket_id_mapping.insert(new_id, bucket.0);
-                                ScryptoValue::from_typed(&bucket)
+                                IndexedScryptoValue::from_typed(&bucket)
                             })
                     }),
                 Instruction::TakeFromWorktopByAmount {
@@ -297,7 +297,7 @@ impl TransactionProcessor {
                             .map_err(InvokeError::Downstream)
                             .map(|bucket| {
                                 bucket_id_mapping.insert(new_id, bucket.0);
-                                ScryptoValue::from_typed(&bucket)
+                                IndexedScryptoValue::from_typed(&bucket)
                             })
                     }),
                 Instruction::TakeFromWorktopByIds {
@@ -317,7 +317,7 @@ impl TransactionProcessor {
                             .map_err(InvokeError::Downstream)
                             .map(|bucket| {
                                 bucket_id_mapping.insert(new_id, bucket.0);
-                                ScryptoValue::from_typed(&bucket)
+                                IndexedScryptoValue::from_typed(&bucket)
                             })
                     }),
                 Instruction::ReturnToWorktop { bucket_id } => bucket_id_mapping
@@ -327,7 +327,7 @@ impl TransactionProcessor {
                             .invoke(WorktopPutInvocation {
                                 bucket: scrypto::resource::Bucket(real_id),
                             })
-                            .map(|rtn| ScryptoValue::from_typed(&rtn))
+                            .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                             .map_err(InvokeError::Downstream)
                     })
                     .unwrap_or(Err(InvokeError::Error(
@@ -337,7 +337,7 @@ impl TransactionProcessor {
                     .invoke(WorktopAssertContainsInvocation {
                         resource_address: *resource_address,
                     })
-                    .map(|rtn| ScryptoValue::from_typed(&rtn))
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream),
                 Instruction::AssertWorktopContainsByAmount {
                     amount,
@@ -347,7 +347,7 @@ impl TransactionProcessor {
                         amount: *amount,
                         resource_address: *resource_address,
                     })
-                    .map(|rtn| ScryptoValue::from_typed(&rtn))
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream),
                 Instruction::AssertWorktopContainsByIds {
                     ids,
@@ -357,7 +357,7 @@ impl TransactionProcessor {
                         ids: ids.clone(),
                         resource_address: *resource_address,
                     })
-                    .map(|rtn| ScryptoValue::from_typed(&rtn))
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream),
 
                 Instruction::PopFromAuthZone {} => id_allocator
@@ -373,7 +373,7 @@ impl TransactionProcessor {
                             .map_err(InvokeError::Downstream)
                             .map(|proof| {
                                 proof_id_mapping.insert(new_id, proof.0);
-                                ScryptoValue::from_typed(&proof)
+                                IndexedScryptoValue::from_typed(&proof)
                             })
                     }),
                 Instruction::ClearAuthZone => {
@@ -382,7 +382,7 @@ impl TransactionProcessor {
                         .invoke(AuthZoneClearInvocation {
                             receiver: auth_zone_id,
                         })
-                        .map(|rtn| ScryptoValue::from_typed(&rtn))
+                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                         .map_err(InvokeError::Downstream)
                 }
                 Instruction::PushToAuthZone { proof_id } => proof_id_mapping
@@ -396,7 +396,7 @@ impl TransactionProcessor {
                                 receiver: auth_zone_id,
                                 proof: scrypto::resource::Proof(real_id),
                             })
-                            .map(|rtn| ScryptoValue::from_typed(&rtn))
+                            .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                             .map_err(InvokeError::Downstream)
                     }),
                 Instruction::CreateProofFromAuthZone { resource_address } => id_allocator
@@ -413,7 +413,7 @@ impl TransactionProcessor {
                             .map_err(InvokeError::Downstream)
                             .map(|proof| {
                                 proof_id_mapping.insert(new_id, proof.0);
-                                ScryptoValue::from_typed(&proof)
+                                IndexedScryptoValue::from_typed(&proof)
                             })
                     }),
                 Instruction::CreateProofFromAuthZoneByAmount {
@@ -434,7 +434,7 @@ impl TransactionProcessor {
                             .map_err(InvokeError::Downstream)
                             .map(|proof| {
                                 proof_id_mapping.insert(new_id, proof.0);
-                                ScryptoValue::from_typed(&proof)
+                                IndexedScryptoValue::from_typed(&proof)
                             })
                     }),
                 Instruction::CreateProofFromAuthZoneByIds {
@@ -455,7 +455,7 @@ impl TransactionProcessor {
                             .map_err(InvokeError::Downstream)
                             .map(|proof| {
                                 proof_id_mapping.insert(new_id, proof.0);
-                                ScryptoValue::from_typed(&proof)
+                                IndexedScryptoValue::from_typed(&proof)
                             })
                     }),
                 Instruction::CreateProofFromBucket { bucket_id } => id_allocator
@@ -480,7 +480,7 @@ impl TransactionProcessor {
                             .map_err(InvokeError::Downstream)
                             .map(|proof| {
                                 proof_id_mapping.insert(new_id, proof.0);
-                                ScryptoValue::from_typed(&proof)
+                                IndexedScryptoValue::from_typed(&proof)
                             })
                     }),
                 Instruction::CloneProof { proof_id } => id_allocator
@@ -498,7 +498,7 @@ impl TransactionProcessor {
                                     .map_err(InvokeError::Downstream)
                                     .map(|proof| {
                                         proof_id_mapping.insert(new_id, proof.0);
-                                        ScryptoValue::from_typed(&proof)
+                                        IndexedScryptoValue::from_typed(&proof)
                                     })
                             })
                             .unwrap_or(Err(InvokeError::Error(
@@ -510,7 +510,7 @@ impl TransactionProcessor {
                     .map(|real_id| {
                         system_api
                             .drop_node(RENodeId::Proof(real_id))
-                            .map(|_| ScryptoValue::unit())
+                            .map(|_| IndexedScryptoValue::unit())
                             .map_err(InvokeError::Downstream)
                     })
                     .unwrap_or(Err(InvokeError::Error(
@@ -526,7 +526,7 @@ impl TransactionProcessor {
                         .invoke(AuthZoneClearInvocation {
                             receiver: auth_zone_id,
                         })
-                        .map(|rtn| ScryptoValue::from_typed(&rtn))
+                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                         .map_err(InvokeError::Downstream)
                 }
                 Instruction::CallFunction {
@@ -536,7 +536,8 @@ impl TransactionProcessor {
                     Self::replace_ids(
                         &mut proof_id_mapping,
                         &mut bucket_id_mapping,
-                        ScryptoValue::from_slice(args).expect("Invalid CALL_FUNCTION arguments"),
+                        IndexedScryptoValue::from_slice(args)
+                            .expect("Invalid CALL_FUNCTION arguments"),
                     )
                     .and_then(|args| Self::process_expressions(args, system_api))
                     .and_then(|args| {
@@ -552,7 +553,7 @@ impl TransactionProcessor {
                                     receiver: auth_zone_id,
                                     proof: scrypto::resource::Proof(*proof_id),
                                 })
-                                .map(|rtn| ScryptoValue::from_typed(&rtn))
+                                .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                                 .map_err(InvokeError::Downstream)?;
                         }
                         // Auto move into worktop
@@ -570,7 +571,8 @@ impl TransactionProcessor {
                     Self::replace_ids(
                         &mut proof_id_mapping,
                         &mut bucket_id_mapping,
-                        ScryptoValue::from_slice(args).expect("Invalid CALL_METHOD arguments"),
+                        IndexedScryptoValue::from_slice(args)
+                            .expect("Invalid CALL_METHOD arguments"),
                     )
                     .and_then(|args| Self::process_expressions(args, system_api))
                     .and_then(|args| {
@@ -586,7 +588,7 @@ impl TransactionProcessor {
                                     receiver: auth_zone_id,
                                     proof: scrypto::resource::Proof(*proof_id),
                                 })
-                                .map(|rtn| ScryptoValue::from_typed(&rtn))
+                                .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                                 .map_err(InvokeError::Downstream)?;
                         }
                         // Auto move into worktop
@@ -605,7 +607,7 @@ impl TransactionProcessor {
                         code: code.clone(),
                         abi: abi.clone(),
                     })
-                    .map(|address| ScryptoValue::from_typed(&address))
+                    .map(|address| IndexedScryptoValue::from_typed(&address))
                     .map_err(InvokeError::Downstream),
                 Instruction::CallNativeFunction {
                     function_ident,
@@ -614,7 +616,7 @@ impl TransactionProcessor {
                     Self::replace_ids(
                         &mut proof_id_mapping,
                         &mut bucket_id_mapping,
-                        ScryptoValue::from_slice(args)
+                        IndexedScryptoValue::from_slice(args)
                             .expect("Invalid CALL_NATIVE_FUNCTION arguments"),
                     )
                     .and_then(|args| Self::process_expressions(args, system_api))
@@ -656,7 +658,7 @@ impl TransactionProcessor {
                     Self::replace_ids(
                         &mut proof_id_mapping,
                         &mut bucket_id_mapping,
-                        ScryptoValue::from_slice(args)
+                        IndexedScryptoValue::from_slice(args)
                             .expect("Invalid CALL_NATIVE_METHOD arguments"),
                     )
                     .and_then(|args| Self::process_expressions(args, system_api))

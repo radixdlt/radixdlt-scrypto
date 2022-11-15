@@ -16,6 +16,8 @@ pub enum NoCustomTypeId {}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomValue {}
 
+pub type BasicEncoder<'a> = Encoder<'a, NoCustomTypeId>;
+pub type BasicDecoder<'a> = Decoder<'a, NoCustomTypeId>;
 pub type BasicSborValue = SborValue<NoCustomTypeId, NoCustomValue>;
 pub type BasicSborTypeId = SborTypeId<NoCustomTypeId>;
 

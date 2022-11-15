@@ -41,7 +41,7 @@ pub struct WasmerEngine {
 
 pub fn send_value(
     instance: &Instance,
-    value: &ScryptoValue,
+    value: &IndexedScryptoValue,
 ) -> Result<usize, InvokeError<WasmError>> {
     let slice = &value.raw;
     let n = slice.len();
@@ -75,7 +75,7 @@ pub fn send_value(
     Err(InvokeError::Error(WasmError::MemoryAllocError))
 }
 
-pub fn read_value(instance: &Instance, ptr: usize) -> Result<ScryptoValue, WasmError> {
+pub fn read_value(instance: &Instance, ptr: usize) -> Result<IndexedScryptoValue, WasmError> {
     let memory = instance
         .exports
         .get_memory(EXPORT_MEMORY)
@@ -100,7 +100,7 @@ pub fn read_value(instance: &Instance, ptr: usize) -> Result<ScryptoValue, WasmE
                 temp.set_len(n);
             }
 
-            return ScryptoValue::from_slice(&temp).map_err(WasmError::InvalidScryptoValue);
+            return IndexedScryptoValue::from_slice(&temp).map_err(WasmError::InvalidScryptoValue);
         }
     }
 
@@ -188,9 +188,9 @@ impl WasmInstance for WasmerInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        args: &ScryptoValue,
+        args: &IndexedScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<ScryptoValue, InvokeError<WasmError>> {
+    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
         {
             // set up runtime pointer
             let mut guard = self

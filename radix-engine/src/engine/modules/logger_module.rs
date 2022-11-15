@@ -126,7 +126,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
     fn on_run(
         &mut self,
         _actor: &REActor,
-        _input: &ScryptoValue,
+        _input: &IndexedScryptoValue,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,

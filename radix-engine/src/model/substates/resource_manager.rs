@@ -93,7 +93,7 @@ impl ResourceManagerSubstate {
     pub fn get_auth(
         &self,
         method: ResourceManagerMethod,
-        args: &ScryptoValue,
+        args: &IndexedScryptoValue,
     ) -> &MethodAuthorization {
         match &method {
             ResourceManagerMethod::UpdateAuth => {
@@ -296,7 +296,7 @@ pub enum MethodAccessRuleMethod {
 /// Currently required as all auth is defined by soft authorization rules.
 macro_rules! convert_auth {
     ($auth:expr) => {
-        convert(&Type::Unit, &ScryptoValue::unit(), &$auth)
+        convert(&Type::Unit, &IndexedScryptoValue::unit(), &$auth)
     };
 }
 
@@ -326,7 +326,7 @@ impl MethodAccessRule {
     pub fn main(
         &mut self,
         method: MethodAccessRuleMethod,
-    ) -> Result<ScryptoValue, InvokeError<ResourceManagerError>> {
+    ) -> Result<IndexedScryptoValue, InvokeError<ResourceManagerError>> {
         match method {
             MethodAccessRuleMethod::Lock() => self.lock(),
             MethodAccessRuleMethod::Update(method_auth) => {
@@ -334,7 +334,7 @@ impl MethodAccessRule {
             }
         }
 
-        Ok(ScryptoValue::from_typed(&()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 
     fn update(&mut self, method_auth: AccessRule) {

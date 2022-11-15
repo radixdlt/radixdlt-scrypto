@@ -140,7 +140,7 @@ impl FeeTable {
     pub fn run_native_function_cost(
         &self,
         native_function: &NativeFunction,
-        input: &ScryptoValue,
+        input: &IndexedScryptoValue,
     ) -> u32 {
         match native_function {
             NativeFunction::TransactionProcessor(transaction_processor_fn) => {
@@ -166,7 +166,7 @@ impl FeeTable {
     pub fn run_native_method_cost(
         &self,
         native_method: &NativeMethod,
-        _input: &ScryptoValue,
+        _input: &IndexedScryptoValue,
     ) -> u32 {
         match native_method {
             NativeMethod::AuthZone(auth_zone_ident) => {

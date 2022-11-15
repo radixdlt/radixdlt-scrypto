@@ -10,13 +10,13 @@ use crate::engine::types::*;
 use crate::misc::*;
 
 #[derive(Clone, Copy, Debug)]
-pub struct ScryptoValueFormatterContext<'a> {
+pub struct ValueFormattingContext<'a> {
     bech32_encoder: Option<&'a Bech32Encoder>,
     bucket_names: Option<&'a HashMap<BucketId, String>>,
     proof_names: Option<&'a HashMap<ProofId, String>>,
 }
 
-impl<'a> ScryptoValueFormatterContext<'a> {
+impl<'a> ValueFormattingContext<'a> {
     pub fn no_context() -> Self {
         Self {
             bech32_encoder: None,
@@ -56,22 +56,22 @@ impl<'a> ScryptoValueFormatterContext<'a> {
     }
 }
 
-impl<'a> Into<ScryptoValueFormatterContext<'a>> for &'a Bech32Encoder {
-    fn into(self) -> ScryptoValueFormatterContext<'a> {
-        ScryptoValueFormatterContext::no_manifest_context(Some(self))
+impl<'a> Into<ValueFormattingContext<'a>> for &'a Bech32Encoder {
+    fn into(self) -> ValueFormattingContext<'a> {
+        ValueFormattingContext::no_manifest_context(Some(self))
     }
 }
 
-impl<'a> Into<ScryptoValueFormatterContext<'a>> for Option<&'a Bech32Encoder> {
-    fn into(self) -> ScryptoValueFormatterContext<'a> {
-        ScryptoValueFormatterContext::no_manifest_context(self)
+impl<'a> Into<ValueFormattingContext<'a>> for Option<&'a Bech32Encoder> {
+    fn into(self) -> ValueFormattingContext<'a> {
+        ValueFormattingContext::no_manifest_context(self)
     }
 }
 
 pub fn format_scrypto_value<F: fmt::Write>(
     f: &mut F,
-    value: &SborValue<ScryptoCustomTypeId, ScryptoCustomValue>,
-    context: &ScryptoValueFormatterContext,
+    value: &ScryptoValue,
+    context: &ValueFormattingContext,
 ) -> fmt::Result {
     match value {
         // primitive types
@@ -131,10 +131,7 @@ pub fn format_scrypto_value<F: fmt::Write>(
     Ok(())
 }
 
-pub fn format_type_id<F: fmt::Write>(
-    f: &mut F,
-    type_id: &SborTypeId<ScryptoCustomTypeId>,
-) -> fmt::Result {
+pub fn format_type_id<F: fmt::Write>(f: &mut F, type_id: &ScryptoTypeId) -> fmt::Result {
     match type_id {
         SborTypeId::Unit => f.write_str("Unit"),
         SborTypeId::Bool => f.write_str("Bool"),
@@ -180,8 +177,8 @@ pub fn format_type_id<F: fmt::Write>(
 
 pub fn format_elements<F: fmt::Write>(
     f: &mut F,
-    values: &[SborValue<ScryptoCustomTypeId, ScryptoCustomValue>],
-    context: &ScryptoValueFormatterContext,
+    values: &[ScryptoValue],
+    context: &ValueFormattingContext,
 ) -> fmt::Result {
     for (i, x) in values.iter().enumerate() {
         if i != 0 {
@@ -195,7 +192,7 @@ pub fn format_elements<F: fmt::Write>(
 pub fn format_custom_value<F: fmt::Write>(
     f: &mut F,
     value: &ScryptoCustomValue,
-    context: &ScryptoValueFormatterContext,
+    context: &ValueFormattingContext,
 ) -> fmt::Result {
     match value {
         // Global address types

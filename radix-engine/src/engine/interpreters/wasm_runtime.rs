@@ -45,8 +45,8 @@ where
         &mut self,
         fn_ident: ScryptoFunctionIdent,
         args: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let args = ScryptoValue::from_slice(&args)
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
+        let args = IndexedScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
         self.system_api
             .invoke(ScryptoInvocation::Function(fn_ident, args))
@@ -56,8 +56,8 @@ where
         &mut self,
         fn_ident: ScryptoMethodIdent,
         args: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let args = ScryptoValue::from_slice(&args)
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
+        let args = IndexedScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
         self.system_api
             .invoke(ScryptoInvocation::Method(fn_ident, args))
@@ -67,7 +67,7 @@ where
         &mut self,
         native_function: NativeFunction,
         args: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         parse_and_invoke_native_function(native_function, args, self.system_api)
     }
 
@@ -75,14 +75,14 @@ where
         &mut self,
         native_method: NativeMethod,
         args: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         parse_and_invoke_native_method(native_method, args, self.system_api)
     }
 
     fn handle_node_create(
         &mut self,
         scrypto_node: ScryptoRENode,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         let node = match scrypto_node {
             ScryptoRENode::GlobalComponent(component_id) => RENode::Global(
                 GlobalAddressSubstate::Component(scrypto::component::Component(component_id)),
@@ -98,17 +98,17 @@ where
         };
 
         let id = self.system_api.create_node(node)?;
-        Ok(ScryptoValue::from_typed(&id))
+        Ok(IndexedScryptoValue::from_typed(&id))
     }
 
-    fn handle_get_visible_node_ids(&mut self) -> Result<ScryptoValue, RuntimeError> {
+    fn handle_get_visible_node_ids(&mut self) -> Result<IndexedScryptoValue, RuntimeError> {
         let node_ids = self.system_api.get_visible_node_ids()?;
-        Ok(ScryptoValue::from_typed(&node_ids))
+        Ok(IndexedScryptoValue::from_typed(&node_ids))
     }
 
-    fn handle_drop_node(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
+    fn handle_drop_node(&mut self, node_id: RENodeId) -> Result<IndexedScryptoValue, RuntimeError> {
         self.system_api.drop_node(node_id)?;
-        Ok(ScryptoValue::from_typed(&()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 
     fn handle_lock_substate(
@@ -116,7 +116,7 @@ where
         node_id: RENodeId,
         offset: SubstateOffset,
         mutable: bool,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         let flags = if mutable {
             LockFlags::MUTABLE
         } else {
@@ -130,10 +130,13 @@ where
 
         self.lock_types.insert(handle, offset);
 
-        Ok(ScryptoValue::from_typed(&handle))
+        Ok(IndexedScryptoValue::from_typed(&handle))
     }
 
-    fn handle_read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+    fn handle_read(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         self.system_api
             .get_ref(lock_handle)
             .map(|substate_ref| substate_ref.to_scrypto_value())
@@ -143,7 +146,7 @@ where
         &mut self,
         lock_handle: LockHandle,
         buffer: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         let offset = self
             .lock_types
             .get(&lock_handle)
@@ -164,14 +167,17 @@ where
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
         }
 
-        Ok(ScryptoValue::unit())
+        Ok(IndexedScryptoValue::unit())
     }
 
-    fn handle_drop_lock(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+    fn handle_drop_lock(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         self.lock_types.remove(&lock_handle);
         self.system_api
             .drop_lock(lock_handle)
-            .map(|unit| ScryptoValue::from_typed(&unit))
+            .map(|unit| IndexedScryptoValue::from_typed(&unit))
     }
 
     fn handle_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {
@@ -191,15 +197,18 @@ where
     }
 }
 
-fn encode<T: Encode<ScryptoCustomTypeId>>(output: T) -> ScryptoValue {
-    ScryptoValue::from_typed(&output)
+fn encode<T: Encode<ScryptoCustomTypeId>>(output: T) -> IndexedScryptoValue {
+    IndexedScryptoValue::from_typed(&output)
 }
 
 impl<'y, 'a, Y> WasmRuntime for RadixEngineWasmRuntime<'y, 'a, Y>
 where
     Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
 {
-    fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {
+    fn main(
+        &mut self,
+        input: IndexedScryptoValue,
+    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
         let input: RadixEngineInput = scrypto_decode(&input.raw)
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         let rtn = match input {
@@ -257,8 +266,11 @@ impl NopWasmRuntime {
 }
 
 impl WasmRuntime for NopWasmRuntime {
-    fn main(&mut self, _input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {
-        Ok(ScryptoValue::unit())
+    fn main(
+        &mut self,
+        _input: IndexedScryptoValue,
+    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
+        Ok(IndexedScryptoValue::unit())
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>> {

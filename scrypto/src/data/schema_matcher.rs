@@ -3,7 +3,7 @@ use sbor::*;
 use crate::abi::*;
 use crate::data::*;
 
-pub fn sbor_type_id(ty: &Type) -> Option<SborTypeId<ScryptoCustomTypeId>> {
+pub fn sbor_type_id(ty: &Type) -> Option<ScryptoTypeId> {
     match ty {
         Type::Unit => Some(SborTypeId::Unit),
         Type::Bool => Some(SborTypeId::Bool),
@@ -63,10 +63,7 @@ pub fn sbor_type_id(ty: &Type) -> Option<SborTypeId<ScryptoCustomTypeId>> {
     }
 }
 
-pub fn match_schema_with_value(
-    ty: &Type,
-    value: &SborValue<ScryptoCustomTypeId, ScryptoCustomValue>,
-) -> bool {
+pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
     match ty {
         Type::Unit => matches!(value, SborValue::Unit),
         Type::Bool => matches!(value, SborValue::Bool { .. }),
