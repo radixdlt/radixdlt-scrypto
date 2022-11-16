@@ -1,5 +1,7 @@
+use radix_engine_lib::data::ScryptoCustomTypeId;
 use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
 use radix_engine_lib::engine::types::RENodeId;
+use radix_engine_lib::math::Decimal;
 use radix_engine_lib::resource::{
     AuthZoneClearInvocation, AuthZoneCreateProofByAmountInvocation,
     AuthZoneCreateProofByIdsInvocation, AuthZoneCreateProofInvocation, AuthZoneDrainInvocation,
@@ -10,8 +12,6 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-use radix_engine_lib::data::ScryptoCustomTypeId;
-use radix_engine_lib::math::Decimal;
 
 /// Represents the auth zone, which is used by system for checking
 /// if this component is allowed to
@@ -37,7 +37,9 @@ impl ComponentAuthZone {
         })
     }
 
-    pub fn sys_clear<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(env: &mut Y) -> Result<(), E>
+    pub fn sys_clear<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
+        env: &mut Y,
+    ) -> Result<(), E>
     where
         Y: Syscalls<E> + SysNativeInvokable<AuthZoneClearInvocation, E>,
     {
@@ -67,7 +69,10 @@ impl ComponentAuthZone {
         })
     }
 
-    pub fn sys_create_proof<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
+    pub fn sys_create_proof<
+        Y,
+        E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+    >(
         resource_address: ResourceAddress,
         env: &mut Y,
     ) -> Result<radix_engine_lib::resource::Proof, E>
@@ -85,7 +90,10 @@ impl ComponentAuthZone {
         })
     }
 
-    pub fn sys_create_proof_by_amount<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
+    pub fn sys_create_proof_by_amount<
+        Y,
+        E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+    >(
         amount: Decimal,
         resource_address: ResourceAddress,
         env: &mut Y,
@@ -105,7 +113,10 @@ impl ComponentAuthZone {
         })
     }
 
-    pub fn sys_create_proof_by_ids<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
+    pub fn sys_create_proof_by_ids<
+        Y,
+        E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+    >(
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
         env: &mut Y,
@@ -125,7 +136,11 @@ impl ComponentAuthZone {
         })
     }
 
-    pub fn sys_push<P: Into<radix_engine_lib::resource::Proof>, Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
+    pub fn sys_push<
+        P: Into<radix_engine_lib::resource::Proof>,
+        Y,
+        E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+    >(
         proof: P,
         env: &mut Y,
     ) -> Result<(), E>

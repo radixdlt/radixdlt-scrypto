@@ -1,4 +1,4 @@
-use radix_engine_lib::data::ScryptoValue;
+use radix_engine_lib::data::IndexedScryptoValue;
 use radix_engine_lib::engine::types::{
     AuthZoneMethod, BucketMethod, ComponentMethod, EpochManagerFunction, EpochManagerMethod,
     NativeFunction, NativeMethod, PackageFunction, ProofMethod, ResourceManagerFunction,
@@ -145,7 +145,7 @@ impl FeeTable {
     pub fn run_native_function_cost(
         &self,
         native_function: &NativeFunction,
-        input: &ScryptoValue,
+        input: &IndexedScryptoValue,
     ) -> u32 {
         match native_function {
             NativeFunction::TransactionProcessor(transaction_processor_fn) => {
@@ -171,7 +171,7 @@ impl FeeTable {
     pub fn run_native_method_cost(
         &self,
         native_method: &NativeMethod,
-        _input: &ScryptoValue,
+        _input: &IndexedScryptoValue,
     ) -> u32 {
         match native_method {
             NativeMethod::AuthZone(auth_zone_ident) => {

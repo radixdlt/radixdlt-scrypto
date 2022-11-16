@@ -1,6 +1,6 @@
-use radix_engine_lib::data::ScryptoValue;
 use crate::model::{convert, MethodAuthorization};
 use crate::types::*;
+use radix_engine_lib::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct ComponentStateSubstate {
@@ -40,7 +40,7 @@ impl ComponentInfoSubstate {
         schema: &Type,
         method_name: &str,
     ) -> Vec<MethodAuthorization> {
-        let data = ScryptoValue::from_slice(&component_state.raw)
+        let data = IndexedScryptoValue::from_slice(&component_state.raw)
             .expect("Failed to decode component state");
 
         let mut authorizations = Vec::new();

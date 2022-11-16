@@ -1,7 +1,7 @@
 use colored::*;
 use radix_engine_lib::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_lib::component::SystemAddress;
-use radix_engine_lib::data::{ScryptoCustomTypeId, ScryptoValue};
+use radix_engine_lib::data::{IndexedScryptoValue, ScryptoCustomTypeId};
 use radix_engine_lib::engine::types::{GlobalAddress, Level};
 use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
 use transaction::model::*;
@@ -346,7 +346,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                         f,
                         "\n{} {}",
                         prefix!(i, outputs),
-                        ScryptoValue::from_slice(output)
+                        IndexedScryptoValue::from_slice(output)
                             .expect("Failed to parse return data")
                             .display(decompilation_context.for_value_display())
                     )?;

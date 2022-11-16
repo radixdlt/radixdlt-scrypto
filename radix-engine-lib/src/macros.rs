@@ -69,7 +69,6 @@ macro_rules! pdec {
     };
 }
 
-
 /// A macro for implementing sbor traits.
 #[macro_export]
 macro_rules! scrypto_type {

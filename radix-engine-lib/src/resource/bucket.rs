@@ -12,8 +12,8 @@ use crate::engine::scrypto_env::*;
 use crate::engine::{api::*, types::*};
 use crate::math::*;
 use crate::resource::*;
-use crate::scrypto_type;
 use crate::scrypto;
+use crate::scrypto_type;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]

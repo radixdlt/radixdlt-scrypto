@@ -7,9 +7,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::data::ScryptoCustomTypeId;
+use crate::data::*;
 use crate::scrypto_type;
-
 
 /// Encodes a data structure into byte array.
 fn scrypto_encode<T: Encode<ScryptoCustomTypeId> + ?Sized>(v: &T) -> Vec<u8> {
@@ -67,10 +66,10 @@ impl TryFrom<&[u8]> for NonFungibleId {
     type Error = ParseNonFungibleIdError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        // TODO: Check for no custom values
         /*
-        let value =
-            ScryptoValue::from_slice(slice).map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
+        // TODO: Check for no custom values
+        let value = IndexedScryptoValue::from_slice(slice)
+            .map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
         // TODO: limit types
         if value.value_count() != 0 {
             return Err(ParseNonFungibleIdError::ContainsOwnedNodes);

@@ -2,12 +2,14 @@ use radix_engine_lib::address::Bech32Decoder;
 use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::crypto::{Blob, Hash, hash};
+use radix_engine_lib::crypto::{hash, Blob, Hash};
+use radix_engine_lib::data::{IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue};
 use radix_engine_lib::engine::types::{
     BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
     ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoPackage, ScryptoReceiver,
 };
+use radix_engine_lib::math::{Decimal, PreciseDecimal};
 use radix_engine_lib::resource::ResourceMethodAuthKey::*;
 use radix_engine_lib::resource::{
     require, AccessRule, AccessRuleNode, Bucket, MintParams, Mutability, NonFungibleAddress,
@@ -29,8 +31,6 @@ use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::rule;
 use scrypto::*;
-use radix_engine_lib::data::{ScryptoCustomTypeId, ScryptoCustomValue, ScryptoValue};
-use radix_engine_lib::math::{Decimal, PreciseDecimal};
 
 use crate::errors::*;
 use crate::model::*;
@@ -119,7 +119,7 @@ impl ManifestBuilder {
             | Instruction::CallMethod { args, .. }
             | Instruction::CallNativeFunction { args, .. }
             | Instruction::CallNativeMethod { args, .. } => {
-                let scrypt_value = ScryptoValue::from_slice(&args).unwrap();
+                let scrypt_value = IndexedScryptoValue::from_slice(&args).unwrap();
                 self.id_validator.move_resources(&scrypt_value).unwrap();
             }
             Instruction::PublishPackage { .. } => {}
@@ -1039,7 +1039,9 @@ impl ManifestBuilder {
                                     .unwrap()
                                 }
                             };
-                            Ok(scrypto_encode(&radix_engine_lib::resource::Bucket(bucket_id)))
+                            Ok(scrypto_encode(&radix_engine_lib::resource::Bucket(
+                                bucket_id,
+                            )))
                         }
                         Type::Proof => {
                             let resource_specifier = parse_resource_specifier(arg, &self.decoder)
@@ -1114,7 +1116,9 @@ impl ManifestBuilder {
         type_id: u8,
         account: Option<ComponentAddress>,
     ) -> Result<Vec<u8>, BuildArgsError> {
-        match ScryptoCustomTypeId::from_u8(type_id).ok_or(BuildArgsError::UnsupportedType(i, ty.clone()))? {
+        match ScryptoCustomTypeId::from_u8(type_id)
+            .ok_or(BuildArgsError::UnsupportedType(i, ty.clone()))?
+        {
             ScryptoCustomTypeId::Decimal => {
                 let value = arg
                     .parse::<Decimal>()

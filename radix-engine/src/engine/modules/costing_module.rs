@@ -1,8 +1,8 @@
-use radix_engine_lib::data::ScryptoValue;
 use crate::engine::*;
 use crate::fee::{FeeReserve, FeeReserveError, SystemApiCostingEntry};
 use crate::model::Resource;
 use crate::types::*;
+use radix_engine_lib::data::IndexedScryptoValue;
 use radix_engine_lib::engine::types::{RENodeId, VaultId};
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -368,7 +368,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
     fn on_run(
         &mut self,
         actor: &REActor,
-        input: &ScryptoValue,
+        input: &IndexedScryptoValue,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
         track: &mut Track<R>,

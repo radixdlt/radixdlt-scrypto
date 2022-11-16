@@ -1,7 +1,7 @@
 use radix_engine_lib::math::Decimal;
 use radix_engine_lib::resource::{NonFungibleAddress, ResourceAddress};
-use scrypto::scrypto;
 use sbor::*;
+use scrypto::scrypto;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum MethodAuthorizationError {

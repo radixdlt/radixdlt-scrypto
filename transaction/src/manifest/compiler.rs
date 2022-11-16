@@ -34,9 +34,9 @@ pub fn compile(
 
 #[cfg(test)]
 mod tests {
-    use radix_engine_lib::crypto::Blob;
     use super::*;
     use crate::model::Instruction;
+    use radix_engine_lib::crypto::Blob;
     use radix_engine_lib::engine::types::{
         NativeFunctionIdent, ResourceManagerFunction, ScryptoMethodIdent, ScryptoReceiver,
     };

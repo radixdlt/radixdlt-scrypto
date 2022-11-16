@@ -1,4 +1,5 @@
 use radix_engine_lib::engine::api::SysNativeInvokable;
+use radix_engine_lib::math::Decimal;
 use radix_engine_lib::resource::{
     AccessRule, Bucket, MintParams, NonFungibleId, ResourceAddress, ResourceManagerBurnInvocation,
     ResourceManagerGetMetadataInvocation, ResourceManagerGetNonFungibleInvocation,
@@ -8,7 +9,6 @@ use radix_engine_lib::resource::{
     ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation,
     ResourceMethodAuthKey, ResourceType,
 };
-use radix_engine_lib::math::Decimal;
 
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;

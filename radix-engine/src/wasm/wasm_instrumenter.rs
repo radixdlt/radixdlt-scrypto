@@ -1,6 +1,6 @@
 use moka::sync::Cache;
-use std::sync::Arc;
 use radix_engine_lib::crypto::hash;
+use std::sync::Arc;
 
 use crate::types::*;
 use crate::wasm::{WasmMeteringConfig, WasmModule};

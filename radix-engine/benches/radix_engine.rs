@@ -40,7 +40,6 @@ macro_rules! dec {
     };
 }
 
-
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.
     let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();

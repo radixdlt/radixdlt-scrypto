@@ -1,6 +1,6 @@
+use radix_engine_lib::crypto::{sha256, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature};
 use sbor::rust::vec::Vec;
 use secp256k1::{Message, PublicKey, SecretKey};
-use radix_engine_lib::crypto::{EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, sha256};
 
 pub struct EcdsaSecp256k1PrivateKey(SecretKey);
 

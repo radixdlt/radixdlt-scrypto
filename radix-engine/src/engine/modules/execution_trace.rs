@@ -2,12 +2,15 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use radix_engine_lib::engine::types::{BucketOffset, ComponentId, NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, SubstateId, SubstateOffset, VaultId, VaultMethod, VaultOffset};
-use radix_engine_lib::resource::{VaultPutInvocation, VaultTakeInvocation};
-use radix_engine_lib::resource::{Bucket, Proof, Vault};
-use std::fmt::Debug;
-use radix_engine_lib::data::ScryptoValue;
+use radix_engine_lib::data::IndexedScryptoValue;
+use radix_engine_lib::engine::types::{
+    BucketOffset, ComponentId, NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,
+    SubstateId, SubstateOffset, VaultId, VaultMethod, VaultOffset,
+};
 use radix_engine_lib::math::Decimal;
+use radix_engine_lib::resource::{Bucket, Proof, Vault};
+use radix_engine_lib::resource::{VaultPutInvocation, VaultTakeInvocation};
+use std::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -119,7 +122,7 @@ pub trait Traceable: Debug {
     fn proofs(&self) -> Vec<ProofId>;
 }
 
-impl Traceable for ScryptoValue {
+impl Traceable for IndexedScryptoValue {
     fn buckets(&self) -> Vec<BucketId> {
         self.bucket_ids.keys().map(|k| k.clone()).collect()
     }
@@ -250,7 +253,7 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     fn on_run(
         &mut self,
         actor: &REActor,
-        input: &ScryptoValue,
+        input: &IndexedScryptoValue,
         call_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track<R>,
@@ -551,7 +554,7 @@ impl ExecutionTraceModule {
         heap: &mut Heap,
         track: &mut Track<'s, R>,
         actor: &REActor,
-        input: &ScryptoValue,
+        input: &IndexedScryptoValue,
     ) {
         if let REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) = actor {
             let caller = &call_frame.actor;
@@ -576,7 +579,7 @@ impl ExecutionTraceModule {
         track: &mut Track<'s, R>,
         actor: &REActor,
         vault_id: &VaultId,
-        input: &ScryptoValue,
+        input: &IndexedScryptoValue,
     ) {
         if let Ok(call_data) = scrypto_decode::<VaultPutInvocation>(&input.raw) {
             let bucket_id = call_data.bucket.0;
@@ -597,7 +600,7 @@ impl ExecutionTraceModule {
         track: &mut Track<'s, R>,
         actor: &REActor,
         vault_id: &VaultId,
-        input: &ScryptoValue,
+        input: &IndexedScryptoValue,
     ) {
         if let Ok(call_data) = scrypto_decode::<VaultTakeInvocation>(&input.raw) {
             track.vault_ops.push((

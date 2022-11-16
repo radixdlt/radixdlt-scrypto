@@ -1,3 +1,5 @@
+use radix_engine_lib::crypto::Hash;
+use radix_engine_lib::data::{match_schema_with_value, IndexedScryptoValue};
 use radix_engine_lib::engine::api::{SysInvokableNative, Syscalls};
 use radix_engine_lib::engine::types::{
     AuthZoneOffset, BucketOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
@@ -8,8 +10,6 @@ use scrypto::access_rule_node;
 use scrypto::rule;
 use std::fmt::Debug;
 use std::mem;
-use radix_engine_lib::crypto::Hash;
-use radix_engine_lib::data::{match_schema_with_value, ScryptoValue};
 use transaction::errors::IdAllocationError;
 use transaction::model::AuthZoneParams;
 use transaction::validation::*;
@@ -313,7 +313,7 @@ where
                         blueprint_name: "Account".to_string(),
                         function_name: "create".to_string(),
                     },
-                    ScryptoValue::from_slice(&args!(access_rule)).unwrap(),
+                    IndexedScryptoValue::from_slice(&args!(access_rule)).unwrap(),
                 ))?;
                 let component_id = result.component_ids.into_iter().next().unwrap();
 
@@ -775,7 +775,7 @@ pub trait Executor {
     type Output: Debug;
 
     // TODO: Remove
-    fn args(&self) -> &ScryptoValue;
+    fn args(&self) -> &IndexedScryptoValue;
 
     fn execute<'a, Y>(
         self,
@@ -851,7 +851,10 @@ where
     W: WasmEngine,
     R: FeeReserve,
 {
-    fn invoke(&mut self, invocation: ScryptoInvocation) -> Result<ScryptoValue, RuntimeError> {
+    fn invoke(
+        &mut self,
+        invocation: ScryptoInvocation,
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,

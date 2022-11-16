@@ -1,5 +1,6 @@
 use crate::component::*;
 use crate::crypto::Hash;
+use crate::data::ScryptoCustomTypeId;
 use crate::engine::actor::ScryptoActor;
 use crate::engine::scrypto_env::NativeFnInvocation;
 use crate::resource::*;
@@ -7,7 +8,6 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::Decode;
-use crate::data::ScryptoCustomTypeId;
 
 use super::types::*;
 

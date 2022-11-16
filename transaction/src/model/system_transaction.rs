@@ -1,7 +1,7 @@
 use crate::model::{AuthModule, AuthZoneParams, Executable, TransactionManifest};
+use radix_engine_lib::crypto::Hash;
 use scrypto::scrypto;
 use std::collections::BTreeSet;
-use radix_engine_lib::crypto::Hash;
 
 use super::{ExecutionContext, FeePayment, DEFAULT_COST_UNIT_LIMIT};
 

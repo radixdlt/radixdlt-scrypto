@@ -1,3 +1,4 @@
+use crate::Describe;
 use sbor::path::SborPath;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
@@ -6,7 +7,6 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto_abi::{Fields, Type};
-use crate::Describe;
 
 use crate::resource::schema_path::SchemaSubPath::{Field, Index};
 
@@ -64,7 +64,10 @@ impl SchemaPath {
                         cur_type = element_type.as_ref();
                         sbor_path.push(*index);
                     }
-                    Type::Array { element_type, length: _ } => {
+                    Type::Array {
+                        element_type,
+                        length: _,
+                    } => {
                         cur_type = element_type.as_ref();
                         sbor_path.push(*index);
                     }

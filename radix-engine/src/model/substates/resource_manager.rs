@@ -1,9 +1,10 @@
-use radix_engine_lib::data::ScryptoValue;
+use crate::dec;
 use crate::model::ResourceMethodRule::{Protected, Public};
 use crate::model::{
     convert, InvokeError, MethodAuthorization, NonFungible, Resource, ResourceManagerError,
 };
 use crate::types::*;
+use radix_engine_lib::data::IndexedScryptoValue;
 use radix_engine_lib::engine::types::{
     BucketMethod, NonFungibleStoreId, ResourceManagerMethod, VaultMethod,
 };
@@ -14,7 +15,6 @@ use radix_engine_lib::resource::{
     AccessRule, MintParams, Mutability, ResourceManagerLockAuthInvocation,
     ResourceManagerUpdateAuthInvocation, ResourceMethodAuthKey, ResourceType, LOCKED,
 };
-use crate::dec;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -104,7 +104,7 @@ impl ResourceManagerSubstate {
     pub fn get_auth(
         &self,
         method: ResourceManagerMethod,
-        args: &ScryptoValue,
+        args: &IndexedScryptoValue,
     ) -> &MethodAuthorization {
         match &method {
             ResourceManagerMethod::UpdateAuth => {
@@ -307,7 +307,7 @@ pub enum MethodAccessRuleMethod {
 /// Currently required as all auth is defined by soft authorization rules.
 macro_rules! convert_auth {
     ($auth:expr) => {
-        convert(&Type::Unit, &ScryptoValue::unit(), &$auth)
+        convert(&Type::Unit, &IndexedScryptoValue::unit(), &$auth)
     };
 }
 
@@ -337,7 +337,7 @@ impl MethodAccessRule {
     pub fn main(
         &mut self,
         method: MethodAccessRuleMethod,
-    ) -> Result<ScryptoValue, InvokeError<ResourceManagerError>> {
+    ) -> Result<IndexedScryptoValue, InvokeError<ResourceManagerError>> {
         match method {
             MethodAccessRuleMethod::Lock() => self.lock(),
             MethodAccessRuleMethod::Update(method_auth) => {
@@ -345,7 +345,7 @@ impl MethodAccessRule {
             }
         }
 
-        Ok(ScryptoValue::from_typed(&()))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 
     fn update(&mut self, method_auth: AccessRule) {

@@ -1,9 +1,9 @@
-use radix_engine_lib::data::ScryptoValue;
 use crate::engine::call_frame::RENodeLocation;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;
 use crate::types::*;
+use radix_engine_lib::data::IndexedScryptoValue;
 use radix_engine_lib::engine::types::{
     Level, LockHandle, RENodeId, SubstateId, SubstateOffset, VaultId,
 };
@@ -100,7 +100,7 @@ pub trait Module<R: FeeReserve> {
     fn on_run(
         &mut self,
         actor: &REActor,
-        input: &ScryptoValue,
+        input: &IndexedScryptoValue,
         call_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track<R>,

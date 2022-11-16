@@ -1,5 +1,5 @@
 use radix_engine_lib::crypto::{Signature, SignatureWithPublicKey};
-use scrypto::{buffer::scrypto_encode};
+use scrypto::buffer::scrypto_encode;
 
 use crate::{model::*, signing::Signer};
 

@@ -1,8 +1,8 @@
-use radix_engine_lib::data::ScryptoValue;
 use crate::engine::{KernelError, RuntimeError};
 use crate::model::substates::worktop::WorktopSubstate;
 use crate::model::*;
 use crate::types::*;
+use radix_engine_lib::data::IndexedScryptoValue;
 use radix_engine_lib::engine::types::{
     ComponentOffset, GlobalAddress, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
     SubstateOffset,
@@ -432,16 +432,16 @@ pub enum SubstateRef<'a> {
 }
 
 impl<'a> SubstateRef<'a> {
-    pub fn to_scrypto_value(&self) -> ScryptoValue {
+    pub fn to_scrypto_value(&self) -> IndexedScryptoValue {
         match self {
-            SubstateRef::Global(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::EpochManager(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::ResourceManager(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::ComponentInfo(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::ComponentState(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::Package(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::NonFungible(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::KeyValueStoreEntry(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::Global(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::EpochManager(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::ResourceManager(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::ComponentInfo(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::ComponentState(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::Package(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::NonFungible(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::KeyValueStoreEntry(value) => IndexedScryptoValue::from_typed(*value),
             _ => panic!("Unsupported scrypto value"),
         }
     }
@@ -579,14 +579,14 @@ impl<'a> SubstateRef<'a> {
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
-                let scrypto_value = ScryptoValue::from_slice(&substate.raw).unwrap();
+                let scrypto_value = IndexedScryptoValue::from_slice(&substate.raw).unwrap();
                 (scrypto_value.global_references(), scrypto_value.node_ids())
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
                 let maybe_scrypto_value = substate
                     .0
                     .as_ref()
-                    .map(|raw| ScryptoValue::from_slice(raw).unwrap());
+                    .map(|raw| IndexedScryptoValue::from_slice(raw).unwrap());
                 if let Some(scrypto_value) = maybe_scrypto_value {
                     (scrypto_value.global_references(), scrypto_value.node_ids())
                 } else {
@@ -597,7 +597,7 @@ impl<'a> SubstateRef<'a> {
                 let maybe_scrypto_value = substate
                     .0
                     .as_ref()
-                    .map(|non_fungible| ScryptoValue::from_typed(non_fungible));
+                    .map(|non_fungible| IndexedScryptoValue::from_typed(non_fungible));
                 if let Some(scrypto_value) = maybe_scrypto_value {
                     (scrypto_value.global_references(), scrypto_value.node_ids())
                 } else {

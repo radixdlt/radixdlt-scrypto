@@ -1,8 +1,8 @@
 use moka::sync::Cache;
+use radix_engine_lib::crypto::Hash;
+use radix_engine_lib::data::IndexedScryptoValue;
 use std::sync::Arc;
 use wasmi::*;
-use radix_engine_lib::crypto::Hash;
-use radix_engine_lib::data::ScryptoValue;
 
 use crate::model::InvokeError;
 use crate::types::{format, Box};
@@ -129,7 +129,7 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
         }
     }
 
-    pub fn read_value(&self, ptr: usize) -> Result<ScryptoValue, WasmError> {
+    pub fn read_value(&self, ptr: usize) -> Result<IndexedScryptoValue, WasmError> {
         let len = self
             .instance
             .memory_ref
@@ -145,7 +145,7 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
             return Err(WasmError::MemoryAccessError);
         }
 
-        ScryptoValue::from_slice(&buffer[start..end]).map_err(WasmError::InvalidScryptoValue)
+        IndexedScryptoValue::from_slice(&buffer[start..end]).map_err(WasmError::InvalidScryptoValue)
     }
 }
 
@@ -180,9 +180,9 @@ impl WasmInstance for WasmiInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        args: &ScryptoValue,
+        args: &IndexedScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<ScryptoValue, InvokeError<WasmError>> {
+    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
         let mut externals = WasmiExternals {
             instance: self,
             runtime,

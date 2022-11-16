@@ -18,7 +18,7 @@ macro_rules! checked_int_impl_large {
 
             }
         }
-    }
+    };
 }
 
 macro_rules! checked_unsigned_large {

@@ -1,7 +1,7 @@
-use radix_engine_lib::data::ScryptoValue;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;
+use radix_engine_lib::data::IndexedScryptoValue;
 use radix_engine_lib::engine::types::VaultId;
 
 pub struct LoggerModule {
@@ -127,7 +127,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
     fn on_run(
         &mut self,
         _actor: &REActor,
-        _input: &ScryptoValue,
+        _input: &IndexedScryptoValue,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,

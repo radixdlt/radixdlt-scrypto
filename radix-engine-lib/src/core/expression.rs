@@ -7,8 +7,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::data::*;
-use scrypto_abi::Type;
 use crate::scrypto_type;
+use scrypto_abi::Type;
 
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Expression(pub String);

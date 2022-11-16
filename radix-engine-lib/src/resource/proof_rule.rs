@@ -1,10 +1,10 @@
+use crate::math::Decimal;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::boxed::Box;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use scrypto_abi::{Describe, Fields, Type, Variant};
-use crate::math::Decimal;
 
 use crate::resource::AccessRuleNode::{AllOf, AnyOf};
 use crate::resource::*;
@@ -207,7 +207,6 @@ impl Describe for AccessRuleNode {
         }
     }
 }
-
 
 impl AccessRuleNode {
     pub fn or(self, other: AccessRuleNode) -> Self {

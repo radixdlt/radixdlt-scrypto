@@ -320,10 +320,18 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         SchemaType::Any => {
             panic!("Any type not currently supported for importing.");
         }
-        SchemaType::PackageAddress => parse_quote! { ::scrypto::engine_lib::component::PackageAddress },
-        SchemaType::ComponentAddress => parse_quote! { ::scrypto::engine_lib::component::ComponentAddress},
-        SchemaType::ResourceAddress => parse_quote! {::scrypto::engine_lib::resource::ResourceAddress },
-        SchemaType::SystemAddress => parse_quote! { ::scrypto::engine_lib::component::SystemAddress},
+        SchemaType::PackageAddress => {
+            parse_quote! { ::scrypto::engine_lib::component::PackageAddress }
+        }
+        SchemaType::ComponentAddress => {
+            parse_quote! { ::scrypto::engine_lib::component::ComponentAddress}
+        }
+        SchemaType::ResourceAddress => {
+            parse_quote! {::scrypto::engine_lib::resource::ResourceAddress }
+        }
+        SchemaType::SystemAddress => {
+            parse_quote! { ::scrypto::engine_lib::component::SystemAddress}
+        }
         SchemaType::Component => parse_quote! {::scrypto::engine_lib::component::Component },
         SchemaType::KeyValueStore {
             key_type,
@@ -340,7 +348,9 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         SchemaType::Vault => parse_quote! { ::scrypto::engine_lib::resource::Vault},
         SchemaType::Expression => parse_quote! {::scrypto::core::Expression },
         SchemaType::Blob => parse_quote! { ::scrypto::engine_lib::crypto::Blob},
-        SchemaType::NonFungibleAddress => parse_quote! { ::scrypto::engine_lib::resource::NonFungibleAddress},
+        SchemaType::NonFungibleAddress => {
+            parse_quote! { ::scrypto::engine_lib::resource::NonFungibleAddress}
+        }
         SchemaType::Hash => parse_quote! { ::scrypto::crypto::Hash},
         SchemaType::EcdsaSecp256k1PublicKey => {
             parse_quote! {::scrypto::crypto::EcdsaSecp256k1PublicKey }

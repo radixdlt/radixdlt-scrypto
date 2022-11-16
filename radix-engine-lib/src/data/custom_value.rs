@@ -1,14 +1,14 @@
 use sbor::type_id::*;
 use sbor::*;
 
+use crate::component::*;
+use crate::core::*;
+use crate::crypto::*;
+use crate::data::*;
 use crate::engine::types::*;
-use utils::misc::copy_u8_array;
-use crate::component::{ComponentAddress, PackageAddress, SystemAddress};
-use crate::core::Expression;
-use crate::crypto::{Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature, Hash};
-use crate::data::ScryptoCustomTypeId;
 use crate::math::{Decimal, PreciseDecimal};
 use crate::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
+use utils::misc::copy_u8_array;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValue {
@@ -42,7 +42,7 @@ pub enum ScryptoCustomValue {
 }
 
 impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
-    fn encode_type_id(&self, encoder: &mut Encoder<ScryptoCustomTypeId>) {
+    fn encode_type_id(&self, encoder: &mut ScryptoEncoder) {
         match self {
             ScryptoCustomValue::PackageAddress(_) => {
                 encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::PackageAddress))
@@ -107,7 +107,7 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
         }
     }
 
-    fn encode_value(&self, encoder: &mut Encoder<ScryptoCustomTypeId>) {
+    fn encode_value(&self, encoder: &mut ScryptoEncoder) {
         match self {
             // TODO: vector free
             ScryptoCustomValue::PackageAddress(v) => encoder.write_slice(&v.to_vec()),
@@ -146,7 +146,7 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
     }
 
     fn decode(
-        decoder: &mut Decoder<ScryptoCustomTypeId>,
+        decoder: &mut ScryptoDecoder,
         type_id: ScryptoCustomTypeId,
     ) -> Result<Self, DecodeError> {
         match type_id {

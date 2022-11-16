@@ -50,7 +50,6 @@ macro_rules! dec {
     };
 }
 
-
 fn execute_single_transaction(transaction: NotarizedTransaction) {
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 

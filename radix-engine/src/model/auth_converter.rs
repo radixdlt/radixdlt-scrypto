@@ -1,4 +1,4 @@
-use radix_engine_lib::data::{ScryptoCustomTypeId, ScryptoCustomValue, ScryptoValue};
+use radix_engine_lib::data::{IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue};
 use sbor::SborTypeId;
 
 use crate::model::method_authorization::{
@@ -15,7 +15,7 @@ use radix_engine_lib::resource::{
 fn soft_to_hard_decimal(
     schema: &Type,
     soft_decimal: &SoftDecimal,
-    value: &ScryptoValue,
+    value: &IndexedScryptoValue,
 ) -> HardDecimal {
     match soft_decimal {
         SoftDecimal::Static(amount) => HardDecimal::Amount(amount.clone()),
@@ -35,7 +35,11 @@ fn soft_to_hard_decimal(
     }
 }
 
-fn soft_to_hard_count(schema: &Type, soft_count: &SoftCount, value: &ScryptoValue) -> HardCount {
+fn soft_to_hard_count(
+    schema: &Type,
+    soft_count: &SoftCount,
+    value: &IndexedScryptoValue,
+) -> HardCount {
     match soft_count {
         SoftCount::Static(count) => HardCount::Count(count.clone()),
         SoftCount::Dynamic(schema_path) => {
@@ -54,7 +58,7 @@ fn soft_to_hard_count(schema: &Type, soft_count: &SoftCount, value: &ScryptoValu
 fn soft_to_hard_resource_list(
     schema: &Type,
     list: &SoftResourceOrNonFungibleList,
-    value: &ScryptoValue,
+    value: &IndexedScryptoValue,
 ) -> HardProofRuleResourceList {
     match list {
         SoftResourceOrNonFungibleList::Static(resources) => {
@@ -118,7 +122,7 @@ fn soft_to_hard_resource_list(
 fn soft_to_hard_resource(
     schema: &Type,
     soft_resource: &SoftResource,
-    value: &ScryptoValue,
+    value: &IndexedScryptoValue,
 ) -> HardResourceOrNonFungible {
     match soft_resource {
         SoftResource::Dynamic(schema_path) => {
@@ -143,7 +147,7 @@ fn soft_to_hard_resource(
 fn soft_to_hard_resource_or_non_fungible(
     schema: &Type,
     proof_rule_resource: &SoftResourceOrNonFungible,
-    value: &ScryptoValue,
+    value: &IndexedScryptoValue,
 ) -> HardResourceOrNonFungible {
     match proof_rule_resource {
         SoftResourceOrNonFungible::Dynamic(schema_path) => {
@@ -172,7 +176,7 @@ fn soft_to_hard_resource_or_non_fungible(
 fn soft_to_hard_proof_rule(
     schema: &Type,
     proof_rule: &ProofRule,
-    value: &ScryptoValue,
+    value: &IndexedScryptoValue,
 ) -> HardProofRule {
     match proof_rule {
         ProofRule::Require(soft_resource_or_non_fungible) => {
@@ -204,7 +208,7 @@ fn soft_to_hard_proof_rule(
 fn soft_to_hard_auth_rule(
     schema: &Type,
     auth_rule: &AccessRuleNode,
-    value: &ScryptoValue,
+    value: &IndexedScryptoValue,
 ) -> HardAuthRule {
     match auth_rule {
         AccessRuleNode::ProofRule(proof_rule) => {
@@ -229,7 +233,7 @@ fn soft_to_hard_auth_rule(
 
 pub fn convert(
     schema: &Type,
-    value: &ScryptoValue,
+    value: &IndexedScryptoValue,
     method_auth: &AccessRule,
 ) -> MethodAuthorization {
     match method_auth {

@@ -1,4 +1,4 @@
-use radix_engine_lib::crypto::{Hash, hash};
+use radix_engine_lib::crypto::{hash, Hash};
 use radix_engine_lib::resource::{NonFungibleAddress, ResourceAddress};
 use sbor::rust::collections::{BTreeSet, HashMap};
 use sbor::rust::vec::Vec;

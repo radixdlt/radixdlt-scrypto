@@ -2,12 +2,12 @@ use std::sync::{Arc, Mutex};
 
 use crate::model::InvokeError;
 use moka::sync::Cache;
+use radix_engine_lib::data::IndexedScryptoValue;
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
     Universal, Val, WasmerEnv,
 };
 use wasmer_compiler_singlepass::Singlepass;
-use radix_engine_lib::data::ScryptoValue;
 
 use crate::types::*;
 use crate::wasm::constants::*;
@@ -72,7 +72,7 @@ pub fn send_value(instance: &Instance, value: &[u8]) -> Result<usize, InvokeErro
     Err(InvokeError::Error(WasmError::MemoryAllocError))
 }
 
-pub fn read_value(instance: &Instance, ptr: usize) -> Result<ScryptoValue, WasmError> {
+pub fn read_value(instance: &Instance, ptr: usize) -> Result<IndexedScryptoValue, WasmError> {
     let memory = instance
         .exports
         .get_memory(EXPORT_MEMORY)
@@ -97,7 +97,7 @@ pub fn read_value(instance: &Instance, ptr: usize) -> Result<ScryptoValue, WasmE
                 temp.set_len(n);
             }
 
-            return ScryptoValue::from_slice(&temp).map_err(WasmError::InvalidScryptoValue);
+            return IndexedScryptoValue::from_slice(&temp).map_err(WasmError::InvalidScryptoValue);
         }
     }
 
@@ -185,9 +185,9 @@ impl WasmInstance for WasmerInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        args: &ScryptoValue,
+        args: &IndexedScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<ScryptoValue, InvokeError<WasmError>> {
+    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
         {
             // set up runtime pointer
             let mut guard = self

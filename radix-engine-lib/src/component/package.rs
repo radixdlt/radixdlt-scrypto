@@ -12,8 +12,8 @@ use crate::data::ScryptoCustomTypeId;
 use crate::engine::scrypto_env::{
     NativeFnInvocation, NativeFunctionInvocation, PackageFunctionInvocation,
 };
-use crate::scrypto_type;
 use crate::scrypto;
+use crate::scrypto_type;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]

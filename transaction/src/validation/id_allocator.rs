@@ -1,7 +1,7 @@
 use radix_engine_lib::component::ComponentAddress;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::component::SystemAddress;
-use radix_engine_lib::crypto::{Hash, hash};
+use radix_engine_lib::crypto::{hash, Hash};
 use radix_engine_lib::engine::types::{
     AuthZoneId, BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId, PackageId, ProofId,
     ResourceManagerId, VaultId,

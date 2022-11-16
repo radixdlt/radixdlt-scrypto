@@ -1,5 +1,3 @@
-use radix_engine_lib::crypto::Hash;
-use radix_engine_lib::data::ScryptoValue;
 use crate::engine::{
     Invokable, Kernel, KernelError, LockFlags, NativeInvocation, REActor, RENode, ResolvedFunction,
     ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi,
@@ -11,6 +9,8 @@ use crate::model::{
 };
 use crate::types::ScryptoInvocation;
 use crate::wasm::WasmEngine;
+use radix_engine_lib::crypto::Hash;
+use radix_engine_lib::data::IndexedScryptoValue;
 use radix_engine_lib::engine::actor::ScryptoActor;
 use radix_engine_lib::engine::api::{
     ScryptoNativeInvocation, SysInvokableNative, SysNativeInvokable, Syscalls,
@@ -48,7 +48,7 @@ where
         fn_ident: ScryptoFunctionIdent,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let args = ScryptoValue::from_slice(&args)
+        let args = IndexedScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
 
         self.invoke(ScryptoInvocation::Function(fn_ident, args))
@@ -60,7 +60,7 @@ where
         method_ident: ScryptoMethodIdent,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let args = ScryptoValue::from_slice(&args)
+        let args = IndexedScryptoValue::from_slice(&args)
             .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
 
         self.invoke(ScryptoInvocation::Method(method_ident, args))

@@ -20,9 +20,9 @@ use radix_engine::wasm::{
 use radix_engine_lib::resource::AccessRule;
 
 use radix_engine_constants::*;
+use radix_engine_lib::core::NetworkDefinition;
 use radix_engine_lib::crypto::hash;
-use scrypto::engine_lib::core::NetworkDefinition;
-use scrypto::engine_lib::engine::types::{RENodeId, ScryptoMethodIdent};
+use radix_engine_lib::engine::types::{RENodeId, ScryptoMethodIdent};
 use scrypto::resource::non_fungible::FromPublicKey;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{AuthZoneParams, Executable, TransactionManifest};
@@ -57,7 +57,6 @@ macro_rules! dec {
         }
     };
 }
-
 
 pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
     execution_stores: StagedSubstateStoreManager<'s, S>,

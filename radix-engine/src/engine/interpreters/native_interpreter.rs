@@ -6,7 +6,7 @@ use radix_engine_lib::component::{
     EpochManagerGetCurrentEpochInvocation, EpochManagerSetEpochInvocation,
     PackagePublishInvocation,
 };
-use radix_engine_lib::data::{ScryptoCustomTypeId, ScryptoValue};
+use radix_engine_lib::data::{IndexedScryptoValue, ScryptoCustomTypeId};
 use radix_engine_lib::engine::api::{SysInvokableNative, Syscalls};
 use radix_engine_lib::engine::types::{NativeFunction, NativeMethod, RENodeId};
 use radix_engine_lib::resource::{
@@ -209,7 +209,7 @@ impl<N: NativeInvocation> Resolver<N> for NativeResolver {
             }
         };
 
-        let input = ScryptoValue::from_typed(&invocation);
+        let input = IndexedScryptoValue::from_typed(&invocation);
         let executor = NativeExecutor(invocation, input);
         Ok((actor, call_frame_update, executor))
     }
@@ -234,12 +234,12 @@ pub trait NativeExecutable: Invocation {
             + SysInvokableNative<RuntimeError>;
 }
 
-pub struct NativeExecutor<N: NativeExecutable>(pub N, pub ScryptoValue);
+pub struct NativeExecutor<N: NativeExecutable>(pub N, pub IndexedScryptoValue);
 
 impl<N: NativeExecutable> Executor for NativeExecutor<N> {
     type Output = <N as Invocation>::Output;
 
-    fn args(&self) -> &ScryptoValue {
+    fn args(&self) -> &IndexedScryptoValue {
         &self.1
     }
 

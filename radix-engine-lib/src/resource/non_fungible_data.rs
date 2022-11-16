@@ -1,5 +1,5 @@
-use sbor::DecodeError;
 use sbor::rust::vec::Vec;
+use sbor::DecodeError;
 use scrypto_abi::Type;
 
 /// Represents the data structure of a non-fungible.

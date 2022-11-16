@@ -1,26 +1,26 @@
-use radix_engine_lib::data::{match_schema_with_value, ScryptoValue};
 use crate::engine::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
+use radix_engine_lib::data::{match_schema_with_value, IndexedScryptoValue};
 use radix_engine_lib::engine::api::{SysInvokableNative, Syscalls};
 use radix_engine_lib::engine::types::RENodeId;
 
 pub struct ScryptoExecutor<I: WasmInstance> {
     instance: I,
-    args: ScryptoValue,
+    args: IndexedScryptoValue,
 }
 
 impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
-    type Output = ScryptoValue;
+    type Output = IndexedScryptoValue;
 
-    fn args(&self) -> &ScryptoValue {
+    fn args(&self) -> &IndexedScryptoValue {
         &self.args
     }
 
     fn execute<'a, Y>(
         mut self,
         system_api: &mut Y,
-    ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
+    ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
@@ -92,7 +92,7 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
     pub fn create_executor(
         &self,
         code: &[u8],
-        args: ScryptoValue,
+        args: IndexedScryptoValue,
     ) -> ScryptoExecutor<W::WasmInstance> {
         let instrumented_code = self
             .wasm_instrumenter

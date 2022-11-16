@@ -11,8 +11,8 @@ use crate::crypto::{hash, PublicKey};
 use crate::data::ScryptoCustomTypeId;
 use crate::engine::{api::*, scrypto_env::*, types::*};
 use crate::resource::AccessRules;
-use crate::scrypto_type;
 use crate::scrypto;
+use crate::scrypto_type;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]

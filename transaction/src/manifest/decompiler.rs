@@ -1,5 +1,6 @@
 use radix_engine_lib::address::{AddressError, Bech32Encoder};
 use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_lib::data::{IndexedScryptoValue, ValueFormattingContext};
 use radix_engine_lib::engine::types::{
     BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
     ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
@@ -12,7 +13,6 @@ use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use sbor::{encode_any, SborValue};
 use scrypto::buffer::scrypto_decode;
-use radix_engine_lib::data::{ScryptoValue, ScryptoValueFormatterContext};
 use utils::misc::ContextualDisplay;
 
 use crate::errors::*;
@@ -59,8 +59,8 @@ impl<'a> DecompilationContext<'a> {
         }
     }
 
-    pub fn for_value_display(&'a self) -> ScryptoValueFormatterContext<'a> {
-        ScryptoValueFormatterContext::with_manifest_context(
+    pub fn for_value_display(&'a self) -> ValueFormattingContext<'a> {
+        ValueFormattingContext::with_manifest_context(
             self.bech32_encoder,
             &self.bucket_names,
             &self.proof_names,
@@ -383,12 +383,13 @@ pub fn decompile_call_native_function<F: fmt::Write>(
             if let Ok(input) = scrypto_decode::<ResourceManagerCreateInvocation>(&args) {
                 f.write_str(&format!(
                     "CREATE_RESOURCE {} {} {} {};",
-                    ScryptoValue::from_typed(&input.resource_type)
+                    IndexedScryptoValue::from_typed(&input.resource_type)
                         .display(context.for_value_display()),
-                    ScryptoValue::from_typed(&input.metadata).display(context.for_value_display()),
-                    ScryptoValue::from_typed(&input.access_rules)
+                    IndexedScryptoValue::from_typed(&input.metadata)
                         .display(context.for_value_display()),
-                    ScryptoValue::from_typed(&input.mint_params)
+                    IndexedScryptoValue::from_typed(&input.access_rules)
+                        .display(context.for_value_display()),
+                    IndexedScryptoValue::from_typed(&input.mint_params)
                         .display(context.for_value_display()),
                 ))?;
                 return Ok(());
@@ -474,12 +475,13 @@ pub fn format_args<F: fmt::Write>(
     context: &mut DecompilationContext,
     args: &Vec<u8>,
 ) -> Result<(), DecompileError> {
-    let value = ScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
+    let value =
+        IndexedScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
     if let SborValue::Struct { fields } = value.dom {
         for field in fields {
             let bytes = encode_any(&field);
-            let arg =
-                ScryptoValue::from_slice(&bytes).map_err(|_| DecompileError::InvalidArguments)?;
+            let arg = IndexedScryptoValue::from_slice(&bytes)
+                .map_err(|_| DecompileError::InvalidArguments)?;
             f.write_char(' ')?;
             write!(f, "{}", &arg.display(context.for_value_display()))?;
         }

@@ -1,4 +1,4 @@
-use radix_engine_lib::crypto::{Hash, hash, PublicKey};
+use radix_engine_lib::crypto::{hash, Hash, PublicKey};
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
 use scrypto::scrypto;

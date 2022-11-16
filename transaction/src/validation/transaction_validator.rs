@@ -3,9 +3,9 @@ use radix_engine_lib::crypto::PublicKey;
 use sbor::rust::collections::{BTreeSet, HashSet};
 use sbor::Decode;
 
+use radix_engine_lib::data::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::constants::*;
-use radix_engine_lib::data::*;
 
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
@@ -349,7 +349,7 @@ impl NotarizedTransactionValidator {
         call_data: &[u8],
         id_validator: &mut IdValidator,
     ) -> Result<(), CallDataValidationError> {
-        let value = ScryptoValue::from_slice(call_data)
+        let value = IndexedScryptoValue::from_slice(call_data)
             .map_err(CallDataValidationError::InvalidScryptoValue)?;
         id_validator
             .move_resources(&value)

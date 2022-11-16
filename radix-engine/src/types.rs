@@ -6,11 +6,18 @@ pub use radix_engine_lib::component::{
     EpochManagerCreateInvocation, EpochManagerGetCurrentEpochInvocation,
     EpochManagerSetEpochInvocation,
 };
+pub use radix_engine_lib::crypto::Blob;
+pub use radix_engine_lib::crypto::{
+    EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
+    Hash, PublicKey, Signature,
+};
+use radix_engine_lib::data::IndexedScryptoValue;
 pub use radix_engine_lib::engine::actor::ScryptoActor;
 use radix_engine_lib::engine::types::{
     NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,
 };
 pub use radix_engine_lib::engine::{scrypto_env::RadixEngineInput, types::*};
+pub use radix_engine_lib::math::{Decimal, RoundingMode, I256};
 pub use radix_engine_lib::resource::NonFungibleAddress;
 pub use radix_engine_lib::resource::NonFungibleId;
 pub use radix_engine_lib::resource::ResourceAddress;
@@ -44,13 +51,6 @@ pub use radix_engine_lib::resource::{
     WorktopAssertContainsNonFungiblesInvocation, WorktopDrainInvocation, WorktopPutInvocation,
     WorktopTakeAllInvocation, WorktopTakeAmountInvocation, WorktopTakeNonFungiblesInvocation,
     LOCKED, MUTABLE,
-};
-use radix_engine_lib::data::ScryptoValue;
-pub use radix_engine_lib::crypto::Blob;
-pub use radix_engine_lib::math::{Decimal, RoundingMode, I256};
-pub use radix_engine_lib::crypto::{
-    EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
-    Hash, PublicKey, Signature,
 };
 
 pub use sbor::rust::borrow::ToOwned;
@@ -86,20 +86,19 @@ pub use scrypto::buffer::{scrypto_decode, scrypto_encode};
 
 pub use scrypto::args;
 
-
 /// Scrypto function/method invocation.
 #[derive(Debug)]
 pub enum ScryptoInvocation {
-    Function(ScryptoFunctionIdent, ScryptoValue),
-    Method(ScryptoMethodIdent, ScryptoValue),
+    Function(ScryptoFunctionIdent, IndexedScryptoValue),
+    Method(ScryptoMethodIdent, IndexedScryptoValue),
 }
 
 impl Invocation for ScryptoInvocation {
-    type Output = ScryptoValue;
+    type Output = IndexedScryptoValue;
 }
 
 impl ScryptoInvocation {
-    pub fn args(&self) -> &ScryptoValue {
+    pub fn args(&self) -> &IndexedScryptoValue {
         match self {
             ScryptoInvocation::Function(_, args) => &args,
             ScryptoInvocation::Method(_, args) => &args,
@@ -108,14 +107,14 @@ impl ScryptoInvocation {
 }
 
 #[derive(Debug)]
-pub struct NativeMethodInvocation(pub NativeMethod, pub RENodeId, pub ScryptoValue);
+pub struct NativeMethodInvocation(pub NativeMethod, pub RENodeId, pub IndexedScryptoValue);
 
 impl Invocation for NativeMethodInvocation {
-    type Output = ScryptoValue;
+    type Output = IndexedScryptoValue;
 }
 
 impl NativeMethodInvocation {
-    pub fn args(&self) -> &ScryptoValue {
+    pub fn args(&self) -> &IndexedScryptoValue {
         &self.2
     }
 }
