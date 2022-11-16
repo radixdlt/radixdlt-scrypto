@@ -1,7 +1,6 @@
 use crate::engine::{
-    AuthModule, CallFrameUpdate, Invokable, InvokableNative, LockFlags, NativeExecutable,
-    NativeInvocation, NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError,
-    SystemApi,
+    AuthModule, CallFrameUpdate, Invokable, LockFlags, NativeExecutable, NativeInvocation,
+    NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
@@ -30,12 +29,12 @@ pub struct EpochManager {
 impl NativeExecutable for EpochManagerCreateInvocation {
     type NativeOutput = SystemAddress;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         _invocation: Self,
         system_api: &mut Y,
     ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
+        Y: SystemApi + Invokable<ScryptoInvocation>,
     {
         let node_id =
             system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
@@ -69,12 +68,9 @@ impl NativeInvocation for EpochManagerCreateInvocation {
 impl NativeExecutable for EpochManagerGetCurrentEpochInvocation {
     type NativeOutput = u64;
 
-    fn execute<'a, Y>(
-        _input: Self,
-        system_api: &mut Y,
-    ) -> Result<(u64, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(_input: Self, system_api: &mut Y) -> Result<(u64, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -104,12 +100,9 @@ impl NativeInvocation for EpochManagerGetCurrentEpochInvocation {
 impl NativeExecutable for EpochManagerSetEpochInvocation {
     type NativeOutput = ();
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {

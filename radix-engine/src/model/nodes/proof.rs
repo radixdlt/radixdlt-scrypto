@@ -1,6 +1,6 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
-    NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, LockFlags, NativeExecutable, NativeInvocation,
+    NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
@@ -32,12 +32,12 @@ pub enum ProofError {
 impl NativeExecutable for ProofGetAmountInvocation {
     type NativeOutput = Decimal;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Proof(input.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
@@ -62,12 +62,12 @@ impl NativeInvocation for ProofGetAmountInvocation {
 impl NativeExecutable for ProofGetNonFungibleIdsInvocation {
     type NativeOutput = BTreeSet<NonFungibleId>;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Proof(input.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
@@ -98,12 +98,12 @@ impl NativeInvocation for ProofGetNonFungibleIdsInvocation {
 impl NativeExecutable for ProofGetResourceAddressInvocation {
     type NativeOutput = ResourceAddress;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Proof(input.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
@@ -133,12 +133,12 @@ impl NativeInvocation for ProofGetResourceAddressInvocation {
 impl NativeExecutable for ProofCloneInvocation {
     type NativeOutput = radix_engine_lib::resource::Proof;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Proof(input.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);

@@ -1,6 +1,6 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
-    NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, LockFlags, NativeExecutable, NativeInvocation,
+    NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::model::{InvokeError, ProofError};
 use crate::types::*;
@@ -30,12 +30,12 @@ pub enum AuthZoneError {
 impl NativeExecutable for AuthZonePopInvocation {
     type NativeOutput = radix_engine_lib::resource::Proof;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -75,12 +75,9 @@ impl NativeInvocation for AuthZonePopInvocation {
 impl NativeExecutable for AuthZonePushInvocation {
     type NativeOutput = ();
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -119,12 +116,12 @@ impl NativeInvocation for AuthZonePushInvocation {
 impl NativeExecutable for AuthZoneCreateProofInvocation {
     type NativeOutput = radix_engine_lib::resource::Proof;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -178,12 +175,12 @@ impl NativeInvocation for AuthZoneCreateProofInvocation {
 impl NativeExecutable for AuthZoneCreateProofByAmountInvocation {
     type NativeOutput = radix_engine_lib::resource::Proof;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -238,12 +235,12 @@ impl NativeInvocation for AuthZoneCreateProofByAmountInvocation {
 impl NativeExecutable for AuthZoneCreateProofByIdsInvocation {
     type NativeOutput = radix_engine_lib::resource::Proof;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -298,12 +295,9 @@ impl NativeInvocation for AuthZoneCreateProofByIdsInvocation {
 impl NativeExecutable for AuthZoneClearInvocation {
     type NativeOutput = ();
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -329,12 +323,12 @@ impl NativeInvocation for AuthZoneClearInvocation {
 impl NativeExecutable for AuthZoneDrainInvocation {
     type NativeOutput = Vec<radix_engine_lib::resource::Proof>;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Vec<radix_engine_lib::resource::Proof>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);

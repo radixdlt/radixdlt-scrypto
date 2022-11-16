@@ -1,6 +1,6 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
-    NativeInvocation, NativeInvocationInfo, RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, LockFlags, NativeExecutable, NativeInvocation,
+    NativeInvocationInfo, RuntimeError, SystemApi,
 };
 use crate::types::*;
 use radix_engine_lib::component::ComponentAddAccessCheckInvocation;
@@ -18,12 +18,9 @@ pub enum ComponentError {
 impl NativeExecutable for ComponentAddAccessCheckInvocation {
     type NativeOutput = ();
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Component(input.receiver);
         let offset = SubstateOffset::Component(ComponentOffset::Info);

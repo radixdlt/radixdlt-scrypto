@@ -1,6 +1,6 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
-    NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, LockFlags, NativeExecutable, NativeInvocation,
+    NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
@@ -30,12 +30,9 @@ pub enum WorktopError {
 impl NativeExecutable for WorktopPutInvocation {
     type NativeOutput = ();
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -69,12 +66,12 @@ impl NativeInvocation for WorktopPutInvocation {
 impl NativeExecutable for WorktopTakeAmountInvocation {
     type NativeOutput = radix_engine_lib::resource::Bucket;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -134,12 +131,12 @@ impl NativeInvocation for WorktopTakeAmountInvocation {
 impl NativeExecutable for WorktopTakeAllInvocation {
     type NativeOutput = radix_engine_lib::resource::Bucket;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -198,12 +195,12 @@ impl NativeInvocation for WorktopTakeAllInvocation {
 impl NativeExecutable for WorktopTakeNonFungiblesInvocation {
     type NativeOutput = radix_engine_lib::resource::Bucket;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -264,12 +261,9 @@ impl NativeInvocation for WorktopTakeNonFungiblesInvocation {
 impl NativeExecutable for WorktopAssertContainsInvocation {
     type NativeOutput = ();
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -302,12 +296,9 @@ impl NativeInvocation for WorktopAssertContainsInvocation {
 impl NativeExecutable for WorktopAssertContainsAmountInvocation {
     type NativeOutput = ();
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -340,12 +331,9 @@ impl NativeInvocation for WorktopAssertContainsAmountInvocation {
 impl NativeExecutable for WorktopAssertContainsNonFungiblesInvocation {
     type NativeOutput = ();
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -386,12 +374,12 @@ impl NativeInvocation for WorktopAssertContainsNonFungiblesInvocation {
 impl NativeExecutable for WorktopDrainInvocation {
     type NativeOutput = Vec<radix_engine_lib::resource::Bucket>;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(Vec<radix_engine_lib::resource::Bucket>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);

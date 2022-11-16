@@ -51,14 +51,13 @@ pub enum TransactionProcessorError {
 impl<'b> NativeExecutable for TransactionProcessorRunInvocation<'b> {
     type NativeOutput = Vec<Vec<u8>>;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
             + Syscalls<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
@@ -215,7 +214,7 @@ impl TransactionProcessor {
         }
     }
 
-    pub fn run<'a, Y>(
+    pub fn run<Y>(
         input: TransactionProcessorRunInvocation,
         env: &mut Y,
     ) -> Result<Vec<Vec<u8>>, InvokeError<TransactionProcessorError>>
@@ -223,7 +222,6 @@ impl TransactionProcessor {
         Y: SystemApi
             + Syscalls<RuntimeError>
             + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
             + SysInvokableNative<RuntimeError>,
     {
         for request in input.runtime_validations.as_ref() {
@@ -532,7 +530,7 @@ impl TransactionProcessor {
                     })
                 }
                 Instruction::PublishPackage { code, abi } => env
-                    .invoke(PackagePublishInvocation {
+                    .sys_invoke(PackagePublishInvocation {
                         code: code.clone(),
                         abi: abi.clone(),
                     })

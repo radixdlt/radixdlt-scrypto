@@ -1,7 +1,7 @@
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::InvokeError;
-use crate::types::{scrypto_decode, scrypto_encode, Encode, PhantomData, ScryptoInvocation};
+use crate::types::{scrypto_decode, scrypto_encode, Encode, ScryptoInvocation};
 use crate::wasm::*;
 use radix_engine_lib::data::{IndexedScryptoValue, ScryptoCustomTypeId};
 use radix_engine_lib::engine::api::{SysInvokableNative, Syscalls};
@@ -17,31 +17,25 @@ use radix_engine_lib::engine::scrypto_env::{
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, 'a, Y>
+pub struct RadixEngineWasmRuntime<'y, Y>
 where
     Y: SystemApi
         + Syscalls<RuntimeError>
         + Invokable<ScryptoInvocation>
-        + InvokableNative<'a>
         + SysInvokableNative<RuntimeError>,
 {
     system_api: &'y mut Y,
-    phantom: PhantomData<&'a ()>,
 }
 
-impl<'y, 'a, Y> RadixEngineWasmRuntime<'y, 'a, Y>
+impl<'y, Y> RadixEngineWasmRuntime<'y, Y>
 where
     Y: SystemApi
         + Syscalls<RuntimeError>
         + Invokable<ScryptoInvocation>
-        + InvokableNative<'a>
         + SysInvokableNative<RuntimeError>,
 {
     pub fn new(system_api: &'y mut Y) -> Self {
-        RadixEngineWasmRuntime {
-            system_api,
-            phantom: PhantomData,
-        }
+        RadixEngineWasmRuntime { system_api }
     }
 
     pub fn invoke_native_fn(
@@ -309,12 +303,11 @@ fn encode<T: Encode<ScryptoCustomTypeId>>(output: T) -> Vec<u8> {
     scrypto_encode(&output)
 }
 
-impl<'y, 'a, Y> WasmRuntime for RadixEngineWasmRuntime<'y, 'a, Y>
+impl<'y, Y> WasmRuntime for RadixEngineWasmRuntime<'y, Y>
 where
     Y: SystemApi
         + Syscalls<RuntimeError>
         + Invokable<ScryptoInvocation>
-        + InvokableNative<'a>
         + SysInvokableNative<RuntimeError>,
 {
     // TODO: expose API for reading blobs

@@ -1,6 +1,6 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, InvokableNative, LockFlags, NativeExecutable,
-    NativeInvocation, NativeInvocationInfo, RENode, RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, LockFlags, NativeExecutable, NativeInvocation,
+    NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserveError;
 use crate::model::{
@@ -39,7 +39,7 @@ impl NativeExecutable for VaultTakeInvocation {
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -85,7 +85,7 @@ impl NativeExecutable for VaultPutInvocation {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -125,7 +125,7 @@ impl NativeExecutable for VaultLockFeeInvocation {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -189,7 +189,7 @@ impl NativeExecutable for VaultTakeNonFungiblesInvocation {
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -237,7 +237,7 @@ impl NativeExecutable for VaultGetAmountInvocation {
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -269,7 +269,7 @@ impl NativeExecutable for VaultGetResourceAddressInvocation {
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -304,7 +304,7 @@ impl NativeExecutable for VaultGetNonFungibleIdsInvocation {
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -340,7 +340,7 @@ impl NativeExecutable for VaultCreateProofInvocation {
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -384,7 +384,7 @@ impl NativeExecutable for VaultCreateProofByAmountInvocation {
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -429,7 +429,7 @@ impl NativeExecutable for VaultCreateProofByIdsInvocation {
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);

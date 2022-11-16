@@ -777,23 +777,16 @@ pub trait Executor {
     // TODO: Remove
     fn args(&self) -> &IndexedScryptoValue;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         self,
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
             + Syscalls<RuntimeError>
-            + SysInvokableNative<RuntimeError>;
-}
-
-impl<'g, 's, 'a, W, R> InvokableNative<'a> for Kernel<'g, 's, W, R>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-{
+            + SysInvokableNative<RuntimeError>
+            + Invokable<ResourceManagerSetResourceAddressInvocation>;
 }
 
 impl<'g, 's, W, R, N> Invokable<N> for Kernel<'g, 's, W, R>

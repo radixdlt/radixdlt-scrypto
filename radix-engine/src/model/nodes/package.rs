@@ -35,12 +35,12 @@ impl Package {
 impl NativeExecutable for PackagePublishInvocation {
     type NativeOutput = PackageAddress;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
+        Y: SystemApi + Invokable<ScryptoInvocation>,
     {
         let code = system_api.read_blob(&invocation.code.0)?.to_vec();
         let blob = system_api.read_blob(&invocation.abi.0)?;

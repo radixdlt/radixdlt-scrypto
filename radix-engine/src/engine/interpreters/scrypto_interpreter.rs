@@ -17,14 +17,13 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
         &self.args
     }
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         mut self,
         system_api: &mut Y,
     ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
             + Syscalls<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {

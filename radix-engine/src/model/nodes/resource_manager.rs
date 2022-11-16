@@ -1,7 +1,6 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, Invokable, InvokableNative, LockFlags, NativeExecutable,
-    NativeInvocation, NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError,
-    SystemApi,
+    ApplicationError, CallFrameUpdate, Invokable, LockFlags, NativeExecutable, NativeInvocation,
+    NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::model::{
     BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
@@ -54,12 +53,9 @@ pub enum ResourceManagerError {
 impl NativeExecutable for ResourceManagerBucketBurnInvocation {
     type NativeOutput = ();
 
-    fn execute<'a, Y>(invocation: Self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(invocation: Self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation>
-            + InvokableNative<'a>
-            + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + Invokable<ScryptoInvocation> + SysInvokableNative<RuntimeError>,
     {
         let bucket = Bucket(invocation.bucket.0);
         bucket.sys_burn(env)?;
@@ -96,7 +92,7 @@ impl NativeInvocation for ResourceManagerBucketBurnInvocation {
 impl NativeExecutable for ResourceManagerCreateInvocation {
     type NativeOutput = (ResourceAddress, Option<radix_engine_lib::resource::Bucket>);
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<
@@ -107,7 +103,9 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
         RuntimeError,
     >
     where
-        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
+        Y: SystemApi
+            + Invokable<ScryptoInvocation>
+            + Invokable<ResourceManagerSetResourceAddressInvocation>,
     {
         let node_id = if matches!(invocation.resource_type, ResourceType::NonFungible) {
             let nf_store_node_id =
@@ -279,7 +277,7 @@ impl NativeExecutable for ResourceManagerBurnInvocation {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -360,7 +358,7 @@ impl NativeExecutable for ResourceManagerUpdateAuthInvocation {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -410,7 +408,7 @@ impl NativeExecutable for ResourceManagerLockAuthInvocation {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -460,7 +458,7 @@ impl NativeExecutable for ResourceManagerCreateVaultInvocation {
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Vault, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -505,7 +503,7 @@ impl NativeExecutable for ResourceManagerCreateBucketInvocation {
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -550,7 +548,7 @@ impl NativeExecutable for ResourceManagerMintInvocation {
         system_api: &mut Y,
     ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -642,7 +640,7 @@ impl NativeExecutable for ResourceManagerGetMetadataInvocation {
         system_api: &mut Y,
     ) -> Result<(HashMap<String, String>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -677,7 +675,7 @@ impl NativeExecutable for ResourceManagerGetResourceTypeInvocation {
         system_api: &mut Y,
     ) -> Result<(ResourceType, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -712,7 +710,7 @@ impl NativeExecutable for ResourceManagerGetTotalSupplyInvocation {
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -746,7 +744,7 @@ impl NativeExecutable for ResourceManagerUpdateMetadataInvocation {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -789,7 +787,7 @@ impl NativeExecutable for ResourceManagerUpdateNonFungibleDataInvocation {
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -854,7 +852,7 @@ impl NativeExecutable for ResourceManagerNonFungibleExistsInvocation {
         system_api: &mut Y,
     ) -> Result<(bool, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -900,12 +898,12 @@ impl NativeInvocation for ResourceManagerNonFungibleExistsInvocation {
 impl NativeExecutable for ResourceManagerGetNonFungibleInvocation {
     type NativeOutput = [Vec<u8>; 2];
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<([Vec<u8>; 2], CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -964,12 +962,9 @@ impl NativeInvocation for ResourceManagerGetNonFungibleInvocation {
 impl NativeExecutable for ResourceManagerSetResourceAddressInvocation {
     type NativeOutput = ();
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<'a>,
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
