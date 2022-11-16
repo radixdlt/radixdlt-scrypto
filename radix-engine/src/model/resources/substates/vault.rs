@@ -1,6 +1,7 @@
+use crate::engine::InvokeError;
 use crate::model::{
-    BucketSubstate, InvokeError, LockableResource, ProofError, ProofSubstate, Resource,
-    ResourceContainerId, ResourceOperationError, VaultError,
+    BucketSubstate, LockableResource, ProofError, ProofSubstate, Resource, ResourceContainerId,
+    ResourceOperationError, VaultError,
 };
 use crate::types::*;
 use std::ops::Deref;
