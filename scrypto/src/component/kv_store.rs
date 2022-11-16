@@ -16,9 +16,7 @@ use crate::abi::*;
 use crate::buffer::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_lib::data::*;
-use radix_engine_lib::crypto::*;
 use crate::core::{DataRef, DataRefMut};
-use crate::misc::*;
 
 /// A scalable key-value map which loads entries on demand.
 pub struct KeyValueStore<

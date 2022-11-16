@@ -16,7 +16,6 @@ use scrypto::scrypto_env_native_fn;
 
 use crate::resource::*;
 use crate::scrypto;
-use crate::scrypto_type;
 
 // TODO: Evaluate if we should have a ProofValidationModeBuilder to construct more complex validation modes.
 /// Specifies the validation mode that should be used for validating a `Proof`.

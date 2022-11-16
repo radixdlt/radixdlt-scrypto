@@ -34,11 +34,13 @@ pub fn compile(
 
 #[cfg(test)]
 mod tests {
+    use radix_engine_lib::crypto::Blob;
     use super::*;
     use crate::model::Instruction;
     use radix_engine_lib::engine::types::{
         NativeFunctionIdent, ResourceManagerFunction, ScryptoMethodIdent, ScryptoReceiver,
     };
+    use radix_engine_lib::math::{Decimal, PreciseDecimal};
     use radix_engine_lib::resource::{
         AccessRule, MintParams, Mutability, NonFungibleId, ResourceMethodAuthKey, ResourceType,
     };
@@ -46,8 +48,6 @@ mod tests {
     use sbor::rust::str::FromStr;
     use scrypto::args;
     use scrypto::core::Expression;
-    use utils::crypto::Blob;
-    use utils::math::*;
 
     #[test]
     fn test_compile() {

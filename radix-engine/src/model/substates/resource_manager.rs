@@ -14,7 +14,7 @@ use radix_engine_lib::resource::{
     AccessRule, MintParams, Mutability, ResourceManagerLockAuthInvocation,
     ResourceManagerUpdateAuthInvocation, ResourceMethodAuthKey, ResourceType, LOCKED,
 };
-use utils::dec;
+use crate::dec;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]

@@ -6,47 +6,14 @@ macro_rules! checked_int_impl_large {
             impl $t {
                 /// Returns the smallest value that can be represented by this integer type.
                 ///
-                /// # Examples
-                ///
-                /// Please note that this example is shared between large integer types.
-                /// Which explains why `I8` is used here.
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = "use scrypto::prelude::*;"]
-                ///
-                #[doc = concat!("assert_eq!(", stringify!($t), "::MIN, ", stringify!(<$t>::MIN), " );")]
-                /// ```
                 pub const MIN: Self = $min;
 
                 /// Returns the largest value that can be represented by this integer type.
                 ///
-                /// # Examples
-                ///
-                /// Please note that this example is shared between large integer types.
-                /// Which explains why `I8` is used here.
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = "use scrypto::prelude::*;"]
-                ///
-                #[doc = concat!("assert_eq!(", stringify!($t), "::MAX, ", stringify!(<$t>::MAX), " );")]
-                /// ```
                 pub const MAX: Self = $max;
 
                 /// Returns the size of this integer type in bits.
                 ///
-                /// # Examples
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = "use scrypto::prelude::*;"]
-                ///
-                #[doc = concat!("assert_eq!(", stringify!($t), "::BITS, ", stringify!(<$t>::BITS), ");")]
-                /// ```
                 pub const BITS: u32 = $bytes_len * 8;
 
             }
@@ -106,47 +73,14 @@ macro_rules! checked_int_impl_small {
             impl $t {
                 /// Returns the smallest value that can be represented by this integer type.
                 ///
-                /// # Examples
-                ///
-                /// Please note that this example is shared between large integer types.
-                /// Which explains why `I8` is used here.
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = "use scrypto::prelude::*;"]
-                ///
-                #[doc = concat!("assert_eq!(", stringify!($t), "::MIN, ", stringify!(<$t>::MIN), " );")]
-                /// ```
                 pub const MIN: Self = Self([<$t:lower>]::MIN);
 
                 /// Returns the largest value that can be represented by this integer type.
                 ///
-                /// # Examples
-                ///
-                /// Please note that this example is shared between large integer types.
-                /// Which explains why `I8` is used here.
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = "use scrypto::prelude::*;"]
-                ///
-                #[doc = concat!("assert_eq!(", stringify!($t), "::MAX, ", stringify!(<$t>::MAX), " );")]
-                /// ```
                 pub const MAX: Self = Self([<$t:lower>]::MAX);
 
                 /// Returns the size of this integer type in bits.
                 ///
-                /// # Examples
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = "use scrypto::prelude::*;"]
-                ///
-                #[doc = concat!("assert_eq!(", stringify!($t), "::BITS, ", stringify!(<$t>::BITS), ");")]
-                /// ```
                 pub const BITS: u32 = [<$t:lower>]::BITS;
             }
         }

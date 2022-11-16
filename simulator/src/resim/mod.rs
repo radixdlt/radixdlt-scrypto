@@ -66,6 +66,7 @@ use scrypto::prelude::non_fungible::FromPublicKey;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
+use scrypto::prelude::hash;
 use transaction::builder::ManifestBuilder;
 use transaction::manifest::decompile;
 use transaction::model::AuthModule;

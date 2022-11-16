@@ -7,6 +7,7 @@ use wasmer::{
     Universal, Val, WasmerEnv,
 };
 use wasmer_compiler_singlepass::Singlepass;
+use radix_engine_lib::data::ScryptoValue;
 
 use crate::types::*;
 use crate::wasm::constants::*;

@@ -18,8 +18,6 @@ use scrypto::scrypto_env_native_fn;
 
 use crate::resource::*;
 use crate::scrypto;
-use crate::scrypto_type;
-use crate::Describe;
 
 /// Represents a resource manager.
 #[derive(Debug)]

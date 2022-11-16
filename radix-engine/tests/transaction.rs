@@ -8,7 +8,6 @@ use scrypto::resource::non_fungible::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
-use utils::crypto::Blob;
 use utils::misc::ContextualDisplay;
 
 #[test]

@@ -17,7 +17,6 @@ use scrypto::scrypto_env_native_fn;
 
 use crate::resource::*;
 use crate::scrypto;
-use crate::scrypto_type;
 
 pub trait SysVault {
     fn sys_amount<Y, E: Debug + Decode<ScryptoCustomTypeId>>(&self, sys_calls: &mut Y) -> Result<Decimal, E>

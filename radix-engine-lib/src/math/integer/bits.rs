@@ -1,4 +1,5 @@
 use super::*;
+use scrypto::math::I8;
 
 pub trait PrimIntExt {
     type Output;
@@ -13,17 +14,6 @@ macro_rules! checked_int_impl_large {
                 impl $t {
                     /// Returns the number of ones in the binary representation of `self`.
                     ///
-                    /// # Examples
-                    ///
-                    /// Basic usage:
-                    ///
-                    /// ```
-                    #[doc = "use scrypto::prelude::*;"]
-                    ///
-                    #[doc = "let n = " $t "::by(0b01001100u8);"]
-                    ///
-                    /// assert_eq!(n.count_ones(), 3);
-                    /// ```
                     #[inline]
                     #[doc(alias = "popcount")]
                     #[doc(alias = "popcnt")]
@@ -35,19 +25,6 @@ macro_rules! checked_int_impl_large {
 
                     /// Returns the number of zeros in the binary representation of `self`.
                     ///
-                    /// # Examples
-                    ///
-                    /// Please note that this example is shared between large integer types.
-                    /// Which explains why `I8` is used here.
-                    ///
-                    /// Basic usage:
-                    ///
-                    /// ```
-                    #[doc = "use scrypto::prelude::*;"]
-                    ///
-                    #[doc = concat!("assert_eq!(", stringify!($t),
-                        "::by(0i8).count_zeros(), ", stringify!(<$t>::BITS), ");")]
-                    /// ```
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
@@ -57,20 +34,6 @@ macro_rules! checked_int_impl_large {
 
                     /// Returns the number of trailing zeros in the binary representation of `self`.
                     ///
-                    /// # Examples
-                    ///
-                    /// Please note that this example is shared between large integer types.
-                    /// Which explains why `I8` is used here.
-                    ///
-                    /// Basic usage:
-                    ///
-                    /// ```
-                    #[doc = "use scrypto::prelude::*;"]
-                    ///
-                    #[doc = "let n = I8::by(0b0101000u8);"]
-                    ///
-                    /// assert_eq!(n.trailing_zeros(), 3);
-                    /// ```
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
@@ -88,24 +51,6 @@ macro_rules! checked_int_impl_large {
 
                     /// Reverses the byte order of the integer.
                     ///
-                    /// # Examples
-                    ///
-                    /// Please note that this example is shared between large integer types.
-                    /// Which explains why `I16` is used here.
-                    ///
-                    /// Basic usage:
-                    ///
-                    /// ```
-                    #[doc = "use scrypto::prelude::*;"]
-                    ///
-                    #[doc = "let n: I16  = I16::by(0b0000000_01010101i16);"]
-                    #[doc = "assert_eq!(n, I16::by(85));"]
-                    ///
-                    /// let m = n.swap_bytes();
-                    ///
-                    #[doc = "assert_eq!(m, I16::by(0b01010101_00000000i16));"]
-                    #[doc = "assert_eq!(m, I16::by(21760i16));"]
-                    /// ```
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
@@ -115,24 +60,6 @@ macro_rules! checked_int_impl_large {
 
                     /// Reverses the bit pattern of the integer.
                     ///
-                    /// # Examples
-                    ///
-                    /// Please note that this example is shared between large integer types.
-                    /// Which explains why `I16` is used here.
-                    ///
-                    /// Basic usage:
-                    ///
-                    /// ```
-                    #[doc = "use scrypto::prelude::*;"]
-                    ///
-                    #[doc = "let n: I16  = I16::by(0b0000000_01010101i16);"]
-                    #[doc = "assert_eq!(n, I16::by(85i16));"]
-                    ///
-                    /// let m = n.reverse_bits();
-                    ///
-                    /// assert_eq!(m.0 as u16, 0b10101010_00000000);
-                    #[doc = "assert_eq!(m, I16::by(-22016i16));"]
-                    /// ```
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                     #[inline]
@@ -170,17 +97,6 @@ macro_rules! checked_int_impl_small {
 
                 /// Returns the number of ones in the binary representation of `self`.
                 ///
-                /// # Examples
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = "use scrypto::prelude::*;"]
-                ///
-                #[doc = "let n = " $t "::by(0b01001100u8);"]
-                ///
-                /// assert_eq!(n.count_ones(), 3);
-                /// ```
                 #[inline]
                 #[doc(alias = "popcount")]
                 #[doc(alias = "popcnt")]
@@ -192,18 +108,6 @@ macro_rules! checked_int_impl_small {
 
                 /// Returns the number of zeros in the binary representation of `self`.
                 ///
-                /// # Examples
-                ///
-                /// Please note that this example is shared between large integer types.
-                /// Which explains why `I8` is used here.
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = "use scrypto::prelude::*;"]
-                ///
-                #[doc = "assert_eq!(I8::by(0i8).count_zeros(), 8);"]
-                /// ```
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                 without modifying the original"]
@@ -213,20 +117,6 @@ macro_rules! checked_int_impl_small {
 
                 /// Returns the number of trailing zeros in the binary representation of `self`.
                 ///
-                /// # Examples
-                ///
-                /// Please note that this example is shared between large integer types.
-                /// Which explains why `I8` is used here.
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = "use scrypto::prelude::*;"]
-                ///
-                #[doc = "let n = I8::by(0b0101000u8);"]
-                ///
-                /// assert_eq!(n.trailing_zeros(), 3);
-                /// ```
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                 without modifying the original"]
@@ -236,24 +126,6 @@ macro_rules! checked_int_impl_small {
 
                 /// Reverses the byte order of the integer.
                 ///
-                /// # Examples
-                ///
-                /// Please note that this example is shared between large integer types.
-                /// Which explains why `I16` is used here.
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = "use scrypto::prelude::*;"]
-                ///
-                #[doc = "let n: I16  = I16::by(0b0000000_01010101i16);"]
-                #[doc = "assert_eq!(n, I16::by(85));"]
-                ///
-                /// let m = n.swap_bytes();
-                ///
-                #[doc = "assert_eq!(m, I16::by(0b01010101_00000000i16));"]
-                #[doc = "assert_eq!(m, I16::by(21760i16));"]
-                /// ```
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                 without modifying the original"]
@@ -263,24 +135,6 @@ macro_rules! checked_int_impl_small {
 
                 /// Reverses the bit pattern of the integer.
                 ///
-                /// # Examples
-                ///
-                /// Please note that this example is shared between large integer types.
-                /// Which explains why `I16` is used here.
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = "use scrypto::prelude::*;"]
-                ///
-                #[doc = "let n: I16  = I16::by(0b0000000_01010101i16);"]
-                #[doc = "assert_eq!(n, I16::by(85i16));"]
-                ///
-                /// let m = n.reverse_bits();
-                ///
-                /// assert_eq!(m.0 as u16, 0b10101010_00000000);
-                #[doc = "assert_eq!(m, I16::by(-22016i16));"]
-                /// ```
                 #[must_use = "this returns the result of the operation, \
                 without modifying the original"]
                 #[inline]
@@ -293,24 +147,6 @@ macro_rules! checked_int_impl_small {
                 /// On big endian this is a no-op. On little endian the bytes are
                 /// swapped.
                 ///
-                /// # Examples
-                ///
-                /// Please note that this example is shared between large integer types.
-                /// Which explains why `I8` is used here.
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = "use scrypto::prelude::*;"]
-                ///
-                #[doc = "let n = " $t "::by(0x1Ai8);"]
-                ///
-                /// if cfg!(target_endian = "big") {
-                #[doc = "    assert_eq!(" $t "::from_be(n), n)"]
-                /// } else {
-                #[doc = "    assert_eq!(" $t "::from_be(n), n.swap_bytes())"]
-                /// }
-                /// ```
                 #[inline]
                 #[must_use]
                 pub const fn from_be(x: Self) -> Self {
@@ -326,24 +162,6 @@ macro_rules! checked_int_impl_small {
                 /// On little endian this is a no-op. On big endian the bytes are
                 /// swapped.
                 ///
-                /// # Examples
-                ///
-                /// Please note that this example is shared between large integer types.
-                /// Which explains why `I8` is used here.
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = "use scrypto::prelude::*;"]
-                ///
-                #[doc = "let n = " $t "::by(0x1Ai8);"]
-                ///
-                /// if cfg!(target_endian = "little") {
-                #[doc = "    assert_eq!(" $t "::from_le(n), n)"]
-                /// } else {
-                #[doc = "    assert_eq!(" $t "::from_le(n), n.swap_bytes())"]
-                /// }
-                /// ```
                 #[inline]
                 #[must_use]
                 pub const fn from_le(x: Self) -> Self {
@@ -359,24 +177,6 @@ macro_rules! checked_int_impl_small {
                 /// On big endian this is a no-op. On little endian the bytes are
                 /// swapped.
                 ///
-                /// # Examples
-                ///
-                /// Please note that this example is shared between large integer types.
-                /// Which explains why `I8` is used here.
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = "use scrypto::prelude::*;"]
-                ///
-                #[doc = "let n = " $t "::by(0x1Ai8);"]
-                ///
-                /// if cfg!(target_endian = "big") {
-                ///     assert_eq!(n.to_be(), n)
-                /// } else {
-                ///     assert_eq!(n.to_be(), n.swap_bytes())
-                /// }
-                /// ```
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                 without modifying the original"]
@@ -393,24 +193,6 @@ macro_rules! checked_int_impl_small {
                 /// On little endian this is a no-op. On big endian the bytes are
                 /// swapped.
                 ///
-                /// # Examples
-                ///
-                /// Please note that this example is shared between large integer types.
-                /// Which explains why `I8` is used here.
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = "use scrypto::prelude::*;"]
-                ///
-                #[doc = "let n = " $t "::by(0x1Ai8);"]
-                ///
-                /// if cfg!(target_endian = "little") {
-                ///     assert_eq!(n.to_le(), n)
-                /// } else {
-                ///     assert_eq!(n.to_le(), n.swap_bytes())
-                /// }
-                /// ```
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                 without modifying the original"]

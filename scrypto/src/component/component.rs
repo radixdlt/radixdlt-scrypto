@@ -6,7 +6,6 @@ use radix_engine_lib::engine::types::{
     ScryptoReceiver, SubstateOffset,
 };
 use radix_engine_lib::resource::AccessRules;
-use radix_engine_lib::crypto::Hash;
 use radix_engine_lib::data::ScryptoCustomTypeId;
 
 use sbor::rust::borrow::ToOwned;

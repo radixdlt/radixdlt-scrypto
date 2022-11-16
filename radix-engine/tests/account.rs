@@ -4,7 +4,6 @@ use radix_engine::types::*;
 use radix_engine_lib::core::NetworkDefinition;
 use radix_engine_lib::engine::types::ScryptoMethodIdent;
 use scrypto::resource::non_fungible::FromPublicKey;
-use scrypto::values::ScryptoValue;
 use radix_engine_lib::data::ScryptoValue;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

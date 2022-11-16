@@ -537,8 +537,8 @@ mod tests {
     use radix_engine_lib::core::NetworkDefinition;
     use radix_engine_lib::engine::types::ResourceManagerFunction;
     use radix_engine_lib::resource::{AccessRule, Mutability, ResourceMethodAuthKey, ResourceType};
-    use sbor::*;
     use scrypto::buffer::scrypto_encode;
+    use scrypto::scrypto;
 
     #[scrypto(TypeId, Encode, Decode)]
     struct BadResourceManagerCreateInput {

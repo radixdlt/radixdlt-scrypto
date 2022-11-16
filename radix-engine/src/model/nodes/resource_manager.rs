@@ -28,7 +28,34 @@ use radix_engine_lib::resource::{
     ResourceType,
 };
 use scrypto::resource::SysBucket;
-use utils::dec;
+
+#[macro_export]
+macro_rules! dec {
+    ($x:literal) => {
+        radix_engine_lib::math::Decimal::from($x)
+    };
+
+    ($base:literal, $shift:literal) => {
+        // Base can be any type that converts into a Decimal, and shift must support
+        // comparison and `-` unary operation, enforced by rustc.
+        {
+            let base = radix_engine_lib::math::Decimal::from($base);
+            if $shift >= 0 {
+                base * radix_engine_lib::math::Decimal::try_from(
+                    radix_engine_lib::math::I256::from(10u8)
+                        .pow(u32::try_from($shift).expect("Shift overflow")),
+                )
+                .expect("Shift overflow")
+            } else {
+                base / radix_engine_lib::math::Decimal::try_from(
+                    radix_engine_lib::math::I256::from(10u8)
+                        .pow(u32::try_from(-$shift).expect("Shift overflow")),
+                )
+                .expect("Shift overflow")
+            }
+        }
+    };
+}
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq)]

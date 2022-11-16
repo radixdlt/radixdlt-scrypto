@@ -1431,6 +1431,7 @@ dependencies = [
  "hex",
  "radix-engine",
  "radix-engine-constants",
+ "radix-engine-lib",
  "radix-engine-stores",
  "rand 0.8.5",
  "regex",

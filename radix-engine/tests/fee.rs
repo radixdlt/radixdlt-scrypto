@@ -7,6 +7,7 @@ use radix_engine::model::WorktopError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_lib::data::ScryptoValue;
 use scrypto::resource::non_fungible::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

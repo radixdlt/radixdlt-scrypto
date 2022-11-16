@@ -334,6 +334,11 @@ mod tests {
     use super::rust::vec;
     use super::*;
 
+    /// Encodes a data structure into byte array.
+    fn scrypto_encode<T: Encode<ScryptoCustomTypeId> + ?Sized>(v: &T) -> Vec<u8> {
+        encode(v)
+    }
+
     #[test]
     fn should_reject_duplicate_ids() {
         let buckets = scrypto_encode(&vec![

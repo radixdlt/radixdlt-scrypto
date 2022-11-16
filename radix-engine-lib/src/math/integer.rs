@@ -758,17 +758,6 @@ macro_rules! checked_int_impl_signed {
                     ///  - `1` if the number is positive
                     ///  - `-1` if the number is negative
                     ///
-                    /// # Examples
-                    ///
-                    /// Basic usage:
-                    ///
-                    /// ```
-                    #[doc = "use scrypto::prelude::*;"]
-                    ///
-                    #[doc = "assert_eq!(" $t "::by(10i8).signum(), " $t "::by(1i8));"]
-                    #[doc = "assert_eq!(" $t "::by(0i8).signum(), " $t "::by(0i8));"]
-                    #[doc = "assert_eq!(" $t "::by(-10i8).signum(), " $t "::by(-1i8));"]
-                    /// ```
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
@@ -779,16 +768,6 @@ macro_rules! checked_int_impl_signed {
                     /// Returns `true` if `self` is positive and `false` if the number is zero or
                     /// negative.
                     ///
-                    /// # Examples
-                    ///
-                    /// Basic usage:
-                    ///
-                    /// ```
-                    #[doc = "use scrypto::prelude::*;"]
-                    ///
-                    #[doc = "assert!(" $t "::by(10i8).is_positive());"]
-                    #[doc = "assert!(!" $t "::by(-10i8).is_positive());"]
-                    /// ```
                     #[must_use]
                     #[inline]
                     pub fn is_positive($self) -> bool {
@@ -799,16 +778,6 @@ macro_rules! checked_int_impl_signed {
                     /// Returns `true` if `self` is negative and `false` if the number is zero or
                     /// positive.
                     ///
-                    /// # Examples
-                    ///
-                    /// Basic usage:
-                    ///
-                    /// ```
-                    #[doc = "use scrypto::prelude::*;"]
-                    ///
-                    #[doc = "assert!(" $t "::by(-10i8).is_negative());"]
-                    #[doc = "assert!(!" $t "::by(10i8).is_negative());"]
-                    /// ```
                     #[must_use]
                     #[inline]
                     pub fn is_negative($self) -> bool {

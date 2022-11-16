@@ -590,7 +590,6 @@ mod tests {
     use super::*;
     use crate::dec;
     use sbor::rust::vec;
-    use utils::dec;
 
     #[test]
     fn test_format_decimal() {
