@@ -11,9 +11,10 @@ use crate::data::ScryptoCustomTypeId;
 use crate::engine::{api::*, scrypto_env::*};
 use crate::math::*;
 use crate::resource::*;
-use crate::scrypto;
 use crate::scrypto_type;
 use crate::Describe;
+
+use radix_engine_derive::scrypto;
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,

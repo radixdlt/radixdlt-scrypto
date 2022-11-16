@@ -66,7 +66,6 @@ impl TryFrom<&[u8]> for NonFungibleId {
     type Error = ParseNonFungibleIdError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        /*
         // TODO: Check for no custom values
         let value = IndexedScryptoValue::from_slice(slice)
             .map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
@@ -75,9 +74,6 @@ impl TryFrom<&[u8]> for NonFungibleId {
             return Err(ParseNonFungibleIdError::ContainsOwnedNodes);
         }
         Ok(Self(value.raw))
-         */
-
-        Ok(Self(slice.to_vec()))
     }
 }
 

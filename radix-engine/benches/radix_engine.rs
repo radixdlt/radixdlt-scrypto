@@ -7,38 +7,11 @@ use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
 use radix_engine::wasm::{DefaultWasmEngine, InstructionCostRules, WasmMeteringConfig};
 use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_lib::dec;
 use scrypto::resource::non_fungible::FromPublicKey;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
-
-#[macro_export]
-macro_rules! dec {
-    ($x:literal) => {
-        radix_engine_lib::math::Decimal::from($x)
-    };
-
-    ($base:literal, $shift:literal) => {
-        // Base can be any type that converts into a Decimal, and shift must support
-        // comparison and `-` unary operation, enforced by rustc.
-        {
-            let base = radix_engine_lib::math::Decimal::from($base);
-            if $shift >= 0 {
-                base * radix_engine_lib::math::Decimal::try_from(
-                    radix_engine_lib::math::I256::from(10u8)
-                        .pow(u32::try_from($shift).expect("Shift overflow")),
-                )
-                .expect("Shift overflow")
-            } else {
-                base / radix_engine_lib::math::Decimal::try_from(
-                    radix_engine_lib::math::I256::from(10u8)
-                        .pow(u32::try_from(-$shift).expect("Shift overflow")),
-                )
-                .expect("Shift overflow")
-            }
-        }
-    };
-}
 
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.

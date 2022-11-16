@@ -24,6 +24,7 @@ members = [
     "transaction",
     "radix-engine",
     "radix-engine-lib",
+    "radix-engine-derive",
     "radix-engine-stores",
     "radix-engine-constants",
     "utils",

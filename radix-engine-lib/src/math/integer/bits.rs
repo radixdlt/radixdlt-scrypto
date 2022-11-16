@@ -1,5 +1,4 @@
 use super::*;
-use scrypto::math::I8;
 
 pub trait PrimIntExt {
     type Output;

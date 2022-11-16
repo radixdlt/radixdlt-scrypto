@@ -1,4 +1,3 @@
-use crate::dec;
 use crate::model::ResourceMethodRule::{Protected, Public};
 use crate::model::{
     convert, InvokeError, MethodAuthorization, NonFungible, Resource, ResourceManagerError,

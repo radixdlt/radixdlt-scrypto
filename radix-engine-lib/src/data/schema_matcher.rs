@@ -1,7 +1,5 @@
+use crate::data::*;
 use sbor::*;
-use scrypto::data::{ScryptoTypeId, ScryptoValue};
-
-use crate::data::{ScryptoCustomTypeId, ScryptoCustomValue};
 use scrypto_abi::{Fields, Type};
 
 pub fn sbor_type_id(ty: &Type) -> Option<ScryptoTypeId> {

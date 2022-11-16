@@ -804,6 +804,20 @@ name = "radix-engine-constants"
 version = "0.7.0"
 
 [[package]]
+name = "radix-engine-derive"
+version = "0.7.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "sbor",
+ "scrypto-abi",
+ "serde",
+ "serde_json",
+ "syn",
+ "uuid",
+]
+
+[[package]]
 name = "radix-engine-lib"
 version = "0.7.0"
 dependencies = [
@@ -813,9 +827,9 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "paste",
+ "radix-engine-derive",
  "sbor",
  "scrypto-abi",
- "scrypto-derive",
  "sha2 0.10.2",
  "sha3",
  "strum",

@@ -12,6 +12,7 @@ pub use radix_engine_lib::crypto::{
     Hash, PublicKey, Signature,
 };
 use radix_engine_lib::data::IndexedScryptoValue;
+pub use radix_engine_lib::dec;
 pub use radix_engine_lib::engine::actor::ScryptoActor;
 use radix_engine_lib::engine::types::{
     NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,

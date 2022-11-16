@@ -340,8 +340,8 @@ mod tests {
     #[test]
     fn should_reject_duplicate_ids() {
         let buckets = scrypto_encode(&vec![
-            scrypto::resource::Bucket(0),
-            scrypto::resource::Bucket(0),
+            radix_engine_lib::resource::Bucket(0),
+            radix_engine_lib::resource::Bucket(0),
         ]);
         assert_eq!(
             IndexedScryptoValue::from_slice(&buckets),

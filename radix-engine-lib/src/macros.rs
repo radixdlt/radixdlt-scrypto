@@ -3,23 +3,23 @@
 #[macro_export]
 macro_rules! dec {
     ($x:literal) => {
-        scrypto::math::Decimal::from($x)
+        radix_engine_lib::math::Decimal::from($x)
     };
 
     ($base:literal, $shift:literal) => {
         // Base can be any type that converts into a Decimal, and shift must support
         // comparison and `-` unary operation, enforced by rustc.
         {
-            let base = scrypto::math::Decimal::from($base);
+            let base = radix_engine_lib::math::Decimal::from($base);
             if $shift >= 0 {
-                base * scrypto::math::Decimal::try_from(
-                    scrypto::math::I256::from(10u8)
+                base * radix_engine_lib::math::Decimal::try_from(
+                    radix_engine_lib::math::I256::from(10u8)
                         .pow(u32::try_from($shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             } else {
-                base / scrypto::math::Decimal::try_from(
-                    scrypto::math::I256::from(10u8)
+                base / radix_engine_lib::math::Decimal::try_from(
+                    radix_engine_lib::math::I256::from(10u8)
                         .pow(u32::try_from(-$shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
@@ -44,23 +44,23 @@ macro_rules! i {
 #[macro_export]
 macro_rules! pdec {
     ($x:literal) => {
-        scrypto::math::PreciseDecimal::from($x)
+        radix_engine_lib::math::PreciseDecimal::from($x)
     };
 
     ($base:literal, $shift:literal) => {
         // Base can be any type that converts into a PreciseDecimal, and shift must support
         // comparison and `-` unary operation, enforced by rustc.
         {
-            let base = scrypto::math::PreciseDecimal::from($base);
+            let base = radix_engine_lib::math::PreciseDecimal::from($base);
             if $shift >= 0 {
-                base * scrypto::math::PreciseDecimal::try_from(
-                    scrypto::math::I512::from(10u8)
+                base * radix_engine_lib::math::PreciseDecimal::try_from(
+                    radix_engine_lib::math::I512::from(10u8)
                         .pow(u32::try_from($shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             } else {
-                base / scrypto::math::PreciseDecimal::try_from(
-                    scrypto::math::I512::from(10u8)
+                base / radix_engine_lib::math::PreciseDecimal::try_from(
+                    radix_engine_lib::math::I512::from(10u8)
                         .pow(u32::try_from(-$shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
