@@ -4,9 +4,9 @@ use std::path::PathBuf;
 use radix_engine::ledger::*;
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::*;
+use radix_engine_lib::data::ScryptoCustomTypeId;
+use radix_engine_lib::engine::types::RENodeId;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
-use scrypto::data::ScryptoCustomTypeId;
-use scrypto::engine_lib::engine::types::RENodeId;
 
 pub struct RadixEngineDB {
     db: DBWithThreadMode<SingleThreaded>,

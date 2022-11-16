@@ -1,39 +1,11 @@
 use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
-use radix_engine_lib::component::{
-    ComponentAddAccessCheckInvocation, EpochManagerCreateInvocation,
-    EpochManagerGetCurrentEpochInvocation, EpochManagerSetEpochInvocation,
-    PackagePublishInvocation,
-};
+use radix_engine_lib::component::*;
 use radix_engine_lib::data::{IndexedScryptoValue, ScryptoCustomTypeId};
 use radix_engine_lib::engine::api::{SysInvokableNative, Syscalls};
 use radix_engine_lib::engine::types::{NativeFunction, NativeMethod, RENodeId};
-use radix_engine_lib::resource::{
-    AuthZoneClearInvocation, AuthZoneCreateProofByAmountInvocation,
-    AuthZoneCreateProofByIdsInvocation, AuthZoneCreateProofInvocation, AuthZoneDrainInvocation,
-    AuthZonePopInvocation, AuthZonePushInvocation, BucketCreateProofInvocation,
-    BucketGetAmountInvocation, BucketGetNonFungibleIdsInvocation,
-    BucketGetResourceAddressInvocation, BucketPutInvocation, BucketTakeInvocation,
-    BucketTakeNonFungiblesInvocation, ProofCloneInvocation, ProofGetAmountInvocation,
-    ProofGetNonFungibleIdsInvocation, ProofGetResourceAddressInvocation,
-    ResourceManagerBucketBurnInvocation, ResourceManagerBurnInvocation,
-    ResourceManagerCreateBucketInvocation, ResourceManagerCreateInvocation,
-    ResourceManagerCreateVaultInvocation, ResourceManagerGetMetadataInvocation,
-    ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation,
-    ResourceManagerGetTotalSupplyInvocation, ResourceManagerLockAuthInvocation,
-    ResourceManagerMintInvocation, ResourceManagerNonFungibleExistsInvocation,
-    ResourceManagerSetResourceAddressInvocation, ResourceManagerUpdateAuthInvocation,
-    ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation,
-    VaultCreateProofByAmountInvocation, VaultCreateProofByIdsInvocation,
-    VaultCreateProofInvocation, VaultGetAmountInvocation, VaultGetNonFungibleIdsInvocation,
-    VaultGetResourceAddressInvocation, VaultLockFeeInvocation, VaultPutInvocation,
-    VaultTakeInvocation, VaultTakeNonFungiblesInvocation, WorktopAssertContainsAmountInvocation,
-    WorktopAssertContainsInvocation, WorktopAssertContainsNonFungiblesInvocation,
-    WorktopDrainInvocation, WorktopPutInvocation, WorktopTakeAllInvocation,
-    WorktopTakeAmountInvocation, WorktopTakeNonFungiblesInvocation,
-};
-
+use radix_engine_lib::resource::*;
 use sbor::rust::fmt::Debug;
 use sbor::*;
 

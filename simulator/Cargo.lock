@@ -1060,9 +1060,9 @@ name = "radix-engine-stores"
 version = "0.7.0"
 dependencies = [
  "radix-engine",
+ "radix-engine-lib",
  "rocksdb",
  "sbor",
- "scrypto",
 ]
 
 [[package]]
