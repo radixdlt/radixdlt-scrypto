@@ -39,7 +39,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                             encoder.write_type_id(::sbor::type_id::SborTypeId::Struct);
                         }
                         #[inline]
-                        fn encode_value(&self, encoder: &mut ::sbor::Encoder <#sbor_cti>) {
+                        fn encode_body(&self, encoder: &mut ::sbor::Encoder <#sbor_cti>) {
                             use ::sbor::{self, Encode};
                             encoder.write_size(#ns_len);
                             #(self.#ns_ids.encode(encoder);)*
@@ -62,7 +62,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                             encoder.write_type_id(::sbor::type_id::SborTypeId::Struct);
                         }
                         #[inline]
-                        fn encode_value(&self, encoder: &mut ::sbor::Encoder <#sbor_cti>) {
+                        fn encode_body(&self, encoder: &mut ::sbor::Encoder <#sbor_cti>) {
                             use ::sbor::{self, Encode};
                             encoder.write_size(#ns_len);
                             #(self.#ns_indices.encode(encoder);)*
@@ -78,7 +78,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                             encoder.write_type_id(::sbor::type_id::SborTypeId::Struct);
                         }
                         #[inline]
-                        fn encode_value(&self, encoder: &mut ::sbor::Encoder <#sbor_cti>) {
+                        fn encode_body(&self, encoder: &mut ::sbor::Encoder <#sbor_cti>) {
                             encoder.write_size(0);
                         }
                     }
@@ -142,7 +142,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                             encoder.write_type_id(::sbor::type_id::SborTypeId::Enum);
                         }
                         #[inline]
-                        fn encode_value(&self, encoder: &mut ::sbor::Encoder <#sbor_cti>) {
+                        fn encode_body(&self, encoder: &mut ::sbor::Encoder <#sbor_cti>) {
                         }
                     }
                 }
@@ -154,7 +154,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                             encoder.write_type_id(::sbor::type_id::SborTypeId::Enum);
                         }
                         #[inline]
-                        fn encode_value(&self, encoder: &mut ::sbor::Encoder <#sbor_cti>) {
+                        fn encode_body(&self, encoder: &mut ::sbor::Encoder <#sbor_cti>) {
                             use ::sbor::{self, Encode};
 
                             match self {
@@ -202,7 +202,7 @@ mod tests {
                         encoder.write_type_id(::sbor::type_id::SborTypeId::Struct);
                     }
                     #[inline]
-                    fn encode_value(&self, encoder: &mut ::sbor::Encoder<CTI>) {
+                    fn encode_body(&self, encoder: &mut ::sbor::Encoder<CTI>) {
                         use ::sbor::{self, Encode};
                         encoder.write_size(1);
                         self.a.encode(encoder);
@@ -226,7 +226,7 @@ mod tests {
                         encoder.write_type_id(::sbor::type_id::SborTypeId::Enum);
                     }
                     #[inline]
-                    fn encode_value(&self, encoder: &mut ::sbor::Encoder<CTI>) {
+                    fn encode_body(&self, encoder: &mut ::sbor::Encoder<CTI>) {
                         use ::sbor::{self, Encode};
                         match self {
                             Self::A => {
@@ -264,7 +264,7 @@ mod tests {
                         encoder.write_type_id(::sbor::type_id::SborTypeId::Struct);
                     }
                     #[inline]
-                    fn encode_value(&self, encoder: &mut ::sbor::Encoder<CTI>) {
+                    fn encode_body(&self, encoder: &mut ::sbor::Encoder<CTI>) {
                         use ::sbor::{self, Encode};
                         encoder.write_size(0);
                     }
@@ -290,7 +290,7 @@ mod tests {
                         encoder.write_type_id(::sbor::type_id::SborTypeId::Struct);
                     }
                     #[inline]
-                    fn encode_value(&self, encoder: &mut ::sbor::Encoder<NoCustomTypeId>) {
+                    fn encode_body(&self, encoder: &mut ::sbor::Encoder<NoCustomTypeId>) {
                         use ::sbor::{self, Encode};
                         encoder.write_size(0);
                     }
@@ -316,7 +316,7 @@ mod tests {
                         encoder.write_type_id(::sbor::type_id::SborTypeId::Struct);
                     }
                     #[inline]
-                    fn encode_value(&self, encoder: &mut ::sbor::Encoder<::sbor::basic::NoCustomTypeId>) {
+                    fn encode_body(&self, encoder: &mut ::sbor::Encoder<::sbor::basic::NoCustomTypeId>) {
                         use ::sbor::{self, Encode};
                         encoder.write_size(0);
                     }

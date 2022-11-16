@@ -36,7 +36,7 @@ impl<X: CustomTypeId> CustomValue<X> for NoCustomValue {
         panic!("No custom value")
     }
 
-    fn encode_value(&self, _encoder: &mut Encoder<X>) {
+    fn encode_body(&self, _encoder: &mut Encoder<X>) {
         panic!("No custom value")
     }
 

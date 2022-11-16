@@ -1056,7 +1056,7 @@ mod tests {
         let mut bytes = Vec::with_capacity(512);
         let mut enc = Encoder::new(&mut bytes);
         dec.encode_type_id(&mut enc);
-        dec.encode_value(&mut enc);
+        dec.encode_body(&mut enc);
         assert_eq!(bytes, {
             let mut a = [0; 33];
             a[0] = Decimal::type_id().as_u8();
@@ -1080,7 +1080,7 @@ mod tests {
         let mut bytes = Vec::with_capacity(512);
         let mut enc = Encoder::new(&mut bytes);
         dec.encode_type_id(&mut enc);
-        dec.encode_value(&mut enc);
+        dec.encode_body(&mut enc);
         let mut decoder = Decoder::new(&bytes);
         let val = Decimal::decode(&mut decoder).unwrap();
         assert_eq!(val, dec!("1.23456789"));

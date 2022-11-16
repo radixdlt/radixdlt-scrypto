@@ -297,13 +297,13 @@ macro_rules! sbor_codec {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
-            fn encode_value(&self, encoder: &mut Encoder<X>) {
+            fn encode_body(&self, encoder: &mut Encoder<X>) {
                 encoder.write_slice(&self.to_le_bytes());
             }
         }
 
         impl<X: CustomTypeId> Decode<X> for $t {
-            fn decode_value(
+            fn decode_with_type_id(
                 decoder: &mut Decoder<X>,
                 type_id: SborTypeId<X>,
             ) -> Result<Self, DecodeError> {

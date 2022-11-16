@@ -108,7 +108,7 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
         }
     }
 
-    fn encode_value(&self, encoder: &mut ScryptoEncoder) {
+    fn encode_body(&self, encoder: &mut ScryptoEncoder) {
         match self {
             // TODO: vector free
             ScryptoCustomValue::PackageAddress(v) => encoder.write_slice(&v.to_vec()),

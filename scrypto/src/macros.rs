@@ -117,7 +117,7 @@ macro_rules! args {
         $(
             let arg = $args;
             arg.encode_type_id(&mut encoder);
-            arg.encode_value(&mut encoder);
+            arg.encode_body(&mut encoder);
         )*
         buf
     }};
@@ -613,13 +613,13 @@ macro_rules! scrypto_type {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
-            fn encode_value(&self, encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
+            fn encode_body(&self, encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
                 encoder.write_slice(&self.to_vec());
             }
         }
 
         impl Decode<::scrypto::data::ScryptoCustomTypeId> for $t {
-            fn decode_value(
+            fn decode_with_type_id(
                 decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
                 type_id: ::scrypto::data::ScryptoTypeId,
             ) -> Result<Self, DecodeError> {
@@ -651,7 +651,7 @@ macro_rules! scrypto_type {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
-            fn encode_value(&self, encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
+            fn encode_body(&self, encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
                 let bytes = self.to_vec();
                 encoder.write_size(bytes.len());
                 encoder.write_slice(&bytes);
@@ -659,7 +659,7 @@ macro_rules! scrypto_type {
         }
 
         impl Decode<::scrypto::data::ScryptoCustomTypeId> for $t {
-            fn decode_value(
+            fn decode_with_type_id(
                 decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
                 type_id: ::scrypto::data::ScryptoTypeId,
             ) -> Result<Self, DecodeError> {

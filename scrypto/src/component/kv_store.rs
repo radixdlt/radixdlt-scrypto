@@ -182,7 +182,7 @@ impl<
     }
 
     #[inline]
-    fn encode_value(&self, encoder: &mut ScryptoEncoder) {
+    fn encode_body(&self, encoder: &mut ScryptoEncoder) {
         encoder.write_slice(&self.to_vec());
     }
 }
@@ -192,7 +192,7 @@ impl<
         V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
     > Decode<ScryptoCustomTypeId> for KeyValueStore<K, V>
 {
-    fn decode_value(
+    fn decode_with_type_id(
         decoder: &mut ScryptoDecoder,
         type_id: ScryptoTypeId,
     ) -> Result<Self, DecodeError> {
