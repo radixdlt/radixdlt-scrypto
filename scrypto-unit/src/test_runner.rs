@@ -24,6 +24,7 @@ use radix_engine_lib::crypto::hash;
 use radix_engine_lib::dec;
 use radix_engine_lib::engine::types::{RENodeId, ScryptoMethodIdent};
 use scrypto::resource::non_fungible::FromPublicKey;
+use scrypto::{access_rule_node, args, rule};
 use transaction::builder::ManifestBuilder;
 use transaction::model::{AuthZoneParams, Executable, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};

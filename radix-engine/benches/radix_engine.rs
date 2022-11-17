@@ -9,6 +9,7 @@ use radix_engine::wasm::{DefaultWasmEngine, InstructionCostRules, WasmMeteringCo
 use radix_engine_lib::core::NetworkDefinition;
 use radix_engine_lib::dec;
 use scrypto::resource::non_fungible::FromPublicKey;
+use scrypto::{access_rule_node, args, rule};
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaSecp256k1PrivateKey;

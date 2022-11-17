@@ -32,10 +32,7 @@ pub use sbor::rust::vec::Vec;
 pub use sbor::{Decode, DecodeError, Encode, SborPath, SborPathBuf, SborTypeId, SborValue, TypeId};
 
 pub use scrypto::abi::{BlueprintAbi, Fields, Fn, Type, Variant};
-pub use scrypto::access_and_or;
-pub use scrypto::access_rule_node;
 pub use scrypto::args;
-pub use scrypto::rule;
 
 use std::fmt::Debug;
 
