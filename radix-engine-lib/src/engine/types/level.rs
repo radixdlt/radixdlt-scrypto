@@ -1,8 +1,8 @@
 use super::*;
-use crate::Describe;
+use scrypto_abi::*;
 
 /// Represents the level of a log message.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, TypeId, Encode, Decode, Describe)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, TypeId, Encode, Decode, crate::Describe)]
 pub enum Level {
     Error,
     Warn,

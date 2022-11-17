@@ -1,5 +1,6 @@
 use crate::Describe;
 use sbor::*;
+use scrypto_abi::*;
 
 /// Represents the type of a resource.
 #[derive(Debug, Clone, Copy, TypeId, Encode, Decode, Describe, Eq, PartialEq)]

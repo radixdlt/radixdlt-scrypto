@@ -45,15 +45,14 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                 let types = ns.iter().map(|f| &f.ty);
 
                 quote! {
-                    impl ::scrypto_abi::Describe for #ident {
-                        fn describe() -> ::scrypto_abi::Type {
+                    impl Describe for #ident {
+                        fn describe() -> Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
-                            use ::scrypto_abi::Describe;
 
-                            ::scrypto_abi::Type::Struct {
+                            Type::Struct {
                                 name: #ident_str.to_owned(),
-                                fields: ::scrypto_abi::Fields::Named {
+                                fields: Fields::Named {
                                     named: vec![#((#names.to_owned(), <#types>::describe())),*]
                                 },
                             }
@@ -70,15 +69,15 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                 let types = ns.iter().map(|f| &f.ty);
 
                 quote! {
-                    impl ::scrypto_abi::Describe for #ident {
+                    impl Describe for #ident {
                         fn describe() -> ::scrypto_abi::Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
-                            use ::scrypto_abi::Describe;
+                            use Describe;
 
-                            ::scrypto_abi::Type::Struct {
+                            Type::Struct {
                                 name: #ident_str.to_owned(),
-                                fields: ::scrypto_abi::Fields::Unnamed {
+                                fields: Fields::Unnamed {
                                     unnamed: vec![#(<#types>::describe()),*]
                                 },
                             }
@@ -88,13 +87,13 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl ::scrypto_abi::Describe for #ident {
-                        fn describe() -> ::scrypto_abi::Type {
+                    impl Describe for #ident {
+                        fn describe() -> Type {
                             use ::sbor::rust::borrow::ToOwned;
 
-                            ::scrypto_abi::Type::Struct {
+                            Type::Struct {
                                 name: #ident_str.to_owned(),
-                                fields: ::scrypto_abi::Fields::Unit,
+                                fields: Fields::Unit,
                             }
                         }
                     }
@@ -121,7 +120,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
 
                         quote! {
                             {
-                                ::scrypto_abi::Fields::Named {
+                                Fields::Named {
                                     named: vec![#((#names.to_owned(), <#types>::describe())),*]
                                 }
                             }
@@ -137,7 +136,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
 
                         quote! {
                             {
-                                ::scrypto_abi::Fields::Unnamed {
+                                Fields::Unnamed {
                                     unnamed: vec![#(<#types>::describe()),*]
                                 }
                             }
@@ -146,7 +145,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                     syn::Fields::Unit => {
                         quote! {
                             {
-                                ::scrypto_abi::Fields::Unit
+                                Fields::Unit
                             }
                         }
                     }
@@ -154,16 +153,15 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
             });
 
             quote! {
-                impl ::scrypto_abi::Describe for #ident {
-                    fn describe() -> ::scrypto_abi::Type {
+                impl Describe for #ident {
+                    fn describe() -> Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use ::scrypto_abi::Describe;
 
-                        ::scrypto_abi::Type::Enum {
+                        Type::Enum {
                             name: #ident_str.to_owned(),
                             variants: vec![
-                                #(::scrypto_abi::Variant {
+                                #(Variant {
                                     name: #names.to_owned(),
                                     fields: #fields
                                 }),*
@@ -204,15 +202,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::scrypto_abi::Describe for Test {
-                    fn describe() -> ::scrypto_abi::Type {
+                impl Describe for Test {
+                    fn describe() -> Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use ::scrypto_abi::Describe;
 
-                        ::scrypto_abi::Type::Struct {
+                        Type::Struct {
                             name: "Test".to_owned(),
-                            fields: ::scrypto_abi::Fields::Named {
+                            fields: Fields::Named {
                                 named: vec![("a".to_owned(), <u32>::describe())]
                             },
                         }
@@ -230,29 +227,29 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::scrypto_abi::Describe for Test {
-                    fn describe() -> ::scrypto_abi::Type {
+                impl Describe for Test {
+                    fn describe() -> Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use ::scrypto_abi::Describe;
+                        use Describe;
 
-                        ::scrypto_abi::Type::Enum {
+                        Type::Enum {
                             name: "Test".to_owned(),
                             variants: vec![
-                                ::scrypto_abi::Variant {
+                                Variant {
                                     name: "A".to_owned(),
-                                    fields: { ::scrypto_abi::Fields::Unit }
+                                    fields: { Fields::Unit }
                                 },
-                                ::scrypto_abi::Variant {
+                                Variant {
                                     name: "B".to_owned(),
                                     fields: {
-                                        ::scrypto_abi::Fields::Unnamed { unnamed: vec![<u32>::describe()] }
+                                        Fields::Unnamed { unnamed: vec![<u32>::describe()] }
                                     }
                                 },
-                                ::scrypto_abi::Variant {
+                                Variant {
                                     name: "C".to_owned(),
                                     fields: {
-                                        ::scrypto_abi::Fields::Named { named: vec![("x".to_owned(), <u8>::describe())] }
+                                        Fields::Named { named: vec![("x".to_owned(), <u8>::describe())] }
                                     }
                                 }
                             ]
@@ -271,15 +268,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::scrypto_abi::Describe for Test {
-                    fn describe() -> ::scrypto_abi::Type {
+                impl Describe for Test {
+                    fn describe() -> Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use ::scrypto_abi::Describe;
 
-                        ::scrypto_abi::Type::Struct {
+                        Type::Struct {
                             name: "Test".to_owned(),
-                            fields: ::scrypto_abi::Fields::Named { named: vec![] },
+                            fields: Fields::Named { named: vec![] },
                         }
                     }
                 }
@@ -298,29 +294,28 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::scrypto_abi::Describe for Test {
-                    fn describe() -> ::scrypto_abi::Type {
+                impl Describe for Test {
+                    fn describe() -> Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use ::scrypto_abi::Describe;
 
-                        ::scrypto_abi::Type::Enum {
+                        Type::Enum {
                             name: "Test".to_owned(),
                             variants: vec![
-                                ::scrypto_abi::Variant {
+                                Variant {
                                     name: "A".to_owned(),
-                                    fields: { ::scrypto_abi::Fields::Unit }
+                                    fields: { Fields::Unit }
                                 },
-                                ::scrypto_abi::Variant {
+                                Variant {
                                     name: "B".to_owned(),
                                     fields: {
-                                        ::scrypto_abi::Fields::Unnamed { unnamed: vec![] }
+                                        Fields::Unnamed { unnamed: vec![] }
                                     }
                                 },
-                                ::scrypto_abi::Variant {
+                                Variant {
                                     name: "C".to_owned(),
                                     fields: {
-                                        ::scrypto_abi::Fields::Named { named: vec![] }
+                                        Fields::Named { named: vec![] }
                                     }
                                 }
                             ]

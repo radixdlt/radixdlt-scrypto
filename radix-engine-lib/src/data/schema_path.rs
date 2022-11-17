@@ -8,7 +8,7 @@ use sbor::*;
 
 use self::SchemaSubPath::{Field, Index};
 use crate::Describe;
-use scrypto_abi::{Fields, Type};
+use scrypto_abi::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
 pub enum SchemaSubPath {
