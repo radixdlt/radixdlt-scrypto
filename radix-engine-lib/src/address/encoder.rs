@@ -9,6 +9,7 @@ use super::errors::AddressError;
 use super::hrpset::HrpSet;
 use crate::component::*;
 use crate::core::NetworkDefinition;
+use crate::model::*;
 use crate::resource::ResourceAddress;
 
 /// Represents an encoder which understands how to encode Scrypto addresses in Bech32.

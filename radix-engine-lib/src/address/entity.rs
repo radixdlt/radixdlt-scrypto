@@ -1,4 +1,5 @@
 use crate::component::*;
+use crate::model::*;
 use crate::resource::ResourceAddress;
 
 /// A unique identifier used in the addressing of Resource Addresses.

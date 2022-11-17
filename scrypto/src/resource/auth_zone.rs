@@ -2,11 +2,8 @@ use radix_engine_lib::data::ScryptoCustomTypeId;
 use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
 use radix_engine_lib::engine::types::RENodeId;
 use radix_engine_lib::math::Decimal;
-use radix_engine_lib::resource::{
-    AuthZoneClearInvocation, AuthZoneCreateProofByAmountInvocation,
-    AuthZoneCreateProofByIdsInvocation, AuthZoneCreateProofInvocation, AuthZoneDrainInvocation,
-    AuthZonePopInvocation, AuthZonePushInvocation, NonFungibleId, ResourceAddress,
-};
+use radix_engine_lib::model::*;
+use radix_engine_lib::resource::{NonFungibleId, ResourceAddress};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;

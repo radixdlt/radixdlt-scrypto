@@ -37,6 +37,10 @@ pub mod math {
     pub use radix_engine_lib::math::*;
 }
 
+pub mod model {
+    pub use radix_engine_lib::model::*;
+}
+
 /// Radix engine APIs.
 pub mod engine;
 /// Miscellaneous functions.

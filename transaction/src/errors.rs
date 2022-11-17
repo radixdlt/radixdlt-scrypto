@@ -1,5 +1,5 @@
 use radix_engine_lib::abi::Type;
-use radix_engine_lib::component::ComponentAddress;
+use radix_engine_lib::model::*;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::data::ScryptoValueDecodeError;
 use radix_engine_lib::engine::types::{BucketId, KeyValueStoreId, ProofId, VaultId};

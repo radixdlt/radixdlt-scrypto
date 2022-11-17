@@ -7,10 +7,10 @@ macro_rules! construct_address {
         ::radix_engine_lib::component::PackageAddress::Normal([$($bytes),*])
     };
     (EntityType::NormalComponent, $($bytes:expr),*) => {
-        ::radix_engine_lib::component::ComponentAddress::Normal([$($bytes),*])
+        ::radix_engine_lib::model::ComponentAddress::Normal([$($bytes),*])
     };
     (EntityType::AccountComponent, $($bytes:expr),*) => {
-        ::radix_engine_lib::component::ComponentAddress::Account([$($bytes),*])
+        ::radix_engine_lib::model::ComponentAddress::Account([$($bytes),*])
     };
     (EntityType::EpochManager, $($bytes:expr),*) => {
         ::radix_engine_lib::component::SystemAddress::EpochManager([$($bytes),*])

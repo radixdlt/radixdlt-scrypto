@@ -486,13 +486,13 @@ macro_rules! external_component {
     ) => {
         #[scrypto(TypeId, Encode, Decode, Describe)]
         struct $component_ident {
-            component_address: ::scrypto::engine_lib::component::ComponentAddress,
+            component_address: ::scrypto::model::ComponentAddress,
         }
 
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $component_ident {
-            fn at(component_address: ::scrypto::engine_lib::component::ComponentAddress) -> Self {
+            fn at(component_address: ::scrypto::model::ComponentAddress) -> Self {
                 Self {
                     component_address,
                 }
@@ -501,16 +501,16 @@ macro_rules! external_component {
             ::scrypto::external_component_members!($($component_methods)*);
         }
 
-        impl From<::scrypto::engine_lib::component::ComponentAddress> for $component_ident {
-            fn from(component_address: ::scrypto::engine_lib::component::ComponentAddress) -> Self {
+        impl From<::scrypto::model::ComponentAddress> for $component_ident {
+            fn from(component_address: ::scrypto::model::ComponentAddress) -> Self {
                 Self {
                     component_address
                 }
             }
         }
 
-        impl From<$component_ident> for ::scrypto::engine_lib::component::ComponentAddress {
-            fn from(a: $component_ident) -> ::scrypto::engine_lib::component::ComponentAddress {
+        impl From<$component_ident> for ::scrypto::model::ComponentAddress {
+            fn from(a: $component_ident) -> ::scrypto::model::ComponentAddress {
                 a.component_address
             }
         }

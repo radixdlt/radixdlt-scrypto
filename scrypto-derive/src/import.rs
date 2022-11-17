@@ -90,23 +90,23 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
         #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
         pub struct #ident {
-            component_address: ::scrypto::engine_lib::component::ComponentAddress,
+            component_address: ::scrypto::model::ComponentAddress,
         }
 
         impl #ident {
             #(#fns)*
         }
 
-        impl From<::scrypto::engine_lib::component::ComponentAddress> for #ident {
-            fn from(component_address: ::scrypto::engine_lib::component::ComponentAddress) -> Self {
+        impl From<::scrypto::model::ComponentAddress> for #ident {
+            fn from(component_address: ::scrypto::model::ComponentAddress) -> Self {
                 Self {
                     component_address
                 }
             }
         }
 
-        impl From<#ident> for ::scrypto::engine_lib::component::ComponentAddress {
-            fn from(a: #ident) -> ::scrypto::engine_lib::component::ComponentAddress {
+        impl From<#ident> for ::scrypto::model::ComponentAddress {
+            fn from(a: #ident) -> ::scrypto::model::ComponentAddress {
                 a.component_address
             }
         }
@@ -324,7 +324,7 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
             parse_quote! { ::scrypto::engine_lib::component::PackageAddress }
         }
         SchemaType::ComponentAddress => {
-            parse_quote! { ::scrypto::engine_lib::component::ComponentAddress}
+            parse_quote! { ::scrypto::model::ComponentAddress}
         }
         SchemaType::ResourceAddress => {
             parse_quote! {::scrypto::engine_lib::resource::ResourceAddress }
@@ -447,10 +447,10 @@ mod tests {
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
                 #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
                 pub struct Simple {
-                    component_address: ::scrypto::engine_lib::component::ComponentAddress,
+                    component_address: ::scrypto::model::ComponentAddress,
                 }
                 impl Simple {
-                    pub fn new() -> ::scrypto::engine_lib::component::ComponentAddress {
+                    pub fn new() -> ::scrypto::model::ComponentAddress {
                         ::scrypto::core::Runtime::call_function(
                             ::scrypto::engine_lib::component::PackageAddress::try_from_hex("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7").unwrap(),
                             "Simple",
@@ -466,15 +466,15 @@ mod tests {
                         )
                     }
                 }
-                impl From<::scrypto::engine_lib::component::ComponentAddress> for Simple {
-                    fn from(component_address: ::scrypto::engine_lib::component::ComponentAddress) -> Self {
+                impl From<::scrypto::model::ComponentAddress> for Simple {
+                    fn from(component_address: ::scrypto::model::ComponentAddress) -> Self {
                         Self {
                             component_address
                         }
                     }
                 }
-                impl From<Simple> for ::scrypto::engine_lib::component::ComponentAddress {
-                    fn from(a: Simple) -> ::scrypto::engine_lib::component::ComponentAddress {
+                impl From<Simple> for ::scrypto::model::ComponentAddress {
+                    fn from(a: Simple) -> ::scrypto::model::ComponentAddress {
                         a.component_address
                     }
                 }

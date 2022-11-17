@@ -1,8 +1,8 @@
 use crate::component::*;
 use crate::engine::types::*;
+use crate::model::*;
 use crate::resource::*;
 use crate::scrypto;
-use crate::model::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;

@@ -1,5 +1,5 @@
 use radix_engine_lib::address::Bech32Decoder;
-use radix_engine_lib::component::ComponentAddress;
+use radix_engine_lib::model::*;
 use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::core::NetworkDefinition;
 use radix_engine_lib::crypto::{hash, Blob, Hash};

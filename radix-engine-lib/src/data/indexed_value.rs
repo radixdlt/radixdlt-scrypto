@@ -5,11 +5,12 @@ use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::component::{ComponentAddress, PackageAddress, SystemAddress};
+use crate::component::{PackageAddress, SystemAddress};
 use crate::core::Expression;
 use crate::crypto::Blob;
 use crate::data::*;
 use crate::engine::types::*;
+use crate::model::*;
 use crate::resource::{NonFungibleAddress, ResourceAddress};
 use utils::misc::ContextualDisplay;
 

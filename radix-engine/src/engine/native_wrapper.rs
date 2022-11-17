@@ -2,7 +2,7 @@ use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::types::*;
 use radix_engine_lib::component::{
-    ComponentAddAccessCheckInvocation, EpochManagerCreateInvocation,
+    EpochManagerCreateInvocation,
     EpochManagerGetCurrentEpochInvocation, EpochManagerSetEpochInvocation,
     PackagePublishInvocation,
 };
@@ -13,10 +13,9 @@ use radix_engine_lib::engine::types::{
     NativeFn, NativeFunction, NativeMethod, PackageFunction, ProofMethod, ResourceManagerFunction,
     ResourceManagerMethod, TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
+use radix_engine_lib::model::*;
 use radix_engine_lib::resource::{
-    AuthZoneClearInvocation, AuthZoneCreateProofByAmountInvocation,
-    AuthZoneCreateProofByIdsInvocation, AuthZoneCreateProofInvocation, AuthZoneDrainInvocation,
-    AuthZonePopInvocation, AuthZonePushInvocation, BucketCreateProofInvocation,
+    BucketCreateProofInvocation,
     BucketGetAmountInvocation, BucketGetNonFungibleIdsInvocation,
     BucketGetResourceAddressInvocation, BucketPutInvocation, BucketTakeInvocation,
     BucketTakeNonFungiblesInvocation, ProofCloneInvocation, ProofGetAmountInvocation,

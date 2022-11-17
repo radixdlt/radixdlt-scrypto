@@ -1,5 +1,6 @@
 use crate::component::*;
 use crate::engine::types::*;
+use crate::model::*;
 use crate::scrypto;
 
 #[derive(Debug, Clone, Eq, PartialEq)]

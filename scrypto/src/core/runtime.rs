@@ -1,10 +1,11 @@
+use radix_engine_lib::component::EpochManagerGetCurrentEpochInvocation;
 use radix_engine_lib::component::PackageAddress;
-use radix_engine_lib::component::{ComponentAddress, EpochManagerGetCurrentEpochInvocation};
 use radix_engine_lib::engine::actor::ScryptoActor;
 use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
 use radix_engine_lib::engine::types::{
     ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
 };
+use radix_engine_lib::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::*;

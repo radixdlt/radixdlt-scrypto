@@ -8,11 +8,7 @@ use radix_engine_lib::engine::types::{
     AuthZoneMethod, AuthZoneOffset, GlobalAddress, NativeMethod, ProofId, ProofOffset, RENodeId,
     ResourceManagerOffset, SubstateOffset,
 };
-use radix_engine_lib::resource::{
-    AuthZoneClearInvocation, AuthZoneCreateProofByAmountInvocation,
-    AuthZoneCreateProofByIdsInvocation, AuthZoneCreateProofInvocation, AuthZoneDrainInvocation,
-    AuthZonePopInvocation, AuthZonePushInvocation,
-};
+use radix_engine_lib::model::*;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

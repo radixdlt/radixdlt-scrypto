@@ -1,5 +1,4 @@
 pub use radix_engine_lib::address::{AddressError, Bech32Decoder, Bech32Encoder};
-pub use radix_engine_lib::component::ComponentAddress;
 pub use radix_engine_lib::component::PackageAddress;
 pub use radix_engine_lib::component::SystemAddress;
 pub use radix_engine_lib::component::{
@@ -19,6 +18,7 @@ use radix_engine_lib::engine::types::{
 };
 pub use radix_engine_lib::engine::{scrypto_env::RadixEngineInput, types::*};
 pub use radix_engine_lib::math::{Decimal, RoundingMode, I256};
+pub use radix_engine_lib::model::*;
 pub use radix_engine_lib::resource::NonFungibleAddress;
 pub use radix_engine_lib::resource::NonFungibleId;
 pub use radix_engine_lib::resource::ResourceAddress;
@@ -30,9 +30,7 @@ pub use radix_engine_lib::resource::{
     SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
 pub use radix_engine_lib::resource::{
-    AuthZoneClearInvocation, AuthZoneCreateProofByAmountInvocation,
-    AuthZoneCreateProofByIdsInvocation, AuthZoneCreateProofInvocation, AuthZonePopInvocation,
-    AuthZonePushInvocation, BucketCreateProofInvocation, BucketGetAmountInvocation,
+    BucketCreateProofInvocation, BucketGetAmountInvocation,
     BucketGetNonFungibleIdsInvocation, BucketGetResourceAddressInvocation, BucketPutInvocation,
     BucketTakeInvocation, BucketTakeNonFungiblesInvocation, MintParams, Mutability,
     ProofCloneInvocation, ProofGetAmountInvocation, ProofGetNonFungibleIdsInvocation,
