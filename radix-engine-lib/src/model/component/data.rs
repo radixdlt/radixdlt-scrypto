@@ -1,5 +1,4 @@
 use sbor::rust::fmt;
-use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -9,31 +8,7 @@ use crate::abi::*;
 use crate::address::*;
 use crate::crypto::{hash, PublicKey};
 use crate::data::ScryptoCustomTypeId;
-use crate::engine::{api::*, scrypto_env::*, types::*};
-use crate::model::*;
-use crate::scrypto;
 use crate::scrypto_type;
-
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct ComponentAddAccessCheckInvocation {
-    pub receiver: ComponentId,
-    pub access_rules: AccessRules,
-}
-
-impl SysInvocation for ComponentAddAccessCheckInvocation {
-    type Output = ();
-}
-
-impl ScryptoNativeInvocation for ComponentAddAccessCheckInvocation {}
-
-impl Into<NativeFnInvocation> for ComponentAddAccessCheckInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Component(
-            ComponentMethodInvocation::AddAccessCheck(self),
-        ))
-    }
-}
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -158,6 +133,6 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
                 write!(f, "EddsaEd25519VirtualAccountComponent[{}]", self.to_hex())
             }
         }
-        .map_err(|err| AddressError::FormatError(err))
+            .map_err(|err| AddressError::FormatError(err))
     }
 }
