@@ -14,6 +14,7 @@ mod value_formatter;
 pub use custom_type_id::*;
 pub use custom_value::*;
 pub use indexed_value::*;
+use sbor::{decode, encode, Decode, DecodeError, Encode};
 pub use schema_matcher::*;
 pub use schema_path::*;
 pub use value_formatter::*;
@@ -24,3 +25,12 @@ pub type ScryptoEncoder<'a> = sbor::Encoder<'a, ScryptoCustomTypeId>;
 pub type ScryptoDecoder<'a> = sbor::Decoder<'a, ScryptoCustomTypeId>;
 pub type ScryptoTypeId = sbor::SborTypeId<ScryptoCustomTypeId>;
 pub type ScryptoValue = sbor::SborValue<ScryptoCustomTypeId, ScryptoCustomValue>;
+
+/// Encodes a data structure into byte array.
+pub fn scrypto_encode<T: Encode<ScryptoCustomTypeId> + ?Sized>(v: &T) -> Vec<u8> {
+    encode(v)
+}
+
+pub fn scrypto_decode<T: Decode<ScryptoCustomTypeId>>(buf: &[u8]) -> Result<T, DecodeError> {
+    decode(buf)
+}

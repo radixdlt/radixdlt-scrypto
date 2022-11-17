@@ -10,11 +10,6 @@ use crate::abi::*;
 use crate::data::*;
 use crate::scrypto_type;
 
-/// Encodes a data structure into byte array.
-fn scrypto_encode<T: Encode<ScryptoCustomTypeId> + ?Sized>(v: &T) -> Vec<u8> {
-    encode(v)
-}
-
 /// Represents a key for a non-fungible resource
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NonFungibleId(pub Vec<u8>);

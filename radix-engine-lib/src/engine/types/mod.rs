@@ -1,8 +1,10 @@
+mod actor;
 mod ids;
 mod invocation;
 mod level;
 mod re_node;
 
+pub use actor::*;
 pub use ids::*;
 pub use invocation::*;
 pub use level::*;

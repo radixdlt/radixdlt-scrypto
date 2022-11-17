@@ -1,6 +1,6 @@
 use sbor::rust::fmt::Debug;
 
-use crate::engine::{api::*, scrypto_env::*, types::*};
+use crate::engine::{api::*, types::*, wasm_input::*};
 use crate::model::*;
 use crate::scrypto;
 

@@ -2,12 +2,12 @@ pub use radix_engine_lib::address::{AddressError, Bech32Decoder, Bech32Encoder};
 pub use radix_engine_lib::core::Expression;
 pub use radix_engine_lib::crypto::*;
 use radix_engine_lib::data::IndexedScryptoValue;
+pub use radix_engine_lib::data::{scrypto_decode, scrypto_encode};
 pub use radix_engine_lib::dec;
-pub use radix_engine_lib::engine::actor::ScryptoActor;
 use radix_engine_lib::engine::types::{
     NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,
 };
-pub use radix_engine_lib::engine::{scrypto_env::RadixEngineInput, types::*};
+pub use radix_engine_lib::engine::{types::*, wasm_input::RadixEngineInput};
 pub use radix_engine_lib::math::{Decimal, RoundingMode, I256};
 pub use radix_engine_lib::model::*;
 pub use radix_engine_lib::scrypto;
@@ -34,7 +34,6 @@ pub use scrypto::abi::{BlueprintAbi, Fields, Fn, Type, Variant};
 pub use scrypto::access_and_or;
 pub use scrypto::access_rule_node;
 pub use scrypto::args;
-pub use scrypto::buffer::{scrypto_decode, scrypto_encode};
 pub use scrypto::constants::*;
 pub use scrypto::rule;
 

@@ -8,7 +8,7 @@ use utils::misc::{copy_u8_array, ContextualDisplay};
 
 use crate::address::*;
 use crate::data::ScryptoCustomTypeId;
-use crate::engine::{api::*, scrypto_env::*};
+use crate::engine::{api::*, wasm_input::*};
 use crate::math::*;
 use crate::model::*;
 use crate::scrypto_type;

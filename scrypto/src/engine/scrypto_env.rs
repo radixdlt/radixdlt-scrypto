@@ -1,12 +1,11 @@
 use radix_engine_lib::crypto::Hash;
 use radix_engine_lib::data::ScryptoCustomTypeId;
-use radix_engine_lib::engine::actor::ScryptoActor;
 use radix_engine_lib::engine::api::{ScryptoNativeInvocation, SysNativeInvokable, Syscalls};
-use radix_engine_lib::engine::scrypto_env::RadixEngineInput;
 use radix_engine_lib::engine::types::{
-    Level, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode,
-    SubstateOffset,
+    Level, LockHandle, RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent,
+    ScryptoRENode, SubstateOffset,
 };
+use radix_engine_lib::engine::wasm_input::RadixEngineInput;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -32,12 +31,12 @@ pub fn call_engine<V: Decode<ScryptoCustomTypeId>>(input: RadixEngineInput) -> V
 /// Utility function for making a radix engine call.
 #[cfg(target_arch = "wasm32")]
 pub fn call_engine_to_raw(input: RadixEngineInput) -> Vec<u8> {
-    use crate::buffer::{scrypto_raw_from_buffer, *};
+    use crate::buffer::{scrypto_buffer_to_vec, *};
 
     unsafe {
         let input_ptr = scrypto_encode_to_buffer(&input);
         let output_ptr = radix_engine(input_ptr);
-        scrypto_raw_from_buffer(output_ptr)
+        scrypto_buffer_to_vec(output_ptr)
     }
 }
 

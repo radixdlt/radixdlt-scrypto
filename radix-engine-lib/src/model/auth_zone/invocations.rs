@@ -3,8 +3,8 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
 use crate::engine::api::*;
-use crate::engine::scrypto_env::*;
 use crate::engine::types::AuthZoneId;
+use crate::engine::wasm_input::*;
 use crate::math::Decimal;
 use crate::model::*;
 use crate::scrypto;

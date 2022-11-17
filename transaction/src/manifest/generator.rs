@@ -4,7 +4,8 @@ use radix_engine_lib::crypto::{
     EddsaEd25519Signature, Hash,
 };
 use radix_engine_lib::data::{
-    IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue, ScryptoTypeId, ScryptoValue,
+    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue,
+    ScryptoTypeId, ScryptoValue,
 };
 use radix_engine_lib::engine::types::{
     BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
@@ -18,8 +19,6 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use sbor::{encode_any, SborValue};
-use scrypto::buffer::scrypto_decode;
-use scrypto::buffer::scrypto_encode;
 use scrypto::component::{Component, KeyValueStore};
 use scrypto::core::Expression;
 use scrypto::{args, args_from_value_vec};

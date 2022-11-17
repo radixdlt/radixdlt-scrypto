@@ -1,5 +1,4 @@
 pub use crate::abi::*;
-pub use crate::buffer::{scrypto_decode, scrypto_encode};
 pub use crate::component::*;
 pub use crate::constants::*;
 pub use crate::core::*;

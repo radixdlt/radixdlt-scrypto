@@ -4,7 +4,6 @@ use sbor::rust::collections::{BTreeSet, HashSet};
 use sbor::Decode;
 
 use radix_engine_lib::data::*;
-use scrypto::buffer::scrypto_decode;
 use scrypto::constants::*;
 
 use crate::errors::{SignatureValidationError, *};

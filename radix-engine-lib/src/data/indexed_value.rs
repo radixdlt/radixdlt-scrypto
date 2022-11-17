@@ -331,17 +331,9 @@ mod tests {
     use super::rust::vec;
     use super::*;
 
-    /// Encodes a data structure into byte array.
-    fn scrypto_encode<T: Encode<ScryptoCustomTypeId> + ?Sized>(v: &T) -> Vec<u8> {
-        encode(v)
-    }
-
     #[test]
     fn should_reject_duplicate_ids() {
-        let buckets = scrypto_encode(&vec![
-            radix_engine_lib::model::Bucket(0),
-            radix_engine_lib::model::Bucket(0),
-        ]);
+        let buckets = scrypto_encode(&vec![Bucket(0), Bucket(0)]);
         assert_eq!(
             IndexedScryptoValue::from_slice(&buckets),
             Err(ScryptoValueDecodeError::ValueIndexingError(

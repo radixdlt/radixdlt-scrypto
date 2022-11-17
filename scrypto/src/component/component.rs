@@ -1,4 +1,4 @@
-use radix_engine_lib::data::ScryptoCustomTypeId;
+use radix_engine_lib::data::{scrypto_decode, ScryptoCustomTypeId};
 use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
 use radix_engine_lib::engine::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoRENode,
@@ -14,7 +14,6 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::buffer::scrypto_decode;
 use scrypto::scrypto_type;
 use utils::misc::copy_u8_array;
 

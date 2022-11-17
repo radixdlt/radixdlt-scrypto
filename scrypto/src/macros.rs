@@ -103,7 +103,7 @@ macro_rules! args {
     ($($args: expr),*) => {{
         let mut fields = Vec::new();
         $(
-            let encoded = ::scrypto::buffer::scrypto_encode(&$args);
+            let encoded = ::scrypto::data::scrypto_encode(&$args);
             fields.push(::sbor::decode_any::<::scrypto::data::ScryptoCustomTypeId, ::scrypto::data::ScryptoCustomValue>(&encoded).unwrap());
         )*
         let input_struct = ::sbor::SborValue::Struct {

@@ -1,4 +1,4 @@
-use radix_engine_lib::data::ScryptoCustomTypeId;
+use radix_engine_lib::data::{scrypto_decode, scrypto_encode, ScryptoCustomTypeId};
 use radix_engine_lib::engine::api::Syscalls;
 use radix_engine_lib::engine::types::{
     ComponentOffset, KeyValueStoreOffset, LockHandle, RENodeId, SubstateOffset,
@@ -9,7 +9,6 @@ use sbor::rust::ops::{Deref, DerefMut};
 use sbor::{Decode, Encode};
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
-use crate::buffer::*;
 use crate::component::{ComponentStateSubstate, KeyValueStoreEntrySubstate};
 
 pub struct DataRef<V: Encode<ScryptoCustomTypeId>> {

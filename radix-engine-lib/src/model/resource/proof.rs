@@ -1,4 +1,4 @@
-use crate::engine::scrypto_env::NativeFnInvocation;
+use crate::engine::wasm_input::NativeFnInvocation;
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
@@ -9,7 +9,7 @@ use utils::misc::copy_u8_array;
 
 use crate::abi::*;
 use crate::data::ScryptoCustomTypeId;
-use crate::engine::scrypto_env::{NativeMethodInvocation, ProofMethodInvocation};
+use crate::engine::wasm_input::{NativeMethodInvocation, ProofMethodInvocation};
 use crate::engine::{api::*, types::*};
 use crate::math::*;
 use crate::model::*;
