@@ -24,6 +24,8 @@ pub enum DecodeError {
 
     InvalidUtf8,
 
+    SizeTooLarge,
+
     InvalidCustomValue, // TODO: generify custom error codes
 }
 
@@ -86,9 +88,21 @@ impl<'de, X: CustomTypeId> Decoder<'de, X> {
     }
 
     pub fn read_size(&mut self) -> Result<usize, DecodeError> {
-        let mut bytes = [0u8; 4];
-        bytes.copy_from_slice(self.read_slice(4)?);
-        Ok(u32::from_le_bytes(bytes) as usize)
+        // LEB128 and 4 bytes max
+        let mut size = 0usize;
+        let mut shift = 0;
+        loop {
+            let byte = self.read_byte()?;
+            size |= ((byte & 0x7F) as usize) << shift;
+            if byte < 0x80 {
+                break;
+            }
+            shift += 7;
+            if shift >= 28 {
+                return Err(DecodeError::SizeTooLarge);
+            }
+        }
+        Ok(size)
     }
 
     pub fn read_byte(&mut self) -> Result<u8, DecodeError> {
@@ -161,6 +175,38 @@ mod tests {
     use crate::rust::vec;
     use crate::rust::vec::Vec;
 
+    fn encode_decode_size(size: usize) -> Result<(), DecodeError> {
+        // Encode
+        let mut bytes = Vec::with_capacity(512);
+        let mut enc = Encoder::<NoCustomTypeId>::new(&mut bytes);
+        enc.write_size(size);
+
+        let mut dec = Decoder::<NoCustomTypeId>::new(&bytes);
+        dec.check_size(size)?;
+        dec.check_end()?;
+        Ok(())
+    }
+
+    #[test]
+    pub fn test_vlq() {
+        encode_decode_size(0x00000000).unwrap();
+        encode_decode_size(0x0000007F).unwrap();
+        encode_decode_size(0x00000080).unwrap();
+        encode_decode_size(0x00002000).unwrap();
+        encode_decode_size(0x00003FFF).unwrap();
+        encode_decode_size(0x00004000).unwrap();
+        encode_decode_size(0x001FFFFF).unwrap();
+        encode_decode_size(0x00200000).unwrap();
+        encode_decode_size(0x08000000).unwrap();
+        encode_decode_size(0x0FFFFFFF).unwrap();
+    }
+
+    #[test]
+    pub fn test_vlq_too_large() {
+        let mut dec = Decoder::<NoCustomTypeId>::new(&[0xff, 0xff, 0xff, 0xff, 0x00]);
+        assert_eq!(dec.read_size(), Err(DecodeError::SizeTooLarge));
+    }
+
     fn assert_decoding<X: CustomTypeId>(dec: &mut Decoder<X>) {
         <()>::decode(dec).unwrap();
         assert_eq!(true, <bool>::decode(dec).unwrap());
@@ -213,17 +259,16 @@ mod tests {
             9, 1, 0, 0, 0, // u32
             10, 1, 0, 0, 0, 0, 0, 0, 0, // u64
             11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
-            12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // string
-            32, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
-            33, 2, 0, 0, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
-            32, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
-            32, 7, 2, 0, 0, 0, 1, 2, // set
-            32, 33, 2, 0, 0, 0, 2, 0, 0, 0, 7, 1, 7, 2, 2, 0, 0, 0, 7, 3, 7, 4, // map
-            17, 4, 0, 0, 0, 83, 111, 109, 101, 1, 0, 0, 0, 9, 1, 0, 0, 0, // Some<T>
-            17, 4, 0, 0, 0, 78, 111, 110, 101, 0, 0, 0, 0, // None
-            17, 2, 0, 0, 0, 79, 107, 1, 0, 0, 0, 9, 1, 0, 0, 0, // Ok<T>
-            17, 3, 0, 0, 0, 69, 114, 114, 1, 0, 0, 0, 12, 5, 0, 0, 0, 104, 101, 108, 108,
-            111, // Err<T>
+            12, 5, 104, 101, 108, 108, 111, // string
+            32, 9, 3, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
+            33, 2, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
+            32, 9, 3, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
+            32, 7, 2, 1, 2, // set
+            32, 33, 2, 2, 7, 1, 7, 2, 2, 7, 3, 7, 4, // map
+            17, 4, 83, 111, 109, 101, 1, 9, 1, 0, 0, 0, // Some<T>
+            17, 4, 78, 111, 110, 101, 0, // None
+            17, 2, 79, 107, 1, 9, 1, 0, 0, 0, // Ok<T>
+            17, 3, 69, 114, 114, 1, 12, 5, 104, 101, 108, 108, 111, // Err<T>
         ];
         let mut dec = Decoder::<NoCustomTypeId>::new(&bytes);
         assert_decoding(&mut dec);
