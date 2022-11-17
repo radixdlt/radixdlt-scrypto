@@ -1,4 +1,5 @@
 pub use radix_engine_lib::address::{AddressError, Bech32Decoder, Bech32Encoder};
+pub use radix_engine_lib::constants::*;
 pub use radix_engine_lib::core::Expression;
 pub use radix_engine_lib::crypto::*;
 use radix_engine_lib::data::IndexedScryptoValue;
@@ -34,7 +35,6 @@ pub use scrypto::abi::{BlueprintAbi, Fields, Fn, Type, Variant};
 pub use scrypto::access_and_or;
 pub use scrypto::access_rule_node;
 pub use scrypto::args;
-pub use scrypto::constants::*;
 pub use scrypto::rule;
 
 use std::fmt::Debug;

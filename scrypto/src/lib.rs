@@ -24,19 +24,19 @@ pub mod abi {
 pub mod buffer;
 /// Scrypto component library.
 pub mod component;
-/// Scrypto constants.
-pub mod constants;
+
 /// Scrypto core library, mainly process and transaction context.
 pub mod core;
 
+pub mod constants {
+    pub use radix_engine_lib::constants::*;
+}
 pub mod data {
     pub use radix_engine_lib::data::*;
 }
-
 pub mod math {
     pub use radix_engine_lib::math::*;
 }
-
 pub mod model {
     pub use radix_engine_lib::model::*;
 }

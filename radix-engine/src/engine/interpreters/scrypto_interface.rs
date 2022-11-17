@@ -12,7 +12,7 @@ use crate::wasm::WasmEngine;
 use radix_engine_lib::crypto::Hash;
 use radix_engine_lib::data::IndexedScryptoValue;
 use radix_engine_lib::engine::api::{
-    ScryptoNativeInvocation, SysInvokableNative, SysNativeInvokable, EngineApi,
+    EngineApi, ScryptoNativeInvocation, SysInvokableNative, SysNativeInvokable,
 };
 use radix_engine_lib::engine::types::{
     Level, LockHandle, RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent,

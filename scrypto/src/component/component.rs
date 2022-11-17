@@ -1,5 +1,5 @@
 use radix_engine_lib::data::{scrypto_decode, ScryptoCustomTypeId};
-use radix_engine_lib::engine::api::{SysNativeInvokable, EngineApi};
+use radix_engine_lib::engine::api::{EngineApi, SysNativeInvokable};
 use radix_engine_lib::engine::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoRENode,
     ScryptoReceiver, SubstateOffset,

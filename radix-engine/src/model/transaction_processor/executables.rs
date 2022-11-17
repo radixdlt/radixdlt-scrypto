@@ -1,5 +1,5 @@
 use radix_engine_lib::data::{IndexedScryptoValue, ValueReplacingError};
-use radix_engine_lib::engine::api::{SysInvokableNative, EngineApi};
+use radix_engine_lib::engine::api::{EngineApi, SysInvokableNative};
 use radix_engine_lib::engine::types::{
     BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent,
     ProofId, RENodeId, TransactionProcessorFunction,

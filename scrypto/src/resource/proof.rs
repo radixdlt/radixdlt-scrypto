@@ -1,5 +1,5 @@
 use radix_engine_lib::data::ScryptoCustomTypeId;
-use radix_engine_lib::engine::api::{SysNativeInvokable, EngineApi};
+use radix_engine_lib::engine::api::{EngineApi, SysNativeInvokable};
 use radix_engine_lib::engine::types::{ProofId, RENodeId};
 use radix_engine_lib::math::Decimal;
 use radix_engine_lib::model::*;
