@@ -15,6 +15,7 @@ pub use crate::args;
 pub use custom_type_id::*;
 pub use custom_value::*;
 pub use indexed_value::*;
+use sbor::rust::vec::Vec;
 use sbor::{decode, encode, Decode, DecodeError, Encode};
 pub use schema_matcher::*;
 pub use schema_path::*;
