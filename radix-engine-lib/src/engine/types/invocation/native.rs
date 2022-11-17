@@ -1,6 +1,5 @@
 use crate::engine::types::*;
 use crate::scrypto;
-use scrypto_abi::*;
 
 // Native function identifier used by transaction model
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

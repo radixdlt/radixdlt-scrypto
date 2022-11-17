@@ -55,6 +55,10 @@ pub mod resource;
 mod macros;
 pub use macros::*;
 
+pub extern crate scrypto_abi;
+pub extern crate radix_engine_derive;
+
+extern crate radix_engine_lib;
 pub mod engine_lib {
     pub use radix_engine_lib::*;
 }

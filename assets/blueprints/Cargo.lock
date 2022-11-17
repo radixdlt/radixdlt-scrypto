@@ -980,6 +980,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "paste",
+ "radix-engine-derive",
  "radix-engine-lib",
  "sbor",
  "scrypto-abi",
