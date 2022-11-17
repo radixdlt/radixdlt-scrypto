@@ -116,10 +116,24 @@ impl<'de, X: CustomTypeId> Decoder<'de, X> {
         Ok(slice)
     }
 
+    pub fn check_preloaded_type_id(
+        &self,
+        type_id: SborTypeId<X>,
+        expected: SborTypeId<X>,
+    ) -> Result<SborTypeId<X>, DecodeError> {
+        if type_id == expected {
+            Ok(type_id)
+        } else {
+            Err(DecodeError::UnexpectedTypeId {
+                actual: type_id.as_u8(),
+                expected: expected.as_u8(),
+            })
+        }
+    }
+
     pub fn check_type_id(&mut self, expected: SborTypeId<X>) -> Result<SborTypeId<X>, DecodeError> {
         let type_id = self.read_type_id()?;
-        type_id.assert_eq(expected)?;
-        Ok(type_id)
+        self.check_preloaded_type_id(type_id, expected)
     }
 
     pub fn check_size(&mut self, expected: usize) -> Result<(), DecodeError> {
@@ -149,7 +163,7 @@ impl<X: CustomTypeId> Decode<X> for () {
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(Self::type_id())?;
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         let value = decoder.read_byte()?;
         match value {
             0 => Ok(()),
@@ -163,7 +177,7 @@ impl<X: CustomTypeId> Decode<X> for bool {
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(Self::type_id())?;
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         let value = decoder.read_byte()?;
         match value {
             0 => Ok(false),
@@ -178,7 +192,7 @@ impl<X: CustomTypeId> Decode<X> for i8 {
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(Self::type_id())?;
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         let value = decoder.read_byte()?;
         Ok(value as i8)
     }
@@ -189,7 +203,7 @@ impl<X: CustomTypeId> Decode<X> for u8 {
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(Self::type_id())?;
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         let value = decoder.read_byte()?;
         Ok(value)
     }
@@ -202,7 +216,7 @@ macro_rules! decode_int {
                 decoder: &mut Decoder<X>,
                 type_id: SborTypeId<X>,
             ) -> Result<Self, DecodeError> {
-                type_id.assert_eq(Self::type_id())?;
+                decoder.check_preloaded_type_id(type_id, Self::type_id())?;
                 let slice = decoder.read_slice($n)?;
                 let mut bytes = [0u8; $n];
                 bytes.copy_from_slice(&slice[..]);
@@ -226,7 +240,7 @@ impl<X: CustomTypeId> Decode<X> for isize {
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(Self::type_id())?;
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         i64::decode_with_type_id(decoder, type_id).map(|i| i as isize)
     }
 }
@@ -236,7 +250,7 @@ impl<X: CustomTypeId> Decode<X> for usize {
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(Self::type_id())?;
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         u64::decode_with_type_id(decoder, type_id).map(|i| i as usize)
     }
 }
@@ -246,7 +260,7 @@ impl<X: CustomTypeId> Decode<X> for String {
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(Self::type_id())?;
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         let len = decoder.read_size()?;
         let slice = decoder.read_slice(len)?;
         String::from_utf8(slice.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
@@ -260,7 +274,7 @@ impl<'a, X: CustomTypeId, B: ?Sized + 'a + ToOwned<Owned = O>, O: Decode<X> + Ty
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(O::type_id())?;
+        decoder.check_preloaded_type_id(type_id, O::type_id())?;
         let v = O::decode_with_type_id(decoder, type_id)?;
         Ok(Cow::Owned(v))
     }
@@ -271,7 +285,7 @@ impl<X: CustomTypeId, T: Decode<X> + TypeId<X>> Decode<X> for Box<T> {
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(T::type_id())?;
+        decoder.check_preloaded_type_id(type_id, T::type_id())?;
         let v = T::decode_with_type_id(decoder, type_id)?;
         Ok(Box::new(v))
     }
@@ -282,7 +296,7 @@ impl<X: CustomTypeId, T: Decode<X> + TypeId<X>> Decode<X> for Rc<T> {
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(T::type_id())?;
+        decoder.check_preloaded_type_id(type_id, T::type_id())?;
         let v = T::decode_with_type_id(decoder, type_id)?;
         Ok(Rc::new(v))
     }
@@ -293,7 +307,7 @@ impl<X: CustomTypeId, T: Decode<X> + TypeId<X>> Decode<X> for RefCell<T> {
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(T::type_id())?;
+        decoder.check_preloaded_type_id(type_id, T::type_id())?;
         let v = T::decode_with_type_id(decoder, type_id)?;
         Ok(RefCell::new(v))
     }
@@ -304,7 +318,7 @@ impl<X: CustomTypeId, T: Decode<X> + TypeId<X>, const N: usize> Decode<X> for [T
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(Self::type_id())?;
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         let element_type_id = decoder.check_type_id(T::type_id())?;
         decoder.check_size(N)?;
 
@@ -335,7 +349,7 @@ macro_rules! decode_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {
         impl<X: CustomTypeId, $($name: Decode<X>),+> Decode<X> for ($($name,)+) {
             fn decode_with_type_id(decoder: &mut Decoder<X>, type_id: SborTypeId<X>) -> Result<Self, DecodeError> {
-                type_id.assert_eq(Self::type_id())?;
+                decoder.check_preloaded_type_id(type_id, Self::type_id())?;
                 decoder.check_size($n)?;
 
                 Ok(($($name::decode(decoder)?),+))
@@ -359,7 +373,7 @@ impl<X: CustomTypeId, T: Decode<X>> Decode<X> for Option<T> {
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(Self::type_id())?;
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         let discriminator = decoder.read_discriminator()?;
 
         match discriminator.as_ref() {
@@ -383,7 +397,7 @@ impl<X: CustomTypeId, T: Decode<X> + TypeId<X>, E: Decode<X> + TypeId<X>> Decode
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(Self::type_id())?;
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         let discriminator = decoder.read_discriminator()?;
         match discriminator.as_ref() {
             RESULT_VARIANT_OK => {
@@ -404,7 +418,7 @@ impl<X: CustomTypeId, T: Decode<X> + TypeId<X>> Decode<X> for Vec<T> {
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(Self::type_id())?;
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         let element_type_id = decoder.check_type_id(T::type_id())?;
         let len = decoder.read_size()?;
 
@@ -431,7 +445,7 @@ impl<X: CustomTypeId, T: Decode<X> + TypeId<X> + Ord> Decode<X> for BTreeSet<T> 
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(Self::type_id())?;
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         let elements: Vec<T> = Vec::<T>::decode_with_type_id(decoder, type_id)?;
         Ok(elements.into_iter().collect())
     }
@@ -442,7 +456,7 @@ impl<X: CustomTypeId, T: Decode<X> + TypeId<X> + Hash + Eq> Decode<X> for HashSe
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(Self::type_id())?;
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         let elements: Vec<T> = Vec::<T>::decode_with_type_id(decoder, type_id)?;
         Ok(elements.into_iter().collect())
     }
@@ -455,7 +469,7 @@ impl<X: CustomTypeId, K: Decode<X> + TypeId<X> + Ord, V: Decode<X> + TypeId<X>> 
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(Self::type_id())?;
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         let elements = Vec::<(K, V)>::decode_with_type_id(decoder, type_id)?;
         Ok(elements.into_iter().collect())
     }
@@ -468,7 +482,7 @@ impl<X: CustomTypeId, K: Decode<X> + TypeId<X> + Hash + Eq, V: Decode<X> + TypeI
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
-        type_id.assert_eq(Self::type_id())?;
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         let elements: Vec<(K, V)> = Vec::<(K, V)>::decode_with_type_id(decoder, type_id)?;
         Ok(elements.into_iter().collect())
     }

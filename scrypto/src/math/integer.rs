@@ -307,7 +307,7 @@ macro_rules! sbor_codec {
                 decoder: &mut Decoder<X>,
                 type_id: SborTypeId<X>,
             ) -> Result<Self, DecodeError> {
-                type_id.assert_eq(Self::type_id())?;
+                decoder.check_preloaded_type_id(type_id, Self::type_id())?;
                 let slice = decoder.read_slice((Self::BITS / 8) as usize)?;
                 let mut bytes = [0u8; (Self::BITS / 8) as usize];
                 bytes.copy_from_slice(&slice[..]);

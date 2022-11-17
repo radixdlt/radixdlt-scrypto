@@ -623,7 +623,7 @@ macro_rules! scrypto_type {
                 decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
                 type_id: ::scrypto::data::ScryptoTypeId,
             ) -> Result<Self, DecodeError> {
-                type_id.assert_eq(Self::type_id())?;
+                decoder.check_preloaded_type_id(type_id, Self::type_id())?;
                 let slice = decoder.read_slice($size)?;
                 Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
             }
@@ -663,7 +663,7 @@ macro_rules! scrypto_type {
                 decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
                 type_id: ::scrypto::data::ScryptoTypeId,
             ) -> Result<Self, DecodeError> {
-                type_id.assert_eq(Self::type_id())?;
+                decoder.check_preloaded_type_id(type_id, Self::type_id())?;
                 let len = decoder.read_size()?;
                 let slice = decoder.read_slice(len)?;
                 Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
