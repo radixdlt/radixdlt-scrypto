@@ -4,8 +4,8 @@ use radix_engine_lib::crypto::{
     EddsaEd25519Signature, Hash,
 };
 use radix_engine_lib::data::{
-    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue,
-    ScryptoTypeId, ScryptoValue,
+    args, scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId,
+    ScryptoCustomValue, ScryptoTypeId, ScryptoValue,
 };
 use radix_engine_lib::engine::types::{
     BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
@@ -19,9 +19,9 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use sbor::*;
+use scrypto::args_from_value_vec;
 use scrypto::component::{Component, KeyValueStore};
 use scrypto::core::Expression;
-use scrypto::{args, args_from_value_vec};
 
 use crate::errors::*;
 use crate::manifest::ast;
@@ -1195,7 +1195,6 @@ mod tests {
     use crate::manifest::parser::Parser;
     use radix_engine_lib::address::Bech32Decoder;
     use radix_engine_lib::core::NetworkDefinition;
-    use scrypto::args;
     use utils::pdec;
 
     #[macro_export]

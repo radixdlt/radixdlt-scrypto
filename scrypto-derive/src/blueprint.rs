@@ -438,14 +438,14 @@ fn generate_stubs(
                                     ::scrypto::core::Runtime::package_address(),
                                     #bp_name,
                                     #name,
-                                    ::scrypto::args!(#(#input_args),*)
+                                    args!(#(#input_args),*)
                                 )
                             }
                         });
                     } else {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
-                                self.component.call(#name, ::scrypto::args!(
+                                self.component.call(#name, args!(
                                     #(
                                        #input_args
                                     ),*
@@ -680,10 +680,10 @@ mod tests {
 
                 impl TestComponent {
                     pub fn y(arg0: u32) -> u32 {
-                        ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", ::scrypto::args!(arg0))
+                        ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", args!(arg0))
                     }
                     pub fn x(&self, arg0: u32) -> u32 {
-                        self.component.call("x", ::scrypto::args!(arg0))
+                        self.component.call("x", args!(arg0))
                     }
                 }
             },

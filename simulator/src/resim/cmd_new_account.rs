@@ -1,9 +1,9 @@
 use clap::Parser;
 use colored::*;
-use radix_engine_lib::data::*;
 use radix_engine::types::*;
+use radix_engine_lib::data::*;
 use rand::Rng;
-pub use scrypto::{access_rule_node, args, rule};
+pub use scrypto::{access_rule_node, rule};
 use utils::misc::ContextualDisplay;
 
 use crate::resim::Error::TransactionExecutionError;

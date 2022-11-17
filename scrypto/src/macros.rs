@@ -90,29 +90,6 @@ macro_rules! pdec {
     };
 }
 
-/// Constructs argument list for Scrypto function/method invocation.
-///
-/// # Example
-/// ```no_run
-/// use scrypto::prelude::*;
-///
-/// let args = args!("1.1", 100u32);
-/// ```
-#[macro_export]
-macro_rules! args {
-    ($($args: expr),*) => {{
-        let mut fields = Vec::new();
-        $(
-            let encoded = scrypto_encode(&$args);
-            fields.push(decode_any::<ScryptoCustomTypeId, ScryptoCustomValue>(&encoded).unwrap());
-        )*
-        let input_struct = ::sbor::SborValue::Struct {
-            fields,
-        };
-        encode_any::<ScryptoCustomTypeId, ScryptoCustomValue>(&input_struct)
-    }};
-}
-
 #[macro_export]
 macro_rules! args_from_value_vec {
     ($args: expr) => {{
@@ -424,7 +401,7 @@ macro_rules! external_blueprint_members {
                 self.package_address,
                 &self.blueprint_name,
                 stringify!($func_name),
-                ::scrypto::args!($($func_args),*)
+                args!($($func_args),*)
             )
         }
         ::scrypto::external_blueprint_members!($($rest)*);
@@ -439,7 +416,7 @@ macro_rules! external_blueprint_members {
                 self.package_address,
                 &self.blueprint_name,
                 stringify!($func_name),
-                ::scrypto::args!($($func_args),*)
+                args!($($func_args),*)
             )
         }
         ::scrypto::external_blueprint_members!($($rest)*);
@@ -528,7 +505,7 @@ macro_rules! external_component_members {
             ::scrypto::core::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                ::scrypto::args!($($method_args),*)
+                args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);
@@ -541,7 +518,7 @@ macro_rules! external_component_members {
             ::scrypto::core::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                ::scrypto::args!($($method_args),*)
+                args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);
@@ -554,7 +531,7 @@ macro_rules! external_component_members {
             ::scrypto::core::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                ::scrypto::args!($($method_args),*)
+                args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);
@@ -567,7 +544,7 @@ macro_rules! external_component_members {
             ::scrypto::core::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                ::scrypto::args!($($method_args),*)
+                args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);

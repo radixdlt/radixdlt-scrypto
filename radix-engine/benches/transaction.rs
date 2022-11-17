@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::types::*;
-use radix_engine_lib::data::*;
 use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_lib::data::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::TransactionHeader;

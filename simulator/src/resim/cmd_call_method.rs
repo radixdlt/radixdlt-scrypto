@@ -1,8 +1,8 @@
 #![allow(unused_must_use)]
 
 use clap::Parser;
-use radix_engine_lib::data::*;
 use radix_engine::types::*;
+use radix_engine_lib::data::*;
 use scrypto::prelude::Expression;
 use transaction::builder::ManifestBuilder;
 
