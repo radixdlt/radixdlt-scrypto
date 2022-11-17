@@ -7,6 +7,8 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 /// SBOR basic, no custom types
 pub mod basic;
+/// SBOR codec for core Rust types.
+pub mod codec;
 /// SBOR constants
 pub mod constants;
 /// SBOR decoding.
