@@ -22,7 +22,7 @@ extern crate sbor;
 pub use sbor::{Decode, Encode, TypeId};
 
 extern crate radix_engine_derive;
-pub use radix_engine_derive::{scrypto, Describe, NonFungibleData};
+pub use radix_engine_derive::{scrypto, Describe};
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502

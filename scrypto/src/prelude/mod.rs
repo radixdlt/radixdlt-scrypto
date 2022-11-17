@@ -11,11 +11,11 @@ pub use crate::{
     external_component, import, include_abi, include_code, info, resource_list, rule, scrypto,
     this_package, trace, warn, NonFungibleData,
 };
-pub use radix_engine_derive::*;
 pub use num_traits::{
     cast::FromPrimitive, cast::ToPrimitive, identities::One, identities::Zero, pow::Pow,
     sign::Signed,
 };
+pub use radix_engine_derive::*;
 pub use radix_engine_lib::crypto::*;
 pub use radix_engine_lib::data::*;
 pub use radix_engine_lib::math::integer::{
@@ -33,4 +33,5 @@ pub use sbor::rust::vec;
 pub use sbor::rust::vec::Vec;
 pub use sbor::{decode_any, encode_any, Decode, DecodeError, Encode, TypeId};
 
+pub use super::radix_engine_derive;
 pub use super::scrypto_abi;

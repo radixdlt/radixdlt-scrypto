@@ -21,7 +21,7 @@ use crate::abi::*;
 use crate::core::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::scrypto;
-use crate::Describe;
+use radix_engine_derive::Describe;
 
 /// Represents the state of a component.
 pub trait ComponentState<C: LocalComponent>:

@@ -70,7 +70,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                 let types = ns.iter().map(|f| &f.ty);
 
                 quote! {
-                    impl Describe for #ident {
+                    impl scrypto_abi::Describe for #ident {
                         fn describe() -> scrypto_abi::Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;

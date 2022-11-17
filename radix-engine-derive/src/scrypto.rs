@@ -49,7 +49,7 @@ pub fn handle_scrypto(attr: TokenStream, item: TokenStream) -> Result<TokenStrea
                 #[derive(::radix_engine_derive::Describe)]
             }),
             "NonFungibleData" => derived_attributes.push(parse_quote! {
-                #[derive(::radix_engine_derive::NonFungibleData)]
+                #[derive(::scrypto::NonFungibleData)]
             }),
             _ => {}
         }
