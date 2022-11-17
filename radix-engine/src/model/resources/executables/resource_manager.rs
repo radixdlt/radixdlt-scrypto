@@ -85,13 +85,7 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
     fn execute<Y>(
         invocation: Self,
         system_api: &mut Y,
-    ) -> Result<
-        (
-            (ResourceAddress, Option<Bucket>),
-            CallFrameUpdate,
-        ),
-        RuntimeError,
-    >
+    ) -> Result<((ResourceAddress, Option<Bucket>), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>

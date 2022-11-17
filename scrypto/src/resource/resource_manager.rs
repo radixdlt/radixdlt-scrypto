@@ -216,11 +216,7 @@ impl ResourceManager {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible<T: NonFungibleData>(
-        &mut self,
-        id: &NonFungibleId,
-        data: T,
-    ) -> Bucket {
+    pub fn mint_non_fungible<T: NonFungibleData>(&mut self, id: &NonFungibleId, data: T) -> Bucket {
         let mut entries = HashMap::new();
         entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
         self.mint_internal(MintParams::NonFungible { entries })

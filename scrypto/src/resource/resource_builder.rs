@@ -113,10 +113,7 @@ impl FungibleResourceBuilder {
     ///     .metadata("name", "TestToken")
     ///     .initial_supply(5);
     /// ```
-    pub fn initial_supply<T: Into<Decimal>>(
-        &self,
-        amount: T,
-    ) -> Bucket {
+    pub fn initial_supply<T: Into<Decimal>>(&self, amount: T) -> Bucket {
         self.build(Some(MintParams::fungible(amount))).1.unwrap()
     }
 
@@ -125,10 +122,7 @@ impl FungibleResourceBuilder {
         self.build(None).0
     }
 
-    fn build(
-        &self,
-        mint_params: Option<MintParams>,
-    ) -> (ResourceAddress, Option<Bucket>) {
+    fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
         if !authorization.contains_key(&Withdraw) {
             authorization.insert(Withdraw, (rule!(allow_all), LOCKED));
@@ -243,10 +237,7 @@ impl NonFungibleResourceBuilder {
         self.build(None).0
     }
 
-    fn build(
-        &self,
-        mint_params: Option<MintParams>,
-    ) -> (ResourceAddress, Option<Bucket>) {
+    fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
         if !authorization.contains_key(&Withdraw) {
             authorization.insert(Withdraw, (rule!(allow_all), LOCKED));

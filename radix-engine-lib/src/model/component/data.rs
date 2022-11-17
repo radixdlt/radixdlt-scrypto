@@ -133,6 +133,6 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
                 write!(f, "EddsaEd25519VirtualAccountComponent[{}]", self.to_hex())
             }
         }
-            .map_err(|err| AddressError::FormatError(err))
+        .map_err(|err| AddressError::FormatError(err))
     }
 }

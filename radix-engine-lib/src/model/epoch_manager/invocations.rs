@@ -1,7 +1,7 @@
 use sbor::rust::fmt::Debug;
 
-use crate::model::*;
 use crate::engine::{api::*, scrypto_env::*};
+use crate::model::*;
 use crate::scrypto;
 
 #[derive(Debug)]

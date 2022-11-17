@@ -26,10 +26,7 @@ pub enum AuthZoneError {
 impl NativeExecutable for AuthZonePopInvocation {
     type NativeOutput = Proof;
 
-    fn execute<Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -112,10 +109,7 @@ impl NativeInvocation for AuthZonePushInvocation {
 impl NativeExecutable for AuthZoneCreateProofInvocation {
     type NativeOutput = Proof;
 
-    fn execute<Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -171,10 +165,7 @@ impl NativeInvocation for AuthZoneCreateProofInvocation {
 impl NativeExecutable for AuthZoneCreateProofByAmountInvocation {
     type NativeOutput = Proof;
 
-    fn execute<Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -231,10 +222,7 @@ impl NativeInvocation for AuthZoneCreateProofByAmountInvocation {
 impl NativeExecutable for AuthZoneCreateProofByIdsInvocation {
     type NativeOutput = Proof;
 
-    fn execute<Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

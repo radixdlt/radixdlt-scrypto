@@ -165,10 +165,7 @@ impl ComponentAuthZone {
         Self::sys_create_proof(resource_address, &mut ScryptoEnv).unwrap()
     }
 
-    pub fn create_proof_by_amount(
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    ) -> Proof {
+    pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
         Self::sys_create_proof_by_amount(amount, resource_address, &mut ScryptoEnv).unwrap()
     }
 

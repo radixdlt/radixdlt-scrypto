@@ -24,4 +24,3 @@ impl Into<NativeFnInvocation> for ComponentAddAccessCheckInvocation {
         ))
     }
 }
-

@@ -3,11 +3,11 @@ use crate::engine::{
     NativeInvocationInfo, RuntimeError, SystemApi,
 };
 use crate::types::*;
-use radix_engine_lib::model::*;
 use radix_engine_lib::engine::types::{
     ComponentMethod, ComponentOffset, GlobalAddress, NativeMethod, PackageOffset, RENodeId,
     SubstateOffset,
 };
+use radix_engine_lib::model::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum ComponentError {

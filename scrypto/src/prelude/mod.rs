@@ -16,13 +16,13 @@ pub use num_traits::{
     cast::FromPrimitive, cast::ToPrimitive, identities::One, identities::Zero, pow::Pow,
     sign::Signed,
 };
-pub use radix_engine_lib::model::*;
 pub use radix_engine_lib::crypto::*;
 pub use radix_engine_lib::data::*;
 pub use radix_engine_lib::math::integer::{
     CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedPow, CheckedRem, CheckedSub,
 };
 pub use radix_engine_lib::math::*;
+pub use radix_engine_lib::model::*;
 pub use sbor::rust::borrow::ToOwned;
 pub use sbor::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 pub use sbor::rust::str::FromStr;

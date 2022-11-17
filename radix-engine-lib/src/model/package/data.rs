@@ -1,4 +1,3 @@
-use crate::engine::api::{ScryptoNativeInvocation, SysInvocation};
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -7,34 +6,8 @@ use utils::misc::{copy_u8_array, ContextualDisplay};
 
 use crate::abi::*;
 use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
-use crate::crypto::Blob;
 use crate::data::ScryptoCustomTypeId;
-use crate::engine::scrypto_env::{
-    NativeFnInvocation, NativeFunctionInvocation, PackageFunctionInvocation,
-};
-use crate::scrypto;
 use crate::scrypto_type;
-
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct PackagePublishInvocation {
-    pub code: Blob,
-    pub abi: Blob,
-}
-
-impl SysInvocation for PackagePublishInvocation {
-    type Output = PackageAddress;
-}
-
-impl ScryptoNativeInvocation for PackagePublishInvocation {}
-
-impl Into<NativeFnInvocation> for PackagePublishInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::Package(
-            PackageFunctionInvocation::Publish(self),
-        ))
-    }
-}
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]

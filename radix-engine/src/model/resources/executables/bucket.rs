@@ -66,10 +66,7 @@ impl NativeInvocation for BucketTakeInvocation {
 impl NativeExecutable for BucketCreateProofInvocation {
     type NativeOutput = Proof;
 
-    fn execute<Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

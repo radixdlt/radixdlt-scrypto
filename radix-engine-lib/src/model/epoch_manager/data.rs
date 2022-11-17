@@ -90,6 +90,6 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for SystemAddress {
                 write!(f, "EpochManagerSystem[{}]", self.to_hex())
             }
         }
-            .map_err(|err| AddressError::FormatError(err))
+        .map_err(|err| AddressError::FormatError(err))
     }
 }

@@ -1,9 +1,9 @@
-use radix_engine_lib::model::*;
 use radix_engine_lib::crypto::{hash, Hash};
 use radix_engine_lib::engine::types::{
     AuthZoneId, BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId, PackageId, ProofId,
     ResourceManagerId, VaultId,
 };
+use radix_engine_lib::model::*;
 use sbor::rust::ops::Range;
 use scrypto::constants::*;
 

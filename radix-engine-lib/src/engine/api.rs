@@ -10,11 +10,12 @@ use sbor::Decode;
 
 use super::types::*;
 
+pub trait ScryptoNativeInvocation: Into<NativeFnInvocation> + SysInvocation {}
+
 pub trait SysInvocation {
     type Output: Debug + Decode<ScryptoCustomTypeId>;
 }
 
-pub trait ScryptoNativeInvocation: Into<NativeFnInvocation> + SysInvocation {}
 pub trait SysNativeInvokable<I: SysInvocation, E> {
     fn sys_invoke(&mut self, invocation: I) -> Result<I::Output, E>;
 }

@@ -1,5 +1,4 @@
 use radix_engine_lib::address::Bech32Decoder;
-use radix_engine_lib::model::*;
 use radix_engine_lib::crypto::{
     Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
     EddsaEd25519Signature, Hash,
@@ -13,6 +12,7 @@ use radix_engine_lib::engine::types::{
     ScryptoPackage, ScryptoReceiver,
 };
 use radix_engine_lib::math::{Decimal, PreciseDecimal};
+use radix_engine_lib::model::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;

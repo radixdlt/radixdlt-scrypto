@@ -46,10 +46,7 @@ pub trait ScryptoVault {
     fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId>;
     fn create_proof(&self) -> Proof;
     fn create_proof_by_amount(&self, amount: Decimal) -> Proof;
-    fn create_proof_by_ids(
-        &self,
-        ids: &BTreeSet<NonFungibleId>,
-    ) -> Proof;
+    fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof;
     fn lock_fee<A: Into<Decimal>>(&mut self, amount: A);
     fn lock_contingent_fee<A: Into<Decimal>>(&mut self, amount: A);
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket;

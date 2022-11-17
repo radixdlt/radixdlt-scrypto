@@ -22,11 +22,7 @@ fn test_manifest_with_non_existent_resource() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(account, 10u32.into())
         .take_from_worktop(non_existent_resource, |builder, bucket_id| {
-            builder.call_method(
-                account,
-                "deposit",
-                args!(Bucket(bucket_id)),
-            )
+            builder.call_method(account, "deposit", args!(Bucket(bucket_id)))
         })
         .build();
     let receipt = test_runner.execute_manifest(

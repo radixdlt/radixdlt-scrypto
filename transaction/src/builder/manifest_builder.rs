@@ -1,5 +1,4 @@
 use radix_engine_lib::address::Bech32Decoder;
-use radix_engine_lib::model::*;
 use radix_engine_lib::core::NetworkDefinition;
 use radix_engine_lib::crypto::{hash, Blob, Hash};
 use radix_engine_lib::data::{IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue};
@@ -9,6 +8,7 @@ use radix_engine_lib::engine::types::{
     ScryptoPackage, ScryptoReceiver,
 };
 use radix_engine_lib::math::{Decimal, PreciseDecimal};
+use radix_engine_lib::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
@@ -1031,9 +1031,7 @@ impl ManifestBuilder {
                                     .unwrap()
                                 }
                             };
-                            Ok(scrypto_encode(&Bucket(
-                                bucket_id,
-                            )))
+                            Ok(scrypto_encode(&Bucket(bucket_id)))
                         }
                         Type::Proof => {
                             let resource_specifier = parse_resource_specifier(arg, &self.decoder)

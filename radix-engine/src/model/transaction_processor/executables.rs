@@ -1,10 +1,10 @@
-use radix_engine_lib::model::*;
 use radix_engine_lib::data::{IndexedScryptoValue, ValueReplacingError};
 use radix_engine_lib::engine::api::{SysInvokableNative, Syscalls};
 use radix_engine_lib::engine::types::{
     BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent,
     ProofId, RENodeId, TransactionProcessorFunction,
 };
+use radix_engine_lib::model::*;
 use sbor::rust::borrow::Cow;
 use scrypto::core::Runtime;
 use scrypto::resource::Worktop;

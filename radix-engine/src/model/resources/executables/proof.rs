@@ -130,10 +130,7 @@ impl NativeInvocation for ProofGetResourceAddressInvocation {
 impl NativeExecutable for ProofCloneInvocation {
     type NativeOutput = Proof;
 
-    fn execute<Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

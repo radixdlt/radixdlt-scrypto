@@ -1,7 +1,7 @@
 use sbor::rust::string::String;
 
-use crate::model::*;
 use crate::engine::types::ComponentId;
+use crate::model::*;
 use crate::scrypto;
 
 #[derive(Debug, Clone)]
