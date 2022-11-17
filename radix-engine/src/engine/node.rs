@@ -13,7 +13,7 @@ pub enum RENode {
     Proof(ProofSubstate),
     AuthZone(AuthZoneStackSubstate),
     Vault(VaultRuntimeSubstate),
-    Component(ComponentInfoSubstate, ComponentStateSubstate),
+    Component(ComponentInfoSubstate, ComponentStateSubstate, AccessRulesSubstate),
     Worktop(WorktopSubstate),
     Package(PackageSubstate),
     KeyValueStore(KeyValueStore),
@@ -61,7 +61,7 @@ impl RENode {
                     );
                 }
             }
-            RENode::Component(info, state) => {
+            RENode::Component(info, state, access_rules) => {
                 substates.insert(
                     SubstateOffset::Component(ComponentOffset::Info),
                     info.into(),
@@ -69,6 +69,10 @@ impl RENode {
                 substates.insert(
                     SubstateOffset::Component(ComponentOffset::State),
                     state.into(),
+                );
+                substates.insert(
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    access_rules.into(),
                 );
             }
             RENode::Worktop(worktop) => {

@@ -133,6 +133,11 @@ pub enum AuthZoneOffset {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum AccessRulesOffset {
+    AccessRules,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ComponentOffset {
     Info,
     State,
@@ -196,6 +201,7 @@ pub enum SubstateOffset {
     Global(GlobalOffset),
     AuthZone(AuthZoneOffset),
     Component(ComponentOffset),
+    AccessRules(AccessRulesOffset),
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),
     KeyValueStore(KeyValueStoreOffset),
