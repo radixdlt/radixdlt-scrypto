@@ -1,5 +1,5 @@
 use radix_engine_lib::data::ScryptoCustomTypeId;
-use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
+use radix_engine_lib::engine::api::{SysNativeInvokable, EngineApi};
 use radix_engine_lib::math::Decimal;
 use radix_engine_lib::model::*;
 use sbor::rust::collections::BTreeSet;
@@ -18,7 +18,7 @@ pub trait SysVault {
         sys_calls: &mut Y,
     ) -> Result<Decimal, E>
     where
-        Y: Syscalls<E> + SysNativeInvokable<VaultGetAmountInvocation, E>;
+        Y: EngineApi<E> + SysNativeInvokable<VaultGetAmountInvocation, E>;
 }
 
 impl SysVault for Vault {
@@ -27,7 +27,7 @@ impl SysVault for Vault {
         sys_calls: &mut Y,
     ) -> Result<Decimal, E>
     where
-        Y: Syscalls<E> + SysNativeInvokable<VaultGetAmountInvocation, E>,
+        Y: EngineApi<E> + SysNativeInvokable<VaultGetAmountInvocation, E>,
     {
         sys_calls.sys_invoke(VaultGetAmountInvocation { receiver: self.0 })
     }

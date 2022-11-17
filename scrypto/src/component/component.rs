@@ -1,5 +1,5 @@
 use radix_engine_lib::data::{scrypto_decode, ScryptoCustomTypeId};
-use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
+use radix_engine_lib::engine::api::{SysNativeInvokable, EngineApi};
 use radix_engine_lib::engine::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoRENode,
     ScryptoReceiver, SubstateOffset,
@@ -104,7 +104,7 @@ impl Component {
         sys_calls: &mut Y,
     ) -> Result<&mut Self, E>
     where
-        Y: Syscalls<E> + SysNativeInvokable<ComponentAddAccessCheckInvocation, E>,
+        Y: EngineApi<E> + SysNativeInvokable<ComponentAddAccessCheckInvocation, E>,
     {
         sys_calls.sys_invoke(ComponentAddAccessCheckInvocation {
             receiver: self.0,
@@ -123,7 +123,7 @@ impl Component {
         sys_calls: &mut Y,
     ) -> Result<ComponentAddress, E>
     where
-        Y: Syscalls<E>,
+        Y: EngineApi<E>,
     {
         let node_id: RENodeId =
             sys_calls.sys_create_node(ScryptoRENode::GlobalComponent(self.0))?;

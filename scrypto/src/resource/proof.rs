@@ -1,5 +1,5 @@
 use radix_engine_lib::data::ScryptoCustomTypeId;
-use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
+use radix_engine_lib::engine::api::{SysNativeInvokable, EngineApi};
 use radix_engine_lib::engine::types::{ProofId, RENodeId};
 use radix_engine_lib::math::Decimal;
 use radix_engine_lib::model::*;
@@ -52,13 +52,13 @@ pub trait SysProof {
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: Syscalls<E> + SysNativeInvokable<ProofCloneInvocation, E>;
+        Y: EngineApi<E> + SysNativeInvokable<ProofCloneInvocation, E>;
     fn sys_drop<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
         self,
         sys_calls: &mut Y,
     ) -> Result<(), E>
     where
-        Y: Syscalls<E>;
+        Y: EngineApi<E>;
 }
 
 impl SysProof for Proof {
@@ -67,7 +67,7 @@ impl SysProof for Proof {
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: Syscalls<E> + SysNativeInvokable<ProofCloneInvocation, E>,
+        Y: EngineApi<E> + SysNativeInvokable<ProofCloneInvocation, E>,
     {
         sys_calls.sys_invoke(ProofCloneInvocation { receiver: self.0 })
     }
@@ -77,7 +77,7 @@ impl SysProof for Proof {
         sys_calls: &mut Y,
     ) -> Result<(), E>
     where
-        Y: Syscalls<E>,
+        Y: EngineApi<E>,
     {
         sys_calls.sys_drop_node(RENodeId::Proof(self.0))
     }

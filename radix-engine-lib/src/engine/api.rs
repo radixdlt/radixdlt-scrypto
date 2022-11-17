@@ -20,7 +20,7 @@ pub trait SysNativeInvokable<I: SysInvocation, E> {
     fn sys_invoke(&mut self, invocation: I) -> Result<I::Output, E>;
 }
 
-pub trait Syscalls<E: Debug> {
+pub trait EngineApi<E: Debug> {
     fn sys_invoke_scrypto_function(
         &mut self,
         fn_ident: ScryptoFunctionIdent,

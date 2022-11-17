@@ -2,7 +2,7 @@ use crate::abi::BlueprintAbi;
 use crate::component::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_lib::data::scrypto_encode;
-use radix_engine_lib::engine::api::Syscalls;
+use radix_engine_lib::engine::api::EngineApi;
 use radix_engine_lib::engine::types::ScryptoRENode;
 use radix_engine_lib::model::*;
 use sbor::rust::collections::*;

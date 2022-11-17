@@ -2,7 +2,7 @@ use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
 use radix_engine_lib::data::{IndexedScryptoValue, ScryptoCustomTypeId};
-use radix_engine_lib::engine::api::{SysInvokableNative, Syscalls};
+use radix_engine_lib::engine::api::{SysInvokableNative, EngineApi};
 use radix_engine_lib::engine::types::{NativeFunction, NativeMethod, RENodeId};
 use radix_engine_lib::model::*;
 use sbor::rust::fmt::Debug;
@@ -138,7 +138,7 @@ pub trait NativeExecutable: Invocation {
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
-            + Syscalls<RuntimeError>
+            + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>
             + Invokable<ResourceManagerSetResourceAddressInvocation>;
 }
@@ -156,7 +156,7 @@ impl<N: NativeExecutable> Executor for NativeExecutor<N> {
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
-            + Syscalls<RuntimeError>
+            + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>
             + Invokable<ResourceManagerSetResourceAddressInvocation>,
     {

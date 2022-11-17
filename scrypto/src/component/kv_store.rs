@@ -1,4 +1,4 @@
-use radix_engine_lib::engine::api::Syscalls;
+use radix_engine_lib::engine::api::EngineApi;
 use radix_engine_lib::engine::types::{
     KeyValueStoreId, KeyValueStoreOffset, RENodeId, ScryptoRENode, SubstateOffset,
 };

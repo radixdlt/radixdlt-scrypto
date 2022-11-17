@@ -1,6 +1,6 @@
 use radix_engine_lib::crypto::Hash;
 use radix_engine_lib::data::ScryptoCustomTypeId;
-use radix_engine_lib::engine::api::{ScryptoNativeInvocation, SysNativeInvokable, Syscalls};
+use radix_engine_lib::engine::api::{ScryptoNativeInvocation, SysNativeInvokable, EngineApi};
 use radix_engine_lib::engine::types::{
     Level, LockHandle, RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoRENode, SubstateOffset,
@@ -63,7 +63,7 @@ impl<N: ScryptoNativeInvocation> SysNativeInvokable<N, SyscallError> for Scrypto
     }
 }
 
-impl Syscalls<SyscallError> for ScryptoEnv {
+impl EngineApi<SyscallError> for ScryptoEnv {
     fn sys_invoke_scrypto_function(
         &mut self,
         fn_ident: ScryptoFunctionIdent,

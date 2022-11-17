@@ -1,5 +1,5 @@
 use radix_engine_lib::data::{IndexedScryptoValue, ValueReplacingError};
-use radix_engine_lib::engine::api::{SysInvokableNative, Syscalls};
+use radix_engine_lib::engine::api::{SysInvokableNative, EngineApi};
 use radix_engine_lib::engine::types::{
     BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent,
     ProofId, RENodeId, TransactionProcessorFunction,
@@ -57,7 +57,7 @@ impl<'b> NativeExecutable for TransactionProcessorRunInvocation<'b> {
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
-            + Syscalls<RuntimeError>
+            + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
         TransactionProcessor::run(invocation, system_api)
@@ -137,7 +137,7 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<IndexedScryptoValue, InvokeError<TransactionProcessorError>>
     where
-        Y: Syscalls<RuntimeError> + SysInvokableNative<RuntimeError>,
+        Y: EngineApi<RuntimeError> + SysInvokableNative<RuntimeError>,
     {
         let mut value = args.dom;
         for (expression, path) in args.expressions {
@@ -219,7 +219,7 @@ impl TransactionProcessor {
     ) -> Result<Vec<Vec<u8>>, InvokeError<TransactionProcessorError>>
     where
         Y: SystemApi
-            + Syscalls<RuntimeError>
+            + EngineApi<RuntimeError>
             + Invokable<ScryptoInvocation>
             + SysInvokableNative<RuntimeError>,
     {

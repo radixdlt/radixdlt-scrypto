@@ -4,7 +4,7 @@ use crate::model::InvokeError;
 use crate::types::{scrypto_decode, scrypto_encode, Encode, ScryptoInvocation};
 use crate::wasm::*;
 use radix_engine_lib::data::{IndexedScryptoValue, ScryptoCustomTypeId};
-use radix_engine_lib::engine::api::{SysInvokableNative, Syscalls};
+use radix_engine_lib::engine::api::{SysInvokableNative, EngineApi};
 use radix_engine_lib::engine::wasm_input::{
     AuthZoneMethodInvocation, BucketMethodInvocation, ComponentMethodInvocation,
     EpochManagerFunctionInvocation, EpochManagerMethodInvocation, NativeFnInvocation,
@@ -20,7 +20,7 @@ use radix_engine_lib::engine::wasm_input::{
 pub struct RadixEngineWasmRuntime<'y, Y>
 where
     Y: SystemApi
-        + Syscalls<RuntimeError>
+        + EngineApi<RuntimeError>
         + Invokable<ScryptoInvocation>
         + SysInvokableNative<RuntimeError>,
 {
@@ -30,7 +30,7 @@ where
 impl<'y, Y> RadixEngineWasmRuntime<'y, Y>
 where
     Y: SystemApi
-        + Syscalls<RuntimeError>
+        + EngineApi<RuntimeError>
         + Invokable<ScryptoInvocation>
         + SysInvokableNative<RuntimeError>,
 {
@@ -306,7 +306,7 @@ fn encode<T: Encode<ScryptoCustomTypeId>>(output: T) -> Vec<u8> {
 impl<'y, Y> WasmRuntime for RadixEngineWasmRuntime<'y, Y>
 where
     Y: SystemApi
-        + Syscalls<RuntimeError>
+        + EngineApi<RuntimeError>
         + Invokable<ScryptoInvocation>
         + SysInvokableNative<RuntimeError>,
 {

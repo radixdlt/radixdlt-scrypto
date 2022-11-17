@@ -1,4 +1,4 @@
-use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
+use radix_engine_lib::engine::api::{SysNativeInvokable, EngineApi};
 use radix_engine_lib::engine::types::{
     ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
 };
