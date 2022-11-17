@@ -5,6 +5,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use scrypto_abi::{Describe, Fields, Type, Variant};
+use crate::data::SchemaPath;
 
 use crate::resource::AccessRuleNode::{AllOf, AnyOf};
 use crate::resource::*;

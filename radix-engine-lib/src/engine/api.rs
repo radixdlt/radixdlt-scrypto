@@ -3,6 +3,7 @@ use crate::crypto::Hash;
 use crate::data::ScryptoCustomTypeId;
 use crate::engine::actor::ScryptoActor;
 use crate::engine::scrypto_env::NativeFnInvocation;
+use crate::model::*;
 use crate::resource::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;

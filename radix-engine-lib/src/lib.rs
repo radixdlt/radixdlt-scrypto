@@ -4,6 +4,8 @@ pub mod abi {
 pub mod address;
 pub mod component;
 pub mod core;
+pub mod model;
+
 /// Scrypto values.
 pub mod data;
 pub mod engine;
