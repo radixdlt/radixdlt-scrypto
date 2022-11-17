@@ -1,5 +1,4 @@
 use radix_engine_lib::component::PackageAddress;
-use radix_engine_lib::component::SystemAddress;
 use radix_engine_lib::model::*;
 use radix_engine_lib::resource::ResourceAddress;
 use radix_engine_lib::{address, construct_address};

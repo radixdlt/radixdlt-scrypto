@@ -13,7 +13,7 @@ macro_rules! construct_address {
         ::radix_engine_lib::model::ComponentAddress::Account([$($bytes),*])
     };
     (EntityType::EpochManager, $($bytes:expr),*) => {
-        ::radix_engine_lib::component::SystemAddress::EpochManager([$($bytes),*])
+        ::radix_engine_lib::model::SystemAddress::EpochManager([$($bytes),*])
     };
 }
 

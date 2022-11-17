@@ -1,8 +1,8 @@
 use colored::*;
 use radix_engine_lib::address::{AddressDisplayContext, NO_NETWORK};
-use radix_engine_lib::component::SystemAddress;
 use radix_engine_lib::data::{IndexedScryptoValue, ScryptoCustomTypeId};
 use radix_engine_lib::engine::types::{GlobalAddress, Level};
+use radix_engine_lib::model::*;
 use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
 use transaction::model::*;
 use utils::misc::ContextualDisplay;

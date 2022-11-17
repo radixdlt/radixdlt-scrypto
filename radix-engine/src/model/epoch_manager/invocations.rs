@@ -7,10 +7,7 @@ use crate::model::{
     HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
-use radix_engine_lib::component::{
-    EpochManagerCreateInvocation, EpochManagerGetCurrentEpochInvocation,
-    EpochManagerSetEpochInvocation,
-};
+use radix_engine_lib::model::*;
 use radix_engine_lib::engine::types::{
     EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction,
     NativeMethod, RENodeId, SubstateOffset,
