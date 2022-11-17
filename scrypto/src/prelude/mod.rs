@@ -35,3 +35,4 @@ pub use sbor::{decode_any, encode_any, Decode, DecodeError, Encode, TypeId};
 
 pub use super::radix_engine_derive;
 pub use super::scrypto_abi;
+pub use super::radix_engine_lib;

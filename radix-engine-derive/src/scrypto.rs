@@ -46,7 +46,7 @@ pub fn handle_scrypto(attr: TokenStream, item: TokenStream) -> Result<TokenStrea
                 })
             }
             "Describe" => derived_attributes.push(parse_quote! {
-                #[derive(::radix_engine_derive::Describe)]
+                #[derive(radix_engine_derive::Describe)]
             }),
             "NonFungibleData" => derived_attributes.push(parse_quote! {
                 #[derive(::scrypto::NonFungibleData)]
@@ -56,7 +56,7 @@ pub fn handle_scrypto(attr: TokenStream, item: TokenStream) -> Result<TokenStrea
     }
     if sbor {
         derived_attributes.push(parse_quote! {
-            #[sbor(custom_type_id = "::radix_engine_lib::data::ScryptoCustomTypeId")]
+            #[sbor(custom_type_id = "radix_engine_lib::data::ScryptoCustomTypeId")]
         })
     }
 
