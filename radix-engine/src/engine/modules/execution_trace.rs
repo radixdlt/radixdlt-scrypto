@@ -328,89 +328,85 @@ impl ExecutionTraceModule {
         heap: &mut Heap,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
-        if self.current_sys_call_depth > self.max_sys_call_trace_depth {
-            // It's important to update the depth counter,
-            // even if we don't trace at this depth anymore.
-            self.current_sys_call_depth += 1;
-            return Ok(());
+        if self.current_sys_call_depth <= self.max_sys_call_trace_depth {
+
+            // Handle transaction processor events
+            match input {
+                SysCallInput::EmitEvent {
+                    event:
+                    Event::Runtime(RuntimeEvent::PreExecuteInstruction {
+                                       instruction_index, ..
+                                   }),
+                } => {
+                    self.current_instruction_index = Some(instruction_index.clone());
+                }
+                SysCallInput::EmitEvent {
+                    event: Event::Runtime(RuntimeEvent::PostExecuteManifest),
+                } => {
+                    self.current_instruction_index = None;
+                }
+                _ => {}
+            };
+
+            let traced_input = match input {
+                SysCallInput::Invoke { info, .. } => {
+                    let (origin, trace_data) = match info {
+                        InvocationInfo::Scrypto(ScryptoInvocation::Function(fn_ident, value)) => (
+                            SysCallTraceOrigin::ScryptoFunction(fn_ident.clone()),
+                            Self::extract_trace_data(heap, value)?,
+                        ),
+                        InvocationInfo::Scrypto(ScryptoInvocation::Method(method_ident, value)) => (
+                            SysCallTraceOrigin::ScryptoMethod(method_ident.clone()),
+                            Self::extract_trace_data(heap, value)?,
+                        ),
+                        InvocationInfo::Native(NativeInvocationInfo::Function(native_fn, value)) => (
+                            SysCallTraceOrigin::NativeFunction(native_fn.clone()),
+                            Self::extract_trace_data(heap, value)?,
+                        ),
+                        InvocationInfo::Native(NativeInvocationInfo::Method(
+                                                   native_method,
+                                                   _,
+                                                   value,
+                                               )) => (
+                            SysCallTraceOrigin::NativeMethod(native_method.clone()),
+                            Self::extract_trace_data(heap, value)?,
+                        ),
+                    };
+                    (trace_data, origin, self.current_instruction_index)
+                }
+                SysCallInput::DropNode { node_id } => {
+                    // Buckets can't be dropped, so only tracking Proofs here
+                    let data = if let RENodeId::Proof(proof_id) = node_id {
+                        let proof = Self::read_proof(heap, proof_id)?;
+                        TracedSysCallData {
+                            buckets: HashMap::new(),
+                            proofs: HashMap::from([(proof_id.clone(), proof)]),
+                        }
+                    } else {
+                        // Not a proof, so nothing to trace
+                        TracedSysCallData::new_empty()
+                    };
+
+                    (
+                        data,
+                        SysCallTraceOrigin::DropNode,
+                        self.current_instruction_index,
+                    )
+                }
+                SysCallInput::CreateNode { .. } => (
+                    TracedSysCallData::new_empty(),
+                    SysCallTraceOrigin::CreateNode,
+                    self.current_instruction_index,
+                ),
+                _ => (
+                    TracedSysCallData::new_empty(),
+                    SysCallTraceOrigin::Opaque,
+                    self.current_instruction_index,
+                ),
+            };
+            self.traced_sys_call_inputs_stack.push(traced_input);
         }
 
-        // Handle transaction processor events
-        match input {
-            SysCallInput::EmitEvent {
-                event:
-                    Event::Runtime(RuntimeEvent::PreExecuteInstruction {
-                        instruction_index, ..
-                    }),
-            } => {
-                self.current_instruction_index = Some(instruction_index.clone());
-            }
-            SysCallInput::EmitEvent {
-                event: Event::Runtime(RuntimeEvent::PostExecuteManifest),
-            } => {
-                self.current_instruction_index = None;
-            }
-            _ => {}
-        };
-
-        let traced_input = match input {
-            SysCallInput::Invoke { info, .. } => {
-                let (origin, trace_data) = match info {
-                    InvocationInfo::Scrypto(ScryptoInvocation::Function(fn_ident, value)) => (
-                        SysCallTraceOrigin::ScryptoFunction(fn_ident.clone()),
-                        Self::extract_trace_data(heap, value)?,
-                    ),
-                    InvocationInfo::Scrypto(ScryptoInvocation::Method(method_ident, value)) => (
-                        SysCallTraceOrigin::ScryptoMethod(method_ident.clone()),
-                        Self::extract_trace_data(heap, value)?,
-                    ),
-                    InvocationInfo::Native(NativeInvocationInfo::Function(native_fn, value)) => (
-                        SysCallTraceOrigin::NativeFunction(native_fn.clone()),
-                        Self::extract_trace_data(heap, value)?,
-                    ),
-                    InvocationInfo::Native(NativeInvocationInfo::Method(
-                        native_method,
-                        _,
-                        value,
-                    )) => (
-                        SysCallTraceOrigin::NativeMethod(native_method.clone()),
-                        Self::extract_trace_data(heap, value)?,
-                    ),
-                };
-                (trace_data, origin, self.current_instruction_index)
-            }
-            SysCallInput::DropNode { node_id } => {
-                // Buckets can't be dropped, so only tracking Proofs here
-                let data = if let RENodeId::Proof(proof_id) = node_id {
-                    let proof = Self::read_proof(heap, proof_id)?;
-                    TracedSysCallData {
-                        buckets: HashMap::new(),
-                        proofs: HashMap::from([(proof_id.clone(), proof)]),
-                    }
-                } else {
-                    // Not a proof, so nothing to trace
-                    TracedSysCallData::new_empty()
-                };
-
-                (
-                    data,
-                    SysCallTraceOrigin::DropNode,
-                    self.current_instruction_index,
-                )
-            }
-            SysCallInput::CreateNode { .. } => (
-                TracedSysCallData::new_empty(),
-                SysCallTraceOrigin::CreateNode,
-                self.current_instruction_index,
-            ),
-            _ => (
-                TracedSysCallData::new_empty(),
-                SysCallTraceOrigin::Opaque,
-                self.current_instruction_index,
-            ),
-        };
-
-        self.traced_sys_call_inputs_stack.push(traced_input);
         self.current_sys_call_depth += 1;
         Ok(())
     }
