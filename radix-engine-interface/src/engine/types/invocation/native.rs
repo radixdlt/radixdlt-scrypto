@@ -28,7 +28,7 @@ pub enum NativeFn {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NativeMethod {
-    Component(ComponentMethod),
+    AccessRules(AccessRulesMethod),
     EpochManager(EpochManagerMethod),
     AuthZone(AuthZoneMethod),
     ResourceManager(ResourceManagerMethod),
@@ -65,7 +65,7 @@ pub enum NativeFunction {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum ComponentMethod {
+pub enum AccessRulesMethod {
     AddAccessCheck,
 }
 

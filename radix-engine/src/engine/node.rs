@@ -13,7 +13,11 @@ pub enum RENode {
     Proof(ProofSubstate),
     AuthZone(AuthZoneStackSubstate),
     Vault(VaultRuntimeSubstate),
-    Component(ComponentInfoSubstate, ComponentStateSubstate, AccessRulesSubstate),
+    Component(
+        ComponentInfoSubstate,
+        ComponentStateSubstate,
+        AccessRulesSubstate,
+    ),
     Worktop(WorktopSubstate),
     Package(PackageSubstate),
     KeyValueStore(KeyValueStore),

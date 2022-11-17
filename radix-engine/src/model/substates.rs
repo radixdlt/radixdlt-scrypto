@@ -427,6 +427,16 @@ impl Into<ProofSubstate> for RuntimeSubstate {
     }
 }
 
+impl Into<AccessRulesSubstate> for RuntimeSubstate {
+    fn into(self) -> AccessRulesSubstate {
+        if let RuntimeSubstate::AccessRules(substate) = self {
+            substate
+        } else {
+            panic!("Not access rules");
+        }
+    }
+}
+
 pub enum SubstateRef<'a> {
     AuthZone(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
@@ -533,6 +543,13 @@ impl<'a> SubstateRef<'a> {
         match self {
             SubstateRef::Package(value) => *value,
             _ => panic!("Not a package"),
+        }
+    }
+
+    pub fn access_rules(&self) -> &AccessRulesSubstate {
+        match self {
+            SubstateRef::AccessRules(value) => *value,
+            _ => panic!("Not access rules"),
         }
     }
 
@@ -714,6 +731,13 @@ impl<'a> SubstateRefMut<'a> {
         match self {
             SubstateRefMut::EpochManager(value) => *value,
             _ => panic!("Not system"),
+        }
+    }
+
+    pub fn access_rules(&mut self) -> &mut AccessRulesSubstate {
+        match self {
+            SubstateRefMut::AccessRules(value) => *value,
+            _ => panic!("Not access rules"),
         }
     }
 }

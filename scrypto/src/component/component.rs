@@ -48,7 +48,6 @@ pub struct Component(pub ComponentId);
 pub struct ComponentInfoSubstate {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
-    pub access_rules: Vec<AccessRules>,
 }
 
 // TODO: de-duplication
@@ -104,9 +103,9 @@ impl Component {
         sys_calls: &mut Y,
     ) -> Result<&mut Self, E>
     where
-        Y: EngineApi<E> + SysNativeInvokable<ComponentAddAccessCheckInvocation, E>,
+        Y: EngineApi<E> + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>,
     {
-        sys_calls.sys_invoke(ComponentAddAccessCheckInvocation {
+        sys_calls.sys_invoke(AccessRulesAddAccessCheckInvocation {
             receiver: RENodeId::Component(self.0),
             access_rules,
         })?;

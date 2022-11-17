@@ -57,7 +57,7 @@ pub enum NativeFunctionInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ComponentMethodInvocation {
-    AddAccessCheck(ComponentAddAccessCheckInvocation),
+    AddAccessCheck(AccessRulesAddAccessCheckInvocation),
 }
 
 #[derive(Debug)]

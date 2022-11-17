@@ -3,7 +3,10 @@ use crate::engine::{
     ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
-use crate::model::{AccessRulesSubstate, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore, RuntimeSubstate};
+use crate::model::{
+    AccessRulesSubstate, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate,
+    KeyValueStore, RuntimeSubstate,
+};
 use crate::types::ScryptoInvocation;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::crypto::Hash;
@@ -71,11 +74,11 @@ where
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
                 // Create component
                 RENode::Component(
-                    ComponentInfoSubstate::new(package_address, blueprint_name, Vec::new()),
+                    ComponentInfoSubstate::new(package_address, blueprint_name),
                     ComponentStateSubstate::new(state),
                     AccessRulesSubstate {
                         access_rules: Vec::new(),
-                    }
+                    },
                 )
             }
             ScryptoRENode::KeyValueStore => RENode::KeyValueStore(KeyValueStore::new()),

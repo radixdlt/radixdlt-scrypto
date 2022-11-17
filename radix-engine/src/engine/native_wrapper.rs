@@ -4,7 +4,7 @@ use crate::types::*;
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::engine::api::SysInvokableNative;
 use radix_engine_interface::engine::types::{
-    AuthZoneMethod, BucketMethod, ComponentMethod, EpochManagerFunction, EpochManagerMethod,
+    AccessRulesMethod, AuthZoneMethod, BucketMethod, EpochManagerFunction, EpochManagerMethod,
     NativeFn, NativeFunction, NativeMethod, PackageFunction, ProofMethod, ResourceManagerFunction,
     ResourceManagerMethod, TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
@@ -262,9 +262,9 @@ where
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
             },
-            NativeMethod::Component(component_method) => match component_method {
-                ComponentMethod::AddAccessCheck => {
-                    let invocation: ComponentAddAccessCheckInvocation = scrypto_decode(&args)
+            NativeMethod::AccessRules(component_method) => match component_method {
+                AccessRulesMethod::AddAccessCheck => {
+                    let invocation: AccessRulesAddAccessCheckInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)
