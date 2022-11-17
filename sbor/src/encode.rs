@@ -57,6 +57,7 @@ mod tests {
     use crate::rust::borrow::ToOwned;
     use crate::rust::boxed::Box;
     use crate::rust::collections::*;
+    use crate::rust::string::String;
     use crate::rust::vec;
     use crate::NoCustomTypeId;
 
