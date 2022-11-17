@@ -545,7 +545,7 @@ where
         }
 
         for m in &mut self.modules {
-            m.on_run(
+            m.pre_execute_invocation(
                 &actor,
                 executor.args(),
                 &mut self.current_frame,
@@ -568,7 +568,7 @@ where
         })?;
 
         for m in &mut self.modules {
-            m.on_post_run(
+            m.post_execute_invocation(
                 &update,
                 &mut self.current_frame,
                 &mut self.heap,

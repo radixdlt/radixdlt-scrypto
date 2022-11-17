@@ -124,7 +124,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
         Ok(())
     }
 
-    fn on_run(
+    fn pre_execute_invocation(
         &mut self,
         _actor: &REActor,
         _input: &IndexedScryptoValue,
@@ -135,7 +135,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
         Ok(())
     }
 
-    fn on_post_run(
+    fn post_execute_invocation(
         &mut self,
         _update: &CallFrameUpdate,
         _call_frame: &CallFrame,

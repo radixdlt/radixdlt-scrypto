@@ -207,10 +207,15 @@ fn test_instruction_traces() {
         // followed by a single input (auto-add to worktop) - in this order.
         assert_eq!(2, traces.len());
         let free_trace = traces.get(0).unwrap();
-        if let SysCallTraceOrigin::ScryptoMethod(_package_address, _blueprint_name, method_name) = &free_trace.origin {
+        if let SysCallTraceOrigin::ScryptoMethod(_package_address, _blueprint_name, method_name) =
+            &free_trace.origin
+        {
             assert_eq!("free", method_name);
         } else {
-            panic!("Expected a scrypto method call but was {:?}", free_trace.origin);
+            panic!(
+                "Expected a scrypto method call but was {:?}",
+                free_trace.origin
+            );
         };
         assert!(free_trace.input.is_empty());
         assert!(free_trace.output.proofs.is_empty());
@@ -329,7 +334,12 @@ fn test_instruction_traces() {
         );
 
         let call_trace = traces.get(1).unwrap();
-        if let SysCallTraceOrigin::ScryptoFunction(_package_address, _blueprint_name, function_name) = &call_trace.origin {
+        if let SysCallTraceOrigin::ScryptoFunction(
+            _package_address,
+            _blueprint_name,
+            function_name,
+        ) = &call_trace.origin
+        {
             assert_eq!("create_and_fund_a_component", function_name);
         } else {
             panic!("Expected a scrypto function call");

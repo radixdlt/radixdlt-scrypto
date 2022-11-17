@@ -4,8 +4,8 @@ use crate::model::*;
 use crate::types::*;
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::engine::types::{
-    BucketOffset, ComponentId, NativeMethod, RENodeId,
-    SubstateId, SubstateOffset, VaultId, VaultMethod, VaultOffset,
+    BucketOffset, ComponentId, NativeMethod, RENodeId, SubstateId, SubstateOffset, VaultId,
+    VaultMethod, VaultOffset,
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
@@ -137,7 +137,7 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
         self.handle_post_sys_call(call_frame, heap, output)
     }
 
-    fn on_run(
+    fn pre_execute_invocation(
         &mut self,
         actor: &REActor,
         input: &IndexedScryptoValue,
@@ -147,12 +147,29 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     ) -> Result<(), ModuleError> {
         if self.current_sys_call_depth <= self.max_sys_call_trace_depth {
             let origin = match actor {
-                REActor::Method(ResolvedMethod::Scrypto { package_address, blueprint_name, ident, .. }, ..) => {
-                    SysCallTraceOrigin::ScryptoMethod(*package_address, blueprint_name.clone(), ident.clone())
-                }
-                REActor::Function(ResolvedFunction::Scrypto { package_address, blueprint_name, ident, ..}) => {
-                    SysCallTraceOrigin::ScryptoFunction(*package_address, blueprint_name.clone(), ident.clone())
-                }
+                REActor::Method(
+                    ResolvedMethod::Scrypto {
+                        package_address,
+                        blueprint_name,
+                        ident,
+                        ..
+                    },
+                    ..,
+                ) => SysCallTraceOrigin::ScryptoMethod(
+                    *package_address,
+                    blueprint_name.clone(),
+                    ident.clone(),
+                ),
+                REActor::Function(ResolvedFunction::Scrypto {
+                    package_address,
+                    blueprint_name,
+                    ident,
+                    ..
+                }) => SysCallTraceOrigin::ScryptoFunction(
+                    *package_address,
+                    blueprint_name.clone(),
+                    ident.clone(),
+                ),
                 REActor::Method(ResolvedMethod::Native(native_method), ..) => {
                     SysCallTraceOrigin::NativeMethod(native_method.clone())
                 }
@@ -162,7 +179,11 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
             };
 
             let trace_data = Self::extract_trace_data(heap, input)?;
-            self.traced_sys_call_inputs_stack.push((trace_data, origin, self.current_instruction_index));
+            self.traced_sys_call_inputs_stack.push((
+                trace_data,
+                origin,
+                self.current_instruction_index,
+            ));
         }
 
         self.current_sys_call_depth += 1;
@@ -186,7 +207,7 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
         Ok(())
     }
 
-    fn on_post_run(
+    fn post_execute_invocation(
         &mut self,
         update: &CallFrameUpdate,
         call_frame: &CallFrame,
@@ -210,7 +231,6 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
             .traced_sys_call_inputs_stack
             .pop()
             .expect("Sys call input stack underflow");
-
 
         let traced_output = Self::extract_trace_data_from_update(update, heap)?;
 
@@ -298,19 +318,18 @@ impl ExecutionTraceModule {
         heap: &mut Heap,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
-        if let SysCallInput::Invoke{ .. } = input {
+        if let SysCallInput::Invoke { .. } = input {
             return Ok(());
         }
 
         if self.current_sys_call_depth <= self.max_sys_call_trace_depth {
-
             // Handle transaction processor events
             match input {
                 SysCallInput::EmitEvent {
                     event:
-                    Event::Runtime(RuntimeEvent::PreExecuteInstruction {
-                                       instruction_index, ..
-                                   }),
+                        Event::Runtime(RuntimeEvent::PreExecuteInstruction {
+                            instruction_index, ..
+                        }),
                 } => {
                     self.current_instruction_index = Some(instruction_index.clone());
                 }
@@ -321,7 +340,6 @@ impl ExecutionTraceModule {
                 }
                 _ => {}
             };
-
 
             let traced_input = match input {
                 SysCallInput::DropNode { node_id } => {

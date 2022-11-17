@@ -1,4 +1,3 @@
-use std::fmt::Debug;
 use crate::engine::call_frame::RENodeLocation;
 use crate::engine::*;
 use crate::fee::FeeReserve;
@@ -8,6 +7,7 @@ use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::engine::types::{
     Level, LockHandle, RENodeId, SubstateId, SubstateOffset, VaultId,
 };
+use std::fmt::Debug;
 
 #[derive(Debug)]
 pub enum InvocationInfo<'a> {
@@ -98,7 +98,7 @@ pub trait Module<R: FeeReserve> {
         output: SysCallOutput,
     ) -> Result<(), ModuleError>;
 
-    fn on_run(
+    fn pre_execute_invocation(
         &mut self,
         actor: &REActor,
         input: &IndexedScryptoValue,
@@ -107,7 +107,7 @@ pub trait Module<R: FeeReserve> {
         track: &mut Track<R>,
     ) -> Result<(), ModuleError>;
 
-    fn on_post_run(
+    fn post_execute_invocation(
         &mut self,
         update: &CallFrameUpdate,
         call_frame: &CallFrame,
