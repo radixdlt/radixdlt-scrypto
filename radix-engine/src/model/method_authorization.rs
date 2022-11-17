@@ -1,5 +1,5 @@
 use radix_engine_lib::math::Decimal;
-use radix_engine_lib::resource::{NonFungibleAddress, ResourceAddress};
+use radix_engine_lib::model::*;
 use sbor::*;
 use scrypto::scrypto;
 

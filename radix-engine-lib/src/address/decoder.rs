@@ -2,7 +2,6 @@ use sbor::rust::vec::Vec;
 
 use crate::core::NetworkDefinition;
 use crate::model::*;
-use crate::resource::ResourceAddress;
 
 use super::entity::EntityType;
 use super::errors::AddressError;

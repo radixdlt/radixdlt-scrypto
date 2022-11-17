@@ -8,12 +8,9 @@ use radix_engine_lib::engine::types::{
     BucketMethod, NonFungibleStoreId, ResourceManagerMethod, VaultMethod,
 };
 use radix_engine_lib::math::Decimal;
-use radix_engine_lib::resource::AccessRule::*;
-use radix_engine_lib::resource::ResourceMethodAuthKey::*;
-use radix_engine_lib::resource::{
-    AccessRule, MintParams, Mutability, ResourceManagerLockAuthInvocation,
-    ResourceManagerUpdateAuthInvocation, ResourceMethodAuthKey, ResourceType, LOCKED,
-};
+use radix_engine_lib::model::AccessRule::*;
+use radix_engine_lib::model::ResourceMethodAuthKey::*;
+use radix_engine_lib::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]

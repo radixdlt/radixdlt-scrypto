@@ -16,17 +16,7 @@ use radix_engine_lib::engine::types::{
     SubstateOffset,
 };
 use radix_engine_lib::math::Decimal;
-use radix_engine_lib::resource::{
-    Bucket, MintParams, ResourceManagerBucketBurnInvocation, ResourceManagerBurnInvocation,
-    ResourceManagerCreateBucketInvocation, ResourceManagerCreateInvocation,
-    ResourceManagerCreateVaultInvocation, ResourceManagerGetMetadataInvocation,
-    ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation,
-    ResourceManagerGetTotalSupplyInvocation, ResourceManagerLockAuthInvocation,
-    ResourceManagerMintInvocation, ResourceManagerNonFungibleExistsInvocation,
-    ResourceManagerSetResourceAddressInvocation, ResourceManagerUpdateAuthInvocation,
-    ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation,
-    ResourceType,
-};
+use radix_engine_lib::model::*;
 use scrypto::resource::SysBucket;
 
 /// Represents an error when accessing a bucket.
@@ -90,14 +80,14 @@ impl NativeInvocation for ResourceManagerBucketBurnInvocation {
 }
 
 impl NativeExecutable for ResourceManagerCreateInvocation {
-    type NativeOutput = (ResourceAddress, Option<radix_engine_lib::resource::Bucket>);
+    type NativeOutput = (ResourceAddress, Option<Bucket>);
 
     fn execute<Y>(
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<
         (
-            (ResourceAddress, Option<radix_engine_lib::resource::Bucket>),
+            (ResourceAddress, Option<Bucket>),
             CallFrameUpdate,
         ),
         RuntimeError,
@@ -222,7 +212,7 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
             let bucket_id = system_api
                 .create_node(RENode::Bucket(BucketSubstate::new(container)))?
                 .into();
-            Some(radix_engine_lib::resource::Bucket(bucket_id))
+            Some(Bucket(bucket_id))
         } else {
             None
         };
@@ -451,12 +441,12 @@ impl NativeInvocation for ResourceManagerLockAuthInvocation {
 }
 
 impl NativeExecutable for ResourceManagerCreateVaultInvocation {
-    type NativeOutput = radix_engine_lib::resource::Vault;
+    type NativeOutput = Vault;
 
     fn execute<'a, Y>(
         _input: Self,
         system_api: &mut Y,
-    ) -> Result<(radix_engine_lib::resource::Vault, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Vault, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -479,7 +469,7 @@ impl NativeExecutable for ResourceManagerCreateVaultInvocation {
             .into();
 
         Ok((
-            radix_engine_lib::resource::Vault(vault_id),
+            Vault(vault_id),
             CallFrameUpdate::move_node(RENodeId::Vault(vault_id)),
         ))
     }
@@ -496,12 +486,12 @@ impl NativeInvocation for ResourceManagerCreateVaultInvocation {
 }
 
 impl NativeExecutable for ResourceManagerCreateBucketInvocation {
-    type NativeOutput = radix_engine_lib::resource::Bucket;
+    type NativeOutput = Bucket;
 
     fn execute<'a, Y>(
         _input: Self,
         system_api: &mut Y,
-    ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -524,7 +514,7 @@ impl NativeExecutable for ResourceManagerCreateBucketInvocation {
             .into();
 
         Ok((
-            radix_engine_lib::resource::Bucket(bucket_id),
+            Bucket(bucket_id),
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }
@@ -541,12 +531,12 @@ impl NativeInvocation for ResourceManagerCreateBucketInvocation {
 }
 
 impl NativeExecutable for ResourceManagerMintInvocation {
-    type NativeOutput = radix_engine_lib::resource::Bucket;
+    type NativeOutput = Bucket;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -616,7 +606,7 @@ impl NativeExecutable for ResourceManagerMintInvocation {
         }
 
         Ok((
-            radix_engine_lib::resource::Bucket(bucket_id),
+            Bucket(bucket_id),
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }

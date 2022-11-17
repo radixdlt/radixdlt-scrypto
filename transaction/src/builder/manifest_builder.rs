@@ -9,12 +9,6 @@ use radix_engine_lib::engine::types::{
     ScryptoPackage, ScryptoReceiver,
 };
 use radix_engine_lib::math::{Decimal, PreciseDecimal};
-use radix_engine_lib::resource::ResourceMethodAuthKey::*;
-use radix_engine_lib::resource::{
-    require, AccessRule, AccessRuleNode, Bucket, MintParams, Mutability, NonFungibleAddress,
-    NonFungibleId, ResourceAddress, ResourceManagerBurnInvocation, ResourceManagerCreateInvocation,
-    ResourceManagerMintInvocation, ResourceMethodAuthKey, ResourceType, Withdraw, LOCKED,
-};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
@@ -661,7 +655,7 @@ impl ManifestBuilder {
                     },
                     args: scrypto_encode(&ResourceManagerBurnInvocation {
                         receiver: resource_address,
-                        bucket: radix_engine_lib::resource::Bucket(bucket_id),
+                        bucket: Bucket(bucket_id),
                     }),
                 })
                 .0
@@ -685,7 +679,7 @@ impl ManifestBuilder {
                         },
                         args: scrypto_encode(&ResourceManagerBurnInvocation {
                             receiver: non_fungible_address.resource_address(),
-                            bucket: radix_engine_lib::resource::Bucket(bucket_id),
+                            bucket: Bucket(bucket_id),
                         }),
                     })
                     .0
@@ -1037,7 +1031,7 @@ impl ManifestBuilder {
                                     .unwrap()
                                 }
                             };
-                            Ok(scrypto_encode(&radix_engine_lib::resource::Bucket(
+                            Ok(scrypto_encode(&Bucket(
                                 bucket_id,
                             )))
                         }
@@ -1076,7 +1070,7 @@ impl ManifestBuilder {
                                     }
                                 }
                             };
-                            Ok(scrypto_encode(&radix_engine_lib::resource::Proof(proof_id)))
+                            Ok(scrypto_encode(&Proof(proof_id)))
                         }
                         _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
                     };

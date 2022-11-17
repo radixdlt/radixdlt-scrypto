@@ -1,14 +1,6 @@
 use radix_engine_lib::engine::api::SysNativeInvokable;
 use radix_engine_lib::math::Decimal;
-use radix_engine_lib::resource::{
-    AccessRule, Bucket, MintParams, NonFungibleId, ResourceAddress, ResourceManagerBurnInvocation,
-    ResourceManagerGetMetadataInvocation, ResourceManagerGetNonFungibleInvocation,
-    ResourceManagerGetResourceTypeInvocation, ResourceManagerGetTotalSupplyInvocation,
-    ResourceManagerLockAuthInvocation, ResourceManagerMintInvocation,
-    ResourceManagerNonFungibleExistsInvocation, ResourceManagerUpdateAuthInvocation,
-    ResourceManagerUpdateMetadataInvocation, ResourceManagerUpdateNonFungibleDataInvocation,
-    ResourceMethodAuthKey, ResourceType,
-};
+use radix_engine_lib::model::*;
 
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
@@ -16,7 +8,6 @@ use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
 
-use crate::resource::*;
 use crate::scrypto;
 
 /// Represents a resource manager.
@@ -150,7 +141,7 @@ impl ResourceManager {
             .unwrap()
     }
 
-    fn mint_internal(&mut self, mint_params: MintParams) -> radix_engine_lib::resource::Bucket {
+    fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
         let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(ResourceManagerMintInvocation {
@@ -218,7 +209,7 @@ impl ResourceManager {
     }
 
     /// Mints fungible resources
-    pub fn mint<T: Into<Decimal>>(&mut self, amount: T) -> radix_engine_lib::resource::Bucket {
+    pub fn mint<T: Into<Decimal>>(&mut self, amount: T) -> Bucket {
         self.mint_internal(MintParams::Fungible {
             amount: amount.into(),
         })
@@ -229,7 +220,7 @@ impl ResourceManager {
         &mut self,
         id: &NonFungibleId,
         data: T,
-    ) -> radix_engine_lib::resource::Bucket {
+    ) -> Bucket {
         let mut entries = HashMap::new();
         entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
         self.mint_internal(MintParams::NonFungible { entries })

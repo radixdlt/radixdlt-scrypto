@@ -7,8 +7,8 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use scrypto_abi::{Describe, Fields, Type, Variant};
 
-use crate::resource::AccessRuleNode::{AllOf, AnyOf};
-use crate::resource::*;
+use crate::model::AccessRuleNode::{AllOf, AnyOf};
+use crate::model::*;
 use crate::scrypto;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]

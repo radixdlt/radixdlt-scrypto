@@ -9,7 +9,6 @@ use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
 use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::resource::AccessRule;
 use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
@@ -106,7 +105,7 @@ impl TransactionFuzzer {
                             "new_with_resource",
                             args!(
                                 AccessRule::AllowAll,
-                                radix_engine_lib::resource::Bucket(bucket_id)
+                                Bucket(bucket_id)
                             ),
                         )
                     });
@@ -127,7 +126,7 @@ impl TransactionFuzzer {
                             "new_with_resource",
                             args!(
                                 AccessRule::AllowAll,
-                                radix_engine_lib::resource::Bucket(bucket_id)
+                                Bucket(bucket_id)
                             ),
                         )
                     });

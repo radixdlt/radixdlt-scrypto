@@ -10,7 +10,6 @@ use crate::crypto::Blob;
 use crate::data::*;
 use crate::engine::types::*;
 use crate::model::*;
-use crate::resource::{NonFungibleAddress, ResourceAddress};
 use utils::misc::ContextualDisplay;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -340,8 +339,8 @@ mod tests {
     #[test]
     fn should_reject_duplicate_ids() {
         let buckets = scrypto_encode(&vec![
-            radix_engine_lib::resource::Bucket(0),
-            radix_engine_lib::resource::Bucket(0),
+            radix_engine_lib::model::Bucket(0),
+            radix_engine_lib::model::Bucket(0),
         ]);
         assert_eq!(
             IndexedScryptoValue::from_slice(&buckets),

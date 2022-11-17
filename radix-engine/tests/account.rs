@@ -141,7 +141,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
                         receiver: ScryptoReceiver::Global(account),
                         method_name: "deposit".to_string(),
                     },
-                    args: args!(radix_engine_lib::resource::Bucket(bucket_id)),
+                    args: args!(Bucket(bucket_id)),
                 })
                 .0
         })

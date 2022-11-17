@@ -3,7 +3,6 @@ use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_lib::core::NetworkDefinition;
 use radix_engine_lib::engine::types::RENodeId;
-use radix_engine_lib::resource::{Bucket, Proof};
 use scrypto::resource::non_fungible::FromPublicKey;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;

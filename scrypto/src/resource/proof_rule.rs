@@ -74,7 +74,7 @@ macro_rules! access_and_or {
 #[macro_export]
 macro_rules! access_rule_node {
     // Handle leaves
-    ($rule:ident $args:tt) => {{ ::scrypto::engine_lib::resource::AccessRuleNode::ProofRule($rule $args) }};
+    ($rule:ident $args:tt) => {{ ::scrypto::model::AccessRuleNode::ProofRule($rule $args) }};
 
     // Handle group
     (($($tt:tt)+)) => {{ access_rule_node!($($tt)+) }};
@@ -93,12 +93,12 @@ macro_rules! access_rule_node {
 #[macro_export]
 macro_rules! rule {
     (allow_all) => {{
-        ::scrypto::engine_lib::resource::AccessRule::AllowAll
+        ::scrypto::model::AccessRule::AllowAll
     }};
     (deny_all) => {{
-        ::scrypto::engine_lib::resource::AccessRule::DenyAll
+        ::scrypto::model::AccessRule::DenyAll
     }};
     ($($tt:tt)+) => {{
-        ::scrypto::engine_lib::resource::AccessRule::Protected(access_rule_node!($($tt)+))
+        ::scrypto::model::AccessRule::Protected(access_rule_node!($($tt)+))
     }};
 }

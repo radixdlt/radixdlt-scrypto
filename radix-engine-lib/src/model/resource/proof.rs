@@ -12,7 +12,7 @@ use crate::data::ScryptoCustomTypeId;
 use crate::engine::scrypto_env::{NativeMethodInvocation, ProofMethodInvocation};
 use crate::engine::{api::*, types::*};
 use crate::math::*;
-use crate::resource::*;
+use crate::model::*;
 use crate::scrypto_type;
 
 #[derive(Debug, TypeId, Encode, Decode)]

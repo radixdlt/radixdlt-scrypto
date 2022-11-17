@@ -1,5 +1,5 @@
 mod access_rules;
-pub mod bucket;
+mod bucket;
 mod mint_params;
 mod non_fungible_address;
 mod non_fungible_data;
@@ -14,14 +14,11 @@ mod worktop;
 pub use access_rules::AccessRules;
 pub use bucket::*;
 pub use mint_params::MintParams;
+pub use non_fungible_data::*;
 pub use non_fungible_address::*;
 pub use non_fungible_id::*;
 pub use proof::*;
-pub use proof_rule::{
-    require, require_all_of, require_amount, require_any_of, require_n_of, AccessRule,
-    AccessRuleNode, ProofRule, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
-    SoftResourceOrNonFungibleList,
-};
+pub use proof_rule::*;
 pub use resource_manager::Mutability::*;
 pub use resource_manager::ResourceMethodAuthKey::*;
 pub use resource_manager::*;

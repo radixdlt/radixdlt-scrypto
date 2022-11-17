@@ -43,7 +43,7 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                     .map(|f| f.ident.clone().expect("Illegal State!").to_string());
 
                 quote! {
-                    impl ::scrypto::resource::NonFungibleData for #ident {
+                    impl ::scrypto::model::NonFungibleData for #ident {
                         fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{type_id::*, *};
                             let mut decoder_nm = Decoder::new(immutable_data);
@@ -172,7 +172,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::scrypto::resource::NonFungibleData for MyStruct {
+                impl ::scrypto::model::NonFungibleData for MyStruct {
                     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{type_id::*, *};
                         let mut decoder_nm = Decoder::new(immutable_data);

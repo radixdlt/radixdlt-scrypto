@@ -1,5 +1,5 @@
 use radix_engine_lib::crypto::{hash, PublicKey};
-use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
+use radix_engine_lib::model::*;
 use sbor::rust::marker::PhantomData;
 
 use crate::borrow_resource_manager;

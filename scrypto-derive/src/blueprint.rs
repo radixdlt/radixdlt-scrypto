@@ -479,7 +479,7 @@ fn generate_stubs(
             fn blueprint_name(&self) -> String {
                 self.component.blueprint_name()
             }
-            fn add_access_check(&mut self, access_rules: ::scrypto::engine_lib::resource::AccessRules) -> &mut Self {
+            fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
                 self.component.add_access_check(access_rules);
                 self
             }
@@ -669,7 +669,7 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn add_access_check(&mut self, access_rules: ::scrypto::engine_lib::resource::AccessRules) -> &mut Self {
+                    fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
                         self.component.add_access_check(access_rules);
                         self
                     }
@@ -752,7 +752,7 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn add_access_check(&mut self, access_rules: ::scrypto::engine_lib::resource::AccessRules) -> &mut Self {
+                    fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
                         self.component.add_access_check(access_rules);
                         self
                     }

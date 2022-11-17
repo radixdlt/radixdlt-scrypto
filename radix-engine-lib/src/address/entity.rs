@@ -1,5 +1,4 @@
 use crate::model::*;
-use crate::resource::ResourceAddress;
 
 /// A unique identifier used in the addressing of Resource Addresses.
 pub const RESOURCE_ADDRESS_ENTITY_ID: u8 = 0x00;

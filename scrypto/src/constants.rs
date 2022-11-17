@@ -1,5 +1,4 @@
 use radix_engine_lib::model::*;
-use radix_engine_lib::resource::ResourceAddress;
 use radix_engine_lib::{address, construct_address};
 
 // After changing Radix Engine ID allocation, you will most likely need to update the addresses below.

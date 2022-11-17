@@ -8,8 +8,7 @@ use radix_engine_lib::engine::types::{
     SubstateId, SubstateOffset, VaultId, VaultMethod, VaultOffset,
 };
 use radix_engine_lib::math::Decimal;
-use radix_engine_lib::resource::{Bucket, Proof, Vault};
-use radix_engine_lib::resource::{VaultPutInvocation, VaultTakeInvocation};
+use radix_engine_lib::model::*;
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

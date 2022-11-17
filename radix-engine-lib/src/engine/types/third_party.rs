@@ -7,5 +7,4 @@ pub use sbor::*;
 pub use strum::*;
 
 pub use crate::crypto::Hash;
-pub use crate::resource::NonFungibleId;
-pub use crate::resource::ResourceAddress;
+pub use crate::model::*;

@@ -2,11 +2,7 @@ use radix_engine_lib::data::ScryptoCustomTypeId;
 use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
 use radix_engine_lib::engine::types::{ProofId, RENodeId};
 use radix_engine_lib::math::Decimal;
-use radix_engine_lib::resource::{
-    NonFungibleAddress, NonFungibleId, Proof, ProofCloneInvocation, ProofGetAmountInvocation,
-    ProofGetNonFungibleIdsInvocation, ProofGetResourceAddressInvocation, ProofValidationError,
-    ResourceAddress,
-};
+use radix_engine_lib::model::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
@@ -69,7 +65,7 @@ impl SysProof for Proof {
     fn sys_clone<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
         &self,
         sys_calls: &mut Y,
-    ) -> Result<radix_engine_lib::resource::Proof, E>
+    ) -> Result<Proof, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<ProofCloneInvocation, E>,
     {

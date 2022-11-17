@@ -4,7 +4,7 @@ use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 
-use crate::resource::*;
+use crate::model::*;
 use crate::scrypto;
 
 /// Method authorization rules for a component

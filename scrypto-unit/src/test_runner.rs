@@ -17,7 +17,6 @@ use radix_engine::types::*;
 use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
-use radix_engine_lib::resource::AccessRule;
 
 use radix_engine_constants::*;
 use radix_engine_lib::core::NetworkDefinition;
@@ -164,7 +163,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 builder.call_method(
                     account_address,
                     "deposit",
-                    args!(radix_engine_lib::resource::Bucket(bucket_id)),
+                    args!(Bucket(bucket_id)),
                 )
             })
             .build();

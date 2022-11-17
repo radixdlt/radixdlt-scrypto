@@ -1,7 +1,6 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::resource::Bucket;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

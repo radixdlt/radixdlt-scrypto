@@ -13,12 +13,6 @@ use radix_engine_lib::engine::types::{
     ScryptoPackage, ScryptoReceiver,
 };
 use radix_engine_lib::math::{Decimal, PreciseDecimal};
-use radix_engine_lib::resource::NonFungibleAddress;
-use radix_engine_lib::resource::NonFungibleId;
-use radix_engine_lib::resource::{
-    MintParams, ResourceAddress, ResourceManagerBucketBurnInvocation,
-    ResourceManagerCreateInvocation, ResourceManagerMintInvocation, Vault,
-};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
@@ -484,7 +478,7 @@ pub fn generate_instruction(
                     function_name: ResourceManagerFunction::BurnBucket.to_string(),
                 },
                 args: scrypto_encode(&ResourceManagerBucketBurnInvocation {
-                    bucket: radix_engine_lib::resource::Bucket(bucket_id),
+                    bucket: Bucket(bucket_id),
                 }),
             }
         }

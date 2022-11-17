@@ -1,13 +1,7 @@
 use radix_engine_lib::data::ScryptoCustomTypeId;
 use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
 use radix_engine_lib::math::Decimal;
-use radix_engine_lib::resource::{
-    Bucket, NonFungibleAddress, NonFungibleId, ResourceAddress,
-    ResourceManagerCreateVaultInvocation, Vault, VaultCreateProofByAmountInvocation,
-    VaultCreateProofByIdsInvocation, VaultCreateProofInvocation, VaultGetAmountInvocation,
-    VaultGetNonFungibleIdsInvocation, VaultGetResourceAddressInvocation, VaultLockFeeInvocation,
-    VaultPutInvocation, VaultTakeInvocation, VaultTakeNonFungiblesInvocation,
-};
+use radix_engine_lib::model::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
@@ -50,12 +44,12 @@ pub trait ScryptoVault {
     fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket;
     fn resource_address(&self) -> ResourceAddress;
     fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId>;
-    fn create_proof(&self) -> radix_engine_lib::resource::Proof;
-    fn create_proof_by_amount(&self, amount: Decimal) -> radix_engine_lib::resource::Proof;
+    fn create_proof(&self) -> Proof;
+    fn create_proof_by_amount(&self, amount: Decimal) -> Proof;
     fn create_proof_by_ids(
         &self,
         ids: &BTreeSet<NonFungibleId>,
-    ) -> radix_engine_lib::resource::Proof;
+    ) -> Proof;
     fn lock_fee<A: Into<Decimal>>(&mut self, amount: A);
     fn lock_contingent_fee<A: Into<Decimal>>(&mut self, amount: A);
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket;
@@ -114,7 +108,7 @@ impl ScryptoVault for Vault {
         fn put(&mut self, bucket: Bucket) -> () {
             VaultPutInvocation {
                 receiver: self.0,
-                bucket: radix_engine_lib::resource::Bucket(bucket.0),
+                bucket: Bucket(bucket.0),
             }
         }
 
@@ -137,17 +131,17 @@ impl ScryptoVault for Vault {
             }
         }
 
-        fn create_proof(&self) -> radix_engine_lib::resource::Proof {
+        fn create_proof(&self) -> Proof {
             VaultCreateProofInvocation {
                 receiver: self.0,
             }
         }
 
-        fn create_proof_by_amount(&self, amount: Decimal) -> radix_engine_lib::resource::Proof {
+        fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
             VaultCreateProofByAmountInvocation { amount, receiver: self.0, }
         }
 
-        fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> radix_engine_lib::resource::Proof {
+        fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
             VaultCreateProofByIdsInvocation { ids: ids.clone(), receiver: self.0 }
         }
     }

@@ -6,9 +6,7 @@ use crate::engine::api::*;
 use crate::engine::scrypto_env::*;
 use crate::engine::types::AuthZoneId;
 use crate::math::Decimal;
-use crate::resource::NonFungibleId;
-use crate::resource::Proof;
-use crate::resource::ResourceAddress;
+use crate::model::*;
 use crate::scrypto;
 
 #[derive(Debug)]

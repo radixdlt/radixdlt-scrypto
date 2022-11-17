@@ -5,7 +5,6 @@ use radix_engine_lib::engine::types::{
     BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent,
     ProofId, RENodeId, TransactionProcessorFunction,
 };
-use radix_engine_lib::resource::Bucket;
 use sbor::rust::borrow::Cow;
 use scrypto::core::Runtime;
 use scrypto::resource::Worktop;
@@ -295,7 +294,7 @@ impl TransactionProcessor {
                 Instruction::ReturnToWorktop { bucket_id } => bucket_id_mapping
                     .remove(bucket_id)
                     .map(|real_id| {
-                        Worktop::sys_put(radix_engine_lib::resource::Bucket(real_id), env)
+                        Worktop::sys_put(Bucket(real_id), env)
                             .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                             .map_err(InvokeError::Downstream)
                     })
@@ -347,7 +346,7 @@ impl TransactionProcessor {
                         TransactionProcessorError::ProofNotFound(*proof_id),
                     ))
                     .and_then(|real_id| {
-                        let proof = radix_engine_lib::resource::Proof(real_id);
+                        let proof = Proof(real_id);
                         ComponentAuthZone::sys_push(proof, env)
                             .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                             .map_err(InvokeError::Downstream)
@@ -435,7 +434,7 @@ impl TransactionProcessor {
                             .get(proof_id)
                             .cloned()
                             .map(|real_id| {
-                                let proof = radix_engine_lib::resource::Proof(real_id);
+                                let proof = Proof(real_id);
                                 proof
                                     .sys_clone(env)
                                     .map_err(InvokeError::Downstream)
@@ -451,7 +450,7 @@ impl TransactionProcessor {
                 Instruction::DropProof { proof_id } => proof_id_mapping
                     .remove(proof_id)
                     .map(|real_id| {
-                        let proof = radix_engine_lib::resource::Proof(real_id);
+                        let proof = Proof(real_id);
                         proof
                             .sys_drop(env)
                             .map(|_| IndexedScryptoValue::unit())
@@ -462,7 +461,7 @@ impl TransactionProcessor {
                     ))),
                 Instruction::DropAllProofs => {
                     for (_, real_id) in proof_id_mapping.drain() {
-                        let proof = radix_engine_lib::resource::Proof(real_id);
+                        let proof = Proof(real_id);
                         proof
                             .sys_drop(env)
                             .map(|_| IndexedScryptoValue::unit())
@@ -490,13 +489,13 @@ impl TransactionProcessor {
                     .and_then(|result| {
                         // Auto move into auth_zone
                         for (proof_id, _) in &result.proof_ids {
-                            let proof = radix_engine_lib::resource::Proof(*proof_id);
+                            let proof = Proof(*proof_id);
                             ComponentAuthZone::sys_push(proof, env)
                                 .map_err(InvokeError::Downstream)?;
                         }
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(radix_engine_lib::resource::Bucket(*bucket_id), env)
+                            Worktop::sys_put(Bucket(*bucket_id), env)
                                 .map_err(InvokeError::Downstream)?;
                         }
                         Ok(result)
@@ -517,13 +516,13 @@ impl TransactionProcessor {
                     .and_then(|result| {
                         // Auto move into auth_zone
                         for (proof_id, _) in &result.proof_ids {
-                            let proof = radix_engine_lib::resource::Proof(*proof_id);
+                            let proof = Proof(*proof_id);
                             ComponentAuthZone::sys_push(proof, env)
                                 .map_err(InvokeError::Downstream)?;
                         }
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(radix_engine_lib::resource::Bucket(*bucket_id), env)
+                            Worktop::sys_put(Bucket(*bucket_id), env)
                                 .map_err(InvokeError::downstream)?;
                         }
                         Ok(result)
@@ -567,13 +566,13 @@ impl TransactionProcessor {
                     .and_then(|result| {
                         // Auto move into auth_zone
                         for (proof_id, _) in &result.proof_ids {
-                            let proof = radix_engine_lib::resource::Proof(*proof_id);
+                            let proof = Proof(*proof_id);
                             ComponentAuthZone::sys_push(proof, env)
                                 .map_err(InvokeError::Downstream)?;
                         }
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(radix_engine_lib::resource::Bucket(*bucket_id), env)
+                            Worktop::sys_put(Bucket(*bucket_id), env)
                                 .map_err(InvokeError::Downstream)?;
                         }
                         Ok(result)
@@ -602,13 +601,13 @@ impl TransactionProcessor {
                     .and_then(|result| {
                         // Auto move into auth_zone
                         for (proof_id, _) in &result.proof_ids {
-                            let proof = radix_engine_lib::resource::Proof(*proof_id);
+                            let proof = Proof(*proof_id);
                             ComponentAuthZone::sys_push(proof, env)
                                 .map_err(InvokeError::Downstream)?;
                         }
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(radix_engine_lib::resource::Bucket(*bucket_id), env)
+                            Worktop::sys_put(Bucket(*bucket_id), env)
                                 .map_err(InvokeError::downstream)?;
                         }
                         Ok(result)

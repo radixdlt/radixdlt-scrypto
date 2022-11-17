@@ -7,11 +7,7 @@ use crate::types::*;
 use radix_engine_lib::engine::types::{
     BucketMethod, BucketOffset, GlobalAddress, NativeMethod, RENodeId, SubstateOffset,
 };
-use radix_engine_lib::resource::{
-    BucketCreateProofInvocation, BucketGetAmountInvocation, BucketGetNonFungibleIdsInvocation,
-    BucketGetResourceAddressInvocation, BucketPutInvocation, BucketTakeInvocation,
-    BucketTakeNonFungiblesInvocation,
-};
+use radix_engine_lib::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -27,12 +23,12 @@ pub enum BucketError {
 }
 
 impl NativeExecutable for BucketTakeInvocation {
-    type NativeOutput = radix_engine_lib::resource::Bucket;
+    type NativeOutput = Bucket;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -51,7 +47,7 @@ impl NativeExecutable for BucketTakeInvocation {
             .create_node(RENode::Bucket(BucketSubstate::new(container)))?
             .into();
         Ok((
-            radix_engine_lib::resource::Bucket(bucket_id),
+            Bucket(bucket_id),
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }
@@ -68,12 +64,12 @@ impl NativeInvocation for BucketTakeInvocation {
 }
 
 impl NativeExecutable for BucketCreateProofInvocation {
-    type NativeOutput = radix_engine_lib::resource::Proof;
+    type NativeOutput = Proof;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -91,7 +87,7 @@ impl NativeExecutable for BucketCreateProofInvocation {
 
         let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
         Ok((
-            radix_engine_lib::resource::Proof(proof_id),
+            Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
         ))
     }
@@ -108,12 +104,12 @@ impl NativeInvocation for BucketCreateProofInvocation {
 }
 
 impl NativeExecutable for BucketTakeNonFungiblesInvocation {
-    type NativeOutput = radix_engine_lib::resource::Bucket;
+    type NativeOutput = Bucket;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -132,7 +128,7 @@ impl NativeExecutable for BucketTakeNonFungiblesInvocation {
             .create_node(RENode::Bucket(BucketSubstate::new(container)))?
             .into();
         Ok((
-            radix_engine_lib::resource::Bucket(bucket_id),
+            Bucket(bucket_id),
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }

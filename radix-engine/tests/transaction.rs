@@ -25,7 +25,7 @@ fn test_manifest_with_non_existent_resource() {
             builder.call_method(
                 account,
                 "deposit",
-                args!(radix_engine_lib::resource::Bucket(bucket_id)),
+                args!(Bucket(bucket_id)),
             )
         })
         .build();

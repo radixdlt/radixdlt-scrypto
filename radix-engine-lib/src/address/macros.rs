@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! construct_address {
     (EntityType::Resource, $($bytes:expr),*) => {
-        ::radix_engine_lib::resource::ResourceAddress::Normal([$($bytes),*])
+        ::radix_engine_lib::model::ResourceAddress::Normal([$($bytes),*])
     };
     (EntityType::Package, $($bytes:expr),*) => {
         ::radix_engine_lib::model::PackageAddress::Normal([$($bytes),*])

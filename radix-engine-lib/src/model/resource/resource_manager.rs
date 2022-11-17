@@ -10,7 +10,7 @@ use crate::address::*;
 use crate::data::ScryptoCustomTypeId;
 use crate::engine::{api::*, scrypto_env::*};
 use crate::math::*;
-use crate::resource::*;
+use crate::model::*;
 use crate::scrypto_type;
 use crate::Describe;
 

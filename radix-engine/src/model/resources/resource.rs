@@ -1,6 +1,6 @@
 use crate::types::*;
 use radix_engine_lib::engine::types::{BucketId, VaultId};
-use radix_engine_lib::resource::ResourceType;
+use radix_engine_lib::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]

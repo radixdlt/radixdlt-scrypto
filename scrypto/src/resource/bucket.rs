@@ -1,14 +1,8 @@
-use crate::resource::proof::ScryptoProof;
-use crate::resource::{ComponentAuthZone, NonFungible, NonFungibleData};
+use crate::resource::{ComponentAuthZone, NonFungible, ScryptoProof};
 use radix_engine_lib::data::ScryptoCustomTypeId;
 use radix_engine_lib::engine::api::SysNativeInvokable;
 use radix_engine_lib::math::Decimal;
-use radix_engine_lib::resource::{
-    BucketCreateProofInvocation, BucketGetAmountInvocation, BucketGetNonFungibleIdsInvocation,
-    BucketGetResourceAddressInvocation, BucketPutInvocation, BucketTakeInvocation,
-    BucketTakeNonFungiblesInvocation, NonFungibleAddress, NonFungibleId, Proof, ResourceAddress,
-    ResourceManagerBurnInvocation, ResourceManagerCreateBucketInvocation,
-};
+use radix_engine_lib::model::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
@@ -20,7 +14,7 @@ pub trait SysBucket {
     fn sys_new<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
         receiver: ResourceAddress,
         sys_calls: &mut Y,
-    ) -> Result<radix_engine_lib::resource::Bucket, E>
+    ) -> Result<Bucket, E>
     where
         Y: SysNativeInvokable<ResourceManagerCreateBucketInvocation, E>;
 
@@ -40,16 +34,16 @@ pub trait SysBucket {
     fn sys_create_proof<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
         &self,
         sys_calls: &mut Y,
-    ) -> Result<radix_engine_lib::resource::Proof, E>
+    ) -> Result<Proof, E>
     where
         Y: SysNativeInvokable<BucketCreateProofInvocation, E>;
 }
 
-impl SysBucket for radix_engine_lib::resource::Bucket {
+impl SysBucket for Bucket {
     fn sys_new<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
         receiver: ResourceAddress,
         sys_calls: &mut Y,
-    ) -> Result<radix_engine_lib::resource::Bucket, E>
+    ) -> Result<Bucket, E>
     where
         Y: SysNativeInvokable<ResourceManagerCreateBucketInvocation, E>,
     {
@@ -67,7 +61,7 @@ impl SysBucket for radix_engine_lib::resource::Bucket {
         let receiver = self.sys_resource_address(env)?;
         env.sys_invoke(ResourceManagerBurnInvocation {
             receiver,
-            bucket: radix_engine_lib::resource::Bucket(self.0),
+            bucket: Bucket(self.0),
         })
     }
 
@@ -95,11 +89,11 @@ pub trait ScryptoBucket {
     fn burn(self);
     fn create_proof(&self) -> Proof;
     fn resource_address(&self) -> ResourceAddress;
-    fn take_internal(&mut self, amount: Decimal) -> radix_engine_lib::resource::Bucket;
+    fn take_internal(&mut self, amount: Decimal) -> Bucket;
     fn take_non_fungibles(
         &mut self,
         non_fungible_ids: &BTreeSet<NonFungibleId>,
-    ) -> radix_engine_lib::resource::Bucket;
+    ) -> Bucket;
     fn put(&mut self, other: Self) -> ();
     fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId>;
     fn amount(&self) -> Decimal;
@@ -112,7 +106,7 @@ pub trait ScryptoBucket {
     fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T>;
 }
 
-impl ScryptoBucket for radix_engine_lib::resource::Bucket {
+impl ScryptoBucket for Bucket {
     fn new(resource_address: ResourceAddress) -> Self {
         Self::sys_new(resource_address, &mut ScryptoEnv).unwrap()
     }
@@ -130,14 +124,14 @@ impl ScryptoBucket for radix_engine_lib::resource::Bucket {
     }
 
     scrypto_env_native_fn! {
-        fn take_internal(&mut self, amount: Decimal) -> radix_engine_lib::resource::Bucket {
+        fn take_internal(&mut self, amount: Decimal) -> Bucket {
             BucketTakeInvocation {
                 receiver: self.0,
                 amount,
             }
         }
 
-        fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> radix_engine_lib::resource::Bucket {
+        fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
             BucketTakeNonFungiblesInvocation {
                 receiver: self.0,
                 ids: non_fungible_ids.clone()
@@ -147,7 +141,7 @@ impl ScryptoBucket for radix_engine_lib::resource::Bucket {
         fn put(&mut self, other: Self) -> () {
             BucketPutInvocation {
                 receiver: self.0,
-                bucket: radix_engine_lib::resource::Bucket(other.0),
+                bucket: Bucket(other.0),
             }
         }
 

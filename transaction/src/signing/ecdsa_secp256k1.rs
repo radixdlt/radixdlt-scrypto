@@ -47,7 +47,7 @@ impl EcdsaSecp256k1PrivateKey {
 mod tests {
     use super::*;
     use crate::validation::verify_ecdsa_secp256k1;
-    use radix_engine_lib::resource::{NonFungibleAddress, NonFungibleId};
+    use radix_engine_lib::model::{NonFungibleAddress, NonFungibleId};
     use sbor::rust::str::FromStr;
     use scrypto::constants::ECDSA_SECP256K1_TOKEN;
 

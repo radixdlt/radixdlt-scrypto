@@ -3,7 +3,6 @@ use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
 use radix_engine_lib::engine::types::RENodeId;
 use radix_engine_lib::math::Decimal;
 use radix_engine_lib::model::*;
-use radix_engine_lib::resource::{NonFungibleId, ResourceAddress};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
@@ -20,7 +19,7 @@ pub struct ComponentAuthZone {}
 impl ComponentAuthZone {
     pub fn sys_drain<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
         env: &mut Y,
-    ) -> Result<Vec<radix_engine_lib::resource::Proof>, E>
+    ) -> Result<Vec<Proof>, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<AuthZoneDrainInvocation, E>,
     {
@@ -52,7 +51,7 @@ impl ComponentAuthZone {
 
     pub fn sys_pop<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
         env: &mut Y,
-    ) -> Result<radix_engine_lib::resource::Proof, E>
+    ) -> Result<Proof, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<AuthZonePopInvocation, E>,
     {
@@ -72,7 +71,7 @@ impl ComponentAuthZone {
     >(
         resource_address: ResourceAddress,
         env: &mut Y,
-    ) -> Result<radix_engine_lib::resource::Proof, E>
+    ) -> Result<Proof, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<AuthZoneCreateProofInvocation, E>,
     {
@@ -94,7 +93,7 @@ impl ComponentAuthZone {
         amount: Decimal,
         resource_address: ResourceAddress,
         env: &mut Y,
-    ) -> Result<radix_engine_lib::resource::Proof, E>
+    ) -> Result<Proof, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<AuthZoneCreateProofByAmountInvocation, E>,
     {
@@ -117,7 +116,7 @@ impl ComponentAuthZone {
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
         env: &mut Y,
-    ) -> Result<radix_engine_lib::resource::Proof, E>
+    ) -> Result<Proof, E>
     where
         Y: Syscalls<E> + SysNativeInvokable<AuthZoneCreateProofByIdsInvocation, E>,
     {
@@ -134,7 +133,7 @@ impl ComponentAuthZone {
     }
 
     pub fn sys_push<
-        P: Into<radix_engine_lib::resource::Proof>,
+        P: Into<Proof>,
         Y,
         E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
     >(
@@ -150,7 +149,7 @@ impl ComponentAuthZone {
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
 
-        let proof: radix_engine_lib::resource::Proof = proof.into();
+        let proof: Proof = proof.into();
 
         env.sys_invoke(AuthZonePushInvocation {
             receiver: node_id.into(),
@@ -158,29 +157,29 @@ impl ComponentAuthZone {
         })
     }
 
-    pub fn pop() -> radix_engine_lib::resource::Proof {
+    pub fn pop() -> Proof {
         Self::sys_pop(&mut ScryptoEnv).unwrap()
     }
 
-    pub fn create_proof(resource_address: ResourceAddress) -> radix_engine_lib::resource::Proof {
+    pub fn create_proof(resource_address: ResourceAddress) -> Proof {
         Self::sys_create_proof(resource_address, &mut ScryptoEnv).unwrap()
     }
 
     pub fn create_proof_by_amount(
         amount: Decimal,
         resource_address: ResourceAddress,
-    ) -> radix_engine_lib::resource::Proof {
+    ) -> Proof {
         Self::sys_create_proof_by_amount(amount, resource_address, &mut ScryptoEnv).unwrap()
     }
 
     pub fn create_proof_by_ids(
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
-    ) -> radix_engine_lib::resource::Proof {
+    ) -> Proof {
         Self::sys_create_proof_by_ids(ids, resource_address, &mut ScryptoEnv).unwrap()
     }
 
-    pub fn push<P: Into<radix_engine_lib::resource::Proof>>(proof: P) {
+    pub fn push<P: Into<Proof>>(proof: P) {
         Self::sys_push(proof, &mut ScryptoEnv).unwrap()
     }
 }

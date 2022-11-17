@@ -8,11 +8,7 @@ use radix_engine_lib::engine::types::{
     GlobalAddress, NativeMethod, RENodeId, ResourceManagerOffset, SubstateOffset, WorktopMethod,
     WorktopOffset,
 };
-use radix_engine_lib::resource::{
-    WorktopAssertContainsAmountInvocation, WorktopAssertContainsInvocation,
-    WorktopAssertContainsNonFungiblesInvocation, WorktopDrainInvocation, WorktopPutInvocation,
-    WorktopTakeAllInvocation, WorktopTakeAmountInvocation, WorktopTakeNonFungiblesInvocation,
-};
+use radix_engine_lib::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -64,12 +60,12 @@ impl NativeInvocation for WorktopPutInvocation {
 }
 
 impl NativeExecutable for WorktopTakeAmountInvocation {
-    type NativeOutput = radix_engine_lib::resource::Bucket;
+    type NativeOutput = Bucket;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -110,7 +106,7 @@ impl NativeExecutable for WorktopTakeAmountInvocation {
             .create_node(RENode::Bucket(BucketSubstate::new(resource_resource)))?
             .into();
         Ok((
-            radix_engine_lib::resource::Bucket(bucket_id),
+            Bucket(bucket_id),
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }
@@ -129,12 +125,12 @@ impl NativeInvocation for WorktopTakeAmountInvocation {
 }
 
 impl NativeExecutable for WorktopTakeAllInvocation {
-    type NativeOutput = radix_engine_lib::resource::Bucket;
+    type NativeOutput = Bucket;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -174,7 +170,7 @@ impl NativeExecutable for WorktopTakeAllInvocation {
             .into();
 
         Ok((
-            radix_engine_lib::resource::Bucket(bucket_id),
+            Bucket(bucket_id),
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }
@@ -193,12 +189,12 @@ impl NativeInvocation for WorktopTakeAllInvocation {
 }
 
 impl NativeExecutable for WorktopTakeNonFungiblesInvocation {
-    type NativeOutput = radix_engine_lib::resource::Bucket;
+    type NativeOutput = Bucket;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(radix_engine_lib::resource::Bucket, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -240,7 +236,7 @@ impl NativeExecutable for WorktopTakeNonFungiblesInvocation {
             .into();
 
         Ok((
-            radix_engine_lib::resource::Bucket(bucket_id),
+            Bucket(bucket_id),
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }
@@ -372,12 +368,12 @@ impl NativeInvocation for WorktopAssertContainsNonFungiblesInvocation {
 }
 
 impl NativeExecutable for WorktopDrainInvocation {
-    type NativeOutput = Vec<radix_engine_lib::resource::Bucket>;
+    type NativeOutput = Vec<Bucket>;
 
     fn execute<Y>(
         _input: Self,
         system_api: &mut Y,
-    ) -> Result<(Vec<radix_engine_lib::resource::Bucket>, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Vec<Bucket>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -407,7 +403,7 @@ impl NativeExecutable for WorktopDrainInvocation {
             let bucket_id = system_api
                 .create_node(RENode::Bucket(BucketSubstate::new(resource)))?
                 .into();
-            buckets.push(radix_engine_lib::resource::Bucket(bucket_id));
+            buckets.push(Bucket(bucket_id));
             nodes_to_move.push(RENodeId::Bucket(bucket_id));
         }
 

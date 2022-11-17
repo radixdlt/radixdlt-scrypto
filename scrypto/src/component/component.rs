@@ -5,7 +5,6 @@ use radix_engine_lib::engine::types::{
     ScryptoReceiver, SubstateOffset,
 };
 use radix_engine_lib::model::*;
-use radix_engine_lib::resource::AccessRules;
 
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;

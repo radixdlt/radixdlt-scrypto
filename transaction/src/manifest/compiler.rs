@@ -41,9 +41,7 @@ mod tests {
         NativeFunctionIdent, ResourceManagerFunction, ScryptoMethodIdent, ScryptoReceiver,
     };
     use radix_engine_lib::math::{Decimal, PreciseDecimal};
-    use radix_engine_lib::resource::{
-        AccessRule, MintParams, Mutability, NonFungibleId, ResourceMethodAuthKey, ResourceType,
-    };
+    use radix_engine_lib::model::*;
     use sbor::rust::collections::*;
     use sbor::rust::str::FromStr;
     use scrypto::args;
@@ -103,7 +101,7 @@ mod tests {
                         receiver: ScryptoReceiver::Global(component2),
                         method_name: "buy_gumball".to_string(),
                     },
-                    args: args!(radix_engine_lib::resource::Bucket(512))
+                    args: args!(Bucket(512))
                 },
                 Instruction::AssertWorktopContainsByAmount {
                     amount: Decimal::from(3),

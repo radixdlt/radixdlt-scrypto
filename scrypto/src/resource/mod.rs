@@ -1,7 +1,6 @@
 mod auth_zone;
 pub mod bucket;
 pub mod non_fungible;
-mod non_fungible_data;
 mod proof;
 mod proof_rule;
 mod resource_builder;
@@ -13,7 +12,6 @@ mod worktop;
 pub use auth_zone::*;
 pub use bucket::*;
 pub use non_fungible::NonFungible;
-pub use non_fungible_data::NonFungibleData;
 pub use proof::*;
 pub use proof_rule::*;
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};

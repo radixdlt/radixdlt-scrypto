@@ -33,7 +33,7 @@ where
                     package_address,
                     "Fee",
                     "new",
-                    args!(radix_engine_lib::resource::Bucket(bucket_id)),
+                    args!(Bucket(bucket_id)),
                 );
                 builder
             })

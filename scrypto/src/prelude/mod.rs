@@ -23,7 +23,6 @@ pub use radix_engine_lib::math::integer::{
     CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedPow, CheckedRem, CheckedSub,
 };
 pub use radix_engine_lib::math::*;
-pub use radix_engine_lib::resource::*;
 pub use sbor::rust::borrow::ToOwned;
 pub use sbor::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 pub use sbor::rust::str::FromStr;

@@ -1,9 +1,5 @@
 use radix_engine_lib::math::Decimal;
-use radix_engine_lib::resource::ResourceMethodAuthKey::*;
-use radix_engine_lib::resource::{
-    AccessRule, MintParams, Mutability, NonFungibleId, ResourceAddress, ResourceMethodAuthKey,
-    ResourceType, LOCKED,
-};
+use radix_engine_lib::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
@@ -120,7 +116,7 @@ impl FungibleResourceBuilder {
     pub fn initial_supply<T: Into<Decimal>>(
         &self,
         amount: T,
-    ) -> radix_engine_lib::resource::Bucket {
+    ) -> Bucket {
         self.build(Some(MintParams::fungible(amount))).1.unwrap()
     }
 
@@ -132,7 +128,7 @@ impl FungibleResourceBuilder {
     fn build(
         &self,
         mint_params: Option<MintParams>,
-    ) -> (ResourceAddress, Option<radix_engine_lib::resource::Bucket>) {
+    ) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
         if !authorization.contains_key(&Withdraw) {
             authorization.insert(Withdraw, (rule!(allow_all), LOCKED));
@@ -227,7 +223,7 @@ impl NonFungibleResourceBuilder {
     ///         (NftKey::from(2u128), "another_immutable_part", "another_mutable_part"),
     ///     ]);
     /// ```
-    pub fn initial_supply<T, V>(&self, entries: T) -> radix_engine_lib::resource::Bucket
+    pub fn initial_supply<T, V>(&self, entries: T) -> Bucket
     where
         T: IntoIterator<Item = (NonFungibleId, V)>,
         V: NonFungibleData,
@@ -250,7 +246,7 @@ impl NonFungibleResourceBuilder {
     fn build(
         &self,
         mint_params: Option<MintParams>,
-    ) -> (ResourceAddress, Option<radix_engine_lib::resource::Bucket>) {
+    ) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
         if !authorization.contains_key(&Withdraw) {
             authorization.insert(Withdraw, (rule!(allow_all), LOCKED));

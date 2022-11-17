@@ -95,7 +95,7 @@ pub enum Command {
     CallMethod(CallMethod),
     ExportAbi(ExportAbi),
     GenerateKeyPair(GenerateKeyPair),
-    Mint(Mint),
+    Mint(crate::resim::cmd_mint::Mint),
     NewAccount(NewAccount),
     NewBadgeFixed(NewBadgeFixed),
     NewBadgeMutable(NewBadgeMutable),

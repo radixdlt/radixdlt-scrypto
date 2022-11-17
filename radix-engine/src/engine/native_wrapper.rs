@@ -9,27 +9,6 @@ use radix_engine_lib::engine::types::{
     ResourceManagerMethod, TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
 use radix_engine_lib::model::*;
-use radix_engine_lib::resource::{
-    BucketCreateProofInvocation,
-    BucketGetAmountInvocation, BucketGetNonFungibleIdsInvocation,
-    BucketGetResourceAddressInvocation, BucketPutInvocation, BucketTakeInvocation,
-    BucketTakeNonFungiblesInvocation, ProofCloneInvocation, ProofGetAmountInvocation,
-    ProofGetNonFungibleIdsInvocation, ProofGetResourceAddressInvocation,
-    ResourceManagerBucketBurnInvocation, ResourceManagerBurnInvocation,
-    ResourceManagerCreateBucketInvocation, ResourceManagerCreateInvocation,
-    ResourceManagerCreateVaultInvocation, ResourceManagerGetMetadataInvocation,
-    ResourceManagerGetNonFungibleInvocation, ResourceManagerGetResourceTypeInvocation,
-    ResourceManagerGetTotalSupplyInvocation, ResourceManagerLockAuthInvocation,
-    ResourceManagerMintInvocation, ResourceManagerNonFungibleExistsInvocation,
-    ResourceManagerUpdateAuthInvocation, ResourceManagerUpdateMetadataInvocation,
-    ResourceManagerUpdateNonFungibleDataInvocation, VaultCreateProofByAmountInvocation,
-    VaultCreateProofByIdsInvocation, VaultCreateProofInvocation, VaultGetAmountInvocation,
-    VaultGetNonFungibleIdsInvocation, VaultGetResourceAddressInvocation, VaultLockFeeInvocation,
-    VaultPutInvocation, VaultTakeInvocation, VaultTakeNonFungiblesInvocation,
-    WorktopAssertContainsAmountInvocation, WorktopAssertContainsInvocation,
-    WorktopAssertContainsNonFungiblesInvocation, WorktopDrainInvocation, WorktopPutInvocation,
-    WorktopTakeAllInvocation, WorktopTakeAmountInvocation, WorktopTakeNonFungiblesInvocation,
-};
 
 // TODO: Cleanup
 pub fn parse_and_invoke_native_fn<'a, Y>(

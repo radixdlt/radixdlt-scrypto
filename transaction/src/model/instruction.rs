@@ -4,7 +4,7 @@ use radix_engine_lib::engine::types::{
     ScryptoMethodIdent,
 };
 use radix_engine_lib::math::Decimal;
-use radix_engine_lib::resource::{NonFungibleId, ResourceAddress};
+use radix_engine_lib::model::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use scrypto::scrypto;

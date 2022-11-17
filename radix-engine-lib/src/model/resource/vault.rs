@@ -12,7 +12,7 @@ use crate::abi::*;
 use crate::data::ScryptoCustomTypeId;
 use crate::engine::{api::*, scrypto_env::*, types::*};
 use crate::math::*;
-use crate::resource::*;
+use crate::model::*;
 use crate::scrypto;
 use crate::scrypto_type;
 

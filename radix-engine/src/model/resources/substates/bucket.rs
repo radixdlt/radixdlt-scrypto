@@ -4,7 +4,7 @@ use crate::model::{
 };
 use crate::types::*;
 use radix_engine_lib::engine::types::BucketId;
-use radix_engine_lib::resource::ResourceType;
+use radix_engine_lib::model::*;
 
 /// A transient resource container.
 #[derive(Debug)]

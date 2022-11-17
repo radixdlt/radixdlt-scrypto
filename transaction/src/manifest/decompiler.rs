@@ -5,10 +5,7 @@ use radix_engine_lib::engine::types::{
     BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
     ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
 };
-use radix_engine_lib::resource::{
-    MintParams, ResourceManagerBurnInvocation, ResourceManagerCreateInvocation,
-    ResourceManagerMintInvocation,
-};
+use radix_engine_lib::model::*;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use sbor::{encode_any, SborValue};
@@ -538,7 +535,6 @@ mod tests {
     use crate::manifest::*;
     use radix_engine_lib::core::NetworkDefinition;
     use radix_engine_lib::engine::types::ResourceManagerFunction;
-    use radix_engine_lib::resource::{AccessRule, Mutability, ResourceMethodAuthKey, ResourceType};
     use scrypto::buffer::scrypto_encode;
     use scrypto::scrypto;
 

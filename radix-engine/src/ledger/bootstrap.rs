@@ -14,9 +14,6 @@ use radix_engine_lib::engine::types::{
     EpochManagerFunction, GlobalAddress, NativeFunctionIdent, RENodeId, ResourceManagerFunction,
     ResourceManagerOffset, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset,
 };
-use radix_engine_lib::resource::{
-    AccessRule, Bucket, MintParams, Mutability, ResourceMethodAuthKey, LOCKED,
-};
 use scrypto::rule;
 
 use transaction::model::{Instruction, SystemTransaction, TransactionManifest};

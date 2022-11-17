@@ -24,12 +24,12 @@ pub enum AuthZoneError {
 }
 
 impl NativeExecutable for AuthZonePopInvocation {
-    type NativeOutput = radix_engine_lib::resource::Proof;
+    type NativeOutput = Proof;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -52,7 +52,7 @@ impl NativeExecutable for AuthZonePopInvocation {
         let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
 
         Ok((
-            radix_engine_lib::resource::Proof(proof_id),
+            Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
         ))
     }
@@ -110,12 +110,12 @@ impl NativeInvocation for AuthZonePushInvocation {
 }
 
 impl NativeExecutable for AuthZoneCreateProofInvocation {
-    type NativeOutput = radix_engine_lib::resource::Proof;
+    type NativeOutput = Proof;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -150,7 +150,7 @@ impl NativeExecutable for AuthZoneCreateProofInvocation {
         let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
 
         Ok((
-            radix_engine_lib::resource::Proof(proof_id),
+            Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
         ))
     }
@@ -169,12 +169,12 @@ impl NativeInvocation for AuthZoneCreateProofInvocation {
 }
 
 impl NativeExecutable for AuthZoneCreateProofByAmountInvocation {
-    type NativeOutput = radix_engine_lib::resource::Proof;
+    type NativeOutput = Proof;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -210,7 +210,7 @@ impl NativeExecutable for AuthZoneCreateProofByAmountInvocation {
         let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
 
         Ok((
-            radix_engine_lib::resource::Proof(proof_id),
+            Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
         ))
     }
@@ -229,12 +229,12 @@ impl NativeInvocation for AuthZoneCreateProofByAmountInvocation {
 }
 
 impl NativeExecutable for AuthZoneCreateProofByIdsInvocation {
-    type NativeOutput = radix_engine_lib::resource::Proof;
+    type NativeOutput = Proof;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(radix_engine_lib::resource::Proof, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -270,7 +270,7 @@ impl NativeExecutable for AuthZoneCreateProofByIdsInvocation {
         let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
 
         Ok((
-            radix_engine_lib::resource::Proof(proof_id),
+            Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
         ))
     }
@@ -317,12 +317,12 @@ impl NativeInvocation for AuthZoneClearInvocation {
 }
 
 impl NativeExecutable for AuthZoneDrainInvocation {
-    type NativeOutput = Vec<radix_engine_lib::resource::Proof>;
+    type NativeOutput = Vec<Proof>;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
-    ) -> Result<(Vec<radix_engine_lib::resource::Proof>, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Vec<Proof>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -337,11 +337,11 @@ impl NativeExecutable for AuthZoneDrainInvocation {
             proofs
         };
 
-        let mut proof_ids: Vec<radix_engine_lib::resource::Proof> = Vec::new();
+        let mut proof_ids: Vec<Proof> = Vec::new();
         let mut nodes_to_move = Vec::new();
         for proof in proofs {
             let proof_id: ProofId = system_api.create_node(RENode::Proof(proof))?.into();
-            proof_ids.push(radix_engine_lib::resource::Proof(proof_id));
+            proof_ids.push(Proof(proof_id));
             nodes_to_move.push(RENodeId::Proof(proof_id));
         }
 

@@ -5,7 +5,6 @@ use radix_engine::ledger::{
 };
 use radix_engine::types::*;
 use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::resource::AccessRule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::AuthModule;

@@ -87,7 +87,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 builder.call_method(
                     account,
                     "deposit",
-                    args!(radix_engine_lib::resource::Bucket(bucket_id)),
+                    args!(Bucket(bucket_id)),
                 )
             })
             .call_method(

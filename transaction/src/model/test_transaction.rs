@@ -1,6 +1,6 @@
 use radix_engine_lib::core::NetworkDefinition;
 use radix_engine_lib::crypto::{EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature};
-use radix_engine_lib::resource::NonFungibleAddress;
+use radix_engine_lib::model::*;
 use sbor::rust::vec::Vec;
 use std::collections::BTreeSet;
 

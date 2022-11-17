@@ -7,7 +7,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::data::ScryptoCustomTypeId;
-use crate::resource::*;
+use crate::model::*;
 use crate::scrypto_type;
 
 /// Identifier for a non-fungible unit.

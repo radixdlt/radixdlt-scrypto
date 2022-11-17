@@ -7,7 +7,6 @@ use crate::data::*;
 use crate::engine::types::*;
 use crate::math::{Decimal, PreciseDecimal};
 use crate::model::*;
-use crate::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
 use utils::misc::copy_u8_array;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

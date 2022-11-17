@@ -2,8 +2,7 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;
 
 use crate::math::*;
-use crate::resource::non_fungible_data::NonFungibleData;
-use crate::resource::*;
+use crate::model::*;
 use crate::scrypto;
 
 /// Represents the minting config
