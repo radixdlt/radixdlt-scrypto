@@ -29,4 +29,4 @@ pub use sbor::rust::string::String;
 pub use sbor::rust::string::ToString;
 pub use sbor::rust::vec;
 pub use sbor::rust::vec::Vec;
-pub use sbor::{Decode, Encode, TypeId};
+pub use sbor::{Decode, Encode, TypeId, encode_any, decode_any, DecodeError};

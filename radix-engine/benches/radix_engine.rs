@@ -8,6 +8,7 @@ use radix_engine::wasm::WasmInstrumenter;
 use radix_engine::wasm::{DefaultWasmEngine, InstructionCostRules, WasmMeteringConfig};
 use radix_engine_lib::core::NetworkDefinition;
 use radix_engine_lib::dec;
+use radix_engine_lib::data::*;
 use scrypto::resource::non_fungible::FromPublicKey;
 use scrypto::{access_rule_node, args, rule};
 use transaction::builder::ManifestBuilder;

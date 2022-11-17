@@ -9,6 +9,7 @@ use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
 use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_lib::data::*;
 use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;

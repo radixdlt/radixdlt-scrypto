@@ -1,6 +1,7 @@
 use radix_engine::engine::{KernelError, ModuleError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use radix_engine_lib::data::*;
 use radix_engine_lib::core::NetworkDefinition;
 use scrypto::resource::non_fungible::FromPublicKey;
 use scrypto_unit::*;

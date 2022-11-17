@@ -13,6 +13,7 @@ use std::mem;
 use transaction::errors::IdAllocationError;
 use transaction::model::AuthZoneParams;
 use transaction::validation::*;
+use radix_engine_lib::data::{ScryptoCustomTypeId, ScryptoCustomValue};
 
 use crate::engine::call_frame::RENodeLocation;
 use crate::engine::system_api::Invokable;

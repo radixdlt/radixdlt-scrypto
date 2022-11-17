@@ -14,7 +14,9 @@ use radix_engine_lib::engine::types::{
     ResourceManagerOffset, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset,
 };
 use radix_engine_lib::model::*;
+use radix_engine_lib::data::{ScryptoCustomTypeId, ScryptoCustomValue};
 use scrypto::rule;
+use sbor::*;
 
 use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};

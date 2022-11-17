@@ -42,8 +42,10 @@ mod tests {
     };
     use radix_engine_lib::math::{Decimal, PreciseDecimal};
     use radix_engine_lib::model::*;
+    use radix_engine_lib::data::*;
     use sbor::rust::collections::*;
     use sbor::rust::str::FromStr;
+    use sbor::*;
     use scrypto::args;
     use scrypto::core::Expression;
 
