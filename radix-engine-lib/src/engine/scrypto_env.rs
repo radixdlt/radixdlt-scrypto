@@ -1,4 +1,3 @@
-use crate::component::*;
 use crate::engine::types::*;
 use crate::model::*;
 use crate::resource::*;

@@ -1,9 +1,6 @@
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::types::*;
-use radix_engine_lib::component::{
-    PackagePublishInvocation,
-};
 use radix_engine_lib::data::IndexedScryptoValue;
 use radix_engine_lib::engine::api::SysInvokableNative;
 use radix_engine_lib::engine::types::{

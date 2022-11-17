@@ -5,7 +5,6 @@ use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::component::{PackageAddress};
 use crate::core::Expression;
 use crate::crypto::Blob;
 use crate::data::*;

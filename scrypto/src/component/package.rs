@@ -1,4 +1,4 @@
-use radix_engine_lib::component::PackageAddress;
+use radix_engine_lib::model::*;
 use sbor::rust::vec::Vec;
 use sbor::*;
 

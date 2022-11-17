@@ -1,5 +1,4 @@
 use super::*;
-use crate::component::*;
 use crate::model::*;
 use crate::scrypto;
 

@@ -17,7 +17,6 @@ pub use num_traits::{
     sign::Signed,
 };
 pub use radix_engine_lib::model::*;
-pub use radix_engine_lib::component::*;
 pub use radix_engine_lib::crypto::*;
 pub use radix_engine_lib::data::*;
 pub use radix_engine_lib::math::integer::{

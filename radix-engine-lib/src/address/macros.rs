@@ -4,7 +4,7 @@ macro_rules! construct_address {
         ::radix_engine_lib::resource::ResourceAddress::Normal([$($bytes),*])
     };
     (EntityType::Package, $($bytes:expr),*) => {
-        ::radix_engine_lib::component::PackageAddress::Normal([$($bytes),*])
+        ::radix_engine_lib::model::PackageAddress::Normal([$($bytes),*])
     };
     (EntityType::NormalComponent, $($bytes:expr),*) => {
         ::radix_engine_lib::model::ComponentAddress::Normal([$($bytes),*])

@@ -1,4 +1,3 @@
-use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::engine::actor::ScryptoActor;
 use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
 use radix_engine_lib::engine::types::{

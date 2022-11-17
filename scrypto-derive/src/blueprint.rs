@@ -473,7 +473,7 @@ fn generate_stubs(
         }
 
         impl ::scrypto::component::LocalComponent for #value_ident {
-            fn package_address(&self) -> ::scrypto::engine_lib::component::PackageAddress {
+            fn package_address(&self) -> ::scrypto::model::PackageAddress {
                 self.component.package_address()
             }
             fn blueprint_name(&self) -> String {
@@ -663,7 +663,7 @@ mod tests {
                 }
 
                 impl ::scrypto::component::LocalComponent for TestComponent {
-                    fn package_address(&self) -> ::scrypto::engine_lib::component::PackageAddress {
+                    fn package_address(&self) -> ::scrypto::model::PackageAddress {
                         self.component.package_address()
                     }
                     fn blueprint_name(&self) -> String {
@@ -746,7 +746,7 @@ mod tests {
                 }
 
                 impl ::scrypto::component::LocalComponent for TestComponent {
-                    fn package_address(&self) -> ::scrypto::engine_lib::component::PackageAddress {
+                    fn package_address(&self) -> ::scrypto::model::PackageAddress {
                         self.component.package_address()
                     }
                     fn blueprint_name(&self) -> String {

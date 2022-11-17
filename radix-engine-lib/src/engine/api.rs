@@ -1,4 +1,3 @@
-use crate::component::*;
 use crate::crypto::Hash;
 use crate::data::ScryptoCustomTypeId;
 use crate::engine::actor::ScryptoActor;

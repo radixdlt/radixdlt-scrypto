@@ -1,5 +1,4 @@
 pub use radix_engine_lib::address::{AddressError, Bech32Decoder, Bech32Encoder};
-pub use radix_engine_lib::component::PackageAddress;
 pub use radix_engine_lib::crypto::Blob;
 pub use radix_engine_lib::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,

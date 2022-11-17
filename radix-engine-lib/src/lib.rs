@@ -2,7 +2,6 @@ pub mod abi {
     pub use scrypto_abi::*;
 }
 pub mod address;
-pub mod component;
 pub mod core;
 pub mod model;
 

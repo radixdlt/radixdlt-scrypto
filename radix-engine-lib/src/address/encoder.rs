@@ -7,7 +7,6 @@ use utils::misc::combine;
 use super::entity::EntityType;
 use super::errors::AddressError;
 use super::hrpset::HrpSet;
-use crate::component::*;
 use crate::core::NetworkDefinition;
 use crate::model::*;
 use crate::resource::ResourceAddress;

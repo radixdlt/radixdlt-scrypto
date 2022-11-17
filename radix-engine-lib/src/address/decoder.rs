@@ -1,6 +1,5 @@
 use sbor::rust::vec::Vec;
 
-use crate::component::*;
 use crate::core::NetworkDefinition;
 use crate::model::*;
 use crate::resource::ResourceAddress;

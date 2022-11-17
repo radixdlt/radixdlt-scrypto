@@ -1,4 +1,4 @@
-use radix_engine_lib::component::PackagePublishInvocation;
+use radix_engine_lib::model::*;
 use radix_engine_lib::data::{IndexedScryptoValue, ValueReplacingError};
 use radix_engine_lib::engine::api::{SysInvokableNative, Syscalls};
 use radix_engine_lib::engine::types::{

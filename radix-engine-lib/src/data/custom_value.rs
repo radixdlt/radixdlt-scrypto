@@ -1,7 +1,6 @@
 use sbor::type_id::*;
 use sbor::*;
 
-use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::data::*;

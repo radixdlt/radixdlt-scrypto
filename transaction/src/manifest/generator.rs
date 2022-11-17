@@ -1,6 +1,5 @@
 use radix_engine_lib::address::Bech32Decoder;
 use radix_engine_lib::model::*;
-use radix_engine_lib::component::PackageAddress;
 use radix_engine_lib::crypto::{
     Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
     EddsaEd25519Signature, Hash,
