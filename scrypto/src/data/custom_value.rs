@@ -146,7 +146,7 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
         }
     }
 
-    fn decode(
+    fn decode_with_type_id(
         decoder: &mut ScryptoDecoder,
         type_id: ScryptoCustomTypeId,
     ) -> Result<Self, DecodeError> {
