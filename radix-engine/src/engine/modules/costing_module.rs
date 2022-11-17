@@ -398,6 +398,16 @@ impl<R: FeeReserve> Module<R> for CostingModule {
         }
     }
 
+    fn post_execute_invocation(
+        &mut self,
+        _update: &CallFrameUpdate,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
     fn on_finished_processing(
         &mut self,
         _heap: &mut Heap,
