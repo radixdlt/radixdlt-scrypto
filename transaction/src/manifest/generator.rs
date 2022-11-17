@@ -1196,7 +1196,7 @@ mod tests {
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::core::NetworkDefinition;
-    use utils::pdec;
+    use radix_engine_interface::pdec;
 
     #[macro_export]
     macro_rules! generate_value_ok {
