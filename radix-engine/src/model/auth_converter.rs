@@ -1,4 +1,6 @@
-use radix_engine_lib::data::{IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue};
+use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue};
+use radix_engine_interface::model::*;
+
 use sbor::SborTypeId;
 
 use crate::model::method_authorization::{
@@ -7,7 +9,6 @@ use crate::model::method_authorization::{
 };
 use crate::model::MethodAuthorization;
 use crate::types::*;
-use radix_engine_lib::model::*;
 
 fn soft_to_hard_decimal(
     schema: &Type,

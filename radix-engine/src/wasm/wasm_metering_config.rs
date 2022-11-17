@@ -1,6 +1,6 @@
 use super::InstructionCostRules;
 use crate::types::*;
-use radix_engine_lib::crypto::hash;
+use radix_engine_interface::crypto::hash;
 
 #[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]

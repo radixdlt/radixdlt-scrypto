@@ -1,4 +1,4 @@
-use radix_engine_lib::data::ScryptoValueDecodeError;
+use radix_engine_interface::data::ScryptoValueDecodeError;
 use wasmi::HostError;
 
 use crate::fee::FeeReserveError;

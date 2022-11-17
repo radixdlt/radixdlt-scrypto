@@ -3,9 +3,9 @@ use crate::fee::*;
 use crate::model::InvokeError;
 use crate::types::{scrypto_decode, scrypto_encode, Encode, ScryptoInvocation};
 use crate::wasm::*;
-use radix_engine_lib::data::{IndexedScryptoValue, ScryptoCustomTypeId};
-use radix_engine_lib::engine::api::{EngineApi, SysInvokableNative};
-use radix_engine_lib::engine::wasm_input::{
+use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
+use radix_engine_interface::engine::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::engine::wasm_input::{
     AuthZoneMethodInvocation, BucketMethodInvocation, ComponentMethodInvocation,
     EpochManagerFunctionInvocation, EpochManagerMethodInvocation, NativeFnInvocation,
     NativeFunctionInvocation, NativeMethodInvocation, PackageFunctionInvocation,

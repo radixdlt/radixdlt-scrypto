@@ -1,6 +1,6 @@
 use moka::sync::Cache;
-use radix_engine_lib::crypto::Hash;
-use radix_engine_lib::data::IndexedScryptoValue;
+use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::data::IndexedScryptoValue;
 use std::sync::Arc;
 use wasmi::*;
 

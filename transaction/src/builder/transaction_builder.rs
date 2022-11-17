@@ -1,5 +1,5 @@
-use radix_engine_lib::crypto::{Signature, SignatureWithPublicKey};
-use radix_engine_lib::data::scrypto_encode;
+use radix_engine_interface::crypto::{Signature, SignatureWithPublicKey};
+use radix_engine_interface::data::scrypto_encode;
 
 use crate::{model::*, signing::Signer};
 
@@ -79,7 +79,7 @@ impl TransactionBuilder {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine_lib::core::NetworkDefinition;
+    use radix_engine_interface::core::NetworkDefinition;
 
     use super::*;
     use crate::builder::*;

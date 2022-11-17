@@ -59,7 +59,7 @@ use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::*;
 use radix_engine_constants::*;
-use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use scrypto::abi;
 use scrypto::prelude::hash;

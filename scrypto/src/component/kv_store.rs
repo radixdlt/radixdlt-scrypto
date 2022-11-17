@@ -1,7 +1,9 @@
-use radix_engine_lib::engine::api::EngineApi;
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::data::*;
+use radix_engine_interface::engine::api::EngineApi;
+use radix_engine_interface::engine::types::{
     KeyValueStoreId, KeyValueStoreOffset, RENodeId, ScryptoRENode, SubstateOffset,
 };
+
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
@@ -15,7 +17,6 @@ use utils::misc::copy_u8_array;
 use crate::abi::*;
 use crate::core::{DataRef, DataRefMut};
 use crate::engine::scrypto_env::ScryptoEnv;
-use radix_engine_lib::data::*;
 
 /// A scalable key-value map which loads entries on demand.
 pub struct KeyValueStore<

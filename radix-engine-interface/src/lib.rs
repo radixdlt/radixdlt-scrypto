@@ -26,4 +26,4 @@ pub use radix_engine_derive::{scrypto, Describe};
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
-extern crate self as radix_engine_lib;
+extern crate self as radix_engine_interface;

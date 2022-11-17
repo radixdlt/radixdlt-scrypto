@@ -3,14 +3,14 @@ use crate::model::{
     convert, InvokeError, MethodAuthorization, NonFungible, Resource, ResourceManagerError,
 };
 use crate::types::*;
-use radix_engine_lib::data::IndexedScryptoValue;
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::engine::types::{
     BucketMethod, NonFungibleStoreId, ResourceManagerMethod, VaultMethod,
 };
-use radix_engine_lib::math::Decimal;
-use radix_engine_lib::model::AccessRule::*;
-use radix_engine_lib::model::ResourceMethodAuthKey::*;
-use radix_engine_lib::model::*;
+use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::AccessRule::*;
+use radix_engine_interface::model::ResourceMethodAuthKey::*;
+use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]

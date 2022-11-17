@@ -1,11 +1,11 @@
-use radix_engine_lib::crypto::Hash;
-use radix_engine_lib::data::ScryptoCustomTypeId;
-use radix_engine_lib::engine::api::{EngineApi, ScryptoNativeInvocation, SysNativeInvokable};
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::data::ScryptoCustomTypeId;
+use radix_engine_interface::engine::api::{EngineApi, ScryptoNativeInvocation, SysNativeInvokable};
+use radix_engine_interface::engine::types::{
     Level, LockHandle, RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoRENode, SubstateOffset,
 };
-use radix_engine_lib::engine::wasm_input::RadixEngineInput;
+use radix_engine_interface::engine::wasm_input::RadixEngineInput;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -149,7 +149,7 @@ macro_rules! scrypto_env_native_fn {
         $(
             $vis $fn $fn_name ($($args)*) -> $rtn {
                 let mut env = crate::engine::scrypto_env::ScryptoEnv;
-                radix_engine_lib::engine::api::SysNativeInvokable::sys_invoke(&mut env, $arg).unwrap()
+                radix_engine_interface::engine::api::SysNativeInvokable::sys_invoke(&mut env, $arg).unwrap()
             }
         )+
     };
@@ -160,20 +160,20 @@ macro_rules! sys_env_native_fn {
     ($vis:vis $fn:ident $fn_name:ident ($($args:tt)+) -> $rtn:ty { $invocation:ident { $($invocation_args:tt)* } }) => {
         $vis $fn $fn_name<Y, E>($($args)*, env: &mut Y) -> Result<$rtn, E>
         where
-            Y: radix_engine_lib::engine::api::SysNativeInvokable<$invocation, E>,
-            E: sbor::rust::fmt::Debug + TypeId<radix_engine_lib::data::ScryptoCustomTypeId> + Decode<radix_engine_lib::data::ScryptoCustomTypeId>,
+            Y: radix_engine_interface::engine::api::SysNativeInvokable<$invocation, E>,
+            E: sbor::rust::fmt::Debug + TypeId<radix_engine_interface::data::ScryptoCustomTypeId> + Decode<radix_engine_interface::data::ScryptoCustomTypeId>,
         {
-            radix_engine_lib::engine::api::SysNativeInvokable::sys_invoke(env, $invocation { $($invocation_args)* })
+            radix_engine_interface::engine::api::SysNativeInvokable::sys_invoke(env, $invocation { $($invocation_args)* })
         }
     };
 
     ($vis:vis $fn:ident $fn_name:ident () -> $rtn:ty { $invocation:ident { $($invocation_args:tt)* } }) => {
         $vis $fn $fn_name<Y, E>(env: &mut Y) -> Result<$rtn, E>
         where
-            Y: radix_engine_lib::engine::api::SysNativeInvokable<$invocation, E>,
-            E: sbor::rust::fmt::Debug + TypeId<radix_engine_lib::data::ScryptoCustomTypeId> + Decode<radix_engine_lib::data::ScryptoCustomTypeId>,
+            Y: radix_engine_interface::engine::api::SysNativeInvokable<$invocation, E>,
+            E: sbor::rust::fmt::Debug + TypeId<radix_engine_interface::data::ScryptoCustomTypeId> + Decode<radix_engine_interface::data::ScryptoCustomTypeId>,
         {
-            radix_engine_lib::engine::api::SysNativeInvokable::sys_invoke(env, $invocation { $($invocation_args)* })
+            radix_engine_interface::engine::api::SysNativeInvokable::sys_invoke(env, $invocation { $($invocation_args)* })
         }
     };
 }

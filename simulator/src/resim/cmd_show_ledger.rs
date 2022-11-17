@@ -1,6 +1,6 @@
 use clap::Parser;
 use colored::*;
-use radix_engine_lib::address::Bech32Encoder;
+use radix_engine_interface::address::Bech32Encoder;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use utils::misc::ContextualDisplay;
 

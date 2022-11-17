@@ -1,4 +1,4 @@
-use radix_engine_lib::model::*;
+use radix_engine_interface::model::*;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 use scrypto::scrypto_env_native_fn;

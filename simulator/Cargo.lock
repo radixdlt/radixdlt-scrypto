@@ -1008,7 +1008,7 @@ dependencies = [
  "moka",
  "parity-wasm",
  "radix-engine-constants",
- "radix-engine-lib",
+ "radix-engine-interface",
  "sbor",
  "scrypto",
  "transaction",
@@ -1037,7 +1037,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-lib"
+name = "radix-engine-interface"
 version = "0.7.0"
 dependencies = [
  "bech32",
@@ -1060,7 +1060,7 @@ name = "radix-engine-stores"
 version = "0.7.0"
 dependencies = [
  "radix-engine",
- "radix-engine-lib",
+ "radix-engine-interface",
  "rocksdb",
  "sbor",
 ]
@@ -1270,7 +1270,7 @@ dependencies = [
  "num-traits",
  "paste",
  "radix-engine-derive",
- "radix-engine-lib",
+ "radix-engine-interface",
  "sbor",
  "scrypto-abi",
  "scrypto-derive",
@@ -1446,7 +1446,7 @@ dependencies = [
  "hex",
  "radix-engine",
  "radix-engine-constants",
- "radix-engine-lib",
+ "radix-engine-interface",
  "radix-engine-stores",
  "rand 0.8.5",
  "regex",
@@ -1647,7 +1647,7 @@ dependencies = [
  "clap",
  "ed25519-dalek",
  "hex",
- "radix-engine-lib",
+ "radix-engine-interface",
  "sbor",
  "scrypto",
  "secp256k1",

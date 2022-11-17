@@ -6,7 +6,7 @@ use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::InstrumentedCode;
 use radix_engine::wasm::WasmEngine;
 use radix_engine::wasm::WasmValidator;
-use radix_engine_lib::crypto::hash;
+use radix_engine_interface::crypto::hash;
 
 fn bench_wasm_validation(c: &mut Criterion) {
     let code = include_bytes!("../../assets/account.wasm");

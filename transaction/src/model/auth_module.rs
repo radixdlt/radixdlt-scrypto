@@ -1,5 +1,5 @@
-use radix_engine_lib::crypto::PublicKey;
-use radix_engine_lib::model::*;
+use radix_engine_interface::crypto::PublicKey;
+use radix_engine_interface::model::*;
 use scrypto::constants::SYSTEM_TOKEN;
 use scrypto::resource::non_fungible::FromPublicKey;
 

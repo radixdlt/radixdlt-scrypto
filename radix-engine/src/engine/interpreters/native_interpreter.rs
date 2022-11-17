@@ -1,10 +1,10 @@
 use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
-use radix_engine_lib::data::{IndexedScryptoValue, ScryptoCustomTypeId};
-use radix_engine_lib::engine::api::{EngineApi, SysInvokableNative};
-use radix_engine_lib::engine::types::{NativeFunction, NativeMethod, RENodeId};
-use radix_engine_lib::model::*;
+use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
+use radix_engine_interface::engine::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::engine::types::{NativeFunction, NativeMethod, RENodeId};
+use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
 use sbor::*;
 

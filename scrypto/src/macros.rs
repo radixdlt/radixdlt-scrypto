@@ -35,7 +35,7 @@ macro_rules! args_from_bytes_vec {
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(radix_engine_lib::engine::types::Level::Error, ::sbor::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(radix_engine_interface::engine::types::Level::Error, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -50,7 +50,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(radix_engine_lib::engine::types::Level::Warn, ::sbor::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(radix_engine_interface::engine::types::Level::Warn, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -65,7 +65,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(radix_engine_lib::engine::types::Level::Info, ::sbor::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(radix_engine_interface::engine::types::Level::Info, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -80,7 +80,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(radix_engine_lib::engine::types::Level::Debug, ::sbor::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(radix_engine_interface::engine::types::Level::Debug, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -95,7 +95,7 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(radix_engine_lib::engine::types::Level::Trace, ::sbor::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(radix_engine_interface::engine::types::Level::Trace, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -184,7 +184,7 @@ macro_rules! include_abi {
 ///
 /// # Examples
 /// ```no_run
-/// use radix_engine_lib::address::Bech32Decoder;
+/// use radix_engine_interface::address::Bech32Decoder;
 /// use scrypto::prelude::*;
 ///
 /// external_blueprint! {
@@ -489,33 +489,38 @@ macro_rules! external_component_members {
 macro_rules! scrypto_type {
     // static size
     ($t:ty, $type_id:expr, $schema_type: expr, $size: expr) => {
-        impl TypeId<::scrypto::data::ScryptoCustomTypeId> for $t {
+        impl TypeId<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn type_id() -> SborTypeId<::scrypto::data::ScryptoCustomTypeId> {
+            fn type_id() -> SborTypeId<radix_engine_interface::data::ScryptoCustomTypeId> {
                 SborTypeId::Custom($type_id)
             }
         }
 
-        impl Encode<::scrypto::data::ScryptoCustomTypeId> for $t {
+        impl Encode<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn encode_type_id(encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
+            fn encode_type_id(
+                encoder: &mut Encoder<radix_engine_interface::data::ScryptoCustomTypeId>,
+            ) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
-            fn encode_value(&self, encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
+            fn encode_value(
+                &self,
+                encoder: &mut Encoder<radix_engine_interface::data::ScryptoCustomTypeId>,
+            ) {
                 encoder.write_slice(&self.to_vec());
             }
         }
 
-        impl Decode<::scrypto::data::ScryptoCustomTypeId> for $t {
+        impl Decode<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
             fn check_type_id(
-                decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
+                decoder: &mut Decoder<radix_engine_interface::data::ScryptoCustomTypeId>,
             ) -> Result<(), DecodeError> {
                 decoder.check_type_id(Self::type_id())
             }
 
             fn decode_value(
-                decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
+                decoder: &mut Decoder<radix_engine_interface::data::ScryptoCustomTypeId>,
             ) -> Result<Self, DecodeError> {
                 let slice = decoder.read_slice($size)?;
                 Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
@@ -531,35 +536,40 @@ macro_rules! scrypto_type {
 
     // dynamic size
     ($t:ty, $type_id:expr, $schema_type: expr) => {
-        impl TypeId<::scrypto::data::ScryptoCustomTypeId> for $t {
+        impl TypeId<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn type_id() -> SborTypeId<::scrypto::data::ScryptoCustomTypeId> {
+            fn type_id() -> SborTypeId<radix_engine_interface::data::ScryptoCustomTypeId> {
                 SborTypeId::Custom($type_id)
             }
         }
 
-        impl Encode<::scrypto::data::ScryptoCustomTypeId> for $t {
+        impl Encode<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn encode_type_id(encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
+            fn encode_type_id(
+                encoder: &mut Encoder<radix_engine_interface::data::ScryptoCustomTypeId>,
+            ) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
-            fn encode_value(&self, encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
+            fn encode_value(
+                &self,
+                encoder: &mut Encoder<radix_engine_interface::data::ScryptoCustomTypeId>,
+            ) {
                 let bytes = self.to_vec();
                 encoder.write_size(bytes.len());
                 encoder.write_slice(&bytes);
             }
         }
 
-        impl Decode<::scrypto::data::ScryptoCustomTypeId> for $t {
+        impl Decode<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
             fn check_type_id(
-                decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
+                decoder: &mut Decoder<radix_engine_interface::data::ScryptoCustomTypeId>,
             ) -> Result<(), DecodeError> {
                 decoder.check_type_id(Self::type_id())
             }
 
             fn decode_value(
-                decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
+                decoder: &mut Decoder<radix_engine_interface::data::ScryptoCustomTypeId>,
             ) -> Result<Self, DecodeError> {
                 let len = decoder.read_size()?;
                 let slice = decoder.read_slice(len)?;

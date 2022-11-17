@@ -8,15 +8,15 @@ use crate::model::{
 };
 use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
-use radix_engine_lib::dec;
-use radix_engine_lib::engine::api::SysInvokableNative;
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::dec;
+use radix_engine_interface::engine::api::SysInvokableNative;
+use radix_engine_interface::engine::types::{
     GlobalAddress, NativeFunction, NativeMethod, NonFungibleStoreId, NonFungibleStoreOffset,
     RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset,
     SubstateOffset,
 };
-use radix_engine_lib::math::Decimal;
-use radix_engine_lib::model::*;
+use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::*;
 use scrypto::resource::SysBucket;
 
 /// Represents an error when accessing a bucket.

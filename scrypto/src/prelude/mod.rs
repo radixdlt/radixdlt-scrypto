@@ -16,14 +16,15 @@ pub use num_traits::{
     sign::Signed,
 };
 pub use radix_engine_derive::*;
-pub use radix_engine_lib::crypto::*;
-pub use radix_engine_lib::data::*;
-pub use radix_engine_lib::math::integer::{
+pub use radix_engine_interface::crypto::*;
+pub use radix_engine_interface::data::*;
+pub use radix_engine_interface::math::integer::{
     CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedPow, CheckedRem, CheckedSub,
 };
-pub use radix_engine_lib::math::*;
-pub use radix_engine_lib::model::*;
-pub use radix_engine_lib::{dec, i, pdec};
+pub use radix_engine_interface::math::*;
+pub use radix_engine_interface::model::*;
+pub use radix_engine_interface::{dec, i, pdec};
+
 pub use sbor::rust::borrow::ToOwned;
 pub use sbor::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 pub use sbor::rust::str::FromStr;
@@ -34,5 +35,5 @@ pub use sbor::rust::vec::Vec;
 pub use sbor::{decode_any, encode_any, Decode, DecodeError, Encode, TypeId};
 
 pub use super::radix_engine_derive;
-pub use super::radix_engine_lib;
+pub use super::radix_engine_interface;
 pub use super::scrypto_abi;

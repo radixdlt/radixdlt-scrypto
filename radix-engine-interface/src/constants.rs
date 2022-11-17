@@ -1,5 +1,5 @@
-use radix_engine_lib::model::*;
-use radix_engine_lib::{address, construct_address};
+use crate::model::*;
+use crate::{address, construct_address};
 
 // After changing Radix Engine ID allocation, you will most likely need to update the addresses below.
 //

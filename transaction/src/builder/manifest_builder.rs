@@ -1,15 +1,16 @@
-use radix_engine_lib::address::Bech32Decoder;
-use radix_engine_lib::args;
-use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::crypto::{hash, Blob, Hash};
-use radix_engine_lib::data::*;
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::address::Bech32Decoder;
+use radix_engine_interface::args;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::{hash, Blob, Hash};
+use radix_engine_interface::data::*;
+use radix_engine_interface::engine::types::{
     BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
     ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoPackage, ScryptoReceiver,
 };
-use radix_engine_lib::math::{Decimal, PreciseDecimal};
-use radix_engine_lib::model::*;
+use radix_engine_interface::math::{Decimal, PreciseDecimal};
+use radix_engine_interface::model::*;
+
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;

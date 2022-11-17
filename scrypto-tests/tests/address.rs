@@ -1,12 +1,12 @@
 use scrypto::prelude::{PackageAddress, ResourceAddress};
 
 use bech32::{self, ToBase32, Variant};
-use scrypto::radix_engine_lib::address::{
+use scrypto::radix_engine_interface::address::{
     AddressError, Bech32Decoder, Bech32Encoder, EntityType, ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
     EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID, NORMAL_COMPONENT_ADDRESS_ENTITY_ID,
     PACKAGE_ADDRESS_ENTITY_ID, RESOURCE_ADDRESS_ENTITY_ID,
 };
-use scrypto::radix_engine_lib::core::NetworkDefinition;
+use scrypto::radix_engine_interface::core::NetworkDefinition;
 
 fn generate_u8_array(entity_byte: u8) -> [u8; 27] {
     [

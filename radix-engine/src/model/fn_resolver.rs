@@ -1,5 +1,5 @@
 use crate::types::*;
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::engine::types::{
     AuthZoneMethod, BucketMethod, ComponentMethod, EpochManagerFunction, EpochManagerMethod,
     GlobalAddress, NativeFunction, NativeMethod, PackageFunction, ProofMethod, RENodeId,
     ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,

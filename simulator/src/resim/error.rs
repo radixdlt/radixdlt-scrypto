@@ -5,7 +5,7 @@ use radix_engine::engine::*;
 use radix_engine::model::{ExportError, ExtractAbiError};
 use radix_engine::types::AddressError;
 use radix_engine::wasm::PrepareError;
-use radix_engine_lib::core::ParseNetworkError;
+use radix_engine_interface::core::ParseNetworkError;
 use sbor::*;
 use transaction::errors::*;
 

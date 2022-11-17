@@ -1,6 +1,7 @@
-use radix_engine_lib::address::Bech32Decoder;
-use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::crypto::hash;
+use radix_engine_interface::address::Bech32Decoder;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::hash;
+
 use sbor::rust::collections::HashMap;
 
 use crate::manifest::*;
@@ -36,13 +37,13 @@ pub fn compile(
 mod tests {
     use super::*;
     use crate::model::Instruction;
-    use radix_engine_lib::crypto::Blob;
-    use radix_engine_lib::data::*;
-    use radix_engine_lib::engine::types::{
+    use radix_engine_interface::crypto::Blob;
+    use radix_engine_interface::data::*;
+    use radix_engine_interface::engine::types::{
         NativeFunctionIdent, ResourceManagerFunction, ScryptoMethodIdent, ScryptoReceiver,
     };
-    use radix_engine_lib::math::{Decimal, PreciseDecimal};
-    use radix_engine_lib::model::*;
+    use radix_engine_interface::math::{Decimal, PreciseDecimal};
+    use radix_engine_interface::model::*;
     use sbor::rust::collections::*;
     use sbor::rust::str::FromStr;
     use sbor::*;

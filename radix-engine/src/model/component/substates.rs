@@ -1,6 +1,6 @@
 use crate::model::{convert, MethodAuthorization};
 use crate::types::*;
-use radix_engine_lib::data::IndexedScryptoValue;
+use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct ComponentStateSubstate {

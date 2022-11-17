@@ -1,7 +1,7 @@
 use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::engine::types::{
     AuthZoneOffset, ComponentOffset, GlobalAddress, NativeFunction, NativeMethod, PackageOffset,
     RENodeId, ResourceManagerOffset, SubstateOffset, VaultOffset,
 };

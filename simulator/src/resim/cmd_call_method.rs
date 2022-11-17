@@ -2,8 +2,8 @@
 
 use clap::Parser;
 use radix_engine::types::*;
-use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::data::*;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
 use scrypto::prelude::Expression;
 use transaction::builder::ManifestBuilder;
 

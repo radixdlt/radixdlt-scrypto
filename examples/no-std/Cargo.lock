@@ -234,7 +234,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-lib"
+name = "radix-engine-interface"
 version = "0.7.0"
 dependencies = [
  "bech32",
@@ -295,7 +295,7 @@ dependencies = [
  "num-traits",
  "paste",
  "radix-engine-derive",
- "radix-engine-lib",
+ "radix-engine-interface",
  "sbor",
  "scrypto-abi",
  "scrypto-derive",

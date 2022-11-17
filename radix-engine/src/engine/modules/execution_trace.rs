@@ -2,13 +2,13 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use radix_engine_lib::data::IndexedScryptoValue;
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::engine::types::{
     BucketOffset, ComponentId, NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,
     SubstateId, SubstateOffset, VaultId, VaultMethod, VaultOffset,
 };
-use radix_engine_lib::math::Decimal;
-use radix_engine_lib::model::*;
+use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::*;
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -1,19 +1,20 @@
-use radix_engine_lib::address::Bech32Decoder;
-use radix_engine_lib::crypto::{
+use radix_engine_interface::address::Bech32Decoder;
+use radix_engine_interface::crypto::{
     Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
     EddsaEd25519Signature, Hash,
 };
-use radix_engine_lib::data::{
+use radix_engine_interface::data::{
     args, scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId,
     ScryptoCustomValue, ScryptoTypeId, ScryptoValue,
 };
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::engine::types::{
     BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
     ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoPackage, ScryptoReceiver,
 };
-use radix_engine_lib::math::{Decimal, PreciseDecimal};
-use radix_engine_lib::model::*;
+use radix_engine_interface::math::{Decimal, PreciseDecimal};
+use radix_engine_interface::model::*;
+
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
@@ -1193,8 +1194,8 @@ mod tests {
     use super::*;
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
-    use radix_engine_lib::address::Bech32Decoder;
-    use radix_engine_lib::core::NetworkDefinition;
+    use radix_engine_interface::address::Bech32Decoder;
+    use radix_engine_interface::core::NetworkDefinition;
     use utils::pdec;
 
     #[macro_export]

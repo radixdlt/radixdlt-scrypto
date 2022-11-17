@@ -1,5 +1,5 @@
 use crate::model::InvokeError;
-use radix_engine_lib::data::IndexedScryptoValue;
+use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::boxed::Box;
 
 use crate::wasm::errors::*;

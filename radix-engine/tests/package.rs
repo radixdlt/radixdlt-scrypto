@@ -3,8 +3,8 @@ use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::PackageError;
 use radix_engine::types::*;
 use radix_engine::wasm::*;
-use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::data::*;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

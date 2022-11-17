@@ -29,16 +29,16 @@ pub mod component;
 pub mod core;
 
 pub mod constants {
-    pub use radix_engine_lib::constants::*;
+    pub use radix_engine_interface::constants::*;
 }
 pub mod data {
-    pub use radix_engine_lib::data::*;
+    pub use radix_engine_interface::data::*;
 }
 pub mod math {
-    pub use radix_engine_lib::math::*;
+    pub use radix_engine_interface::math::*;
 }
 pub mod model {
-    pub use radix_engine_lib::model::*;
+    pub use radix_engine_interface::model::*;
 }
 
 /// Radix engine APIs.
@@ -56,7 +56,7 @@ mod macros;
 pub use macros::*;
 
 pub extern crate radix_engine_derive;
-pub extern crate radix_engine_lib;
+pub extern crate radix_engine_interface;
 pub extern crate scrypto_abi;
 pub use radix_engine_derive::{scrypto, Describe};
 

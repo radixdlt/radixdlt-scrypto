@@ -4,10 +4,10 @@ use crate::engine::{
 };
 use crate::model::{BucketSubstate, ProofError, ResourceOperationError};
 use crate::types::*;
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::engine::types::{
     BucketMethod, BucketOffset, GlobalAddress, NativeMethod, RENodeId, SubstateOffset,
 };
-use radix_engine_lib::model::*;
+use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]

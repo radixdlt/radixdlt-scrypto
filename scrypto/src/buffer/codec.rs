@@ -2,7 +2,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::buffer::*;
-use radix_engine_lib::data::*;
+
+use radix_engine_interface::data::*;
 
 /// Encodes a data structure into a Scrypto buffer.
 pub fn scrypto_encode_to_buffer<T: Encode<ScryptoCustomTypeId> + ?Sized>(v: &T) -> *mut u8 {

@@ -246,8 +246,8 @@ fn generate_dispatcher(
                     });
                     stmts.push(parse_quote! {
                         let mut component_data = ::scrypto::core::DataPointer::new(
-                            radix_engine_lib::engine::types::RENodeId::Component(component_id),
-                            radix_engine_lib::engine::types::SubstateOffset::Component(radix_engine_lib::engine::types::ComponentOffset::State),
+                            radix_engine_interface::engine::types::RENodeId::Component(component_id),
+                            radix_engine_interface::engine::types::SubstateOffset::Component(radix_engine_interface::engine::types::ComponentOffset::State),
                         );
                     });
                     stmts.push(stmt);
@@ -600,8 +600,8 @@ mod tests {
                     let actor = ::scrypto::core::Runtime::actor();
                     let (component_id, ..) = actor.as_component();
                     let mut component_data = ::scrypto::core::DataPointer::new(
-                        radix_engine_lib::engine::types::RENodeId::Component(component_id),
-                        radix_engine_lib::engine::types::SubstateOffset::Component(radix_engine_lib::engine::types::ComponentOffset::State),
+                        radix_engine_interface::engine::types::RENodeId::Component(component_id),
+                        radix_engine_interface::engine::types::SubstateOffset::Component(radix_engine_interface::engine::types::ComponentOffset::State),
                     );
                     let state: DataRef<Test_impl::Test> = component_data.get();
 

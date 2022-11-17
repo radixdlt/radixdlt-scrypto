@@ -1,6 +1,6 @@
-use radix_engine_lib::data::{scrypto_decode, scrypto_encode, ScryptoCustomTypeId};
-use radix_engine_lib::engine::api::EngineApi;
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomTypeId};
+use radix_engine_interface::engine::api::EngineApi;
+use radix_engine_interface::engine::types::{
     ComponentOffset, KeyValueStoreOffset, LockHandle, RENodeId, SubstateOffset,
 };
 use sbor::rust::fmt;

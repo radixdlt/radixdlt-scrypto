@@ -7,11 +7,11 @@ use crate::model::{
     HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::engine::types::{
     EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction,
     NativeMethod, RENodeId, SubstateOffset,
 };
-use radix_engine_lib::model::*;
+use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum EpochManagerError {

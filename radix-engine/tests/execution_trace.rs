@@ -2,9 +2,9 @@ use radix_engine::engine::{NativeEvent, SysCallTrace, SysCallTraceOrigin, Tracke
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::LockedAmountOrIds;
 use radix_engine::types::*;
-use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::data::*;
-use radix_engine_lib::engine::types::NativeMethod;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
+use radix_engine_interface::engine::types::NativeMethod;
 use scrypto::resource::non_fungible::FromPublicKey;
 use scrypto_unit::*;
 use std::ops::Add;

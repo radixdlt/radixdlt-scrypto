@@ -1,5 +1,5 @@
 use radix_engine::ledger::*;
-use scrypto::engine_lib::core::NetworkDefinition;
+use radix_engine_interface::core::NetworkDefinition;
 use scrypto::prelude::non_fungible::FromPublicKey;
 use scrypto::prelude::*;
 use scrypto_unit::*;

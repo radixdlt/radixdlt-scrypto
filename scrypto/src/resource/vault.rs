@@ -1,7 +1,7 @@
-use radix_engine_lib::data::ScryptoCustomTypeId;
-use radix_engine_lib::engine::api::{EngineApi, SysNativeInvokable};
-use radix_engine_lib::math::Decimal;
-use radix_engine_lib::model::*;
+use radix_engine_interface::data::ScryptoCustomTypeId;
+use radix_engine_interface::engine::api::{EngineApi, SysNativeInvokable};
+use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;

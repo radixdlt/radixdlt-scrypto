@@ -1,5 +1,5 @@
 [package]
-name = "radix-engine-lib"
+name = "radix-engine-interface"
 version = "0.7.0"
 edition = "2021"
 

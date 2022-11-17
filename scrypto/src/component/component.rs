@@ -1,10 +1,10 @@
-use radix_engine_lib::data::{scrypto_decode, ScryptoCustomTypeId};
-use radix_engine_lib::engine::api::{EngineApi, SysNativeInvokable};
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::data::{scrypto_decode, ScryptoCustomTypeId};
+use radix_engine_interface::engine::api::{EngineApi, SysNativeInvokable};
+use radix_engine_interface::engine::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoRENode,
     ScryptoReceiver, SubstateOffset,
 };
-use radix_engine_lib::model::*;
+use radix_engine_interface::model::*;
 
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
