@@ -1,5 +1,4 @@
 use sbor::rust::fmt;
-use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -8,68 +7,7 @@ use utils::misc::{copy_u8_array, ContextualDisplay};
 use crate::abi::*;
 use crate::address::*;
 use crate::data::ScryptoCustomTypeId;
-use crate::engine::{api::*, scrypto_env::*};
-use crate::scrypto;
 use crate::scrypto_type;
-
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct EpochManagerCreateInvocation {}
-
-impl SysInvocation for EpochManagerCreateInvocation {
-    type Output = SystemAddress;
-}
-
-impl ScryptoNativeInvocation for EpochManagerCreateInvocation {}
-
-impl Into<NativeFnInvocation> for EpochManagerCreateInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::EpochManager(
-            EpochManagerFunctionInvocation::Create(self),
-        ))
-    }
-}
-
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct EpochManagerGetCurrentEpochInvocation {
-    pub receiver: SystemAddress,
-}
-
-impl SysInvocation for EpochManagerGetCurrentEpochInvocation {
-    type Output = u64;
-}
-
-impl ScryptoNativeInvocation for EpochManagerGetCurrentEpochInvocation {}
-
-impl Into<NativeFnInvocation> for EpochManagerGetCurrentEpochInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerMethodInvocation::GetCurrentEpoch(self),
-        ))
-    }
-}
-
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct EpochManagerSetEpochInvocation {
-    pub receiver: SystemAddress,
-    pub epoch: u64,
-}
-
-impl SysInvocation for EpochManagerSetEpochInvocation {
-    type Output = ();
-}
-
-impl ScryptoNativeInvocation for EpochManagerSetEpochInvocation {}
-
-impl Into<NativeFnInvocation> for EpochManagerSetEpochInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerMethodInvocation::SetEpoch(self),
-        ))
-    }
-}
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SystemAddress {
@@ -152,6 +90,6 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for SystemAddress {
                 write!(f, "EpochManagerSystem[{}]", self.to_hex())
             }
         }
-        .map_err(|err| AddressError::FormatError(err))
+            .map_err(|err| AddressError::FormatError(err))
     }
 }
