@@ -1,9 +1,9 @@
 use crate::engine::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
-use radix_engine_lib::data::{match_schema_with_value, IndexedScryptoValue};
-use radix_engine_lib::engine::api::{SysInvokableNative, Syscalls};
-use radix_engine_lib::engine::types::RENodeId;
+use radix_engine_interface::data::{match_schema_with_value, IndexedScryptoValue};
+use radix_engine_interface::engine::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::engine::types::RENodeId;
 
 pub struct ScryptoExecutor<I: WasmInstance> {
     instance: I,
@@ -24,7 +24,7 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
-            + Syscalls<RuntimeError>
+            + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
         let (export_name, return_type) = match system_api.get_actor() {

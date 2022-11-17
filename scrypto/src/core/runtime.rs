@@ -1,9 +1,11 @@
-use radix_engine_lib::engine::actor::ScryptoActor;
-use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
-use radix_engine_lib::engine::types::{
-    ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
+use radix_engine_interface::crypto::*;
+use radix_engine_interface::data::{scrypto_decode, ScryptoCustomTypeId};
+use radix_engine_interface::engine::api::{EngineApi, SysNativeInvokable};
+use radix_engine_interface::engine::types::{
+    ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
 };
-use radix_engine_lib::model::*;
+use radix_engine_interface::model::*;
+
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::*;
@@ -11,10 +13,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::constants::EPOCH_MANAGER;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-
-use crate::buffer::scrypto_decode;
-use radix_engine_lib::crypto::*;
-use radix_engine_lib::data::ScryptoCustomTypeId;
 
 /// The transaction runtime.
 #[derive(Debug)]

@@ -1,5 +1,5 @@
+use radix_engine_interface::engine::wasm_input::*;
 use scrypto::engine::scrypto_env::*;
-use scrypto::engine_lib::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
 blueprint! {

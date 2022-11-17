@@ -1,16 +1,17 @@
-pub use radix_engine_lib::address::{AddressError, Bech32Decoder, Bech32Encoder};
-pub use radix_engine_lib::core::Expression;
-pub use radix_engine_lib::crypto::*;
-use radix_engine_lib::data::IndexedScryptoValue;
-pub use radix_engine_lib::dec;
-pub use radix_engine_lib::engine::actor::ScryptoActor;
-use radix_engine_lib::engine::types::{
+pub use radix_engine_interface::address::{AddressError, Bech32Decoder, Bech32Encoder};
+pub use radix_engine_interface::constants::*;
+pub use radix_engine_interface::core::Expression;
+pub use radix_engine_interface::crypto::*;
+use radix_engine_interface::data::IndexedScryptoValue;
+pub use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
+pub use radix_engine_interface::dec;
+use radix_engine_interface::engine::types::{
     NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,
 };
-pub use radix_engine_lib::engine::{scrypto_env::RadixEngineInput, types::*};
-pub use radix_engine_lib::math::{Decimal, RoundingMode, I256};
-pub use radix_engine_lib::model::*;
-pub use radix_engine_lib::scrypto;
+pub use radix_engine_interface::engine::{types::*, wasm_input::RadixEngineInput};
+pub use radix_engine_interface::math::{Decimal, RoundingMode, I256};
+pub use radix_engine_interface::model::*;
+pub use radix_engine_interface::scrypto;
 
 pub use sbor::decode_any;
 pub use sbor::rust::borrow::ToOwned;
@@ -31,12 +32,6 @@ pub use sbor::rust::vec::Vec;
 pub use sbor::{Decode, DecodeError, Encode, SborPath, SborPathBuf, SborTypeId, SborValue, TypeId};
 
 pub use scrypto::abi::{BlueprintAbi, Fields, Fn, Type, Variant};
-pub use scrypto::access_and_or;
-pub use scrypto::access_rule_node;
-pub use scrypto::args;
-pub use scrypto::buffer::{scrypto_decode, scrypto_encode};
-pub use scrypto::constants::*;
-pub use scrypto::rule;
 
 use std::fmt::Debug;
 

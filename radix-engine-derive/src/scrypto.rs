@@ -46,17 +46,17 @@ pub fn handle_scrypto(attr: TokenStream, item: TokenStream) -> Result<TokenStrea
                 })
             }
             "Describe" => derived_attributes.push(parse_quote! {
-                #[derive(::radix_engine_derive::Describe)]
+                #[derive(radix_engine_derive::Describe)]
             }),
             "NonFungibleData" => derived_attributes.push(parse_quote! {
-                #[derive(::radix_engine_derive::NonFungibleData)]
+                #[derive(::scrypto::NonFungibleData)]
             }),
             _ => {}
         }
     }
     if sbor {
         derived_attributes.push(parse_quote! {
-            #[sbor(custom_type_id = "::radix_engine_lib::data::ScryptoCustomTypeId")]
+            #[sbor(custom_type_id = "radix_engine_interface::data::ScryptoCustomTypeId")]
         })
     }
 
@@ -116,7 +116,7 @@ mod tests {
                 #[derive(::sbor::Encode)]
                 #[derive(::sbor::Decode)]
                 #[derive(::sbor::TypeId)]
-                #[derive(::scrypto::Describe)]
+                #[derive(::radix_engine_derive::Describe)]
                 #[derive(::scrypto::NonFungibleData)]
                 #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
                 pub struct MyStruct<T: Bound> {
@@ -141,7 +141,7 @@ mod tests {
                 #[derive(::sbor::Encode)]
                 #[derive(::sbor::Decode)]
                 #[derive(::sbor::TypeId)]
-                #[derive(::scrypto::Describe)]
+                #[derive(::radix_engine_derive::Describe)]
                 #[derive(::scrypto::NonFungibleData)]
                 #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
                 enum MyEnum<T: Bound> {

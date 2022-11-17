@@ -1,5 +1,5 @@
 use moka::sync::Cache;
-use radix_engine_lib::crypto::hash;
+use radix_engine_interface::crypto::hash;
 use std::sync::Arc;
 
 use crate::types::*;

@@ -246,8 +246,8 @@ fn generate_dispatcher(
                     });
                     stmts.push(parse_quote! {
                         let mut component_data = ::scrypto::core::DataPointer::new(
-                            ::scrypto::engine_lib::engine::types::RENodeId::Component(component_id),
-                            ::scrypto::engine_lib::engine::types::SubstateOffset::Component(::scrypto::engine_lib::engine::types::ComponentOffset::State),
+                            radix_engine_interface::engine::types::RENodeId::Component(component_id),
+                            radix_engine_interface::engine::types::SubstateOffset::Component(radix_engine_interface::engine::types::ComponentOffset::State),
                         );
                     });
                     stmts.push(stmt);
@@ -438,14 +438,14 @@ fn generate_stubs(
                                     ::scrypto::core::Runtime::package_address(),
                                     #bp_name,
                                     #name,
-                                    ::scrypto::args!(#(#input_args),*)
+                                    args!(#(#input_args),*)
                                 )
                             }
                         });
                     } else {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
-                                self.component.call(#name, ::scrypto::args!(
+                                self.component.call(#name, args!(
                                     #(
                                        #input_args
                                     ),*
@@ -600,8 +600,8 @@ mod tests {
                     let actor = ::scrypto::core::Runtime::actor();
                     let (component_id, ..) = actor.as_component();
                     let mut component_data = ::scrypto::core::DataPointer::new(
-                        ::scrypto::engine_lib::engine::types::RENodeId::Component(component_id),
-                        ::scrypto::engine_lib::engine::types::SubstateOffset::Component(::scrypto::engine_lib::engine::types::ComponentOffset::State),
+                        radix_engine_interface::engine::types::RENodeId::Component(component_id),
+                        radix_engine_interface::engine::types::SubstateOffset::Component(radix_engine_interface::engine::types::ComponentOffset::State),
                     );
                     let state: DataRef<Test_impl::Test> = component_data.get();
 
@@ -680,10 +680,10 @@ mod tests {
 
                 impl TestComponent {
                     pub fn y(arg0: u32) -> u32 {
-                        ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", ::scrypto::args!(arg0))
+                        ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", args!(arg0))
                     }
                     pub fn x(&self, arg0: u32) -> u32 {
-                        self.component.call("x", ::scrypto::args!(arg0))
+                        self.component.call("x", args!(arg0))
                     }
                 }
             },

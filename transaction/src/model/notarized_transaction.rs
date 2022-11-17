@@ -1,7 +1,7 @@
-use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::crypto::{hash, Hash, PublicKey, Signature, SignatureWithPublicKey};
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::{hash, Hash, PublicKey, Signature, SignatureWithPublicKey};
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use sbor::*;
-use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::scrypto;
 
 use crate::manifest::{compile, CompileError};
@@ -128,7 +128,6 @@ impl NotarizedTransaction {
 mod tests {
     use super::*;
     use crate::signing::*;
-    use scrypto::buffer::scrypto_encode;
 
     #[test]
     fn construct_sign_and_notarize_ecdsa_secp256k1() {

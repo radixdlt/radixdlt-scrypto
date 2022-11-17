@@ -1,9 +1,10 @@
-use radix_engine_lib::model::*;
+use radix_engine_interface::data::ScryptoCustomTypeId;
+use radix_engine_interface::model::*;
+
 use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::core::*;
-use radix_engine_lib::data::ScryptoCustomTypeId;
 
 /// Represents a published package.
 #[derive(Debug)]

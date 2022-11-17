@@ -1,7 +1,10 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
 use rand::Rng;
+pub use scrypto::{access_rule_node, rule};
 use utils::misc::ContextualDisplay;
 
 use crate::resim::Error::TransactionExecutionError;

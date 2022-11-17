@@ -1,5 +1,7 @@
 use crate::types::*;
-use radix_engine_lib::engine::types::{EpochManagerId, PackageId, RENodeId, ResourceManagerId};
+use radix_engine_interface::engine::types::{
+    EpochManagerId, PackageId, RENodeId, ResourceManagerId,
+};
 
 // TODO: clean up after `Owned(RENodeId)`?
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -4,11 +4,11 @@ use crate::engine::{
 };
 use crate::model::{InvokeError, ProofError};
 use crate::types::*;
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::engine::types::{
     AuthZoneMethod, AuthZoneOffset, GlobalAddress, NativeMethod, ProofId, ProofOffset, RENodeId,
     ResourceManagerOffset, SubstateOffset,
 };
-use radix_engine_lib::model::*;
+use radix_engine_interface::model::*;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

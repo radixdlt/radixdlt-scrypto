@@ -1,6 +1,8 @@
 use clap::Parser;
 use radix_engine::types::*;
-use scrypto::engine_lib::engine::types::RENodeId;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
+use radix_engine_interface::engine::types::RENodeId;
 
 use crate::resim::*;
 

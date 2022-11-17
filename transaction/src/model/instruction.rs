@@ -1,10 +1,10 @@
-use radix_engine_lib::crypto::Blob;
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::crypto::Blob;
+use radix_engine_interface::engine::types::{
     BucketId, NativeFunctionIdent, NativeMethodIdent, ProofId, ScryptoFunctionIdent,
     ScryptoMethodIdent,
 };
-use radix_engine_lib::math::Decimal;
-use radix_engine_lib::model::*;
+use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use scrypto::scrypto;

@@ -1,4 +1,4 @@
-use radix_engine_lib::crypto::Hash;
+use radix_engine_interface::crypto::Hash;
 use sbor::rust::collections::HashMap;
 
 pub trait IntentHashManager {

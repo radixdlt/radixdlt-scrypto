@@ -1,5 +1,5 @@
-use radix_engine_lib::engine::api::Syscalls;
-use radix_engine_lib::engine::types::Level;
+use radix_engine_interface::engine::api::EngineApi;
+use radix_engine_interface::engine::types::Level;
 use sbor::rust::string::String;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 

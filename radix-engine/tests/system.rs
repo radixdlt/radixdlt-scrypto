@@ -1,7 +1,8 @@
 use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::AuthModule;

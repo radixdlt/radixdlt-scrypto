@@ -1,5 +1,5 @@
-use radix_engine_lib::crypto::{hash, Hash};
-use radix_engine_lib::model::*;
+use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::model::*;
 use sbor::rust::collections::{BTreeSet, HashMap};
 use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};

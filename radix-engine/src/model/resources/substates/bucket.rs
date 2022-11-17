@@ -3,8 +3,8 @@ use crate::model::{
     ResourceOperationError,
 };
 use crate::types::*;
-use radix_engine_lib::engine::types::BucketId;
-use radix_engine_lib::model::*;
+use radix_engine_interface::engine::types::BucketId;
+use radix_engine_interface::model::*;
 
 /// A transient resource container.
 #[derive(Debug)]

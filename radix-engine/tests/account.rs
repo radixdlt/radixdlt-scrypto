@@ -1,9 +1,10 @@
 use radix_engine::engine::ResourceChange;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::data::IndexedScryptoValue;
-use radix_engine_lib::engine::types::ScryptoMethodIdent;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::data::*;
+use radix_engine_interface::engine::types::ScryptoMethodIdent;
 use scrypto::resource::non_fungible::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

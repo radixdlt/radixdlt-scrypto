@@ -1,10 +1,10 @@
-use radix_engine_lib::data::ScryptoCustomTypeId;
-use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::data::{scrypto_decode, ScryptoCustomTypeId};
+use radix_engine_interface::engine::api::{EngineApi, SysNativeInvokable};
+use radix_engine_interface::engine::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoRENode,
     ScryptoReceiver, SubstateOffset,
 };
-use radix_engine_lib::model::*;
+use radix_engine_interface::model::*;
 
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
@@ -14,7 +14,6 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::buffer::scrypto_decode;
 use scrypto::scrypto_type;
 use utils::misc::copy_u8_array;
 
@@ -22,7 +21,7 @@ use crate::abi::*;
 use crate::core::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::scrypto;
-use crate::Describe;
+use radix_engine_derive::Describe;
 
 /// Represents the state of a component.
 pub trait ComponentState<C: LocalComponent>:
@@ -105,7 +104,7 @@ impl Component {
         sys_calls: &mut Y,
     ) -> Result<&mut Self, E>
     where
-        Y: Syscalls<E> + SysNativeInvokable<ComponentAddAccessCheckInvocation, E>,
+        Y: EngineApi<E> + SysNativeInvokable<ComponentAddAccessCheckInvocation, E>,
     {
         sys_calls.sys_invoke(ComponentAddAccessCheckInvocation {
             receiver: self.0,
@@ -124,7 +123,7 @@ impl Component {
         sys_calls: &mut Y,
     ) -> Result<ComponentAddress, E>
     where
-        Y: Syscalls<E>,
+        Y: EngineApi<E>,
     {
         let node_id: RENodeId =
             sys_calls.sys_create_node(ScryptoRENode::GlobalComponent(self.0))?;

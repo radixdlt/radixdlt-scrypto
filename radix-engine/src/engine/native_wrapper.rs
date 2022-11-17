@@ -1,14 +1,14 @@
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::types::*;
-use radix_engine_lib::data::IndexedScryptoValue;
-use radix_engine_lib::engine::api::SysInvokableNative;
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::engine::api::SysInvokableNative;
+use radix_engine_interface::engine::types::{
     AuthZoneMethod, BucketMethod, ComponentMethod, EpochManagerFunction, EpochManagerMethod,
     NativeFn, NativeFunction, NativeMethod, PackageFunction, ProofMethod, ResourceManagerFunction,
     ResourceManagerMethod, TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
-use radix_engine_lib::model::*;
+use radix_engine_interface::model::*;
 
 // TODO: Cleanup
 pub fn parse_and_invoke_native_fn<'a, Y>(

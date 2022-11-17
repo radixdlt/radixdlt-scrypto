@@ -1,6 +1,7 @@
-use radix_engine_lib::core::NetworkDefinition;
-use radix_engine_lib::crypto::{EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature};
-use radix_engine_lib::model::*;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::{EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature};
+use radix_engine_interface::model::*;
+
 use sbor::rust::vec::Vec;
 use std::collections::BTreeSet;
 

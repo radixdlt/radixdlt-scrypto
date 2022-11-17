@@ -23,7 +23,7 @@ members = [
     "scrypto-unit",
     "transaction",
     "radix-engine",
-    "radix-engine-lib",
+    "radix-engine-interface",
     "radix-engine-derive",
     "radix-engine-stores",
     "radix-engine-constants",

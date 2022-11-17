@@ -2,7 +2,8 @@ extern crate core;
 
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use radix_engine_lib::core::NetworkDefinition;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
 use scrypto::resource::non_fungible::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

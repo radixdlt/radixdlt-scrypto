@@ -1,6 +1,6 @@
 use crate::engine::{ExecutionMode, LockFlags, REActor};
-use radix_engine_lib::data::ScryptoValueDecodeError;
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::data::ScryptoValueDecodeError;
+use radix_engine_interface::engine::types::{
     GlobalAddress, LockHandle, NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,
     SubstateOffset,
 };

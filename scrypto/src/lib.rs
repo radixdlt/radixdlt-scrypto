@@ -24,21 +24,21 @@ pub mod abi {
 pub mod buffer;
 /// Scrypto component library.
 pub mod component;
-/// Scrypto constants.
-pub mod constants;
+
 /// Scrypto core library, mainly process and transaction context.
 pub mod core;
 
+pub mod constants {
+    pub use radix_engine_interface::constants::*;
+}
 pub mod data {
-    pub use radix_engine_lib::data::*;
+    pub use radix_engine_interface::data::*;
 }
-
 pub mod math {
-    pub use radix_engine_lib::math::*;
+    pub use radix_engine_interface::math::*;
 }
-
 pub mod model {
-    pub use radix_engine_lib::model::*;
+    pub use radix_engine_interface::model::*;
 }
 
 /// Radix engine APIs.
@@ -55,13 +55,14 @@ pub mod resource;
 mod macros;
 pub use macros::*;
 
-pub mod engine_lib {
-    pub use radix_engine_lib::*;
-}
+pub extern crate radix_engine_derive;
+pub extern crate radix_engine_interface;
+pub extern crate scrypto_abi;
+pub use radix_engine_derive::{scrypto, Describe};
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;
-pub use scrypto_derive::{blueprint, import, scrypto, Describe, NonFungibleData};
+pub use scrypto_derive::{blueprint, import, NonFungibleData};
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502

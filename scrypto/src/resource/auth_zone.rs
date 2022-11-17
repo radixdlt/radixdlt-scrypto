@@ -1,8 +1,8 @@
-use radix_engine_lib::data::ScryptoCustomTypeId;
-use radix_engine_lib::engine::api::{SysNativeInvokable, Syscalls};
-use radix_engine_lib::engine::types::RENodeId;
-use radix_engine_lib::math::Decimal;
-use radix_engine_lib::model::*;
+use radix_engine_interface::data::ScryptoCustomTypeId;
+use radix_engine_interface::engine::api::{EngineApi, SysNativeInvokable};
+use radix_engine_interface::engine::types::RENodeId;
+use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
@@ -21,7 +21,7 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Vec<Proof>, E>
     where
-        Y: Syscalls<E> + SysNativeInvokable<AuthZoneDrainInvocation, E>,
+        Y: EngineApi<E> + SysNativeInvokable<AuthZoneDrainInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -37,7 +37,7 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<(), E>
     where
-        Y: Syscalls<E> + SysNativeInvokable<AuthZoneClearInvocation, E>,
+        Y: EngineApi<E> + SysNativeInvokable<AuthZoneClearInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -53,7 +53,7 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: Syscalls<E> + SysNativeInvokable<AuthZonePopInvocation, E>,
+        Y: EngineApi<E> + SysNativeInvokable<AuthZonePopInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -73,7 +73,7 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: Syscalls<E> + SysNativeInvokable<AuthZoneCreateProofInvocation, E>,
+        Y: EngineApi<E> + SysNativeInvokable<AuthZoneCreateProofInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -95,7 +95,7 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: Syscalls<E> + SysNativeInvokable<AuthZoneCreateProofByAmountInvocation, E>,
+        Y: EngineApi<E> + SysNativeInvokable<AuthZoneCreateProofByAmountInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -118,7 +118,7 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: Syscalls<E> + SysNativeInvokable<AuthZoneCreateProofByIdsInvocation, E>,
+        Y: EngineApi<E> + SysNativeInvokable<AuthZoneCreateProofByIdsInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -141,7 +141,7 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<(), E>
     where
-        Y: Syscalls<E> + SysNativeInvokable<AuthZonePushInvocation, E>,
+        Y: EngineApi<E> + SysNativeInvokable<AuthZonePushInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids

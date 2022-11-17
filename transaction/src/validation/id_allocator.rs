@@ -1,11 +1,12 @@
-use radix_engine_lib::crypto::{hash, Hash};
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::constants::*;
+use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::engine::types::{
     AuthZoneId, BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId, PackageId, ProofId,
     ResourceManagerId, VaultId,
 };
-use radix_engine_lib::model::*;
+use radix_engine_interface::model::*;
+
 use sbor::rust::ops::Range;
-use scrypto::constants::*;
 
 use crate::errors::*;
 

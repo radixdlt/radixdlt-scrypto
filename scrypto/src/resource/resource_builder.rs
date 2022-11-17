@@ -1,5 +1,5 @@
-use radix_engine_lib::math::Decimal;
-use radix_engine_lib::model::*;
+use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;

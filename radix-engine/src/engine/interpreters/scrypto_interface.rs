@@ -9,15 +9,14 @@ use crate::model::{
 };
 use crate::types::ScryptoInvocation;
 use crate::wasm::WasmEngine;
-use radix_engine_lib::crypto::Hash;
-use radix_engine_lib::data::IndexedScryptoValue;
-use radix_engine_lib::engine::actor::ScryptoActor;
-use radix_engine_lib::engine::api::{
-    ScryptoNativeInvocation, SysInvokableNative, SysNativeInvokable, Syscalls,
+use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::engine::api::{
+    EngineApi, ScryptoNativeInvocation, SysInvokableNative, SysNativeInvokable,
 };
-use radix_engine_lib::engine::types::{
-    Level, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode,
-    SubstateOffset,
+use radix_engine_interface::engine::types::{
+    Level, LockHandle, RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent,
+    ScryptoRENode, SubstateOffset,
 };
 
 impl<'g, 's, W, R, N, T> SysNativeInvokable<N, RuntimeError> for Kernel<'g, 's, W, R>
@@ -38,7 +37,7 @@ where
 {
 }
 
-impl<'g, 's, W, R> Syscalls<RuntimeError> for Kernel<'g, 's, W, R>
+impl<'g, 's, W, R> EngineApi<RuntimeError> for Kernel<'g, 's, W, R>
 where
     W: WasmEngine,
     R: FeeReserve,

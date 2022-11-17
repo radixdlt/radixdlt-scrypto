@@ -1,11 +1,13 @@
-use radix_engine_lib::crypto::Hash;
-use radix_engine_lib::data::{match_schema_with_value, IndexedScryptoValue};
-use radix_engine_lib::engine::api::{SysInvokableNative, Syscalls};
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::data::*;
+use radix_engine_interface::data::{ScryptoCustomTypeId, ScryptoCustomValue};
+use radix_engine_interface::engine::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::engine::types::{
     AuthZoneOffset, BucketOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
     PackageOffset, ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver,
     SubstateId, SubstateOffset, VaultId, WorktopOffset,
 };
+
 use scrypto::access_rule_node;
 use scrypto::rule;
 use std::fmt::Debug;
@@ -794,7 +796,7 @@ pub trait Executor {
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
-            + Syscalls<RuntimeError>
+            + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>
             + Invokable<ResourceManagerSetResourceAddressInvocation>;
 }

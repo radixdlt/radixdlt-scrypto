@@ -1,8 +1,8 @@
 use crate::engine::{KernelError, RuntimeError};
 use crate::model::*;
 use crate::types::*;
-use radix_engine_lib::data::IndexedScryptoValue;
-use radix_engine_lib::engine::types::{
+use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::engine::types::{
     ComponentOffset, GlobalAddress, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
     SubstateOffset,
 };

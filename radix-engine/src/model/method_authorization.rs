@@ -1,5 +1,5 @@
-use radix_engine_lib::math::Decimal;
-use radix_engine_lib::model::*;
+use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::*;
 use sbor::*;
 use scrypto::scrypto;
 
