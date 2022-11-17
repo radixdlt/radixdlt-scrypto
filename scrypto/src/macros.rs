@@ -346,14 +346,14 @@ macro_rules! external_blueprint {
 
         #[scrypto(TypeId, Encode, Decode, Describe)]
         struct $blueprint_ident {
-            package_address: ::scrypto::engine_lib::component::PackageAddress,
+            package_address: ::scrypto::model::PackageAddress,
             blueprint_name: ::sbor::rust::string::String,
         }
 
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $blueprint_ident {
-            fn at<S>(package_address: ::scrypto::engine_lib::component::PackageAddress, blueprint_name: S) -> Self
+            fn at<S>(package_address: ::scrypto::model::PackageAddress, blueprint_name: S) -> Self
             where
                 S: Into<::sbor::rust::string::String>
             {
@@ -368,8 +368,8 @@ macro_rules! external_blueprint {
             );
         }
 
-        impl From<$blueprint_ident> for ::scrypto::engine_lib::component::PackageAddress {
-            fn from(a: $blueprint_ident) -> ::scrypto::engine_lib::component::PackageAddress {
+        impl From<$blueprint_ident> for ::scrypto::model::PackageAddress {
+            fn from(a: $blueprint_ident) -> ::scrypto::model::PackageAddress {
                 a.package_address
             }
         }
