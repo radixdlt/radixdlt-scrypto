@@ -22,8 +22,8 @@ strum = { version = "0.24", default-features = false, features = ["derive"] }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "sbor/std", "scrypto-abi/std", "radix-engine-derive/std", "strum/std"]
-alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "radix-engine-derive/alloc"]
+std = ["hex/std", "sbor/std", "scrypto-abi/std", "radix-engine-derive/std", "strum/std", "utils/std"]
+alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "radix-engine-derive/alloc", "utils/alloc"]
 
 # Turn on this feature to enable tracing.
 trace = ["radix-engine-derive/trace"]
