@@ -7,7 +7,7 @@ use crate::scrypto;
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentAddAccessCheckInvocation {
-    pub receiver: ComponentId,
+    pub receiver: RENodeId,
     pub access_rules: AccessRules,
 }
 

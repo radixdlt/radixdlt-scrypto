@@ -1,7 +1,4 @@
-use crate::engine::{
-    ApplicationError, CallFrameUpdate, LockFlags, NativeExecutable, NativeInvocation,
-    NativeInvocationInfo, RuntimeError, SystemApi,
-};
+use crate::engine::{ApplicationError, CallFrameUpdate, InterpreterError, LockFlags, NativeExecutable, NativeInvocation, NativeInvocationInfo, RuntimeError, SystemApi};
 use crate::types::*;
 use radix_engine_interface::engine::types::{
     ComponentMethod, ComponentOffset, GlobalAddress, NativeMethod, PackageOffset, RENodeId,
@@ -22,7 +19,13 @@ impl NativeExecutable for ComponentAddAccessCheckInvocation {
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::Component(input.receiver);
+        let node_id = input.receiver;
+
+        // TODO: Move this into a more static check once node types implemented
+        if !matches!(node_id, RENodeId::Component(..)) {
+            return Err(RuntimeError::InterpreterError(InterpreterError::InvalidInvocation));
+        }
+
         let offset = SubstateOffset::Component(ComponentOffset::Info);
         let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
@@ -75,7 +78,7 @@ impl NativeInvocation for ComponentAddAccessCheckInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Component(ComponentMethod::AddAccessCheck),
-            RENodeId::Component(self.receiver),
+            self.receiver,
             CallFrameUpdate::empty(),
         )
     }

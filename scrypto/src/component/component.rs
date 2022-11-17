@@ -107,7 +107,7 @@ impl Component {
         Y: EngineApi<E> + SysNativeInvokable<ComponentAddAccessCheckInvocation, E>,
     {
         sys_calls.sys_invoke(ComponentAddAccessCheckInvocation {
-            receiver: self.0,
+            receiver: RENodeId::Component(self.0),
             access_rules,
         })?;
 
