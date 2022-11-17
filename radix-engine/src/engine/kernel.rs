@@ -565,6 +565,16 @@ where
             executor.execute(system_api)
         })?;
 
+        for m in &mut self.modules {
+            m.on_post_run(
+                &update,
+                &mut self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
         // Process return data
         let mut parent = self.prev_frame_stack.pop().unwrap();
 

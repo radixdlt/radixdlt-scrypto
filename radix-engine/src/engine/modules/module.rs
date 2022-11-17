@@ -106,6 +106,14 @@ pub trait Module<R: FeeReserve> {
         track: &mut Track<R>,
     ) -> Result<(), ModuleError>;
 
+    fn on_post_run(
+        &mut self,
+        update: &CallFrameUpdate,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
+        track: &mut Track<R>,
+    ) -> Result<(), ModuleError>;
+
     fn on_wasm_instantiation(
         &mut self,
         call_frame: &CallFrame,

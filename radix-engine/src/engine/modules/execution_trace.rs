@@ -261,6 +261,16 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
         Ok(())
     }
 
+    fn on_post_run(
+        &mut self,
+        _update: &CallFrameUpdate,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
     fn on_wasm_instantiation(
         &mut self,
         _call_frame: &CallFrame,
