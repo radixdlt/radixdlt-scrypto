@@ -56,13 +56,9 @@ mod macros;
 pub use macros::*;
 
 pub extern crate radix_engine_derive;
-pub extern crate scrypto_abi;
-pub use radix_engine_derive::{Describe, scrypto};
-
 pub extern crate radix_engine_lib;
-pub mod engine_lib {
-    pub use radix_engine_lib::*;
-}
+pub extern crate scrypto_abi;
+pub use radix_engine_derive::{scrypto, Describe};
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;

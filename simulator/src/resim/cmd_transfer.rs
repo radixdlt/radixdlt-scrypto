@@ -1,5 +1,6 @@
 use clap::Parser;
 use radix_engine::types::*;
+use radix_engine_lib::core::NetworkDefinition;
 use radix_engine_lib::data::*;
 use transaction::builder::ManifestBuilder;
 

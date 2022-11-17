@@ -1,6 +1,6 @@
+use radix_engine_lib::engine::types::*;
+use radix_engine_lib::engine::wasm_input::*;
 use scrypto::engine::scrypto_env::*;
-use scrypto::engine_lib::engine::types::*;
-use scrypto::engine_lib::engine::wasm_input::*;
 use scrypto::prelude::*;
 
 // TODO: de-dup

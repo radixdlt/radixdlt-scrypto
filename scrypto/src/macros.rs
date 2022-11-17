@@ -35,7 +35,7 @@ macro_rules! args_from_bytes_vec {
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine_lib::engine::types::Level::Error, ::sbor::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(radix_engine_lib::engine::types::Level::Error, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -50,7 +50,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine_lib::engine::types::Level::Warn, ::sbor::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(radix_engine_lib::engine::types::Level::Warn, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -65,7 +65,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine_lib::engine::types::Level::Info, ::sbor::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(radix_engine_lib::engine::types::Level::Info, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -80,7 +80,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine_lib::engine::types::Level::Debug, ::sbor::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(radix_engine_lib::engine::types::Level::Debug, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -95,7 +95,7 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine_lib::engine::types::Level::Trace, ::sbor::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(radix_engine_lib::engine::types::Level::Trace, ::sbor::rust::format!($($args),+));
     }};
 }
 

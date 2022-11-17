@@ -1,6 +1,7 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
+use radix_engine_lib::core::NetworkDefinition;
 use radix_engine_lib::data::*;
 use rand::Rng;
 pub use scrypto::{access_rule_node, rule};
