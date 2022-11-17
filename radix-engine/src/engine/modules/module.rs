@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use crate::engine::call_frame::RENodeLocation;
 use crate::engine::*;
 use crate::fee::FeeReserve;
@@ -64,7 +65,7 @@ pub enum SysCallInput<'a> {
 
 #[derive(Debug)]
 pub enum SysCallOutput<'a> {
-    Invoke { rtn: &'a dyn Traceable },
+    Invoke { rtn: &'a dyn Debug },
     ReadOwnedNodes,
     BorrowNode { node_pointer: &'a RENodeLocation },
     DropNode { node: &'a HeapRENode },

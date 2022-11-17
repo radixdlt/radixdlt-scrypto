@@ -4,7 +4,7 @@ use crate::model::*;
 use crate::types::*;
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::engine::types::{
-    BucketOffset, ComponentId, NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,
+    BucketOffset, ComponentId, NativeMethod, RENodeId,
     SubstateId, SubstateOffset, VaultId, VaultMethod, VaultOffset,
 };
 use radix_engine_interface::math::Decimal;
@@ -115,118 +115,6 @@ pub enum SysCallTraceOrigin {
     /// Anything else that isn't traced on its own, but the trace exists for its children
     Opaque,
 }
-
-pub trait Traceable: Debug {
-    fn buckets(&self) -> Vec<BucketId>;
-    fn proofs(&self) -> Vec<ProofId>;
-}
-
-impl Traceable for IndexedScryptoValue {
-    fn buckets(&self) -> Vec<BucketId> {
-        self.bucket_ids.keys().map(|k| k.clone()).collect()
-    }
-
-    fn proofs(&self) -> Vec<ProofId> {
-        self.proof_ids.keys().map(|k| k.clone()).collect()
-    }
-}
-
-impl Traceable for Bucket {
-    fn buckets(&self) -> Vec<BucketId> {
-        vec![self.0]
-    }
-
-    fn proofs(&self) -> Vec<ProofId> {
-        vec![]
-    }
-}
-
-impl Traceable for Proof {
-    fn buckets(&self) -> Vec<BucketId> {
-        vec![]
-    }
-
-    fn proofs(&self) -> Vec<ProofId> {
-        vec![self.0]
-    }
-}
-
-impl Traceable for (ResourceAddress, Option<Bucket>) {
-    fn buckets(&self) -> Vec<BucketId> {
-        match &self.1 {
-            Some(bucket) => vec![bucket.0.clone()],
-            None => vec![],
-        }
-    }
-
-    fn proofs(&self) -> Vec<ProofId> {
-        vec![]
-    }
-}
-
-impl Traceable for CallFrameUpdate {
-    fn buckets(&self) -> Vec<BucketId> {
-        self.nodes_to_move
-            .iter()
-            .filter_map(|node_id| match node_id {
-                RENodeId::Bucket(bucket_id) => Some(bucket_id.clone()),
-                _ => None,
-            })
-            .collect()
-    }
-
-    fn proofs(&self) -> Vec<ProofId> {
-        self.nodes_to_move
-            .iter()
-            .filter_map(|node_id| match node_id {
-                RENodeId::Proof(proof_id) => Some(proof_id.clone()),
-                _ => None,
-            })
-            .collect()
-    }
-}
-
-impl<A: Traceable> Traceable for Vec<A> {
-    fn buckets(&self) -> Vec<BucketId> {
-        self.into_iter().flat_map(|t| t.buckets()).collect()
-    }
-
-    fn proofs(&self) -> Vec<ProofId> {
-        self.into_iter().flat_map(|t| t.proofs()).collect()
-    }
-}
-
-macro_rules! impl_empty_traceable {
-    (for $($t:ty),+) => {
-        $(impl Traceable for $t {
-            fn buckets(&self) -> Vec<BucketId> {
-                vec![]
-            }
-            fn proofs(&self) -> Vec<ProofId> {
-                vec![]
-            }
-        })*
-    }
-}
-
-// Remaining Traceable implementations for invocations that don't involve proofs/buckets
-impl_empty_traceable!(for
-    (),
-    bool,
-    u8,
-    u64,
-    [Vec<u8>; 2],
-    (String, String),
-    HashMap<String, String>,
-    Decimal,
-    Vault,
-    VaultId,
-    ResourceType,
-    BTreeSet<NonFungibleId>,
-    PackageAddress,
-    ResourceAddress,
-    SystemAddress
-);
 
 impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     fn pre_sys_call(
@@ -603,18 +491,23 @@ impl ExecutionTraceModule {
 
     fn extract_trace_data(
         heap: &mut Heap,
-        traceable: &dyn Traceable,
+        value: &IndexedScryptoValue,
     ) -> Result<TracedSysCallData, ModuleError> {
         let mut buckets: HashMap<BucketId, Resource> = HashMap::new();
-        for bucket_id in traceable.buckets() {
-            let bucket_resource = Self::read_bucket_resource(heap, &bucket_id)?;
-            buckets.insert(bucket_id, bucket_resource);
-        }
-
         let mut proofs: HashMap<ProofId, ProofSnapshot> = HashMap::new();
-        for proof_id in traceable.proofs() {
-            let proof = Self::read_proof(heap, &proof_id)?;
-            proofs.insert(proof_id, proof);
+
+        for node_id in value.node_ids() {
+            match node_id {
+                RENodeId::Bucket(bucket_id) => {
+                    let bucket_resource = Self::read_bucket_resource(heap, &bucket_id)?;
+                    buckets.insert(bucket_id, bucket_resource);
+                }
+                RENodeId::Proof(proof_id) => {
+                    let proof = Self::read_proof(heap, &proof_id)?;
+                    proofs.insert(proof_id, proof);
+                }
+                _ => {}
+            }
         }
 
         Ok(TracedSysCallData { buckets, proofs })

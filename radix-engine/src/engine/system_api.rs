@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use crate::engine::node::*;
 use crate::engine::*;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
@@ -31,7 +32,7 @@ pub struct LockInfo {
 }
 
 pub trait Invocation {
-    type Output: Traceable + 'static;
+    type Output: Debug;
 }
 
 pub trait Invokable<I>
