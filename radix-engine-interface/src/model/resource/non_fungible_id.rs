@@ -56,6 +56,7 @@ impl fmt::Display for ParseNonFungibleIdError {
 // binary
 //========
 
+// Manually validating non-fungible id instead of using any codec to reduce code size.
 fn validate_id(slice: &[u8]) -> Result<(), DecodeError> {
     let mut decoder = ScryptoDecoder::new(slice);
     let type_id = decoder.read_type_id()?;
