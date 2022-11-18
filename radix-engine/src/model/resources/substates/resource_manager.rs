@@ -3,10 +3,10 @@ use crate::model::{
     convert, InvokeError, MethodAuthorization, NonFungible, Resource, ResourceManagerError,
 };
 use crate::types::*;
-use radix_engine_interface::data::IndexedScryptoValue;
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     BucketMethod, NonFungibleStoreId, ResourceManagerMethod, VaultMethod,
 };
+use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::AccessRule::*;
 use radix_engine_interface::model::ResourceMethodAuthKey::*;

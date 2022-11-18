@@ -6,7 +6,7 @@ use crate::model::{
     ProofSubstate,
 };
 use crate::types::*;
-use radix_engine_interface::engine::types::{GlobalAddress, RENodeId};
+use radix_engine_interface::api::types::{GlobalAddress, RENodeId};
 use sbor::rust::ops::Fn;
 
 struct AuthVerification;

@@ -1,9 +1,9 @@
 use crate::engine::{ExecutionMode, LockFlags, REActor};
-use radix_engine_interface::data::ScryptoValueDecodeError;
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     GlobalAddress, LockHandle, NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,
     SubstateOffset,
 };
+use radix_engine_interface::data::ScryptoValueDecodeError;
 use sbor::*;
 use transaction::errors::*;
 

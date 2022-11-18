@@ -1,11 +1,11 @@
 use colored::*;
 use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
+use radix_engine_interface::api::types::{GlobalAddress, Level};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
-use radix_engine_interface::engine::types::{GlobalAddress, Level};
 use radix_engine_interface::model::*;
 use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
 use transaction::model::*;
-use utils::misc::ContextualDisplay;
+use utils::ContextualDisplay;
 
 use crate::engine::{RejectionError, ResourceChange, RuntimeError, TrackedEvent};
 use crate::fee::FeeSummary;

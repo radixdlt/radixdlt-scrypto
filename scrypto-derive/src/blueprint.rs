@@ -239,15 +239,15 @@ fn generate_dispatcher(
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
                     stmts.push(parse_quote! {
-                        let actor = ::scrypto::core::Runtime::actor();
+                        let actor = ::scrypto::runtime::Runtime::actor();
                     });
                     stmts.push(parse_quote! {
                         let (component_id, ..) = actor.as_component();
                     });
                     stmts.push(parse_quote! {
-                        let mut component_data = ::scrypto::core::DataPointer::new(
-                            radix_engine_interface::engine::types::RENodeId::Component(component_id),
-                            radix_engine_interface::engine::types::SubstateOffset::Component(radix_engine_interface::engine::types::ComponentOffset::State),
+                        let mut component_data = ::scrypto::runtime::DataPointer::new(
+                            radix_engine_interface::api::types::RENodeId::Component(component_id),
+                            radix_engine_interface::api::types::SubstateOffset::Component(radix_engine_interface::api::types::ComponentOffset::State),
                         );
                     });
                     stmts.push(stmt);
@@ -272,7 +272,7 @@ fn generate_dispatcher(
                         use ::sbor::rust::ops::{Deref, DerefMut};
 
                         // Set up panic hook
-                        ::scrypto::misc::set_up_panic_hook();
+                        ::scrypto::set_up_panic_hook();
 
                         // Set up component and resource subsystems;
                         ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
@@ -434,8 +434,8 @@ fn generate_stubs(
                     if mutable.is_none() {
                         functions.push(parse_quote! {
                             pub fn #ident(#(#input_args: #input_types),*) -> #output {
-                                ::scrypto::core::Runtime::call_function(
-                                    ::scrypto::core::Runtime::package_address(),
+                                ::scrypto::runtime::Runtime::call_function(
+                                    ::scrypto::runtime::Runtime::package_address(),
                                     #bp_name,
                                     #name,
                                     args!(#(#input_args),*)
@@ -590,18 +590,18 @@ mod tests {
                     use ::sbor::rust::ops::{Deref, DerefMut};
 
                     // Set up panic hook
-                    ::scrypto::misc::set_up_panic_hook();
+                    ::scrypto::set_up_panic_hook();
 
                     // Set up component and resource subsystems;
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
-                    let actor = ::scrypto::core::Runtime::actor();
+                    let actor = ::scrypto::runtime::Runtime::actor();
                     let (component_id, ..) = actor.as_component();
-                    let mut component_data = ::scrypto::core::DataPointer::new(
-                        radix_engine_interface::engine::types::RENodeId::Component(component_id),
-                        radix_engine_interface::engine::types::SubstateOffset::Component(radix_engine_interface::engine::types::ComponentOffset::State),
+                    let mut component_data = ::scrypto::runtime::DataPointer::new(
+                        radix_engine_interface::api::types::RENodeId::Component(component_id),
+                        radix_engine_interface::api::types::SubstateOffset::Component(radix_engine_interface::api::types::ComponentOffset::State),
                     );
                     let state: DataRef<Test_impl::Test> = component_data.get();
 
@@ -614,7 +614,7 @@ mod tests {
                     use ::sbor::rust::ops::{Deref, DerefMut};
 
                     // Set up panic hook
-                    ::scrypto::misc::set_up_panic_hook();
+                    ::scrypto::set_up_panic_hook();
 
                     // Set up component and resource subsystems;
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
@@ -680,7 +680,7 @@ mod tests {
 
                 impl TestComponent {
                     pub fn y(arg0: u32) -> u32 {
-                        ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", args!(arg0))
+                        ::scrypto::runtime::Runtime::call_function(::scrypto::runtime::Runtime::package_address(), "Test", "y", args!(arg0))
                     }
                     pub fn x(&self, arg0: u32) -> u32 {
                         self.component.call("x", args!(arg0))

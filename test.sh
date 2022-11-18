@@ -13,6 +13,8 @@ echo "Testing with std..."
 (cd scrypto; cargo test --release)
 (cd scrypto-derive; cargo test)
 (cd scrypto-tests; cargo test)
+(cd radix-engine-derive; cargo test)
+(cd radix-engine-interface; cargo test)
 (cd radix-engine; cargo test)
 (cd radix-engine; cargo test --features wasmer)
 (cd transaction; cargo test)

@@ -2,7 +2,7 @@ use clap::Parser;
 use colored::*;
 use radix_engine_interface::address::Bech32Encoder;
 use radix_engine_stores::rocks_db::RadixEngineDB;
-use utils::misc::ContextualDisplay;
+use utils::ContextualDisplay;
 
 use crate::resim::*;
 use crate::utils::*;

@@ -1,5 +1,5 @@
 use crate::types::*;
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     NativeFunction, NativeMethod, PackageId, RENodeId, TransactionProcessorFunction,
 };
 

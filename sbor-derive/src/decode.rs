@@ -38,13 +38,10 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 let s_types = s.iter().map(|f| &f.ty);
                 quote! {
                     impl #impl_generics ::sbor::Decode <#sbor_cti> for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn check_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<(), ::sbor::DecodeError> {
-                            decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
-                        }
-                        fn decode_value(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
+                        fn decode_body_with_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>, type_id: ::sbor::SborTypeId<#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
-                            decoder.check_size(#ns_len)?;
+                            decoder.check_preloaded_type_id(type_id, ::sbor::type_id::SborTypeId::Struct)?;
+                            decoder.read_and_check_size(#ns_len)?;
                             Ok(Self {
                                 #(#ns_ids: <#ns_types>::decode(decoder)?,)*
                                 #(#s_ids: <#s_types>::default()),*
@@ -67,13 +64,10 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     Index::from(unnamed.iter().filter(|f| !is_decoding_skipped(f)).count());
                 quote! {
                     impl #impl_generics ::sbor::Decode <#sbor_cti> for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn check_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<(), ::sbor::DecodeError> {
-                            decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
-                        }
-                        fn decode_value(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
+                        fn decode_body_with_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>, type_id: ::sbor::SborTypeId<#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
-                            decoder.check_size(#ns_len)?;
+                            decoder.check_preloaded_type_id(type_id, ::sbor::type_id::SborTypeId::Struct)?;
+                            decoder.read_and_check_size(#ns_len)?;
                             Ok(Self (
                                 #(#fields,)*
                             ))
@@ -84,12 +78,9 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             syn::Fields::Unit => {
                 quote! {
                     impl #impl_generics ::sbor::Decode <#sbor_cti> for #ident #ty_generics #where_clause {
-                        #[inline]
-                        fn check_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<(), ::sbor::DecodeError> {
-                            decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
-                        }
-                        fn decode_value(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
-                            decoder.check_size(0)?;
+                        fn decode_body_with_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>, type_id: ::sbor::SborTypeId<#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
+                            decoder.check_preloaded_type_id(type_id, ::sbor::type_id::SborTypeId::Struct)?;
+                            decoder.read_and_check_size(0)?;
                             Ok(Self {})
                         }
                     }
@@ -115,7 +106,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         let s_types = s.iter().map(|f| &f.ty);
                         quote! {
                             #discriminator => {
-                                decoder.check_size(#ns_len)?;
+                                decoder.read_and_check_size(#ns_len)?;
                                 Ok(Self::#v_id {
                                     #(#ns_ids: <#ns_types>::decode(decoder)?,)*
                                     #(#s_ids: <#s_types>::default(),)*
@@ -137,7 +128,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                             Index::from(unnamed.iter().filter(|f| !is_decoding_skipped(f)).count());
                         quote! {
                             #discriminator => {
-                                decoder.check_size(#ns_len)?;
+                                decoder.read_and_check_size(#ns_len)?;
                                 Ok(Self::#v_id (
                                     #(#fields),*
                                 ))
@@ -147,7 +138,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     syn::Fields::Unit => {
                         quote! {
                             #discriminator => {
-                                decoder.check_size(0)?;
+                                decoder.read_and_check_size(0)?;
                                 Ok(Self::#v_id)
                             }
                         }
@@ -157,14 +148,9 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
 
             quote! {
                 impl #impl_generics ::sbor::Decode <#sbor_cti> for #ident #ty_generics #where_clause {
-                    #[inline]
-                    fn check_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<(), ::sbor::DecodeError> {
-                        decoder.check_type_id(::sbor::type_id::SborTypeId::Enum)
-                    }
-                    #[inline]
-                    fn decode_value(decoder: &mut ::sbor::Decoder <#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
+                    fn decode_body_with_type_id(decoder: &mut ::sbor::Decoder <#sbor_cti>, type_id: ::sbor::SborTypeId<#sbor_cti>) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-
+                        decoder.check_preloaded_type_id(type_id, ::sbor::type_id::SborTypeId::Enum)?;
                         let discriminator = decoder.read_discriminator()?;
                         match discriminator.as_str() {
                             #(#match_arms,)*
@@ -206,13 +192,35 @@ mod tests {
             output,
             quote! {
                 impl <CTI: ::sbor::type_id::CustomTypeId> ::sbor::Decode<CTI> for Test {
-                    #[inline]
-                    fn check_type_id(decoder: &mut ::sbor::Decoder<CTI>) -> Result<(), ::sbor::DecodeError> {
-                        decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
-                    }
-                    fn decode_value(decoder: &mut ::sbor::Decoder<CTI>) -> Result<Self, ::sbor::DecodeError> {
+                    fn decode_body_with_type_id(decoder: &mut ::sbor::Decoder<CTI>, type_id: ::sbor::SborTypeId<CTI>) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-                        decoder.check_size(1)?;
+                        decoder.check_preloaded_type_id(type_id, ::sbor::type_id::SborTypeId::Struct)?;
+                        decoder.read_and_check_size(1)?;
+                        Ok(Self {
+                            a: <u32>::decode(decoder)?,
+                        })
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_decode_struct_with_custom_type_id() {
+        let input = TokenStream::from_str(
+            "#[sbor(custom_type_id = \"NoCustomTypeId\")] struct Test {a: u32}",
+        )
+        .unwrap();
+        let output = handle_decode(input).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                impl ::sbor::Decode<NoCustomTypeId> for Test {
+                    fn decode_body_with_type_id(decoder: &mut ::sbor::Decoder<NoCustomTypeId>, type_id: ::sbor::SborTypeId<NoCustomTypeId>) -> Result<Self, ::sbor::DecodeError> {
+                        use ::sbor::{self, Decode};
+                        decoder.check_preloaded_type_id(type_id, ::sbor::type_id::SborTypeId::Struct)?;
+                        decoder.read_and_check_size(1)?;
                         Ok(Self {
                             a: <u32>::decode(decoder)?,
                         })
@@ -231,13 +239,10 @@ mod tests {
             output,
             quote! {
                 impl <'a, CTI: ::sbor::type_id::CustomTypeId> ::sbor::Decode<CTI> for Test<'a> {
-                    #[inline]
-                    fn check_type_id(decoder: &mut ::sbor::Decoder<CTI>) -> Result<(), ::sbor::DecodeError> {
-                        decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
-                    }
-                    fn decode_value(decoder: &mut ::sbor::Decoder<CTI>) -> Result<Self, ::sbor::DecodeError> {
+                    fn decode_body_with_type_id(decoder: &mut ::sbor::Decoder<CTI>, type_id: ::sbor::SborTypeId<CTI>) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-                        decoder.check_size(1)?;
+                        decoder.check_preloaded_type_id(type_id, ::sbor::type_id::SborTypeId::Struct)?;
+                        decoder.read_and_check_size(1)?;
                         Ok(Self {
                             a: <&'a u32>::decode(decoder)?,
                         })
@@ -256,25 +261,21 @@ mod tests {
             output,
             quote! {
                 impl <CTI: ::sbor::type_id::CustomTypeId> ::sbor::Decode<CTI> for Test {
-                    #[inline]
-                    fn check_type_id(decoder: &mut ::sbor::Decoder<CTI>) -> Result<(), ::sbor::DecodeError> {
-                        decoder.check_type_id(::sbor::type_id::SborTypeId::Enum)
-                    }
-                    #[inline]
-                    fn decode_value(decoder: &mut ::sbor::Decoder<CTI>) -> Result<Self, ::sbor::DecodeError> {
+                    fn decode_body_with_type_id(decoder: &mut ::sbor::Decoder<CTI>, type_id: ::sbor::SborTypeId<CTI>) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
+                        decoder.check_preloaded_type_id(type_id, ::sbor::type_id::SborTypeId::Enum)?;
                         let discriminator = decoder.read_discriminator()?;
                         match discriminator.as_str() {
                             "A" => {
-                                decoder.check_size(0)?;
+                                decoder.read_and_check_size(0)?;
                                 Ok(Self::A)
                             },
                             "B" => {
-                                decoder.check_size(1)?;
+                                decoder.read_and_check_size(1)?;
                                 Ok(Self::B(<u32>::decode(decoder)?))
                             },
                             "C" => {
-                                decoder.check_size(1)?;
+                                decoder.read_and_check_size(1)?;
                                 Ok(Self::C {
                                     x: <u8>::decode(decoder)?,
                                 })
@@ -296,13 +297,10 @@ mod tests {
             output,
             quote! {
                 impl <CTI: ::sbor::type_id::CustomTypeId> ::sbor::Decode<CTI> for Test {
-                    #[inline]
-                    fn check_type_id(decoder: &mut ::sbor::Decoder<CTI>) -> Result<(), ::sbor::DecodeError> {
-                        decoder.check_type_id(::sbor::type_id::SborTypeId::Struct)
-                    }
-                    fn decode_value(decoder: &mut ::sbor::Decoder<CTI>) -> Result<Self, ::sbor::DecodeError> {
+                    fn decode_body_with_type_id(decoder: &mut ::sbor::Decoder<CTI>, type_id: ::sbor::SborTypeId<CTI>) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-                        decoder.check_size(0)?;
+                        decoder.check_preloaded_type_id(type_id, ::sbor::type_id::SborTypeId::Struct)?;
+                        decoder.read_and_check_size(0)?;
                         Ok(Self {
                             a: <u32>::default()
                         })

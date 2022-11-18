@@ -47,9 +47,9 @@ impl EcdsaSecp256k1PrivateKey {
 mod tests {
     use super::*;
     use crate::validation::verify_ecdsa_secp256k1;
+    use radix_engine_interface::constants::ECDSA_SECP256K1_TOKEN;
     use radix_engine_interface::model::{NonFungibleAddress, NonFungibleId};
     use sbor::rust::str::FromStr;
-    use scrypto::constants::ECDSA_SECP256K1_TOKEN;
 
     #[test]
     fn sign_and_verify() {
@@ -68,7 +68,7 @@ mod tests {
 
     #[test]
     fn test_non_fungible_address_codec() {
-        let expected = "00ed9100551d7fae91eaf413e50a3c5a59f8b96af9f1297890a8f4200721000000031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
+        let expected = "00ed9100551d7fae91eaf413e50a3c5a59f8b96af9f1297890a8f4200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
         let private_key = EcdsaSecp256k1PrivateKey::from_bytes(&[1u8; 32]).unwrap();
         let public_key = private_key.public_key();
         let auth_address = NonFungibleAddress::new(

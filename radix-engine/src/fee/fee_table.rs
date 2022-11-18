@@ -1,9 +1,9 @@
-use radix_engine_interface::data::IndexedScryptoValue;
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     AccessRulesMethod, AuthZoneMethod, BucketMethod, EpochManagerFunction, EpochManagerMethod,
     NativeFunction, NativeMethod, PackageFunction, ProofMethod, ResourceManagerFunction,
     ResourceManagerMethod, TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
+use radix_engine_interface::data::IndexedScryptoValue;
 
 pub enum SystemApiCostingEntry {
     /*

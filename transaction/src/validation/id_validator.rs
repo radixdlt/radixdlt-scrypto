@@ -1,5 +1,5 @@
+use radix_engine_interface::api::types::{BucketId, ProofId};
 use radix_engine_interface::data::IndexedScryptoValue;
-use radix_engine_interface::engine::types::{BucketId, ProofId};
 use sbor::rust::collections::*;
 
 use crate::errors::*;

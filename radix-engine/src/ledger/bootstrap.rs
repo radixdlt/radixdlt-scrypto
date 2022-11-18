@@ -8,14 +8,13 @@ use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::GENESIS_CREATION_CREDIT;
-use radix_engine_interface::crypto::hash;
-use radix_engine_interface::data::*;
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     EpochManagerFunction, GlobalAddress, NativeFunctionIdent, RENodeId, ResourceManagerFunction,
     ResourceManagerOffset, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset,
 };
+use radix_engine_interface::crypto::hash;
+use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
-use sbor::*;
 use scrypto::rule;
 
 use transaction::model::{Instruction, SystemTransaction, TransactionManifest};

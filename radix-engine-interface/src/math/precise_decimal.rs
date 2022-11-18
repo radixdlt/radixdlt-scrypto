@@ -1070,7 +1070,7 @@ mod tests {
     fn test_encode_decimal_type_precise_decimal() {
         let mut bytes = Vec::with_capacity(512);
         let mut enc = Encoder::new(&mut bytes);
-        PreciseDecimal::encode_type_id(&mut enc);
+        pdec!("1").encode_type_id(&mut enc);
         assert_eq!(bytes, vec![PreciseDecimal::type_id().as_u8()]);
     }
 
@@ -1079,8 +1079,8 @@ mod tests {
         let pdec = pdec!("0");
         let mut bytes = Vec::with_capacity(512);
         let mut enc = Encoder::new(&mut bytes);
-        PreciseDecimal::encode_type_id(&mut enc);
-        pdec.encode_value(&mut enc);
+        pdec.encode_type_id(&mut enc);
+        pdec.encode_body(&mut enc);
         assert_eq!(bytes, {
             let mut a = [0; 65];
             a[0] = PreciseDecimal::type_id().as_u8();
@@ -1092,7 +1092,7 @@ mod tests {
     fn test_decode_decimal_type_precise_decimal() {
         let mut bytes = Vec::with_capacity(512);
         let mut enc = Encoder::new(&mut bytes);
-        PreciseDecimal::encode_type_id(&mut enc);
+        pdec!("1").encode_type_id(&mut enc);
         let mut decoder = Decoder::new(&bytes);
         let typ = decoder.read_type_id().unwrap();
         assert_eq!(typ, PreciseDecimal::type_id());
@@ -1103,11 +1103,10 @@ mod tests {
         let pdec = pdec!("1.23456789");
         let mut bytes = Vec::with_capacity(512);
         let mut enc = Encoder::new(&mut bytes);
-        PreciseDecimal::encode_type_id(&mut enc);
-        pdec.encode_value(&mut enc);
+        pdec.encode_type_id(&mut enc);
+        pdec.encode_body(&mut enc);
         let mut decoder = Decoder::new(&bytes);
-        PreciseDecimal::check_type_id(&mut decoder).unwrap();
-        let val = PreciseDecimal::decode_value(&mut decoder).unwrap();
+        let val = PreciseDecimal::decode(&mut decoder).unwrap();
         assert_eq!(val, pdec!("1.23456789"));
     }
 

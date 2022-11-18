@@ -67,6 +67,12 @@ impl NewPackage {
             .map_err(Error::IOError)?;
 
             fs::write(
+                child_of(&path, ".gitignore"),
+                include_str!("../../../assets/template/.gitignore"),
+            )
+            .map_err(Error::IOError)?;
+
+            fs::write(
                 child_of(&child_of(&path, "src"), "lib.rs"),
                 include_str!("../../../assets/template/src/lib.rs"),
             )

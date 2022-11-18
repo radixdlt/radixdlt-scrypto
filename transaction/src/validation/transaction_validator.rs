@@ -5,7 +5,7 @@ use radix_engine_interface::data::*;
 use sbor::rust::collections::{BTreeSet, HashSet};
 use sbor::Decode;
 
-use scrypto::constants::*;
+use radix_engine_interface::constants::*;
 
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;

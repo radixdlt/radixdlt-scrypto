@@ -3,7 +3,7 @@ use radix_engine::ledger::{
 };
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::*;
-use radix_engine_interface::engine::types::RENodeId;
+use radix_engine_interface::api::types::RENodeId;
 
 /// A substate store that stores all typed substates in host memory.
 #[derive(Debug, PartialEq, Eq)]

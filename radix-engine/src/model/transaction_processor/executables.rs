@@ -1,14 +1,14 @@
-use radix_engine_interface::data::{IndexedScryptoValue, ValueReplacingError};
-use radix_engine_interface::engine::api::{EngineApi, SysInvokableNative};
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent,
     ProofId, RENodeId, TransactionProcessorFunction,
 };
+use radix_engine_interface::data::{IndexedScryptoValue, ValueReplacingError};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::Cow;
-use scrypto::core::Runtime;
 use scrypto::resource::Worktop;
 use scrypto::resource::{ComponentAuthZone, SysBucket, SysProof};
+use scrypto::runtime::Runtime;
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;

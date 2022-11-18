@@ -1,11 +1,11 @@
 use crate::engine::{KernelError, RuntimeError};
 use crate::model::*;
 use crate::types::*;
-use radix_engine_interface::data::IndexedScryptoValue;
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
     SubstateOffset,
 };
+use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]

@@ -1,7 +1,7 @@
+use crate::api::types::ScryptoActor;
+use crate::api::wasm_input::NativeFnInvocation;
 use crate::crypto::Hash;
 use crate::data::ScryptoCustomTypeId;
-use crate::engine::types::ScryptoActor;
-use crate::engine::wasm_input::NativeFnInvocation;
 use crate::model::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;

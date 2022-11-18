@@ -1,13 +1,12 @@
 use sbor::type_id::*;
 use sbor::*;
 
+use crate::api::types::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::data::*;
-use crate::engine::types::*;
 use crate::math::{Decimal, PreciseDecimal};
-use crate::model::*;
-use utils::misc::copy_u8_array;
+use utils::copy_u8_array;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValue {
@@ -106,7 +105,7 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
         }
     }
 
-    fn encode_value(&self, encoder: &mut ScryptoEncoder) {
+    fn encode_body(&self, encoder: &mut ScryptoEncoder) {
         match self {
             // TODO: vector free
             ScryptoCustomValue::PackageAddress(v) => encoder.write_slice(&v.to_vec()),
@@ -144,7 +143,7 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
         }
     }
 
-    fn decode(
+    fn decode_body_with_type_id(
         decoder: &mut ScryptoDecoder,
         type_id: ScryptoCustomTypeId,
     ) -> Result<Self, DecodeError> {

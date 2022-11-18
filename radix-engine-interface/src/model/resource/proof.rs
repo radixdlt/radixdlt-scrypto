@@ -1,18 +1,17 @@
-use crate::engine::wasm_input::NativeFnInvocation;
+use crate::api::wasm_input::NativeFnInvocation;
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::misc::copy_u8_array;
+use utils::copy_u8_array;
 
 use crate::abi::*;
+use crate::api::wasm_input::{NativeMethodInvocation, ProofMethodInvocation};
+use crate::api::{api::*, types::*};
 use crate::data::ScryptoCustomTypeId;
-use crate::engine::wasm_input::{NativeMethodInvocation, ProofMethodInvocation};
-use crate::engine::{api::*, types::*};
 use crate::math::*;
-use crate::model::*;
 use crate::scrypto_type;
 
 #[derive(Debug, TypeId, Encode, Decode)]

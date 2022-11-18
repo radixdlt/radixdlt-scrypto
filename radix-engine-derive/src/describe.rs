@@ -46,7 +46,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
 
                 quote! {
                     impl scrypto_abi::Describe for #ident {
-                        fn describe() -> Type {
+                        fn describe() -> scrypto_abi::Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
                             use scrypto_abi::Describe;
@@ -121,7 +121,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
 
                         quote! {
                             {
-                                Fields::Named {
+                                scrypto_abi::Fields::Named {
                                     named: vec![#((#names.to_owned(), <#types>::describe())),*]
                                 }
                             }

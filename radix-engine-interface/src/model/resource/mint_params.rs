@@ -1,6 +1,5 @@
 use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;
-use scrypto_abi::*;
 
 use crate::math::*;
 use crate::model::*;

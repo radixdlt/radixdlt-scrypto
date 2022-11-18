@@ -5,7 +5,7 @@ use crate::model::{
     RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
 use crate::types::{HashMap, HashSet};
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     BucketOffset, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
 

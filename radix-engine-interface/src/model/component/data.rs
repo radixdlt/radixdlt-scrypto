@@ -2,7 +2,7 @@ use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::misc::{copy_u8_array, ContextualDisplay};
+use utils::{copy_u8_array, ContextualDisplay};
 
 use crate::abi::*;
 use crate::address::*;

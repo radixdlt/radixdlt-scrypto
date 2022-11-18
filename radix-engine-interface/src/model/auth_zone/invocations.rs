@@ -2,9 +2,9 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
-use crate::engine::api::*;
-use crate::engine::types::AuthZoneId;
-use crate::engine::wasm_input::*;
+use crate::api::api::*;
+use crate::api::types::AuthZoneId;
+use crate::api::wasm_input::*;
 use crate::math::Decimal;
 use crate::model::*;
 use crate::scrypto;

@@ -3,7 +3,7 @@ use crate::engine::{
     ResolvedReceiver, RuntimeError,
 };
 use crate::model::GlobalAddressSubstate;
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     AccessRulesOffset, AuthZoneOffset, BucketOffset, ComponentOffset, GlobalOffset,
     KeyValueStoreOffset, NativeFunction, NativeMethod, PackageOffset, ProofOffset, RENodeId,
     ResourceManagerOffset, SubstateOffset, TransactionProcessorFunction, VaultOffset,

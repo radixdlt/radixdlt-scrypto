@@ -1,6 +1,6 @@
 use sbor::rust::string::String;
 
-use crate::engine::types::ComponentId;
+use crate::api::types::ComponentId;
 use crate::model::*;
 use crate::scrypto;
 

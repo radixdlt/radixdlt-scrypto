@@ -37,17 +37,16 @@ pub fn compile(
 mod tests {
     use super::*;
     use crate::model::Instruction;
-    use radix_engine_interface::crypto::Blob;
-    use radix_engine_interface::data::*;
-    use radix_engine_interface::engine::types::{
+    use radix_engine_interface::api::types::{
         NativeFunctionIdent, ResourceManagerFunction, ScryptoMethodIdent, ScryptoReceiver,
     };
+    use radix_engine_interface::crypto::Blob;
+    use radix_engine_interface::data::*;
     use radix_engine_interface::math::{Decimal, PreciseDecimal};
     use radix_engine_interface::model::*;
     use sbor::rust::collections::*;
     use sbor::rust::str::FromStr;
-    use sbor::*;
-    use scrypto::core::Expression;
+    use scrypto::runtime::Expression;
 
     #[test]
     fn test_compile() {

@@ -2,8 +2,8 @@ use crate::engine::*;
 use crate::fee::{FeeReserve, FeeReserveError, SystemApiCostingEntry};
 use crate::model::Resource;
 use crate::types::*;
+use radix_engine_interface::api::types::{RENodeId, VaultId};
 use radix_engine_interface::data::IndexedScryptoValue;
-use radix_engine_interface::engine::types::{RENodeId, VaultId};
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum CostingError {

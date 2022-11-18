@@ -2,7 +2,7 @@ use bech32::{self, ToBase32, Variant, WriteBase32};
 use sbor::rust::borrow::Cow;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
-use utils::misc::combine;
+use utils::combine;
 
 use super::entity::EntityType;
 use super::errors::AddressError;
