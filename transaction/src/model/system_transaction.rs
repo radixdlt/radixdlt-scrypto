@@ -1,5 +1,6 @@
 use crate::model::{AuthModule, AuthZoneParams, Executable, TransactionManifest};
-use scrypto::crypto::Hash;
+use radix_engine_interface::crypto::Hash;
+
 use scrypto::scrypto;
 use std::collections::BTreeSet;
 

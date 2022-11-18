@@ -1,7 +1,12 @@
+use crate::engine::{ExecutionMode, LockFlags, REActor};
+use radix_engine_interface::api::types::{
+    GlobalAddress, LockHandle, NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,
+    SubstateOffset,
+};
+use radix_engine_interface::data::ScryptoValueDecodeError;
 use sbor::*;
 use transaction::errors::*;
 
-use crate::engine::{ExecutionMode, LockFlags, REActor};
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
@@ -142,6 +147,7 @@ pub enum ScryptoFnResolvingError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum InterpreterError {
+    InvalidInvocation,
     InvalidScryptoFunctionInvocation(ScryptoFunctionIdent, ScryptoFnResolvingError),
     InvalidScryptoMethodInvocation(ScryptoMethodIdent, ScryptoFnResolvingError),
 }

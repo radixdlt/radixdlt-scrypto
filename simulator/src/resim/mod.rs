@@ -59,9 +59,11 @@ use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::*;
 use radix_engine_constants::*;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::hash;
+use radix_engine_interface::model::FromPublicKey;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use scrypto::abi;
-use scrypto::misc::ContextualDisplay;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -71,6 +73,7 @@ use transaction::model::AuthModule;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
+use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
 #[derive(Parser, Debug)]
@@ -92,7 +95,7 @@ pub enum Command {
     CallMethod(CallMethod),
     ExportAbi(ExportAbi),
     GenerateKeyPair(GenerateKeyPair),
-    Mint(Mint),
+    Mint(crate::resim::cmd_mint::Mint),
     NewAccount(NewAccount),
     NewBadgeFixed(NewBadgeFixed),
     NewBadgeMutable(NewBadgeMutable),

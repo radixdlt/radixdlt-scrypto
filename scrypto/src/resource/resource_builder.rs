@@ -1,8 +1,9 @@
+use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 
-use crate::math::*;
 use crate::resource::*;
 use crate::rule;
 
@@ -221,7 +222,12 @@ impl NonFungibleResourceBuilder {
         T: IntoIterator<Item = (NonFungibleId, V)>,
         V: NonFungibleData,
     {
-        self.build(Some(MintParams::non_fungible(entries)))
+        let mut encoded = HashMap::new();
+        for (id, e) in entries {
+            encoded.insert(id, (e.immutable_data(), e.mutable_data()));
+        }
+
+        self.build(Some(MintParams::NonFungible { entries: encoded }))
             .1
             .unwrap()
     }

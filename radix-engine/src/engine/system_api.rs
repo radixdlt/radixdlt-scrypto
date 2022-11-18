@@ -3,6 +3,7 @@ use crate::engine::*;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use bitflags::bitflags;
+use radix_engine_interface::api::types::{Level, LockHandle, RENodeId, SubstateOffset, VaultId};
 
 bitflags! {
     #[derive(Encode, Decode, TypeId)]
@@ -23,6 +24,10 @@ impl LockFlags {
     pub fn read_only() -> Self {
         LockFlags::empty()
     }
+}
+
+pub struct LockInfo {
+    pub offset: SubstateOffset,
 }
 
 pub trait Invocation {
@@ -74,6 +79,8 @@ pub trait SystemApi {
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;
+
+    fn get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError>;
 
     /// Drops a lock
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;

@@ -1,6 +1,10 @@
 use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
+use radix_engine_interface::api::types::{
+    AuthZoneOffset, ComponentOffset, GlobalAddress, NativeFunction, NativeMethod, PackageOffset,
+    RENodeId, ResourceManagerOffset, SubstateOffset, VaultOffset,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]

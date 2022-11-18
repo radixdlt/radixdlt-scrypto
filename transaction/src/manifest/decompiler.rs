@@ -1,16 +1,15 @@
+use radix_engine_interface::address::{AddressError, Bech32Encoder};
+use radix_engine_interface::api::types::{
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
+    ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
+};
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::{scrypto_decode, IndexedScryptoValue, ValueFormattingContext};
+use radix_engine_interface::model::*;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use sbor::{encode_any, SborValue};
-use scrypto::address::{AddressError, Bech32Encoder};
-use scrypto::buffer::scrypto_decode;
-use scrypto::core::NetworkDefinition;
-use scrypto::data::*;
-use scrypto::engine::types::*;
-use scrypto::misc::ContextualDisplay;
-use scrypto::resource::{
-    MintParams, ResourceManagerBurnInvocation, ResourceManagerCreateInvocation,
-    ResourceManagerMintInvocation,
-};
+use utils::ContextualDisplay;
 
 use crate::errors::*;
 use crate::model::*;
@@ -340,8 +339,9 @@ pub fn decompile_call_function<F: fmt::Write>(
         f,
         "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
         match &function_ident.package {
-            ScryptoPackage::Global(package_address) =>
-                package_address.display(context.bech32_encoder),
+            ScryptoPackage::Global(package_address) => {
+                package_address.display(context.bech32_encoder)
+            }
         },
         function_ident.blueprint_name,
         function_ident.function_name,
@@ -412,10 +412,12 @@ pub fn decompile_call_scrypto_method<F: fmt::Write>(
     args: &Vec<u8>,
 ) -> Result<(), DecompileError> {
     let receiver = match method_ident.receiver {
-        ScryptoReceiver::Global(address) => format!(
-            "ComponentAddress(\"{}\")",
-            address.display(context.bech32_encoder)
-        ),
+        ScryptoReceiver::Global(address) => {
+            format!(
+                "ComponentAddress(\"{}\")",
+                address.display(context.bech32_encoder)
+            )
+        }
         ScryptoReceiver::Component(id) => {
             format!("Component(\"{}\")", format_id(&id))
         }
@@ -530,12 +532,9 @@ fn format_id(id: &[u8; 36]) -> String {
 mod tests {
     use super::*;
     use crate::manifest::*;
-    use scrypto::buffer::scrypto_encode;
-    use scrypto::core::NetworkDefinition;
-    use scrypto::resource::AccessRule;
-    use scrypto::resource::Mutability;
-    use scrypto::resource::ResourceMethodAuthKey;
-    use scrypto::resource::ResourceType;
+    use radix_engine_interface::api::types::ResourceManagerFunction;
+    use radix_engine_interface::core::NetworkDefinition;
+    use radix_engine_interface::data::scrypto_encode;
     use scrypto::scrypto;
 
     #[scrypto(TypeId, Encode, Decode)]

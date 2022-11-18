@@ -1,5 +1,10 @@
 use crate::model::*;
 use crate::types::*;
+use radix_engine_interface::api::types::{
+    AuthZoneOffset, BucketOffset, ComponentOffset, EpochManagerOffset, GlobalOffset,
+    KeyValueStoreOffset, NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset,
+    SubstateOffset, VaultOffset, WorktopOffset,
+};
 
 #[derive(Debug)]
 pub enum RENode {

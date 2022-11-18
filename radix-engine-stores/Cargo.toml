@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 radix-engine = { path = "../radix-engine" }
-scrypto = { path = "../scrypto" }
+radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 sbor = { path = "../sbor" }
 rocksdb = { version = "0.19.0", optional = true }
 

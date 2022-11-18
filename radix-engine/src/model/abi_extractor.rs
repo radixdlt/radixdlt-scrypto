@@ -1,3 +1,7 @@
+use radix_engine_interface::api::types::{
+    ComponentOffset, GlobalAddress, GlobalOffset, PackageOffset, RENodeId, SubstateId,
+    SubstateOffset,
+};
 use scrypto::abi;
 
 use crate::ledger::*;

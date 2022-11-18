@@ -1,6 +1,9 @@
 use radix_engine::engine::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -317,7 +320,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(
             package_address,
             "RefCheck",
@@ -345,7 +348,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(
             package_address,
             "RefCheck",

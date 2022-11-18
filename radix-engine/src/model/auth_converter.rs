@@ -1,3 +1,6 @@
+use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue};
+use radix_engine_interface::model::*;
+
 use sbor::SborTypeId;
 
 use crate::model::method_authorization::{

@@ -1,6 +1,9 @@
 use radix_engine::engine::{KernelError, ModuleError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
+use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -141,14 +144,14 @@ fn recursion_bomb() {
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account_by_amount(account, Decimal::from(5), RADIX_TOKEN)
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .withdraw_from_account_by_amount(account, Decimal::from(5u32), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb",
                 "recursion_bomb",
-                args!(scrypto::resource::Bucket(bucket_id)),
+                args!(Bucket(bucket_id)),
             )
         })
         .call_method(
@@ -176,14 +179,14 @@ fn recursion_bomb_to_failure() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account_by_amount(account, Decimal::from(100), RADIX_TOKEN)
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .withdraw_from_account_by_amount(account, Decimal::from(100u32), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb",
                 "recursion_bomb",
-                args!(scrypto::resource::Bucket(bucket_id)),
+                args!(Bucket(bucket_id)),
             )
         })
         .call_method(
@@ -217,14 +220,14 @@ fn recursion_bomb_2() {
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account_by_amount(account, Decimal::from(5), RADIX_TOKEN)
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .withdraw_from_account_by_amount(account, Decimal::from(5u32), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb2",
                 "recursion_bomb",
-                args!(scrypto::resource::Bucket(bucket_id)),
+                args!(Bucket(bucket_id)),
             )
         })
         .call_method(
@@ -252,14 +255,14 @@ fn recursion_bomb_2_to_failure() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account_by_amount(account, Decimal::from(100), RADIX_TOKEN)
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .withdraw_from_account_by_amount(account, Decimal::from(100u32), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb2",
                 "recursion_bomb",
-                args!(scrypto::resource::Bucket(bucket_id)),
+                args!(Bucket(bucket_id)),
             )
         })
         .call_method(

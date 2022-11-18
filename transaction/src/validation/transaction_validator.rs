@@ -1,11 +1,11 @@
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::PublicKey;
+use radix_engine_interface::data::*;
+
 use sbor::rust::collections::{BTreeSet, HashSet};
 use sbor::Decode;
-use scrypto::core::NetworkDefinition;
 
-use scrypto::buffer::scrypto_decode;
-use scrypto::constants::*;
-use scrypto::crypto::PublicKey;
-use scrypto::data::*;
+use radix_engine_interface::constants::*;
 
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
@@ -368,7 +368,7 @@ impl NotarizedTransactionValidator {
 
 #[cfg(test)]
 mod tests {
-    use scrypto::core::NetworkDefinition;
+    use radix_engine_interface::core::NetworkDefinition;
 
     use super::*;
     use crate::{

@@ -1,6 +1,9 @@
 use crate::engine::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
+use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::data::{match_schema_with_value, IndexedScryptoValue};
 
 pub struct ScryptoExecutor<I: WasmInstance> {
     instance: I,
@@ -14,53 +17,40 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
         &self.args
     }
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         mut self,
         system_api: &mut Y,
     ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
+        Y: SystemApi
+            + Invokable<ScryptoInvocation>
+            + EngineApi<RuntimeError>
+            + SysInvokableNative<RuntimeError>,
     {
-        let (export_name, return_type, scrypto_actor) = match system_api.get_actor() {
+        let (export_name, return_type) = match system_api.get_actor() {
             REActor::Method(
                 ResolvedMethod::Scrypto {
-                    package_address,
-                    blueprint_name,
                     export_name,
                     return_type,
                     ..
                 },
                 ResolvedReceiver {
-                    receiver: RENodeId::Component(component_id),
+                    receiver: RENodeId::Component(..),
                     ..
                 },
-            ) => (
-                export_name.to_string(),
-                return_type.clone(),
-                ScryptoActor::Component(
-                    *component_id,
-                    package_address.clone(),
-                    blueprint_name.clone(),
-                ),
-            ),
+            ) => (export_name.to_string(), return_type.clone()),
             REActor::Function(ResolvedFunction::Scrypto {
-                package_address,
-                blueprint_name,
                 export_name,
                 return_type,
                 ..
-            }) => (
-                export_name.to_string(),
-                return_type.clone(),
-                ScryptoActor::blueprint(*package_address, blueprint_name.clone()),
-            ),
+            }) => (export_name.to_string(), return_type.clone()),
 
             _ => panic!("Should not get here."),
         };
 
         let output = {
             let mut runtime: Box<dyn WasmRuntime> =
-                Box::new(RadixEngineWasmRuntime::new(scrypto_actor, system_api));
+                Box::new(RadixEngineWasmRuntime::new(system_api));
             self.instance
                 .invoke_export(&export_name, &self.args, &mut runtime)
                 .map_err(|e| match e {

@@ -20,40 +20,77 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 pub mod abi {
     pub use scrypto_abi::*;
 }
-/// Scrypto address.
-pub mod address;
-/// Scrypto data encoding, decoding and exchange.
+/// Scrypto buffer for wasm-engine data exchange.
 pub mod buffer;
-/// Scrypto component library.
+/// Scrypto component abstraction.
 pub mod component;
-/// Scrypto constants.
-pub mod constants;
-/// Scrypto core library, mainly process and transaction context.
-pub mod core;
-/// Scrypto cryptography library.
-pub mod crypto;
-/// Scrypto values.
-pub mod data;
-/// Radix engine APIs.
-pub mod engine;
+/// Scrypto runtime abstraction.
+pub mod runtime;
+/// Scrypto data model.
+pub mod data {
+    pub use radix_engine_interface::data::*;
+}
 /// Scrypto math library.
-pub mod math;
-/// Miscellaneous functions.
-pub mod misc;
+pub mod math {
+    pub use radix_engine_interface::math::*;
+}
+/// Scrypto RE node model.
+pub mod model {
+    pub use radix_engine_interface::model::*;
+}
+/// Scrypto RE abstraction.
+pub mod engine;
+/// Scrypto resource abstraction.
+pub mod resource;
+
 /// Scrypto preludes.
 #[cfg(feature = "prelude")]
 pub mod prelude;
-/// Scrypto resource library.
-pub mod resource;
 
 // Export macros
 mod macros;
 pub use macros::*;
 
+// Re-export radix engine derives
+pub extern crate radix_engine_derive;
+pub extern crate radix_engine_interface;
+pub extern crate scrypto_abi;
+pub use radix_engine_derive::{scrypto, Describe};
+
 // Re-export Scrypto derive.
 extern crate scrypto_derive;
-pub use scrypto_derive::{blueprint, import, scrypto, Describe, NonFungibleData};
+pub use scrypto_derive::{blueprint, import, NonFungibleData};
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
 extern crate self as scrypto;
+
+/// Sets up panic hook.
+pub fn set_up_panic_hook() {
+    #[cfg(not(feature = "alloc"))]
+    std::panic::set_hook(Box::new(|info| {
+        // parse message
+        let payload = info
+            .payload()
+            .downcast_ref::<&str>()
+            .map(ToString::to_string)
+            .or(info
+                .payload()
+                .downcast_ref::<String>()
+                .map(ToString::to_string))
+            .unwrap_or(String::new());
+
+        // parse location
+        let location = if let Some(l) = info.location() {
+            format!("{}:{}:{}", l.file(), l.line(), l.column())
+        } else {
+            "<unknown>".to_owned()
+        };
+
+        crate::runtime::Logger::error(sbor::rust::format!(
+            "Panicked at '{}', {}",
+            payload,
+            location
+        ));
+    }));
+}
