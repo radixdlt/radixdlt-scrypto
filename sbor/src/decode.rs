@@ -185,7 +185,7 @@ mod tests {
         enc.write_size(size);
 
         let mut dec = Decoder::<NoCustomTypeId>::new(&bytes);
-        dec.check_size(size)?;
+        dec.read_and_check_size(size)?;
         dec.check_end()?;
         Ok(())
     }
