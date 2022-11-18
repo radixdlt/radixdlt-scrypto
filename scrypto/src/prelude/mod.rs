@@ -1,6 +1,5 @@
 pub use crate::abi::*;
 pub use crate::component::*;
-pub use crate::constants::*;
 pub use crate::core::*;
 pub use crate::misc::*;
 pub use crate::resource::non_fungible::ScryptoNonFungibleId;
@@ -16,6 +15,7 @@ pub use num_traits::{
     sign::Signed,
 };
 pub use radix_engine_derive::*;
+pub use radix_engine_interface::constants::*;
 pub use radix_engine_interface::crypto::*;
 pub use radix_engine_interface::data::*;
 pub use radix_engine_interface::math::integer::{

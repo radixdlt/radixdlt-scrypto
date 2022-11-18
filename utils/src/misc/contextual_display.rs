@@ -11,7 +11,6 @@ use sbor::rust::fmt;
 /// It is therefore recommended that the `Context` implement `Copy`,
 /// to make it very easy to pass around and re-use.
 ///
-/// [ComponentAddress]: crate::component::component::ComponentAddress
 pub trait ContextualDisplay<Context>: Sized {
     type Error;
 

@@ -116,7 +116,7 @@ mod tests {
                 #[derive(::sbor::Encode)]
                 #[derive(::sbor::Decode)]
                 #[derive(::sbor::TypeId)]
-                #[derive(::radix_engine_derive::Describe)]
+                #[derive(radix_engine_derive::Describe)]
                 #[derive(::scrypto::NonFungibleData)]
                 #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
                 pub struct MyStruct<T: Bound> {
@@ -141,7 +141,7 @@ mod tests {
                 #[derive(::sbor::Encode)]
                 #[derive(::sbor::Decode)]
                 #[derive(::sbor::TypeId)]
-                #[derive(::radix_engine_derive::Describe)]
+                #[derive(radix_engine_derive::Describe)]
                 #[derive(::scrypto::NonFungibleData)]
                 #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
                 enum MyEnum<T: Bound> {

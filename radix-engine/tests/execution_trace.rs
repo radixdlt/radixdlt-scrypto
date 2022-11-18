@@ -5,7 +5,7 @@ use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::engine::types::NativeMethod;
-use scrypto::resource::non_fungible::FromPublicKey;
+use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use std::ops::Add;
 use transaction::builder::ManifestBuilder;

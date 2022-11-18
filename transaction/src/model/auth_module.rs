@@ -1,7 +1,7 @@
+use radix_engine_interface::constants::SYSTEM_TOKEN;
 use radix_engine_interface::crypto::PublicKey;
+use radix_engine_interface::model::FromPublicKey;
 use radix_engine_interface::model::*;
-use scrypto::constants::SYSTEM_TOKEN;
-use scrypto::resource::non_fungible::FromPublicKey;
 
 pub struct AuthModule;
 

@@ -289,7 +289,7 @@ impl Default for SystemLoanFeeReserve {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use scrypto::constants::RADIX_TOKEN;
+    use radix_engine_interface::constants::RADIX_TOKEN;
 
     const TEST_VAULT_ID: VaultId = [0u8; 36];
 

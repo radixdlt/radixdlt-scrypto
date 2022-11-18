@@ -11,6 +11,7 @@ use radix_engine_interface::engine::types::{
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
 
+use radix_engine_interface::constants::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
@@ -21,7 +22,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::abi::*;
 use scrypto::access_rule_node;
-use scrypto::constants::*;
 use scrypto::rule;
 use scrypto::*;
 
