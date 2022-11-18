@@ -213,8 +213,8 @@ impl WasmInstance for WasmiInstance {
 
 #[derive(Debug, Clone)]
 pub struct EngineOptions {
-    
-    #[allow(dead_code)] max_cache_size_bytes: u64,
+    #[allow(dead_code)]
+    max_cache_size_bytes: u64,
 }
 
 pub struct WasmiEngine {
