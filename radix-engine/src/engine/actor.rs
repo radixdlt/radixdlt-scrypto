@@ -33,7 +33,6 @@ impl ResolvedReceiver {
 pub enum ResolvedFunction {
     Scrypto {
         package_address: PackageAddress,
-        package_id: PackageId,
         blueprint_name: String,
         ident: String,
         export_name: String,

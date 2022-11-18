@@ -1469,12 +1469,12 @@ where
                     ScryptoPackage::Global(address) => address,
                 };
                 let global_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
-                let package_node_id = self.node_method_deref(global_node_id)?.unwrap();
+
                 let package = self.execute_in_mode::<_, _, RuntimeError>(
                     ExecutionMode::ScryptoInterpreter,
                     |system_api| {
                         let handle = system_api.lock_substate(
-                            package_node_id,
+                            global_node_id,
                             SubstateOffset::Package(PackageOffset::Package),
                             LockFlags::read_only(),
                         )?;
@@ -1489,7 +1489,6 @@ where
                 // Pass the package ref
                 // TODO: remove? currently needed for `Runtime::package_address()` API.
                 node_refs_to_copy.insert(global_node_id);
-                node_refs_to_copy.insert(package_node_id);
 
                 // Find the abi
                 let abi = package
@@ -1541,8 +1540,7 @@ where
                     self.scrypto_interpreter
                         .create_executor(&package.code, invocation.args().clone()),
                     REActor::Function(ResolvedFunction::Scrypto {
-                        package_address: package_address,
-                        package_id: package_node_id.into(),
+                        package_address,
                         blueprint_name: function_ident.blueprint_name.clone(),
                         ident: function_ident.function_name.clone(),
                         export_name: fn_abi.export_name.clone(),
