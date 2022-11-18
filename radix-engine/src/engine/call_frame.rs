@@ -115,6 +115,7 @@ impl CallFrame {
         // Expand references
         {
             // TODO: Figure out how to drop these references as well on reference drop
+            // TODO: This is especially true for derefed nodes
             for global_address in &global_references {
                 let node_id = RENodeId::Global(global_address.clone());
                 self.node_refs.insert(node_id, RENodeLocation::Store);
