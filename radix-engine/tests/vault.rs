@@ -1,7 +1,9 @@
 use radix_engine::engine::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use scrypto::engine::types::RENodeId;
+use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -14,7 +16,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(
             package_address,
             "NonExistentVault",
@@ -40,7 +42,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(package_address, "NonExistentVault", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -51,7 +53,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(component_address, "create_non_existent_vault", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -74,7 +76,7 @@ fn non_existent_vault_in_kv_store_creation_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(
             package_address,
             "NonExistentVault",
@@ -100,7 +102,7 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(package_address, "NonExistentVault", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -111,7 +113,7 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(
             component_address,
             "create_non_existent_vault_in_kv_store",
@@ -156,7 +158,7 @@ fn invalid_double_ownership_of_vault() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(
             package_address,
             "VaultTest",
@@ -205,7 +207,7 @@ fn cannot_overwrite_vault_in_map() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(package_address, "VaultTest", "new_vault_into_map", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -216,7 +218,7 @@ fn cannot_overwrite_vault_in_map() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(component_address, "overwrite_vault_in_map", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -260,7 +262,7 @@ fn cannot_remove_vaults() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(
             package_address,
             "VaultTest",
@@ -276,7 +278,7 @@ fn cannot_remove_vaults() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(component_address, "clear_vector", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

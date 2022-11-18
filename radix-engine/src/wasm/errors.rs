@@ -1,3 +1,4 @@
+use radix_engine_interface::data::ScryptoValueDecodeError;
 use wasmi::HostError;
 
 use crate::fee::FeeReserveError;
@@ -8,10 +9,10 @@ use crate::types::*;
 #[derive(Debug, PartialEq, Eq, Clone, TypeId, Encode, Decode)]
 pub enum PrepareError {
     /// Failed to deserialize.
-    /// See https://webassembly.github.io/spec/core/syntax/index.html
+    /// See <https://webassembly.github.io/spec/core/syntax/index.html>
     DeserializationError,
     /// Failed to validate
-    /// See https://webassembly.github.io/spec/core/valid/index.html
+    /// See <https://webassembly.github.io/spec/core/valid/index.html>
     ValidationError,
     /// Failed to serialize.
     SerializationError,

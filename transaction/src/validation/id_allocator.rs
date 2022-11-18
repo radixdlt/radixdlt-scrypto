@@ -1,10 +1,12 @@
+use radix_engine_interface::api::types::{
+    AuthZoneId, BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId, PackageId, ProofId,
+    ResourceManagerId, VaultId,
+};
+use radix_engine_interface::constants::*;
+use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::model::*;
+
 use sbor::rust::ops::Range;
-use scrypto::component::{ComponentAddress, PackageAddress};
-use scrypto::constants::*;
-use scrypto::core::SystemAddress;
-use scrypto::crypto::*;
-use scrypto::engine::types::*;
-use scrypto::resource::ResourceAddress;
 
 use crate::errors::*;
 

@@ -1,4 +1,5 @@
-use scrypto::{buffer::scrypto_encode, crypto::*};
+use radix_engine_interface::crypto::{Signature, SignatureWithPublicKey};
+use radix_engine_interface::data::scrypto_encode;
 
 use crate::{model::*, signing::Signer};
 
@@ -78,7 +79,7 @@ impl TransactionBuilder {
 
 #[cfg(test)]
 mod tests {
-    use scrypto::core::NetworkDefinition;
+    use radix_engine_interface::core::NetworkDefinition;
 
     use super::*;
     use crate::builder::*;

@@ -1,7 +1,11 @@
 use radix_engine::engine::ResourceChange;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use scrypto::data::IndexedScryptoValue;
+use radix_engine_interface::api::types::ScryptoMethodIdent;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::data::*;
+use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
@@ -130,7 +134,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account(use_virtual);
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee_and_withdraw(account, 10.into(), RADIX_TOKEN)
+        .lock_fee_and_withdraw(account, 10u32.into(), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::CallMethod {
@@ -138,7 +142,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
                         receiver: ScryptoReceiver::Global(account),
                         method_name: "deposit".to_string(),
                     },
-                    args: args!(scrypto::resource::Bucket(bucket_id)),
+                    args: args!(Bucket(bucket_id)),
                 })
                 .0
         })

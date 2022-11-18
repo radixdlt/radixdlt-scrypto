@@ -1,3 +1,14 @@
+use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::api::types::{
+    AuthZoneOffset, BucketOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
+    PackageOffset, ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver,
+    SubstateId, SubstateOffset, VaultId, WorktopOffset,
+};
+use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::data::*;
+
+use scrypto::access_rule_node;
+use scrypto::rule;
 use std::fmt::Debug;
 use std::mem;
 use transaction::errors::IdAllocationError;
@@ -6,6 +17,7 @@ use transaction::validation::*;
 
 use crate::engine::call_frame::RENodeLocation;
 use crate::engine::system_api::Invokable;
+use crate::engine::system_api::LockInfo;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
@@ -766,19 +778,16 @@ pub trait Executor {
     // TODO: Remove
     fn args(&self) -> &IndexedScryptoValue;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         self,
         system_api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>;
-}
-
-impl<'g, 's, 'a, W, R> InvokableNative<'a> for Kernel<'g, 's, W, R>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-{
+        Y: SystemApi
+            + Invokable<ScryptoInvocation>
+            + EngineApi<RuntimeError>
+            + SysInvokableNative<RuntimeError>
+            + Invokable<ResourceManagerSetResourceAddressInvocation>;
 }
 
 impl<'g, 's, W, R, N> Invokable<N> for Kernel<'g, 's, W, R>
@@ -1185,6 +1194,10 @@ where
         }
 
         Ok(lock_handle)
+    }
+
+    fn get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
+        self.current_frame.get_lock_info(lock_handle)
     }
 
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {

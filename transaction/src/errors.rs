@@ -1,9 +1,9 @@
+use radix_engine_interface::abi::Type;
+use radix_engine_interface::api::types::{BucketId, KeyValueStoreId, ProofId, VaultId};
+use radix_engine_interface::data::ScryptoValueDecodeError;
+use radix_engine_interface::model::*;
 use sbor::rust::string::String;
 use sbor::*;
-use scrypto::abi::*;
-use scrypto::component::{ComponentAddress, PackageAddress};
-use scrypto::data::ScryptoValueDecodeError;
-use scrypto::engine::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HeaderValidationError {

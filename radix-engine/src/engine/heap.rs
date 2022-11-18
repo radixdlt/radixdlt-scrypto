@@ -5,7 +5,9 @@ use crate::model::{
     RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
 use crate::types::{HashMap, HashSet};
-use scrypto::engine::types::{BucketOffset, ProofOffset, RENodeId, SubstateId, SubstateOffset};
+use radix_engine_interface::api::types::{
+    BucketOffset, ProofOffset, RENodeId, SubstateId, SubstateOffset,
+};
 
 pub struct Heap {
     nodes: HashMap<RENodeId, HeapRENode>,

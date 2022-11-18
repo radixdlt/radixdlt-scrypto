@@ -1,4 +1,4 @@
-use scrypto::crypto::SignatureWithPublicKey;
+use radix_engine_interface::crypto::SignatureWithPublicKey;
 
 use super::{EcdsaSecp256k1PrivateKey, EddsaEd25519PrivateKey};
 

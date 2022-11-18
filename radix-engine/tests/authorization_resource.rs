@@ -2,6 +2,9 @@ extern crate core;
 
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
+use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -51,7 +54,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
 
     // Act
     let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
-    builder.lock_fee(FAUCET_COMPONENT, 10.into());
+    builder.lock_fee(FAUCET_COMPONENT, 10u32.into());
     builder.create_proof_from_account_by_amount(account, Decimal::one(), auth_to_use);
 
     match action {
@@ -82,11 +85,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .create_proof_from_account(account, withdraw_auth)
             .withdraw_from_account_by_amount(account, Decimal::from("1.0"), token_address)
             .take_from_worktop(token_address, |builder, bucket_id| {
-                builder.call_method(
-                    account,
-                    "deposit",
-                    args!(scrypto::resource::Bucket(bucket_id)),
-                )
+                builder.call_method(account, "deposit", args!(Bucket(bucket_id)))
             })
             .call_method(
                 account,

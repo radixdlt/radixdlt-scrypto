@@ -74,11 +74,6 @@ pub fn extract_attributes(attrs: &[Attribute]) -> HashMap<String, Option<String>
     configs
 }
 
-pub fn is_describing_skipped(f: &Field) -> bool {
-    let parsed = extract_attributes(&f.attrs);
-    parsed.contains_key("skip") || parsed.contains_key("skip_describing")
-}
-
 pub fn is_mutable(f: &Field) -> bool {
     let parsed = extract_attributes(&f.attrs);
     parsed.contains_key("mutable")

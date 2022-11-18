@@ -8,6 +8,8 @@ use radix_engine::types::*;
 use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
 use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
@@ -74,7 +76,7 @@ impl TransactionFuzzer {
                             ACCOUNT_PACKAGE,
                             ACCOUNT_BLUEPRINT,
                             "new_with_resource",
-                            args!(AccessRule::AllowAll, scrypto::resource::Bucket(bucket_id)),
+                            args!(AccessRule::AllowAll, Bucket(bucket_id)),
                         )
                     });
                 }
@@ -92,7 +94,7 @@ impl TransactionFuzzer {
                             ACCOUNT_PACKAGE,
                             ACCOUNT_BLUEPRINT,
                             "new_with_resource",
-                            args!(AccessRule::AllowAll, scrypto::resource::Bucket(bucket_id)),
+                            args!(AccessRule::AllowAll, Bucket(bucket_id)),
                         )
                     });
                 }

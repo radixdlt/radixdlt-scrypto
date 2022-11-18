@@ -1,7 +1,12 @@
+use crate::engine::system_api::LockInfo;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::{SubstateRef, SubstateRefMut};
 use crate::types::*;
+use radix_engine_interface::api::types::{
+    GlobalAddress, LockHandle, NativeFunction, NonFungibleStoreOffset, RENodeId, SubstateId,
+    SubstateOffset, TransactionProcessorFunction,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallFrameUpdate {
@@ -135,6 +140,17 @@ impl CallFrame {
         *counter += 1;
 
         Ok(lock_handle)
+    }
+
+    pub fn get_lock_info(&self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
+        let substate_lock = self
+            .locks
+            .get(&lock_handle)
+            .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
+
+        Ok(LockInfo {
+            offset: substate_lock.substate_pointer.2.clone(),
+        })
     }
 
     pub fn drop_lock<'s, R: FeeReserve>(

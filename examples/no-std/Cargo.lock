@@ -220,6 +220,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "radix-engine-derive"
+version = "0.7.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "sbor",
+ "scrypto-abi",
+ "serde",
+ "serde_json",
+ "syn",
+ "uuid",
+]
+
+[[package]]
+name = "radix-engine-interface"
+version = "0.7.0"
+dependencies = [
+ "bech32",
+ "forward_ref",
+ "hex",
+ "num-bigint",
+ "num-traits",
+ "paste",
+ "radix-engine-derive",
+ "sbor",
+ "scrypto-abi",
+ "sha2",
+ "sha3",
+ "strum",
+ "utils",
+]
+
+[[package]]
 name = "rustversion"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -261,12 +294,15 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "paste",
+ "radix-engine-derive",
+ "radix-engine-interface",
  "sbor",
  "scrypto-abi",
  "scrypto-derive",
  "sha2",
  "sha3",
  "strum",
+ "utils",
 ]
 
 [[package]]
@@ -387,6 +423,24 @@ name = "unicode-ident"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4f5b37a154999a8f3f98cc23a628d850e154479cd94decf3414696e12e31aaf"
+
+[[package]]
+name = "utils"
+version = "0.7.0"
+dependencies = [
+ "bech32",
+ "forward_ref",
+ "hex",
+ "num-bigint",
+ "num-traits",
+ "paste",
+ "sbor",
+ "scrypto-abi",
+ "scrypto-derive",
+ "sha2",
+ "sha3",
+ "strum",
+]
 
 [[package]]
 name = "uuid"

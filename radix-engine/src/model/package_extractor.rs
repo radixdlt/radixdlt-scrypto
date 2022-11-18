@@ -4,6 +4,7 @@ use crate::model::InvokeError;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_constants::EXTRACT_ABI_CREDIT;
+use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug)]
 pub enum ExtractAbiError {

@@ -1,10 +1,12 @@
 use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
+use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::api::types::{NativeFunction, NativeMethod, RENodeId};
+use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
+use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
 use sbor::*;
-use scrypto::resource::AuthZoneDrainInvocation;
-use scrypto::resource::ResourceManagerBucketBurnInvocation;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
     fn into(self) -> RuntimeError {
@@ -75,68 +77,6 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
-pub trait InvokableNative<'a>:
-    Invokable<EpochManagerCreateInvocation>
-    + Invokable<PackagePublishInvocation>
-    + Invokable<ResourceManagerBucketBurnInvocation>
-    + Invokable<ResourceManagerCreateInvocation>
-    + Invokable<TransactionProcessorRunInvocation<'a>>
-    + Invokable<BucketTakeInvocation>
-    + Invokable<BucketCreateProofInvocation>
-    + Invokable<BucketTakeNonFungiblesInvocation>
-    + Invokable<BucketGetNonFungibleIdsInvocation>
-    + Invokable<BucketGetAmountInvocation>
-    + Invokable<BucketPutInvocation>
-    + Invokable<BucketGetResourceAddressInvocation>
-    + Invokable<AuthZonePopInvocation>
-    + Invokable<AuthZonePushInvocation>
-    + Invokable<AuthZoneCreateProofInvocation>
-    + Invokable<AuthZoneCreateProofByAmountInvocation>
-    + Invokable<AuthZoneCreateProofByIdsInvocation>
-    + Invokable<AuthZoneClearInvocation>
-    + Invokable<AuthZoneDrainInvocation>
-    + Invokable<ProofGetAmountInvocation>
-    + Invokable<ProofGetNonFungibleIdsInvocation>
-    + Invokable<ProofGetResourceAddressInvocation>
-    + Invokable<ProofCloneInvocation>
-    + Invokable<WorktopPutInvocation>
-    + Invokable<WorktopTakeAmountInvocation>
-    + Invokable<WorktopTakeAllInvocation>
-    + Invokable<WorktopTakeNonFungiblesInvocation>
-    + Invokable<WorktopAssertContainsInvocation>
-    + Invokable<WorktopAssertContainsAmountInvocation>
-    + Invokable<WorktopAssertContainsNonFungiblesInvocation>
-    + Invokable<WorktopDrainInvocation>
-    + Invokable<VaultTakeInvocation>
-    + Invokable<VaultPutInvocation>
-    + Invokable<VaultLockFeeInvocation>
-    + Invokable<VaultTakeNonFungiblesInvocation>
-    + Invokable<VaultGetAmountInvocation>
-    + Invokable<VaultGetResourceAddressInvocation>
-    + Invokable<VaultGetNonFungibleIdsInvocation>
-    + Invokable<VaultCreateProofInvocation>
-    + Invokable<VaultCreateProofByAmountInvocation>
-    + Invokable<VaultCreateProofByIdsInvocation>
-    + Invokable<ComponentAddAccessCheckInvocation>
-    + Invokable<ResourceManagerBurnInvocation>
-    + Invokable<ResourceManagerUpdateAuthInvocation>
-    + Invokable<ResourceManagerLockAuthInvocation>
-    + Invokable<ResourceManagerCreateVaultInvocation>
-    + Invokable<ResourceManagerCreateBucketInvocation>
-    + Invokable<ResourceManagerMintInvocation>
-    + Invokable<ResourceManagerGetMetadataInvocation>
-    + Invokable<ResourceManagerGetResourceTypeInvocation>
-    + Invokable<ResourceManagerGetTotalSupplyInvocation>
-    + Invokable<ResourceManagerUpdateMetadataInvocation>
-    + Invokable<ResourceManagerUpdateNonFungibleDataInvocation>
-    + Invokable<ResourceManagerNonFungibleExistsInvocation>
-    + Invokable<ResourceManagerGetNonFungibleInvocation>
-    + Invokable<ResourceManagerSetResourceAddressInvocation>
-    + Invokable<EpochManagerGetCurrentEpochInvocation>
-    + Invokable<EpochManagerSetEpochInvocation>
-{
-}
-
 // TODO: This should be cleaned up
 #[derive(Debug)]
 pub enum NativeInvocationInfo {
@@ -145,7 +85,7 @@ pub enum NativeInvocationInfo {
 }
 
 impl<N: NativeExecutable> Invocation for N {
-    type Output = <N as NativeExecutable>::Output;
+    type Output = <N as NativeExecutable>::NativeOutput;
 }
 
 pub struct NativeResolver;
@@ -189,14 +129,18 @@ pub trait NativeInvocation: NativeExecutable + Encode<ScryptoCustomTypeId> + Deb
 }
 
 pub trait NativeExecutable: Invocation {
-    type Output: Traceable + 'static;
+    type NativeOutput: Traceable + 'static;
 
-    fn execute<'a, Y>(
+    fn execute<Y>(
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>;
+        Y: SystemApi
+            + Invokable<ScryptoInvocation>
+            + EngineApi<RuntimeError>
+            + SysInvokableNative<RuntimeError>
+            + Invokable<ResourceManagerSetResourceAddressInvocation>;
 }
 
 pub struct NativeExecutor<N: NativeExecutable>(pub N, pub IndexedScryptoValue);
@@ -208,12 +152,13 @@ impl<N: NativeExecutable> Executor for NativeExecutor<N> {
         &self.1
     }
 
-    fn execute<'a, Y>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation> + InvokableNative<'a>,
+        Y: SystemApi
+            + Invokable<ScryptoInvocation>
+            + EngineApi<RuntimeError>
+            + SysInvokableNative<RuntimeError>
+            + Invokable<ResourceManagerSetResourceAddressInvocation>,
     {
         N::execute(self.0, system_api)
     }
