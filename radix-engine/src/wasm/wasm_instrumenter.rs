@@ -1,16 +1,18 @@
-use moka::sync::Cache;
 use radix_engine_interface::crypto::hash;
-use std::sync::Arc;
+use sbor::rust::cell::RefCell;
+use sbor::rust::collections::HashMap;
+use sbor::rust::sync::Arc;
 
 use crate::types::*;
 use crate::wasm::{WasmMeteringConfig, WasmModule};
 
 pub struct WasmInstrumenter {
-    cache: Cache<(Hash, Hash), Arc<Vec<u8>>>,
+    cache: RefCell<HashMap<(Hash, Hash), Arc<Vec<u8>>>>,
 }
 
 #[derive(Debug, Clone)]
 pub struct InstrumenterOptions {
+    #[allow(dead_code)]
     max_cache_size_bytes: u64,
 }
 
@@ -28,17 +30,9 @@ pub struct InstrumentedCode {
 }
 
 impl WasmInstrumenter {
-    pub fn new(options: InstrumenterOptions) -> Self {
-        let cache = Cache::builder()
-            .weigher(|_key: &(Hash, Hash), value: &Arc<Vec<u8>>| -> u32 {
-                value
-                    .len()
-                    .checked_add(Hash::LENGTH * 2)
-                    .and_then(|total| total.try_into().ok())
-                    .unwrap_or(u32::MAX)
-            })
-            .max_capacity(options.max_cache_size_bytes)
-            .build();
+    pub fn new(_options: InstrumenterOptions) -> Self {
+        // TODO: limit size
+        let cache = RefCell::new(HashMap::new());
 
         Self { cache }
     }
@@ -51,16 +45,20 @@ impl WasmInstrumenter {
         let code_hash = hash(code);
         let cache_key = (code_hash, *wasm_metering_config.identifier());
 
-        if let Some(cached) = self.cache.get(&cache_key) {
-            return InstrumentedCode {
-                code: cached.clone(),
-                code_hash,
-            };
+        {
+            if let Some(cached) = self.cache.borrow().get(&cache_key) {
+                return InstrumentedCode {
+                    code: cached.clone(),
+                    code_hash,
+                };
+            }
         }
 
         let instrumented_ref = Arc::new(self.instrument_no_cache(code, wasm_metering_config));
 
-        self.cache.insert(cache_key, instrumented_ref.clone());
+        self.cache
+            .borrow_mut()
+            .insert(cache_key, instrumented_ref.clone());
 
         InstrumentedCode {
             code: instrumented_ref,

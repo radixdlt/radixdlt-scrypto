@@ -12,6 +12,7 @@ use radix_engine_interface::api::wasm_input::{
     ResourceManagerMethodInvocation, VaultMethodInvocation, WorktopMethodInvocation,
 };
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
+use sbor::rust::vec::Vec;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
 ///

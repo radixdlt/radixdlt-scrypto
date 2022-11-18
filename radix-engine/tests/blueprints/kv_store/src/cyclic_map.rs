@@ -1,8 +1,8 @@
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::wasm_input::*;
+use sbor::rust::marker::PhantomData;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
-use std::marker::PhantomData;
 
 blueprint! {
     struct CyclicMap {

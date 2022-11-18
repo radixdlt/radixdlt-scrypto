@@ -18,6 +18,8 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 
 impl<'g, 's, W, R, N, T> SysNativeInvokable<N, RuntimeError> for Kernel<'g, 's, W, R>
 where

@@ -1,8 +1,7 @@
-use std::sync::{Arc, Mutex};
-
 use crate::model::InvokeError;
 use moka::sync::Cache;
 use radix_engine_interface::data::IndexedScryptoValue;
+use sbor::rust::sync::{Arc, Mutex};
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
     Universal, Val, WasmerEnv,

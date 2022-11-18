@@ -1,5 +1,6 @@
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::scrypto;
 

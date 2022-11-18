@@ -1,10 +1,9 @@
+use super::InstrumentedCode;
 use crate::model::InvokeError;
+use crate::wasm::errors::*;
 use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::boxed::Box;
-
-use crate::wasm::errors::*;
-
-use super::InstrumentedCode;
+use sbor::rust::vec::Vec;
 
 /// Represents the runtime that can be invoked by Scrypto modules.
 pub trait WasmRuntime {

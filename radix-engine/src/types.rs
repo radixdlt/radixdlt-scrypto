@@ -33,8 +33,6 @@ pub use sbor::{Decode, DecodeError, Encode, SborPath, SborPathBuf, SborTypeId, S
 
 pub use scrypto::abi::{BlueprintAbi, Fields, Fn, Type, Variant};
 
-use std::fmt::Debug;
-
 // methods and macros
 use crate::engine::Invocation;
 
