@@ -44,45 +44,45 @@ impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for RefCell<T> {
 impl<'a, X: CustomTypeId, B: ?Sized + 'a + ToOwned<Owned = O>, O: Decode<X> + TypeId<X>> Decode<X>
     for Cow<'a, B>
 {
-    fn decode_with_type_id(
+    fn decode_body_with_type_id(
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, O::type_id())?;
-        let v = O::decode_with_type_id(decoder, type_id)?;
+        let v = O::decode_body_with_type_id(decoder, type_id)?;
         Ok(Cow::Owned(v))
     }
 }
 
 impl<X: CustomTypeId, T: Decode<X> + TypeId<X>> Decode<X> for Box<T> {
-    fn decode_with_type_id(
+    fn decode_body_with_type_id(
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, T::type_id())?;
-        let v = T::decode_with_type_id(decoder, type_id)?;
+        let v = T::decode_body_with_type_id(decoder, type_id)?;
         Ok(Box::new(v))
     }
 }
 
 impl<X: CustomTypeId, T: Decode<X> + TypeId<X>> Decode<X> for Rc<T> {
-    fn decode_with_type_id(
+    fn decode_body_with_type_id(
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, T::type_id())?;
-        let v = T::decode_with_type_id(decoder, type_id)?;
+        let v = T::decode_body_with_type_id(decoder, type_id)?;
         Ok(Rc::new(v))
     }
 }
 
 impl<X: CustomTypeId, T: Decode<X> + TypeId<X>> Decode<X> for RefCell<T> {
-    fn decode_with_type_id(
+    fn decode_body_with_type_id(
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, T::type_id())?;
-        let v = T::decode_with_type_id(decoder, type_id)?;
+        let v = T::decode_body_with_type_id(decoder, type_id)?;
         Ok(RefCell::new(v))
     }
 }

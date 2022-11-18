@@ -38,7 +38,7 @@ impl<X: CustomTypeId> Encode<X> for String {
 }
 
 impl<X: CustomTypeId> Decode<X> for String {
-    fn decode_with_type_id(
+    fn decode_body_with_type_id(
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {

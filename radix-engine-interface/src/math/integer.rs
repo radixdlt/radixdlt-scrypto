@@ -303,7 +303,7 @@ macro_rules! sbor_codec {
         }
 
         impl<X: CustomTypeId> Decode<X> for $t {
-            fn decode_with_type_id(
+            fn decode_body_with_type_id(
                 decoder: &mut Decoder<X>,
                 type_id: SborTypeId<X>,
             ) -> Result<Self, DecodeError> {

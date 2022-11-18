@@ -27,7 +27,7 @@ impl<X: CustomTypeId, T: Encode<X>, E: Encode<X>> Encode<X> for Result<T, E> {
 impl<X: CustomTypeId, T: Decode<X> + TypeId<X>, E: Decode<X> + TypeId<X>> Decode<X>
     for Result<T, E>
 {
-    fn decode_with_type_id(
+    fn decode_body_with_type_id(
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
@@ -35,11 +35,11 @@ impl<X: CustomTypeId, T: Decode<X> + TypeId<X>, E: Decode<X> + TypeId<X>> Decode
         let discriminator = decoder.read_discriminator()?;
         match discriminator.as_ref() {
             RESULT_VARIANT_OK => {
-                decoder.check_size(1)?;
+                decoder.read_and_check_size(1)?;
                 Ok(Ok(T::decode(decoder)?))
             }
             RESULT_VARIANT_ERR => {
-                decoder.check_size(1)?;
+                decoder.read_and_check_size(1)?;
                 Ok(Err(E::decode(decoder)?))
             }
             _ => Err(DecodeError::UnknownDiscriminator(discriminator)),

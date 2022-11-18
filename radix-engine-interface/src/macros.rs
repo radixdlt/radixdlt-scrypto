@@ -92,7 +92,7 @@ macro_rules! scrypto_type {
         }
 
         impl sbor::Decode<crate::data::ScryptoCustomTypeId> for $t {
-            fn decode_with_type_id(
+            fn decode_body_with_type_id(
                 decoder: &mut sbor::Decoder<crate::data::ScryptoCustomTypeId>,
                 type_id: sbor::SborTypeId<crate::data::ScryptoCustomTypeId>,
             ) -> Result<Self, sbor::DecodeError> {
@@ -135,7 +135,7 @@ macro_rules! scrypto_type {
         }
 
         impl sbor::Decode<crate::data::ScryptoCustomTypeId> for $t {
-            fn decode_with_type_id(
+            fn decode_body_with_type_id(
                 decoder: &mut sbor::Decoder<crate::data::ScryptoCustomTypeId>,
                 type_id: sbor::SborTypeId<crate::data::ScryptoCustomTypeId>,
             ) -> Result<Self, sbor::DecodeError> {
