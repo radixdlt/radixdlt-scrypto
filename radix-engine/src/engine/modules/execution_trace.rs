@@ -187,6 +187,7 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
         }
 
         self.current_sys_call_depth += 1;
+
         if let REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) = actor {
             let caller = &call_frame.actor;
 
@@ -222,43 +223,8 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
             return Ok(());
         }
 
-        let child_traces = self
-            .sys_call_traces_stacks
-            .remove(&(self.current_sys_call_depth + 1))
-            .unwrap_or(vec![]);
-
-        let (traced_input, origin, instruction_index) = self
-            .traced_sys_call_inputs_stack
-            .pop()
-            .expect("Sys call input stack underflow");
-
         let traced_output = Self::extract_trace_data_from_update(update, heap)?;
-
-        // Only include the trace if:
-        // * there's a non-empty traced input or output
-        // * OR there are any child traces: they need a parent regardless of whether it traces any inputs/outputs.
-        //   At some depth (up to the tracing limit) there must have been at least one traced input/output
-        //   so we need to include the full path up to the root.
-        if !traced_input.is_empty() || !traced_output.is_empty() || !child_traces.is_empty() {
-            let trace = SysCallTrace {
-                origin,
-                sys_call_depth: self.current_sys_call_depth,
-                call_frame_actor: call_frame.actor.clone(),
-                call_frame_depth: call_frame.depth,
-                instruction_index,
-                input: traced_input,
-                output: traced_output,
-                children: child_traces,
-            };
-
-            let siblings = self
-                .sys_call_traces_stacks
-                .entry(self.current_sys_call_depth)
-                .or_insert(vec![]);
-            siblings.push(trace);
-        }
-
-        Ok(())
+        self.finalize_sys_call_trace(call_frame, traced_output)
     }
 
     fn on_wasm_instantiation(
@@ -319,6 +285,7 @@ impl ExecutionTraceModule {
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         if let SysCallInput::Invoke { .. } = input {
+            // Invoke calls are handled separately in pre_execute_invocation
             return Ok(());
         }
 
@@ -386,6 +353,7 @@ impl ExecutionTraceModule {
         output: SysCallOutput,
     ) -> Result<(), ModuleError> {
         if let SysCallOutput::Invoke { .. } = output {
+            // Invoke calls are handled separately in post_execute_invocation
             return Ok(());
         }
 
@@ -396,16 +364,6 @@ impl ExecutionTraceModule {
             // Nothing to trace at this depth, exit.
             return Ok(());
         }
-
-        let child_traces = self
-            .sys_call_traces_stacks
-            .remove(&(self.current_sys_call_depth + 1))
-            .unwrap_or(vec![]);
-
-        let (traced_input, origin, instruction_index) = self
-            .traced_sys_call_inputs_stack
-            .pop()
-            .expect("Sys call input stack underflow");
 
         let traced_output = match output {
             SysCallOutput::CreateNode { node_id } => match node_id {
@@ -427,6 +385,24 @@ impl ExecutionTraceModule {
             },
             _ => TracedSysCallData::new_empty(),
         };
+
+        self.finalize_sys_call_trace(call_frame, traced_output)
+    }
+
+    fn finalize_sys_call_trace(
+        &mut self,
+        call_frame: &CallFrame,
+        traced_output: TracedSysCallData,
+    ) -> Result<(), ModuleError> {
+        let child_traces = self
+            .sys_call_traces_stacks
+            .remove(&(self.current_sys_call_depth + 1))
+            .unwrap_or(vec![]);
+
+        let (traced_input, origin, instruction_index) = self
+            .traced_sys_call_inputs_stack
+            .pop()
+            .expect("Sys call input stack underflow");
 
         // Only include the trace if:
         // * there's a non-empty traced input or output
