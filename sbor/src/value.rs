@@ -9,7 +9,7 @@ use crate::type_id::*;
 pub trait CustomValue<X: CustomTypeId>: Debug + Clone + PartialEq + Eq {
     fn encode_type_id(&self, encoder: &mut Encoder<X>);
     fn encode_body(&self, encoder: &mut Encoder<X>);
-    fn decode_with_type_id(decoder: &mut Decoder<X>, type_id: X) -> Result<Self, DecodeError>
+    fn decode_body_with_type_id(decoder: &mut Decoder<X>, type_id: X) -> Result<Self, DecodeError>
     where
         Self: Sized;
 }
@@ -214,56 +214,56 @@ pub fn decode_any<X: CustomTypeId, Y: CustomValue<X>>(
 ) -> Result<SborValue<X, Y>, DecodeError> {
     let mut decoder = Decoder::new(data);
     let type_id = decoder.read_type_id()?;
-    let result = decode_with_type_id(type_id, &mut decoder);
+    let result = decode_body_with_type_id(type_id, &mut decoder);
     decoder.check_end()?;
     result
 }
 
-fn decode_with_type_id<X: CustomTypeId, Y: CustomValue<X>>(
+fn decode_body_with_type_id<X: CustomTypeId, Y: CustomValue<X>>(
     type_id: SborTypeId<X>,
     decoder: &mut Decoder<X>,
 ) -> Result<SborValue<X, Y>, DecodeError> {
     match type_id {
         // primitive types
         SborTypeId::Unit => {
-            <()>::decode_with_type_id(decoder, type_id)?;
+            <()>::decode_body_with_type_id(decoder, type_id)?;
             Ok(SborValue::Unit)
         }
         SborTypeId::Bool => Ok(SborValue::Bool {
-            value: <bool>::decode_with_type_id(decoder, type_id)?,
+            value: <bool>::decode_body_with_type_id(decoder, type_id)?,
         }),
         SborTypeId::I8 => Ok(SborValue::I8 {
-            value: <i8>::decode_with_type_id(decoder, type_id)?,
+            value: <i8>::decode_body_with_type_id(decoder, type_id)?,
         }),
         SborTypeId::I16 => Ok(SborValue::I16 {
-            value: <i16>::decode_with_type_id(decoder, type_id)?,
+            value: <i16>::decode_body_with_type_id(decoder, type_id)?,
         }),
         SborTypeId::I32 => Ok(SborValue::I32 {
-            value: <i32>::decode_with_type_id(decoder, type_id)?,
+            value: <i32>::decode_body_with_type_id(decoder, type_id)?,
         }),
         SborTypeId::I64 => Ok(SborValue::I64 {
-            value: <i64>::decode_with_type_id(decoder, type_id)?,
+            value: <i64>::decode_body_with_type_id(decoder, type_id)?,
         }),
         SborTypeId::I128 => Ok(SborValue::I128 {
-            value: <i128>::decode_with_type_id(decoder, type_id)?,
+            value: <i128>::decode_body_with_type_id(decoder, type_id)?,
         }),
         SborTypeId::U8 => Ok(SborValue::U8 {
-            value: <u8>::decode_with_type_id(decoder, type_id)?,
+            value: <u8>::decode_body_with_type_id(decoder, type_id)?,
         }),
         SborTypeId::U16 => Ok(SborValue::U16 {
-            value: <u16>::decode_with_type_id(decoder, type_id)?,
+            value: <u16>::decode_body_with_type_id(decoder, type_id)?,
         }),
         SborTypeId::U32 => Ok(SborValue::U32 {
-            value: <u32>::decode_with_type_id(decoder, type_id)?,
+            value: <u32>::decode_body_with_type_id(decoder, type_id)?,
         }),
         SborTypeId::U64 => Ok(SborValue::U64 {
-            value: <u64>::decode_with_type_id(decoder, type_id)?,
+            value: <u64>::decode_body_with_type_id(decoder, type_id)?,
         }),
         SborTypeId::U128 => Ok(SborValue::U128 {
-            value: <u128>::decode_with_type_id(decoder, type_id)?,
+            value: <u128>::decode_body_with_type_id(decoder, type_id)?,
         }),
         SborTypeId::String => Ok(SborValue::String {
-            value: <String>::decode_with_type_id(decoder, type_id)?,
+            value: <String>::decode_body_with_type_id(decoder, type_id)?,
         }),
         // struct & enum
         SborTypeId::Struct => {
@@ -273,20 +273,20 @@ fn decode_with_type_id<X: CustomTypeId, Y: CustomValue<X>>(
             let mut fields = Vec::new();
             for _ in 0..len {
                 let type_id = decoder.read_type_id()?;
-                fields.push(decode_with_type_id(type_id, decoder)?);
+                fields.push(decode_body_with_type_id(type_id, decoder)?);
             }
             Ok(SborValue::Struct { fields })
         }
         SborTypeId::Enum => {
             // discriminator
-            let discriminator = <String>::decode_with_type_id(decoder, String::type_id())?;
+            let discriminator = <String>::decode_body_with_type_id(decoder, String::type_id())?;
             // number of fields
             let len = decoder.read_size()?;
             // fields
             let mut fields = Vec::new();
             for _ in 0..len {
                 let type_id = decoder.read_type_id()?;
-                fields.push(decode_with_type_id(type_id, decoder)?);
+                fields.push(decode_body_with_type_id(type_id, decoder)?);
             }
             Ok(SborValue::Enum {
                 discriminator,
@@ -302,7 +302,7 @@ fn decode_with_type_id<X: CustomTypeId, Y: CustomValue<X>>(
             // values
             let mut elements = Vec::new();
             for _ in 0..len {
-                elements.push(decode_with_type_id(element_type_id, decoder)?);
+                elements.push(decode_body_with_type_id(element_type_id, decoder)?);
             }
             Ok(SborValue::Array {
                 element_type_id,
@@ -316,12 +316,12 @@ fn decode_with_type_id<X: CustomTypeId, Y: CustomValue<X>>(
             let mut elements = Vec::new();
             for _ in 0..len {
                 let type_id = decoder.read_type_id()?;
-                elements.push(decode_with_type_id(type_id, decoder)?);
+                elements.push(decode_body_with_type_id(type_id, decoder)?);
             }
             Ok(SborValue::Tuple { elements })
         }
         SborTypeId::Custom(type_id) => Ok(SborValue::Custom {
-            value: Y::decode_with_type_id(decoder, type_id)?,
+            value: Y::decode_body_with_type_id(decoder, type_id)?,
         }),
     }
 }

@@ -86,12 +86,12 @@ impl<X: CustomTypeId, K: Encode<X> + TypeId<X> + Ord + Hash, V: Encode<X> + Type
 }
 
 impl<X: CustomTypeId, T: Decode<X> + TypeId<X>> Decode<X> for Vec<T> {
-    fn decode_with_type_id(
+    fn decode_body_with_type_id(
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
-        let element_type_id = decoder.check_type_id(T::type_id())?;
+        let element_type_id = decoder.read_and_check_type_id(T::type_id())?;
         let len = decoder.read_size()?;
 
         if T::type_id() == SborTypeId::U8 || T::type_id() == SborTypeId::I8 {
@@ -105,7 +105,7 @@ impl<X: CustomTypeId, T: Decode<X> + TypeId<X>> Decode<X> for Vec<T> {
         } else {
             let mut result = Vec::<T>::with_capacity(if len <= 1024 { len } else { 1024 });
             for _ in 0..len {
-                result.push(T::decode_with_type_id(decoder, element_type_id)?);
+                result.push(T::decode_body_with_type_id(decoder, element_type_id)?);
             }
             Ok(result)
         }
@@ -113,23 +113,23 @@ impl<X: CustomTypeId, T: Decode<X> + TypeId<X>> Decode<X> for Vec<T> {
 }
 
 impl<X: CustomTypeId, T: Decode<X> + TypeId<X> + Ord> Decode<X> for BTreeSet<T> {
-    fn decode_with_type_id(
+    fn decode_body_with_type_id(
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
-        let elements: Vec<T> = Vec::<T>::decode_with_type_id(decoder, type_id)?;
+        let elements: Vec<T> = Vec::<T>::decode_body_with_type_id(decoder, type_id)?;
         Ok(elements.into_iter().collect())
     }
 }
 
 impl<X: CustomTypeId, T: Decode<X> + TypeId<X> + Hash + Eq> Decode<X> for HashSet<T> {
-    fn decode_with_type_id(
+    fn decode_body_with_type_id(
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
-        let elements: Vec<T> = Vec::<T>::decode_with_type_id(decoder, type_id)?;
+        let elements: Vec<T> = Vec::<T>::decode_body_with_type_id(decoder, type_id)?;
         Ok(elements.into_iter().collect())
     }
 }
@@ -137,12 +137,12 @@ impl<X: CustomTypeId, T: Decode<X> + TypeId<X> + Hash + Eq> Decode<X> for HashSe
 impl<X: CustomTypeId, K: Decode<X> + TypeId<X> + Ord, V: Decode<X> + TypeId<X>> Decode<X>
     for BTreeMap<K, V>
 {
-    fn decode_with_type_id(
+    fn decode_body_with_type_id(
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
-        let elements = Vec::<(K, V)>::decode_with_type_id(decoder, type_id)?;
+        let elements = Vec::<(K, V)>::decode_body_with_type_id(decoder, type_id)?;
         Ok(elements.into_iter().collect())
     }
 }
@@ -150,12 +150,12 @@ impl<X: CustomTypeId, K: Decode<X> + TypeId<X> + Ord, V: Decode<X> + TypeId<X>> 
 impl<X: CustomTypeId, K: Decode<X> + TypeId<X> + Hash + Eq, V: Decode<X> + TypeId<X>> Decode<X>
     for HashMap<K, V>
 {
-    fn decode_with_type_id(
+    fn decode_body_with_type_id(
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
-        let elements: Vec<(K, V)> = Vec::<(K, V)>::decode_with_type_id(decoder, type_id)?;
+        let elements: Vec<(K, V)> = Vec::<(K, V)>::decode_body_with_type_id(decoder, type_id)?;
         Ok(elements.into_iter().collect())
     }
 }

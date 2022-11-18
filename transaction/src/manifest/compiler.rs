@@ -1,7 +1,8 @@
+use radix_engine_interface::address::Bech32Decoder;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::hash;
+
 use sbor::rust::collections::HashMap;
-use scrypto::address::Bech32Decoder;
-use scrypto::core::NetworkDefinition;
-use scrypto::crypto::hash;
 
 use crate::manifest::*;
 use crate::model::TransactionManifest;
@@ -36,18 +37,16 @@ pub fn compile(
 mod tests {
     use super::*;
     use crate::model::Instruction;
+    use radix_engine_interface::api::types::{
+        NativeFunctionIdent, ResourceManagerFunction, ScryptoMethodIdent, ScryptoReceiver,
+    };
+    use radix_engine_interface::crypto::Blob;
+    use radix_engine_interface::data::*;
+    use radix_engine_interface::math::{Decimal, PreciseDecimal};
+    use radix_engine_interface::model::*;
     use sbor::rust::collections::*;
     use sbor::rust::str::FromStr;
-    use scrypto::address::Bech32Decoder;
-    use scrypto::args;
-    use scrypto::core::Blob;
-    use scrypto::core::NetworkDefinition;
-    use scrypto::engine::types::*;
-    use scrypto::math::*;
-    use scrypto::resource::{
-        AccessRule, MintParams, Mutability, ResourceMethodAuthKey, ResourceType,
-    };
-    use scrypto::{core::Expression, resource::NonFungibleId};
+    use scrypto::runtime::Expression;
 
     #[test]
     fn test_compile() {
@@ -103,7 +102,7 @@ mod tests {
                         receiver: ScryptoReceiver::Global(component2),
                         method_name: "buy_gumball".to_string(),
                     },
-                    args: args!(scrypto::resource::Bucket(512))
+                    args: args!(Bucket(512))
                 },
                 Instruction::AssertWorktopContainsByAmount {
                     amount: Decimal::from(3),

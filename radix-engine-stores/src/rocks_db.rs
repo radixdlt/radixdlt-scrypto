@@ -4,6 +4,8 @@ use std::path::PathBuf;
 use radix_engine::ledger::*;
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::*;
+use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::data::ScryptoCustomTypeId;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 
 pub struct RadixEngineDB {

@@ -1,10 +1,14 @@
 use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use scrypto::misc::ContextualDisplay;
-use scrypto::resource::{Bucket, Proof, DIVISIBILITY_MAXIMUM};
+use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
+use radix_engine_interface::model::FromPublicKey;
+use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use utils::ContextualDisplay;
 
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {
@@ -302,12 +306,12 @@ fn cant_move_restricted_proof() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
-        test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
+        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function_with_abi(
             package_address,
             "VaultProof",
@@ -345,12 +349,12 @@ fn cant_move_locked_bucket() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
-        test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
+        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function_with_abi(
             package_address,
             "BucketProof",
@@ -388,7 +392,7 @@ fn can_compose_bucket_and_vault_proof() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
-        test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
+        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
@@ -404,9 +408,9 @@ fn can_compose_bucket_and_vault_proof() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account_by_amount(account, 99.into(), resource_address)
-        .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .withdraw_from_account_by_amount(account, 99u32.into(), resource_address)
+        .take_from_worktop_by_amount(99u32.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof",
@@ -430,7 +434,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
-        test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
+        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
@@ -446,13 +450,13 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account_by_amount(account, 99.into(), resource_address)
-        .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .withdraw_from_account_by_amount(account, 99u32.into(), resource_address)
+        .take_from_worktop_by_amount(99u32.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof_by_amount",
-                args!(Bucket(bucket_id), Decimal::from(2)),
+                args!(Bucket(bucket_id), Decimal::from(2u32)),
             )
         })
         .build();
@@ -487,7 +491,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .withdraw_from_account_by_ids(
             account,
             &BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)]),
@@ -563,7 +567,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .create_proof_from_account_by_ids(
             account,
             &BTreeSet::from([NonFungibleId::from_u32(1), NonFungibleId::from_u32(2)]),

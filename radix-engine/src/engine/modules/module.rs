@@ -3,6 +3,10 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;
 use crate::types::*;
+use radix_engine_interface::api::types::{
+    Level, LockHandle, RENodeId, SubstateId, SubstateOffset, VaultId,
+};
+use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug)]
 pub enum InvocationInfo<'a> {

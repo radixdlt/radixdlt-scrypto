@@ -1008,9 +1008,11 @@ dependencies = [
  "moka",
  "parity-wasm",
  "radix-engine-constants",
+ "radix-engine-interface",
  "sbor",
  "scrypto",
  "transaction",
+ "utils",
  "wasm-instrument",
  "wasmi",
  "wasmi-validation",
@@ -1021,13 +1023,46 @@ name = "radix-engine-constants"
 version = "0.7.0"
 
 [[package]]
+name = "radix-engine-derive"
+version = "0.7.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "sbor",
+ "scrypto-abi",
+ "serde",
+ "serde_json",
+ "syn",
+ "uuid",
+]
+
+[[package]]
+name = "radix-engine-interface"
+version = "0.7.0"
+dependencies = [
+ "bech32",
+ "forward_ref",
+ "hex",
+ "num-bigint",
+ "num-traits",
+ "paste",
+ "radix-engine-derive",
+ "sbor",
+ "scrypto-abi",
+ "sha2 0.10.6",
+ "sha3",
+ "strum",
+ "utils",
+]
+
+[[package]]
 name = "radix-engine-stores"
 version = "0.7.0"
 dependencies = [
  "radix-engine",
+ "radix-engine-interface",
  "rocksdb",
  "sbor",
- "scrypto",
 ]
 
 [[package]]
@@ -1234,6 +1269,8 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "paste",
+ "radix-engine-derive",
+ "radix-engine-interface",
  "sbor",
  "scrypto-abi",
  "scrypto-derive",
@@ -1241,6 +1278,7 @@ dependencies = [
  "sha2 0.10.6",
  "sha3",
  "strum",
+ "utils",
 ]
 
 [[package]]
@@ -1408,6 +1446,7 @@ dependencies = [
  "hex",
  "radix-engine",
  "radix-engine-constants",
+ "radix-engine-interface",
  "radix-engine-stores",
  "rand 0.8.5",
  "regex",
@@ -1417,6 +1456,7 @@ dependencies = [
  "serde_json",
  "temp-env",
  "transaction",
+ "utils",
  "uuid",
 ]
 
@@ -1607,10 +1647,12 @@ dependencies = [
  "clap",
  "ed25519-dalek",
  "hex",
+ "radix-engine-interface",
  "sbor",
  "scrypto",
  "secp256k1",
  "serde_with",
+ "utils",
 ]
 
 [[package]]
@@ -1651,6 +1693,24 @@ name = "unicode-xid"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
+
+[[package]]
+name = "utils"
+version = "0.7.0"
+dependencies = [
+ "bech32",
+ "forward_ref",
+ "hex",
+ "num-bigint",
+ "num-traits",
+ "paste",
+ "sbor",
+ "scrypto-abi",
+ "scrypto-derive",
+ "sha2 0.10.6",
+ "sha3",
+ "strum",
+]
 
 [[package]]
 name = "uuid"

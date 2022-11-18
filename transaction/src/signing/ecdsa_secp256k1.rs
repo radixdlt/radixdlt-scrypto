@@ -1,5 +1,5 @@
+use radix_engine_interface::crypto::{sha256, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature};
 use sbor::rust::vec::Vec;
-use scrypto::crypto::*;
 use secp256k1::{Message, PublicKey, SecretKey};
 
 pub struct EcdsaSecp256k1PrivateKey(SecretKey);
@@ -47,11 +47,9 @@ impl EcdsaSecp256k1PrivateKey {
 mod tests {
     use super::*;
     use crate::validation::verify_ecdsa_secp256k1;
+    use radix_engine_interface::constants::ECDSA_SECP256K1_TOKEN;
+    use radix_engine_interface::model::{NonFungibleAddress, NonFungibleId};
     use sbor::rust::str::FromStr;
-    use scrypto::{
-        constants::ECDSA_SECP256K1_TOKEN,
-        resource::{NonFungibleAddress, NonFungibleId},
-    };
 
     #[test]
     fn sign_and_verify() {

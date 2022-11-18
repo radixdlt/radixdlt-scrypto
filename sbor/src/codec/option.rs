@@ -24,7 +24,7 @@ impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for Option<T> {
 }
 
 impl<X: CustomTypeId, T: Decode<X>> Decode<X> for Option<T> {
-    fn decode_with_type_id(
+    fn decode_body_with_type_id(
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
@@ -33,11 +33,11 @@ impl<X: CustomTypeId, T: Decode<X>> Decode<X> for Option<T> {
 
         match discriminator.as_ref() {
             OPTION_VARIANT_SOME => {
-                decoder.check_size(1)?;
+                decoder.read_and_check_size(1)?;
                 Ok(Some(T::decode(decoder)?))
             }
             OPTION_VARIANT_NONE => {
-                decoder.check_size(0)?;
+                decoder.read_and_check_size(0)?;
                 Ok(None)
             }
             _ => Err(DecodeError::UnknownDiscriminator(discriminator)),

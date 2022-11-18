@@ -1,6 +1,6 @@
 use crate::model::InvokeError;
+use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::boxed::Box;
-use scrypto::data::IndexedScryptoValue;
 
 use crate::wasm::errors::*;
 
@@ -8,10 +8,7 @@ use super::InstrumentedCode;
 
 /// Represents the runtime that can be invoked by Scrypto modules.
 pub trait WasmRuntime {
-    fn main(
-        &mut self,
-        input: IndexedScryptoValue,
-    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>>;
+    fn main(&mut self, input: IndexedScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>>;
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>>;
 }

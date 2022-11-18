@@ -43,16 +43,16 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                     .map(|f| f.ident.clone().expect("Illegal State!").to_string());
 
                 quote! {
-                    impl ::scrypto::resource::NonFungibleData for #ident {
+                    impl radix_engine_interface::model::NonFungibleData for #ident {
                         fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{type_id::*, *};
                             let mut decoder_nm = Decoder::new(immutable_data);
-                            decoder_nm.check_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct)?;
-                            decoder_nm.check_size(#im_n)?;
+                            decoder_nm.read_and_check_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct)?;
+                            decoder_nm.read_and_check_size(#im_n)?;
 
                             let mut decoder_m = Decoder::new(mutable_data);
-                            decoder_m.check_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct)?;
-                            decoder_m.check_size(#m_n)?;
+                            decoder_m.read_and_check_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct)?;
+                            decoder_m.read_and_check_size(#m_n)?;
 
                             let decoded = Self {
                                 #(#im_ids: <#im_types>::decode(&mut decoder_nm)?,)*
@@ -172,15 +172,15 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::scrypto::resource::NonFungibleData for MyStruct {
+                impl radix_engine_interface::model::NonFungibleData for MyStruct {
                     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{type_id::*, *};
                         let mut decoder_nm = Decoder::new(immutable_data);
-                        decoder_nm.check_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct)?;
-                        decoder_nm.check_size(1)?;
+                        decoder_nm.read_and_check_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct)?;
+                        decoder_nm.read_and_check_size(1)?;
                         let mut decoder_m = Decoder::new(mutable_data);
-                        decoder_m.check_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct)?;
-                        decoder_m.check_size(1)?;
+                        decoder_m.read_and_check_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct)?;
+                        decoder_m.read_and_check_size(1)?;
                         let decoded = Self {
                             field_1: <u32>::decode(&mut decoder_nm)?,
                             field_2: <String>::decode(&mut decoder_m)?,

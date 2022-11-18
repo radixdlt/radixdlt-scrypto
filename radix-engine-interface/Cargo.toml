@@ -1,0 +1,32 @@
+[package]
+name = "radix-engine-interface"
+version = "0.7.0"
+edition = "2021"
+
+[dependencies]
+sha2 = { version = "0.10.2", default-features = false }
+sha3 = { version = "0.10.1", default-features = false }
+hex = { version = "0.4.3", default-features = false }
+num-traits = { version = "0.2.15", default-features = false }
+num-bigint = { version = "0.4.3", default-features = false }
+bech32 = { version = "0.9.0", default-features = false }
+sbor = { path = "../sbor", default-features = false }
+radix-engine-derive = { path = "../radix-engine-derive", default-features = false }
+scrypto-abi = { path = "../scrypto-abi", default-features = false }
+utils = { path = "../utils", default-features = false }
+forward_ref = { version = "1.0.0"}
+paste = { version = "1.0.7"}
+serde = { version = "1.0.144", default-features = false, optional = true }
+strum = { version = "0.24", default-features = false, features = ["derive"] }
+
+[features]
+# You should enable either `std` or `alloc`
+default = ["std"]
+std = ["hex/std", "sbor/std", "scrypto-abi/std", "radix-engine-derive/std", "strum/std", "utils/std"]
+alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "radix-engine-derive/alloc", "utils/alloc"]
+
+# Turn on this feature to enable tracing.
+trace = ["radix-engine-derive/trace"]
+
+# Enable serde derives
+serde = ["sbor/serde", "scrypto-abi/serde", "serde/derive"]

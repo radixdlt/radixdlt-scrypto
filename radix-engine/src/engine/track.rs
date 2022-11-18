@@ -1,3 +1,9 @@
+use radix_engine_interface::api::types::{
+    GlobalAddress, GlobalOffset, KeyValueStoreOffset, Level, NonFungibleStoreOffset, RENodeId,
+    SubstateId, SubstateOffset, VaultId, VaultOffset,
+};
+use radix_engine_interface::crypto::hash;
+use radix_engine_interface::model::*;
 use transaction::model::Executable;
 
 use crate::engine::*;

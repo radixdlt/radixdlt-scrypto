@@ -1,4 +1,6 @@
-use scrypto::engine::{api::*, types::*, utils::*};
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::wasm_input::*;
+use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
 blueprint! {

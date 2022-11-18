@@ -34,11 +34,11 @@ pub trait Decode<X: CustomTypeId>: Sized {
     /// Decodes from the byte array encapsulated by the given decoder.
     fn decode(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
         let type_id = decoder.read_type_id()?;
-        Self::decode_with_type_id(decoder, type_id)
+        Self::decode_body_with_type_id(decoder, type_id)
     }
 
     /// Decodes from the byte array encapsulated by the given decoder, with a preloaded type id.
-    fn decode_with_type_id(
+    fn decode_body_with_type_id(
         decoder: &mut Decoder<X>,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError>;
@@ -134,12 +134,15 @@ impl<'de, X: CustomTypeId> Decoder<'de, X> {
         }
     }
 
-    pub fn check_type_id(&mut self, expected: SborTypeId<X>) -> Result<SborTypeId<X>, DecodeError> {
+    pub fn read_and_check_type_id(
+        &mut self,
+        expected: SborTypeId<X>,
+    ) -> Result<SborTypeId<X>, DecodeError> {
         let type_id = self.read_type_id()?;
         self.check_preloaded_type_id(type_id, expected)
     }
 
-    pub fn check_size(&mut self, expected: usize) -> Result<(), DecodeError> {
+    pub fn read_and_check_size(&mut self, expected: usize) -> Result<(), DecodeError> {
         let len = self.read_size()?;
         if len != expected {
             return Err(DecodeError::UnexpectedSize {

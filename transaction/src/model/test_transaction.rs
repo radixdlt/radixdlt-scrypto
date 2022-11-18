@@ -1,7 +1,8 @@
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::{EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature};
+use radix_engine_interface::model::*;
+
 use sbor::rust::vec::Vec;
-use scrypto::core::NetworkDefinition;
-use scrypto::crypto::*;
-use scrypto::resource::NonFungibleAddress;
 use std::collections::BTreeSet;
 
 use crate::builder::TransactionBuilder;

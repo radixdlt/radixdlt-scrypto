@@ -1,7 +1,22 @@
+use radix_engine_interface::model::*;
 use sbor::rust::marker::PhantomData;
 
 use crate::borrow_resource_manager;
 use crate::resource::*;
+
+pub trait ScryptoNonFungibleId {
+    /// Creates a non-fungible ID from some uuid.
+    fn random() -> Self;
+}
+
+impl ScryptoNonFungibleId for NonFungibleId {
+    fn random() -> Self {
+        let bytes = crate::runtime::Runtime::generate_uuid()
+            .to_be_bytes()
+            .to_vec();
+        Self::from_bytes(bytes)
+    }
+}
 
 /// Represents a non-fungible unit.
 #[derive(Debug)]
