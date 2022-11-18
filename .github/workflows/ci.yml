@@ -182,6 +182,12 @@ jobs:
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
       run: cargo test
+      working-directory: radix-engine-derive
+    - name: Run tests
+      run: cargo test
+      working-directory: radix-engine-interface
+    - name: Run tests
+      run: cargo test
       working-directory: radix-engine
   radix-engine-wasmer:
     name: Run Radix Engine tests with Wasmer
