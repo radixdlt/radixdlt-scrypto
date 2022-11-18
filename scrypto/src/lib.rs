@@ -22,10 +22,10 @@ pub mod abi {
 }
 /// Scrypto buffer for wasm-engine data exchange.
 pub mod buffer;
-/// Scrypto component library.
+/// Scrypto component abstraction.
 pub mod component;
-/// Scrypto core library, mainly process and transaction context.
-pub mod core;
+/// Scrypto runtime abstraction.
+pub mod runtime;
 /// Scrypto data model.
 pub mod data {
     pub use radix_engine_interface::data::*;
@@ -38,11 +38,9 @@ pub mod math {
 pub mod model {
     pub use radix_engine_interface::model::*;
 }
-/// Radix Engine APIs.
+/// Scrypto RE abstraction.
 pub mod engine;
-/// Miscellaneous functions.
-pub mod misc;
-/// Scrypto resource library.
+/// Scrypto resource abstraction.
 pub mod resource;
 
 /// Scrypto preludes.
@@ -66,3 +64,33 @@ pub use scrypto_derive::{blueprint, import, NonFungibleData};
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
 extern crate self as scrypto;
+
+/// Sets up panic hook.
+pub fn set_up_panic_hook() {
+    #[cfg(not(feature = "alloc"))]
+    std::panic::set_hook(Box::new(|info| {
+        // parse message
+        let payload = info
+            .payload()
+            .downcast_ref::<&str>()
+            .map(ToString::to_string)
+            .or(info
+                .payload()
+                .downcast_ref::<String>()
+                .map(ToString::to_string))
+            .unwrap_or(String::new());
+
+        // parse location
+        let location = if let Some(l) = info.location() {
+            format!("{}:{}:{}", l.file(), l.line(), l.column())
+        } else {
+            "<unknown>".to_owned()
+        };
+
+        crate::runtime::Logger::error(sbor::rust::format!(
+            "Panicked at '{}', {}",
+            payload,
+            location
+        ));
+    }));
+}

@@ -5,7 +5,7 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use utils::misc::ContextualDisplay;
+use utils::ContextualDisplay;
 
 #[test]
 fn test_integer_basic_ops() {

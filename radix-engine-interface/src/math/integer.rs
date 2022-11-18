@@ -385,7 +385,6 @@ where
     write!(f, "{}{}", minus, num)
 }
 
-#[macro_export]
 macro_rules! forward_ref_unop {
     (impl $imp:ident, $method:ident for $t:ty) => {
         impl $imp for &$t {
@@ -399,7 +398,6 @@ macro_rules! forward_ref_unop {
     };
 }
 
-#[macro_export]
 macro_rules! forward_ref_binop {
     (impl $imp:ident, $method:ident for $t:ty, $u:ty) => {
         impl<'a> $imp<$u> for &'a $t {
@@ -430,7 +428,7 @@ macro_rules! forward_ref_binop {
         }
     };
 }
-#[macro_export]
+
 macro_rules! forward_ref_op_assign {
     (impl $imp:ident, $method:ident for $t:ty, $u:ty) => {
         impl $imp<&$u> for $t {

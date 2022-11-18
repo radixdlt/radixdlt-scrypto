@@ -1,5 +1,5 @@
 use core::fmt::Debug;
-use radix_engine_interface::engine::types::{NativeFunction, PackageFunction, PackageId};
+use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId};
 
 use crate::engine::*;
 use crate::model::{GlobalAddressSubstate, PackageSubstate};

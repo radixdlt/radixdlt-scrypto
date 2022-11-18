@@ -4,7 +4,7 @@ use crate::engine::{
 };
 use crate::model::{InvokeError, ProofError};
 use crate::types::*;
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     AuthZoneMethod, AuthZoneOffset, GlobalAddress, NativeMethod, ProofId, ProofOffset, RENodeId,
     ResourceManagerOffset, SubstateOffset,
 };

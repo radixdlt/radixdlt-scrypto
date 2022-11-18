@@ -1,9 +1,9 @@
-use crate::engine::api::{ScryptoNativeInvocation, SysInvocation};
+use crate::api::api::{ScryptoNativeInvocation, SysInvocation};
 
-use crate::crypto::Blob;
-use crate::engine::wasm_input::{
+use crate::api::wasm_input::{
     NativeFnInvocation, NativeFunctionInvocation, PackageFunctionInvocation,
 };
+use crate::crypto::Blob;
 use crate::model::*;
 use crate::scrypto;
 

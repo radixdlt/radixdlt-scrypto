@@ -1,6 +1,6 @@
 use clap::Parser;
 use colored::*;
-use utils::misc::ContextualDisplay;
+use utils::ContextualDisplay;
 
 use crate::resim::*;
 

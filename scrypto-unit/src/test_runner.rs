@@ -18,11 +18,11 @@ use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
 use radix_engine_constants::*;
+use radix_engine_interface::api::types::{RENodeId, ScryptoMethodIdent};
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
 use radix_engine_interface::dec;
-use radix_engine_interface::engine::types::{RENodeId, ScryptoMethodIdent};
 
 use radix_engine_interface::model::FromPublicKey;
 use scrypto::{access_rule_node, rule};
@@ -843,7 +843,7 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
     }
 }
 
-pub fn test_abi_any_in_void_out(
+pub fn generate_single_function_abi(
     blueprint_name: &str,
     function_name: &str,
 ) -> HashMap<String, BlueprintAbi> {

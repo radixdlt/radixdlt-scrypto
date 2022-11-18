@@ -1,5 +1,5 @@
+use crate::construct_address;
 use crate::model::*;
-use crate::{address, construct_address};
 
 // After changing Radix Engine ID allocation, you will most likely need to update the addresses below.
 //
@@ -135,7 +135,7 @@ pub const SYSTEM_TOKEN: ResourceAddress = construct_address!(
 );
 
 /// The XRD resource address.
-pub const RADIX_TOKEN: ResourceAddress = address!(
+pub const RADIX_TOKEN: ResourceAddress = construct_address!(
     EntityType::Resource,
     141,
     129,
@@ -227,7 +227,7 @@ pub const EPOCH_MANAGER: SystemAddress = construct_address!(
 );
 
 /// The ED25519 virtual resource address.
-pub const EDDSA_ED25519_TOKEN: ResourceAddress = address!(
+pub const EDDSA_ED25519_TOKEN: ResourceAddress = construct_address!(
     EntityType::Resource,
     15,
     142,

@@ -73,7 +73,7 @@ use transaction::model::AuthModule;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
-use utils::misc::ContextualDisplay;
+use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
 #[derive(Parser, Debug)]

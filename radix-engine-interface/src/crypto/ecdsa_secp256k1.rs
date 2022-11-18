@@ -4,7 +4,7 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::misc::copy_u8_array;
+use utils::copy_u8_array;
 
 use crate::abi::*;
 use crate::data::*;

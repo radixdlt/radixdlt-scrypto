@@ -4,7 +4,7 @@ use radix_engine_interface::model::*;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::core::*;
+use crate::runtime::*;
 
 /// Represents a published package.
 #[derive(Debug)]

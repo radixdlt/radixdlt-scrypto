@@ -1,5 +1,5 @@
 use crate::types::*;
-use radix_engine_interface::engine::types::{BucketId, VaultId};
+use radix_engine_interface::api::types::{BucketId, VaultId};
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

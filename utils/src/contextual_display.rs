@@ -3,7 +3,7 @@ use sbor::rust::fmt;
 /// This trait is used where context is required to correctly display a value.
 ///
 /// Typically, this is due to needing to know the current network to display addresses.
-/// Other forms of Context are also possible. See [`ComponentAddress`][ComponentAddress]
+/// Other forms of Context are also possible. See `ComponentAddress`
 /// or `TransactionReceipt` in the `radix-engine` crate for example implementations.
 ///
 /// The `Context` used should typically just be a wrapper type around references, and so

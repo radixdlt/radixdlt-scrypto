@@ -1,13 +1,13 @@
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::args;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::crypto::{hash, Blob, Hash};
-use radix_engine_interface::data::*;
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
     ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoPackage, ScryptoReceiver,
 };
+use radix_engine_interface::args;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::{hash, Blob, Hash};
+use radix_engine_interface::data::*;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
 

@@ -3,9 +3,9 @@ use radix_engine::engine::{
 };
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use radix_engine_interface::api::types::{RENodeId, ScryptoFunctionIdent};
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
-use radix_engine_interface::engine::types::{RENodeId, ScryptoFunctionIdent};
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

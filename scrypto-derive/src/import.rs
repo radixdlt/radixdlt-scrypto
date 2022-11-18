@@ -63,7 +63,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
         if let None = function.mutability {
             fns.push(parse_quote! {
                 pub fn #func_indent(#(#func_args: #func_types),*) -> #func_output {
-                    ::scrypto::core::Runtime::call_function(
+                    ::scrypto::runtime::Runtime::call_function(
                         ::scrypto::model::PackageAddress::try_from_hex(#package_address).unwrap(),
                         #blueprint_name,
                         #func_name,
@@ -74,7 +74,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
         } else {
             fns.push(parse_quote! {
                 pub fn #func_indent(&self #(, #func_args: #func_types)*) -> #func_output {
-                    ::scrypto::core::Runtime::call_method(
+                    ::scrypto::runtime::Runtime::call_method(
                         self.component_address,
                         #func_name,
                         args!(#(#func_args),*)
@@ -346,7 +346,7 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         SchemaType::Bucket => parse_quote! {::scrypto::engine_lib::resource::Bucket },
         SchemaType::Proof => parse_quote! { ::scrypto::engine_lib::resource::Proof},
         SchemaType::Vault => parse_quote! { ::scrypto::engine_lib::resource::Vault},
-        SchemaType::Expression => parse_quote! {::scrypto::core::Expression },
+        SchemaType::Expression => parse_quote! {::scrypto::runtime::Expression },
         SchemaType::Blob => parse_quote! { ::scrypto::engine_lib::crypto::Blob},
         SchemaType::NonFungibleAddress => {
             parse_quote! { ::scrypto::engine_lib::resource::NonFungibleAddress}
@@ -451,7 +451,7 @@ mod tests {
                 }
                 impl Simple {
                     pub fn new() -> ::scrypto::model::ComponentAddress {
-                        ::scrypto::core::Runtime::call_function(
+                        ::scrypto::runtime::Runtime::call_function(
                             ::scrypto::model::PackageAddress::try_from_hex("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7").unwrap(),
                             "Simple",
                             "new",
@@ -459,7 +459,7 @@ mod tests {
                         )
                     }
                     pub fn free_token(&self) -> ::scrypto::engine_lib::resource::Bucket {
-                        ::scrypto::core::Runtime::call_method(
+                        ::scrypto::runtime::Runtime::call_method(
                             self.component_address,
                             "free_token",
                             args!()

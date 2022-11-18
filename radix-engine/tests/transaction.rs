@@ -9,7 +9,7 @@ use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
-use utils::misc::ContextualDisplay;
+use utils::ContextualDisplay;
 
 #[test]
 fn test_manifest_with_non_existent_resource() {

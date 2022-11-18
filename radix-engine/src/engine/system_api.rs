@@ -3,7 +3,7 @@ use crate::engine::*;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use bitflags::bitflags;
-use radix_engine_interface::engine::types::{Level, LockHandle, RENodeId, SubstateOffset, VaultId};
+use radix_engine_interface::api::types::{Level, LockHandle, RENodeId, SubstateOffset, VaultId};
 
 bitflags! {
     #[derive(Encode, Decode, TypeId)]

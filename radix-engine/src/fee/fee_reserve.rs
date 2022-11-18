@@ -4,7 +4,7 @@ use crate::types::*;
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine_interface::engine::types::VaultId;
+use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::math::{Decimal, RoundingMode};
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]

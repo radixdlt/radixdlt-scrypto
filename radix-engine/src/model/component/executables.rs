@@ -3,7 +3,7 @@ use crate::engine::{
     NativeInvocationInfo, RuntimeError, SystemApi,
 };
 use crate::types::*;
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     ComponentMethod, ComponentOffset, GlobalAddress, NativeMethod, PackageOffset, RENodeId,
     SubstateOffset,
 };
