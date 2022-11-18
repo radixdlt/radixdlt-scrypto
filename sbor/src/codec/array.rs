@@ -13,7 +13,7 @@ impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for [T] {
         encoder.write_size(self.len());
         if T::type_id() == SborTypeId::U8 || T::type_id() == SborTypeId::I8 {
             let ptr = self.as_ptr().cast::<u8>();
-            let slice = unsafe { std::slice::from_raw_parts(ptr, self.len()) };
+            let slice = unsafe { sbor::rust::slice::from_raw_parts(ptr, self.len()) };
             encoder.write_slice(slice);
         } else {
             for v in self {
