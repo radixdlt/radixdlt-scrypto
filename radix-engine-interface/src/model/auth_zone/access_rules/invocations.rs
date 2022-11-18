@@ -18,8 +18,8 @@ impl ScryptoNativeInvocation for AccessRulesAddAccessCheckInvocation {}
 
 impl Into<NativeFnInvocation> for AccessRulesAddAccessCheckInvocation {
     fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Component(
-            ComponentMethodInvocation::AddAccessCheck(self),
+        NativeFnInvocation::Method(NativeMethodInvocation::AccessRules(
+            AccessRulesMethodInvocation::AddAccessCheck(self),
         ))
     }
 }
