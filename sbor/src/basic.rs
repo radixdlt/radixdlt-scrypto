@@ -5,7 +5,7 @@ use crate::*;
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type") // See https://serde.rs/enum-representations.html
 )]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomTypeId {}
 
 #[cfg_attr(
@@ -36,11 +36,11 @@ impl<X: CustomTypeId> CustomValue<X> for NoCustomValue {
         panic!("No custom value")
     }
 
-    fn encode_value(&self, _encoder: &mut Encoder<X>) {
+    fn encode_body(&self, _encoder: &mut Encoder<X>) {
         panic!("No custom value")
     }
 
-    fn decode(_decoder: &mut Decoder<X>, _type_id: X) -> Result<Self, DecodeError>
+    fn decode_body_with_type_id(_decoder: &mut Decoder<X>, _type_id: X) -> Result<Self, DecodeError>
     where
         Self: Sized,
     {

@@ -6,6 +6,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::data::{scrypto_decode, ScryptoCustomTypeId};
 use radix_engine_interface::model::*;
 
+use radix_engine_interface::scrypto_type;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
@@ -14,7 +15,6 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::scrypto_type;
 use utils::copy_u8_array;
 
 use crate::abi::*;

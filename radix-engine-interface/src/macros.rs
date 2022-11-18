@@ -79,25 +79,24 @@ macro_rules! scrypto_type {
 
         impl sbor::Encode<crate::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn encode_type_id(encoder: &mut sbor::Encoder<crate::data::ScryptoCustomTypeId>) {
+            fn encode_type_id(
+                &self,
+                encoder: &mut sbor::Encoder<crate::data::ScryptoCustomTypeId>,
+            ) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
-            fn encode_value(&self, encoder: &mut sbor::Encoder<crate::data::ScryptoCustomTypeId>) {
+            fn encode_body(&self, encoder: &mut sbor::Encoder<crate::data::ScryptoCustomTypeId>) {
                 encoder.write_slice(&self.to_vec());
             }
         }
 
         impl sbor::Decode<crate::data::ScryptoCustomTypeId> for $t {
-            fn check_type_id(
+            fn decode_body_with_type_id(
                 decoder: &mut sbor::Decoder<crate::data::ScryptoCustomTypeId>,
-            ) -> Result<(), sbor::DecodeError> {
-                decoder.check_type_id(Self::type_id())
-            }
-
-            fn decode_value(
-                decoder: &mut sbor::Decoder<crate::data::ScryptoCustomTypeId>,
+                type_id: sbor::SborTypeId<crate::data::ScryptoCustomTypeId>,
             ) -> Result<Self, sbor::DecodeError> {
+                decoder.check_preloaded_type_id(type_id, Self::type_id())?;
                 let slice = decoder.read_slice($size)?;
                 Self::try_from(slice).map_err(|_| sbor::DecodeError::InvalidCustomValue)
             }
@@ -121,11 +120,14 @@ macro_rules! scrypto_type {
 
         impl sbor::Encode<crate::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn encode_type_id(encoder: &mut sbor::Encoder<crate::data::ScryptoCustomTypeId>) {
+            fn encode_type_id(
+                &self,
+                encoder: &mut sbor::Encoder<crate::data::ScryptoCustomTypeId>,
+            ) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
-            fn encode_value(&self, encoder: &mut sbor::Encoder<crate::data::ScryptoCustomTypeId>) {
+            fn encode_body(&self, encoder: &mut sbor::Encoder<crate::data::ScryptoCustomTypeId>) {
                 let bytes = self.to_vec();
                 encoder.write_size(bytes.len());
                 encoder.write_slice(&bytes);
@@ -133,15 +135,11 @@ macro_rules! scrypto_type {
         }
 
         impl sbor::Decode<crate::data::ScryptoCustomTypeId> for $t {
-            fn check_type_id(
+            fn decode_body_with_type_id(
                 decoder: &mut sbor::Decoder<crate::data::ScryptoCustomTypeId>,
-            ) -> Result<(), sbor::DecodeError> {
-                decoder.check_type_id(Self::type_id())
-            }
-
-            fn decode_value(
-                decoder: &mut sbor::Decoder<crate::data::ScryptoCustomTypeId>,
+                type_id: sbor::SborTypeId<crate::data::ScryptoCustomTypeId>,
             ) -> Result<Self, sbor::DecodeError> {
+                decoder.check_preloaded_type_id(type_id, Self::type_id())?;
                 let len = decoder.read_size()?;
                 let slice = decoder.read_slice(len)?;
                 Self::try_from(slice).map_err(|_| sbor::DecodeError::InvalidCustomValue)

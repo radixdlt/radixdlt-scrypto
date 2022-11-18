@@ -293,21 +293,21 @@ macro_rules! sbor_codec {
 
         impl<X: CustomTypeId> Encode<X> for $t {
             #[inline]
-            fn encode_type_id(encoder: &mut Encoder<X>) {
+            fn encode_type_id(&self, encoder: &mut Encoder<X>) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
-            fn encode_value(&self, encoder: &mut Encoder<X>) {
+            fn encode_body(&self, encoder: &mut Encoder<X>) {
                 encoder.write_slice(&self.to_le_bytes());
             }
         }
 
         impl<X: CustomTypeId> Decode<X> for $t {
-            #[inline]
-            fn check_type_id(decoder: &mut Decoder<X>) -> Result<(), DecodeError> {
-                decoder.check_type_id(Self::type_id())
-            }
-            fn decode_value(decoder: &mut Decoder<X>) -> Result<Self, DecodeError> {
+            fn decode_body_with_type_id(
+                decoder: &mut Decoder<X>,
+                type_id: SborTypeId<X>,
+            ) -> Result<Self, DecodeError> {
+                decoder.check_preloaded_type_id(type_id, Self::type_id())?;
                 let slice = decoder.read_slice((Self::BITS / 8) as usize)?;
                 let mut bytes = [0u8; (Self::BITS / 8) as usize];
                 bytes.copy_from_slice(&slice[..]);

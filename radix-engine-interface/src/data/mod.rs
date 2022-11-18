@@ -44,11 +44,6 @@ macro_rules! count {
     ($a:expr, $($rest:expr),*) => {1usize + radix_engine_interface::count!($($rest),*)};
 }
 
-// TODO: remove after `&self` parameter is added `Encode::encode_type_id()`.
-pub fn get_type_id<T: sbor::TypeId<ScryptoCustomTypeId>>(_v: &T) -> ScryptoTypeId {
-    T::type_id()
-}
-
 /// Constructs argument list for Scrypto function/method invocation.
 #[macro_export]
 macro_rules! args {
@@ -61,8 +56,8 @@ macro_rules! args {
         encoder.write_size(radix_engine_interface::count!($(stringify!($args)),*));
         $(
             let arg = $args;
-            encoder.write_type_id(radix_engine_interface::data::get_type_id(&arg));
-            arg.encode_value(&mut encoder);
+            arg.encode_type_id(&mut encoder);
+            arg.encode_body(&mut encoder);
         )*
         buf
     }};
