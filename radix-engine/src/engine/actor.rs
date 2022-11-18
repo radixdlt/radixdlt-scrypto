@@ -8,15 +8,15 @@ use radix_engine_interface::api::types::{
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResolvedReceiver {
-    pub derefed_from: Option<RENodeId>,
+    pub derefed_from: Option<(RENodeId, LockHandle)>,
     pub receiver: RENodeId,
 }
 
 impl ResolvedReceiver {
-    pub fn derefed(receiver: RENodeId, from: RENodeId) -> Self {
+    pub fn derefed(receiver: RENodeId, from: RENodeId, lock_handle: LockHandle) -> Self {
         Self {
             receiver,
-            derefed_from: Some(from),
+            derefed_from: Some((from, lock_handle)),
         }
     }
 

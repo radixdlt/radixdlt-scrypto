@@ -529,6 +529,19 @@ where
         actor: REActor,
         mut call_frame_update: CallFrameUpdate,
     ) -> Result<X::Output, RuntimeError> {
+        let derefed_lock = if let REActor::Method(
+            _,
+            ResolvedReceiver {
+                derefed_from: Some((_, derefed_lock)),
+                ..
+            },
+        ) = &actor
+        {
+            Some(*derefed_lock)
+        } else {
+            None
+        };
+
         let new_refed_nodes = self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
             AuthModule::on_before_frame_start(&actor, &executor, system_api).map_err(|e| match e {
                 InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
@@ -596,23 +609,28 @@ where
         // Restore previous frame
         self.current_frame = parent;
 
+        if let Some(derefed_lock) = derefed_lock {
+            self.current_frame
+                .drop_lock(&mut self.heap, &mut self.track, derefed_lock)?;
+        }
+
         Ok(output)
     }
 
     pub fn node_method_deref(
         &mut self,
         node_id: RENodeId,
-    ) -> Result<Option<RENodeId>, RuntimeError> {
+    ) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
-            let node_id =
+            let derefed =
                 self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Deref, |system_api| {
                     let offset = SubstateOffset::Global(GlobalOffset::Global);
                     let handle = system_api.lock_substate(node_id, offset, LockFlags::empty())?;
                     let substate_ref = system_api.get_ref(handle)?;
-                    Ok(substate_ref.global_address().node_deref())
+                    Ok((substate_ref.global_address().node_deref(), handle))
                 })?;
 
-            Ok(Some(node_id))
+            Ok(Some(derefed))
         } else {
             Ok(None)
         }
@@ -750,7 +768,7 @@ where
 }
 
 pub trait MethodDeref {
-    fn deref(&mut self, node_id: RENodeId) -> Result<Option<RENodeId>, RuntimeError>;
+    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError>;
 }
 
 impl<'g, 's, W, R> MethodDeref for Kernel<'g, 's, W, R>
@@ -758,7 +776,7 @@ where
     W: WasmEngine,
     R: FeeReserve,
 {
-    fn deref(&mut self, node_id: RENodeId) -> Result<Option<RENodeId>, RuntimeError> {
+    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
         self.node_method_deref(node_id)
     }
 }
@@ -1557,12 +1575,14 @@ where
                 };
 
                 // Deref if global
-                let resolved_receiver =
-                    if let Some(derefed) = self.node_method_deref(original_node_id)? {
-                        ResolvedReceiver::derefed(derefed, original_node_id)
-                    } else {
-                        ResolvedReceiver::new(original_node_id)
-                    };
+                // TODO: Move into kernel
+                let resolved_receiver = if let Some((derefed, derefed_lock)) =
+                    self.node_method_deref(original_node_id)?
+                {
+                    ResolvedReceiver::derefed(derefed, original_node_id, derefed_lock)
+                } else {
+                    ResolvedReceiver::new(original_node_id)
+                };
 
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
