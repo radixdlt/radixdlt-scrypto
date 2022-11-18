@@ -1,8 +1,8 @@
-use radix_engine_interface::data::*;
-use radix_engine_interface::engine::api::EngineApi;
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::api::EngineApi;
+use radix_engine_interface::api::types::{
     KeyValueStoreId, KeyValueStoreOffset, RENodeId, ScryptoRENode, SubstateOffset,
 };
+use radix_engine_interface::data::*;
 
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::boxed::Box;
@@ -12,11 +12,11 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::misc::copy_u8_array;
+use utils::copy_u8_array;
 
 use crate::abi::*;
-use crate::core::{DataRef, DataRefMut};
 use crate::engine::scrypto_env::ScryptoEnv;
+use crate::runtime::{DataRef, DataRefMut};
 
 /// A scalable key-value map which loads entries on demand.
 pub struct KeyValueStore<
@@ -177,12 +177,12 @@ impl<
     > Encode<ScryptoCustomTypeId> for KeyValueStore<K, V>
 {
     #[inline]
-    fn encode_type_id(encoder: &mut ScryptoEncoder) {
+    fn encode_type_id(&self, encoder: &mut ScryptoEncoder) {
         encoder.write_type_id(Self::type_id());
     }
 
     #[inline]
-    fn encode_value(&self, encoder: &mut ScryptoEncoder) {
+    fn encode_body(&self, encoder: &mut ScryptoEncoder) {
         encoder.write_slice(&self.to_vec());
     }
 }
@@ -192,11 +192,11 @@ impl<
         V: Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
     > Decode<ScryptoCustomTypeId> for KeyValueStore<K, V>
 {
-    fn check_type_id(decoder: &mut ScryptoDecoder) -> Result<(), DecodeError> {
-        decoder.check_type_id(Self::type_id())
-    }
-
-    fn decode_value(decoder: &mut ScryptoDecoder) -> Result<Self, DecodeError> {
+    fn decode_body_with_type_id(
+        decoder: &mut ScryptoDecoder,
+        type_id: ScryptoTypeId,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         let slice = decoder.read_slice(36)?;
         Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
     }

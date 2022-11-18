@@ -1,4 +1,9 @@
 use radix_engine_interface::address::Bech32Decoder;
+use radix_engine_interface::api::types::{
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
+    ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
+    ScryptoPackage, ScryptoReceiver,
+};
 use radix_engine_interface::crypto::{
     Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
     EddsaEd25519Signature, Hash,
@@ -6,11 +11,6 @@ use radix_engine_interface::crypto::{
 use radix_engine_interface::data::{
     args, scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId,
     ScryptoCustomValue, ScryptoTypeId, ScryptoValue,
-};
-use radix_engine_interface::engine::types::{
-    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
-    ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
-    ScryptoPackage, ScryptoReceiver,
 };
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
@@ -20,14 +20,21 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use sbor::*;
-use scrypto::args_from_value_vec;
 use scrypto::component::{Component, KeyValueStore};
-use scrypto::core::Expression;
+use scrypto::runtime::Expression;
 
 use crate::errors::*;
 use crate::manifest::ast;
 use crate::model::*;
 use crate::validation::*;
+
+#[macro_export]
+macro_rules! args_from_value_vec {
+    ($args: expr) => {{
+        let input_struct = ::sbor::SborValue::Struct { fields: $args };
+        ::sbor::encode_any(&input_struct)
+    }};
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
@@ -1321,7 +1328,7 @@ mod tests {
         generate_value_ok!(
             r#"Expression("ENTIRE_WORKTOP")"#,
             SborValue::Custom {
-                value: ScryptoCustomValue::Expression(scrypto::core::Expression(
+                value: ScryptoCustomValue::Expression(scrypto::runtime::Expression(
                     "ENTIRE_WORKTOP".to_owned()
                 ))
             }

@@ -1,29 +1,3 @@
-#[macro_export]
-macro_rules! args_from_value_vec {
-    ($args: expr) => {{
-        let input_struct = ::sbor::SborValue::Struct { fields: $args };
-        ::sbor::encode_any(&input_struct)
-    }};
-}
-
-#[macro_export]
-macro_rules! args_from_bytes_vec {
-    ($args: expr) => {{
-        let mut fields = Vec::new();
-        for arg in $args {
-            fields.push(
-                ::sbor::decode_any::<
-                    ::scrypto::data::ScryptoCustomTypeId,
-                    ::scrypto::data::ScryptoCustomValue,
-                >(&arg)
-                .unwrap(),
-            );
-        }
-        let input_struct = ::sbor::SborValue::Struct { fields };
-        ::sbor::encode_any(&input_struct)
-    }};
-}
-
 /// Logs an `ERROR` message.
 ///
 /// # Example
@@ -35,7 +9,7 @@ macro_rules! args_from_bytes_vec {
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(radix_engine_interface::engine::types::Level::Error, ::sbor::rust::format!($($args),+));
+        ::scrypto::runtime::Logger::log(radix_engine_interface::api::types::Level::Error, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -50,7 +24,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(radix_engine_interface::engine::types::Level::Warn, ::sbor::rust::format!($($args),+));
+        ::scrypto::runtime::Logger::log(radix_engine_interface::api::types::Level::Warn, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -65,7 +39,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(radix_engine_interface::engine::types::Level::Info, ::sbor::rust::format!($($args),+));
+        ::scrypto::runtime::Logger::log(radix_engine_interface::api::types::Level::Info, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -80,7 +54,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(radix_engine_interface::engine::types::Level::Debug, ::sbor::rust::format!($($args),+));
+        ::scrypto::runtime::Logger::log(radix_engine_interface::api::types::Level::Debug, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -95,7 +69,7 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(radix_engine_interface::engine::types::Level::Trace, ::sbor::rust::format!($($args),+));
+        ::scrypto::runtime::Logger::log(radix_engine_interface::api::types::Level::Trace, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -180,7 +154,7 @@ macro_rules! include_abi {
 
 /// Generates a bridge/stub to make package calls to a blueprint.
 ///
-/// If you just wish to instead make calls to an instantiated component, see the [external_component]! macro.
+/// If you just wish to instead make calls to an instantiated component, see the `external_component` macro.
 ///
 /// # Examples
 /// ```no_run
@@ -220,7 +194,7 @@ macro_rules! include_abi {
 /// # Related
 ///
 /// - Replaces the import! macro for importing an abi, using a more concise, readable syntax.
-/// - Similar to the [external_component]! macro, which is used for making cross-component calls to an already-instantiated component.
+/// - Similar to the `external_component` macro, which is used for making cross-component calls to an already-instantiated component.
 #[macro_export]
 macro_rules! external_blueprint {
     (
@@ -305,7 +279,7 @@ macro_rules! external_blueprint_members {
         $($rest:tt)*
     ) => {
         pub fn $func_name(&self, $($func_args: $func_types),*) -> $func_output {
-            ::scrypto::core::Runtime::call_function(
+            ::scrypto::runtime::Runtime::call_function(
                 self.package_address,
                 &self.blueprint_name,
                 stringify!($func_name),
@@ -320,7 +294,7 @@ macro_rules! external_blueprint_members {
     ) => {
         pub fn $func_name(&self, $($func_args: $func_types),*) {
             use ::scrypto::rust::str::FromStr;
-            ::scrypto::core::Runtime::call_function(
+            ::scrypto::runtime::Runtime::call_function(
                 self.package_address,
                 &self.blueprint_name,
                 stringify!($func_name),
@@ -410,7 +384,7 @@ macro_rules! external_component_members {
         $($rest:tt)*
     ) => {
         pub fn $method_name(&self $(, $method_args: $method_types)*) -> $method_output {
-            ::scrypto::core::Runtime::call_method(
+            ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
                 args!($($method_args),*)
@@ -423,7 +397,7 @@ macro_rules! external_component_members {
         $($rest:tt)*
     ) => {
         pub fn $method_name(&self $(, $method_args: $method_types)*) {
-            ::scrypto::core::Runtime::call_method(
+            ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
                 args!($($method_args),*)
@@ -436,7 +410,7 @@ macro_rules! external_component_members {
         $($rest:tt)*
     ) => {
         pub fn $method_name(&mut self $(, $method_args: $method_types)*) -> $method_output {
-            ::scrypto::core::Runtime::call_method(
+            ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
                 args!($($method_args),*)
@@ -449,7 +423,7 @@ macro_rules! external_component_members {
         $($rest:tt)*
     ) => {
         pub fn $method_name(&mut self $(, $method_args: $method_types)*) {
-            ::scrypto::core::Runtime::call_method(
+            ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
                 args!($($method_args),*)
@@ -482,105 +456,4 @@ macro_rules! external_component_members {
         compile_error!("The external_component! macro cannot be used to define static blueprint methods which don't take &self or &mut self. For these package methods, use a separate external_blueprint! macro.");
     };
     () => {}
-}
-
-/// A macro for implementing sbor traits.
-#[macro_export]
-macro_rules! scrypto_type {
-    // static size
-    ($t:ty, $type_id:expr, $schema_type: expr, $size: expr) => {
-        impl TypeId<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
-            #[inline]
-            fn type_id() -> SborTypeId<radix_engine_interface::data::ScryptoCustomTypeId> {
-                SborTypeId::Custom($type_id)
-            }
-        }
-
-        impl Encode<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
-            #[inline]
-            fn encode_type_id(
-                encoder: &mut Encoder<radix_engine_interface::data::ScryptoCustomTypeId>,
-            ) {
-                encoder.write_type_id(Self::type_id());
-            }
-            #[inline]
-            fn encode_value(
-                &self,
-                encoder: &mut Encoder<radix_engine_interface::data::ScryptoCustomTypeId>,
-            ) {
-                encoder.write_slice(&self.to_vec());
-            }
-        }
-
-        impl Decode<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
-            fn check_type_id(
-                decoder: &mut Decoder<radix_engine_interface::data::ScryptoCustomTypeId>,
-            ) -> Result<(), DecodeError> {
-                decoder.check_type_id(Self::type_id())
-            }
-
-            fn decode_value(
-                decoder: &mut Decoder<radix_engine_interface::data::ScryptoCustomTypeId>,
-            ) -> Result<Self, DecodeError> {
-                let slice = decoder.read_slice($size)?;
-                Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
-            }
-        }
-
-        impl Describe for $t {
-            fn describe() -> Type {
-                $schema_type
-            }
-        }
-    };
-
-    // dynamic size
-    ($t:ty, $type_id:expr, $schema_type: expr) => {
-        impl TypeId<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
-            #[inline]
-            fn type_id() -> SborTypeId<radix_engine_interface::data::ScryptoCustomTypeId> {
-                SborTypeId::Custom($type_id)
-            }
-        }
-
-        impl Encode<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
-            #[inline]
-            fn encode_type_id(
-                encoder: &mut Encoder<radix_engine_interface::data::ScryptoCustomTypeId>,
-            ) {
-                encoder.write_type_id(Self::type_id());
-            }
-            #[inline]
-            fn encode_value(
-                &self,
-                encoder: &mut Encoder<radix_engine_interface::data::ScryptoCustomTypeId>,
-            ) {
-                let bytes = self.to_vec();
-                encoder.write_size(bytes.len());
-                encoder.write_slice(&bytes);
-            }
-        }
-
-        impl Decode<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
-            fn check_type_id(
-                decoder: &mut Decoder<radix_engine_interface::data::ScryptoCustomTypeId>,
-            ) -> Result<(), DecodeError> {
-                decoder.check_type_id(Self::type_id())
-            }
-
-            fn decode_value(
-                decoder: &mut Decoder<radix_engine_interface::data::ScryptoCustomTypeId>,
-            ) -> Result<Self, DecodeError> {
-                let len = decoder.read_size()?;
-                let slice = decoder.read_slice(len)?;
-                Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
-            }
-        }
-
-        impl Describe for $t {
-            fn describe() -> Type {
-                $schema_type
-            }
-        }
-    };
 }

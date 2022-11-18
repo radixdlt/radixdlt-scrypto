@@ -45,15 +45,15 @@ fn test_struct_with_skip() {
     assert_eq!(
         vec![
           16, // struct type 
-          1, 0, 0, 0, // number of fields
+          1, // number of fields
           9, 2, 0, 0, 0, // field value
 
           16,  // struct type 
-          1, 0, 0, 0,  // number of fields
+          1, // number of fields
           9, 4, 0, 0, 0,  // field value
 
           16, // struct type
-          0, 0, 0, 0,  // number of fields
+          0, // number of fields
         ],
         bytes
     );
@@ -84,21 +84,21 @@ fn test_enum_with_skip() {
     assert_eq!(
         vec![
             17, // enum type
-            1, 0, 0, 0, // string size
+            1,  // string size
             65, // "A"
-            1, 0, 0, 0,  // number of fields
+            1,  // number of fields
             9, 2, 0, 0, 0, // field value
 
             17, // enum type
-            1, 0, 0, 0, // string size
+            1,  // string size
             66, // "B"
-            1, 0, 0, 0, // number of fields
+            1,  // number of fields
             9, 4, 0, 0, 0, // field value
             
             17, // enum type
-            1, 0, 0, 0, // string size
+            1,  // string size
             67, // "C"
-            0, 0, 0, 0,  // number of fields
+            0,  // number of fields
         ],
         bytes
     );

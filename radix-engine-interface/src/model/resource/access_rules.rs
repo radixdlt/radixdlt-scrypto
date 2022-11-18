@@ -3,7 +3,6 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use scrypto_abi::*;
 
 use crate::model::*;
 use crate::scrypto;

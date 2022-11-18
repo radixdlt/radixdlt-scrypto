@@ -4,11 +4,11 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto_abi::*;
-use utils::misc::{copy_u8_array, ContextualDisplay};
+use utils::{copy_u8_array, ContextualDisplay};
 
 use crate::address::*;
+use crate::api::{api::*, wasm_input::*};
 use crate::data::ScryptoCustomTypeId;
-use crate::engine::{api::*, wasm_input::*};
 use crate::math::*;
 use crate::model::*;
 use crate::scrypto_type;

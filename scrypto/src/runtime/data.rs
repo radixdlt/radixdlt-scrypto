@@ -1,8 +1,8 @@
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomTypeId};
-use radix_engine_interface::engine::api::EngineApi;
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::api::EngineApi;
+use radix_engine_interface::api::types::{
     ComponentOffset, KeyValueStoreOffset, LockHandle, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomTypeId};
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};

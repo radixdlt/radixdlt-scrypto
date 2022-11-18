@@ -6,13 +6,12 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::misc::copy_u8_array;
+use utils::copy_u8_array;
 
 use crate::abi::*;
+use crate::api::{api::*, types::*, wasm_input::*};
 use crate::data::ScryptoCustomTypeId;
-use crate::engine::{api::*, types::*, wasm_input::*};
 use crate::math::*;
-use crate::model::*;
 use crate::scrypto;
 use crate::scrypto_type;
 

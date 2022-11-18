@@ -1,16 +1,17 @@
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::args;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::crypto::{hash, Blob, Hash};
-use radix_engine_interface::data::*;
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
     ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoPackage, ScryptoReceiver,
 };
+use radix_engine_interface::args;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::{hash, Blob, Hash};
+use radix_engine_interface::data::*;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
 
+use radix_engine_interface::constants::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
@@ -21,13 +22,30 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::abi::*;
 use scrypto::access_rule_node;
-use scrypto::constants::*;
 use scrypto::rule;
 use scrypto::*;
 
 use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
+
+#[macro_export]
+macro_rules! args_from_bytes_vec {
+    ($args: expr) => {{
+        let mut fields = Vec::new();
+        for arg in $args {
+            fields.push(
+                ::sbor::decode_any::<
+                    ::scrypto::data::ScryptoCustomTypeId,
+                    ::scrypto::data::ScryptoCustomValue,
+                >(&arg)
+                .unwrap(),
+            );
+        }
+        let input_struct = ::sbor::SborValue::Struct { fields };
+        ::sbor::encode_any(&input_struct)
+    }};
+}
 
 /// Utility for building transaction manifest.
 pub struct ManifestBuilder {

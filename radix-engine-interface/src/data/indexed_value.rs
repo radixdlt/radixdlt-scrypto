@@ -5,12 +5,11 @@ use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::api::types::*;
 use crate::core::Expression;
 use crate::crypto::Blob;
 use crate::data::*;
-use crate::engine::types::*;
-use crate::model::*;
-use utils::misc::ContextualDisplay;
+use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ScryptoValueDecodeError {

@@ -37,18 +37,61 @@ pub fn scrypto_decode<T: Decode<ScryptoCustomTypeId>>(buf: &[u8]) -> Result<T, D
     decode(buf)
 }
 
+#[macro_export]
+macro_rules! count {
+    () => {0usize};
+    ($a:expr) => {1usize};
+    ($a:expr, $($rest:expr),*) => {1usize + radix_engine_interface::count!($($rest),*)};
+}
+
 /// Constructs argument list for Scrypto function/method invocation.
 #[macro_export]
 macro_rules! args {
     ($($args: expr),*) => {{
-        let mut fields = Vec::new();
+        use ::sbor::Encode;
+        let mut buf = ::sbor::rust::vec::Vec::new();
+        let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut buf);
+        encoder.write_type_id(radix_engine_interface::data::ScryptoTypeId::Struct);
+        // Hack: stringify to skip ownership move semantics
+        encoder.write_size(radix_engine_interface::count!($(stringify!($args)),*));
         $(
-            let encoded = scrypto_encode(&$args);
-            fields.push(decode_any::<ScryptoCustomTypeId, ScryptoCustomValue>(&encoded).unwrap());
+            let arg = $args;
+            arg.encode_type_id(&mut encoder);
+            arg.encode_body(&mut encoder);
         )*
-        let input_struct = ::sbor::SborValue::Struct {
-            fields,
-        };
-        encode_any::<ScryptoCustomTypeId, ScryptoCustomValue>(&input_struct)
+        buf
     }};
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::*;
+    use crate::scrypto;
+    use sbor::rust::borrow::ToOwned;
+    use sbor::rust::collections::BTreeSet;
+    use sbor::rust::string::String;
+
+    #[test]
+    fn test_args() {
+        #[scrypto(Encode, Decode, TypeId)]
+        struct A {
+            a: u32,
+            b: String,
+        }
+
+        assert_eq!(
+            args!(1u32, "abc"),
+            scrypto_encode(&A {
+                a: 1,
+                b: "abc".to_owned(),
+            })
+        )
+    }
+
+    #[test]
+    fn test_args_with_non_fungible_id() {
+        let id = NonFungibleId::from_u32(1);
+        let _x = args!(BTreeSet::from([id]));
+    }
 }

@@ -1,6 +1,6 @@
-use crate::engine::api::{ScryptoNativeInvocation, SysInvocation};
-use crate::engine::wasm_input::WorktopMethodInvocation;
-use crate::engine::wasm_input::{NativeFnInvocation, NativeMethodInvocation};
+use crate::api::api::{ScryptoNativeInvocation, SysInvocation};
+use crate::api::wasm_input::WorktopMethodInvocation;
+use crate::api::wasm_input::{NativeFnInvocation, NativeMethodInvocation};
 use crate::math::Decimal;
 use crate::model::*;
 use crate::scrypto;

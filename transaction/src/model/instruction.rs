@@ -1,8 +1,8 @@
-use radix_engine_interface::crypto::Blob;
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     BucketId, NativeFunctionIdent, NativeMethodIdent, ProofId, ScryptoFunctionIdent,
     ScryptoMethodIdent,
 };
+use radix_engine_interface::crypto::Blob;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;

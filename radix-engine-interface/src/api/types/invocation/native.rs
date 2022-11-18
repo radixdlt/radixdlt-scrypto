@@ -1,4 +1,4 @@
-use crate::engine::types::*;
+use crate::api::types::*;
 use crate::scrypto;
 
 // Native function identifier used by transaction model

@@ -40,7 +40,6 @@ impl NonFungibleId {
 pub enum ParseNonFungibleIdError {
     InvalidHex(String),
     InvalidValue,
-    ContainsOwnedNodes,
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -57,18 +56,47 @@ impl fmt::Display for ParseNonFungibleIdError {
 // binary
 //========
 
+// Manually validating non-fungible id instead of using any codec to reduce code size.
+fn validate_id(slice: &[u8]) -> Result<(), DecodeError> {
+    let mut decoder = ScryptoDecoder::new(slice);
+    let type_id = decoder.read_type_id()?;
+    match type_id {
+        // TODO: add more allowed types as agreed
+        ScryptoTypeId::U32 => {
+            decoder.read_slice(4)?;
+        }
+        ScryptoTypeId::U64 => {
+            decoder.read_slice(8)?;
+        }
+        ScryptoTypeId::Array => {
+            let element_type_id = decoder.read_type_id()?;
+            if element_type_id == ScryptoTypeId::U8 {
+                let size = decoder.read_size()?;
+                decoder.read_slice(size)?;
+            } else {
+                return Err(DecodeError::UnexpectedTypeId {
+                    actual: element_type_id.as_u8(),
+                    expected: ScryptoTypeId::U8.as_u8(),
+                });
+            }
+        }
+        type_id => {
+            return Err(DecodeError::UnexpectedTypeId {
+                actual: type_id.as_u8(),
+                expected: ScryptoTypeId::U32.as_u8(), // TODO: make it a vec
+            });
+        }
+    }
+
+    decoder.check_end()
+}
+
 impl TryFrom<&[u8]> for NonFungibleId {
     type Error = ParseNonFungibleIdError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        // TODO: Check for no custom values
-        let value = IndexedScryptoValue::from_slice(slice)
-            .map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
-        // TODO: limit types
-        if value.value_count() != 0 {
-            return Err(ParseNonFungibleIdError::ContainsOwnedNodes);
-        }
-        Ok(Self(value.raw))
+        validate_id(slice).map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
+        Ok(Self(slice.to_vec()))
     }
 }
 
@@ -118,7 +146,7 @@ mod tests {
     #[test]
     fn test_non_fungible_id_string_rep() {
         assert_eq!(
-            NonFungibleId::from_str("2007020000003575").unwrap(),
+            NonFungibleId::from_str("2007023575").unwrap(),
             NonFungibleId::from_bytes(vec![53u8, 117u8]),
         );
         assert_eq!(

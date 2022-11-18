@@ -1,14 +1,14 @@
 use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
-use radix_engine_interface::engine::types::RENodeId;
-use scrypto::resource::non_fungible::FromPublicKey;
+use radix_engine_interface::model::FromPublicKey;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use utils::misc::ContextualDisplay;
+use utils::ContextualDisplay;
 
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {

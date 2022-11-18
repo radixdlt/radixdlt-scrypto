@@ -5,29 +5,35 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
+/// RE Scrypto ABI.
 pub mod abi {
     pub use scrypto_abi::*;
 }
+/// RE addresses.
 pub mod address;
+/// RE APIs
+pub mod api;
+/// RE constants
+pub mod constants;
+/// RE core abstractions.
 pub mod core;
+/// RE crypto library
+pub mod crypto;
+/// RE data model.
+pub mod data;
+/// RE math library.
+pub mod math;
+/// RE node models.
 pub mod model;
 
-/// Scrypto values.
-pub mod data;
-pub mod engine;
-pub mod math;
-
-// Export macros
-pub mod constants;
-pub mod crypto;
 mod macros;
-
 pub use macros::*;
 
 // Re-export SBOR derive.
 extern crate sbor;
 pub use sbor::{Decode, Encode, TypeId};
 
+// Re-export Engine derive.
 extern crate radix_engine_derive;
 pub use radix_engine_derive::{scrypto, Describe};
 

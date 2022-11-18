@@ -1,4 +1,4 @@
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, GlobalOffset, PackageOffset, RENodeId, SubstateId,
     SubstateOffset,
 };

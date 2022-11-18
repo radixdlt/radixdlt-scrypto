@@ -7,7 +7,7 @@ use crate::model::{
     HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction,
     NativeMethod, RENodeId, SubstateOffset,
 };

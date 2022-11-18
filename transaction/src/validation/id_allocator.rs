@@ -1,9 +1,9 @@
-use radix_engine_interface::constants::*;
-use radix_engine_interface::crypto::{hash, Hash};
-use radix_engine_interface::engine::types::{
+use radix_engine_interface::api::types::{
     AuthZoneId, BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId, PackageId, ProofId,
     ResourceManagerId, VaultId,
 };
+use radix_engine_interface::constants::*;
+use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::model::*;
 
 use sbor::rust::ops::Range;

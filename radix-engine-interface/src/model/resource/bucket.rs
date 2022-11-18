@@ -4,14 +4,13 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::misc::copy_u8_array;
+use utils::copy_u8_array;
 
 use crate::abi::*;
+use crate::api::wasm_input::*;
+use crate::api::{api::*, types::*};
 use crate::data::ScryptoCustomTypeId;
-use crate::engine::wasm_input::*;
-use crate::engine::{api::*, types::*};
 use crate::math::*;
-use crate::model::*;
 use crate::scrypto;
 use crate::scrypto_type;
 

@@ -1,15 +1,15 @@
 use crate::abi::BlueprintAbi;
 use crate::component::*;
 use crate::engine::scrypto_env::ScryptoEnv;
+use radix_engine_interface::api::api::EngineApi;
+use radix_engine_interface::api::types::ScryptoRENode;
 use radix_engine_interface::data::scrypto_encode;
-use radix_engine_interface::engine::api::EngineApi;
-use radix_engine_interface::engine::types::ScryptoRENode;
 use radix_engine_interface::model::*;
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use scrypto::core::Runtime;
+use scrypto::runtime::Runtime;
 
 /// Represents the Radix Engine component subsystem.
 ///
