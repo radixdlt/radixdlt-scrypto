@@ -1582,16 +1582,14 @@ where
                         Ok(component_info)
                     },
                 )?;
-                let package_node_id = self
-                    .node_method_deref(RENodeId::Global(GlobalAddress::Package(
-                        component_info.package_address,
-                    )))?
-                    .unwrap();
                 let package = self.execute_in_mode::<_, _, RuntimeError>(
                     ExecutionMode::ScryptoInterpreter,
                     |system_api| {
+                        let package_global = RENodeId::Global(GlobalAddress::Package(
+                            component_info.package_address,
+                        ));
                         let handle = system_api.lock_substate(
-                            package_node_id,
+                            package_global,
                             SubstateOffset::Package(PackageOffset::Package),
                             LockFlags::read_only(),
                         )?;
@@ -1663,7 +1661,6 @@ where
                     REActor::Method(
                         ResolvedMethod::Scrypto {
                             package_address: component_info.package_address,
-                            package_id: package_node_id.into(),
                             blueprint_name: component_info.blueprint_name,
                             ident: method_ident.method_name.clone(),
                             export_name: fn_abi.export_name.clone(),

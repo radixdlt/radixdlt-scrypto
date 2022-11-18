@@ -1,6 +1,6 @@
 use crate::types::*;
 use radix_engine_interface::api::types::{
-    NativeFunction, NativeMethod, PackageId, RENodeId, TransactionProcessorFunction,
+    NativeFunction, NativeMethod, RENodeId, TransactionProcessorFunction,
 };
 
 /// Resolved receiver including info whether receiver was derefed
@@ -46,7 +46,6 @@ pub enum ResolvedFunction {
 pub enum ResolvedMethod {
     Scrypto {
         package_address: PackageAddress,
-        package_id: PackageId,
         blueprint_name: String,
         ident: String,
         export_name: String,
