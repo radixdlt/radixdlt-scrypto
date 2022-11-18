@@ -6,7 +6,6 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::*;
-use radix_engine_interface::data::{ScryptoCustomTypeId, ScryptoCustomValue};
 
 use scrypto::access_rule_node;
 use scrypto::rule;

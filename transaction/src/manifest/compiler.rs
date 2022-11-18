@@ -46,7 +46,6 @@ mod tests {
     use radix_engine_interface::model::*;
     use sbor::rust::collections::*;
     use sbor::rust::str::FromStr;
-    use sbor::*;
     use scrypto::runtime::Expression;
 
     #[test]

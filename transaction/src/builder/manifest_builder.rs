@@ -29,6 +29,24 @@ use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
 
+#[macro_export]
+macro_rules! args_from_bytes_vec {
+    ($args: expr) => {{
+        let mut fields = Vec::new();
+        for arg in $args {
+            fields.push(
+                ::sbor::decode_any::<
+                    ::scrypto::data::ScryptoCustomTypeId,
+                    ::scrypto::data::ScryptoCustomValue,
+                >(&arg)
+                .unwrap(),
+            );
+        }
+        let input_struct = ::sbor::SborValue::Struct { fields };
+        ::sbor::encode_any(&input_struct)
+    }};
+}
+
 /// Utility for building transaction manifest.
 pub struct ManifestBuilder {
     /// The decoder used by the manifest (mainly for the `call_*_with_abi)

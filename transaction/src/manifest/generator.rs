@@ -20,7 +20,6 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use sbor::*;
-use scrypto::args_from_value_vec;
 use scrypto::component::{Component, KeyValueStore};
 use scrypto::runtime::Expression;
 
@@ -28,6 +27,14 @@ use crate::errors::*;
 use crate::manifest::ast;
 use crate::model::*;
 use crate::validation::*;
+
+#[macro_export]
+macro_rules! args_from_value_vec {
+    ($args: expr) => {{
+        let input_struct = ::sbor::SborValue::Struct { fields: $args };
+        ::sbor::encode_any(&input_struct)
+    }};
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {

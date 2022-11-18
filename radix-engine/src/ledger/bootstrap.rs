@@ -15,7 +15,6 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
-use sbor::*;
 use scrypto::rule;
 
 use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
