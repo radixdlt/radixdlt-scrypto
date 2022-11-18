@@ -52,6 +52,7 @@ fn manifest_cannot_refer_to_persisted_component_by_id() {
     });
 }
 
+/*
 #[test]
 fn no_new_visible_nodes_on_deref() {
     // Arrange
@@ -70,3 +71,4 @@ fn no_new_visible_nodes_on_deref() {
     // Assert
     receipt.expect_commit_success();
 }
+ */

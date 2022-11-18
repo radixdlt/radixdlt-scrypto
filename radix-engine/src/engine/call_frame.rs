@@ -210,8 +210,9 @@ impl CallFrame {
 
         let counter = self
             .node_lock_count
-            .entry(substate_lock.substate_pointer.1)
-            .or_insert(0u32);
+            .get_mut(&substate_lock.substate_pointer.1)
+            .ok_or(RuntimeError::UnexpectedError("Node lock count was not properly managed".to_string()))?;
+
         *counter -= 1;
         if *counter == 0 {
             self.node_lock_count

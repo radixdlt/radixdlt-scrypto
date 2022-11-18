@@ -56,6 +56,9 @@ pub enum RuntimeError {
 
     /// An error occurred within application logic, like the RE models.
     ApplicationError(ApplicationError),
+
+    /// An unexpected error occurred
+    UnexpectedError(String),
 }
 
 impl From<KernelError> for RuntimeError {
