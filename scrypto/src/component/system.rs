@@ -1,12 +1,15 @@
 use crate::abi::BlueprintAbi;
-use crate::buffer::*;
 use crate::component::*;
-use crate::core::Runtime;
-use crate::engine::{api::*, types::*, utils::*};
+use crate::engine::scrypto_env::ScryptoEnv;
+use radix_engine_interface::api::api::EngineApi;
+use radix_engine_interface::api::types::ScryptoRENode;
+use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::model::*;
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use scrypto::runtime::Runtime;
 
 /// Represents the Radix Engine component subsystem.
 ///
@@ -62,13 +65,14 @@ impl ComponentSystem {
         blueprint_name: &str,
         state: T,
     ) -> Component {
-        let input = RadixEngineInput::CreateNode(ScryptoRENode::Component(
-            Runtime::package_address(),
-            blueprint_name.to_string(),
-            scrypto_encode(&state),
-        ));
-        let node_id: RENodeId = call_engine(input);
-
+        let mut syscalls = ScryptoEnv;
+        let node_id = syscalls
+            .sys_create_node(ScryptoRENode::Component(
+                Runtime::package_address(),
+                blueprint_name.to_string(),
+                scrypto_encode(&state),
+            ))
+            .unwrap();
         Component(node_id.into())
     }
 }

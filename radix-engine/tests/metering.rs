@@ -1,6 +1,8 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use scrypto::args;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
+use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -12,7 +14,8 @@ fn test_loop() {
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000"));
-    let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
+    let package_address =
+        test_runner.publish_package(code, generate_single_function_abi("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
@@ -31,7 +34,8 @@ fn test_loop_out_of_cost_unit() {
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "70000000"));
-    let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
+    let package_address =
+        test_runner.publish_package(code, generate_single_function_abi("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 45.into())
         .call_function(package_address, "Test", "f", args!())
@@ -51,7 +55,8 @@ fn test_recursion() {
     // Act
     // In this test case, each call frame costs 4 stack units
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "128"));
-    let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
+    let package_address =
+        test_runner.publish_package(code, generate_single_function_abi("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
@@ -70,7 +75,8 @@ fn test_recursion_stack_overflow() {
 
     // Act
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "129"));
-    let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
+    let package_address =
+        test_runner.publish_package(code, generate_single_function_abi("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
@@ -89,7 +95,8 @@ fn test_grow_memory() {
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100"));
-    let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
+    let package_address =
+        test_runner.publish_package(code, generate_single_function_abi("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
@@ -108,7 +115,8 @@ fn test_grow_memory_out_of_cost_unit() {
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
-    let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
+    let package_address =
+        test_runner.publish_package(code, generate_single_function_abi("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
@@ -154,18 +162,18 @@ fn test_basic_transfer() {
         + 1212 /* decode_manifest */
         + 5600 /* drop_lock */
         + 2000 /* drop_node */
+        + 800 /* emit_event */
         + 0 /* instantiate_wasm */
         + 1505 /* invoke */
         + 7100 /* lock_substate */
-        + 2100 /* read_owned_nodes */
+        + 2000 /* read_owned_nodes */
         + 22000 /* read_substate */
         + 1000 /* run_native_function */
         + 2200 /* run_native_method */
-        + 357649 /* run_wasm */
+        + 346971 /* run_wasm */
         + 404 /* verify_manifest */
         + 3750 /* verify_signatures */
-        + 17000 /* write_substate */
-        + 800, /* emit_event */
+        + 17000, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed
     );
 }

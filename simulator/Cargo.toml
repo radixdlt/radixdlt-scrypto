@@ -10,9 +10,11 @@ edition = "2021"
 radix-engine = { path = "../radix-engine" }
 radix-engine-stores = { path = "../radix-engine-stores", features = ["rocksdb"] }
 radix-engine-constants = { path = "../radix-engine-constants" }
+radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 scrypto = { path = "../scrypto", features = ["serde"] }
 sbor = { path = "../sbor" }
 transaction = { path = "../transaction" }
+utils = { path = "../utils", default-features = false }
 serde = { version = "1.0.137", features = ["derive"] }
 serde_json = { version = "1.0.81" }
 clap = { version = "3.1.17", features = ["derive", "cargo"] }

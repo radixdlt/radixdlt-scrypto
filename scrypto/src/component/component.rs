@@ -1,31 +1,27 @@
+use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
+use radix_engine_interface::api::types::{
+    ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoRENode,
+    ScryptoReceiver, SubstateOffset,
+};
+use radix_engine_interface::data::{scrypto_decode, ScryptoCustomTypeId};
+use radix_engine_interface::model::*;
+
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
+use sbor::rust::fmt::Debug;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::scrypto_type;
+use utils::copy_u8_array;
 
 use crate::abi::*;
-use crate::address::*;
-use crate::buffer::scrypto_encode;
-use crate::component::*;
-use crate::core::*;
-use crate::crypto::{hash, PublicKey};
-use crate::data::*;
-use crate::engine::{api::*, types::*, utils::*};
-use crate::misc::*;
-use crate::resource::AccessRules;
+use crate::engine::scrypto_env::ScryptoEnv;
+use crate::runtime::*;
 use crate::scrypto;
-use crate::scrypto_type;
-use crate::Describe;
-
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct ComponentAddAccessCheckInvocation {
-    pub receiver: ComponentId,
-    pub access_rules: AccessRules,
-}
+use radix_engine_derive::Describe;
 
 /// Represents the state of a component.
 pub trait ComponentState<C: LocalComponent>:
@@ -64,14 +60,17 @@ pub struct ComponentStateSubstate {
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: Decode<ScryptoCustomTypeId>>(&self, method: &str, args: Vec<u8>) -> T {
-        let input = RadixEngineInput::InvokeScryptoMethod(
-            ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Component(self.0),
-                method_name: method.to_string(),
-            },
-            args,
-        );
-        call_engine(input)
+        let mut sys_calls = ScryptoEnv;
+        let rtn = sys_calls
+            .sys_invoke_scrypto_method(
+                ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Component(self.0),
+                    method_name: method.to_string(),
+                },
+                args,
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Returns the package ID of this component.
@@ -95,22 +94,40 @@ impl Component {
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        let input = RadixEngineInput::InvokeNativeMethod(
-            NativeMethod::Component(ComponentMethod::AddAccessCheck),
-            scrypto_encode(&ComponentAddAccessCheckInvocation {
-                access_rules,
-                receiver: self.0,
-            }),
-        );
-        let _: () = call_engine(input);
+        self.sys_add_access_check(access_rules, &mut ScryptoEnv)
+            .unwrap()
+    }
 
-        self
+    pub fn sys_add_access_check<Y, E: Debug + Decode<ScryptoCustomTypeId>>(
+        &mut self,
+        access_rules: AccessRules,
+        sys_calls: &mut Y,
+    ) -> Result<&mut Self, E>
+    where
+        Y: EngineApi<E> + SysNativeInvokable<ComponentAddAccessCheckInvocation, E>,
+    {
+        sys_calls.sys_invoke(ComponentAddAccessCheckInvocation {
+            receiver: self.0,
+            access_rules,
+        })?;
+
+        Ok(self)
     }
 
     pub fn globalize(self) -> ComponentAddress {
-        let input = RadixEngineInput::CreateNode(ScryptoRENode::GlobalComponent(self.0));
-        let node_id: RENodeId = call_engine(input);
-        node_id.into()
+        self.sys_globalize(&mut ScryptoEnv).unwrap()
+    }
+
+    pub fn sys_globalize<Y, E: Debug + Decode<ScryptoCustomTypeId>>(
+        self,
+        sys_calls: &mut Y,
+    ) -> Result<ComponentAddress, E>
+    where
+        Y: EngineApi<E>,
+    {
+        let node_id: RENodeId =
+            sys_calls.sys_create_node(ScryptoRENode::GlobalComponent(self.0))?;
+        Ok(node_id.into())
     }
 }
 
@@ -120,14 +137,17 @@ pub struct BorrowedGlobalComponent(pub ComponentAddress);
 impl BorrowedGlobalComponent {
     /// Invokes a method on this component.
     pub fn call<T: Decode<ScryptoCustomTypeId>>(&self, method: &str, args: Vec<u8>) -> T {
-        let input = RadixEngineInput::InvokeScryptoMethod(
-            ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Global(self.0),
-                method_name: method.to_string(),
-            },
-            args,
-        );
-        call_engine(input)
+        let mut syscalls = ScryptoEnv;
+        let raw = syscalls
+            .sys_invoke_scrypto_method(
+                ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Global(self.0),
+                    method_name: method.to_string(),
+                },
+                args,
+            )
+            .unwrap();
+        scrypto_decode(&raw).unwrap()
     }
 
     /// Returns the package ID of this component.
@@ -208,130 +228,5 @@ impl fmt::Display for Component {
 impl fmt::Debug for Component {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{:?}", self.0)
-    }
-}
-
-/// An instance of a blueprint, which lives in the ledger state.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum ComponentAddress {
-    Normal([u8; 26]),
-    Account([u8; 26]),
-    EcdsaSecp256k1VirtualAccount([u8; 26]),
-    EddsaEd25519VirtualAccount([u8; 26]),
-}
-
-//========
-// binary
-//========
-
-impl TryFrom<&[u8]> for ComponentAddress {
-    type Error = AddressError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            27 => match EntityType::try_from(slice[0])
-                .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
-            {
-                EntityType::NormalComponent => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
-                EntityType::AccountComponent => Ok(Self::Account(copy_u8_array(&slice[1..]))),
-                EntityType::EcdsaSecp256k1VirtualAccountComponent => Ok(
-                    Self::EcdsaSecp256k1VirtualAccount(copy_u8_array(&slice[1..])),
-                ),
-                EntityType::EddsaEd25519VirtualAccountComponent => {
-                    Ok(Self::EddsaEd25519VirtualAccount(copy_u8_array(&slice[1..])))
-                }
-                _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
-            },
-            _ => Err(AddressError::InvalidLength(slice.len())),
-        }
-    }
-}
-
-impl ComponentAddress {
-    pub fn virtual_account_from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self {
-        match public_key.clone().into() {
-            PublicKey::EcdsaSecp256k1(public_key) => {
-                ComponentAddress::EcdsaSecp256k1VirtualAccount(
-                    hash(public_key.to_vec()).lower_26_bytes(),
-                )
-            }
-            PublicKey::EddsaEd25519(public_key) => ComponentAddress::EddsaEd25519VirtualAccount(
-                hash(public_key.to_vec()).lower_26_bytes(),
-            ),
-        }
-    }
-
-    pub fn to_vec(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
-        buf.push(EntityType::component(self).id());
-        match self {
-            Self::Normal(v)
-            | Self::Account(v)
-            | Self::EddsaEd25519VirtualAccount(v)
-            | Self::EcdsaSecp256k1VirtualAccount(v) => buf.extend(v),
-        }
-        buf
-    }
-
-    pub fn to_hex(&self) -> String {
-        hex::encode(self.to_vec())
-    }
-
-    pub fn try_from_hex(hex_str: &str) -> Result<Self, AddressError> {
-        let bytes = hex::decode(hex_str).map_err(|_| AddressError::HexDecodingError)?;
-
-        Self::try_from(bytes.as_ref())
-    }
-}
-
-scrypto_type!(
-    ComponentAddress,
-    ScryptoCustomTypeId::ComponentAddress,
-    Type::ComponentAddress,
-    27
-);
-
-//======
-// text
-//======
-
-impl fmt::Debug for ComponentAddress {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.display(NO_NETWORK))
-    }
-}
-
-impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
-    type Error = AddressError;
-
-    fn contextual_format<F: fmt::Write>(
-        &self,
-        f: &mut F,
-        context: &AddressDisplayContext<'a>,
-    ) -> Result<(), Self::Error> {
-        if let Some(encoder) = context.encoder {
-            return encoder.encode_component_address_to_fmt(f, self);
-        }
-
-        // This could be made more performant by streaming the hex into the formatter
-        match self {
-            ComponentAddress::Normal(_) => {
-                write!(f, "NormalComponent[{}]", self.to_hex())
-            }
-            ComponentAddress::Account(_) => {
-                write!(f, "AccountComponent[{}]", self.to_hex())
-            }
-            ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => {
-                write!(
-                    f,
-                    "EcdsaSecp256k1VirtualAccountComponent[{}]",
-                    self.to_hex()
-                )
-            }
-            ComponentAddress::EddsaEd25519VirtualAccount(_) => {
-                write!(f, "EddsaEd25519VirtualAccountComponent[{}]", self.to_hex())
-            }
-        }
-        .map_err(|err| AddressError::FormatError(err))
     }
 }

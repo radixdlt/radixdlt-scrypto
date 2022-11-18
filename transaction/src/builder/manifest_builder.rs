@@ -1,3 +1,17 @@
+use radix_engine_interface::address::Bech32Decoder;
+use radix_engine_interface::api::types::{
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
+    ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
+    ScryptoPackage, ScryptoReceiver,
+};
+use radix_engine_interface::args;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::{hash, Blob, Hash};
+use radix_engine_interface::data::*;
+use radix_engine_interface::math::{Decimal, PreciseDecimal};
+use radix_engine_interface::model::*;
+
+use radix_engine_interface::constants::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
@@ -7,23 +21,8 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::abi::*;
-use scrypto::address::Bech32Decoder;
-use scrypto::buffer::*;
-use scrypto::component::{ComponentAddress, PackageAddress};
-use scrypto::constants::*;
-use scrypto::core::{Blob, NetworkDefinition};
-use scrypto::crypto::*;
-use scrypto::data::*;
-use scrypto::engine::types::*;
-use scrypto::math::*;
-use scrypto::resource::ResourceManagerBurnInvocation;
-use scrypto::resource::{require, LOCKED};
-use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
-use scrypto::resource::{
-    MintParams, Mutability, ResourceManagerCreateInvocation, ResourceMethodAuthKey,
-};
-use scrypto::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
-use scrypto::resource::{ResourceManagerMintInvocation, ResourceType};
+use scrypto::access_rule_node;
+use scrypto::rule;
 use scrypto::*;
 
 use crate::errors::*;
@@ -657,7 +656,7 @@ impl ManifestBuilder {
                     },
                     args: scrypto_encode(&ResourceManagerBurnInvocation {
                         receiver: resource_address,
-                        bucket: scrypto::resource::Bucket(bucket_id),
+                        bucket: Bucket(bucket_id),
                     }),
                 })
                 .0
@@ -681,7 +680,7 @@ impl ManifestBuilder {
                         },
                         args: scrypto_encode(&ResourceManagerBurnInvocation {
                             receiver: non_fungible_address.resource_address(),
-                            bucket: scrypto::resource::Bucket(bucket_id),
+                            bucket: Bucket(bucket_id),
                         }),
                     })
                     .0
@@ -714,7 +713,7 @@ impl ManifestBuilder {
                 blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
                 function_name: "new_with_resource".to_string(),
             },
-            args: args!(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)),
+            args: args!(withdraw_auth.clone(), Bucket(bucket_id)),
         })
         .0
     }
@@ -1033,7 +1032,7 @@ impl ManifestBuilder {
                                     .unwrap()
                                 }
                             };
-                            Ok(scrypto_encode(&scrypto::resource::Bucket(bucket_id)))
+                            Ok(scrypto_encode(&Bucket(bucket_id)))
                         }
                         Type::Proof => {
                             let resource_specifier = parse_resource_specifier(arg, &self.decoder)
@@ -1070,7 +1069,7 @@ impl ManifestBuilder {
                                     }
                                 }
                             };
-                            Ok(scrypto_encode(&scrypto::resource::Proof(proof_id)))
+                            Ok(scrypto_encode(&Proof(proof_id)))
                         }
                         _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
                     };

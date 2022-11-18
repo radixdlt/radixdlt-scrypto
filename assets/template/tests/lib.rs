@@ -1,5 +1,6 @@
 use radix_engine::ledger::*;
-use scrypto::core::NetworkDefinition;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::model::FromPublicKey;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

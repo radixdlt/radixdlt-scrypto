@@ -18,8 +18,15 @@ use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
 use radix_engine_constants::*;
-use scrypto::dec;
-use scrypto::math::Decimal;
+use radix_engine_interface::api::types::{RENodeId, ScryptoMethodIdent};
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::hash;
+use radix_engine_interface::data::*;
+use radix_engine_interface::dec;
+
+use radix_engine_interface::model::FromPublicKey;
+use scrypto::{access_rule_node, rule};
+
 use transaction::builder::ManifestBuilder;
 use transaction::model::{AuthZoneParams, Executable, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
@@ -156,11 +163,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.call_method(
-                    account_address,
-                    "deposit",
-                    args!(scrypto::resource::Bucket(bucket_id)),
-                )
+                builder.call_method(account_address, "deposit", args!(Bucket(bucket_id)))
             })
             .build();
 
@@ -840,7 +843,7 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
     }
 }
 
-pub fn test_abi_any_in_void_out(
+pub fn generate_single_function_abi(
     blueprint_name: &str,
     function_name: &str,
 ) -> HashMap<String, BlueprintAbi> {

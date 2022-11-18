@@ -17,6 +17,7 @@ pub struct Blueprint {
     pub abi: BlueprintAbi,
 }
 
+/// Represents the ABI of a blueprint.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct BlueprintAbi {

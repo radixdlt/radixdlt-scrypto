@@ -1,9 +1,11 @@
 use moka::sync::Cache;
+use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::data::IndexedScryptoValue;
 use std::sync::Arc;
 use wasmi::*;
 
 use crate::model::InvokeError;
-use crate::types::{format, Box, Hash, IndexedScryptoValue};
+use crate::types::{format, Box};
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
@@ -99,13 +101,10 @@ impl WasmiModule {
 }
 
 impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
-    pub fn send_value(
-        &mut self,
-        value: &IndexedScryptoValue,
-    ) -> Result<RuntimeValue, InvokeError<WasmError>> {
+    pub fn send_value(&mut self, value: &[u8]) -> Result<RuntimeValue, InvokeError<WasmError>> {
         let result = self.instance.module_ref.clone().invoke_export(
             EXPORT_SCRYPTO_ALLOC,
-            &[RuntimeValue::I32((value.raw.len()) as i32)],
+            &[RuntimeValue::I32((value.len()) as i32)],
             self,
         );
 
@@ -115,7 +114,7 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
                     if self
                         .instance
                         .memory_ref
-                        .set((ptr + 4) as u32, &value.raw)
+                        .set((ptr + 4) as u32, value)
                         .is_ok()
                     {
                         return Ok(RuntimeValue::I32(ptr));
@@ -189,7 +188,7 @@ impl WasmInstance for WasmiInstance {
             runtime,
         };
 
-        let pointer = externals.send_value(args)?;
+        let pointer = externals.send_value(&args.raw)?;
         let result = self
             .module_ref
             .clone()

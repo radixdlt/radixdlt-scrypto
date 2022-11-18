@@ -1,6 +1,8 @@
 use crate::ledger::*;
 use crate::state_manager::CommitReceipt;
 use crate::types::*;
+use radix_engine_interface::api::types::SubstateId;
+use radix_engine_interface::crypto::hash;
 
 #[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]

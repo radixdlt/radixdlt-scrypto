@@ -1,8 +1,6 @@
 use clap::Parser;
 use radix_engine::types::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
-use scrypto::address::Bech32Decoder;
-use scrypto::core::NetworkDefinition;
 
 use crate::ledger::*;
 use crate::resim::*;

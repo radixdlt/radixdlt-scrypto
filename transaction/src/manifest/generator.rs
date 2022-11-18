@@ -1,25 +1,28 @@
+use radix_engine_interface::address::Bech32Decoder;
+use radix_engine_interface::api::types::{
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
+    ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
+    ScryptoPackage, ScryptoReceiver,
+};
+use radix_engine_interface::crypto::{
+    Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
+    EddsaEd25519Signature, Hash,
+};
+use radix_engine_interface::data::{
+    args, scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId,
+    ScryptoCustomValue, ScryptoTypeId, ScryptoValue,
+};
+use radix_engine_interface::math::{Decimal, PreciseDecimal};
+use radix_engine_interface::model::*;
+
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use sbor::*;
-use scrypto::address::Bech32Decoder;
-use scrypto::buffer::scrypto_decode;
-use scrypto::buffer::scrypto_encode;
-use scrypto::component::ComponentAddress;
-use scrypto::component::PackageAddress;
+use scrypto::args_from_value_vec;
 use scrypto::component::{Component, KeyValueStore};
-use scrypto::core::{Blob, Expression, SystemAddress};
-use scrypto::crypto::*;
-use scrypto::data::*;
-use scrypto::engine::types::*;
-use scrypto::math::*;
-use scrypto::resource::{
-    MintParams, NonFungibleAddress, NonFungibleId, ResourceAddress,
-    ResourceManagerBucketBurnInvocation, ResourceManagerCreateInvocation,
-    ResourceManagerMintInvocation, Vault,
-};
-use scrypto::{args, args_from_value_vec};
+use scrypto::runtime::Expression;
 
 use crate::errors::*;
 use crate::manifest::ast;
@@ -475,7 +478,7 @@ pub fn generate_instruction(
                     function_name: ResourceManagerFunction::BurnBucket.to_string(),
                 },
                 args: scrypto_encode(&ResourceManagerBucketBurnInvocation {
-                    bucket: scrypto::resource::Bucket(bucket_id),
+                    bucket: Bucket(bucket_id),
                 }),
             }
         }
@@ -1191,9 +1194,9 @@ mod tests {
     use super::*;
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
-    use scrypto::address::Bech32Decoder;
-    use scrypto::core::NetworkDefinition;
-    use scrypto::{args, pdec};
+    use radix_engine_interface::address::Bech32Decoder;
+    use radix_engine_interface::core::NetworkDefinition;
+    use radix_engine_interface::pdec;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1318,7 +1321,7 @@ mod tests {
         generate_value_ok!(
             r#"Expression("ENTIRE_WORKTOP")"#,
             SborValue::Custom {
-                value: ScryptoCustomValue::Expression(scrypto::core::Expression(
+                value: ScryptoCustomValue::Expression(scrypto::runtime::Expression(
                     "ENTIRE_WORKTOP".to_owned()
                 ))
             }

@@ -1,118 +1,3 @@
-/// Creates a `Decimal` from literals.
-///
-/// # Example
-/// ```no_run
-/// use scrypto::prelude::*;
-///
-/// let a = dec!(1);
-/// let b = dec!("1.1");
-/// ```
-#[macro_export]
-macro_rules! dec {
-    ($x:literal) => {
-        scrypto::math::Decimal::from($x)
-    };
-
-    ($base:literal, $shift:literal) => {
-        // Base can be any type that converts into a Decimal, and shift must support
-        // comparison and `-` unary operation, enforced by rustc.
-        {
-            let base = scrypto::math::Decimal::from($base);
-            if $shift >= 0 {
-                base * scrypto::math::Decimal::try_from(
-                    scrypto::math::I256::from(10u8)
-                        .pow(u32::try_from($shift).expect("Shift overflow")),
-                )
-                .expect("Shift overflow")
-            } else {
-                base / scrypto::math::Decimal::try_from(
-                    scrypto::math::I256::from(10u8)
-                        .pow(u32::try_from(-$shift).expect("Shift overflow")),
-                )
-                .expect("Shift overflow")
-            }
-        }
-    };
-}
-
-/// Creates a safe integer from literals.
-/// You must specify the type of the
-/// integer you want to create.
-///
-/// # Example
-/// ```no_run
-/// use scrypto::prelude::*;
-///
-/// let a: I256 = i!(21);
-/// let b: U512 = i!("1156");
-/// ```
-#[macro_export]
-macro_rules! i {
-    ($x:expr) => {
-        $x.try_into().expect("Parse Error")
-    };
-}
-
-/// Creates a `PreciseDecimal` from literals.
-///
-/// # Example
-/// ```no_run
-/// use scrypto::prelude::*;
-///
-/// let a = pdec!(1);
-/// let b = pdec!("1.1");
-/// ```
-#[macro_export]
-macro_rules! pdec {
-    ($x:literal) => {
-        scrypto::math::PreciseDecimal::from($x)
-    };
-
-    ($base:literal, $shift:literal) => {
-        // Base can be any type that converts into a PreciseDecimal, and shift must support
-        // comparison and `-` unary operation, enforced by rustc.
-        {
-            let base = scrypto::math::PreciseDecimal::from($base);
-            if $shift >= 0 {
-                base * scrypto::math::PreciseDecimal::try_from(
-                    scrypto::math::I512::from(10u8)
-                        .pow(u32::try_from($shift).expect("Shift overflow")),
-                )
-                .expect("Shift overflow")
-            } else {
-                base / scrypto::math::PreciseDecimal::try_from(
-                    scrypto::math::I512::from(10u8)
-                        .pow(u32::try_from(-$shift).expect("Shift overflow")),
-                )
-                .expect("Shift overflow")
-            }
-        }
-    };
-}
-
-/// Constructs argument list for Scrypto function/method invocation.
-///
-/// # Example
-/// ```no_run
-/// use scrypto::prelude::*;
-///
-/// let args = args!("1.1", 100u32);
-/// ```
-#[macro_export]
-macro_rules! args {
-    ($($args: expr),*) => {{
-        let mut fields = Vec::new();
-        $(
-            let encoded = ::scrypto::buffer::scrypto_encode(&$args);
-            fields.push(::sbor::decode_any::<::scrypto::data::ScryptoCustomTypeId, ::scrypto::data::ScryptoCustomValue>(&encoded).unwrap());
-        )*
-        let input_struct = ::sbor::SborValue::Struct {
-            fields,
-        };
-        ::sbor::encode_any::<::scrypto::data::ScryptoCustomTypeId, ::scrypto::data::ScryptoCustomValue>(&input_struct)
-    }};
-}
-
 #[macro_export]
 macro_rules! args_from_value_vec {
     ($args: expr) => {{
@@ -150,7 +35,7 @@ macro_rules! args_from_bytes_vec {
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine::types::Level::Error, ::sbor::rust::format!($($args),+));
+        ::scrypto::runtime::Logger::log(radix_engine_interface::api::types::Level::Error, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -165,7 +50,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine::types::Level::Warn, ::sbor::rust::format!($($args),+));
+        ::scrypto::runtime::Logger::log(radix_engine_interface::api::types::Level::Warn, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -180,7 +65,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine::types::Level::Info, ::sbor::rust::format!($($args),+));
+        ::scrypto::runtime::Logger::log(radix_engine_interface::api::types::Level::Info, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -195,7 +80,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine::types::Level::Debug, ::sbor::rust::format!($($args),+));
+        ::scrypto::runtime::Logger::log(radix_engine_interface::api::types::Level::Debug, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -210,7 +95,7 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine::types::Level::Trace, ::sbor::rust::format!($($args),+));
+        ::scrypto::runtime::Logger::log(radix_engine_interface::api::types::Level::Trace, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -295,12 +180,12 @@ macro_rules! include_abi {
 
 /// Generates a bridge/stub to make package calls to a blueprint.
 ///
-/// If you just wish to instead make calls to an instantiated component, see the [external_component]! macro.
+/// If you just wish to instead make calls to an instantiated component, see the `external_component` macro.
 ///
 /// # Examples
 /// ```no_run
+/// use radix_engine_interface::address::Bech32Decoder;
 /// use scrypto::prelude::*;
-/// use scrypto::address::Bech32Decoder;
 ///
 /// external_blueprint! {
 ///     CustomAccountBlueprint {
@@ -330,23 +215,12 @@ macro_rules! include_abi {
 ///     blueprint.instantiate_global("account_name")
 /// }
 ///
-/// fn create_and_transfer() {
-///     let component_address = instantiate_custom_account();
-///
-///     let mut account = AccountInterface::at(component_address);
-///
-///     let resource_address = Bech32Decoder::for_simulator()
-///         .validate_and_decode_resource_address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
-///         .unwrap();
-///     let empty_bucket = Bucket::new(resource_address);
-///     account.deposit(empty_bucket);
-/// }
 /// ```
 ///
 /// # Related
 ///
 /// - Replaces the import! macro for importing an abi, using a more concise, readable syntax.
-/// - Similar to the [external_component]! macro, which is used for making cross-component calls to an already-instantiated component.
+/// - Similar to the `external_component` macro, which is used for making cross-component calls to an already-instantiated component.
 #[macro_export]
 macro_rules! external_blueprint {
     (
@@ -357,14 +231,14 @@ macro_rules! external_blueprint {
 
         #[scrypto(TypeId, Encode, Decode, Describe)]
         struct $blueprint_ident {
-            package_address: ::scrypto::component::PackageAddress,
+            package_address: ::scrypto::model::PackageAddress,
             blueprint_name: ::sbor::rust::string::String,
         }
 
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $blueprint_ident {
-            fn at<S>(package_address: ::scrypto::component::PackageAddress, blueprint_name: S) -> Self
+            fn at<S>(package_address: ::scrypto::model::PackageAddress, blueprint_name: S) -> Self
             where
                 S: Into<::sbor::rust::string::String>
             {
@@ -379,8 +253,8 @@ macro_rules! external_blueprint {
             );
         }
 
-        impl From<$blueprint_ident> for ::scrypto::component::PackageAddress {
-            fn from(a: $blueprint_ident) -> ::scrypto::component::PackageAddress {
+        impl From<$blueprint_ident> for ::scrypto::model::PackageAddress {
+            fn from(a: $blueprint_ident) -> ::scrypto::model::PackageAddress {
                 a.package_address
             }
         }
@@ -431,11 +305,11 @@ macro_rules! external_blueprint_members {
         $($rest:tt)*
     ) => {
         pub fn $func_name(&self, $($func_args: $func_types),*) -> $func_output {
-            ::scrypto::core::Runtime::call_function(
+            ::scrypto::runtime::Runtime::call_function(
                 self.package_address,
                 &self.blueprint_name,
                 stringify!($func_name),
-                ::scrypto::args!($($func_args),*)
+                args!($($func_args),*)
             )
         }
         ::scrypto::external_blueprint_members!($($rest)*);
@@ -446,11 +320,11 @@ macro_rules! external_blueprint_members {
     ) => {
         pub fn $func_name(&self, $($func_args: $func_types),*) {
             use ::scrypto::rust::str::FromStr;
-            ::scrypto::core::Runtime::call_function(
+            ::scrypto::runtime::Runtime::call_function(
                 self.package_address,
                 &self.blueprint_name,
                 stringify!($func_name),
-                ::scrypto::args!($($func_args),*)
+                args!($($func_args),*)
             )
         }
         ::scrypto::external_blueprint_members!($($rest)*);
@@ -463,7 +337,6 @@ macro_rules! external_blueprint_members {
 /// # Examples
 /// ```no_run
 /// use scrypto::prelude::*;
-/// use scrypto::address::Bech32Decoder;
 ///
 /// #[derive(TypeId, Encode, Decode, Describe)]
 /// enum DepositResult {
@@ -498,13 +371,13 @@ macro_rules! external_component {
     ) => {
         #[scrypto(TypeId, Encode, Decode, Describe)]
         struct $component_ident {
-            component_address: ::scrypto::component::ComponentAddress,
+            component_address: ::scrypto::model::ComponentAddress,
         }
 
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $component_ident {
-            fn at(component_address: ::scrypto::component::ComponentAddress) -> Self {
+            fn at(component_address: ::scrypto::model::ComponentAddress) -> Self {
                 Self {
                     component_address,
                 }
@@ -513,16 +386,16 @@ macro_rules! external_component {
             ::scrypto::external_component_members!($($component_methods)*);
         }
 
-        impl From<::scrypto::component::ComponentAddress> for $component_ident {
-            fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
+        impl From<::scrypto::model::ComponentAddress> for $component_ident {
+            fn from(component_address: ::scrypto::model::ComponentAddress) -> Self {
                 Self {
                     component_address
                 }
             }
         }
 
-        impl From<$component_ident> for ::scrypto::component::ComponentAddress {
-            fn from(a: $component_ident) -> ::scrypto::component::ComponentAddress {
+        impl From<$component_ident> for ::scrypto::model::ComponentAddress {
+            fn from(a: $component_ident) -> ::scrypto::model::ComponentAddress {
                 a.component_address
             }
         }
@@ -537,10 +410,10 @@ macro_rules! external_component_members {
         $($rest:tt)*
     ) => {
         pub fn $method_name(&self $(, $method_args: $method_types)*) -> $method_output {
-            ::scrypto::core::Runtime::call_method(
+            ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                ::scrypto::args!($($method_args),*)
+                args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);
@@ -550,10 +423,10 @@ macro_rules! external_component_members {
         $($rest:tt)*
     ) => {
         pub fn $method_name(&self $(, $method_args: $method_types)*) {
-            ::scrypto::core::Runtime::call_method(
+            ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                ::scrypto::args!($($method_args),*)
+                args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);
@@ -563,10 +436,10 @@ macro_rules! external_component_members {
         $($rest:tt)*
     ) => {
         pub fn $method_name(&mut self $(, $method_args: $method_types)*) -> $method_output {
-            ::scrypto::core::Runtime::call_method(
+            ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                ::scrypto::args!($($method_args),*)
+                args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);
@@ -576,10 +449,10 @@ macro_rules! external_component_members {
         $($rest:tt)*
     ) => {
         pub fn $method_name(&mut self $(, $method_args: $method_types)*) {
-            ::scrypto::core::Runtime::call_method(
+            ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                ::scrypto::args!($($method_args),*)
+                args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);
@@ -611,38 +484,43 @@ macro_rules! external_component_members {
     () => {}
 }
 
-/// A macro for implementing sbor traits.
+/// Defines a scrypto custom type.
 #[macro_export]
 macro_rules! scrypto_type {
     // static size
     ($t:ty, $type_id:expr, $schema_type: expr, $size: expr) => {
-        impl TypeId<::scrypto::data::ScryptoCustomTypeId> for $t {
+        impl TypeId<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn type_id() -> SborTypeId<::scrypto::data::ScryptoCustomTypeId> {
+            fn type_id() -> SborTypeId<radix_engine_interface::data::ScryptoCustomTypeId> {
                 SborTypeId::Custom($type_id)
             }
         }
 
-        impl Encode<::scrypto::data::ScryptoCustomTypeId> for $t {
+        impl Encode<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn encode_type_id(encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
+            fn encode_type_id(
+                encoder: &mut Encoder<radix_engine_interface::data::ScryptoCustomTypeId>,
+            ) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
-            fn encode_value(&self, encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
+            fn encode_value(
+                &self,
+                encoder: &mut Encoder<radix_engine_interface::data::ScryptoCustomTypeId>,
+            ) {
                 encoder.write_slice(&self.to_vec());
             }
         }
 
-        impl Decode<::scrypto::data::ScryptoCustomTypeId> for $t {
+        impl Decode<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
             fn check_type_id(
-                decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
+                decoder: &mut Decoder<radix_engine_interface::data::ScryptoCustomTypeId>,
             ) -> Result<(), DecodeError> {
                 decoder.check_type_id(Self::type_id())
             }
 
             fn decode_value(
-                decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
+                decoder: &mut Decoder<radix_engine_interface::data::ScryptoCustomTypeId>,
             ) -> Result<Self, DecodeError> {
                 let slice = decoder.read_slice($size)?;
                 Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
@@ -658,35 +536,40 @@ macro_rules! scrypto_type {
 
     // dynamic size
     ($t:ty, $type_id:expr, $schema_type: expr) => {
-        impl TypeId<::scrypto::data::ScryptoCustomTypeId> for $t {
+        impl TypeId<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn type_id() -> SborTypeId<::scrypto::data::ScryptoCustomTypeId> {
+            fn type_id() -> SborTypeId<radix_engine_interface::data::ScryptoCustomTypeId> {
                 SborTypeId::Custom($type_id)
             }
         }
 
-        impl Encode<::scrypto::data::ScryptoCustomTypeId> for $t {
+        impl Encode<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
             #[inline]
-            fn encode_type_id(encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
+            fn encode_type_id(
+                encoder: &mut Encoder<radix_engine_interface::data::ScryptoCustomTypeId>,
+            ) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
-            fn encode_value(&self, encoder: &mut Encoder<::scrypto::data::ScryptoCustomTypeId>) {
+            fn encode_value(
+                &self,
+                encoder: &mut Encoder<radix_engine_interface::data::ScryptoCustomTypeId>,
+            ) {
                 let bytes = self.to_vec();
                 encoder.write_size(bytes.len());
                 encoder.write_slice(&bytes);
             }
         }
 
-        impl Decode<::scrypto::data::ScryptoCustomTypeId> for $t {
+        impl Decode<radix_engine_interface::data::ScryptoCustomTypeId> for $t {
             fn check_type_id(
-                decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
+                decoder: &mut Decoder<radix_engine_interface::data::ScryptoCustomTypeId>,
             ) -> Result<(), DecodeError> {
                 decoder.check_type_id(Self::type_id())
             }
 
             fn decode_value(
-                decoder: &mut Decoder<::scrypto::data::ScryptoCustomTypeId>,
+                decoder: &mut Decoder<radix_engine_interface::data::ScryptoCustomTypeId>,
             ) -> Result<Self, DecodeError> {
                 let len = decoder.read_size()?;
                 let slice = decoder.read_slice(len)?;

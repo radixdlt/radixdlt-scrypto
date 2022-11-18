@@ -1,6 +1,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
+use scrypto::component::*;
 use scrypto::prelude::*;
+use scrypto::{blueprint, import};
 
 // base directory: `scrypto-derive`
 import! {
