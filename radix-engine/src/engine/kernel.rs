@@ -15,7 +15,6 @@ use transaction::errors::IdAllocationError;
 use transaction::model::AuthZoneParams;
 use transaction::validation::*;
 
-use crate::engine::call_frame::RENodeLocation;
 use crate::engine::system_api::Invokable;
 use crate::engine::system_api::LockInfo;
 use crate::engine::*;
@@ -117,34 +116,31 @@ where
             })
             .expect("AuthModule failed to initialize");
 
-        kernel.current_frame.node_refs.insert(
-            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
-            RENodeLocation::Store,
-        );
-        kernel.current_frame.node_refs.insert(
-            RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)),
-            RENodeLocation::Store,
-        );
-        kernel.current_frame.node_refs.insert(
-            RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)),
-            RENodeLocation::Store,
-        );
-        kernel.current_frame.node_refs.insert(
-            RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)),
-            RENodeLocation::Store,
-        );
-        kernel.current_frame.node_refs.insert(
-            RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-            RENodeLocation::Store,
-        );
-        kernel.current_frame.node_refs.insert(
-            RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)),
-            RENodeLocation::Store,
-        );
-        kernel.current_frame.node_refs.insert(
-            RENodeId::Global(GlobalAddress::Package(SYS_FAUCET_PACKAGE)),
-            RENodeLocation::Store,
-        );
+        kernel
+            .current_frame
+            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        kernel
+            .current_frame
+            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)));
+        kernel
+            .current_frame
+            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(
+                ECDSA_SECP256K1_TOKEN,
+            )));
+        kernel
+            .current_frame
+            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(
+                EDDSA_ED25519_TOKEN,
+            )));
+        kernel
+            .current_frame
+            .add_stored_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        kernel
+            .current_frame
+            .add_stored_ref(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+        kernel
+            .current_frame
+            .add_stored_ref(RENodeId::Global(GlobalAddress::Package(SYS_FAUCET_PACKAGE)));
 
         kernel
     }
@@ -326,9 +322,7 @@ where
                     SubstateId(node_id, offset.clone()),
                     RuntimeSubstate::Global(global_substate),
                 );
-                self.current_frame
-                    .node_refs
-                    .insert(node_id, RENodeLocation::Store);
+                self.current_frame.add_stored_ref(node_id);
                 self.current_frame.move_owned_node_to_store(
                     &mut self.heap,
                     &mut self.track,
@@ -708,9 +702,7 @@ where
                                 ..
                             ))
                         ) {
-                            self.current_frame
-                                .node_refs
-                                .insert(*node_id, RENodeLocation::Store);
+                            self.current_frame.add_stored_ref(*node_id);
                             continue;
                         }
 
@@ -724,9 +716,7 @@ where
                         self.track
                             .release_lock(SubstateId(*node_id, offset), false)
                             .map_err(|_| KernelError::GlobalAddressNotFound(*global_address))?;
-                        self.current_frame
-                            .node_refs
-                            .insert(*node_id, RENodeLocation::Store);
+                        self.current_frame.add_stored_ref(*node_id);
                         continue;
                     }
                 }
@@ -1081,9 +1071,7 @@ where
                     SubstateId(global_node_id, SubstateOffset::Global(GlobalOffset::Global)),
                     RuntimeSubstate::Global(global_substate),
                 );
-                self.current_frame
-                    .node_refs
-                    .insert(global_node_id, RENodeLocation::Store);
+                self.current_frame.add_stored_ref(global_node_id);
                 self.current_frame.move_owned_node_to_store(
                     &mut self.heap,
                     &mut self.track,

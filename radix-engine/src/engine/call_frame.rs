@@ -66,7 +66,7 @@ pub struct CallFrame {
     pub actor: REActor,
 
     /// All ref nodes accessible by this call frame (does not include owned nodes).
-    pub node_refs: HashMap<RENodeId, RENodeLocation>,
+    node_refs: HashMap<RENodeId, RENodeLocation>,
 
     /// Owned nodes which by definition must live on heap
     /// Also keeps track of number of locks on this node
@@ -362,6 +362,10 @@ impl CallFrame {
         self.owned_root_nodes.insert(node_id, 0u32);
 
         Ok(())
+    }
+
+    pub fn add_stored_ref(&mut self, node_id: RENodeId) {
+        self.node_refs.insert(node_id, RENodeLocation::Store);
     }
 
     pub fn move_owned_node_to_store<'f, 's, R: FeeReserve>(
