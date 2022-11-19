@@ -34,6 +34,12 @@ pub enum DecodeError {
 }
 
 pub trait Decoder<X: CustomTypeId>: Sized {
+    fn decode_payload<T: Decode<X, Self>>(mut self) -> Result<T, DecodeError> {
+        let value = self.decode()?;
+        self.check_end()?;
+        Ok(value)
+    }
+
     fn decode<T: Decode<X, Self>>(&mut self) -> Result<T, DecodeError> {
         let type_id = self.read_type_id()?;
         self.decode_body_with_type_id(type_id)
@@ -45,7 +51,7 @@ pub trait Decoder<X: CustomTypeId>: Sized {
     ) -> Result<T, DecodeError> {
         self.track_decode_depth_increase()?;
         let decoded = T::decode_body_with_type_id(self, type_id)?;
-        self.track_decode_depth_decrease();
+        self.track_decode_depth_decrease()?;
         Ok(decoded)
     }
 
@@ -117,15 +123,12 @@ pub trait Decoder<X: CustomTypeId>: Sized {
 
     fn track_decode_depth_increase(&mut self) -> Result<(), DecodeError>;
 
-    fn track_decode_depth_decrease(&mut self);
+    fn track_decode_depth_decrease(&mut self) -> Result<(), DecodeError>;
 
     fn read_byte(&mut self) -> Result<u8, DecodeError>;
 
     fn read_slice(&mut self, n: usize) -> Result<&[u8], DecodeError>;
 }
-
-pub const DEFAULT_MAX_DEPTH: u8 = 32;
-pub type DefaultVecDecoder<'de, X> = VecDecoder<'de, X, DEFAULT_MAX_DEPTH>;
 
 /// A `Decoder` abstracts the logic for decoding basic types.
 pub struct VecDecoder<'de, X: CustomTypeId, const MAX_DEPTH: u8> {
@@ -200,8 +203,9 @@ impl<'de, X: CustomTypeId, const MAX_DEPTH: u8> Decoder<X> for VecDecoder<'de, X
     }
 
     #[inline]
-    fn track_decode_depth_decrease(&mut self) {
+    fn track_decode_depth_decrease(&mut self) -> Result<(), DecodeError> {
         self.decoder_stack_depth -= 1;
+        Ok(())
     }
 }
 
@@ -209,7 +213,6 @@ impl<'de, X: CustomTypeId, const MAX_DEPTH: u8> Decoder<X> for VecDecoder<'de, X
 mod tests {
     use super::*;
     use crate::encode::Encode;
-    use crate::encode::Encoder;
     use crate::rust::borrow::ToOwned;
     use crate::rust::boxed::Box;
     use crate::rust::cell::RefCell;

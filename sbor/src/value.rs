@@ -433,8 +433,8 @@ mod tests {
             y: map1,
             z: map2,
         };
-        let bytes = encode::<NoCustomTypeId, _>(&data);
-        let value = decode::<NoCustomTypeId, BasicSborValue>(&bytes).unwrap();
+        let bytes = basic_encode(&data);
+        let value = basic_decode(&bytes).unwrap();
 
         assert_eq!(
             BasicSborValue::Struct {
@@ -537,34 +537,34 @@ mod tests {
 
     #[test]
     pub fn test_max_depth_array_decode_behaviour() {
-        let allowable_payload = encode_array_of_depth(DEFAULT_MAX_DEPTH);
-        let allowable_result = decode::<NoCustomTypeId, BasicSborValue>(&allowable_payload);
+        let allowable_payload = encode_array_of_depth(DEFAULT_BASIC_MAX_DEPTH);
+        let allowable_result = basic_decode::<BasicSborValue>(&allowable_payload);
         assert!(allowable_result.is_ok());
 
-        let forbidden_payload = encode_array_of_depth(DEFAULT_MAX_DEPTH + 1);
-        let forbidden_result = decode::<NoCustomTypeId, BasicSborValue>(&forbidden_payload);
+        let forbidden_payload = encode_array_of_depth(DEFAULT_BASIC_MAX_DEPTH + 1);
+        let forbidden_result = basic_decode::<BasicSborValue>(&forbidden_payload);
         assert!(forbidden_result.is_err());
     }
 
     #[test]
     pub fn test_max_depth_struct_decode_behaviour() {
-        let allowable_payload = encode_struct_of_depth(DEFAULT_MAX_DEPTH);
-        let allowable_result = decode::<NoCustomTypeId, BasicSborValue>(&allowable_payload);
+        let allowable_payload = encode_struct_of_depth(DEFAULT_BASIC_MAX_DEPTH);
+        let allowable_result = basic_decode::<BasicSborValue>(&allowable_payload);
         assert!(allowable_result.is_ok());
 
-        let forbidden_payload = encode_struct_of_depth(DEFAULT_MAX_DEPTH + 1);
-        let forbidden_result = decode::<NoCustomTypeId, BasicSborValue>(&forbidden_payload);
+        let forbidden_payload = encode_struct_of_depth(DEFAULT_BASIC_MAX_DEPTH + 1);
+        let forbidden_result = basic_decode::<BasicSborValue>(&forbidden_payload);
         assert!(forbidden_result.is_err());
     }
 
     #[test]
     pub fn test_max_depth_tuple_decode_behaviour() {
-        let allowable_payload = encode_tuple_of_depth(DEFAULT_MAX_DEPTH);
-        let allowable_result = decode::<NoCustomTypeId, BasicSborValue>(&allowable_payload);
+        let allowable_payload = encode_tuple_of_depth(DEFAULT_BASIC_MAX_DEPTH);
+        let allowable_result = basic_decode::<BasicSborValue>(&allowable_payload);
         assert!(allowable_result.is_ok());
 
-        let forbidden_payload = encode_tuple_of_depth(DEFAULT_MAX_DEPTH + 1);
-        let forbidden_result = decode::<NoCustomTypeId, BasicSborValue>(&forbidden_payload);
+        let forbidden_payload = encode_tuple_of_depth(DEFAULT_BASIC_MAX_DEPTH + 1);
+        let forbidden_result = basic_decode::<BasicSborValue>(&forbidden_payload);
         assert!(forbidden_result.is_err());
     }
 

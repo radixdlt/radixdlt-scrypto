@@ -16,10 +16,35 @@ pub enum NoCustomTypeId {}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomValue {}
 
+pub const DEFAULT_BASIC_MAX_DEPTH: u8 = 32;
 pub type BasicEncoder<'a> = Encoder<'a, NoCustomTypeId>;
-pub type BasicDecoder<'a> = DefaultVecDecoder<'a, NoCustomTypeId>;
+pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomTypeId, DEFAULT_BASIC_MAX_DEPTH>;
 pub type BasicSborValue = SborValue<NoCustomTypeId, NoCustomValue>;
 pub type BasicSborTypeId = SborTypeId<NoCustomTypeId>;
+
+// These trait "aliases" should only be used for parameters, never implementations
+// Implementations should implement the underlying traits (TypeId<NoCustomTypeId>/Encode<NoCustomTypeId, E>/Decode<NoCustomTypeId, D>)
+pub trait BasicTypeId: TypeId<NoCustomTypeId> {}
+impl<T: TypeId<NoCustomTypeId> + ?Sized> BasicTypeId for T {}
+
+pub trait BasicDecode: for<'de> Decode<NoCustomTypeId, BasicDecoder<'de>> {}
+impl<T: for<'de> Decode<NoCustomTypeId, BasicDecoder<'de>>> BasicDecode for T {}
+
+pub trait BasicEncode: Encode<NoCustomTypeId> {}
+impl<T: Encode<NoCustomTypeId> + ?Sized> BasicEncode for T {}
+
+/// Encode a `T` into byte array.
+pub fn basic_encode<T: BasicEncode + ?Sized>(v: &T) -> crate::rust::vec::Vec<u8> {
+    let mut buf = crate::rust::vec::Vec::with_capacity(512);
+    let mut enc = BasicEncoder::new(&mut buf);
+    v.encode(&mut enc);
+    buf
+}
+
+/// Decode an instance of `T` from a slice.
+pub fn basic_decode<T: BasicDecode>(buf: &[u8]) -> Result<T, DecodeError> {
+    BasicDecoder::new(buf).decode_payload()
+}
 
 impl CustomTypeId for NoCustomTypeId {
     fn as_u8(&self) -> u8 {

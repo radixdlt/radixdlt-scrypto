@@ -52,7 +52,7 @@ impl IndexedScryptoValue {
     }
 
     pub fn from_typed<T: ScryptoEncode>(value: &T) -> Self {
-        let bytes = encode(value);
+        let bytes = scrypto_encode(value);
         Self::from_slice(&bytes).expect("Failed to convert trusted value into IndexedScryptoValue")
     }
 

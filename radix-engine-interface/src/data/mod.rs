@@ -16,36 +16,41 @@ pub use custom_type_id::*;
 pub use custom_value::*;
 pub use indexed_value::*;
 use sbor::rust::vec::Vec;
-use sbor::{decode, encode, DecodeError};
+use sbor::{
+    Decode, DecodeError, Decoder, Encode, Encoder, SborTypeId, SborValue, TypeId, VecDecoder,
+};
 pub use schema_matcher::*;
 pub use schema_path::*;
 pub use value_formatter::*;
 
 pub const MAX_SCRYPTO_SBOR_DEPTH: u8 = 32;
 
-pub type ScryptoEncoder<'a> = sbor::Encoder<'a, ScryptoCustomTypeId>;
-pub type ScryptoDecoder<'a> = sbor::VecDecoder<'a, ScryptoCustomTypeId, MAX_SCRYPTO_SBOR_DEPTH>;
-pub type ScryptoSborTypeId = sbor::SborTypeId<ScryptoCustomTypeId>;
-pub type ScryptoValue = sbor::SborValue<ScryptoCustomTypeId, ScryptoCustomValue>;
+pub type ScryptoEncoder<'a> = Encoder<'a, ScryptoCustomTypeId>;
+pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomTypeId, MAX_SCRYPTO_SBOR_DEPTH>;
+pub type ScryptoSborTypeId = SborTypeId<ScryptoCustomTypeId>;
+pub type ScryptoValue = SborValue<ScryptoCustomTypeId, ScryptoCustomValue>;
 
 // These trait "aliases" should only be used for parameters, never implementations
-// Implementations should implement the underlying traits (TypeId/Encode/Decode)
-pub trait ScryptoTypeId: sbor::TypeId<ScryptoCustomTypeId> {}
-impl<T: sbor::TypeId<ScryptoCustomTypeId> + ?Sized> ScryptoTypeId for T {}
+// Implementations should implement the underlying traits (TypeId<ScryptoCustomTypeId>/Encode<ScryptoCustomTypeId, E>/Decode<ScryptoCustomTypeId, D>)
+pub trait ScryptoTypeId: TypeId<ScryptoCustomTypeId> {}
+impl<T: TypeId<ScryptoCustomTypeId> + ?Sized> ScryptoTypeId for T {}
 
-pub trait ScryptoDecode: for<'de> sbor::Decode<ScryptoCustomTypeId, ScryptoDecoder<'de>> {}
-impl<T: for<'de> sbor::Decode<ScryptoCustomTypeId, ScryptoDecoder<'de>>> ScryptoDecode for T {}
+pub trait ScryptoDecode: for<'de> Decode<ScryptoCustomTypeId, ScryptoDecoder<'de>> {}
+impl<T: for<'de> Decode<ScryptoCustomTypeId, ScryptoDecoder<'de>>> ScryptoDecode for T {}
 
-pub trait ScryptoEncode: sbor::Encode<ScryptoCustomTypeId> {}
-impl<T: sbor::Encode<ScryptoCustomTypeId> + ?Sized> ScryptoEncode for T {}
+pub trait ScryptoEncode: Encode<ScryptoCustomTypeId> {}
+impl<T: Encode<ScryptoCustomTypeId> + ?Sized> ScryptoEncode for T {}
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: ScryptoEncode + ?Sized>(v: &T) -> Vec<u8> {
-    encode(v)
+    let mut buf = Vec::with_capacity(512);
+    let mut enc = ScryptoEncoder::new(&mut buf);
+    v.encode(&mut enc);
+    buf
 }
 
 pub fn scrypto_decode<T: ScryptoDecode>(buf: &[u8]) -> Result<T, DecodeError> {
-    decode(buf)
+    ScryptoDecoder::new(buf).decode_payload()
 }
 
 #[macro_export]
