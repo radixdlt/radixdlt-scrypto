@@ -8,7 +8,31 @@ blueprint! {
     struct Deref {}
 
     impl Deref {
-        pub fn verify_no_visible_component_nodes_on_deref(component_address: ComponentAddress) {
+        pub fn verify_no_visible_component_nodes_on_deref_lock(
+            component_address: ComponentAddress,
+        ) {
+            let mut syscalls = ScryptoEnv;
+            syscalls
+                .sys_lock_substate(
+                    RENodeId::Global(GlobalAddress::Component(component_address)),
+                    SubstateOffset::Component(ComponentOffset::Info),
+                    false,
+                )
+                .unwrap();
+
+            let visible_node_ids: Vec<RENodeId> =
+                call_engine(RadixEngineInput::GetVisibleNodeIds());
+
+            for node_id in visible_node_ids {
+                if let RENodeId::Component(..) = node_id {
+                    panic!("Component Node Found: {:?}", node_id);
+                }
+            }
+        }
+
+        pub fn verify_no_visible_component_nodes_after_deref_lock_drop(
+            component_address: ComponentAddress,
+        ) {
             {
                 let mut syscalls = ScryptoEnv;
                 let lock_handle = syscalls
