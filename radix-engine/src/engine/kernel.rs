@@ -428,6 +428,7 @@ where
         actor: REActor,
         mut call_frame_update: CallFrameUpdate,
     ) -> Result<X::Output, RuntimeError> {
+        // Filter
         self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
             AuthModule::on_before_frame_start(&actor, &executor, system_api).map_err(|e| match e {
                 InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
@@ -435,61 +436,73 @@ where
             })
         })?;
 
-        // TODO: Abstract these away
-        self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
-            AuthModule::on_new_call_frame(&mut call_frame_update, system_api)
-        })?;
-        self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
-            NodeMoveModule::on_new_call_frame(&mut call_frame_update, &actor, system_api)
-        })?;
-        for m in &mut self.modules {
-            m.on_run(
-                &actor,
-                executor.args(),
-                &mut self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-            )
-            .map_err(RuntimeError::ModuleError)?;
+        // New Call Frame pre-processing
+        {
+            // TODO: Abstract these away
+            self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
+                AuthModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
+            })?;
+            self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
+                NodeMoveModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
+            })?;
+            for m in &mut self.modules {
+                m.on_run(
+                    &actor,
+                    executor.args(),
+                    &mut self.current_frame,
+                    &mut self.heap,
+                    &mut self.track,
+                )
+                .map_err(RuntimeError::ModuleError)?;
+            }
         }
 
         // Call Frame Push
-        let frame =
-            CallFrame::new_child_from_parent(&mut self.current_frame, actor, call_frame_update)?;
-        let parent = mem::replace(&mut self.current_frame, frame);
-        self.prev_frame_stack.push(parent);
+        {
+            let frame = CallFrame::new_child_from_parent(
+                &mut self.current_frame,
+                actor,
+                call_frame_update,
+            )?;
+            let parent = mem::replace(&mut self.current_frame, frame);
+            self.prev_frame_stack.push(parent);
+        }
 
         // Execute
         let (output, update) = self.execute_in_mode(ExecutionMode::Application, |system_api| {
             executor.execute(system_api)
         })?;
 
-        // Auto drop locks
-        self.current_frame.drop_all_locks(&mut self.heap, &mut self.track)?;
+        // Call Frame post-processing
+        {
+            // Auto drop locks
+            self.current_frame
+                .drop_all_locks(&mut self.heap, &mut self.track)?;
 
-        // Process return data
-        self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
-            NodeMoveModule::on_call_frame_exit(&update, system_api)
-        })?;
-        self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
-            AuthModule::on_frame_end(system_api).map_err(|e| match e {
-                InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            })
-        })?;
+            // TODO: Abstract these away
+            self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
+                NodeMoveModule::on_call_frame_exit(&update, system_api)
+            })?;
+            self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
+                AuthModule::on_call_frame_exit(system_api)
+            })?;
 
-        // Auto-drop locks again in case module forgot to drop
-        self.current_frame
-            .drop_all_locks(&mut self.heap, &mut self.track)?;
+            // Auto-drop locks again in case module forgot to drop
+            self.current_frame
+                .drop_all_locks(&mut self.heap, &mut self.track)?;
+        }
 
-        let mut parent = self.prev_frame_stack.pop().unwrap();
-        CallFrame::update_upstream(&mut self.current_frame, &mut parent, update)?;
+        // Call Frame Pop
+        {
+            let mut parent = self.prev_frame_stack.pop().unwrap();
+            CallFrame::update_upstream(&mut self.current_frame, &mut parent, update)?;
 
-        // drop proofs and check resource leak
-        self.drop_nodes_in_frame()?;
+            // drop proofs and check resource leak
+            self.drop_nodes_in_frame()?;
 
-        // Restore previous frame
-        self.current_frame = parent;
+            // Restore previous frame
+            self.current_frame = parent;
+        }
 
         Ok(output)
     }

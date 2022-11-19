@@ -117,7 +117,7 @@ impl NodeMoveModule {
         }
     }
 
-    pub fn on_new_call_frame<Y: SystemApi>(
+    pub fn on_call_frame_enter<Y: SystemApi>(
         call_frame_update: &mut CallFrameUpdate,
         actor: &REActor,
         system_api: &mut Y,

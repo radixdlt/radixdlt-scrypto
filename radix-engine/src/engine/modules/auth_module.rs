@@ -27,8 +27,9 @@ impl AuthModule {
         NonFungibleId::from_u32(1)
     }
 
-    pub fn on_new_call_frame<Y: SystemApi>(
+    pub fn on_call_frame_enter<Y: SystemApi>(
         call_frame_update: &mut CallFrameUpdate,
+        actor: &REActor,
         system_api: &mut Y,
     ) -> Result<(), RuntimeError> {
         let refed = system_api.get_visible_node_ids()?;
@@ -36,8 +37,24 @@ impl AuthModule {
             .into_iter()
             .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
             .unwrap();
-
         call_frame_update.node_refs_to_copy.insert(auth_zone_id);
+
+        if !matches!(
+            actor,
+            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..)
+        ) {
+            let handle = system_api.lock_substate(
+                auth_zone_id,
+                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+                LockFlags::MUTABLE,
+            )?;
+            let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+            let auth_zone_ref_mut = substate_ref_mut.auth_zone();
+
+            // New auth zone frame managed by the AuthModule
+            auth_zone_ref_mut.new_frame(actor);
+            system_api.drop_lock(handle)?;
+        }
 
         Ok(())
     }
@@ -195,13 +212,13 @@ impl AuthModule {
         let handle = system_api.lock_substate(
             auth_zone_id,
             SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
-            LockFlags::MUTABLE,
+            LockFlags::read_only(),
         )?;
-        let mut substate_mut_ref = system_api.get_ref_mut(handle)?;
-        let auth_zone_ref_mut = substate_mut_ref.auth_zone();
+        let substate_ref = system_api.get_ref(handle)?;
+        let auth_zone_ref = substate_ref.auth_zone();
 
         // Authorization check
-        auth_zone_ref_mut
+        auth_zone_ref
             .check_auth(actor, method_auths)
             .map_err(|(authorization, error)| {
                 InvokeError::Error(AuthError::Unauthorized {
@@ -211,15 +228,12 @@ impl AuthModule {
                 })
             })?;
 
-        // New auth zone frame managed by the AuthModule
-        auth_zone_ref_mut.new_frame(actor);
-
         system_api.drop_lock(handle)?;
 
         Ok(())
     }
 
-    pub fn on_frame_end<Y>(system_api: &mut Y) -> Result<(), InvokeError<AuthError>>
+    pub fn on_call_frame_exit<Y>(system_api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: SystemApi,
     {
