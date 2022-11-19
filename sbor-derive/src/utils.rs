@@ -97,11 +97,33 @@ pub fn custom_type_id(attrs: &[Attribute]) -> Option<String> {
         .unwrap_or(None)
 }
 
+pub fn build_decode_generics(
+    original_generics: &Generics,
+    custom_type_id: Option<String>,
+) -> syn::Result<(Generics, TypeGenerics, Option<&WhereClause>, Path, Path)> {
+    let (mut impl_generics, ty_generics, where_clause, custom_type_id_generic) =
+        build_generics(original_generics, custom_type_id)?;
+
+    let decoder_generic: Path = parse_quote! { DEC };
+
+    impl_generics
+        .params
+        .push(parse_quote!(#decoder_generic: ::sbor::decoder::Decoder<#custom_type_id_generic>));
+
+    Ok((
+        impl_generics,
+        ty_generics,
+        where_clause,
+        custom_type_id_generic,
+        decoder_generic,
+    ))
+}
+
 pub fn build_generics(
-    generics: &Generics,
+    original_generics: &Generics,
     custom_type_id: Option<String>,
 ) -> syn::Result<(Generics, TypeGenerics, Option<&WhereClause>, Path)> {
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Unwrap for mutation
     let mut impl_generics: Generics = parse_quote! { #impl_generics };

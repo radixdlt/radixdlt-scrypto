@@ -17,7 +17,7 @@ pub enum NoCustomTypeId {}
 pub enum NoCustomValue {}
 
 pub type BasicEncoder<'a> = Encoder<'a, NoCustomTypeId>;
-pub type BasicDecoder<'a> = Decoder<'a, NoCustomTypeId>;
+pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomTypeId>;
 pub type BasicSborValue = SborValue<NoCustomTypeId, NoCustomValue>;
 pub type BasicSborTypeId = SborTypeId<NoCustomTypeId>;
 
@@ -31,7 +31,7 @@ impl CustomTypeId for NoCustomTypeId {
     }
 }
 
-impl<X: CustomTypeId> CustomValue<X> for NoCustomValue {
+impl<X: CustomTypeId> Encode<X> for NoCustomValue {
     fn encode_type_id(&self, _encoder: &mut Encoder<X>) {
         panic!("No custom value")
     }
@@ -39,8 +39,13 @@ impl<X: CustomTypeId> CustomValue<X> for NoCustomValue {
     fn encode_body(&self, _encoder: &mut Encoder<X>) {
         panic!("No custom value")
     }
+}
 
-    fn decode_body_with_type_id(_decoder: &mut Decoder<X>, _type_id: X) -> Result<Self, DecodeError>
+impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for NoCustomValue {
+    fn decode_body_with_type_id(
+        _decoder: &mut D,
+        _type_id: SborTypeId<X>,
+    ) -> Result<Self, DecodeError>
     where
         Self: Sized,
     {

@@ -11,8 +11,10 @@ pub mod basic;
 pub mod codec;
 /// SBOR constants
 pub mod constants;
-/// SBOR decoding.
+/// SBOR decode trait.
 pub mod decode;
+/// SBOR decoding.
+pub mod decoder;
 /// SBOR encoding.
 pub mod encode;
 /// SBOR paths.
@@ -26,7 +28,8 @@ pub mod value;
 
 pub use basic::*;
 pub use constants::*;
-pub use decode::{Decode, DecodeError, Decoder};
+pub use decode::Decode;
+pub use decoder::{DecodeError, Decoder, VecDecoder};
 pub use encode::{Encode, Encoder};
 pub use path::{SborPath, SborPathBuf};
 pub use type_id::*;
@@ -41,11 +44,13 @@ pub fn encode<X: CustomTypeId, T: Encode<X> + ?Sized>(v: &T) -> crate::rust::vec
 }
 
 /// Decode an instance of `T` from a slice.
-pub fn decode<X: CustomTypeId, T: Decode<X>>(buf: &[u8]) -> Result<T, DecodeError> {
-    let mut dec = Decoder::new(buf);
-    let v = T::decode(&mut dec)?;
-    dec.check_end()?;
-    Ok(v)
+pub fn decode<X: CustomTypeId, T: for<'de> Decode<X, VecDecoder<'de, X>>>(
+    buf: &[u8],
+) -> Result<T, DecodeError> {
+    let mut decoder = VecDecoder::new(buf);
+    let value = decoder.decode()?;
+    decoder.check_end()?;
+    Ok(value)
 }
 
 // Re-export derives

@@ -45,23 +45,23 @@ fn test_struct_with_skip() {
     assert_eq!(
         vec![
           16, // struct type 
-          1, 0, 0, 0, // number of fields
+          1, // number of fields
           9, 2, 0, 0, 0, // field value
 
           16,  // struct type 
-          1, 0, 0, 0,  // number of fields
+          1,  // number of fields
           9, 4, 0, 0, 0,  // field value
 
           16, // struct type
-          0, 0, 0, 0,  // number of fields
+          0,  // number of fields
         ],
         bytes
     );
 
-    let mut decoder = Decoder::<NoCustomTypeId>::new(&bytes);
-    let a = TestStructNamed::decode(&mut decoder).unwrap();
-    let b = TestStructUnnamed::decode(&mut decoder).unwrap();
-    let c = TestStructUnit::decode(&mut decoder).unwrap();
+    let mut decoder = VecDecoder::<NoCustomTypeId>::new(&bytes);
+    let a = decoder.decode::<TestStructNamed>().unwrap();
+    let b = decoder.decode::<TestStructUnnamed>().unwrap();
+    let c = decoder.decode::<TestStructUnit>().unwrap();
 
     assert_eq!(TestStructNamed { x: 0, y: 2 }, a);
     assert_eq!(TestStructUnnamed(0, 4), b);
@@ -103,10 +103,10 @@ fn test_enum_with_skip() {
         bytes
     );
 
-    let mut decoder = Decoder::<NoCustomTypeId>::new(&bytes);
-    let a = TestEnum::decode(&mut decoder).unwrap();
-    let b = TestEnum::decode(&mut decoder).unwrap();
-    let c = TestEnum::decode(&mut decoder).unwrap();
+    let mut decoder = VecDecoder::<NoCustomTypeId>::new(&bytes);
+    let a = decoder.decode::<TestEnum>().unwrap();
+    let b = decoder.decode::<TestEnum>().unwrap();
+    let c = decoder.decode::<TestEnum>().unwrap();
 
     assert_eq!(TestEnum::A { x: 0, y: 2 }, a);
     assert_eq!(TestEnum::B(0, 4), b);

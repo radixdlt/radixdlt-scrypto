@@ -7,7 +7,7 @@ pub use radix_engine_interface::constants::*;
 pub use radix_engine_interface::core::Expression;
 pub use radix_engine_interface::crypto::*;
 use radix_engine_interface::data::IndexedScryptoValue;
-pub use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
+pub use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoEncode, ScryptoDecode, ScryptoTypeId};
 pub use radix_engine_interface::dec;
 pub use radix_engine_interface::math::{Decimal, RoundingMode, I256};
 pub use radix_engine_interface::model::*;

@@ -23,9 +23,9 @@ impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for Option<T> {
     }
 }
 
-impl<X: CustomTypeId, T: Decode<X>> Decode<X> for Option<T> {
+impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Option<T> {
     fn decode_body_with_type_id(
-        decoder: &mut Decoder<X>,
+        decoder: &mut D,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
@@ -34,7 +34,7 @@ impl<X: CustomTypeId, T: Decode<X>> Decode<X> for Option<T> {
         match discriminator.as_ref() {
             OPTION_VARIANT_SOME => {
                 decoder.read_and_check_size(1)?;
-                Ok(Some(T::decode(decoder)?))
+                Ok(Some(decoder.decode()?))
             }
             OPTION_VARIANT_NONE => {
                 decoder.read_and_check_size(0)?;

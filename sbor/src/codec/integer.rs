@@ -69,9 +69,9 @@ impl<X: CustomTypeId> Encode<X> for usize {
     }
 }
 
-impl<X: CustomTypeId> Decode<X> for i8 {
+impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for i8 {
     fn decode_body_with_type_id(
-        decoder: &mut Decoder<X>,
+        decoder: &mut D,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
@@ -80,9 +80,9 @@ impl<X: CustomTypeId> Decode<X> for i8 {
     }
 }
 
-impl<X: CustomTypeId> Decode<X> for u8 {
+impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for u8 {
     fn decode_body_with_type_id(
-        decoder: &mut Decoder<X>,
+        decoder: &mut D,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
@@ -93,9 +93,9 @@ impl<X: CustomTypeId> Decode<X> for u8 {
 
 macro_rules! decode_int {
     ($type:ident, $type_id:ident, $n:expr) => {
-        impl<X: CustomTypeId> Decode<X> for $type {
+        impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for $type {
             fn decode_body_with_type_id(
-                decoder: &mut Decoder<X>,
+                decoder: &mut D,
                 type_id: SborTypeId<X>,
             ) -> Result<Self, DecodeError> {
                 decoder.check_preloaded_type_id(type_id, Self::type_id())?;
@@ -117,9 +117,9 @@ decode_int!(u32, TYPE_U32, 4);
 decode_int!(u64, TYPE_U64, 8);
 decode_int!(u128, TYPE_U128, 16);
 
-impl<X: CustomTypeId> Decode<X> for isize {
+impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for isize {
     fn decode_body_with_type_id(
-        decoder: &mut Decoder<X>,
+        decoder: &mut D,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
@@ -127,9 +127,9 @@ impl<X: CustomTypeId> Decode<X> for isize {
     }
 }
 
-impl<X: CustomTypeId> Decode<X> for usize {
+impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for usize {
     fn decode_body_with_type_id(
-        decoder: &mut Decoder<X>,
+        decoder: &mut D,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;

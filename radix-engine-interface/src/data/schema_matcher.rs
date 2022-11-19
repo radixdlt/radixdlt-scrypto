@@ -2,7 +2,7 @@ use crate::data::*;
 use sbor::*;
 use scrypto_abi::{Fields, Type};
 
-pub fn sbor_type_id(ty: &Type) -> Option<ScryptoTypeId> {
+pub fn sbor_type_id(ty: &Type) -> Option<ScryptoSborTypeId> {
     match ty {
         Type::Unit => Some(SborTypeId::Unit),
         Type::Bool => Some(SborTypeId::Bool),

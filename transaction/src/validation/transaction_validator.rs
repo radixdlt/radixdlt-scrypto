@@ -3,7 +3,6 @@ use radix_engine_interface::crypto::PublicKey;
 use radix_engine_interface::data::*;
 
 use sbor::rust::collections::{BTreeSet, HashSet};
-use sbor::Decode;
 
 use radix_engine_interface::constants::*;
 
@@ -13,7 +12,7 @@ use crate::validation::*;
 
 pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
 
-pub trait TransactionValidator<T: Decode<ScryptoCustomTypeId>> {
+pub trait TransactionValidator<T: ScryptoDecode> {
     fn check_length_and_decode_from_slice(
         &self,
         transaction: &[u8],

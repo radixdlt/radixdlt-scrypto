@@ -3,7 +3,9 @@ use radix_engine_interface::api::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoRENode,
     ScryptoReceiver, SubstateOffset,
 };
-use radix_engine_interface::data::{scrypto_decode, ScryptoCustomTypeId};
+use radix_engine_interface::data::{
+    scrypto_decode, ScryptoCustomTypeId, ScryptoDecode, ScryptoEncode,
+};
 use radix_engine_interface::model::*;
 
 use radix_engine_interface::scrypto_type;
@@ -24,9 +26,7 @@ use crate::scrypto;
 use radix_engine_derive::Describe;
 
 /// Represents the state of a component.
-pub trait ComponentState<C: LocalComponent>:
-    Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>
-{
+pub trait ComponentState<C: LocalComponent>: ScryptoEncode + ScryptoDecode {
     /// Instantiates a component from this data structure.
     fn instantiate(self) -> C;
 }
@@ -59,7 +59,7 @@ pub struct ComponentStateSubstate {
 
 impl Component {
     /// Invokes a method on this component.
-    pub fn call<T: Decode<ScryptoCustomTypeId>>(&self, method: &str, args: Vec<u8>) -> T {
+    pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let mut sys_calls = ScryptoEnv;
         let rtn = sys_calls
             .sys_invoke_scrypto_method(
@@ -98,7 +98,7 @@ impl Component {
             .unwrap()
     }
 
-    pub fn sys_add_access_check<Y, E: Debug + Decode<ScryptoCustomTypeId>>(
+    pub fn sys_add_access_check<Y, E: Debug + ScryptoDecode>(
         &mut self,
         access_rules: AccessRules,
         sys_calls: &mut Y,
@@ -118,7 +118,7 @@ impl Component {
         self.sys_globalize(&mut ScryptoEnv).unwrap()
     }
 
-    pub fn sys_globalize<Y, E: Debug + Decode<ScryptoCustomTypeId>>(
+    pub fn sys_globalize<Y, E: Debug + ScryptoDecode>(
         self,
         sys_calls: &mut Y,
     ) -> Result<ComponentAddress, E>
@@ -136,7 +136,7 @@ pub struct BorrowedGlobalComponent(pub ComponentAddress);
 
 impl BorrowedGlobalComponent {
     /// Invokes a method on this component.
-    pub fn call<T: Decode<ScryptoCustomTypeId>>(&self, method: &str, args: Vec<u8>) -> T {
+    pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let mut syscalls = ScryptoEnv;
         let raw = syscalls
             .sys_invoke_scrypto_method(
