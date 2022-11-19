@@ -54,7 +54,7 @@ fn manifest_cannot_refer_to_persisted_component_by_id() {
 
 /*
 #[test]
-fn no_new_visible_nodes_on_deref() {
+fn no_visible_component_nodes_on_deref() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -64,7 +64,7 @@ fn no_new_visible_nodes_on_deref() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package, "Deref", "verify_no_new_visible_nodes_on_deref", args!(account))
+        .call_function(package, "Deref", "verify_no_visible_component_nodes_on_deref", args!(account))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
