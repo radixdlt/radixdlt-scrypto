@@ -1132,11 +1132,12 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         // Deref
-        let (node_id, derefed_lock) = if let Some((node_id, derefed_lock)) = self.node_offset_deref(node_id, &offset)? {
-            (node_id, Some(derefed_lock))
-        } else {
-            (node_id, None)
-        };
+        let (node_id, derefed_lock) =
+            if let Some((node_id, derefed_lock)) = self.node_offset_deref(node_id, &offset)? {
+                (node_id, Some(derefed_lock))
+            } else {
+                (node_id, None)
+            };
 
         // TODO: Check if valid offset for node_id
 
@@ -1166,7 +1167,6 @@ where
             node_id,
             offset.clone(),
             flags,
-            derefed_lock,
         );
 
         let lock_handle = match maybe_lock_handle {
@@ -1181,7 +1181,6 @@ where
                         node_id,
                         offset.clone(),
                         flags,
-                        derefed_lock,
                     )?
                 } else {
                     return maybe_lock_handle;
@@ -1189,6 +1188,11 @@ where
             }
             Err(err) => return Err(err),
         };
+
+        if let Some(lock_handle) = derefed_lock {
+            self.current_frame
+                .drop_lock(&mut self.heap, &mut self.track, lock_handle)?;
+        }
 
         // Restore current mode
         self.execution_mode = current_mode;

@@ -4,12 +4,11 @@ use crate::model::Resource;
 use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::data::IndexedScryptoValue;
 
-pub struct LoggerModule {
-}
+pub struct LoggerModule {}
 
 impl LoggerModule {
     pub fn new() -> Self {
-        Self { }
+        Self {}
     }
 }
 
@@ -60,7 +59,11 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
                 );
             }
             SysCallInput::GetRef { lock_handle } => {
-                log!(call_frame, "Reading substate: lock_handle = {:?}", lock_handle);
+                log!(
+                    call_frame,
+                    "Reading substate: lock_handle = {:?}",
+                    lock_handle
+                );
             }
             SysCallInput::GetRefMut { lock_handle } => {
                 log!(call_frame, "Get Mut: lock_handle = {:?}", lock_handle);
@@ -69,7 +72,11 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
                 log!(call_frame, "Drop Lock: lock_handle = {:?}", lock_handle);
             }
             SysCallInput::TakeSubstate { substate_id } => {
-                log!(call_frame, "Taking substate: substate_id = {:?}", substate_id);
+                log!(
+                    call_frame,
+                    "Taking substate: substate_id = {:?}",
+                    substate_id
+                );
             }
             SysCallInput::ReadTransactionHash => {
                 log!(call_frame, "Reading transaction hash");
@@ -107,7 +114,11 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallOutput::DropNode { .. } => {}
             SysCallOutput::CreateNode { .. } => {}
             SysCallOutput::LockSubstate { lock_handle } => {
-                log!(call_frame, "Lock acquired: lock_handle = {:?} ", lock_handle);
+                log!(
+                    call_frame,
+                    "Lock acquired: lock_handle = {:?} ",
+                    lock_handle
+                );
             }
             SysCallOutput::GetRef { .. } => {}
             SysCallOutput::GetRefMut { .. } => {}

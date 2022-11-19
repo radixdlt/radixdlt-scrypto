@@ -63,7 +63,12 @@ fn no_visible_component_nodes_on_deref() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package, "Deref", "verify_no_visible_component_nodes_on_deref", args!(account))
+        .call_function(
+            package,
+            "Deref",
+            "verify_no_visible_component_nodes_on_deref",
+            args!(account),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

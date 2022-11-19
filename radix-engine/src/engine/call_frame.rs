@@ -52,8 +52,6 @@ pub struct SubstateLock {
     pub global_references: HashSet<GlobalAddress>,
     pub substate_owned_nodes: HashSet<RENodeId>,
     pub flags: LockFlags,
-    is_deref: bool,
-    derefed_lock: Option<LockHandle>,
 }
 
 struct RENodeRefData {
@@ -62,12 +60,9 @@ struct RENodeRefData {
 
 impl RENodeRefData {
     fn new(location: RENodeLocation) -> Self {
-        RENodeRefData {
-            location
-        }
+        RENodeRefData { location }
     }
 }
-
 
 // TODO: reduce fields visibility
 
@@ -99,7 +94,6 @@ impl CallFrame {
         node_id: RENodeId,
         offset: SubstateOffset,
         flags: LockFlags,
-        derefed_lock: Option<LockHandle>,
     ) -> Result<LockHandle, RuntimeError> {
         let location = self.get_node_location(node_id)?;
         if !(matches!(offset, SubstateOffset::KeyValueStore(..))
@@ -132,17 +126,13 @@ impl CallFrame {
         {
             for global_address in &global_references {
                 let node_id = RENodeId::Global(global_address.clone());
-                self.node_refs.insert(node_id, RENodeRefData::new(RENodeLocation::Store));
+                self.node_refs
+                    .insert(node_id, RENodeRefData::new(RENodeLocation::Store));
             }
             for child_id in &substate_owned_nodes {
-                self.node_refs.insert(*child_id, RENodeRefData::new(location));
+                self.node_refs
+                    .insert(*child_id, RENodeRefData::new(location));
             }
-        }
-
-
-        if let Some(derefed_lock) = &derefed_lock {
-            let derefed_substate_lock = self.locks.get_mut(derefed_lock).unwrap();
-            derefed_substate_lock.is_deref = true;
         }
 
         let lock_handle = self.next_lock_handle;
@@ -153,8 +143,6 @@ impl CallFrame {
                 substate_pointer: (location, node_id, offset),
                 substate_owned_nodes,
                 flags,
-                derefed_lock,
-                is_deref: false,
             },
         );
         self.next_lock_handle = self.next_lock_handle + 1;
@@ -165,7 +153,6 @@ impl CallFrame {
 
         Ok(lock_handle)
     }
-
 
     pub fn drop_lock<'s, R: FeeReserve>(
         &mut self,
@@ -219,6 +206,7 @@ impl CallFrame {
         }
 
         // Global references need not be dropped
+        // Substate Locks downstream may also continue to live
         for refed_node in substate_lock.substate_owned_nodes {
             self.node_refs.remove(&refed_node);
         }
@@ -247,10 +235,6 @@ impl CallFrame {
                     .map_err(KernelError::TrackError),
                 RENodeLocation::Heap => Ok(()),
             }?;
-        }
-
-        if let Some(derefed_lock_handle) = substate_lock.derefed_lock {
-            self.drop_lock(heap, track, derefed_lock_handle)?;
         }
 
         Ok(())
@@ -333,7 +317,8 @@ impl CallFrame {
                 .node_refs
                 .get(&node_id)
                 .ok_or(CallFrameError::RENodeNotVisible(node_id))?;
-            to.node_refs.insert(node_id, RENodeRefData::new(ref_data.location.clone()));
+            to.node_refs
+                .insert(node_id, RENodeRefData::new(ref_data.location.clone()));
         }
 
         Ok(())
@@ -344,15 +329,10 @@ impl CallFrame {
         heap: &mut Heap,
         track: &mut Track<'s, R>,
     ) -> Result<(), RuntimeError> {
-        let mut lock_ids = Vec::new();
-        for lock_handle in self.locks.keys().cloned() {
-            if !self.locks.get(&lock_handle).unwrap().is_deref {
-                lock_ids.push(lock_handle);
-            }
-        }
+        let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
 
-        for lock in lock_ids {
-            self.drop_lock(heap, track, lock)?;
+        for lock_handle in lock_handles {
+            self.drop_lock(heap, track, lock_handle)?;
         }
 
         Ok(())
@@ -400,7 +380,8 @@ impl CallFrame {
     }
 
     pub fn add_stored_ref(&mut self, node_id: RENodeId) {
-        self.node_refs.insert(node_id, RENodeRefData::new(RENodeLocation::Store));
+        self.node_refs
+            .insert(node_id, RENodeRefData::new(RENodeLocation::Store));
     }
 
     pub fn move_owned_node_to_store<'f, 's, R: FeeReserve>(
