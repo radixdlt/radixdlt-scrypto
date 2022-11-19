@@ -44,7 +44,9 @@ pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
     trace: bool,
 }
 
-impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
+impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateStore>
+    TestRunner<'s, S>
+{
     pub fn new(trace: bool, substate_store: &'s mut S) -> Self {
         let scrypto_interpreter = ScryptoInterpreter {
             wasm_metering_config: WasmMeteringConfig::new(
@@ -104,60 +106,17 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         Some(global.global().node_deref())
     }
 
-    pub fn inspect_component(
+    pub fn get_component_resources(
         &mut self,
         component_address: ComponentAddress,
-    ) -> Option<radix_engine::model::ComponentInfoSubstate> {
-        let node_id = self.deref_component(component_address)?;
-        self.execution_stores
-            .get_root_store()
-            .get_substate(&SubstateId(
-                node_id,
-                SubstateOffset::Component(ComponentOffset::Info),
-            ))
-            .map(|output| output.substate.to_runtime().into())
-    }
-
-    pub fn inspect_component_state(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Option<radix_engine::model::ComponentStateSubstate> {
-        let node_id = self.deref_component(component_address)?;
-
-        self.execution_stores
-            .get_root_store()
-            .get_substate(&SubstateId(
-                node_id,
-                SubstateOffset::Component(ComponentOffset::State),
-            ))
-            .map(|output| output.substate.to_runtime().into())
-    }
-
-    pub fn inspect_key_value_entry(
-        &mut self,
-        kv_store_id: KeyValueStoreId,
-        key: Vec<u8>,
-    ) -> Option<radix_engine::model::KeyValueStoreEntrySubstate> {
-        self.execution_stores
-            .get_root_store()
-            .get_substate(&SubstateId(
-                RENodeId::KeyValueStore(kv_store_id),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-            ))
-            .map(|output| output.substate.to_runtime().into())
-    }
-
-    pub fn inspect_vault(
-        &mut self,
-        vault_id: VaultId,
-    ) -> Option<radix_engine::model::VaultSubstate> {
-        self.execution_stores
-            .get_root_store()
-            .get_substate(&SubstateId(
-                RENodeId::Vault(vault_id),
-                SubstateOffset::Vault(VaultOffset::Vault),
-            ))
-            .map(|output| output.substate.into())
+    ) -> HashMap<ResourceAddress, Decimal> {
+        let mut accounter = ResourceAccounter::new(self.execution_stores.get_root_store());
+        accounter
+            .add_resources(RENodeId::Global(GlobalAddress::Component(
+                component_address,
+            )))
+            .unwrap();
+        accounter.into_map()
     }
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
