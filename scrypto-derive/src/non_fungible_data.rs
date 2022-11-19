@@ -46,11 +46,11 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                     impl radix_engine_interface::model::NonFungibleData for #ident {
                         fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{type_id::*, *};
-                            let mut decoder_nm = VecDecoder::new(immutable_data);
+                            let mut decoder_nm = ScryptoDecoder::new(immutable_data);
                             decoder_nm.read_and_check_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct)?;
                             decoder_nm.read_and_check_size(#im_n)?;
 
-                            let mut decoder_m = VecDecoder::new(mutable_data);
+                            let mut decoder_m = ScryptoDecoder::new(mutable_data);
                             decoder_m.read_and_check_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct)?;
                             decoder_m.read_and_check_size(#m_n)?;
 

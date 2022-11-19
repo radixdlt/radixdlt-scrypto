@@ -58,7 +58,7 @@ fn test_struct_with_skip() {
         bytes
     );
 
-    let mut decoder = VecDecoder::<NoCustomTypeId>::new(&bytes);
+    let mut decoder = BasicDecoder::new(&bytes);
     let a = decoder.decode::<TestStructNamed>().unwrap();
     let b = decoder.decode::<TestStructUnnamed>().unwrap();
     let c = decoder.decode::<TestStructUnit>().unwrap();
@@ -103,7 +103,7 @@ fn test_enum_with_skip() {
         bytes
     );
 
-    let mut decoder = VecDecoder::<NoCustomTypeId>::new(&bytes);
+    let mut decoder = BasicDecoder::new(&bytes);
     let a = decoder.decode::<TestEnum>().unwrap();
     let b = decoder.decode::<TestEnum>().unwrap();
     let c = decoder.decode::<TestEnum>().unwrap();
