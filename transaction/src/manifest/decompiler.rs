@@ -4,11 +4,13 @@ use radix_engine_interface::api::types::{
     ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
 };
 use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::{scrypto_decode, IndexedScryptoValue, ValueFormattingContext};
+use radix_engine_interface::data::{
+    scrypto_decode, scrypto_encode, IndexedScryptoValue, ValueFormattingContext,
+};
 use radix_engine_interface::model::*;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
-use sbor::{encode_any, SborValue};
+use sbor::SborValue;
 use utils::ContextualDisplay;
 
 use crate::errors::*;
@@ -475,7 +477,7 @@ pub fn format_args<F: fmt::Write>(
         IndexedScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
     if let SborValue::Struct { fields } = value.dom {
         for field in fields {
-            let bytes = encode_any(&field);
+            let bytes = scrypto_encode(&field);
             let arg = IndexedScryptoValue::from_slice(&bytes)
                 .map_err(|_| DecompileError::InvalidArguments)?;
             f.write_char(' ')?;

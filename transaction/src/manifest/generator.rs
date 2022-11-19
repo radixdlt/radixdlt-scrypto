@@ -32,7 +32,7 @@ use crate::validation::*;
 macro_rules! args_from_value_vec {
     ($args: expr) => {{
         let input_struct = ::sbor::SborValue::Struct { fields: $args };
-        ::sbor::encode_any(&input_struct)
+        ::radix_engine_interface::data::scrypto_encode(&input_struct)
     }};
 }
 
@@ -532,7 +532,7 @@ fn generate_args(
     for v in values {
         let value = generate_value(v, None, resolver, bech32_decoder, blobs)?;
 
-        result.push(encode_any(&value));
+        result.push(scrypto_encode(&value));
     }
     Ok(result)
 }

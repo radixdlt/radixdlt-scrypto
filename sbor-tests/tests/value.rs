@@ -36,7 +36,8 @@ fn test_encode_as_json() {
         d: "5".to_string(),
     };
     let bytes = crate::encode::<NoCustomTypeId, _>(&sample);
-    let any = crate::decode_any::<NoCustomTypeId, NoCustomValue>(&bytes).unwrap();
+    let any =
+        crate::decode::<NoCustomTypeId, SborValue<NoCustomTypeId, NoCustomValue>>(&bytes).unwrap();
 
     assert_json_eq(
         any,

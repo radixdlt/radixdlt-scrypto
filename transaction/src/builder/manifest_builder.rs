@@ -33,16 +33,10 @@ macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
         let mut fields = Vec::new();
         for arg in $args {
-            fields.push(
-                ::sbor::decode_any::<
-                    ::scrypto::data::ScryptoCustomTypeId,
-                    ::scrypto::data::ScryptoCustomValue,
-                >(&arg)
-                .unwrap(),
-            );
+            fields.push(::scrypto::data::scrypto_decode(&arg).unwrap());
         }
-        let input_struct = ::sbor::SborValue::Struct { fields };
-        ::sbor::encode_any(&input_struct)
+        let input_struct = ::scrypto::data::ScryptoValue::Struct { fields };
+        ::scrypto::data::scrypto_encode(&input_struct)
     }};
 }
 
@@ -410,11 +404,10 @@ impl ManifestBuilder {
 
         let mut fields = Vec::new();
         for arg in arguments {
-            fields
-                .push(::sbor::decode_any::<ScryptoCustomTypeId, ScryptoCustomValue>(&arg).unwrap());
+            fields.push(scrypto_decode(&arg).unwrap());
         }
-        let input_struct = ::sbor::SborValue::Struct { fields };
-        let bytes = ::sbor::encode_any(&input_struct);
+        let input_struct = ScryptoValue::Struct { fields };
+        let bytes = scrypto_encode(&input_struct);
 
         Ok(self
             .add_instruction(Instruction::CallFunction {
@@ -555,7 +548,7 @@ impl ManifestBuilder {
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
                 resource_auth,
-                mint_params,
+                mint_params
             ),
         })
         .0

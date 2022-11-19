@@ -283,32 +283,6 @@ impl<X: CustomTypeId, D: Decoder<X>, CV: Decode<X, D>> Decode<X, D> for SborValu
     }
 }
 
-/// Encodes any SBOR value into byte array.
-pub fn encode_any<X: CustomTypeId, CV: Encode<X>>(value: &SborValue<X, CV>) -> Vec<u8> {
-    let mut bytes = Vec::new();
-    encode_any_with_buffer(value, &mut bytes);
-    bytes
-}
-
-/// Encodes any SBOR value with a given buffer
-pub fn encode_any_with_buffer<X: CustomTypeId, CV: Encode<X>>(
-    value: &SborValue<X, CV>,
-    buffer: &mut Vec<u8>,
-) {
-    let mut encoder = ::sbor::Encoder::new(buffer);
-    value.encode(&mut encoder);
-}
-
-/// Decode any SBOR data.
-pub fn decode_any<X: CustomTypeId, CV: for<'a> Decode<X, DefaultVecDecoder<'a, X>>>(
-    data: &[u8],
-) -> Result<SborValue<X, CV>, DecodeError> {
-    let mut decoder = DefaultVecDecoder::new(data);
-    let value = decoder.decode()?;
-    decoder.check_end()?;
-    Ok(value)
-}
-
 pub fn traverse_any<X: CustomTypeId, CV, V: CustomValueVisitor<CV, Err = E>, E>(
     path: &mut SborPathBuf,
     value: &SborValue<X, CV>,
@@ -460,7 +434,7 @@ mod tests {
             z: map2,
         };
         let bytes = encode::<NoCustomTypeId, _>(&data);
-        let value = decode_any::<NoCustomTypeId, NoCustomValue>(&bytes).unwrap();
+        let value = decode::<NoCustomTypeId, BasicSborValue>(&bytes).unwrap();
 
         assert_eq!(
             BasicSborValue::Struct {
@@ -564,33 +538,33 @@ mod tests {
     #[test]
     pub fn test_max_depth_array_decode_behaviour() {
         let allowable_payload = encode_array_of_depth(DEFAULT_MAX_DEPTH);
-        let allowable_result = decode_any::<NoCustomTypeId, NoCustomValue>(&allowable_payload);
+        let allowable_result = decode::<NoCustomTypeId, BasicSborValue>(&allowable_payload);
         assert!(allowable_result.is_ok());
 
         let forbidden_payload = encode_array_of_depth(DEFAULT_MAX_DEPTH + 1);
-        let forbidden_result = decode_any::<NoCustomTypeId, NoCustomValue>(&forbidden_payload);
+        let forbidden_result = decode::<NoCustomTypeId, BasicSborValue>(&forbidden_payload);
         assert!(forbidden_result.is_err());
     }
 
     #[test]
     pub fn test_max_depth_struct_decode_behaviour() {
         let allowable_payload = encode_struct_of_depth(DEFAULT_MAX_DEPTH);
-        let allowable_result = decode_any::<NoCustomTypeId, NoCustomValue>(&allowable_payload);
+        let allowable_result = decode::<NoCustomTypeId, BasicSborValue>(&allowable_payload);
         assert!(allowable_result.is_ok());
 
         let forbidden_payload = encode_struct_of_depth(DEFAULT_MAX_DEPTH + 1);
-        let forbidden_result = decode_any::<NoCustomTypeId, NoCustomValue>(&forbidden_payload);
+        let forbidden_result = decode::<NoCustomTypeId, BasicSborValue>(&forbidden_payload);
         assert!(forbidden_result.is_err());
     }
 
     #[test]
     pub fn test_max_depth_tuple_decode_behaviour() {
         let allowable_payload = encode_tuple_of_depth(DEFAULT_MAX_DEPTH);
-        let allowable_result = decode_any::<NoCustomTypeId, NoCustomValue>(&allowable_payload);
+        let allowable_result = decode::<NoCustomTypeId, BasicSborValue>(&allowable_payload);
         assert!(allowable_result.is_ok());
 
         let forbidden_payload = encode_tuple_of_depth(DEFAULT_MAX_DEPTH + 1);
-        let forbidden_result = decode_any::<NoCustomTypeId, NoCustomValue>(&forbidden_payload);
+        let forbidden_result = decode::<NoCustomTypeId, BasicSborValue>(&forbidden_payload);
         assert!(forbidden_result.is_err());
     }
 

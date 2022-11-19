@@ -57,7 +57,7 @@ impl IndexedScryptoValue {
     }
 
     pub fn from_slice(slice: &[u8]) -> Result<Self, ScryptoValueDecodeError> {
-        let value = decode_any(slice).map_err(ScryptoValueDecodeError::DecodeError)?;
+        let value = scrypto_decode(slice).map_err(ScryptoValueDecodeError::DecodeError)?;
         Self::from_value(value)
     }
 
@@ -69,7 +69,7 @@ impl IndexedScryptoValue {
         }
 
         Ok(Self {
-            raw: encode_any(&value),
+            raw: scrypto_encode(&value),
             dom: value,
             component_addresses: visitor.component_addresses,
             resource_addresses: visitor.resource_addresses,
@@ -165,7 +165,7 @@ impl IndexedScryptoValue {
         }
         self.bucket_ids = new_bucket_ids;
 
-        self.raw = encode_any(&self.dom);
+        self.raw = scrypto_encode(&self.dom);
 
         Ok(())
     }
