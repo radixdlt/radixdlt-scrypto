@@ -689,36 +689,52 @@ where
         // TODO: Move to higher layer
         if depth == 0 {
             for node_id in &call_frame_update.node_refs_to_copy {
-                if let RENodeId::Global(global_address) = node_id {
-                    if self.current_frame.get_node_location(*node_id).is_err() {
-                        if matches!(
-                            global_address,
-                            GlobalAddress::Component(
-                                ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
-                            )
-                        ) || matches!(
-                            global_address,
-                            GlobalAddress::Component(ComponentAddress::EddsaEd25519VirtualAccount(
-                                ..
-                            ))
-                        ) {
-                            self.current_frame.add_stored_ref(*node_id);
-                            continue;
-                        }
+                match node_id {
+                    RENodeId::Global(global_address) => {
+                        if self.current_frame.get_node_location(*node_id).is_err() {
+                            if matches!(
+                                global_address,
+                                GlobalAddress::Component(
+                                    ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+                                )
+                            ) || matches!(
+                                global_address,
+                                GlobalAddress::Component(
+                                    ComponentAddress::EddsaEd25519VirtualAccount(..)
+                                )
+                            ) {
+                                self.current_frame.add_stored_ref(*node_id);
+                                continue;
+                            }
 
-                        let offset = SubstateOffset::Global(GlobalOffset::Global);
-                        self.track
-                            .acquire_lock(
-                                SubstateId(*node_id, offset.clone()),
-                                LockFlags::read_only(),
-                            )
-                            .map_err(|_| KernelError::GlobalAddressNotFound(*global_address))?;
-                        self.track
-                            .release_lock(SubstateId(*node_id, offset), false)
-                            .map_err(|_| KernelError::GlobalAddressNotFound(*global_address))?;
-                        self.current_frame.add_stored_ref(*node_id);
-                        continue;
+                            let offset = SubstateOffset::Global(GlobalOffset::Global);
+                            self.track
+                                .acquire_lock(
+                                    SubstateId(*node_id, offset.clone()),
+                                    LockFlags::read_only(),
+                                )
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                            self.track
+                                .release_lock(SubstateId(*node_id, offset), false)
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                            self.current_frame.add_stored_ref(*node_id);
+                        }
                     }
+                    RENodeId::Vault(..) => {
+                        if self.current_frame.get_node_location(*node_id).is_err() {
+                            let offset = SubstateOffset::Vault(VaultOffset::Vault);
+                            self.track
+                                .acquire_lock(
+                                    SubstateId(*node_id, offset.clone()),
+                                    LockFlags::read_only(),
+                                )
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                            self.track
+                                .release_lock(SubstateId(*node_id, offset), false)
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
