@@ -21,10 +21,10 @@ pub use schema_matcher::*;
 pub use schema_path::*;
 pub use value_formatter::*;
 
-// TODO: add trait alias for `Encode` and `Decode` as well, once it becomes stable.
+pub const MAX_SCRYPTO_SBOR_DEPTH: u8 = 32;
 
 pub type ScryptoEncoder<'a> = sbor::Encoder<'a, ScryptoCustomTypeId>;
-pub type ScryptoDecoder<'a> = sbor::VecDecoder<'a, ScryptoCustomTypeId>;
+pub type ScryptoDecoder<'a> = sbor::VecDecoder<'a, ScryptoCustomTypeId, MAX_SCRYPTO_SBOR_DEPTH>;
 pub type ScryptoSborTypeId = sbor::SborTypeId<ScryptoCustomTypeId>;
 pub type ScryptoValue = sbor::SborValue<ScryptoCustomTypeId, ScryptoCustomValue>;
 

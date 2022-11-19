@@ -29,7 +29,7 @@ pub mod value;
 pub use basic::*;
 pub use constants::*;
 pub use decode::Decode;
-pub use decoder::{DecodeError, Decoder, VecDecoder};
+pub use decoder::{DecodeError, Decoder, DefaultVecDecoder, VecDecoder};
 pub use encode::{Encode, Encoder};
 pub use path::{SborPath, SborPathBuf};
 pub use type_id::*;
@@ -44,10 +44,10 @@ pub fn encode<X: CustomTypeId, T: Encode<X> + ?Sized>(v: &T) -> crate::rust::vec
 }
 
 /// Decode an instance of `T` from a slice.
-pub fn decode<X: CustomTypeId, T: for<'de> Decode<X, VecDecoder<'de, X>>>(
+pub fn decode<X: CustomTypeId, T: for<'de> Decode<X, DefaultVecDecoder<'de, X>>>(
     buf: &[u8],
 ) -> Result<T, DecodeError> {
-    let mut decoder = VecDecoder::new(buf);
+    let mut decoder = DefaultVecDecoder::new(buf);
     let value = decoder.decode()?;
     decoder.check_end()?;
     Ok(value)

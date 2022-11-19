@@ -28,6 +28,8 @@ pub enum DecodeError {
 
     SizeTooLarge,
 
+    MaxDepthExceeded(u8),
+
     InvalidCustomValue, // TODO: generify custom error codes
 }
 
@@ -122,18 +124,23 @@ pub trait Decoder<X: CustomTypeId>: Sized {
     fn read_slice(&mut self, n: usize) -> Result<&[u8], DecodeError>;
 }
 
+pub const DEFAULT_MAX_DEPTH: u8 = 32;
+pub type DefaultVecDecoder<'de, X> = VecDecoder<'de, X, DEFAULT_MAX_DEPTH>;
+
 /// A `Decoder` abstracts the logic for decoding basic types.
-pub struct VecDecoder<'de, X: CustomTypeId> {
+pub struct VecDecoder<'de, X: CustomTypeId, const MAX_DEPTH: u8> {
     input: &'de [u8],
     offset: usize,
+    decoder_stack_depth: u8,
     phantom: PhantomData<X>,
 }
 
-impl<'de, X: CustomTypeId> VecDecoder<'de, X> {
+impl<'de, X: CustomTypeId, const MAX_DEPTH: u8> VecDecoder<'de, X, MAX_DEPTH> {
     pub fn new(input: &'de [u8]) -> Self {
         Self {
             input,
             offset: 0,
+            decoder_stack_depth: 0,
             phantom: PhantomData,
         }
     }
@@ -156,7 +163,7 @@ impl<'de, X: CustomTypeId> VecDecoder<'de, X> {
     }
 }
 
-impl<'de, X: CustomTypeId> Decoder<X> for VecDecoder<'de, X> {
+impl<'de, X: CustomTypeId, const MAX_DEPTH: u8> Decoder<X> for VecDecoder<'de, X, MAX_DEPTH> {
     #[inline]
     fn read_byte(&mut self) -> Result<u8, DecodeError> {
         self.require_remaining(1)?;
@@ -185,13 +192,16 @@ impl<'de, X: CustomTypeId> Decoder<X> for VecDecoder<'de, X> {
 
     #[inline]
     fn track_decode_depth_increase(&mut self) -> Result<(), DecodeError> {
-        // TODO
+        self.decoder_stack_depth += 1;
+        if self.decoder_stack_depth > MAX_DEPTH {
+            return Err(DecodeError::MaxDepthExceeded(MAX_DEPTH));
+        }
         Ok(())
     }
 
     #[inline]
     fn track_decode_depth_decrease(&mut self) {
-        // TODO
+        self.decoder_stack_depth -= 1;
     }
 }
 
@@ -215,7 +225,7 @@ mod tests {
         let mut enc = Encoder::<NoCustomTypeId>::new(&mut bytes);
         enc.write_size(size);
 
-        let mut dec = VecDecoder::<NoCustomTypeId>::new(&bytes);
+        let mut dec = BasicDecoder::new(&bytes);
         dec.read_and_check_size(size)?;
         dec.check_end()?;
         Ok(())
@@ -237,11 +247,11 @@ mod tests {
 
     #[test]
     pub fn test_vlq_too_large() {
-        let mut dec = VecDecoder::<NoCustomTypeId>::new(&[0xff, 0xff, 0xff, 0xff, 0x00]);
+        let mut dec = BasicDecoder::new(&[0xff, 0xff, 0xff, 0xff, 0x00]);
         assert_eq!(dec.read_size(), Err(DecodeError::SizeTooLarge));
     }
 
-    fn assert_decoding<X: CustomTypeId>(dec: &mut VecDecoder<X>) {
+    fn assert_decoding(dec: &mut BasicDecoder) {
         dec.decode::<()>().unwrap();
         assert_eq!(true, dec.decode::<bool>().unwrap());
         assert_eq!(1, dec.decode::<i8>().unwrap());
@@ -304,14 +314,14 @@ mod tests {
             17, 2, 79, 107, 1, 9, 1, 0, 0, 0, // Ok<T>
             17, 3, 69, 114, 114, 1, 12, 5, 104, 101, 108, 108, 111, // Err<T>
         ];
-        let mut dec = VecDecoder::<NoCustomTypeId>::new(&bytes);
+        let mut dec = BasicDecoder::new(&bytes);
         assert_decoding(&mut dec);
     }
 
     #[test]
     pub fn test_decode_box() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = VecDecoder::<NoCustomTypeId>::new(&bytes);
+        let mut dec = BasicDecoder::new(&bytes);
         let x = dec.decode::<Box<u8>>().unwrap();
         assert_eq!(Box::new(5u8), x);
     }
@@ -319,7 +329,7 @@ mod tests {
     #[test]
     pub fn test_decode_rc() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = VecDecoder::<NoCustomTypeId>::new(&bytes);
+        let mut dec = BasicDecoder::new(&bytes);
         let x = dec.decode::<Rc<u8>>().unwrap();
         assert_eq!(Rc::new(5u8), x);
     }
@@ -327,7 +337,7 @@ mod tests {
     #[test]
     pub fn test_decode_ref_cell() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = VecDecoder::<NoCustomTypeId>::new(&bytes);
+        let mut dec = BasicDecoder::new(&bytes);
         let x = dec.decode::<RefCell<u8>>().unwrap();
         assert_eq!(RefCell::new(5u8), x);
     }
@@ -356,7 +366,7 @@ mod tests {
         let mut enc = Encoder::<NoCustomTypeId>::new(&mut bytes);
         value1.encode(&mut enc);
 
-        let mut dec = VecDecoder::<NoCustomTypeId>::new(&bytes);
+        let mut dec = BasicDecoder::new(&bytes);
         let value2 = dec.decode::<[NFA; 2]>().unwrap();
         assert_eq!(value1, value2);
     }

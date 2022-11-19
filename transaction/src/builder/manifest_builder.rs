@@ -555,7 +555,7 @@ impl ManifestBuilder {
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
                 resource_auth,
-                mint_params
+                mint_params,
             ),
         })
         .0

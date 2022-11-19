@@ -12,9 +12,7 @@ pub fn scrypto_encode_to_buffer<T: ScryptoEncode + ?Sized>(v: &T) -> *mut u8 {
 }
 
 /// Decode a data structure from a Scrypto buffer.
-pub fn scrypto_decode_from_buffer<T: ScryptoDecode>(
-    ptr: *mut u8,
-) -> Result<T, DecodeError> {
+pub fn scrypto_decode_from_buffer<T: ScryptoDecode>(ptr: *mut u8) -> Result<T, DecodeError> {
     scrypto_consume(ptr, |slice| scrypto_decode(slice))
 }
 

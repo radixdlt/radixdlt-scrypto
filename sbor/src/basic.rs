@@ -17,7 +17,7 @@ pub enum NoCustomTypeId {}
 pub enum NoCustomValue {}
 
 pub type BasicEncoder<'a> = Encoder<'a, NoCustomTypeId>;
-pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomTypeId>;
+pub type BasicDecoder<'a> = DefaultVecDecoder<'a, NoCustomTypeId>;
 pub type BasicSborValue = SborValue<NoCustomTypeId, NoCustomValue>;
 pub type BasicSborTypeId = SborTypeId<NoCustomTypeId>;
 
