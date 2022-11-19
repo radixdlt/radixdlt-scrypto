@@ -1,12 +1,6 @@
-use crate::ledger::{
-    QueryableSubstateStore, ReadableSubstateStore, StateTreeTraverser, StateTreeTraverserError,
-    StateTreeVisitor,
-};
+use crate::ledger::StateTreeVisitor;
 use crate::model::VaultSubstate;
-use crate::types::hash_map::Entry;
-use crate::types::HashMap;
-use radix_engine_interface::api::types::{RENodeId, SubstateId, VaultId};
-use radix_engine_interface::math::Decimal;
+use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::model::ResourceAddress;
 
 pub struct VaultFinder {

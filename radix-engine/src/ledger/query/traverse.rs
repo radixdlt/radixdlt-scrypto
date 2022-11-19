@@ -26,7 +26,7 @@ pub struct StateTreeTraverser<
 }
 
 pub trait StateTreeVisitor {
-    fn visit_vault(&mut self, vault_id: VaultId, _vault_substate: &VaultSubstate) {}
+    fn visit_vault(&mut self, _vault_id: VaultId, _vault_substate: &VaultSubstate) {}
     fn visit_node_id(&mut self, _parent_id: Option<&SubstateId>, _node_id: &RENodeId, _depth: u32) {
     }
 }

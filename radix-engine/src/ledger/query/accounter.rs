@@ -5,7 +5,7 @@ use crate::ledger::{
 use crate::model::VaultSubstate;
 use crate::types::hash_map::Entry;
 use crate::types::HashMap;
-use radix_engine_interface::api::types::{RENodeId, SubstateId, VaultId};
+use radix_engine_interface::api::types::{RENodeId, VaultId};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::ResourceAddress;
 
