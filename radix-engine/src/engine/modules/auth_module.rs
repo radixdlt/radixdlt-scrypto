@@ -28,10 +28,11 @@ impl AuthModule {
     }
 
     pub fn on_before_frame_start<Y, X>(
+        call_frame_update: &mut CallFrameUpdate,
         actor: &REActor,
         executor: &X,
         system_api: &mut Y,
-    ) -> Result<HashSet<RENodeId>, InvokeError<AuthError>>
+    ) -> Result<(), InvokeError<AuthError>>
     where
         Y: SystemApi,
         X: Executor,
@@ -41,7 +42,7 @@ impl AuthModule {
             actor,
             REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..)
         ) {
-            return Ok(new_refs);
+            return Ok(());
         }
 
         let method_auths = match actor.clone() {
@@ -203,7 +204,9 @@ impl AuthModule {
 
         system_api.drop_lock(handle)?;
 
-        Ok(new_refs)
+        call_frame_update.node_refs_to_copy.extend(new_refs);
+
+        Ok(())
     }
 
     pub fn on_frame_end<Y>(system_api: &mut Y) -> Result<(), InvokeError<AuthError>>
