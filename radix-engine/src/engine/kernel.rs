@@ -529,15 +529,12 @@ where
         actor: REActor,
         mut call_frame_update: CallFrameUpdate,
     ) -> Result<X::Output, RuntimeError> {
-        let new_refed_nodes = self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
-            AuthModule::on_before_frame_start(&actor, &executor, system_api).map_err(|e| match e {
+        self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
+            AuthModule::on_before_frame_start(&mut call_frame_update, &actor, &executor, system_api).map_err(|e| match e {
                 InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
                 InvokeError::Downstream(runtime_error) => runtime_error,
             })
         })?;
-
-        // TODO: Do this in a better way by allowing module to execute in next call frame
-        call_frame_update.node_refs_to_copy.extend(new_refed_nodes);
 
         for node_id in &call_frame_update.nodes_to_move {
             self.prepare_move_downstream(*node_id, &actor)?;
