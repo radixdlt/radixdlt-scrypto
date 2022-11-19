@@ -5,20 +5,19 @@ use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::data::IndexedScryptoValue;
 
 pub struct LoggerModule {
-    depth: usize,
 }
 
 impl LoggerModule {
     pub fn new() -> Self {
-        Self { depth: 0 }
+        Self { }
     }
 }
 
 #[macro_export]
 macro_rules! log {
-    ( $self: expr, $msg: expr $( , $arg:expr )* ) => {
+    ( $call_frame: expr, $msg: expr $( , $arg:expr )* ) => {
         #[cfg(not(feature = "alloc"))]
-        println!("{}[{}] {}", "    ".repeat($self.depth), $self.depth, sbor::rust::format!($msg, $( $arg ),*));
+        println!("{}[{}] {}", "    ".repeat($call_frame.depth), $call_frame.depth, sbor::rust::format!($msg, $( $arg ),*));
     };
 }
 
@@ -26,28 +25,26 @@ macro_rules! log {
 impl<R: FeeReserve> Module<R> for LoggerModule {
     fn pre_sys_call(
         &mut self,
-        _call_frame: &CallFrame,
+        call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
             SysCallInput::Invoke { info, .. } => {
-                log!(self, "Invoking: {:?}", info);
-
-                self.depth = self.depth + 1;
+                log!(call_frame, "Invoking: {:?}", info);
             }
             SysCallInput::ReadOwnedNodes => {
-                log!(self, "Reading owned nodes");
+                log!(call_frame, "Reading owned nodes");
             }
             SysCallInput::BorrowNode { node_id } => {
-                log!(self, "Borrowing node: node_id = {:?}", node_id);
+                log!(call_frame, "Borrowing node: node_id = {:?}", node_id);
             }
             SysCallInput::DropNode { node_id } => {
-                log!(self, "Dropping node: node_id = {:?}", node_id);
+                log!(call_frame, "Dropping node: node_id = {:?}", node_id);
             }
             SysCallInput::CreateNode { node } => {
-                log!(self, "Creating node: node = {:?}", node);
+                log!(call_frame, "Creating node: node = {:?}", node);
             }
             SysCallInput::LockSubstate {
                 node_id,
@@ -55,7 +52,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
                 flags,
             } => {
                 log!(
-                    self,
+                    call_frame,
                     "Lock substate: node_id = {:?} offset = {:?} flags = {:?}",
                     node_id,
                     offset,
@@ -63,31 +60,31 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
                 );
             }
             SysCallInput::GetRef { lock_handle } => {
-                log!(self, "Reading substate: lock_handle = {:?}", lock_handle);
+                log!(call_frame, "Reading substate: lock_handle = {:?}", lock_handle);
             }
             SysCallInput::GetRefMut { lock_handle } => {
-                log!(self, "Get Mut: lock_handle = {:?}", lock_handle);
+                log!(call_frame, "Get Mut: lock_handle = {:?}", lock_handle);
             }
             SysCallInput::DropLock { lock_handle } => {
-                log!(self, "Drop Lock: lock_handle = {:?}", lock_handle);
+                log!(call_frame, "Drop Lock: lock_handle = {:?}", lock_handle);
             }
             SysCallInput::TakeSubstate { substate_id } => {
-                log!(self, "Taking substate: substate_id = {:?}", substate_id);
+                log!(call_frame, "Taking substate: substate_id = {:?}", substate_id);
             }
             SysCallInput::ReadTransactionHash => {
-                log!(self, "Reading transaction hash");
+                log!(call_frame, "Reading transaction hash");
             }
             SysCallInput::ReadBlob { blob_hash } => {
-                log!(self, "Reading blob: hash = {}", blob_hash);
+                log!(call_frame, "Reading blob: hash = {}", blob_hash);
             }
             SysCallInput::GenerateUuid => {
-                log!(self, "Generating UUID");
+                log!(call_frame, "Generating UUID");
             }
             SysCallInput::EmitLog { .. } => {
-                log!(self, "Emitting application log");
+                log!(call_frame, "Emitting application log");
             }
             SysCallInput::EmitEvent { .. } => {
-                log!(self, "Emitting an event");
+                log!(call_frame, "Emitting an event");
             }
         }
 
@@ -96,21 +93,22 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
 
     fn post_sys_call(
         &mut self,
-        _call_frame: &CallFrame,
+        call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,
         output: SysCallOutput,
     ) -> Result<(), ModuleError> {
         match output {
             SysCallOutput::Invoke { rtn, .. } => {
-                self.depth = self.depth - 1;
-                log!(self, "Exiting invoke: output = {:?}", rtn);
+                log!(call_frame, "Exiting invoke: output = {:?}", rtn);
             }
             SysCallOutput::ReadOwnedNodes { .. } => {}
             SysCallOutput::BorrowNode { .. } => {}
             SysCallOutput::DropNode { .. } => {}
             SysCallOutput::CreateNode { .. } => {}
-            SysCallOutput::LockSubstate { .. } => {}
+            SysCallOutput::LockSubstate { lock_handle } => {
+                log!(call_frame, "Lock acquired: lock_handle = {:?} ", lock_handle);
+            }
             SysCallOutput::GetRef { .. } => {}
             SysCallOutput::GetRefMut { .. } => {}
             SysCallOutput::DropLock { .. } => {}

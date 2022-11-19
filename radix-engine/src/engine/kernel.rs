@@ -634,10 +634,10 @@ where
         &mut self,
         node_id: RENodeId,
         offset: &SubstateOffset,
-    ) -> Result<Option<RENodeId>, RuntimeError> {
+    ) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
             if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) {
-                let node_id = self.execute_in_mode::<_, _, RuntimeError>(
+                let derefed = self.execute_in_mode::<_, _, RuntimeError>(
                     ExecutionMode::Deref,
                     |system_api| {
                         let handle = system_api.lock_substate(
@@ -646,11 +646,11 @@ where
                             LockFlags::empty(),
                         )?;
                         let substate_ref = system_api.get_ref(handle)?;
-                        Ok(substate_ref.global_address().node_deref())
+                        Ok((substate_ref.global_address().node_deref(), handle))
                     },
                 )?;
 
-                Ok(Some(node_id))
+                Ok(Some(derefed))
             } else {
                 Ok(None)
             }
@@ -1109,7 +1109,7 @@ where
 
     fn lock_substate(
         &mut self,
-        mut node_id: RENodeId,
+        node_id: RENodeId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
@@ -1132,9 +1132,11 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         // Deref
-        if let Some(derefed) = self.node_offset_deref(node_id, &offset)? {
-            node_id = derefed;
-        }
+        let (node_id, derefed_lock) = if let Some((node_id, derefed_lock)) = self.node_offset_deref(node_id, &offset)? {
+            (node_id, Some(derefed_lock))
+        } else {
+            (node_id, None)
+        };
 
         // TODO: Check if valid offset for node_id
 
@@ -1164,6 +1166,7 @@ where
             node_id,
             offset.clone(),
             flags,
+            derefed_lock,
         );
 
         let lock_handle = match maybe_lock_handle {
@@ -1178,6 +1181,7 @@ where
                         node_id,
                         offset.clone(),
                         flags,
+                        derefed_lock,
                     )?
                 } else {
                     return maybe_lock_handle;

@@ -52,6 +52,8 @@ pub struct SubstateLock {
     pub global_references: HashSet<GlobalAddress>,
     pub substate_owned_nodes: HashSet<RENodeId>,
     pub flags: LockFlags,
+    is_deref: bool,
+    derefed_lock: Option<LockHandle>,
 }
 
 struct RENodeRefData {
@@ -97,6 +99,7 @@ impl CallFrame {
         node_id: RENodeId,
         offset: SubstateOffset,
         flags: LockFlags,
+        derefed_lock: Option<LockHandle>,
     ) -> Result<LockHandle, RuntimeError> {
         let location = self.get_node_location(node_id)?;
         if !(matches!(offset, SubstateOffset::KeyValueStore(..))
@@ -127,7 +130,6 @@ impl CallFrame {
 
         // Expand references
         {
-            // TODO: Figure out how to drop these references as well on reference drop
             for global_address in &global_references {
                 let node_id = RENodeId::Global(global_address.clone());
                 self.node_refs.insert(node_id, RENodeRefData::new(RENodeLocation::Store));
@@ -135,6 +137,12 @@ impl CallFrame {
             for child_id in &substate_owned_nodes {
                 self.node_refs.insert(*child_id, RENodeRefData::new(location));
             }
+        }
+
+
+        if let Some(derefed_lock) = &derefed_lock {
+            let derefed_substate_lock = self.locks.get_mut(derefed_lock).unwrap();
+            derefed_substate_lock.is_deref = true;
         }
 
         let lock_handle = self.next_lock_handle;
@@ -145,6 +153,8 @@ impl CallFrame {
                 substate_pointer: (location, node_id, offset),
                 substate_owned_nodes,
                 flags,
+                derefed_lock,
+                is_deref: false,
             },
         );
         self.next_lock_handle = self.next_lock_handle + 1;
@@ -156,16 +166,6 @@ impl CallFrame {
         Ok(lock_handle)
     }
 
-    pub fn get_lock_info(&self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
-        let substate_lock = self
-            .locks
-            .get(&lock_handle)
-            .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
-
-        Ok(LockInfo {
-            offset: substate_lock.substate_pointer.2.clone(),
-        })
-    }
 
     pub fn drop_lock<'s, R: FeeReserve>(
         &mut self,
@@ -218,6 +218,7 @@ impl CallFrame {
             }
         }
 
+        // Global references need not be dropped
         for refed_node in substate_lock.substate_owned_nodes {
             self.node_refs.remove(&refed_node);
         }
@@ -248,7 +249,22 @@ impl CallFrame {
             }?;
         }
 
+        if let Some(derefed_lock_handle) = substate_lock.derefed_lock {
+            self.drop_lock(heap, track, derefed_lock_handle)?;
+        }
+
         Ok(())
+    }
+
+    pub fn get_lock_info(&self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
+        let substate_lock = self
+            .locks
+            .get(&lock_handle)
+            .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
+
+        Ok(LockInfo {
+            offset: substate_lock.substate_pointer.2.clone(),
+        })
     }
 
     fn get_lock(&self, lock_handle: LockHandle) -> Result<&SubstateLock, KernelError> {
@@ -328,7 +344,13 @@ impl CallFrame {
         heap: &mut Heap,
         track: &mut Track<'s, R>,
     ) -> Result<(), RuntimeError> {
-        let lock_ids: Vec<LockHandle> = self.locks.keys().cloned().collect();
+        let mut lock_ids = Vec::new();
+        for lock_handle in self.locks.keys().cloned() {
+            if !self.locks.get(&lock_handle).unwrap().is_deref {
+                lock_ids.push(lock_handle);
+            }
+        }
+
         for lock in lock_ids {
             self.drop_lock(heap, track, lock)?;
         }
