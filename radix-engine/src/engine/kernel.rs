@@ -16,6 +16,7 @@ use transaction::model::AuthZoneParams;
 use transaction::validation::*;
 
 use crate::engine::call_frame::RENodeLocation;
+use crate::engine::node_move_module::NodeMoveModule;
 use crate::engine::system_api::Invokable;
 use crate::engine::system_api::LockInfo;
 use crate::engine::*;
@@ -340,73 +341,6 @@ where
         }
     }
 
-    pub fn prepare_move_downstream(
-        &mut self,
-        node_id: RENodeId,
-        to: &REActor,
-    ) -> Result<(), RuntimeError> {
-        self.execute_in_mode(ExecutionMode::MoveDownstream, |system_api| match node_id {
-            RENodeId::Bucket(..) => {
-                let handle = system_api.lock_substate(
-                    node_id,
-                    SubstateOffset::Bucket(BucketOffset::Bucket),
-                    LockFlags::read_only(),
-                )?;
-                let substate_ref = system_api.get_ref(handle)?;
-                let bucket = substate_ref.bucket();
-                let locked = bucket.is_locked();
-                system_api.drop_lock(handle)?;
-                if locked {
-                    Err(RuntimeError::KernelError(KernelError::CantMoveDownstream(
-                        node_id,
-                    )))
-                } else {
-                    Ok(())
-                }
-            }
-            RENodeId::Proof(..) => {
-                let from = system_api.get_actor();
-
-                if from.is_scrypto_or_transaction() || to.is_scrypto_or_transaction() {
-                    let handle = system_api.lock_substate(
-                        node_id,
-                        SubstateOffset::Proof(ProofOffset::Proof),
-                        LockFlags::MUTABLE,
-                    )?;
-                    let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-                    let proof = substate_ref_mut.proof();
-
-                    let rtn = if proof.is_restricted() {
-                        Err(RuntimeError::KernelError(KernelError::CantMoveDownstream(
-                            node_id,
-                        )))
-                    } else {
-                        proof.change_to_restricted();
-                        Ok(())
-                    };
-
-                    system_api.drop_lock(handle)?;
-
-                    rtn
-                } else {
-                    Ok(())
-                }
-            }
-            RENodeId::Component(..) => Ok(()),
-            RENodeId::AuthZoneStack(..)
-            | RENodeId::ResourceManager(..)
-            | RENodeId::KeyValueStore(..)
-            | RENodeId::NonFungibleStore(..)
-            | RENodeId::Vault(..)
-            | RENodeId::Package(..)
-            | RENodeId::Worktop
-            | RENodeId::EpochManager(..)
-            | RENodeId::Global(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveDownstream(node_id),
-            )),
-        })
-    }
-
     pub fn prepare_move_upstream(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         self.execute_in_mode(ExecutionMode::MoveDownstream, |system_api| match node_id {
             RENodeId::Bucket(..) => {
@@ -545,9 +479,9 @@ where
             )
         })?;
 
-        for node_id in &call_frame_update.nodes_to_move {
-            self.prepare_move_downstream(*node_id, &actor)?;
-        }
+        self.execute_in_mode(ExecutionMode::MoveDownstream, |system_api| {
+            NodeMoveModule::on_new_call_frame(&mut call_frame_update, &actor, system_api)
+        })?;
 
         for m in &mut self.modules {
             m.on_run(
