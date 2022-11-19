@@ -1,5 +1,5 @@
 use radix_engine::engine::node_move_module::NodeMoveError;
-use radix_engine::engine::{KernelError, ModuleError, RuntimeError};
+use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;

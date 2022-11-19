@@ -464,18 +464,13 @@ where
             executor.execute(system_api)
         })?;
 
+        // Auto drop locks
+        self.current_frame.drop_all_locks(&mut self.heap, &mut self.track)?;
+
         // Process return data
         self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
             NodeMoveModule::on_call_frame_exit(&update, system_api)
         })?;
-
-        let mut parent = self.prev_frame_stack.pop().unwrap();
-        CallFrame::update_upstream(&mut self.current_frame, &mut parent, update)?;
-
-        // Auto drop locks
-        self.current_frame
-            .drop_all_locks(&mut self.heap, &mut self.track)?;
-
         self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
             AuthModule::on_frame_end(system_api).map_err(|e| match e {
                 InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
@@ -486,6 +481,9 @@ where
         // Auto-drop locks again in case module forgot to drop
         self.current_frame
             .drop_all_locks(&mut self.heap, &mut self.track)?;
+
+        let mut parent = self.prev_frame_stack.pop().unwrap();
+        CallFrame::update_upstream(&mut self.current_frame, &mut parent, update)?;
 
         // drop proofs and check resource leak
         self.drop_nodes_in_frame()?;
