@@ -27,10 +27,10 @@ impl AuthModule {
         NonFungibleId::from_u32(1)
     }
 
-    pub fn finalize_call_frame_update<Y: SystemApi>(
+    pub fn on_new_call_frame<Y: SystemApi>(
         call_frame_update: &mut CallFrameUpdate,
         system_api: &mut Y,
-    ) -> Result<(), InvokeError<AuthError>> {
+    ) -> Result<(), RuntimeError> {
         let refed = system_api.get_visible_node_ids()?;
         let auth_zone_id = refed
             .into_iter()

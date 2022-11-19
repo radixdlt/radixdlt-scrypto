@@ -6,6 +6,7 @@ use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, Su
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NodeMoveError {
     CantMoveDownstream(RENodeId),
+    CantMoveUpstream(RENodeId),
 }
 
 pub struct NodeMoveModule;
@@ -78,6 +79,44 @@ impl NodeMoveModule {
         }
     }
 
+    fn prepare_move_upstream<Y: SystemApi>(
+        node_id: RENodeId,
+        system_api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        match node_id {
+            RENodeId::Bucket(..) => {
+                let handle = system_api.lock_substate(
+                    node_id,
+                    SubstateOffset::Bucket(BucketOffset::Bucket),
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = system_api.get_ref(handle)?;
+                let bucket = substate_ref.bucket();
+                let locked = bucket.is_locked();
+                system_api.drop_lock(handle)?;
+                if locked {
+                    Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                        NodeMoveError::CantMoveUpstream(node_id),
+                    )))
+                } else {
+                    Ok(())
+                }
+            }
+            RENodeId::Proof(..) | RENodeId::Component(..) | RENodeId::Vault(..) => Ok(()),
+
+            RENodeId::AuthZoneStack(..)
+            | RENodeId::ResourceManager(..)
+            | RENodeId::KeyValueStore(..)
+            | RENodeId::NonFungibleStore(..)
+            | RENodeId::Package(..)
+            | RENodeId::Worktop
+            | RENodeId::EpochManager(..)
+            | RENodeId::Global(..) => Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                NodeMoveError::CantMoveUpstream(node_id),
+            ))),
+        }
+    }
+
     pub fn on_new_call_frame<Y: SystemApi>(
         call_frame_update: &mut CallFrameUpdate,
         actor: &REActor,
@@ -85,6 +124,17 @@ impl NodeMoveModule {
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
             Self::prepare_move_downstream(*node_id, actor, system_api)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn on_call_frame_exit<Y: SystemApi>(
+        call_frame_update: &CallFrameUpdate,
+        system_api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        for node_id in &call_frame_update.nodes_to_move {
+            Self::prepare_move_upstream(*node_id, system_api)?;
         }
 
         Ok(())

@@ -118,7 +118,6 @@ pub enum KernelError {
         offset: SubstateOffset,
         flags: LockFlags,
     },
-    CantMoveUpstream(RENodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

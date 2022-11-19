@@ -1,8 +1,8 @@
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
 use radix_engine_interface::api::types::{
-    AuthZoneOffset, BucketOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
-    PackageOffset, ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver,
-    SubstateId, SubstateOffset, VaultId, WorktopOffset,
+    AuthZoneOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle, PackageOffset,
+    ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver, SubstateId,
+    SubstateOffset, VaultId, WorktopOffset,
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::*;
@@ -341,41 +341,6 @@ where
         }
     }
 
-    pub fn prepare_move_upstream(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
-        self.execute_in_mode(ExecutionMode::MoveDownstream, |system_api| match node_id {
-            RENodeId::Bucket(..) => {
-                let handle = system_api.lock_substate(
-                    node_id,
-                    SubstateOffset::Bucket(BucketOffset::Bucket),
-                    LockFlags::read_only(),
-                )?;
-                let substate_ref = system_api.get_ref(handle)?;
-                let bucket = substate_ref.bucket();
-                let locked = bucket.is_locked();
-                system_api.drop_lock(handle)?;
-                if locked {
-                    Err(RuntimeError::KernelError(KernelError::CantMoveUpstream(
-                        node_id,
-                    )))
-                } else {
-                    Ok(())
-                }
-            }
-            RENodeId::Proof(..) | RENodeId::Component(..) | RENodeId::Vault(..) => Ok(()),
-
-            RENodeId::AuthZoneStack(..)
-            | RENodeId::ResourceManager(..)
-            | RENodeId::KeyValueStore(..)
-            | RENodeId::NonFungibleStore(..)
-            | RENodeId::Package(..)
-            | RENodeId::Worktop
-            | RENodeId::EpochManager(..)
-            | RENodeId::Global(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveUpstream(node_id),
-            )),
-        })
-    }
-
     fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |system_api| {
             match node_id {
@@ -470,19 +435,13 @@ where
             })
         })?;
 
+        // TODO: Abstract these away
         self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
-            AuthModule::finalize_call_frame_update(&mut call_frame_update, system_api).map_err(
-                |e| match e {
-                    InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                },
-            )
+            AuthModule::on_new_call_frame(&mut call_frame_update, system_api)
         })?;
-
-        self.execute_in_mode(ExecutionMode::MoveDownstream, |system_api| {
+        self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
             NodeMoveModule::on_new_call_frame(&mut call_frame_update, &actor, system_api)
         })?;
-
         for m in &mut self.modules {
             m.on_run(
                 &actor,
@@ -497,7 +456,6 @@ where
         // Call Frame Push
         let frame =
             CallFrame::new_child_from_parent(&mut self.current_frame, actor, call_frame_update)?;
-
         let parent = mem::replace(&mut self.current_frame, frame);
         self.prev_frame_stack.push(parent);
 
@@ -507,12 +465,11 @@ where
         })?;
 
         // Process return data
+        self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
+            NodeMoveModule::on_call_frame_exit(&update, system_api)
+        })?;
+
         let mut parent = self.prev_frame_stack.pop().unwrap();
-
-        for node_id in &update.nodes_to_move {
-            self.prepare_move_upstream(*node_id)?;
-        }
-
         CallFrame::update_upstream(&mut self.current_frame, &mut parent, update)?;
 
         // Auto drop locks
