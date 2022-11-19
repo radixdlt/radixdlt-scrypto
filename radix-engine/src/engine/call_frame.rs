@@ -54,6 +54,19 @@ pub struct SubstateLock {
     pub flags: LockFlags,
 }
 
+struct RENodeRefData {
+    location: RENodeLocation,
+}
+
+impl RENodeRefData {
+    fn new(location: RENodeLocation) -> Self {
+        RENodeRefData {
+            location
+        }
+    }
+}
+
+
 // TODO: reduce fields visibility
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
@@ -66,7 +79,7 @@ pub struct CallFrame {
     pub actor: REActor,
 
     /// All ref nodes accessible by this call frame (does not include owned nodes).
-    node_refs: HashMap<RENodeId, RENodeLocation>,
+    node_refs: HashMap<RENodeId, RENodeRefData>,
 
     /// Owned nodes which by definition must live on heap
     /// Also keeps track of number of locks on this node
@@ -117,10 +130,10 @@ impl CallFrame {
             // TODO: Figure out how to drop these references as well on reference drop
             for global_address in &global_references {
                 let node_id = RENodeId::Global(global_address.clone());
-                self.node_refs.insert(node_id, RENodeLocation::Store);
+                self.node_refs.insert(node_id, RENodeRefData::new(RENodeLocation::Store));
             }
             for child_id in &substate_owned_nodes {
-                self.node_refs.insert(*child_id, location);
+                self.node_refs.insert(*child_id, RENodeRefData::new(location));
             }
         }
 
@@ -272,7 +285,7 @@ impl CallFrame {
 
         for node_id in call_frame_update.node_refs_to_copy {
             let location = parent.get_node_location(node_id)?;
-            next_node_refs.insert(node_id, location);
+            next_node_refs.insert(node_id, RENodeRefData::new(location));
         }
 
         let frame = Self {
@@ -300,11 +313,11 @@ impl CallFrame {
 
         for node_id in update.node_refs_to_copy {
             // Make sure not to allow owned nodes to be passed as references upstream
-            let location = from
+            let ref_data = from
                 .node_refs
                 .get(&node_id)
                 .ok_or(CallFrameError::RENodeNotVisible(node_id))?;
-            to.node_refs.insert(node_id, location.clone());
+            to.node_refs.insert(node_id, RENodeRefData::new(ref_data.location.clone()));
         }
 
         Ok(())
@@ -365,7 +378,7 @@ impl CallFrame {
     }
 
     pub fn add_stored_ref(&mut self, node_id: RENodeId) {
-        self.node_refs.insert(node_id, RENodeLocation::Store);
+        self.node_refs.insert(node_id, RENodeRefData::new(RENodeLocation::Store));
     }
 
     pub fn move_owned_node_to_store<'f, 's, R: FeeReserve>(
@@ -469,8 +482,8 @@ impl CallFrame {
         let node_pointer = {
             if self.owned_root_nodes.contains_key(&node_id) {
                 RENodeLocation::Heap
-            } else if let Some(pointer) = self.node_refs.get(&node_id) {
-                pointer.clone()
+            } else if let Some(ref_data) = self.node_refs.get(&node_id) {
+                ref_data.location.clone()
             } else {
                 return Err(CallFrameError::RENodeNotVisible(node_id));
             }
