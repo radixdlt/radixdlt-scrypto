@@ -46,12 +46,13 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                     impl radix_engine_interface::model::NonFungibleData for #ident {
                         fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{type_id::*, *};
+                            use ::scrypto::data::*;
                             let mut decoder_nm = ScryptoDecoder::new(immutable_data);
-                            decoder_nm.read_and_check_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct)?;
+                            decoder_nm.read_and_check_type_id(ScryptoSborTypeId::Struct)?;
                             decoder_nm.read_and_check_size(#im_n)?;
 
                             let mut decoder_m = ScryptoDecoder::new(mutable_data);
-                            decoder_m.read_and_check_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct)?;
+                            decoder_m.read_and_check_type_id(ScryptoSborTypeId::Struct)?;
                             decoder_m.read_and_check_size(#m_n)?;
 
                             let decoded = Self {
@@ -67,10 +68,11 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
 
                         fn immutable_data(&self) -> ::sbor::rust::vec::Vec<u8> {
                             use ::sbor::{type_id::*, *};
+                            use ::scrypto::data::*;
 
                             let mut bytes = Vec::with_capacity(512);
-                            let mut encoder = Encoder::new(&mut bytes);
-                            encoder.write_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct);
+                            let mut encoder = ScryptoEncoder::new(&mut bytes);
+                            encoder.write_type_id(ScryptoSborTypeId::Struct);
                             encoder.write_size(#im_n);
                             #(
                                 self.#im_ids2.encode(&mut encoder);
@@ -82,10 +84,11 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                         fn mutable_data(&self) -> ::sbor::rust::vec::Vec<u8> {
                             use ::sbor::{type_id::*, *};
                             use ::sbor::rust::vec::Vec;
+                            use ::scrypto::data::*;
 
                             let mut bytes = Vec::with_capacity(512);
-                            let mut encoder = Encoder::new(&mut bytes);
-                            encoder.write_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct);
+                            let mut encoder = ScryptoEncoder::new(&mut bytes);
+                            encoder.write_type_id(ScryptoSborTypeId::Struct);
                             encoder.write_size(#m_n);
                             #(
                                 self.#m_ids2.encode(&mut encoder);
@@ -175,15 +178,16 @@ mod tests {
                 impl radix_engine_interface::model::NonFungibleData for MyStruct {
                     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{type_id::*, *};
-                        let mut decoder_nm = Decoder::new(immutable_data);
-                        decoder_nm.read_and_check_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct)?;
+                        use ::scrypto::data::*;
+                        let mut decoder_nm = ScryptoDecoder::new(immutable_data);
+                        decoder_nm.read_and_check_type_id(ScryptoSborTypeId::Struct)?;
                         decoder_nm.read_and_check_size(1)?;
-                        let mut decoder_m = Decoder::new(mutable_data);
-                        decoder_m.read_and_check_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct)?;
+                        let mut decoder_m = ScryptoDecoder::new(mutable_data);
+                        decoder_m.read_and_check_type_id(ScryptoSborTypeId::Struct)?;
                         decoder_m.read_and_check_size(1)?;
                         let decoded = Self {
-                            field_1: <u32>::decode(&mut decoder_nm)?,
-                            field_2: <String>::decode(&mut decoder_m)?,
+                            field_1: decoder_nm.decode::<u32>()?,
+                            field_2: decoder_m.decode::<String>()?,
                         };
                         decoder_nm.check_end()?;
                         decoder_m.check_end()?;
@@ -191,9 +195,10 @@ mod tests {
                     }
                     fn immutable_data(&self) -> ::sbor::rust::vec::Vec<u8> {
                         use ::sbor::{type_id::*, *};
+                        use ::scrypto::data::*;
                         let mut bytes = Vec::with_capacity(512);
-                        let mut encoder = Encoder::new(&mut bytes);
-                        encoder.write_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct);
+                        let mut encoder = ScryptoEncoder::new(&mut bytes);
+                        encoder.write_type_id(ScryptoSborTypeId::Struct);
                         encoder.write_size(1);
                         self.field_1.encode(&mut encoder);
                         bytes
@@ -201,9 +206,10 @@ mod tests {
                     fn mutable_data(&self) -> ::sbor::rust::vec::Vec<u8> {
                         use ::sbor::{type_id::*, *};
                         use ::sbor::rust::vec::Vec;
+                        use ::scrypto::data::*;
                         let mut bytes = Vec::with_capacity(512);
-                        let mut encoder = Encoder::new(&mut bytes);
-                        encoder.write_type_id(SborTypeId::<::scrypto::data::ScryptoCustomTypeId>::Struct);
+                        let mut encoder = ScryptoEncoder::new(&mut bytes);
+                        encoder.write_type_id(ScryptoSborTypeId::Struct);
                         encoder.write_size(1);
                         self.field_2.encode(&mut encoder);
                         bytes
