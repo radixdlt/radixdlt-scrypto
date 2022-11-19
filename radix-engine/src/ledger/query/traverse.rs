@@ -4,7 +4,7 @@ use crate::model::{
 };
 use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, RENodeId, SubstateId,
-    SubstateOffset, VaultOffset,
+    SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
@@ -26,7 +26,7 @@ pub struct StateTreeTraverser<
 }
 
 pub trait StateTreeVisitor {
-    fn visit_vault(&mut self, _parent_id: Option<&SubstateId>, _vault_substate: &VaultSubstate) {}
+    fn visit_vault(&mut self, vault_id: VaultId, _vault_substate: &VaultSubstate) {}
     fn visit_node_id(&mut self, _parent_id: Option<&SubstateId>, _node_id: &RENodeId, _depth: u32) {
     }
 }
@@ -80,8 +80,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 if let Some(output_value) = self.substate_store.get_substate(&substate_id) {
                     let vault_substate: VaultSubstate = output_value.substate.into();
 
-                    self.visitor
-                        .visit_vault(Some(&substate_id), &vault_substate);
+                    self.visitor.visit_vault(vault_id, &vault_substate);
                 } else {
                     return Err(StateTreeTraverserError::RENodeNotFound(node_id));
                 }

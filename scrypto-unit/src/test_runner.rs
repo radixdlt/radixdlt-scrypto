@@ -106,16 +106,32 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         Some(global.global().node_deref())
     }
 
+    pub fn get_component_vaults(
+        &mut self,
+        component_address: ComponentAddress,
+        resource_address: ResourceAddress,
+    ) -> Vec<VaultId> {
+        let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+        let mut vault_finder = VaultFinder::new(resource_address);
+
+        let mut state_tree_visitor = StateTreeTraverser::new(
+            self.execution_stores.get_root_store(),
+            &mut vault_finder,
+            100,
+        );
+        state_tree_visitor
+            .traverse_all_descendents(None, node_id)
+            .unwrap();
+        vault_finder.to_vaults()
+    }
+
     pub fn get_component_resources(
         &mut self,
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
+        let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
         let mut accounter = ResourceAccounter::new(self.execution_stores.get_root_store());
-        accounter
-            .add_resources(RENodeId::Global(GlobalAddress::Component(
-                component_address,
-            )))
-            .unwrap();
+        accounter.add_resources(node_id).unwrap();
         accounter.into_map()
     }
 

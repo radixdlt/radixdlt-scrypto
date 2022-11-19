@@ -8,7 +8,6 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
 
-/*
 #[test]
 fn non_existent_vault_in_component_creation_should_fail() {
     // Arrange
@@ -17,6 +16,10 @@ fn non_existent_vault_in_component_creation_should_fail() {
     let (_, _, account) = test_runner.new_allocated_account();
 
     let resource_address = test_runner.create_fungible_resource(10u32.into(), 0u8, account);
+    let vaults = test_runner.get_component_vaults(account, resource_address);
+    let vault_id = vaults[0];
+
+    /*
     test_runner.deref_component()
 
     // Act
@@ -50,5 +53,5 @@ fn non_existent_vault_in_component_creation_should_fail() {
             RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Vault(_)))
         )
     });
+     */
 }
- */
