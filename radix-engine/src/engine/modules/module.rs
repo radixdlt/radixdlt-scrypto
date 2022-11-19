@@ -83,58 +83,72 @@ pub enum SysCallOutput<'a> {
 pub trait Module<R: FeeReserve> {
     fn pre_sys_call(
         &mut self,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-        input: SysCallInput,
-    ) -> Result<(), ModuleError>;
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        _input: SysCallInput,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
 
     fn post_sys_call(
         &mut self,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-        output: SysCallOutput,
-    ) -> Result<(), ModuleError>;
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        _output: SysCallOutput,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
 
     fn on_run(
         &mut self,
-        actor: &REActor,
-        input: &IndexedScryptoValue,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-    ) -> Result<(), ModuleError>;
+        _actor: &REActor,
+        _input: &IndexedScryptoValue,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
 
     fn on_wasm_instantiation(
         &mut self,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-        code: &[u8],
-    ) -> Result<(), ModuleError>;
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        _code: &[u8],
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
 
     fn on_wasm_costing(
         &mut self,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-        units: u32,
-    ) -> Result<(), ModuleError>;
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        _units: u32,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
 
     fn on_lock_fee(
         &mut self,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-        vault_id: VaultId,
+        _call_frame: &CallFrame,
+        _eap: &mut Heap,
+        _rack: &mut Track<R>,
+        _ault_id: VaultId,
         fee: Resource,
-        contingent: bool,
-    ) -> Result<Resource, ModuleError>;
+        _ontingent: bool,
+    ) -> Result<Resource, ModuleError> {
+        Ok(fee)
+    }
 
     fn on_finished_processing(
         &mut self,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-    ) -> Result<(), ModuleError>;
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
 }

@@ -114,7 +114,7 @@ impl VisibilityProperties {
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
                 _ => false,
             },
-            (ExecutionMode::MoveDownstream, offset) => match offset {
+            (ExecutionMode::NodeMoveModule, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => flags == LockFlags::read_only(),
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
                 _ => false,
