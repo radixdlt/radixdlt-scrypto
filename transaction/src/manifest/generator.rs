@@ -10,7 +10,7 @@ use radix_engine_interface::crypto::{
 };
 use radix_engine_interface::data::{
     args, scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId,
-    ScryptoCustomValue, ScryptoTypeId, ScryptoValue,
+    ScryptoCustomValue, ScryptoSborTypeId, ScryptoValue,
 };
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
@@ -1136,7 +1136,7 @@ fn generate_singletons(
     Ok(result)
 }
 
-fn generate_type_id(ty: &ast::Type) -> ScryptoTypeId {
+fn generate_type_id(ty: &ast::Type) -> ScryptoSborTypeId {
     match ty {
         ast::Type::Unit => SborTypeId::Unit,
         ast::Type::Bool => SborTypeId::Bool,

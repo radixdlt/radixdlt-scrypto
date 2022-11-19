@@ -37,9 +37,9 @@ impl<X: CustomTypeId> Encode<X> for String {
     }
 }
 
-impl<X: CustomTypeId> Decode<X> for String {
+impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for String {
     fn decode_body_with_type_id(
-        decoder: &mut Decoder<X>,
+        decoder: &mut D,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;

@@ -34,9 +34,11 @@ impl<X: CustomTypeId, T: Encode<X> + TypeId<X>, const N: usize> Encode<X> for [T
     }
 }
 
-impl<X: CustomTypeId, T: Decode<X> + TypeId<X>, const N: usize> Decode<X> for [T; N] {
+impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>, const N: usize> Decode<X, D>
+    for [T; N]
+{
     fn decode_body_with_type_id(
-        decoder: &mut Decoder<X>,
+        decoder: &mut D,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
@@ -54,7 +56,7 @@ impl<X: CustomTypeId, T: Decode<X> + TypeId<X>, const N: usize> Decode<X> for [T
 
         // Decode element by element
         for elem in &mut data[..] {
-            elem.write(T::decode_body_with_type_id(decoder, element_type_id)?);
+            elem.write(decoder.decode_body_with_type_id(element_type_id)?);
         }
 
         // Use &mut as an assertion of unique "ownership"

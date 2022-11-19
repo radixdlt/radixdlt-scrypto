@@ -62,28 +62,28 @@ fn validate_id(slice: &[u8]) -> Result<(), DecodeError> {
     let type_id = decoder.read_type_id()?;
     match type_id {
         // TODO: add more allowed types as agreed
-        ScryptoTypeId::U32 => {
+        ScryptoSborTypeId::U32 => {
             decoder.read_slice(4)?;
         }
-        ScryptoTypeId::U64 => {
+        ScryptoSborTypeId::U64 => {
             decoder.read_slice(8)?;
         }
-        ScryptoTypeId::Array => {
+        ScryptoSborTypeId::Array => {
             let element_type_id = decoder.read_type_id()?;
-            if element_type_id == ScryptoTypeId::U8 {
+            if element_type_id == ScryptoSborTypeId::U8 {
                 let size = decoder.read_size()?;
                 decoder.read_slice(size)?;
             } else {
                 return Err(DecodeError::UnexpectedTypeId {
                     actual: element_type_id.as_u8(),
-                    expected: ScryptoTypeId::U8.as_u8(),
+                    expected: ScryptoSborTypeId::U8.as_u8(),
                 });
             }
         }
         type_id => {
             return Err(DecodeError::UnexpectedTypeId {
                 actual: type_id.as_u8(),
-                expected: ScryptoTypeId::U32.as_u8(), // TODO: make it a vec
+                expected: ScryptoSborTypeId::U32.as_u8(), // TODO: make it a vec
             });
         }
     }

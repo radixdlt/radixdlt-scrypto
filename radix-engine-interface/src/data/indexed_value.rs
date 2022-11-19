@@ -51,7 +51,7 @@ impl IndexedScryptoValue {
         Self::from_typed(&())
     }
 
-    pub fn from_typed<T: Encode<ScryptoCustomTypeId>>(value: &T) -> Self {
+    pub fn from_typed<T: ScryptoEncode>(value: &T) -> Self {
         let bytes = encode(value);
         Self::from_slice(&bytes).expect("Failed to convert trusted value into IndexedScryptoValue")
     }
@@ -240,7 +240,7 @@ impl ScryptoCustomValueVisitor {
     }
 }
 
-impl CustomValueVisitor<ScryptoCustomTypeId, ScryptoCustomValue> for ScryptoCustomValueVisitor {
+impl CustomValueVisitor<ScryptoCustomValue> for ScryptoCustomValueVisitor {
     type Err = ValueIndexingError;
 
     fn visit(

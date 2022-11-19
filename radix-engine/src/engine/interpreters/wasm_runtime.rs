@@ -1,7 +1,7 @@
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::InvokeError;
-use crate::types::{scrypto_decode, scrypto_encode, Encode, ScryptoInvocation};
+use crate::types::{scrypto_decode, scrypto_encode, ScryptoInvocation};
 use crate::wasm::*;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
 use radix_engine_interface::api::wasm_input::{
@@ -11,7 +11,7 @@ use radix_engine_interface::api::wasm_input::{
     ProofMethodInvocation, RadixEngineInput, ResourceManagerFunctionInvocation,
     ResourceManagerMethodInvocation, VaultMethodInvocation, WorktopMethodInvocation,
 };
-use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
+use radix_engine_interface::data::{IndexedScryptoValue, ScryptoEncode};
 
 /// A glue between system api (call frame and track abstraction) and WASM.
 ///
@@ -299,7 +299,7 @@ where
     }
 }
 
-fn encode<T: Encode<ScryptoCustomTypeId>>(output: T) -> Vec<u8> {
+fn encode<T: ScryptoEncode>(output: T) -> Vec<u8> {
     scrypto_encode(&output)
 }
 

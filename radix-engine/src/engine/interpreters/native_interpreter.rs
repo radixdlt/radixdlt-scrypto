@@ -3,10 +3,9 @@ use crate::model::*;
 use crate::types::*;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
 use radix_engine_interface::api::types::{NativeFunction, NativeMethod, RENodeId};
-use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
+use radix_engine_interface::data::{IndexedScryptoValue, ScryptoEncode};
 use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
-use sbor::*;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
     fn into(self) -> RuntimeError {
@@ -124,7 +123,7 @@ impl<N: NativeInvocation> Resolver<N> for NativeResolver {
     }
 }
 
-pub trait NativeInvocation: NativeExecutable + Encode<ScryptoCustomTypeId> + Debug {
+pub trait NativeInvocation: NativeExecutable + ScryptoEncode + Debug {
     fn info(&self) -> NativeInvocationInfo;
 }
 

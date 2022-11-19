@@ -1,4 +1,5 @@
 use crate::decode::*;
+use crate::decoder::*;
 use crate::encode::*;
 use crate::path::SborPathBuf;
 use crate::rust::fmt::Debug;
@@ -6,21 +7,14 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
 
-pub trait CustomValue<X: CustomTypeId>: Debug + Clone + PartialEq + Eq {
-    fn encode_type_id(&self, encoder: &mut Encoder<X>);
-    fn encode_body(&self, encoder: &mut Encoder<X>);
-    fn decode_body_with_type_id(decoder: &mut Decoder<X>, type_id: X) -> Result<Self, DecodeError>
-    where
-        Self: Sized;
-}
-
+/// CV is CustomValue
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type") // See https://serde.rs/enum-representations.html
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SborValue<X: CustomTypeId, Y: CustomValue<X>> {
+pub enum SborValue<X: CustomTypeId, CV> {
     Unit,
     Bool {
         value: bool,
@@ -60,35 +54,34 @@ pub enum SborValue<X: CustomTypeId, Y: CustomValue<X>> {
     },
 
     Struct {
-        fields: Vec<SborValue<X, Y>>,
+        fields: Vec<SborValue<X, CV>>,
     },
     Enum {
         discriminator: String,
-        fields: Vec<SborValue<X, Y>>,
+        fields: Vec<SborValue<X, CV>>,
     },
     Array {
         element_type_id: SborTypeId<X>,
-        elements: Vec<SborValue<X, Y>>,
+        elements: Vec<SborValue<X, CV>>,
     },
     Tuple {
-        elements: Vec<SborValue<X, Y>>,
+        elements: Vec<SborValue<X, CV>>,
     },
-
     Custom {
-        value: Y,
+        value: CV,
     },
 }
 
 /// Encodes any SBOR value into byte array.
-pub fn encode_any<X: CustomTypeId, Y: CustomValue<X>>(value: &SborValue<X, Y>) -> Vec<u8> {
+pub fn encode_any<X: CustomTypeId, CV: Encode<X>>(value: &SborValue<X, CV>) -> Vec<u8> {
     let mut bytes = Vec::new();
     encode_any_with_buffer(value, &mut bytes);
     bytes
 }
 
 /// Encodes any SBOR value with a given buffer
-pub fn encode_any_with_buffer<X: CustomTypeId, Y: CustomValue<X>>(
-    value: &SborValue<X, Y>,
+pub fn encode_any_with_buffer<X: CustomTypeId, CV: Encode<X>>(
+    value: &SborValue<X, CV>,
     buffer: &mut Vec<u8>,
 ) {
     let mut encoder = ::sbor::Encoder::new(buffer);
@@ -96,8 +89,8 @@ pub fn encode_any_with_buffer<X: CustomTypeId, Y: CustomValue<X>>(
     encode_body(value, &mut encoder);
 }
 
-fn encode_type_id<X: CustomTypeId, Y: CustomValue<X>>(
-    value: &SborValue<X, Y>,
+fn encode_type_id<X: CustomTypeId, CV: Encode<X>>(
+    value: &SborValue<X, CV>,
     encoder: &mut Encoder<X>,
 ) {
     match value {
@@ -122,10 +115,7 @@ fn encode_type_id<X: CustomTypeId, Y: CustomValue<X>>(
     }
 }
 
-fn encode_body<X: CustomTypeId, Y: CustomValue<X>>(
-    value: &SborValue<X, Y>,
-    encoder: &mut Encoder<X>,
-) {
+fn encode_body<X: CustomTypeId, CV: Encode<X>>(value: &SborValue<X, CV>, encoder: &mut Encoder<X>) {
     match value {
         SborValue::Unit => {
             ().encode_body(encoder);
@@ -209,20 +199,20 @@ fn encode_body<X: CustomTypeId, Y: CustomValue<X>>(
 }
 
 /// Decode any SBOR data.
-pub fn decode_any<X: CustomTypeId, Y: CustomValue<X>>(
+pub fn decode_any<X: CustomTypeId, CV: for<'a> Decode<X, VecDecoder<'a, X>>>(
     data: &[u8],
-) -> Result<SborValue<X, Y>, DecodeError> {
-    let mut decoder = Decoder::new(data);
+) -> Result<SborValue<X, CV>, DecodeError> {
+    let mut decoder = VecDecoder::new(data);
     let type_id = decoder.read_type_id()?;
-    let result = decode_body_with_type_id(type_id, &mut decoder);
+    let result = decode_body_with_type_id(type_id, &mut decoder)?;
     decoder.check_end()?;
-    result
+    Ok(result)
 }
 
-fn decode_body_with_type_id<X: CustomTypeId, Y: CustomValue<X>>(
+fn decode_body_with_type_id<X: CustomTypeId, CV: Decode<X, D>, D: Decoder<X>>(
     type_id: SborTypeId<X>,
-    decoder: &mut Decoder<X>,
-) -> Result<SborValue<X, Y>, DecodeError> {
+    decoder: &mut D,
+) -> Result<SborValue<X, CV>, DecodeError> {
     match type_id {
         // primitive types
         SborTypeId::Unit => {
@@ -320,20 +310,17 @@ fn decode_body_with_type_id<X: CustomTypeId, Y: CustomValue<X>>(
             }
             Ok(SborValue::Tuple { elements })
         }
-        SborTypeId::Custom(type_id) => Ok(SborValue::Custom {
-            value: Y::decode_body_with_type_id(decoder, type_id)?,
+        SborTypeId::Custom(_) => Ok(SborValue::Custom {
+            value: decoder.decode_body_with_type_id(type_id)?,
         }),
     }
 }
 
-pub fn traverse_any<X: CustomTypeId, Y: CustomValue<X>, V, E>(
+pub fn traverse_any<X: CustomTypeId, CV, V: CustomValueVisitor<CV, Err = E>, E>(
     path: &mut SborPathBuf,
-    value: &SborValue<X, Y>,
+    value: &SborValue<X, CV>,
     visitor: &mut V,
-) -> Result<(), E>
-where
-    V: CustomValueVisitor<X, Y, Err = E>,
-{
+) -> Result<(), E> {
     match value {
         // primitive types
         SborValue::Unit
@@ -381,10 +368,10 @@ where
     Ok(())
 }
 
-pub trait CustomValueVisitor<X: CustomTypeId, Y: CustomValue<X>> {
+pub trait CustomValueVisitor<CV> {
     type Err;
 
-    fn visit(&mut self, path: &mut SborPathBuf, value: &Y) -> Result<(), Self::Err>;
+    fn visit(&mut self, path: &mut SborPathBuf, value: &CV) -> Result<(), Self::Err>;
 }
 
 #[cfg(test)]

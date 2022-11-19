@@ -91,9 +91,11 @@ macro_rules! scrypto_type {
             }
         }
 
-        impl sbor::Decode<crate::data::ScryptoCustomTypeId> for $t {
+        impl<D: sbor::Decoder<crate::data::ScryptoCustomTypeId>>
+            sbor::Decode<crate::data::ScryptoCustomTypeId, D> for $t
+        {
             fn decode_body_with_type_id(
-                decoder: &mut sbor::Decoder<crate::data::ScryptoCustomTypeId>,
+                decoder: &mut D,
                 type_id: sbor::SborTypeId<crate::data::ScryptoCustomTypeId>,
             ) -> Result<Self, sbor::DecodeError> {
                 decoder.check_preloaded_type_id(type_id, Self::type_id())?;
@@ -134,9 +136,11 @@ macro_rules! scrypto_type {
             }
         }
 
-        impl sbor::Decode<crate::data::ScryptoCustomTypeId> for $t {
+        impl<D: sbor::Decoder<crate::data::ScryptoCustomTypeId>>
+            sbor::Decode<crate::data::ScryptoCustomTypeId, D> for $t
+        {
             fn decode_body_with_type_id(
-                decoder: &mut sbor::Decoder<crate::data::ScryptoCustomTypeId>,
+                decoder: &mut D,
                 type_id: sbor::SborTypeId<crate::data::ScryptoCustomTypeId>,
             ) -> Result<Self, sbor::DecodeError> {
                 decoder.check_preloaded_type_id(type_id, Self::type_id())?;

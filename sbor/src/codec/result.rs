@@ -24,11 +24,11 @@ impl<X: CustomTypeId, T: Encode<X>, E: Encode<X>> Encode<X> for Result<T, E> {
     }
 }
 
-impl<X: CustomTypeId, T: Decode<X> + TypeId<X>, E: Decode<X> + TypeId<X>> Decode<X>
-    for Result<T, E>
+impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>, E: Decode<X, D> + TypeId<X>>
+    Decode<X, D> for Result<T, E>
 {
     fn decode_body_with_type_id(
-        decoder: &mut Decoder<X>,
+        decoder: &mut D,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
@@ -36,11 +36,11 @@ impl<X: CustomTypeId, T: Decode<X> + TypeId<X>, E: Decode<X> + TypeId<X>> Decode
         match discriminator.as_ref() {
             RESULT_VARIANT_OK => {
                 decoder.read_and_check_size(1)?;
-                Ok(Ok(T::decode(decoder)?))
+                Ok(Ok(decoder.decode()?))
             }
             RESULT_VARIANT_ERR => {
                 decoder.read_and_check_size(1)?;
-                Ok(Err(E::decode(decoder)?))
+                Ok(Err(decoder.decode()?))
             }
             _ => Err(DecodeError::UnknownDiscriminator(discriminator)),
         }

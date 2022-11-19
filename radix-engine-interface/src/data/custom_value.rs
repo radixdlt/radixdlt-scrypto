@@ -39,7 +39,7 @@ pub enum ScryptoCustomValue {
     NonFungibleId(NonFungibleId),
 }
 
-impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
+impl Encode<ScryptoCustomTypeId> for ScryptoCustomValue {
     fn encode_type_id(&self, encoder: &mut ScryptoEncoder) {
         match self {
             ScryptoCustomValue::PackageAddress(_) => {
@@ -142,11 +142,16 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
             }
         }
     }
+}
 
+impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for ScryptoCustomValue {
     fn decode_body_with_type_id(
-        decoder: &mut ScryptoDecoder,
-        type_id: ScryptoCustomTypeId,
+        decoder: &mut D,
+        type_id: SborTypeId<ScryptoCustomTypeId>,
     ) -> Result<Self, DecodeError> {
+        let SborTypeId::Custom(type_id) = type_id else {
+            return Err(DecodeError::UnexpectedCustomTypeId { actual: type_id.as_u8() });
+        };
         match type_id {
             ScryptoCustomTypeId::PackageAddress => {
                 let n = 27;

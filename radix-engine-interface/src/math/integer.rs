@@ -302,9 +302,9 @@ macro_rules! sbor_codec {
             }
         }
 
-        impl<X: CustomTypeId> Decode<X> for $t {
+        impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for $t {
             fn decode_body_with_type_id(
-                decoder: &mut Decoder<X>,
+                decoder: &mut D,
                 type_id: SborTypeId<X>,
             ) -> Result<Self, DecodeError> {
                 decoder.check_preloaded_type_id(type_id, Self::type_id())?;
@@ -929,16 +929,16 @@ mod tests {
         let mut enc = ScryptoEncoder::new(&mut bytes);
         encode_integers(&mut enc);
 
-        let mut dec = ScryptoDecoder::new(&bytes);
-        assert_eq!(I8::by(1i8), <I8>::decode(&mut dec).unwrap());
-        assert_eq!(I16::by(1i8), <I16>::decode(&mut dec).unwrap());
-        assert_eq!(I32::by(1i8), <I32>::decode(&mut dec).unwrap());
-        assert_eq!(I64::by(1i8), <I64>::decode(&mut dec).unwrap());
-        assert_eq!(I128::by(1i8), <I128>::decode(&mut dec).unwrap());
-        assert_eq!(U8::by(1u8), <U8>::decode(&mut dec).unwrap());
-        assert_eq!(U16::by(1u8), <U16>::decode(&mut dec).unwrap());
-        assert_eq!(U32::by(1u8), <U32>::decode(&mut dec).unwrap());
-        assert_eq!(U64::by(1u8), <U64>::decode(&mut dec).unwrap());
-        assert_eq!(U128::by(1u8), <U128>::decode(&mut dec).unwrap());
+        let mut decoder = ScryptoDecoder::new(&bytes);
+        assert_eq!(I8::by(1i8), decoder.decode::<I8>().unwrap());
+        assert_eq!(I16::by(1i8), decoder.decode::<I16>().unwrap());
+        assert_eq!(I32::by(1i8), decoder.decode::<I32>().unwrap());
+        assert_eq!(I64::by(1i8), decoder.decode::<I64>().unwrap());
+        assert_eq!(I128::by(1i8), decoder.decode::<I128>().unwrap());
+        assert_eq!(U8::by(1u8), decoder.decode::<U8>().unwrap());
+        assert_eq!(U16::by(1u8), decoder.decode::<U16>().unwrap());
+        assert_eq!(U32::by(1u8), decoder.decode::<U32>().unwrap());
+        assert_eq!(U64::by(1u8), decoder.decode::<U64>().unwrap());
+        assert_eq!(U128::by(1u8), decoder.decode::<U128>().unwrap());
     }
 }

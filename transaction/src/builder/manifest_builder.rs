@@ -19,7 +19,6 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use sbor::*;
 use scrypto::abi::*;
 use scrypto::access_rule_node;
 use scrypto::rule;
@@ -1108,7 +1107,7 @@ impl ManifestBuilder {
         arg: &str,
     ) -> Result<Vec<u8>, BuildArgsError>
     where
-        T: FromStr + Encode<ScryptoCustomTypeId>,
+        T: FromStr + ScryptoEncode,
         T::Err: fmt::Debug,
     {
         let value = arg
