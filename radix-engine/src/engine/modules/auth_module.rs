@@ -27,8 +27,22 @@ impl AuthModule {
         NonFungibleId::from_u32(1)
     }
 
-    pub fn on_before_frame_start<Y, X>(
+    pub fn finalize_call_frame_update<Y: SystemApi>(
         call_frame_update: &mut CallFrameUpdate,
+        system_api: &mut Y,
+    ) -> Result<(), InvokeError<AuthError>> {
+        let refed = system_api.get_visible_node_ids()?;
+        let auth_zone_id = refed
+            .into_iter()
+            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
+            .unwrap();
+
+        call_frame_update.node_refs_to_copy.insert(auth_zone_id);
+
+        Ok(())
+    }
+
+    pub fn on_before_frame_start<Y, X>(
         actor: &REActor,
         executor: &X,
         system_api: &mut Y,
@@ -37,7 +51,6 @@ impl AuthModule {
         Y: SystemApi,
         X: Executor,
     {
-        let mut new_refs = HashSet::new();
         if matches!(
             actor,
             REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..)
@@ -200,11 +213,8 @@ impl AuthModule {
 
         // New auth zone frame managed by the AuthModule
         auth_zone_ref_mut.new_frame(actor);
-        new_refs.insert(auth_zone_id);
 
         system_api.drop_lock(handle)?;
-
-        call_frame_update.node_refs_to_copy.extend(new_refs);
 
         Ok(())
     }

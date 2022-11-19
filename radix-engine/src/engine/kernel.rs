@@ -530,10 +530,19 @@ where
         mut call_frame_update: CallFrameUpdate,
     ) -> Result<X::Output, RuntimeError> {
         self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
-            AuthModule::on_before_frame_start(&mut call_frame_update, &actor, &executor, system_api).map_err(|e| match e {
+            AuthModule::on_before_frame_start(&actor, &executor, system_api).map_err(|e| match e {
                 InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
                 InvokeError::Downstream(runtime_error) => runtime_error,
             })
+        })?;
+
+        self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
+            AuthModule::finalize_call_frame_update(&mut call_frame_update, system_api).map_err(
+                |e| match e {
+                    InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                },
+            )
         })?;
 
         for node_id in &call_frame_update.nodes_to_move {

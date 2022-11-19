@@ -166,7 +166,7 @@ fn test_basic_transfer() {
         + 0 /* instantiate_wasm */
         + 1445 /* invoke */
         + 7100 /* lock_substate */
-        + 2000 /* read_owned_nodes */
+        + 3000 /* read_owned_nodes */
         + 22000 /* read_substate */
         + 1000 /* run_native_function */
         + 2200 /* run_native_method */
