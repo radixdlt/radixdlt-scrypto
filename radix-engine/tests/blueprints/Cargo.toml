@@ -6,6 +6,7 @@ members = [
     "component",
     "core",
     "data_access",
+    "deep_sbor",
     "execution_trace",
     "external_blueprint_caller",
     "fee",
