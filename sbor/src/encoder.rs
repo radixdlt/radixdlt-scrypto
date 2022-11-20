@@ -10,16 +10,42 @@ pub enum EncodeError {
 }
 
 pub trait Encoder<X: CustomTypeId>: Sized {
+    /// Consumes the Encoder and encodes the value as a full payload
     #[inline]
     fn encode_payload<T: Encode<X, Self> + ?Sized>(mut self, value: &T) -> Result<(), EncodeError> {
         self.encode(value)
     }
 
+    /// Encodes the value as part of a larger payload
+    ///
+    /// This method encodes the value's SBOR type id, and then its SBOR body.
     fn encode<T: Encode<X, Self> + ?Sized>(&mut self, value: &T) -> Result<(), EncodeError> {
         value.encode_type_id(self)?;
         self.encode_body(value)
     }
 
+    /// Encodes the SBOR body of the value as part of a larger payload.
+    ///
+    /// In some cases, you may wish to directly call `value.encode_body` instead of this method. See
+    /// the below section for details.
+    ///
+    /// ## Direct calls and SBOR Depth
+    ///
+    /// In order to avoid SBOR depth differentials and disagreement about whether a payload
+    /// is valid, typed codec implementations should ensure that the SBOR depth as measured
+    /// during the encoding/decoding process agrees with the SborValue codec.
+    ///
+    /// If the encoder you're writing is embedding a child type (and is represented as such
+    /// in the SborValue type), then you should call `encoder.encode_body` to increment
+    /// the SBOR depth tracker.
+    ///
+    /// You should only call `value.encode_body` directly when the encoding of that type
+    /// into an SborValue doesn't increase the SBOR depth in the encoder, that is:
+    /// * When the wrapping type is invisible to the SborValue, ie:
+    ///   * Smart pointers
+    ///   * Transparent wrappers
+    /// * Where the use of the inner type is invisible to SborValue, ie:
+    ///   * Where the use of `value.encode_body` is coincidental / code re-use
     fn encode_body<T: Encode<X, Self> + ?Sized>(&mut self, value: &T) -> Result<(), EncodeError>;
 
     #[inline]
