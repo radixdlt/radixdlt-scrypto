@@ -71,19 +71,19 @@ pub enum AccessRulesMethod {
 }
 
 #[derive(
-Debug,
-Clone,
-Copy,
-PartialEq,
-Eq,
-Hash,
-PartialOrd,
-Ord,
-EnumString,
-EnumVariantNames,
-IntoStaticStr,
-AsRefStr,
-Display,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]

@@ -12,11 +12,7 @@ pub struct MetadataSubstate {
 }
 
 impl MetadataSubstate {
-    pub fn insert(
-        &mut self,
-        key: String,
-        value: String,
-    ) {
+    pub fn insert(&mut self, key: String, value: String) {
         self.metadata.insert(key, value);
     }
 }
