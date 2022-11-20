@@ -4,13 +4,8 @@ use crate::model::InvokeError;
 use crate::types::{scrypto_decode, scrypto_encode, Encode, ScryptoInvocation};
 use crate::wasm::*;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
-use radix_engine_interface::api::wasm_input::{
-    AccessRulesMethodInvocation, AuthZoneMethodInvocation, BucketMethodInvocation,
-    EpochManagerFunctionInvocation, EpochManagerMethodInvocation, NativeFnInvocation,
-    NativeFunctionInvocation, NativeMethodInvocation, PackageFunctionInvocation,
-    ProofMethodInvocation, RadixEngineInput, ResourceManagerFunctionInvocation,
-    ResourceManagerMethodInvocation, VaultMethodInvocation, WorktopMethodInvocation,
-};
+use radix_engine_interface::api::types::MetadataMethod;
+use radix_engine_interface::api::wasm_input::{AccessRulesMethodInvocation, AuthZoneMethodInvocation, BucketMethodInvocation, EpochManagerFunctionInvocation, EpochManagerMethodInvocation, MetadataMethodInvocation, NativeFnInvocation, NativeFunctionInvocation, NativeMethodInvocation, PackageFunctionInvocation, ProofMethodInvocation, RadixEngineInput, ResourceManagerFunctionInvocation, ResourceManagerMethodInvocation, VaultMethodInvocation, WorktopMethodInvocation};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
 
 /// A glue between system api (call frame and track abstraction) and WASM.
@@ -188,8 +183,14 @@ where
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
-                NativeMethodInvocation::AccessRules(component_method) => match component_method {
+                NativeMethodInvocation::AccessRules(access_rules_method) => match access_rules_method {
                     AccessRulesMethodInvocation::AddAccessCheck(invocation) => self
+                        .system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                },
+                NativeMethodInvocation::Metadata(metadata_method) => match metadata_method {
+                    MetadataMethodInvocation::Set(invocation) => self
                         .system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),

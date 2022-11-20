@@ -7,6 +7,7 @@ use radix_engine_interface::api::types::{
     NativeFn, NativeFunction, NativeMethod, PackageFunction, ProofMethod, ResourceManagerFunction,
     ResourceManagerMethod, TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
+use radix_engine_interface::api::wasm_input::MetadataMethodInvocation;
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
@@ -265,6 +266,15 @@ where
             NativeMethod::AccessRules(component_method) => match component_method {
                 AccessRulesMethod::AddAccessCheck => {
                     let invocation: AccessRulesAddAccessCheckInvocation = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
+            },
+            NativeMethod::Metadata(metadata_method) => match metadata_method {
+                MetadataMethod::Set => {
+                    let invocation: MetadataSetInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)
