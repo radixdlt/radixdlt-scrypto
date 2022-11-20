@@ -6,6 +6,7 @@ impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for bool {
     fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_type_id(Self::type_id())
     }
+
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_byte(if *self { 1u8 } else { 0u8 })
@@ -13,6 +14,7 @@ impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for bool {
 }
 
 impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for bool {
+    #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
         type_id: SborTypeId<X>,

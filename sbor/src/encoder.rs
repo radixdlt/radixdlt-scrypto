@@ -10,6 +10,7 @@ pub enum EncodeError {
 }
 
 pub trait Encoder<X: CustomTypeId>: Sized {
+    #[inline]
     fn encode_payload<T: Encode<X, Self> + ?Sized>(mut self, value: &T) -> Result<(), EncodeError> {
         self.encode(value)
     }
@@ -25,6 +26,7 @@ pub trait Encoder<X: CustomTypeId>: Sized {
         self.track_stack_depth_decrease()
     }
 
+    #[inline]
     fn write_type_id(&mut self, ty: SborTypeId<X>) -> Result<(), EncodeError> {
         self.write_byte(ty.as_u8())
     }
@@ -77,11 +79,13 @@ impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> VecEncoder<'a, X, MAX_DEPTH> {
 }
 
 impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> Encoder<X> for VecEncoder<'a, X, MAX_DEPTH> {
+    #[inline]
     fn write_byte(&mut self, n: u8) -> Result<(), EncodeError> {
         self.buf.push(n);
         Ok(())
     }
 
+    #[inline]
     fn write_slice(&mut self, slice: &[u8]) -> Result<(), EncodeError> {
         self.buf.extend(slice);
         Ok(())

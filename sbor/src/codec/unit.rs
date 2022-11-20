@@ -14,6 +14,7 @@ impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for () {
 }
 
 impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for () {
+    #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
         type_id: SborTypeId<X>,

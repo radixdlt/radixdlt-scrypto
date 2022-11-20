@@ -32,6 +32,7 @@ encode_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 macro_rules! decode_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {
         impl<X: CustomTypeId, Dec: Decoder<X>, $($name: Decode<X, Dec>),+> Decode<X, Dec> for ($($name,)+) {
+            #[inline]
             fn decode_body_with_type_id(decoder: &mut Dec, type_id: SborTypeId<X>) -> Result<Self, DecodeError> {
                 decoder.check_preloaded_type_id(type_id, Self::type_id())?;
                 decoder.read_and_check_size($n)?;

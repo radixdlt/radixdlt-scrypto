@@ -26,6 +26,7 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> f
 }
 
 impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Option<T> {
+    #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
         type_id: SborTypeId<X>,

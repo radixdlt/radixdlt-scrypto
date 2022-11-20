@@ -34,6 +34,7 @@ pub enum DecodeError {
 }
 
 pub trait Decoder<X: CustomTypeId>: Sized {
+    #[inline]
     fn decode_payload<T: Decode<X, Self>>(mut self) -> Result<T, DecodeError> {
         let value = self.decode()?;
         self.check_end()?;
@@ -55,6 +56,7 @@ pub trait Decoder<X: CustomTypeId>: Sized {
         Ok(decoded)
     }
 
+    #[inline]
     fn read_type_id(&mut self) -> Result<SborTypeId<X>, DecodeError> {
         let id = self.read_byte()?;
         SborTypeId::from_u8(id).ok_or(DecodeError::UnknownTypeId(id))
@@ -84,6 +86,7 @@ pub trait Decoder<X: CustomTypeId>: Sized {
         Ok(size)
     }
 
+    #[inline]
     fn check_preloaded_type_id(
         &self,
         type_id: SborTypeId<X>,
@@ -99,6 +102,7 @@ pub trait Decoder<X: CustomTypeId>: Sized {
         }
     }
 
+    #[inline]
     fn read_and_check_type_id(
         &mut self,
         expected: SborTypeId<X>,
@@ -107,6 +111,7 @@ pub trait Decoder<X: CustomTypeId>: Sized {
         self.check_preloaded_type_id(type_id, expected)
     }
 
+    #[inline]
     fn read_and_check_size(&mut self, expected: usize) -> Result<(), DecodeError> {
         let len = self.read_size()?;
         if len != expected {

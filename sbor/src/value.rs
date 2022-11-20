@@ -74,6 +74,7 @@ pub enum SborValue<X: CustomTypeId, CV> {
 }
 
 impl<X: CustomTypeId, E: Encoder<X>, CV: Encode<X, E>> Encode<X, E> for SborValue<X, CV> {
+    #[inline]
     fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             SborValue::Unit => encoder.write_type_id(SborTypeId::Unit),
@@ -97,6 +98,7 @@ impl<X: CustomTypeId, E: Encoder<X>, CV: Encode<X, E>> Encode<X, E> for SborValu
         }
     }
 
+    #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             SborValue::Unit => {
@@ -180,6 +182,7 @@ impl<X: CustomTypeId, E: Encoder<X>, CV: Encode<X, E>> Encode<X, E> for SborValu
 }
 
 impl<X: CustomTypeId, D: Decoder<X>, CV: Decode<X, D>> Decode<X, D> for SborValue<X, CV> {
+    #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
         type_id: SborTypeId<X>,

@@ -59,6 +59,7 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> f
 impl<'a, X: CustomTypeId, D: Decoder<X>, B: ?Sized + 'a + ToOwned<Owned = O>, O: Decode<X, D>>
     Decode<X, D> for Cow<'a, B>
 {
+    #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
         type_id: SborTypeId<X>,
@@ -68,6 +69,7 @@ impl<'a, X: CustomTypeId, D: Decoder<X>, B: ?Sized + 'a + ToOwned<Owned = O>, O:
 }
 
 impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Box<T> {
+    #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
         type_id: SborTypeId<X>,
@@ -77,6 +79,7 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Box<T> {
 }
 
 impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Rc<T> {
+    #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
         type_id: SborTypeId<X>,
@@ -86,6 +89,7 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Rc<T> {
 }
 
 impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>> Decode<X, D> for RefCell<T> {
+    #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
         type_id: SborTypeId<X>,

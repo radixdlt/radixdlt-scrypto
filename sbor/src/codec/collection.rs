@@ -102,6 +102,7 @@ impl<
 }
 
 impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>> Decode<X, D> for Vec<T> {
+    #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
         type_id: SborTypeId<X>,
@@ -131,6 +132,7 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>> Decode<X, D> f
 impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X> + Ord> Decode<X, D>
     for BTreeSet<T>
 {
+    #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
         type_id: SborTypeId<X>,
@@ -144,6 +146,7 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X> + Ord> Decode<X
 impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X> + Hash + Eq> Decode<X, D>
     for HashSet<T>
 {
+    #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
         type_id: SborTypeId<X>,
@@ -161,6 +164,7 @@ impl<
         V: Decode<X, D> + TypeId<X>,
     > Decode<X, D> for BTreeMap<K, V>
 {
+    #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
         type_id: SborTypeId<X>,
@@ -178,6 +182,7 @@ impl<
         V: Decode<X, D> + TypeId<X>,
     > Decode<X, D> for HashMap<K, V>
 {
+    #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
         type_id: SborTypeId<X>,

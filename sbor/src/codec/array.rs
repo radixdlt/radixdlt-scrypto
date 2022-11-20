@@ -7,6 +7,7 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> f
     fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_type_id(Self::type_id())
     }
+
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_type_id(T::type_id())?;
@@ -40,6 +41,7 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>, const N: usize
 impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>, const N: usize> Decode<X, D>
     for [T; N]
 {
+    #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
         type_id: SborTypeId<X>,
