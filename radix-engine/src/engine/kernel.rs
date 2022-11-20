@@ -430,10 +430,7 @@ where
     ) -> Result<X::Output, RuntimeError> {
         // Filter
         self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
-            AuthModule::on_before_frame_start(&actor, &executor, system_api).map_err(|e| match e {
-                InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            })
+            AuthModule::on_before_frame_start(&actor, &executor, system_api)
         })?;
 
         // New Call Frame pre-processing
