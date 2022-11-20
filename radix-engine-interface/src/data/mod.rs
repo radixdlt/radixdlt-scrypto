@@ -78,6 +78,7 @@ macro_rules! args {
         use ::sbor::Encoder;
         let mut buf = ::sbor::rust::vec::Vec::new();
         let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut buf);
+        encoder.write_payload_prefix().unwrap();
         encoder.write_type_id(radix_engine_interface::data::ScryptoSborTypeId::Struct).unwrap();
         // Hack: stringify to skip ownership move semantics
         encoder.write_size(radix_engine_interface::count!($(stringify!($args)),*)).unwrap();

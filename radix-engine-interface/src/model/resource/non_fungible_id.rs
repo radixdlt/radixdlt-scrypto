@@ -59,6 +59,7 @@ impl fmt::Display for ParseNonFungibleIdError {
 // Manually validating non-fungible id instead of using any codec to reduce code size.
 fn validate_id(slice: &[u8]) -> Result<(), DecodeError> {
     let mut decoder = ScryptoDecoder::new(slice);
+    decoder.read_and_check_payload_prefix()?;
     let type_id = decoder.read_type_id()?;
     match type_id {
         // TODO: add more allowed types as agreed
@@ -146,15 +147,15 @@ mod tests {
     #[test]
     fn test_non_fungible_id_string_rep() {
         assert_eq!(
-            NonFungibleId::from_str("2007023575").unwrap(),
+            NonFungibleId::from_str("5c2007023575").unwrap(),
             NonFungibleId::from_bytes(vec![53u8, 117u8]),
         );
         assert_eq!(
-            NonFungibleId::from_str("0905000000").unwrap(),
+            NonFungibleId::from_str("5c0905000000").unwrap(),
             NonFungibleId::from_u32(5)
         );
         assert_eq!(
-            NonFungibleId::from_str("0a0500000000000000").unwrap(),
+            NonFungibleId::from_str("5c0a0500000000000000").unwrap(),
             NonFungibleId::from_u64(5)
         );
     }

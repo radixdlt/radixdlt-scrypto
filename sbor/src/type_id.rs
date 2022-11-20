@@ -307,6 +307,11 @@ impl<X: CustomTypeId, K, V> TypeId<X> for HashMap<K, V> {
 }
 
 pub trait CustomTypeId: Copy + Debug + Clone + PartialEq + Eq {
+    /// This byte will prefix a full encoded payload.
+    /// It's the intention that each version of SBOR or the custom encoding
+    /// should be given its own prefix
+    const PAYLOAD_PREFIX: u8;
+
     fn as_u8(&self) -> u8;
 
     fn from_u8(id: u8) -> Option<Self>;

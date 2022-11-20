@@ -13,6 +13,7 @@ pub trait Encoder<X: CustomTypeId>: Sized {
     /// Consumes the Encoder and encodes the value as a full payload
     #[inline]
     fn encode_payload<T: Encode<X, Self> + ?Sized>(mut self, value: &T) -> Result<(), EncodeError> {
+        self.write_payload_prefix()?;
         self.encode(value)
     }
 
@@ -52,6 +53,11 @@ pub trait Encoder<X: CustomTypeId>: Sized {
         &mut self,
         value: &T,
     ) -> Result<(), EncodeError>;
+
+    #[inline]
+    fn write_payload_prefix(&mut self) -> Result<(), EncodeError> {
+        self.write_byte(X::PAYLOAD_PREFIX)
+    }
 
     #[inline]
     fn write_type_id(&mut self, ty: SborTypeId<X>) -> Result<(), EncodeError> {

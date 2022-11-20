@@ -57,6 +57,9 @@ pub fn basic_decode<T: BasicDecode>(buf: &[u8]) -> Result<T, DecodeError> {
 }
 
 impl CustomTypeId for NoCustomTypeId {
+    // 5b for (basic) [5b]or - (90 in decimal)
+    const PAYLOAD_PREFIX: u8 = 0x5b;
+
     fn as_u8(&self) -> u8 {
         panic!("No custom type")
     }
