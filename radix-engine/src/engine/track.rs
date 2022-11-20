@@ -614,36 +614,14 @@ impl<'s> FinalizingTrack<'s> {
         invoke_result: InvokeResult,
         fee_summary: &FeeSummary,
     ) -> TransactionResult {
-        let is_success = invoke_result.is_ok();
+        let (outcome, mut to_persist) =
+            FinalizingTrack::calculate_to_persist(invoke_result, self.loaded_substates);
 
-        let mut new_global_addresses = Vec::new();
-        let mut to_persist = HashMap::new();
-
-        // Commit/rollback application state changes
-        if is_success {
-            for (id, loaded) in self.loaded_substates {
-                let old_version = match &loaded.metastate {
-                    SubstateMetaState::New => Option::None,
-                    SubstateMetaState::Existing { old_version, .. } => Option::Some(*old_version),
-                };
-
-                to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
-            }
-
-            new_global_addresses = self.new_global_addresses;
+        let new_global_addresses = if outcome.is_success() {
+            self.new_global_addresses
         } else {
-            for (id, loaded) in self.loaded_substates {
-                match loaded.metastate {
-                    SubstateMetaState::Existing {
-                        old_version,
-                        state: ExistingMetaState::Updated(Some(force_persist)),
-                    } => {
-                        to_persist.insert(id, (force_persist, Option::Some(old_version)));
-                    }
-                    _ => {}
-                }
-            }
-        }
+            Vec::new()
+        };
 
         let mut actual_fee_payments: HashMap<VaultId, Decimal> = HashMap::new();
         let mut required_fee = fee_summary.burned + fee_summary.tipped;
@@ -651,7 +629,7 @@ impl<'s> FinalizingTrack<'s> {
             Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }).into();
         for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
             let amount = if contingent {
-                if is_success {
+                if outcome.is_success() {
                     Decimal::min(locked.amount(), required_fee)
                 } else {
                     Decimal::zero()
@@ -695,21 +673,84 @@ impl<'s> FinalizingTrack<'s> {
             self.vault_ops,
             actual_fee_payments,
             &mut to_persist,
-            invoke_result.is_ok(),
+            outcome.is_success(),
         );
 
         // TODO: update XRD supply or disable it
         // TODO: pay tips to the lead validator
 
         TransactionResult::Commit(CommitResult {
-            outcome: match invoke_result {
-                Ok(output) => TransactionOutcome::Success(output),
-                Err(error) => TransactionOutcome::Failure(error),
-            },
+            outcome,
             state_updates: Self::generate_diff(self.substate_store, to_persist),
             entity_changes: EntityChanges::new(new_global_addresses),
             resource_changes: execution_trace_receipt.resource_changes,
         })
+    }
+
+    fn calculate_to_persist(
+        invoke_result: InvokeResult,
+        loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
+    ) -> (
+        TransactionOutcome,
+        HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
+    ) {
+        let outcome = match invoke_result {
+            Ok(output) => TransactionOutcome::Success(output),
+            Err(error) => TransactionOutcome::Failure(error),
+        };
+
+        let mut to_persist_on_success = HashMap::new();
+        let mut to_persist_on_failure = HashMap::new();
+
+        for (id, loaded) in loaded_substates {
+            let (old_version_number, original_substate_if_force_locked) = match loaded.metastate {
+                SubstateMetaState::New => (None, None),
+                SubstateMetaState::Existing {
+                    old_version,
+                    state: ExistingMetaState::Updated(Some(original_substate)),
+                } => (Some(old_version), Some(original_substate)),
+                SubstateMetaState::Existing { old_version, .. } => (Some(old_version), None),
+            };
+
+            if let Some(original_substate) = original_substate_if_force_locked {
+                // Ensures that "force_locked" substates are loaded (such as vaults with fees locked)
+                // This means that we can remove fees from them later
+                to_persist_on_failure.insert(id.clone(), (original_substate, old_version_number));
+            }
+
+            if outcome.is_success() {
+                let substate_to_persist = loaded.substate.to_persisted();
+                to_persist_on_success.insert(id, (substate_to_persist, old_version_number));
+            }
+        }
+
+        if !outcome.is_success() {
+            return (outcome, to_persist_on_failure);
+        }
+
+        // We now validate that all substates we intend to commit are actually encodable (eg don't hit depth exceeded)
+        // If we don't do this, we can return a substate which can't be encoded when we come to commit
+        for (substate_id, (substate_to_persist, _)) in to_persist_on_success.iter() {
+            if let Err(encode_error) = scrypto_encode(substate_id) {
+                return (
+                    TransactionOutcome::Failure(RuntimeError::KernelError(
+                        KernelError::InvalidSborValueOnEncode(encode_error),
+                    )),
+                    to_persist_on_failure,
+                );
+            }
+            // This might be made more efficient if we can encode to bytes here and just return the bytes in the StateDiff
+            if let Err(encode_error) = scrypto_encode(substate_to_persist) {
+                return (
+                    TransactionOutcome::Failure(RuntimeError::KernelError(
+                        KernelError::InvalidSborValueOnEncode(encode_error),
+                    )),
+                    to_persist_on_failure,
+                );
+            }
+        }
+
+        return (outcome, to_persist_on_success);
     }
 
     pub fn generate_diff(

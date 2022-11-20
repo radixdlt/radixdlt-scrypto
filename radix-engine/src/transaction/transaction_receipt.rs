@@ -61,6 +61,13 @@ pub enum TransactionOutcome {
 }
 
 impl TransactionOutcome {
+    pub fn is_success(&self) -> bool {
+        match self {
+            TransactionOutcome::Success(_) => true,
+            TransactionOutcome::Failure(_) => false,
+        }
+    }
+
     pub fn expect_success(&self) -> &Vec<Vec<u8>> {
         match self {
             TransactionOutcome::Success(results) => results,
