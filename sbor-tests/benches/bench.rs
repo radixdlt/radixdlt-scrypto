@@ -37,7 +37,7 @@ fn decode_simple_bincode(b: &mut Bencher) {
 
 fn decode_simple_sbor(b: &mut Bencher) {
     let t = data::get_simple_dataset(SIMPLE_REAPT);
-    let bytes = basic_encode(&t);
+    let bytes = basic_encode(&t).unwrap();
     b.iter(|| basic_decode::<data::simple::SimpleStruct>(&bytes));
 }
 

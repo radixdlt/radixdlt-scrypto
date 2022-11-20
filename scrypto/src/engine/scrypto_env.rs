@@ -22,7 +22,7 @@ pub fn call_engine<V: ScryptoDecode>(input: RadixEngineInput) -> V {
     use crate::buffer::{scrypto_decode_from_buffer, *};
 
     unsafe {
-        let input_ptr = scrypto_encode_to_buffer(&input);
+        let input_ptr = scrypto_encode_to_buffer(&input).unwrap();
         let output_ptr = radix_engine(input_ptr);
         scrypto_decode_from_buffer::<V>(output_ptr).unwrap()
     }
@@ -34,7 +34,7 @@ pub fn call_engine_to_raw(input: RadixEngineInput) -> Vec<u8> {
     use crate::buffer::{scrypto_buffer_to_vec, *};
 
     unsafe {
-        let input_ptr = scrypto_encode_to_buffer(&input);
+        let input_ptr = scrypto_encode_to_buffer(&input).unwrap();
         let output_ptr = radix_engine(input_ptr);
         scrypto_buffer_to_vec(output_ptr)
     }

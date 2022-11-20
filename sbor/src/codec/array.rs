@@ -2,35 +2,38 @@ use crate::rust::mem::MaybeUninit;
 use crate::type_id::*;
 use crate::*;
 
-impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for [T] {
+impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> for [T] {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(T::type_id());
-        encoder.write_size(self.len());
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(T::type_id())?;
+        encoder.write_size(self.len())?;
         if T::type_id() == SborTypeId::U8 || T::type_id() == SborTypeId::I8 {
             let ptr = self.as_ptr().cast::<u8>();
             let slice = unsafe { sbor::rust::slice::from_raw_parts(ptr, self.len()) };
-            encoder.write_slice(slice);
+            encoder.write_slice(slice)?;
         } else {
             for v in self {
-                v.encode_body(encoder);
+                encoder.encode_body(v)?;
             }
         }
+        Ok(())
     }
 }
 
-impl<X: CustomTypeId, T: Encode<X> + TypeId<X>, const N: usize> Encode<X> for [T; N] {
+impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>, const N: usize> Encode<X, E>
+    for [T; N]
+{
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        self.as_slice().encode_body(encoder);
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.encode_body(self.as_slice())
     }
 }
 

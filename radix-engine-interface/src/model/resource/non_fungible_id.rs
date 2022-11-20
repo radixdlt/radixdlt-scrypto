@@ -17,17 +17,17 @@ pub struct NonFungibleId(pub Vec<u8>);
 impl NonFungibleId {
     /// Creates a non-fungible ID from an arbitrary byte array.
     pub fn from_bytes(v: Vec<u8>) -> Self {
-        Self(scrypto_encode(&v))
+        Self(scrypto_encode(&v).expect("Error encoding byte array"))
     }
 
     /// Creates a non-fungible ID from a `u32` number.
     pub fn from_u32(u: u32) -> Self {
-        Self(scrypto_encode(&u))
+        Self(scrypto_encode(&u).expect("Error encoding u32"))
     }
 
     /// Creates a non-fungible ID from a `u64` number.
     pub fn from_u64(u: u64) -> Self {
-        Self(scrypto_encode(&u))
+        Self(scrypto_encode(&u).expect("Error encoding u64"))
     }
 }
 

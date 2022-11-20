@@ -17,7 +17,8 @@ pub use custom_value::*;
 pub use indexed_value::*;
 use sbor::rust::vec::Vec;
 use sbor::{
-    Decode, DecodeError, Decoder, Encode, Encoder, SborTypeId, SborValue, TypeId, VecDecoder,
+    Decode, DecodeError, Decoder, Encode, EncodeError, Encoder, SborTypeId, SborValue, TypeId,
+    VecDecoder, VecEncoder,
 };
 pub use schema_matcher::*;
 pub use schema_path::*;
@@ -25,7 +26,7 @@ pub use value_formatter::*;
 
 pub const MAX_SCRYPTO_SBOR_DEPTH: u8 = 32;
 
-pub type ScryptoEncoder<'a> = Encoder<'a, ScryptoCustomTypeId>;
+pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomTypeId, MAX_SCRYPTO_SBOR_DEPTH>;
 pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomTypeId, MAX_SCRYPTO_SBOR_DEPTH>;
 pub type ScryptoSborTypeId = SborTypeId<ScryptoCustomTypeId>;
 pub type ScryptoValue = SborValue<ScryptoCustomTypeId, ScryptoCustomValue>;
@@ -35,20 +36,21 @@ pub type ScryptoValue = SborValue<ScryptoCustomTypeId, ScryptoCustomValue>;
 pub trait ScryptoTypeId: TypeId<ScryptoCustomTypeId> {}
 impl<T: TypeId<ScryptoCustomTypeId> + ?Sized> ScryptoTypeId for T {}
 
-pub trait ScryptoDecode: for<'de> Decode<ScryptoCustomTypeId, ScryptoDecoder<'de>> {}
-impl<T: for<'de> Decode<ScryptoCustomTypeId, ScryptoDecoder<'de>>> ScryptoDecode for T {}
+pub trait ScryptoDecode: for<'a> Decode<ScryptoCustomTypeId, ScryptoDecoder<'a>> {}
+impl<T: for<'a> Decode<ScryptoCustomTypeId, ScryptoDecoder<'a>>> ScryptoDecode for T {}
 
-pub trait ScryptoEncode: Encode<ScryptoCustomTypeId> {}
-impl<T: Encode<ScryptoCustomTypeId> + ?Sized> ScryptoEncode for T {}
+pub trait ScryptoEncode: for<'a> Encode<ScryptoCustomTypeId, ScryptoEncoder<'a>> {}
+impl<T: for<'a> Encode<ScryptoCustomTypeId, ScryptoEncoder<'a>> + ?Sized> ScryptoEncode for T {}
 
 /// Encodes a data structure into byte array.
-pub fn scrypto_encode<T: ScryptoEncode + ?Sized>(v: &T) -> Vec<u8> {
+pub fn scrypto_encode<T: ScryptoEncode + ?Sized>(value: &T) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);
-    let mut enc = ScryptoEncoder::new(&mut buf);
-    v.encode(&mut enc);
-    buf
+    let encoder = ScryptoEncoder::new(&mut buf);
+    encoder.encode_payload(value)?;
+    Ok(buf)
 }
 
+/// Decodes a data structure from a byte array.
 pub fn scrypto_decode<T: ScryptoDecode>(buf: &[u8]) -> Result<T, DecodeError> {
     ScryptoDecoder::new(buf).decode_payload()
 }
@@ -64,16 +66,15 @@ macro_rules! count {
 #[macro_export]
 macro_rules! args {
     ($($args: expr),*) => {{
-        use ::sbor::Encode;
+        use ::sbor::Encoder;
         let mut buf = ::sbor::rust::vec::Vec::new();
         let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut buf);
-        encoder.write_type_id(radix_engine_interface::data::ScryptoSborTypeId::Struct);
+        encoder.write_type_id(radix_engine_interface::data::ScryptoSborTypeId::Struct).unwrap();
         // Hack: stringify to skip ownership move semantics
-        encoder.write_size(radix_engine_interface::count!($(stringify!($args)),*));
+        encoder.write_size(radix_engine_interface::count!($(stringify!($args)),*)).unwrap();
         $(
             let arg = $args;
-            arg.encode_type_id(&mut encoder);
-            arg.encode_body(&mut encoder);
+            encoder.encode(&arg).unwrap();
         )*
         buf
     }};
@@ -102,6 +103,7 @@ mod tests {
                 a: 1,
                 b: "abc".to_owned(),
             })
+            .unwrap()
         )
     }
 

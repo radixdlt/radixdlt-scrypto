@@ -49,9 +49,9 @@ pub trait Decoder<X: CustomTypeId>: Sized {
         &mut self,
         type_id: SborTypeId<X>,
     ) -> Result<T, DecodeError> {
-        self.track_decode_depth_increase()?;
+        self.track_stack_depth_increase()?;
         let decoded = T::decode_body_with_type_id(self, type_id)?;
-        self.track_decode_depth_decrease()?;
+        self.track_stack_depth_decrease()?;
         Ok(decoded)
     }
 
@@ -121,9 +121,9 @@ pub trait Decoder<X: CustomTypeId>: Sized {
 
     fn check_end(&self) -> Result<(), DecodeError>;
 
-    fn track_decode_depth_increase(&mut self) -> Result<(), DecodeError>;
+    fn track_stack_depth_increase(&mut self) -> Result<(), DecodeError>;
 
-    fn track_decode_depth_decrease(&mut self) -> Result<(), DecodeError>;
+    fn track_stack_depth_decrease(&mut self) -> Result<(), DecodeError>;
 
     fn read_byte(&mut self) -> Result<u8, DecodeError>;
 
@@ -134,7 +134,7 @@ pub trait Decoder<X: CustomTypeId>: Sized {
 pub struct VecDecoder<'de, X: CustomTypeId, const MAX_DEPTH: u8> {
     input: &'de [u8],
     offset: usize,
-    decoder_stack_depth: u8,
+    stack_depth: u8,
     phantom: PhantomData<X>,
 }
 
@@ -143,7 +143,7 @@ impl<'de, X: CustomTypeId, const MAX_DEPTH: u8> VecDecoder<'de, X, MAX_DEPTH> {
         Self {
             input,
             offset: 0,
-            decoder_stack_depth: 0,
+            stack_depth: 0,
             phantom: PhantomData,
         }
     }
@@ -194,17 +194,17 @@ impl<'de, X: CustomTypeId, const MAX_DEPTH: u8> Decoder<X> for VecDecoder<'de, X
     }
 
     #[inline]
-    fn track_decode_depth_increase(&mut self) -> Result<(), DecodeError> {
-        self.decoder_stack_depth += 1;
-        if self.decoder_stack_depth > MAX_DEPTH {
+    fn track_stack_depth_increase(&mut self) -> Result<(), DecodeError> {
+        self.stack_depth += 1;
+        if self.stack_depth > MAX_DEPTH {
             return Err(DecodeError::MaxDepthExceeded(MAX_DEPTH));
         }
         Ok(())
     }
 
     #[inline]
-    fn track_decode_depth_decrease(&mut self) -> Result<(), DecodeError> {
-        self.decoder_stack_depth -= 1;
+    fn track_stack_depth_decrease(&mut self) -> Result<(), DecodeError> {
+        self.stack_depth -= 1;
         Ok(())
     }
 }
@@ -212,7 +212,6 @@ impl<'de, X: CustomTypeId, const MAX_DEPTH: u8> Decoder<X> for VecDecoder<'de, X
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::encode::Encode;
     use crate::rust::borrow::ToOwned;
     use crate::rust::boxed::Box;
     use crate::rust::cell::RefCell;
@@ -225,8 +224,8 @@ mod tests {
     fn encode_decode_size(size: usize) -> Result<(), DecodeError> {
         // Encode
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::<NoCustomTypeId>::new(&mut bytes);
-        enc.write_size(size);
+        let mut enc = BasicEncoder::new(&mut bytes);
+        enc.write_size(size).unwrap();
 
         let mut dec = BasicDecoder::new(&bytes);
         dec.read_and_check_size(size)?;
@@ -366,11 +365,11 @@ mod tests {
 
         // Encode
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::<NoCustomTypeId>::new(&mut bytes);
-        value1.encode(&mut enc);
+        let mut encoder = BasicEncoder::new(&mut bytes);
+        encoder.encode(&value1).unwrap();
 
-        let mut dec = BasicDecoder::new(&bytes);
-        let value2 = dec.decode::<[NFA; 2]>().unwrap();
+        let mut decoder = BasicDecoder::new(&bytes);
+        let value2 = decoder.decode::<[NFA; 2]>().unwrap();
         assert_eq!(value1, value2);
     }
 }

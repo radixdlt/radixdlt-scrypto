@@ -17,6 +17,8 @@ pub mod decode;
 pub mod decoder;
 /// SBOR encode trait.
 pub mod encode;
+/// SBOR encoding.
+pub mod encoder;
 /// SBOR paths.
 pub mod path;
 /// A facade of Rust types.
@@ -30,7 +32,8 @@ pub use basic::*;
 pub use constants::*;
 pub use decode::Decode;
 pub use decoder::{DecodeError, Decoder, VecDecoder};
-pub use encode::{Encode, Encoder};
+pub use encode::Encode;
+pub use encoder::{EncodeError, Encoder, VecEncoder};
 pub use path::{SborPath, SborPathBuf};
 pub use type_id::*;
 pub use value::*;

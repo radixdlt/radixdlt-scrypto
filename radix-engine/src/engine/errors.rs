@@ -85,6 +85,7 @@ pub enum KernelError {
     // SBOR decoding
     InvalidScryptoValue(ScryptoValueDecodeError),
     InvalidSborValue(DecodeError),
+    InvalidSborValueOnEncode(EncodeError),
 
     // RENode
     StoredNodeRemoved(RENodeId),

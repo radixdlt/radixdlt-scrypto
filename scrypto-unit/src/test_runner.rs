@@ -621,15 +621,15 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let mut entries = HashMap::new();
         entries.insert(
             NonFungibleId::from_u32(1),
-            (scrypto_encode(&()), scrypto_encode(&())),
+            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
         entries.insert(
             NonFungibleId::from_u32(2),
-            (scrypto_encode(&()), scrypto_encode(&())),
+            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
         entries.insert(
             NonFungibleId::from_u32(3),
-            (scrypto_encode(&()), scrypto_encode(&())),
+            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

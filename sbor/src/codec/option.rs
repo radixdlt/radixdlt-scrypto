@@ -2,24 +2,26 @@ use crate::constants::*;
 use crate::type_id::*;
 use crate::*;
 
-impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for Option<T> {
+impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> for Option<T> {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
+
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             Some(v) => {
-                encoder.write_discriminator(OPTION_VARIANT_SOME);
-                encoder.write_size(1);
-                v.encode(encoder);
+                encoder.write_discriminator(OPTION_VARIANT_SOME)?;
+                encoder.write_size(1)?;
+                encoder.encode(v)?;
             }
             None => {
-                encoder.write_discriminator(OPTION_VARIANT_NONE);
-                encoder.write_size(0);
+                encoder.write_discriminator(OPTION_VARIANT_NONE)?;
+                encoder.write_size(0)?;
             }
         }
+        Ok(())
     }
 }
 

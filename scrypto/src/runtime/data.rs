@@ -67,13 +67,13 @@ impl<V: ScryptoEncode> DataRefMut<V> {
 impl<V: ScryptoEncode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
         let mut syscalls = ScryptoEnv;
-        let bytes = scrypto_encode(&self.value);
+        let bytes = scrypto_encode(&self.value).unwrap();
         let substate = match &self.offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
-                scrypto_encode(&KeyValueStoreEntrySubstate(Some(bytes)))
+                scrypto_encode(&KeyValueStoreEntrySubstate(Some(bytes))).unwrap()
             }
             SubstateOffset::Component(ComponentOffset::State) => {
-                scrypto_encode(&ComponentStateSubstate { raw: bytes })
+                scrypto_encode(&ComponentStateSubstate { raw: bytes }).unwrap()
             }
             s @ _ => panic!("Unsupported substate: {:?}", s),
         };

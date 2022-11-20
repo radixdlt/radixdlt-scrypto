@@ -119,6 +119,28 @@ pub fn build_decode_generics(
     ))
 }
 
+pub fn build_encode_generics(
+    original_generics: &Generics,
+    custom_type_id: Option<String>,
+) -> syn::Result<(Generics, TypeGenerics, Option<&WhereClause>, Path, Path)> {
+    let (mut impl_generics, ty_generics, where_clause, custom_type_id_generic) =
+        build_generics(original_generics, custom_type_id)?;
+
+    let encoder_generic: Path = parse_quote! { ENC };
+
+    impl_generics
+        .params
+        .push(parse_quote!(#encoder_generic: ::sbor::encoder::Encoder<#custom_type_id_generic>));
+
+    Ok((
+        impl_generics,
+        ty_generics,
+        where_clause,
+        custom_type_id_generic,
+        encoder_generic,
+    ))
+}
+
 pub fn build_generics(
     original_generics: &Generics,
     custom_type_id: Option<String>,

@@ -5,83 +5,99 @@ use crate::rust::vec::Vec;
 use crate::type_id::*;
 use crate::*;
 
-impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for Vec<T> {
+impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> for Vec<T> {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
+
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        self.as_slice().encode_body(encoder);
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.encode_body(self.as_slice())?;
+        Ok(())
     }
 }
 
-impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for BTreeSet<T> {
+impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> for BTreeSet<T> {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
+
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(T::type_id());
-        encoder.write_size(self.len());
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(T::type_id())?;
+        encoder.write_size(self.len())?;
         for v in self {
-            v.encode_body(encoder);
+            encoder.encode_body(v)?;
         }
+        Ok(())
     }
 }
 
-impl<X: CustomTypeId, T: Encode<X> + TypeId<X> + Ord + Hash> Encode<X> for HashSet<T> {
-    #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
-    }
-    #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(T::type_id());
-        encoder.write_size(self.len());
-        for v in self {
-            v.encode_body(encoder);
-        }
-    }
-}
-
-impl<X: CustomTypeId, K: Encode<X> + TypeId<X>, V: Encode<X> + TypeId<X>> Encode<X>
-    for BTreeMap<K, V>
+impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X> + Ord + Hash> Encode<X, E>
+    for HashSet<T>
 {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
+
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(<(K, V)>::type_id());
-        encoder.write_size(self.len());
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(T::type_id())?;
+        encoder.write_size(self.len())?;
+        for v in self {
+            encoder.encode_body(v)?;
+        }
+        Ok(())
+    }
+}
+
+impl<X: CustomTypeId, E: Encoder<X>, K: Encode<X, E> + TypeId<X>, V: Encode<X, E> + TypeId<X>>
+    Encode<X, E> for BTreeMap<K, V>
+{
+    #[inline]
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(<(K, V)>::type_id())?;
+        encoder.write_size(self.len())?;
         for (k, v) in self {
-            encoder.write_size(2);
-            k.encode(encoder);
-            v.encode(encoder);
+            encoder.write_size(2)?;
+            encoder.encode(k)?;
+            encoder.encode(v)?;
         }
+        Ok(())
     }
 }
 
-impl<X: CustomTypeId, K: Encode<X> + TypeId<X> + Ord + Hash, V: Encode<X> + TypeId<X>> Encode<X>
-    for HashMap<K, V>
+impl<
+        X: CustomTypeId,
+        E: Encoder<X>,
+        K: Encode<X, E> + TypeId<X> + Ord + Hash,
+        V: Encode<X, E> + TypeId<X>,
+    > Encode<X, E> for HashMap<K, V>
 {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
+
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(<(K, V)>::type_id());
-        encoder.write_size(self.len());
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(<(K, V)>::type_id())?;
+        encoder.write_size(self.len())?;
         let keys: BTreeSet<&K> = self.keys().collect();
         for key in keys {
-            encoder.write_size(2);
-            key.encode(encoder);
-            self.get(key).unwrap().encode(encoder);
+            encoder.write_size(2)?;
+            encoder.encode(key)?;
+            encoder.encode(self.get(key).unwrap())?;
         }
+        Ok(())
     }
 }
 

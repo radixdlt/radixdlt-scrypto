@@ -66,35 +66,35 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                             Ok(decoded)
                         }
 
-                        fn immutable_data(&self) -> ::sbor::rust::vec::Vec<u8> {
+                        fn immutable_data(&self) -> Result<::sbor::rust::vec::Vec<u8>, ::sbor::EncodeError> {
                             use ::sbor::{type_id::*, *};
                             use ::scrypto::data::*;
 
                             let mut bytes = Vec::with_capacity(512);
                             let mut encoder = ScryptoEncoder::new(&mut bytes);
-                            encoder.write_type_id(ScryptoSborTypeId::Struct);
-                            encoder.write_size(#im_n);
+                            encoder.write_type_id(ScryptoSborTypeId::Struct)?;
+                            encoder.write_size(#im_n)?;
                             #(
-                                self.#im_ids2.encode(&mut encoder);
+                                encoder.encode(&self.#im_ids2)?;
                             )*
 
-                            bytes
+                            Ok(bytes)
                         }
 
-                        fn mutable_data(&self) -> ::sbor::rust::vec::Vec<u8> {
+                        fn mutable_data(&self) -> Result<::sbor::rust::vec::Vec<u8>, ::sbor::EncodeError> {
                             use ::sbor::{type_id::*, *};
                             use ::sbor::rust::vec::Vec;
                             use ::scrypto::data::*;
 
                             let mut bytes = Vec::with_capacity(512);
                             let mut encoder = ScryptoEncoder::new(&mut bytes);
-                            encoder.write_type_id(ScryptoSborTypeId::Struct);
-                            encoder.write_size(#m_n);
+                            encoder.write_type_id(ScryptoSborTypeId::Struct)?;
+                            encoder.write_size(#m_n)?;
                             #(
-                                self.#m_ids2.encode(&mut encoder);
+                                encoder.encode(&self.#m_ids2)?;
                             )*
 
-                            bytes
+                            Ok(bytes)
                         }
 
                         fn immutable_data_schema() -> ::scrypto::abi::Type {
@@ -193,26 +193,26 @@ mod tests {
                         decoder_m.check_end()?;
                         Ok(decoded)
                     }
-                    fn immutable_data(&self) -> ::sbor::rust::vec::Vec<u8> {
+                    fn immutable_data(&self) -> Result<::sbor::rust::vec::Vec<u8>, ::sbor::EncodeError> {
                         use ::sbor::{type_id::*, *};
                         use ::scrypto::data::*;
                         let mut bytes = Vec::with_capacity(512);
                         let mut encoder = ScryptoEncoder::new(&mut bytes);
-                        encoder.write_type_id(ScryptoSborTypeId::Struct);
-                        encoder.write_size(1);
-                        self.field_1.encode(&mut encoder);
-                        bytes
+                        encoder.write_type_id(ScryptoSborTypeId::Struct)?;
+                        encoder.write_size(1)?;
+                        encoder.encode(&self.field_1)?;
+                        Ok(bytes)
                     }
-                    fn mutable_data(&self) -> ::sbor::rust::vec::Vec<u8> {
+                    fn mutable_data(&self) -> Result<::sbor::rust::vec::Vec<u8>, ::sbor::EncodeError> {
                         use ::sbor::{type_id::*, *};
                         use ::sbor::rust::vec::Vec;
                         use ::scrypto::data::*;
                         let mut bytes = Vec::with_capacity(512);
                         let mut encoder = ScryptoEncoder::new(&mut bytes);
-                        encoder.write_type_id(ScryptoSborTypeId::Struct);
-                        encoder.write_size(1);
-                        self.field_2.encode(&mut encoder);
-                        bytes
+                        encoder.write_type_id(ScryptoSborTypeId::Struct)?;
+                        encoder.write_size(1)?;
+                        encoder.encode(&self.field_2)?;
+                        Ok(bytes)
                     }
                     fn immutable_data_schema() -> ::scrypto::abi::Type {
                         use ::sbor::rust::borrow::ToOwned;

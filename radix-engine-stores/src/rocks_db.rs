@@ -27,11 +27,13 @@ impl RadixEngineDB {
         let start = &scrypto_encode(&SubstateId(
             RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal([0; 26]))),
             SubstateOffset::Global(GlobalOffset::Global),
-        ));
+        ))
+        .unwrap();
         let end = &scrypto_encode(&SubstateId(
             RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal([255; 26]))),
             SubstateOffset::Global(GlobalOffset::Global),
-        ));
+        ))
+        .unwrap();
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
             .into_iter()
@@ -57,11 +59,13 @@ impl RadixEngineDB {
         let start = &scrypto_encode(&SubstateId(
             RENodeId::Global(GlobalAddress::Component(start)),
             SubstateOffset::Global(GlobalOffset::Global),
-        ));
+        ))
+        .unwrap();
         let end = &scrypto_encode(&SubstateId(
             RENodeId::Global(GlobalAddress::Component(end)),
             SubstateOffset::Global(GlobalOffset::Global),
-        ));
+        ))
+        .unwrap();
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
             .into_iter()
@@ -96,11 +100,13 @@ impl RadixEngineDB {
         let start = &scrypto_encode(&SubstateId(
             RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal([0; 26]))),
             SubstateOffset::Global(GlobalOffset::Global),
-        ));
+        ))
+        .unwrap();
         let end = &scrypto_encode(&SubstateId(
             RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal([255; 26]))),
             SubstateOffset::Global(GlobalOffset::Global),
-        ));
+        ))
+        .unwrap();
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
             .into_iter()
@@ -137,11 +143,18 @@ impl RadixEngineDB {
 
     fn read(&self, substate_id: &SubstateId) -> Option<Vec<u8>> {
         // TODO: Use get_pinned
-        self.db.get(scrypto_encode(substate_id)).unwrap()
+        self.db
+            .get(scrypto_encode(substate_id).expect("Could not encode substate id"))
+            .unwrap()
     }
 
     fn write(&self, substate_id: SubstateId, value: Vec<u8>) {
-        self.db.put(scrypto_encode(&substate_id), value).unwrap();
+        self.db
+            .put(
+                scrypto_encode(&substate_id).expect("Could not encode substate id"),
+                value,
+            )
+            .unwrap();
     }
 }
 
@@ -150,11 +163,14 @@ impl QueryableSubstateStore for RadixEngineDB {
         &self,
         kv_store_id: &KeyValueStoreId,
     ) -> HashMap<Vec<u8>, PersistedSubstate> {
-        let unit = scrypto_encode(&());
+        let unit = scrypto_encode(&()).unwrap();
         let id = scrypto_encode(&SubstateId(
             RENodeId::KeyValueStore(kv_store_id.clone()),
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&unit))),
-        ));
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                scrypto_encode(&unit).unwrap(),
+            )),
+        ))
+        .unwrap();
 
         let mut iter = self
             .db
@@ -184,12 +200,16 @@ impl QueryableSubstateStore for RadixEngineDB {
 
 impl ReadableSubstateStore for RadixEngineDB {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        self.read(substate_id).map(|b| scrypto_decode(&b).unwrap())
+        self.read(substate_id)
+            .map(|b| scrypto_decode(&b).expect("Could not decode persisted substate"))
     }
 }
 
 impl WriteableSubstateStore for RadixEngineDB {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
-        self.write(substate_id, scrypto_encode(&substate));
+        self.write(
+            substate_id,
+            scrypto_encode(&substate).expect("Could not encode substate for persistence"),
+        );
     }
 }

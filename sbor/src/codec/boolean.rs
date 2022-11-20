@@ -1,14 +1,14 @@
 use crate::type_id::*;
 use crate::*;
 
-impl<X: CustomTypeId> Encode<X> for bool {
+impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for bool {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        encoder.write_byte(if *self { 1u8 } else { 0u8 });
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_byte(if *self { 1u8 } else { 0u8 })
     }
 }
 

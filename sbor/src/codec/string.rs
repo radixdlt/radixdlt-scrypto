@@ -2,38 +2,43 @@ use crate::rust::string::String;
 use crate::type_id::*;
 use crate::*;
 
-impl<X: CustomTypeId> Encode<X> for str {
+impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for str {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
+
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        encoder.write_size(self.len());
-        encoder.write_slice(self.as_bytes());
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_size(self.len())?;
+        encoder.write_slice(self.as_bytes())?;
+        Ok(())
     }
 }
 
-impl<X: CustomTypeId> Encode<X> for &str {
+impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for &str {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
+
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        encoder.write_size(self.len());
-        encoder.write_slice(self.as_bytes());
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_size(self.len())?;
+        encoder.write_slice(self.as_bytes())?;
+        Ok(())
     }
 }
 
-impl<X: CustomTypeId> Encode<X> for String {
+impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for String {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
+
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        self.as_str().encode_body(encoder);
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.encode_body(self.as_str())
     }
 }
 

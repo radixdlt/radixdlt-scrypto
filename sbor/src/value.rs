@@ -1,6 +1,7 @@
 use crate::decode::*;
 use crate::decoder::*;
 use crate::encode::*;
+use crate::encoder::*;
 use crate::path::SborPathBuf;
 use crate::rust::fmt::Debug;
 use crate::rust::string::String;
@@ -72,8 +73,8 @@ pub enum SborValue<X: CustomTypeId, CV> {
     },
 }
 
-impl<X: CustomTypeId, CV: Encode<X>> Encode<X> for SborValue<X, CV> {
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
+impl<X: CustomTypeId, E: Encoder<X>, CV: Encode<X, E>> Encode<X, E> for SborValue<X, CV> {
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             SborValue::Unit => encoder.write_type_id(SborTypeId::Unit),
             SborValue::Bool { .. } => encoder.write_type_id(SborTypeId::Bool),
@@ -96,84 +97,85 @@ impl<X: CustomTypeId, CV: Encode<X>> Encode<X> for SborValue<X, CV> {
         }
     }
 
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             SborValue::Unit => {
-                ().encode_body(encoder);
+                encoder.encode_body(&())?;
             }
             SborValue::Bool { value } => {
-                value.encode_body(encoder);
+                encoder.encode_body(value)?;
             }
             SborValue::I8 { value } => {
-                value.encode_body(encoder);
+                encoder.encode_body(value)?;
             }
             SborValue::I16 { value } => {
-                value.encode_body(encoder);
+                encoder.encode_body(value)?;
             }
             SborValue::I32 { value } => {
-                value.encode_body(encoder);
+                encoder.encode_body(value)?;
             }
             SborValue::I64 { value } => {
-                value.encode_body(encoder);
+                encoder.encode_body(value)?;
             }
             SborValue::I128 { value } => {
-                value.encode_body(encoder);
+                encoder.encode_body(value)?;
             }
             SborValue::U8 { value } => {
-                value.encode_body(encoder);
+                encoder.encode_body(value)?;
             }
             SborValue::U16 { value } => {
-                value.encode_body(encoder);
+                encoder.encode_body(value)?;
             }
             SborValue::U32 { value } => {
-                value.encode_body(encoder);
+                encoder.encode_body(value)?;
             }
             SborValue::U64 { value } => {
-                value.encode_body(encoder);
+                encoder.encode_body(value)?;
             }
             SborValue::U128 { value } => {
-                value.encode_body(encoder);
+                encoder.encode_body(value)?;
             }
             SborValue::String { value } => {
-                value.encode_body(encoder);
+                encoder.encode_body(value)?;
             }
             SborValue::Struct { fields } => {
-                encoder.write_size(fields.len());
+                encoder.write_size(fields.len())?;
                 for field in fields {
-                    field.encode(encoder);
+                    encoder.encode(field)?;
                 }
             }
             SborValue::Enum {
                 discriminator,
                 fields,
             } => {
-                encoder.write_discriminator(discriminator);
-                encoder.write_size(fields.len());
+                encoder.write_discriminator(discriminator)?;
+                encoder.write_size(fields.len())?;
                 for field in fields {
-                    field.encode(encoder);
+                    encoder.encode(field)?;
                 }
             }
             SborValue::Array {
                 element_type_id,
                 elements,
             } => {
-                encoder.write_type_id(element_type_id.clone());
-                encoder.write_size(elements.len());
+                encoder.write_type_id(*element_type_id)?;
+                encoder.write_size(elements.len())?;
                 for item in elements {
-                    item.encode_body(encoder);
+                    encoder.encode_body(item)?;
                 }
             }
             SborValue::Tuple { elements } => {
-                encoder.write_size(elements.len());
+                encoder.write_size(elements.len())?;
                 for field in elements {
-                    field.encode(encoder);
+                    encoder.encode(field)?;
                 }
             }
             // custom
             SborValue::Custom { value } => {
-                value.encode_body(encoder);
+                encoder.encode_body(value)?;
             }
         }
+        Ok(())
     }
 }
 
@@ -433,7 +435,7 @@ mod tests {
             y: map1,
             z: map2,
         };
-        let bytes = basic_encode(&data);
+        let bytes = basic_encode(&data).unwrap();
         let value = basic_decode(&bytes).unwrap();
 
         assert_eq!(
@@ -530,84 +532,87 @@ mod tests {
         );
 
         let mut bytes2 = Vec::new();
-        let mut enc = Encoder::new(&mut bytes2);
-        value.encode(&mut enc);
+        let mut encoder = BasicEncoder::new(&mut bytes2);
+        encoder.encode(&value).unwrap();
         assert_eq!(bytes2, bytes);
     }
 
     #[test]
     pub fn test_max_depth_array_decode_behaviour() {
-        let allowable_payload = encode_array_of_depth(DEFAULT_BASIC_MAX_DEPTH);
+        let allowable_payload = encode_array_of_depth(DEFAULT_BASIC_MAX_DEPTH).unwrap();
         let allowable_result = basic_decode::<BasicSborValue>(&allowable_payload);
         assert!(allowable_result.is_ok());
 
-        let forbidden_payload = encode_array_of_depth(DEFAULT_BASIC_MAX_DEPTH + 1);
+        let forbidden_payload = encode_array_of_depth(DEFAULT_BASIC_MAX_DEPTH + 1).unwrap();
         let forbidden_result = basic_decode::<BasicSborValue>(&forbidden_payload);
         assert!(forbidden_result.is_err());
     }
 
     #[test]
     pub fn test_max_depth_struct_decode_behaviour() {
-        let allowable_payload = encode_struct_of_depth(DEFAULT_BASIC_MAX_DEPTH);
+        let allowable_payload = encode_struct_of_depth(DEFAULT_BASIC_MAX_DEPTH).unwrap();
         let allowable_result = basic_decode::<BasicSborValue>(&allowable_payload);
         assert!(allowable_result.is_ok());
 
-        let forbidden_payload = encode_struct_of_depth(DEFAULT_BASIC_MAX_DEPTH + 1);
+        let forbidden_payload = encode_struct_of_depth(DEFAULT_BASIC_MAX_DEPTH + 1).unwrap();
         let forbidden_result = basic_decode::<BasicSborValue>(&forbidden_payload);
         assert!(forbidden_result.is_err());
     }
 
     #[test]
     pub fn test_max_depth_tuple_decode_behaviour() {
-        let allowable_payload = encode_tuple_of_depth(DEFAULT_BASIC_MAX_DEPTH);
+        let allowable_payload = encode_tuple_of_depth(DEFAULT_BASIC_MAX_DEPTH).unwrap();
         let allowable_result = basic_decode::<BasicSborValue>(&allowable_payload);
         assert!(allowable_result.is_ok());
 
-        let forbidden_payload = encode_tuple_of_depth(DEFAULT_BASIC_MAX_DEPTH + 1);
+        let forbidden_payload = encode_tuple_of_depth(DEFAULT_BASIC_MAX_DEPTH + 1).unwrap();
         let forbidden_result = basic_decode::<BasicSborValue>(&forbidden_payload);
         assert!(forbidden_result.is_err());
     }
 
-    pub fn encode_array_of_depth(depth: u8) -> Vec<u8> {
+    pub fn encode_array_of_depth(depth: u8) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
         let mut encoder = BasicEncoder::new(&mut buf);
-        encoder.write_type_id(SborTypeId::Array);
+        encoder.write_type_id(SborTypeId::Array)?;
         // Encodes depth - 1 array bodies
         for _ in 1..depth {
-            encoder.write_type_id(SborTypeId::Array); // Child type
-            encoder.write_size(1);
+            encoder.write_type_id(SborTypeId::Array)?; // Child type
+            encoder.write_size(1)?;
         }
         // And finishes off encoding a single layer
-        encoder.write_type_id(SborTypeId::Array); // Child type
-        encoder.write_size(0);
-        buf
+        encoder.write_type_id(SborTypeId::Array)?; // Child type
+        encoder.write_size(0)?;
+
+        Ok(buf)
     }
 
-    pub fn encode_struct_of_depth(depth: u8) -> Vec<u8> {
+    pub fn encode_struct_of_depth(depth: u8) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
         let mut encoder = BasicEncoder::new(&mut buf);
         // Encodes depth - 1 structs containing 1 child
         for _ in 1..depth {
-            encoder.write_type_id(SborTypeId::Struct);
-            encoder.write_size(1);
+            encoder.write_type_id(SborTypeId::Struct)?;
+            encoder.write_size(1)?;
         }
         // And finishes off encoding a single layer with 0 children
-        encoder.write_type_id(SborTypeId::Struct);
-        encoder.write_size(0);
-        buf
+        encoder.write_type_id(SborTypeId::Struct)?;
+        encoder.write_size(0)?;
+
+        Ok(buf)
     }
 
-    pub fn encode_tuple_of_depth(depth: u8) -> Vec<u8> {
+    pub fn encode_tuple_of_depth(depth: u8) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
         let mut encoder = BasicEncoder::new(&mut buf);
         // Encodes depth - 1 structs containing 1 child
         for _ in 1..depth {
-            encoder.write_type_id(SborTypeId::Tuple);
-            encoder.write_size(1);
+            encoder.write_type_id(SborTypeId::Tuple)?;
+            encoder.write_size(1)?;
         }
         // And finishes off encoding a single layer with 0 children
-        encoder.write_type_id(SborTypeId::Tuple);
-        encoder.write_size(0);
-        buf
+        encoder.write_type_id(SborTypeId::Tuple)?;
+        encoder.write_size(0)?;
+
+        Ok(buf)
     }
 }

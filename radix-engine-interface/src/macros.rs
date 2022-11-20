@@ -77,17 +77,17 @@ macro_rules! scrypto_type {
             }
         }
 
-        impl sbor::Encode<crate::data::ScryptoCustomTypeId> for $t {
+        impl<E: sbor::Encoder<crate::data::ScryptoCustomTypeId>>
+            sbor::Encode<crate::data::ScryptoCustomTypeId, E> for $t
+        {
             #[inline]
-            fn encode_type_id(
-                &self,
-                encoder: &mut sbor::Encoder<crate::data::ScryptoCustomTypeId>,
-            ) {
-                encoder.write_type_id(Self::type_id());
+            fn encode_type_id(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                encoder.write_type_id(Self::type_id())
             }
+
             #[inline]
-            fn encode_body(&self, encoder: &mut sbor::Encoder<crate::data::ScryptoCustomTypeId>) {
-                encoder.write_slice(&self.to_vec());
+            fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                encoder.write_slice(&self.to_vec())
             }
         }
 
@@ -120,19 +120,19 @@ macro_rules! scrypto_type {
             }
         }
 
-        impl sbor::Encode<crate::data::ScryptoCustomTypeId> for $t {
+        impl<E: sbor::Encoder<crate::data::ScryptoCustomTypeId>>
+            sbor::Encode<crate::data::ScryptoCustomTypeId, E> for $t
+        {
             #[inline]
-            fn encode_type_id(
-                &self,
-                encoder: &mut sbor::Encoder<crate::data::ScryptoCustomTypeId>,
-            ) {
-                encoder.write_type_id(Self::type_id());
+            fn encode_type_id(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                encoder.write_type_id(Self::type_id())
             }
+
             #[inline]
-            fn encode_body(&self, encoder: &mut sbor::Encoder<crate::data::ScryptoCustomTypeId>) {
+            fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
                 let bytes = self.to_vec();
-                encoder.write_size(bytes.len());
-                encoder.write_slice(&bytes);
+                encoder.write_size(bytes.len())?;
+                encoder.write_slice(&bytes)
             }
         }
 

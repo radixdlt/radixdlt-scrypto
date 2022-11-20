@@ -32,7 +32,7 @@ use crate::validation::*;
 macro_rules! args_from_value_vec {
     ($args: expr) => {{
         let input_struct = ::sbor::SborValue::Struct { fields: $args };
-        ::radix_engine_interface::data::scrypto_encode(&input_struct)
+        ::radix_engine_interface::data::scrypto_encode(&input_struct).unwrap()
     }};
 }
 
@@ -66,6 +66,7 @@ pub enum GeneratorError {
     InvalidEcdsaSecp256k1Signature(String),
     InvalidEddsaEd25519PublicKey(String),
     InvalidEddsaEd25519Signature(String),
+    SborEncodeError(EncodeError),
     BlobNotFound(String),
     NameResolverError(NameResolverError),
     IdValidationError(IdValidationError),
@@ -486,7 +487,8 @@ pub fn generate_instruction(
                 },
                 args: scrypto_encode(&ResourceManagerBucketBurnInvocation {
                     bucket: Bucket(bucket_id),
-                }),
+                })
+                .unwrap(),
             }
         }
         ast::Instruction::MintFungible {
@@ -532,7 +534,7 @@ fn generate_args(
     for v in values {
         let value = generate_value(v, None, resolver, bech32_decoder, blobs)?;
 
-        result.push(scrypto_encode(&value));
+        result.push(scrypto_encode(&value).map_err(|err| GeneratorError::SborEncodeError(err))?);
     }
     Ok(result)
 }

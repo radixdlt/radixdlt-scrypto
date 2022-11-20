@@ -5,12 +5,13 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::{
-    scrypto_decode, scrypto_encode, IndexedScryptoValue, ValueFormattingContext,
+    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoValueDecodeError,
+    ValueFormattingContext,
 };
 use radix_engine_interface::model::*;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
-use sbor::SborValue;
+use sbor::{EncodeError, SborValue};
 use utils::ContextualDisplay;
 
 use crate::errors::*;
@@ -21,8 +22,22 @@ use crate::validation::*;
 pub enum DecompileError {
     InvalidAddress(AddressError),
     InvalidArguments,
+    InvalidScryptoValue(ScryptoValueDecodeError),
+    InvalidSborValue(EncodeError),
     IdAllocationError(IdAllocationError),
     FormattingError(fmt::Error),
+}
+
+impl From<ScryptoValueDecodeError> for DecompileError {
+    fn from(error: ScryptoValueDecodeError) -> Self {
+        Self::InvalidScryptoValue(error)
+    }
+}
+
+impl From<EncodeError> for DecompileError {
+    fn from(error: EncodeError) -> Self {
+        Self::InvalidSborValue(error)
+    }
 }
 
 impl From<fmt::Error> for DecompileError {
@@ -477,7 +492,7 @@ pub fn format_args<F: fmt::Write>(
         IndexedScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
     if let SborValue::Struct { fields } = value.dom {
         for field in fields {
-            let bytes = scrypto_encode(&field);
+            let bytes = scrypto_encode(&field)?;
             let arg = IndexedScryptoValue::from_slice(&bytes)
                 .map_err(|_| DecompileError::InvalidArguments)?;
             f.write_char(' ')?;
@@ -559,7 +574,8 @@ mod tests {
                     resource_type: ResourceType::NonFungible,
                     metadata: HashMap::new(),
                     access_rules: HashMap::new(),
-                }),
+                })
+                .unwrap(),
             }],
             &NetworkDefinition::simulator(),
         )

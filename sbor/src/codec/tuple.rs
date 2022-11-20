@@ -3,16 +3,17 @@ use crate::*;
 
 macro_rules! encode_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {
-        impl<X: CustomTypeId, $($name: Encode<X>),+> Encode<X> for ($($name,)+) {
+        impl<X: CustomTypeId, Enc: Encoder<X>, $($name: Encode<X, Enc>),+> Encode<X, Enc> for ($($name,)+) {
             #[inline]
-            fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-                encoder.write_type_id(Self::type_id());
+            fn encode_type_id(&self, encoder: &mut Enc) -> Result<(), EncodeError> {
+                encoder.write_type_id(Self::type_id())
             }
-            #[inline]
-            fn encode_body(&self, encoder: &mut Encoder<X>) {
-                encoder.write_size($n);
 
-                $(self.$idx.encode(encoder);)+
+            #[inline]
+            fn encode_body(&self, encoder: &mut Enc) -> Result<(), EncodeError> {
+                encoder.write_size($n)?;
+                $(encoder.encode(&self.$idx)?;)+
+                Ok(())
             }
         }
     };

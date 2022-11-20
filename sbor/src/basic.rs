@@ -1,3 +1,4 @@
+use crate::rust::vec::Vec;
 use crate::*;
 
 #[cfg_attr(
@@ -17,7 +18,7 @@ pub enum NoCustomTypeId {}
 pub enum NoCustomValue {}
 
 pub const DEFAULT_BASIC_MAX_DEPTH: u8 = 32;
-pub type BasicEncoder<'a> = Encoder<'a, NoCustomTypeId>;
+pub type BasicEncoder<'a> = VecEncoder<'a, NoCustomTypeId, DEFAULT_BASIC_MAX_DEPTH>;
 pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomTypeId, DEFAULT_BASIC_MAX_DEPTH>;
 pub type BasicSborValue = SborValue<NoCustomTypeId, NoCustomValue>;
 pub type BasicSborTypeId = SborTypeId<NoCustomTypeId>;
@@ -27,18 +28,18 @@ pub type BasicSborTypeId = SborTypeId<NoCustomTypeId>;
 pub trait BasicTypeId: TypeId<NoCustomTypeId> {}
 impl<T: TypeId<NoCustomTypeId> + ?Sized> BasicTypeId for T {}
 
-pub trait BasicDecode: for<'de> Decode<NoCustomTypeId, BasicDecoder<'de>> {}
-impl<T: for<'de> Decode<NoCustomTypeId, BasicDecoder<'de>>> BasicDecode for T {}
+pub trait BasicDecode: for<'a> Decode<NoCustomTypeId, BasicDecoder<'a>> {}
+impl<T: for<'a> Decode<NoCustomTypeId, BasicDecoder<'a>>> BasicDecode for T {}
 
-pub trait BasicEncode: Encode<NoCustomTypeId> {}
-impl<T: Encode<NoCustomTypeId> + ?Sized> BasicEncode for T {}
+pub trait BasicEncode: for<'a> Encode<NoCustomTypeId, BasicEncoder<'a>> {}
+impl<T: for<'a> Encode<NoCustomTypeId, BasicEncoder<'a>> + ?Sized> BasicEncode for T {}
 
 /// Encode a `T` into byte array.
-pub fn basic_encode<T: BasicEncode + ?Sized>(v: &T) -> crate::rust::vec::Vec<u8> {
-    let mut buf = crate::rust::vec::Vec::with_capacity(512);
-    let mut enc = BasicEncoder::new(&mut buf);
-    v.encode(&mut enc);
-    buf
+pub fn basic_encode<T: BasicEncode + ?Sized>(v: &T) -> Result<Vec<u8>, EncodeError> {
+    let mut buf = Vec::with_capacity(512);
+    let encoder = BasicEncoder::new(&mut buf);
+    encoder.encode_payload(v)?;
+    Ok(buf)
 }
 
 /// Decode an instance of `T` from a slice.
@@ -56,12 +57,12 @@ impl CustomTypeId for NoCustomTypeId {
     }
 }
 
-impl<X: CustomTypeId> Encode<X> for NoCustomValue {
-    fn encode_type_id(&self, _encoder: &mut Encoder<X>) {
+impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for NoCustomValue {
+    fn encode_type_id(&self, _encoder: &mut E) -> Result<(), EncodeError> {
         panic!("No custom value")
     }
 
-    fn encode_body(&self, _encoder: &mut Encoder<X>) {
+    fn encode_body(&self, _encoder: &mut E) -> Result<(), EncodeError> {
         panic!("No custom value")
     }
 }

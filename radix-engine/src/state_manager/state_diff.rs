@@ -29,7 +29,10 @@ impl StateDiff {
         for (substate_id, output_value) in &self.up_substates {
             let output_id = OutputId {
                 substate_id: substate_id.clone(),
-                substate_hash: hash(scrypto_encode(&output_value.substate)),
+                substate_hash: hash(
+                    scrypto_encode(&output_value.substate)
+                        .expect("Could not encode newly-committed substate"),
+                ),
                 version: output_value.version,
             };
             receipt.up(output_id);

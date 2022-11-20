@@ -47,7 +47,8 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<DataRef<V>> {
         let mut syscalls = ScryptoEnv;
-        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key)));
+        let offset =
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key).unwrap()));
         let lock_handle = syscalls
             .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset, false)
             .unwrap();
@@ -65,7 +66,8 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
         let mut syscalls = ScryptoEnv;
-        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key)));
+        let offset =
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key).unwrap()));
         let lock_handle = syscalls
             .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset.clone(), true)
             .unwrap();
@@ -84,14 +86,15 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
         let mut syscalls = ScryptoEnv;
-        let offset =
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&key)));
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+            scrypto_encode(&key).unwrap(),
+        ));
         let lock_handle = syscalls
             .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset.clone(), true)
             .unwrap();
-        let substate = KeyValueStoreEntrySubstate(Some(scrypto_encode(&value)));
+        let substate = KeyValueStoreEntrySubstate(Some(scrypto_encode(&value).unwrap()));
         syscalls
-            .sys_write(lock_handle, scrypto_encode(&substate))
+            .sys_write(lock_handle, scrypto_encode(&substate).unwrap())
             .unwrap();
         syscalls.sys_drop_lock(lock_handle).unwrap();
     }
@@ -156,17 +159,20 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> TypeId<
     }
 }
 
-impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> Encode<ScryptoCustomTypeId>
-    for KeyValueStore<K, V>
+impl<
+        K: ScryptoEncode + ScryptoDecode,
+        V: ScryptoEncode + ScryptoDecode,
+        E: Encoder<ScryptoCustomTypeId>,
+    > Encode<ScryptoCustomTypeId, E> for KeyValueStore<K, V>
 {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut ScryptoEncoder) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
 
     #[inline]
-    fn encode_body(&self, encoder: &mut ScryptoEncoder) {
-        encoder.write_slice(&self.to_vec());
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_slice(&self.to_vec())
     }
 }
 

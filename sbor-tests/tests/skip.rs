@@ -36,10 +36,10 @@ fn test_struct_with_skip() {
     let c = TestStructUnit;
 
     let mut bytes = Vec::with_capacity(512);
-    let mut encoder = Encoder::<NoCustomTypeId>::new(&mut bytes);
-    a.encode(&mut encoder);
-    b.encode(&mut encoder);
-    c.encode(&mut encoder);
+    let mut encoder = BasicEncoder::new(&mut bytes);
+    encoder.encode(&a).unwrap();
+    encoder.encode(&b).unwrap();
+    encoder.encode(&c).unwrap();
 
     #[rustfmt::skip]
     assert_eq!(
@@ -75,10 +75,10 @@ fn test_enum_with_skip() {
     let c = TestEnum::C;
 
     let mut bytes = Vec::with_capacity(512);
-    let mut encoder = Encoder::<NoCustomTypeId>::new(&mut bytes);
-    a.encode(&mut encoder);
-    b.encode(&mut encoder);
-    c.encode(&mut encoder);
+    let mut encoder = BasicEncoder::new(&mut bytes);
+    encoder.encode(&a).unwrap();
+    encoder.encode(&b).unwrap();
+    encoder.encode(&c).unwrap();
 
     #[rustfmt::skip]
     assert_eq!(

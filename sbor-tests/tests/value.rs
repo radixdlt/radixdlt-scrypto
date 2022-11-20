@@ -35,7 +35,7 @@ fn test_encode_as_json() {
         c: (2, vec![3, 4]),
         d: "5".to_string(),
     };
-    let bytes = basic_encode(&sample);
+    let bytes = basic_encode(&sample).unwrap();
     let any = basic_decode::<BasicSborValue>(&bytes).unwrap();
 
     assert_json_eq(
