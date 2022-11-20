@@ -20,11 +20,7 @@ pub trait Encoder<X: CustomTypeId>: Sized {
         self.encode_body(value)
     }
 
-    fn encode_body<T: Encode<X, Self> + ?Sized>(&mut self, value: &T) -> Result<(), EncodeError> {
-        self.track_stack_depth_increase()?;
-        value.encode_body(self)?;
-        self.track_stack_depth_decrease()
-    }
+    fn encode_body<T: Encode<X, Self> + ?Sized>(&mut self, value: &T) -> Result<(), EncodeError>;
 
     #[inline]
     fn write_type_id(&mut self, ty: SborTypeId<X>) -> Result<(), EncodeError> {
@@ -61,10 +57,6 @@ pub trait Encoder<X: CustomTypeId>: Sized {
     fn write_byte(&mut self, n: u8) -> Result<(), EncodeError>;
 
     fn write_slice(&mut self, slice: &[u8]) -> Result<(), EncodeError>;
-
-    fn track_stack_depth_increase(&mut self) -> Result<(), EncodeError>;
-
-    fn track_stack_depth_decrease(&mut self) -> Result<(), EncodeError>;
 }
 
 /// An `Encoder` abstracts the logic for writing core types into a byte buffer.
@@ -82,20 +74,6 @@ impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> VecEncoder<'a, X, MAX_DEPTH> {
             phantom: PhantomData,
         }
     }
-}
-
-impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> Encoder<X> for VecEncoder<'a, X, MAX_DEPTH> {
-    #[inline]
-    fn write_byte(&mut self, n: u8) -> Result<(), EncodeError> {
-        self.buf.push(n);
-        Ok(())
-    }
-
-    #[inline]
-    fn write_slice(&mut self, slice: &[u8]) -> Result<(), EncodeError> {
-        self.buf.extend(slice);
-        Ok(())
-    }
 
     #[inline]
     fn track_stack_depth_increase(&mut self) -> Result<(), EncodeError> {
@@ -109,6 +87,26 @@ impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> Encoder<X> for VecEncoder<'a, X, 
     #[inline]
     fn track_stack_depth_decrease(&mut self) -> Result<(), EncodeError> {
         self.stack_depth -= 1;
+        Ok(())
+    }
+}
+
+impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> Encoder<X> for VecEncoder<'a, X, MAX_DEPTH> {
+    fn encode_body<T: Encode<X, Self> + ?Sized>(&mut self, value: &T) -> Result<(), EncodeError> {
+        self.track_stack_depth_increase()?;
+        value.encode_body(self)?;
+        self.track_stack_depth_decrease()
+    }
+
+    #[inline]
+    fn write_byte(&mut self, n: u8) -> Result<(), EncodeError> {
+        self.buf.push(n);
+        Ok(())
+    }
+
+    #[inline]
+    fn write_slice(&mut self, slice: &[u8]) -> Result<(), EncodeError> {
+        self.buf.extend(slice);
         Ok(())
     }
 }

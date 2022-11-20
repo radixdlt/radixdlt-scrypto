@@ -49,12 +49,7 @@ pub trait Decoder<X: CustomTypeId>: Sized {
     fn decode_body_with_type_id<T: Decode<X, Self>>(
         &mut self,
         type_id: SborTypeId<X>,
-    ) -> Result<T, DecodeError> {
-        self.track_stack_depth_increase()?;
-        let decoded = T::decode_body_with_type_id(self, type_id)?;
-        self.track_stack_depth_decrease()?;
-        Ok(decoded)
-    }
+    ) -> Result<T, DecodeError>;
 
     #[inline]
     fn read_type_id(&mut self) -> Result<SborTypeId<X>, DecodeError> {
@@ -126,10 +121,6 @@ pub trait Decoder<X: CustomTypeId>: Sized {
 
     fn check_end(&self) -> Result<(), DecodeError>;
 
-    fn track_stack_depth_increase(&mut self) -> Result<(), DecodeError>;
-
-    fn track_stack_depth_decrease(&mut self) -> Result<(), DecodeError>;
-
     fn read_byte(&mut self) -> Result<u8, DecodeError>;
 
     fn read_slice(&mut self, n: usize) -> Result<&[u8], DecodeError>;
@@ -169,9 +160,34 @@ impl<'de, X: CustomTypeId, const MAX_DEPTH: u8> VecDecoder<'de, X, MAX_DEPTH> {
     fn remaining_bytes(&self) -> usize {
         self.input.len() - self.offset
     }
+
+    #[inline]
+    fn track_stack_depth_increase(&mut self) -> Result<(), DecodeError> {
+        self.stack_depth += 1;
+        if self.stack_depth > MAX_DEPTH {
+            return Err(DecodeError::MaxDepthExceeded(MAX_DEPTH));
+        }
+        Ok(())
+    }
+
+    #[inline]
+    fn track_stack_depth_decrease(&mut self) -> Result<(), DecodeError> {
+        self.stack_depth -= 1;
+        Ok(())
+    }
 }
 
 impl<'de, X: CustomTypeId, const MAX_DEPTH: u8> Decoder<X> for VecDecoder<'de, X, MAX_DEPTH> {
+    fn decode_body_with_type_id<T: Decode<X, Self>>(
+        &mut self,
+        type_id: SborTypeId<X>,
+    ) -> Result<T, DecodeError> {
+        self.track_stack_depth_increase()?;
+        let decoded = T::decode_body_with_type_id(self, type_id)?;
+        self.track_stack_depth_decrease()?;
+        Ok(decoded)
+    }
+
     #[inline]
     fn read_byte(&mut self) -> Result<u8, DecodeError> {
         self.require_remaining(1)?;
@@ -196,21 +212,6 @@ impl<'de, X: CustomTypeId, const MAX_DEPTH: u8> Decoder<X> for VecDecoder<'de, X
         } else {
             Ok(())
         }
-    }
-
-    #[inline]
-    fn track_stack_depth_increase(&mut self) -> Result<(), DecodeError> {
-        self.stack_depth += 1;
-        if self.stack_depth > MAX_DEPTH {
-            return Err(DecodeError::MaxDepthExceeded(MAX_DEPTH));
-        }
-        Ok(())
-    }
-
-    #[inline]
-    fn track_stack_depth_decrease(&mut self) -> Result<(), DecodeError> {
-        self.stack_depth -= 1;
-        Ok(())
     }
 }
 
