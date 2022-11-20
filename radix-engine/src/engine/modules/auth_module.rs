@@ -63,7 +63,7 @@ impl AuthModule {
         actor: &REActor,
         executor: &X,
         system_api: &mut Y,
-    ) -> Result<(), InvokeError<AuthError>>
+    ) -> Result<(), RuntimeError>
     where
         Y: SystemApi,
         X: Executor,
@@ -221,11 +221,11 @@ impl AuthModule {
         auth_zone_ref
             .check_auth(actor, method_auths)
             .map_err(|(authorization, error)| {
-                InvokeError::Error(AuthError::Unauthorized {
+                RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
                     actor: actor.clone(),
                     authorization,
                     error,
-                })
+                }))
             })?;
 
         system_api.drop_lock(handle)?;
