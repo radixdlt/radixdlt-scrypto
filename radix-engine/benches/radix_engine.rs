@@ -24,7 +24,7 @@ fn bench_transfer(c: &mut Criterion) {
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::new(
             InstructionCostRules::tiered(1, 5, 10, 5000),
-            512,
+            1024,
         ),
     };
 
