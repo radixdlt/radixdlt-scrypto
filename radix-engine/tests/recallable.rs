@@ -9,6 +9,7 @@ use radix_engine_interface::api::types::{NativeMethod, RENodeId};
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use scrypto_unit::*;
+use std::ops::Sub;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
 
@@ -136,4 +137,58 @@ fn cannot_take_on_non_recallable_vault() {
             },))
         )
     });
+}
+
+#[test]
+fn can_take_on_recallable_vault() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (_, _, account) = test_runner.new_allocated_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
+
+    let recallable_token = test_runner.create_recallable_token(account);
+    let vaults = test_runner.get_component_vaults(account, recallable_token);
+    let vault_id = vaults[0];
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .add_instruction(Instruction::CallNativeMethod {
+            method_ident: NativeMethodIdent {
+                receiver: RENodeId::Vault(vault_id),
+                method_name: "take".to_string(),
+            },
+            args: scrypto_encode(&VaultTakeInvocation {
+                receiver: vault_id,
+                amount: Decimal::one(),
+            }),
+        })
+        .0
+        .call_method(
+            other_account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+
+    let original_account_amount = test_runner
+        .get_component_resources(account)
+        .get(&recallable_token)
+        .cloned()
+        .unwrap();
+    let mut expected_amount: Decimal = 5u32.into();
+    expected_amount = expected_amount.sub(Decimal::one());
+    assert_eq!(expected_amount, original_account_amount);
+
+    let other_amount = test_runner
+        .get_component_resources(other_account)
+        .get(&recallable_token)
+        .cloned()
+        .unwrap();
+    assert_eq!(other_amount, Decimal::one());
 }

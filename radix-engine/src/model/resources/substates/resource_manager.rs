@@ -30,7 +30,7 @@ impl ResourceManagerSubstate {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        mut auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        mut access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         nf_store_id: Option<NonFungibleStoreId>,
     ) -> Result<ResourceManagerSubstate, InvokeError<ResourceManagerError>> {
         let mut vault_method_table: HashMap<VaultMethod, ResourceMethodRule> = HashMap::new();
@@ -79,7 +79,7 @@ impl ResourceManagerSubstate {
             (UpdateMetadata, (DenyAll, LOCKED)),
             (UpdateNonFungibleData, (DenyAll, LOCKED)),
         ] {
-            let entry = auth.remove(&auth_entry_key).unwrap_or(default);
+            let entry = access_rules.remove(&auth_entry_key).unwrap_or(default);
             authorization.insert(auth_entry_key, MethodAccessRule::new(entry));
         }
 

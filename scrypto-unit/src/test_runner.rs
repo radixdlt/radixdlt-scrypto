@@ -450,6 +450,31 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         .expect_commit_success();
     }
 
+    fn create_fungible_resource_and_deposit(
+        &mut self,
+        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        to: ComponentAddress,
+    ) -> ResourceAddress {
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .create_resource(
+                ResourceType::Fungible { divisibility: 0 },
+                HashMap::new(),
+                access_rules,
+                Some(MintParams::Fungible {
+                    amount: 5u32.into(),
+                }),
+            )
+            .call_method(to, "deposit_batch", args!(Expression::entire_worktop()))
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit_success();
+        receipt
+            .expect_commit()
+            .entity_changes
+            .new_resource_addresses[0]
+    }
+
     pub fn create_restricted_token(
         &mut self,
         account: ComponentAddress,
@@ -467,60 +492,49 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
 
         let mut access_rules = HashMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Mint,
+            Mint,
             (
                 rule!(require(mint_auth)),
                 MUTABLE(rule!(require(admin_auth))),
             ),
         );
         access_rules.insert(
-            ResourceMethodAuthKey::Burn,
+            Burn,
             (
                 rule!(require(burn_auth)),
                 MUTABLE(rule!(require(admin_auth))),
             ),
         );
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            Withdraw,
             (
                 rule!(require(withdraw_auth)),
                 MUTABLE(rule!(require(admin_auth))),
             ),
         );
         access_rules.insert(
-            ResourceMethodAuthKey::Deposit,
+            Deposit,
             (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
         );
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::Fungible { divisibility: 0 },
-                HashMap::new(),
-                access_rules,
-                Some(MintParams::Fungible {
-                    amount: 5u32.into(),
-                }),
-            )
-            .call_method(
-                account,
-                "deposit_batch",
-                args!(Expression::entire_worktop()),
-            )
-            .build();
-        let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
+        let token_address = self.create_fungible_resource_and_deposit(access_rules, account);
 
         (
-            receipt
-                .expect_commit()
-                .entity_changes
-                .new_resource_addresses[0],
+            token_address,
             mint_auth,
             burn_auth,
             withdraw_auth,
             admin_auth,
         )
+    }
+
+    pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
+        let mut access_rules = HashMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Recall, (rule!(allow_all), LOCKED));
+
+        self.create_fungible_resource_and_deposit(access_rules, account)
     }
 
     pub fn create_restricted_burn_token(
@@ -530,38 +544,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let mut access_rules = HashMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(
-            ResourceMethodAuthKey::Burn,
-            (rule!(require(auth_resource_address)), LOCKED),
-        );
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Burn, (rule!(require(auth_resource_address)), LOCKED));
+        let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::Fungible { divisibility: 0 },
-                HashMap::new(),
-                access_rules,
-                Some(MintParams::Fungible {
-                    amount: 5u32.into(),
-                }),
-            )
-            .call_method(
-                account,
-                "deposit_batch",
-                args!(Expression::entire_worktop()),
-            )
-            .build();
-        let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        (
-            auth_resource_address,
-            receipt
-                .expect_commit()
-                .entity_changes
-                .new_resource_addresses[0],
-        )
+        (auth_resource_address, resource_address)
     }
 
     pub fn create_restricted_transfer_token(
@@ -571,37 +559,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let mut access_rules = HashMap::new();
-        access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
-            (rule!(require(auth_resource_address)), LOCKED),
-        );
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Withdraw, (rule!(require(auth_resource_address)), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::Fungible { divisibility: 0 },
-                HashMap::new(),
-                access_rules,
-                Some(MintParams::Fungible {
-                    amount: 5u32.into(),
-                }),
-            )
-            .call_method(
-                account,
-                "deposit_batch",
-                args!(Expression::entire_worktop()),
-            )
-            .build();
-        let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        (
-            auth_resource_address,
-            receipt
-                .expect_commit()
-                .entity_changes
-                .new_resource_addresses[0],
-        )
+        (auth_resource_address, resource_address)
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
@@ -652,8 +614,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         account: ComponentAddress,
     ) -> ResourceAddress {
         let mut access_rules = HashMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(

@@ -199,6 +199,8 @@ impl AuthModule {
 
                         let auth = match visibility {
                             RENodeVisibilityOrigin::Normal => {
+                                // TODO: Do we want to allow recaller to be able to withdraw from
+                                // TODO: any visible vault?
                                 vec![resource_manager.get_vault_auth(*vault_fn).clone()]
                             }
                             RENodeVisibilityOrigin::IgnoredOwner => match vault_fn {
