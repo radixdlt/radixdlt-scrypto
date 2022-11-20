@@ -117,31 +117,34 @@ where
             })
             .expect("AuthModule failed to initialize");
 
-        kernel
-            .current_frame
-            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        kernel
-            .current_frame
-            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)));
-        kernel
-            .current_frame
-            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(
-                ECDSA_SECP256K1_TOKEN,
-            )));
-        kernel
-            .current_frame
-            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(
-                EDDSA_ED25519_TOKEN,
-            )));
-        kernel
-            .current_frame
-            .add_stored_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
-        kernel
-            .current_frame
-            .add_stored_ref(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
-        kernel
-            .current_frame
-            .add_stored_ref(RENodeId::Global(GlobalAddress::Package(SYS_FAUCET_PACKAGE)));
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
+            RENodeVisibility::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)),
+            RENodeVisibility::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)),
+            RENodeVisibility::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)),
+            RENodeVisibility::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+            RENodeVisibility::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)),
+            RENodeVisibility::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Package(SYS_FAUCET_PACKAGE)),
+            RENodeVisibility::Normal,
+        );
 
         kernel
     }
@@ -323,7 +326,8 @@ where
                     SubstateId(node_id, offset.clone()),
                     RuntimeSubstate::Global(global_substate),
                 );
-                self.current_frame.add_stored_ref(node_id);
+                self.current_frame
+                    .add_stored_ref(node_id, RENodeVisibility::Normal);
                 self.current_frame.move_owned_node_to_store(
                     &mut self.heap,
                     &mut self.track,
@@ -608,7 +612,8 @@ where
                                     ComponentAddress::EddsaEd25519VirtualAccount(..)
                                 )
                             ) {
-                                self.current_frame.add_stored_ref(*node_id);
+                                self.current_frame
+                                    .add_stored_ref(*node_id, RENodeVisibility::Normal);
                                 continue;
                             }
 
@@ -622,7 +627,8 @@ where
                             self.track
                                 .release_lock(SubstateId(*node_id, offset), false)
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                            self.current_frame.add_stored_ref(*node_id);
+                            self.current_frame
+                                .add_stored_ref(*node_id, RENodeVisibility::Normal);
                         }
                     }
                     RENodeId::Vault(..) => {
@@ -637,6 +643,9 @@ where
                             self.track
                                 .release_lock(SubstateId(*node_id, offset), false)
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+
+                            self.current_frame
+                                .add_stored_ref(*node_id, RENodeVisibility::RequiresAuth);
                         }
                     }
                     _ => {}
@@ -906,6 +915,14 @@ where
         Ok(node_ids)
     }
 
+    fn get_visible_node_data(
+        &mut self,
+        node_id: RENodeId,
+    ) -> Result<RENodeVisibility, RuntimeError> {
+        let visibility = self.current_frame.get_node_visibility(node_id)?;
+        Ok(visibility)
+    }
+
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
@@ -992,7 +1009,8 @@ where
                     SubstateId(global_node_id, SubstateOffset::Global(GlobalOffset::Global)),
                     RuntimeSubstate::Global(global_substate),
                 );
-                self.current_frame.add_stored_ref(global_node_id);
+                self.current_frame
+                    .add_stored_ref(global_node_id, RENodeVisibility::RequiresAuth);
                 self.current_frame.move_owned_node_to_store(
                     &mut self.heap,
                     &mut self.track,

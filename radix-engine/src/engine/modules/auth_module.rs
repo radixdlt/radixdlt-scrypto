@@ -9,6 +9,7 @@ use radix_engine_interface::api::types::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum AuthError {
+    VisibilityError(RENodeId),
     Unauthorized {
         actor: REActor,
         authorization: MethodAuthorization,
@@ -174,6 +175,17 @@ impl AuthModule {
                         },
                     ) => {
                         let vault_node_id = RENodeId::Vault(vault_id);
+
+                        let visibility = system_api.get_visible_node_data(vault_node_id)?;
+                        match visibility {
+                            RENodeVisibility::Normal => {}
+                            RENodeVisibility::RequiresAuth => {
+                                return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                                    AuthError::VisibilityError(vault_node_id),
+                                )));
+                            }
+                        }
+
                         let resource_address = {
                             let offset = SubstateOffset::Vault(VaultOffset::Vault);
                             let handle = system_api.lock_substate(

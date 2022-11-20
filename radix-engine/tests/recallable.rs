@@ -1,4 +1,4 @@
-use radix_engine::engine::{CallFrameError, KernelError, RejectionError, RuntimeError};
+use radix_engine::engine::{AuthError, KernelError, ModuleError, RejectionError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
@@ -83,9 +83,9 @@ fn owned_vault_should_not_be_visible_to_manifest() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_rejection(|e| {
-        e.eq(&RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::CallFrameError(
-            CallFrameError::RENodeNotVisible(RENodeId::Vault(vault_id)),
+    receipt.expect_specific_failure(|e| {
+        e.eq(&RuntimeError::ModuleError(ModuleError::AuthError(
+            AuthError::VisibilityError(RENodeId::Vault(vault_id)),
         )))
     });
 }
