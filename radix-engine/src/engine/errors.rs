@@ -199,7 +199,7 @@ pub enum ApplicationError {
 
     ResourceManagerError(ResourceManagerError),
 
-    ComponentError(ComponentError),
+    AccessRulesError(AccessRulesError),
 
     BucketError(BucketError),
 

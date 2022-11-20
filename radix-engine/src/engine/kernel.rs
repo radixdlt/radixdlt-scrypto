@@ -1265,10 +1265,7 @@ where
         Ok(substate_ref)
     }
 
-    fn get_ref_mut<'f>(
-        &'f mut self,
-        lock_handle: LockHandle,
-    ) -> Result<SubstateRefMut<'f>, RuntimeError> {
+    fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,
