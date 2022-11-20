@@ -23,14 +23,17 @@ blueprint! {
             };
 
             let node_id = RENodeId::KeyValueStore(kv_store1_id);
-            let offset =
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&0u32).unwrap()));
-            let substate =
-                KeyValueStoreEntrySubstate(Some(scrypto_encode(&KeyValueStore::<(), ()> {
+            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                scrypto_encode(&0u32).unwrap(),
+            ));
+            let substate = KeyValueStoreEntrySubstate(Some(
+                scrypto_encode(&KeyValueStore::<(), ()> {
                     id: kv_store0_id,
                     key: PhantomData,
                     value: PhantomData,
-                }).unwrap()));
+                })
+                .unwrap(),
+            ));
 
             let input = RadixEngineInput::LockSubstate(node_id, offset, true);
             let lock_handle: LockHandle = call_engine(input);
@@ -45,14 +48,17 @@ blueprint! {
             let kv_store_id = kv_store.id.clone();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id.clone());
-            let offset =
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&0u32).unwrap()));
-            let substate =
-                KeyValueStoreEntrySubstate(Some(scrypto_encode(&KeyValueStore::<(), ()> {
+            let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                scrypto_encode(&0u32).unwrap(),
+            ));
+            let substate = KeyValueStoreEntrySubstate(Some(
+                scrypto_encode(&KeyValueStore::<(), ()> {
                     id: kv_store_id,
                     key: PhantomData,
                     value: PhantomData,
-                }).unwrap()));
+                })
+                .unwrap(),
+            ));
 
             let input = RadixEngineInput::LockSubstate(node_id, offset, true);
             let lock_handle: LockHandle = call_engine(input);
