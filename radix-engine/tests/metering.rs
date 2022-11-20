@@ -54,7 +54,7 @@ fn test_recursion() {
 
     // Act
     // In this test case, each call frame costs 4 stack units
-    let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "128"));
+    let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "256"));
     let package_address =
         test_runner.publish_package(code, generate_single_function_abi("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -74,7 +74,7 @@ fn test_recursion_stack_overflow() {
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
-    let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "129"));
+    let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "257"));
     let package_address =
         test_runner.publish_package(code, generate_single_function_abi("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
