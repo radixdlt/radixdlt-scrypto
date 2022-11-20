@@ -17,7 +17,7 @@ pub enum NoCustomTypeId {}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomValue {}
 
-pub const DEFAULT_BASIC_MAX_DEPTH: u8 = 32;
+pub const DEFAULT_BASIC_MAX_DEPTH: u8 = 64;
 pub type BasicEncoder<'a> = VecEncoder<'a, NoCustomTypeId, DEFAULT_BASIC_MAX_DEPTH>;
 pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomTypeId, DEFAULT_BASIC_MAX_DEPTH>;
 pub type BasicSborValue = SborValue<NoCustomTypeId, NoCustomValue>;

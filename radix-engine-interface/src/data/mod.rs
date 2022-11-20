@@ -24,7 +24,7 @@ pub use schema_matcher::*;
 pub use schema_path::*;
 pub use value_formatter::*;
 
-pub const MAX_SCRYPTO_SBOR_DEPTH: u8 = 32;
+pub const MAX_SCRYPTO_SBOR_DEPTH: u8 = 64;
 
 pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomTypeId, MAX_SCRYPTO_SBOR_DEPTH>;
 pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomTypeId, MAX_SCRYPTO_SBOR_DEPTH>;

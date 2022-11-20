@@ -188,6 +188,7 @@ mod tests {
     pub fn test_encode_cow_borrowed() {
         let mut set = BTreeSet::<u8>::new();
         set.insert(1);
+        set.insert(2);
         let x = crate::rust::borrow::Cow::Borrowed(&set);
         let mut bytes = Vec::with_capacity(512);
         let mut encoder = BasicEncoder::new(&mut bytes);

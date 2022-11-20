@@ -30,8 +30,12 @@ impl StateDiff {
             let output_id = OutputId {
                 substate_id: substate_id.clone(),
                 substate_hash: hash(
-                    scrypto_encode(&output_value.substate)
-                        .expect("Could not encode newly-committed substate"),
+                    scrypto_encode(&output_value.substate).unwrap_or_else(|err| {
+                        panic!(
+                            "Could not encode newly-committed substate: {:?}. Substate: {:?}",
+                            err, &output_value.substate
+                        )
+                    }),
                 ),
                 version: output_value.version,
             };
