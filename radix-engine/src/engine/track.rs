@@ -792,3 +792,108 @@ impl<'s> FinalizingTrack<'s> {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use transaction::model::DEFAULT_COST_UNIT_LIMIT;
+
+    use crate::model::ComponentInfoSubstate;
+
+    use super::*;
+
+    #[test]
+    fn unencodable_substate_gives_failed_transaction() {
+        // Arrange
+        let store = TypedInMemorySubstateStore::default();
+
+        let successful_invoke_result = Ok(vec![]);
+
+        let finalizing_track_with_small_depth_substate = FinalizingTrack {
+            substate_store: &store,
+            new_global_addresses: vec![],
+            loaded_substates: create_loaded_substate_with_sbor_depth(10),
+            vault_ops: vec![],
+        };
+
+        let finalizing_track_with_large_depth_substate = FinalizingTrack {
+            substate_store: &store,
+            new_global_addresses: vec![],
+            loaded_substates: create_loaded_substate_with_sbor_depth(100),
+            vault_ops: vec![],
+        };
+
+        // Act
+        let small_substate_txn_result = finalizing_track_with_small_depth_substate
+            .calculate_commit_result(successful_invoke_result.clone(), &dummy_fee_summary());
+
+        small_substate_txn_result
+            .expect_commit()
+            .outcome
+            .expect_success();
+
+        let large_substate_txn_result = finalizing_track_with_large_depth_substate
+            .calculate_commit_result(successful_invoke_result.clone(), &dummy_fee_summary());
+
+        let error = large_substate_txn_result
+            .expect_commit()
+            .outcome
+            .expect_failure();
+        assert!(matches!(
+            error,
+            RuntimeError::KernelError(KernelError::InvalidSborValueOnEncode(
+                EncodeError::MaxDepthExceeded { .. }
+            ))
+        ))
+    }
+
+    fn create_loaded_substate_with_sbor_depth(
+        sbor_depth: u8,
+    ) -> BTreeMap<SubstateId, LoadedSubstate> {
+        let runtime_substate = RuntimeSubstate::ComponentInfo(ComponentInfoSubstate {
+            package_address: PackageAddress::Normal([0; 26]),
+            blueprint_name: "test".to_owned(),
+            access_rules: vec![generate_deep_access_rules(sbor_depth)],
+        });
+
+        let substate_key = SubstateId(
+            RENodeId::Component([0; 36]),
+            SubstateOffset::Component(ComponentOffset::Info),
+        );
+        let loaded_substate = LoadedSubstate {
+            substate: runtime_substate,
+            lock_state: LockState::no_lock(),
+            metastate: SubstateMetaState::New,
+        };
+
+        let mut loaded_substates = BTreeMap::<SubstateId, LoadedSubstate>::new();
+        loaded_substates.insert(substate_key, loaded_substate);
+
+        loaded_substates
+    }
+
+    fn dummy_fee_summary() -> FeeSummary {
+        FeeSummary {
+            loan_fully_repaid: true,
+            cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+            cost_unit_consumed: 0,
+            cost_unit_price: Decimal::zero(),
+            tip_percentage: 0,
+            burned: Decimal::zero(),
+            tipped: Decimal::zero(),
+            payments: vec![],
+            cost_breakdown: HashMap::new(),
+        }
+    }
+
+    fn generate_deep_access_rules(exceed_depth: u8) -> AccessRules {
+        let mut access_rule_node = AccessRuleNode::ProofRule(ProofRule::Require(
+            SoftResourceOrNonFungible::StaticResource(ResourceAddress::Normal([0; 26])),
+        ));
+        let mut curr_depth = 6; // The inner bit and the outer mapping
+        while curr_depth < exceed_depth {
+            access_rule_node = AccessRuleNode::AllOf(vec![access_rule_node]);
+            curr_depth += 2;
+        }
+        AccessRules::new().default(AccessRule::Protected(access_rule_node))
+    }
+}
