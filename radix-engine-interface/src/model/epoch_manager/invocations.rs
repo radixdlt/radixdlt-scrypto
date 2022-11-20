@@ -1,8 +1,9 @@
 use sbor::rust::fmt::Debug;
 
-use crate::api::{api::*, wasm_input::*};
+use crate::api::api::*;
 use crate::model::*;
 use crate::scrypto;
+use crate::wasm::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]

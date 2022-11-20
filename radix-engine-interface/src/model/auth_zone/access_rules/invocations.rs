@@ -1,7 +1,9 @@
+use radix_engine_interface::wasm::ScryptoNativeInvocation;
 use sbor::rust::fmt::Debug;
 
-use crate::api::{api::*, types::*, wasm_input::*};
+use crate::api::{api::*, types::*};
 use crate::scrypto;
+use crate::wasm::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]

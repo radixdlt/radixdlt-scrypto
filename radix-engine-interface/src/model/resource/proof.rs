@@ -1,4 +1,3 @@
-use crate::api::wasm_input::NativeFnInvocation;
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
@@ -8,11 +7,11 @@ use sbor::*;
 use utils::copy_u8_array;
 
 use crate::abi::*;
-use crate::api::wasm_input::{NativeMethodInvocation, ProofMethodInvocation};
 use crate::api::{api::*, types::*};
 use crate::data::ScryptoCustomTypeId;
 use crate::math::*;
 use crate::scrypto_type;
+use crate::wasm::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ProofGetAmountInvocation {

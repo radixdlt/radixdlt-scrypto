@@ -7,11 +7,12 @@ use scrypto_abi::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
 use crate::address::*;
-use crate::api::{api::*, wasm_input::*};
+use crate::api::api::*;
 use crate::data::ScryptoCustomTypeId;
 use crate::math::*;
 use crate::model::*;
 use crate::scrypto_type;
+use crate::wasm::*;
 use crate::Describe;
 
 use radix_engine_derive::scrypto;

@@ -9,15 +9,14 @@ use crate::model::{
 };
 use crate::types::ScryptoInvocation;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::{
-    EngineApi, ScryptoNativeInvocation, SysInvokableNative, SysNativeInvokable,
-};
+use radix_engine_interface::api::api::{EngineApi, SysInvokableNative, SysNativeInvokable};
 use radix_engine_interface::api::types::{
     Level, LockHandle, RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::wasm::*;
 
 impl<'g, 's, W, R, N, T> SysNativeInvokable<N, RuntimeError> for Kernel<'g, 's, W, R>
 where

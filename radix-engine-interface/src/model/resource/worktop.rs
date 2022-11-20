@@ -1,9 +1,8 @@
-use crate::api::api::{ScryptoNativeInvocation, SysInvocation};
-use crate::api::wasm_input::WorktopMethodInvocation;
-use crate::api::wasm_input::{NativeFnInvocation, NativeMethodInvocation};
+use crate::api::api::SysInvocation;
 use crate::math::Decimal;
 use crate::model::*;
 use crate::scrypto;
+use crate::wasm::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 

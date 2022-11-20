@@ -1,11 +1,11 @@
-use radix_engine_interface::api::api::{EngineApi, ScryptoNativeInvocation, SysNativeInvokable};
+use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
 use radix_engine_interface::api::types::{
     Level, LockHandle, RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoRENode, SubstateOffset,
 };
-use radix_engine_interface::api::wasm_input::RadixEngineInput;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::ScryptoCustomTypeId;
+use radix_engine_interface::wasm::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;

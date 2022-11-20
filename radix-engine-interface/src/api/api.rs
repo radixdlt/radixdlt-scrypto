@@ -1,5 +1,4 @@
 use crate::api::types::ScryptoActor;
-use crate::api::wasm_input::NativeFnInvocation;
 use crate::crypto::Hash;
 use crate::data::ScryptoCustomTypeId;
 use crate::model::*;
@@ -9,8 +8,6 @@ use sbor::rust::vec::Vec;
 use sbor::Decode;
 
 use super::types::*;
-
-pub trait ScryptoNativeInvocation: Into<NativeFnInvocation> + SysInvocation {}
 
 pub trait SysInvocation {
     type Output: Debug + Decode<ScryptoCustomTypeId>;

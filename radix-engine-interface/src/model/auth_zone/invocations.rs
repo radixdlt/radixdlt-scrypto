@@ -4,10 +4,10 @@ use sbor::rust::vec::Vec;
 
 use crate::api::api::*;
 use crate::api::types::AuthZoneId;
-use crate::api::wasm_input::*;
 use crate::math::Decimal;
 use crate::model::*;
 use crate::scrypto;
+use crate::wasm::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]

@@ -7,12 +7,12 @@ use sbor::*;
 use utils::copy_u8_array;
 
 use crate::abi::*;
-use crate::api::wasm_input::*;
 use crate::api::{api::*, types::*};
 use crate::data::ScryptoCustomTypeId;
 use crate::math::*;
 use crate::scrypto;
 use crate::scrypto_type;
+use crate::wasm::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]

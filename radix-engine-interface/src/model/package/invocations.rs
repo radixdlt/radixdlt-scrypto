@@ -1,11 +1,8 @@
-use crate::api::api::{ScryptoNativeInvocation, SysInvocation};
-
-use crate::api::wasm_input::{
-    NativeFnInvocation, NativeFunctionInvocation, PackageFunctionInvocation,
-};
+use crate::api::api::SysInvocation;
 use crate::crypto::Blob;
 use crate::model::*;
 use crate::scrypto;
+use crate::wasm::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]

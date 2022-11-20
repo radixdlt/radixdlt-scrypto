@@ -25,6 +25,7 @@ pub mod data;
 pub mod math;
 /// RE node models.
 pub mod model;
+pub mod wasm;
 
 mod macros;
 pub use macros::*;
