@@ -46,9 +46,9 @@ pub enum RENodeLocation {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RENodeVisibility {
+pub enum RENodeVisibilityOrigin {
     Normal,
-    RequiresAuth,
+    IgnoredOwner,
 }
 
 /// A lock on a substate controlled by a call frame
@@ -63,11 +63,11 @@ pub struct SubstateLock {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct RENodeRefData {
     location: RENodeLocation,
-    visibility: RENodeVisibility,
+    visibility: RENodeVisibilityOrigin,
 }
 
 impl RENodeRefData {
-    fn new(location: RENodeLocation, visibility: RENodeVisibility) -> Self {
+    fn new(location: RENodeLocation, visibility: RENodeVisibilityOrigin) -> Self {
         RENodeRefData {
             location,
             visibility,
@@ -139,13 +139,13 @@ impl CallFrame {
                 let node_id = RENodeId::Global(global_address.clone());
                 self.node_refs.insert(
                     node_id,
-                    RENodeRefData::new(RENodeLocation::Store, RENodeVisibility::Normal),
+                    RENodeRefData::new(RENodeLocation::Store, RENodeVisibilityOrigin::Normal),
                 );
             }
             for child_id in &substate_owned_nodes {
                 self.node_refs.insert(
                     *child_id,
-                    RENodeRefData::new(location, RENodeVisibility::Normal),
+                    RENodeRefData::new(location, RENodeVisibilityOrigin::Normal),
                 );
             }
         }
@@ -337,7 +337,7 @@ impl CallFrame {
             to.node_refs
                 .entry(node_id)
                 .and_modify(|e| {
-                    if e.visibility == RENodeVisibility::RequiresAuth {
+                    if e.visibility == RENodeVisibilityOrigin::IgnoredOwner {
                         e.visibility = ref_data.visibility
                     }
                 })
@@ -402,7 +402,7 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn add_stored_ref(&mut self, node_id: RENodeId, visibility: RENodeVisibility) {
+    pub fn add_stored_ref(&mut self, node_id: RENodeId, visibility: RENodeVisibilityOrigin) {
         self.node_refs.insert(
             node_id,
             RENodeRefData::new(RENodeLocation::Store, visibility),
@@ -508,9 +508,9 @@ impl CallFrame {
     pub fn get_node_visibility(
         &self,
         node_id: RENodeId,
-    ) -> Result<RENodeVisibility, CallFrameError> {
+    ) -> Result<RENodeVisibilityOrigin, CallFrameError> {
         let visibility = if self.owned_root_nodes.contains_key(&node_id) {
-            RENodeVisibility::Normal
+            RENodeVisibilityOrigin::Normal
         } else if let Some(ref_data) = self.node_refs.get(&node_id) {
             ref_data.visibility
         } else {

@@ -75,6 +75,7 @@ impl ResourceManagerSubstate {
             (Burn, (DenyAll, LOCKED)),
             (Withdraw, (AllowAll, LOCKED)),
             (Deposit, (AllowAll, LOCKED)),
+            (Recall, (DenyAll, LOCKED)),
             (UpdateMetadata, (DenyAll, LOCKED)),
             (UpdateNonFungibleData, (DenyAll, LOCKED)),
         ] {
@@ -153,6 +154,13 @@ impl ResourceManagerSubstate {
         } else {
             Ok(())
         }
+    }
+
+    pub fn get_recall_auth(&self) -> &MethodAuthorization {
+        self.authorization
+            .get(&Recall)
+            .unwrap_or_else(|| panic!("Recall Authorization not specified"))
+            .get_method_auth()
     }
 
     pub fn get_vault_auth(&self, vault_fn: VaultMethod) -> &MethodAuthorization {

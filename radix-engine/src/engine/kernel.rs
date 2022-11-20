@@ -119,31 +119,31 @@ where
 
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
-            RENodeVisibility::Normal,
+            RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)),
-            RENodeVisibility::Normal,
+            RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)),
-            RENodeVisibility::Normal,
+            RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)),
-            RENodeVisibility::Normal,
+            RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-            RENodeVisibility::Normal,
+            RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)),
-            RENodeVisibility::Normal,
+            RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Package(SYS_FAUCET_PACKAGE)),
-            RENodeVisibility::Normal,
+            RENodeVisibilityOrigin::Normal,
         );
 
         kernel
@@ -327,7 +327,7 @@ where
                     RuntimeSubstate::Global(global_substate),
                 );
                 self.current_frame
-                    .add_stored_ref(node_id, RENodeVisibility::Normal);
+                    .add_stored_ref(node_id, RENodeVisibilityOrigin::Normal);
                 self.current_frame.move_owned_node_to_store(
                     &mut self.heap,
                     &mut self.track,
@@ -613,7 +613,7 @@ where
                                 )
                             ) {
                                 self.current_frame
-                                    .add_stored_ref(*node_id, RENodeVisibility::Normal);
+                                    .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
                                 continue;
                             }
 
@@ -628,7 +628,7 @@ where
                                 .release_lock(SubstateId(*node_id, offset), false)
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                             self.current_frame
-                                .add_stored_ref(*node_id, RENodeVisibility::Normal);
+                                .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         }
                     }
                     RENodeId::Vault(..) => {
@@ -645,7 +645,7 @@ where
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
 
                             self.current_frame
-                                .add_stored_ref(*node_id, RENodeVisibility::RequiresAuth);
+                                .add_stored_ref(*node_id, RENodeVisibilityOrigin::IgnoredOwner);
                         }
                     }
                     _ => {}
@@ -918,7 +918,7 @@ where
     fn get_visible_node_data(
         &mut self,
         node_id: RENodeId,
-    ) -> Result<RENodeVisibility, RuntimeError> {
+    ) -> Result<RENodeVisibilityOrigin, RuntimeError> {
         let visibility = self.current_frame.get_node_visibility(node_id)?;
         Ok(visibility)
     }
@@ -1010,7 +1010,7 @@ where
                     RuntimeSubstate::Global(global_substate),
                 );
                 self.current_frame
-                    .add_stored_ref(global_node_id, RENodeVisibility::RequiresAuth);
+                    .add_stored_ref(global_node_id, RENodeVisibilityOrigin::IgnoredOwner);
                 self.current_frame.move_owned_node_to_store(
                     &mut self.heap,
                     &mut self.track,

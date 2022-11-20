@@ -69,7 +69,7 @@ pub trait SystemApi {
     fn get_visible_node_data(
         &mut self,
         node_id: RENodeId,
-    ) -> Result<RENodeVisibility, RuntimeError>;
+    ) -> Result<RENodeVisibilityOrigin, RuntimeError>;
 
     /// Removes an RENode and all of it's children from the Heap
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;

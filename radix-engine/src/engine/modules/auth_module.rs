@@ -175,16 +175,7 @@ impl AuthModule {
                         },
                     ) => {
                         let vault_node_id = RENodeId::Vault(vault_id);
-
                         let visibility = system_api.get_visible_node_data(vault_node_id)?;
-                        match visibility {
-                            RENodeVisibility::Normal => {}
-                            RENodeVisibility::RequiresAuth => {
-                                return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                                    AuthError::VisibilityError(vault_node_id),
-                                )));
-                            }
-                        }
 
                         let resource_address = {
                             let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -205,7 +196,23 @@ impl AuthModule {
                             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
                         let substate_ref = system_api.get_ref(handle)?;
                         let resource_manager = substate_ref.resource_manager();
-                        let auth = vec![resource_manager.get_vault_auth(*vault_fn).clone()];
+
+                        let auth = match visibility {
+                            RENodeVisibilityOrigin::Normal => {
+                                vec![resource_manager.get_vault_auth(*vault_fn).clone()]
+                            }
+                            RENodeVisibilityOrigin::IgnoredOwner => match vault_fn {
+                                VaultMethod::TakeNonFungibles | VaultMethod::Take => {
+                                    vec![resource_manager.get_recall_auth().clone()]
+                                }
+                                _ => {
+                                    return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                                        AuthError::VisibilityError(vault_node_id),
+                                    )));
+                                }
+                            },
+                        };
+
                         system_api.drop_lock(handle)?;
 
                         auth
