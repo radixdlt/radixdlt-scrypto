@@ -312,7 +312,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         path.set_extension("wasm");
 
         // Extract ABI
-        let code = fs::read(path).unwrap();
+        let code = fs::read(&path).unwrap_or_else(|err| {
+            panic!(
+                "Failed to read built WASM from path {:?} - {:?}",
+                &path, err
+            )
+        });
         let abi = extract_abi(&code).unwrap();
 
         self.publish_package(code, abi)
