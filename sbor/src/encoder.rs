@@ -38,7 +38,13 @@ pub trait Encoder<X: CustomTypeId>: Sized {
 
     fn write_size(&mut self, mut size: usize) -> Result<(), EncodeError> {
         // LEB128 and 4 bytes max
-        assert!(size <= 0x0FFFFFFF); // 268,435,455
+        // This means the max size is 0x0FFFFFFF = 268,435,455
+        if size > 0x0FFFFFFF {
+            return Err(EncodeError::SizeTooLarge {
+                actual: size,
+                max_allowed: 0x0FFFFFFF,
+            });
+        }
         loop {
             let seven_bits = size & 0x7F;
             size = size >> 7;
@@ -186,6 +192,21 @@ mod tests {
             ],
             bytes
         );
+    }
+
+    #[test]
+    pub fn test_size_too_large_error() {
+        const MAX_SIZE: usize = 0x0FFFFFFF; // 268,435,455, so this many bytes is about 268MB
+        const TOO_LARGE_SIZE: usize = MAX_SIZE + 1;
+
+        assert!(basic_encode(&vec![0u8; MAX_SIZE]).is_ok());
+        assert!(matches!(
+            basic_encode(&vec![0u8; MAX_SIZE + 1]),
+            Err(EncodeError::SizeTooLarge {
+                actual: TOO_LARGE_SIZE,
+                max_allowed: MAX_SIZE
+            })
+        ));
     }
 
     #[test]
