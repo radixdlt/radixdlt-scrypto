@@ -21,6 +21,7 @@ pub use sbor::rust::collections::*;
 pub use sbor::rust::fmt;
 pub use sbor::rust::format;
 pub use sbor::rust::marker::PhantomData;
+pub use sbor::rust::num::NonZeroUsize;
 pub use sbor::rust::ops::AddAssign;
 pub use sbor::rust::ptr;
 pub use sbor::rust::rc::Rc;
