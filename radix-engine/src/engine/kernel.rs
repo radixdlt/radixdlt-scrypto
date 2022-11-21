@@ -544,7 +544,7 @@ where
         }
 
         for m in &mut self.modules {
-            m.on_run(
+            m.pre_execute_invocation(
                 &actor,
                 executor.args(),
                 &mut self.current_frame,
@@ -565,6 +565,16 @@ where
         let (output, update) = self.execute_in_mode(ExecutionMode::Application, |system_api| {
             executor.execute(system_api)
         })?;
+
+        for m in &mut self.modules {
+            m.post_execute_invocation(
+                &update,
+                &mut self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
         // Process return data
         let mut parent = self.prev_frame_stack.pop().unwrap();

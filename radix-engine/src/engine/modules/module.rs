@@ -7,6 +7,7 @@ use radix_engine_interface::api::types::{
     Level, LockHandle, RENodeId, SubstateId, SubstateOffset, VaultId,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
+use std::fmt::Debug;
 
 #[derive(Debug)]
 pub enum InvocationInfo<'a> {
@@ -64,7 +65,7 @@ pub enum SysCallInput<'a> {
 
 #[derive(Debug)]
 pub enum SysCallOutput<'a> {
-    Invoke { rtn: &'a dyn Traceable },
+    Invoke { rtn: &'a dyn Debug },
     ReadOwnedNodes,
     BorrowNode { node_pointer: &'a RENodeLocation },
     DropNode { node: &'a HeapRENode },
@@ -97,10 +98,18 @@ pub trait Module<R: FeeReserve> {
         output: SysCallOutput,
     ) -> Result<(), ModuleError>;
 
-    fn on_run(
+    fn pre_execute_invocation(
         &mut self,
         actor: &REActor,
         input: &IndexedScryptoValue,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
+        track: &mut Track<R>,
+    ) -> Result<(), ModuleError>;
+
+    fn post_execute_invocation(
+        &mut self,
+        update: &CallFrameUpdate,
         call_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track<R>,

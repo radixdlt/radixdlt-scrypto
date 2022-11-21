@@ -129,7 +129,7 @@ pub trait NativeInvocation: NativeExecutable + Encode<ScryptoCustomTypeId> + Deb
 }
 
 pub trait NativeExecutable: Invocation {
-    type NativeOutput: Traceable + 'static;
+    type NativeOutput: Debug;
 
     fn execute<Y>(
         invocation: Self,
