@@ -6,6 +6,8 @@ edition = "2021"
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
 serde = { version = "1.0.137", default-features = false, optional = true }
+indexmap = { version = "1.9.2", default-features = false }
+const-sha1 = { version = "0.2.0" } # Chosen because of its small size and 0 transitive dependencies
 
 [features]
 # You should enable either `std` or `alloc`
@@ -14,4 +16,4 @@ std = ["sbor/std", "serde?/std"]
 alloc = ["sbor/alloc", "serde?/alloc"]
 
 # Enable serde derives
-serde = ["serde/derive", "sbor/serde"]
+serde = ["serde/derive", "sbor/serde", "indexmap/serde"]
