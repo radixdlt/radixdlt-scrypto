@@ -116,8 +116,9 @@ mod tests {
         // RFC 2056
         fn assert_all() {
             assert_send::<ScryptoInterpreter<DefaultWasmEngine>>();
-            // TODO: make sure engine is multi-thread safe!
-            // assert_sync::<ScryptoInterpreter<DefaultWasmEngine>>();
+            // TODO: make sure engine is indeed multi-thread safe!
+            #[cfg(not(feature = "alloc"))]
+            assert_sync::<ScryptoInterpreter<DefaultWasmEngine>>();
         }
     };
 }
