@@ -230,7 +230,8 @@ impl Default for WasmiEngine {
 }
 
 impl WasmiEngine {
-    pub fn new(_options: EngineOptions) -> Self {
+    #[allow(unused_variables)]
+    pub fn new(options: EngineOptions) -> Self {
         // TODO: limit size
         let cache = RefCell::new(HashMap::new());
         Self {
