@@ -65,9 +65,9 @@ impl Into<ApplicationError> for VaultError {
     }
 }
 
-impl Into<ApplicationError> for ComponentError {
+impl Into<ApplicationError> for AccessRulesError {
     fn into(self) -> ApplicationError {
-        ApplicationError::ComponentError(self)
+        ApplicationError::AccessRulesError(self)
     }
 }
 
@@ -130,7 +130,7 @@ pub trait NativeInvocation: NativeExecutable + Encode<ScryptoCustomTypeId> + Deb
 }
 
 pub trait NativeExecutable: Invocation {
-    type NativeOutput: Traceable + 'static;
+    type NativeOutput: Debug;
 
     fn execute<Y>(
         invocation: Self,

@@ -454,7 +454,7 @@ where
                 NodeMoveModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
             })?;
             for m in &mut self.modules {
-                m.on_run(
+                m.pre_execute_invocation(
                     &actor,
                     executor.args(),
                     &mut self.current_frame,
@@ -486,6 +486,16 @@ where
             // Auto drop locks
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
+
+            for m in &mut self.modules {
+                m.post_execute_invocation(
+                    &update,
+                    &mut self.current_frame,
+                    &mut self.heap,
+                    &mut self.track,
+                )
+                .map_err(RuntimeError::ModuleError)?;
+            }
 
             // TODO: Abstract these away
             self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
@@ -1218,10 +1228,7 @@ where
         Ok(substate_ref)
     }
 
-    fn get_ref_mut<'f>(
-        &'f mut self,
-        lock_handle: LockHandle,
-    ) -> Result<SubstateRefMut<'f>, RuntimeError> {
+    fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,

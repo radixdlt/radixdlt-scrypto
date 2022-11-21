@@ -36,7 +36,7 @@ pub enum NativeFnInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NativeMethodInvocation {
-    Component(ComponentMethodInvocation),
+    AccessRules(AccessRulesMethodInvocation),
     EpochManager(EpochManagerMethodInvocation),
     AuthZone(AuthZoneMethodInvocation),
     ResourceManager(ResourceManagerMethodInvocation),
@@ -56,8 +56,8 @@ pub enum NativeFunctionInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum ComponentMethodInvocation {
-    AddAccessCheck(ComponentAddAccessCheckInvocation),
+pub enum AccessRulesMethodInvocation {
+    AddAccessCheck(AccessRulesAddAccessCheckInvocation),
 }
 
 #[derive(Debug)]
