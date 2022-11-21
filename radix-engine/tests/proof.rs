@@ -1,4 +1,5 @@
-use radix_engine::engine::{KernelError, RuntimeError};
+use radix_engine::engine::node_move_module::NodeMoveError;
+use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
@@ -337,7 +338,9 @@ fn cant_move_restricted_proof() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CantMoveDownstream(RENodeId::Proof(..)))
+            RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                NodeMoveError::CantMoveDownstream(RENodeId::Proof(..))
+            ))
         )
     });
 }
@@ -380,7 +383,9 @@ fn cant_move_locked_bucket() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CantMoveUpstream(RENodeId::Bucket(..)))
+            RuntimeError::ModuleError(ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(
+                RENodeId::Bucket(..)
+            )))
         )
     });
 }

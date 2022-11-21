@@ -117,10 +117,10 @@ impl fmt::Debug for ResolvedMethod {
 pub enum ExecutionMode {
     Kernel,
     Globalize,
-    MoveDownstream,
     MoveUpstream,
     Deref,
     ScryptoInterpreter,
+    NodeMoveModule,
     AuthModule,
     Application,
     DropNode,
