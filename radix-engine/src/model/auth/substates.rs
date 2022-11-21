@@ -231,7 +231,7 @@ impl AuthZoneStackSubstate {
             REActor::Method(
                 _,
                 ResolvedReceiver {
-                    derefed_from: Some(RENodeId::Global(GlobalAddress::Component(..))),
+                    derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
                     ..
                 }
             )

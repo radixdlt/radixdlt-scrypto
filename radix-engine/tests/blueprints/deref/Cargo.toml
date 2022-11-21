@@ -1,5 +1,5 @@
 [package]
-name = "component"
+name = "deref"
 version = "0.7.0"
 edition = "2021"
 
