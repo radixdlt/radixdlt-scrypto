@@ -57,14 +57,18 @@ macro_rules! checked_signed_large {
 
 checked_signed_large! {
     I256, 32,
+    I320, 40,
     I384, 48,
-    I512, 64
+    I512, 64,
+    I728, 91
 }
 
 checked_unsigned_large! {
     U256, 32,
+    U320, 40,
     U384, 48,
-    U512, 64
+    U512, 64,
+    U728, 91
 }
 
 macro_rules! checked_int_impl_small {

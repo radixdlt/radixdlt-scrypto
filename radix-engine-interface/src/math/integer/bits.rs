@@ -87,7 +87,7 @@ macro_rules! checked_int_impl_large {
     }
 }
 
-checked_int_impl_large! { U256, U384, U512, I256, I384, I512 }
+checked_int_impl_large! { U256, U320, U384, U512, U728, I256, I320, I384, I512, I728 }
 
 macro_rules! checked_int_impl_small {
     ($($t:ident),*) => {$(
@@ -400,4 +400,4 @@ macro_rules! checked_impl_all {
     }
 }
 
-checked_impl_all! { U8, U16, U32, U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512 }
+checked_impl_all! { U8, U16, U32, U64, U128, U256, U320, U384, U512, U728, I8, I16, I32, I64, I128, I256, I320, I384, I512, I728 }

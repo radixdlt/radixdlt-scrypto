@@ -307,11 +307,12 @@ where
     type Output = Decimal;
 
     fn mul(self, other: T) -> Self::Output {
-        let a = self.0;
+        let a = I512::from(self.0);
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b: I256 = b_dec.0;
-        let c: I256 = a * b / Self::ONE.0;
-        Decimal(c)
+        let b: I512 = I512::from(b_dec.0);
+        let c: I512 = a * b / I512::from(Self::ONE.0);
+        let c_256 = I256::try_from(c).unwrap();
+        Decimal(c_256)
     }
 }
 
