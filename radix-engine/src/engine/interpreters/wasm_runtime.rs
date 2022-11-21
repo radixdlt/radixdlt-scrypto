@@ -6,10 +6,11 @@ use crate::wasm::*;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
 use radix_engine_interface::api::wasm_input::{
     AccessRulesMethodInvocation, AuthZoneMethodInvocation, BucketMethodInvocation,
-    EpochManagerFunctionInvocation, EpochManagerMethodInvocation, NativeFnInvocation,
-    NativeFunctionInvocation, NativeMethodInvocation, PackageFunctionInvocation,
-    ProofMethodInvocation, RadixEngineInput, ResourceManagerFunctionInvocation,
-    ResourceManagerMethodInvocation, VaultMethodInvocation, WorktopMethodInvocation,
+    ComponentMethodInvocation, EpochManagerFunctionInvocation, EpochManagerMethodInvocation,
+    NativeFnInvocation, NativeFunctionInvocation, NativeMethodInvocation,
+    PackageFunctionInvocation, ProofMethodInvocation, RadixEngineInput,
+    ResourceManagerFunctionInvocation, ResourceManagerMethodInvocation, VaultMethodInvocation,
+    WorktopMethodInvocation,
 };
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
 use sbor::rust::vec::Vec;
@@ -69,6 +70,12 @@ where
                 },
             },
             NativeFnInvocation::Method(native_method) => match native_method {
+                NativeMethodInvocation::Component(component_method) => match component_method {
+                    ComponentMethodInvocation::SetRoyaltyConfig(invocation) => self
+                        .system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                },
                 NativeMethodInvocation::Bucket(bucket_method) => match bucket_method {
                     BucketMethodInvocation::Take(invocation) => self
                         .system_api

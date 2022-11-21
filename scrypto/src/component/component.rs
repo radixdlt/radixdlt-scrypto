@@ -35,6 +35,7 @@ pub trait LocalComponent {
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
     fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
+    fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self;
     fn globalize(self) -> ComponentAddress;
 }
 
@@ -97,6 +98,11 @@ impl Component {
             .unwrap()
     }
 
+    pub fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self {
+        self.sys_set_royalty_config(royalty_config, &mut ScryptoEnv)
+            .unwrap()
+    }
+
     pub fn sys_add_access_check<Y, E: Debug + Decode<ScryptoCustomTypeId>>(
         &mut self,
         access_rules: AccessRules,
@@ -108,6 +114,22 @@ impl Component {
         sys_calls.sys_invoke(AccessRulesAddAccessCheckInvocation {
             receiver: RENodeId::Component(self.0),
             access_rules,
+        })?;
+
+        Ok(self)
+    }
+
+    pub fn sys_set_royalty_config<Y, E: Debug + Decode<ScryptoCustomTypeId>>(
+        &mut self,
+        royalty_config: RoyaltyConfig,
+        sys_calls: &mut Y,
+    ) -> Result<&mut Self, E>
+    where
+        Y: EngineApi<E> + SysNativeInvokable<ComponentSetRoyaltyConfigInvocation, E>,
+    {
+        sys_calls.sys_invoke(ComponentSetRoyaltyConfigInvocation {
+            receiver: RENodeId::Component(self.0),
+            royalty_config,
         })?;
 
         Ok(self)

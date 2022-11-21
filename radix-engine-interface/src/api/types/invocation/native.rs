@@ -29,6 +29,7 @@ pub enum NativeFn {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NativeMethod {
     AccessRules(AccessRulesMethod),
+    Component(ComponentMethod), // TODO: investigate whether to make royalty universal and take any "receiver".
     EpochManager(EpochManagerMethod),
     AuthZone(AuthZoneMethod),
     ResourceManager(ResourceManagerMethod),
@@ -88,6 +89,27 @@ pub enum AccessRulesMethod {
 #[strum(serialize_all = "snake_case")]
 pub enum EpochManagerFunction {
     Create,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum ComponentMethod {
+    SetRoyaltyConfig,
 }
 
 #[derive(

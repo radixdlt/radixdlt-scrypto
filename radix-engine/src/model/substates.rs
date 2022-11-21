@@ -642,6 +642,7 @@ impl<'a> SubstateRef<'a> {
 pub enum SubstateRefMut<'a> {
     ComponentInfo(&'a mut ComponentInfoSubstate),
     ComponentState(&'a mut ComponentStateSubstate),
+    ComponentRoyaltyConfig(&'a mut ComponentRoyaltyConfigSubstate),
     NonFungible(&'a mut NonFungibleSubstate),
     KeyValueStoreEntry(&'a mut KeyValueStoreEntrySubstate),
     Package(&'a mut PackageSubstate),
@@ -723,14 +724,21 @@ impl<'a> SubstateRefMut<'a> {
     pub fn component_info(&mut self) -> &mut ComponentInfoSubstate {
         match self {
             SubstateRefMut::ComponentInfo(value) => *value,
-            _ => panic!("Not system"),
+            _ => panic!("Not component info"),
+        }
+    }
+
+    pub fn component_royalty_config(&mut self) -> &mut ComponentRoyaltyConfigSubstate {
+        match self {
+            SubstateRefMut::ComponentRoyaltyConfig(value) => *value,
+            _ => panic!("Not component royalty config"),
         }
     }
 
     pub fn epoch_manager(&mut self) -> &mut EpochManagerSubstate {
         match self {
             SubstateRefMut::EpochManager(value) => *value,
-            _ => panic!("Not system"),
+            _ => panic!("Not epoch manager"),
         }
     }
 

@@ -1,7 +1,8 @@
 use radix_engine_interface::api::types::{
-    AccessRulesMethod, AuthZoneMethod, BucketMethod, EpochManagerFunction, EpochManagerMethod,
-    NativeFunction, NativeMethod, PackageFunction, ProofMethod, ResourceManagerFunction,
-    ResourceManagerMethod, TransactionProcessorFunction, VaultMethod, WorktopMethod,
+    AccessRulesMethod, AuthZoneMethod, BucketMethod, ComponentMethod, EpochManagerFunction,
+    EpochManagerMethod, NativeFunction, NativeMethod, PackageFunction, ProofMethod,
+    ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
+    WorktopMethod,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
@@ -230,8 +231,11 @@ impl FeeTable {
                 WorktopMethod::AssertContainsNonFungibles => self.fixed_low,
                 WorktopMethod::Drain => self.fixed_low,
             },
-            NativeMethod::AccessRules(component_ident) => match component_ident {
+            NativeMethod::AccessRules(method_ident) => match method_ident {
                 AccessRulesMethod::AddAccessCheck => self.fixed_medium,
+            },
+            NativeMethod::Component(method_ident) => match method_ident {
+                ComponentMethod::SetRoyaltyConfig => self.fixed_medium,
             },
             NativeMethod::Vault(vault_ident) => {
                 match vault_ident {
