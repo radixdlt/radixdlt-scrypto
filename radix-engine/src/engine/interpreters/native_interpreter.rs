@@ -65,9 +65,9 @@ impl Into<ApplicationError> for VaultError {
     }
 }
 
-impl Into<ApplicationError> for ComponentError {
+impl Into<ApplicationError> for AccessRulesError {
     fn into(self) -> ApplicationError {
-        ApplicationError::ComponentError(self)
+        ApplicationError::AccessRulesError(self)
     }
 }
 
@@ -101,11 +101,12 @@ impl<N: NativeInvocation> Resolver<N> for NativeResolver {
         let (actor, call_frame_update) = match info {
             NativeInvocationInfo::Method(method, receiver, mut call_frame_update) => {
                 // TODO: Move this logic into kernel
-                let resolved_receiver = if let Some(derefed) = deref.deref(receiver)? {
-                    ResolvedReceiver::derefed(derefed, receiver)
-                } else {
-                    ResolvedReceiver::new(receiver)
-                };
+                let resolved_receiver =
+                    if let Some((derefed, derefed_lock)) = deref.deref(receiver)? {
+                        ResolvedReceiver::derefed(derefed, receiver, derefed_lock)
+                    } else {
+                        ResolvedReceiver::new(receiver)
+                    };
                 let resolved_node_id = resolved_receiver.receiver;
                 call_frame_update.node_refs_to_copy.insert(resolved_node_id);
 
@@ -129,7 +130,7 @@ pub trait NativeInvocation: NativeExecutable + Encode<ScryptoCustomTypeId> + Deb
 }
 
 pub trait NativeExecutable: Invocation {
-    type NativeOutput: Traceable + 'static;
+    type NativeOutput: Debug;
 
     fn execute<Y>(
         invocation: Self,

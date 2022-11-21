@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::{
-    AuthZoneMethod, BucketMethod, ComponentMethod, EpochManagerFunction, EpochManagerMethod,
+    AccessRulesMethod, AuthZoneMethod, BucketMethod, EpochManagerFunction, EpochManagerMethod,
     NativeFunction, NativeMethod, PackageFunction, ProofMethod, ResourceManagerFunction,
     ResourceManagerMethod, TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
@@ -230,8 +230,8 @@ impl FeeTable {
                 WorktopMethod::AssertContainsNonFungibles => self.fixed_low,
                 WorktopMethod::Drain => self.fixed_low,
             },
-            NativeMethod::Component(component_ident) => match component_ident {
-                ComponentMethod::AddAccessCheck => self.fixed_medium,
+            NativeMethod::AccessRules(component_ident) => match component_ident {
+                AccessRulesMethod::AddAccessCheck => self.fixed_medium,
             },
             NativeMethod::Vault(vault_ident) => {
                 match vault_ident {

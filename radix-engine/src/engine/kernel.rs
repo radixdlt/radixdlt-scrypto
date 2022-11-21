@@ -15,7 +15,6 @@ use transaction::errors::IdAllocationError;
 use transaction::model::AuthZoneParams;
 use transaction::validation::*;
 
-use crate::engine::call_frame::RENodeLocation;
 use crate::engine::node_move_module::NodeMoveModule;
 use crate::engine::system_api::Invokable;
 use crate::engine::system_api::LockInfo;
@@ -118,34 +117,31 @@ where
             })
             .expect("AuthModule failed to initialize");
 
-        kernel.current_frame.node_refs.insert(
-            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
-            RENodeLocation::Store,
-        );
-        kernel.current_frame.node_refs.insert(
-            RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)),
-            RENodeLocation::Store,
-        );
-        kernel.current_frame.node_refs.insert(
-            RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)),
-            RENodeLocation::Store,
-        );
-        kernel.current_frame.node_refs.insert(
-            RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)),
-            RENodeLocation::Store,
-        );
-        kernel.current_frame.node_refs.insert(
-            RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-            RENodeLocation::Store,
-        );
-        kernel.current_frame.node_refs.insert(
-            RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)),
-            RENodeLocation::Store,
-        );
-        kernel.current_frame.node_refs.insert(
-            RENodeId::Global(GlobalAddress::Package(SYS_FAUCET_PACKAGE)),
-            RENodeLocation::Store,
-        );
+        kernel
+            .current_frame
+            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        kernel
+            .current_frame
+            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)));
+        kernel
+            .current_frame
+            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(
+                ECDSA_SECP256K1_TOKEN,
+            )));
+        kernel
+            .current_frame
+            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(
+                EDDSA_ED25519_TOKEN,
+            )));
+        kernel
+            .current_frame
+            .add_stored_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        kernel
+            .current_frame
+            .add_stored_ref(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+        kernel
+            .current_frame
+            .add_stored_ref(RENodeId::Global(GlobalAddress::Package(SYS_FAUCET_PACKAGE)));
 
         kernel
     }
@@ -327,9 +323,7 @@ where
                     SubstateId(node_id, offset.clone()),
                     RuntimeSubstate::Global(global_substate),
                 );
-                self.current_frame
-                    .node_refs
-                    .insert(node_id, RENodeLocation::Store);
+                self.current_frame.add_stored_ref(node_id);
                 self.current_frame.move_owned_node_to_store(
                     &mut self.heap,
                     &mut self.track,
@@ -428,6 +422,19 @@ where
         actor: REActor,
         mut call_frame_update: CallFrameUpdate,
     ) -> Result<X::Output, RuntimeError> {
+        let derefed_lock = if let REActor::Method(
+            _,
+            ResolvedReceiver {
+                derefed_from: Some((_, derefed_lock)),
+                ..
+            },
+        ) = &actor
+        {
+            Some(*derefed_lock)
+        } else {
+            None
+        };
+
         // Filter
         self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
             AuthModule::on_before_frame_start(&actor, &executor, system_api)
@@ -443,7 +450,7 @@ where
                 NodeMoveModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
             })?;
             for m in &mut self.modules {
-                m.on_run(
+                m.pre_execute_invocation(
                     &actor,
                     executor.args(),
                     &mut self.current_frame,
@@ -476,6 +483,16 @@ where
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
 
+            for m in &mut self.modules {
+                m.post_execute_invocation(
+                    &update,
+                    &mut self.current_frame,
+                    &mut self.heap,
+                    &mut self.track,
+                )
+                .map_err(RuntimeError::ModuleError)?;
+            }
+
             // TODO: Abstract these away
             self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
                 NodeMoveModule::on_call_frame_exit(&update, system_api)
@@ -501,23 +518,28 @@ where
             self.current_frame = parent;
         }
 
+        if let Some(derefed_lock) = derefed_lock {
+            self.current_frame
+                .drop_lock(&mut self.heap, &mut self.track, derefed_lock)?;
+        }
+
         Ok(output)
     }
 
     pub fn node_method_deref(
         &mut self,
         node_id: RENodeId,
-    ) -> Result<Option<RENodeId>, RuntimeError> {
+    ) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
-            let node_id =
+            let derefed =
                 self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Deref, |system_api| {
                     let offset = SubstateOffset::Global(GlobalOffset::Global);
                     let handle = system_api.lock_substate(node_id, offset, LockFlags::empty())?;
                     let substate_ref = system_api.get_ref(handle)?;
-                    Ok(substate_ref.global_address().node_deref())
+                    Ok((substate_ref.global_address().node_deref(), handle))
                 })?;
 
-            Ok(Some(node_id))
+            Ok(Some(derefed))
         } else {
             Ok(None)
         }
@@ -527,10 +549,10 @@ where
         &mut self,
         node_id: RENodeId,
         offset: &SubstateOffset,
-    ) -> Result<Option<RENodeId>, RuntimeError> {
+    ) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
         if let RENodeId::Global(..) = node_id {
             if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) {
-                let node_id = self.execute_in_mode::<_, _, RuntimeError>(
+                let derefed = self.execute_in_mode::<_, _, RuntimeError>(
                     ExecutionMode::Deref,
                     |system_api| {
                         let handle = system_api.lock_substate(
@@ -539,11 +561,11 @@ where
                             LockFlags::empty(),
                         )?;
                         let substate_ref = system_api.get_ref(handle)?;
-                        Ok(substate_ref.global_address().node_deref())
+                        Ok((substate_ref.global_address().node_deref(), handle))
                     },
                 )?;
 
-                Ok(Some(node_id))
+                Ok(Some(derefed))
             } else {
                 Ok(None)
             }
@@ -595,9 +617,7 @@ where
                                 ..
                             ))
                         ) {
-                            self.current_frame
-                                .node_refs
-                                .insert(*node_id, RENodeLocation::Store);
+                            self.current_frame.add_stored_ref(*node_id);
                             continue;
                         }
 
@@ -611,9 +631,7 @@ where
                         self.track
                             .release_lock(SubstateId(*node_id, offset), false)
                             .map_err(|_| KernelError::GlobalAddressNotFound(*global_address))?;
-                        self.current_frame
-                            .node_refs
-                            .insert(*node_id, RENodeLocation::Store);
+                        self.current_frame.add_stored_ref(*node_id);
                         continue;
                     }
                 }
@@ -655,7 +673,7 @@ where
 }
 
 pub trait MethodDeref {
-    fn deref(&mut self, node_id: RENodeId) -> Result<Option<RENodeId>, RuntimeError>;
+    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError>;
 }
 
 impl<'g, 's, W, R> MethodDeref for Kernel<'g, 's, W, R>
@@ -663,7 +681,7 @@ where
     W: WasmEngine,
     R: FeeReserve,
 {
-    fn deref(&mut self, node_id: RENodeId) -> Result<Option<RENodeId>, RuntimeError> {
+    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
         self.node_method_deref(node_id)
     }
 }
@@ -968,9 +986,7 @@ where
                     SubstateId(global_node_id, SubstateOffset::Global(GlobalOffset::Global)),
                     RuntimeSubstate::Global(global_substate),
                 );
-                self.current_frame
-                    .node_refs
-                    .insert(global_node_id, RENodeLocation::Store);
+                self.current_frame.add_stored_ref(global_node_id);
                 self.current_frame.move_owned_node_to_store(
                     &mut self.heap,
                     &mut self.track,
@@ -1008,7 +1024,7 @@ where
 
     fn lock_substate(
         &mut self,
-        mut node_id: RENodeId,
+        node_id: RENodeId,
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
@@ -1031,9 +1047,12 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         // Deref
-        if let Some(derefed) = self.node_offset_deref(node_id, &offset)? {
-            node_id = derefed;
-        }
+        let (node_id, derefed_lock) =
+            if let Some((node_id, derefed_lock)) = self.node_offset_deref(node_id, &offset)? {
+                (node_id, Some(derefed_lock))
+            } else {
+                (node_id, None)
+            };
 
         // TODO: Check if valid offset for node_id
 
@@ -1084,6 +1103,11 @@ where
             }
             Err(err) => return Err(err),
         };
+
+        if let Some(lock_handle) = derefed_lock {
+            self.current_frame
+                .drop_lock(&mut self.heap, &mut self.track, lock_handle)?;
+        }
 
         // Restore current mode
         self.execution_mode = current_mode;
@@ -1170,10 +1194,7 @@ where
         Ok(substate_ref)
     }
 
-    fn get_ref_mut<'f>(
-        &'f mut self,
-        lock_handle: LockHandle,
-    ) -> Result<SubstateRefMut<'f>, RuntimeError> {
+    fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,
@@ -1374,12 +1395,12 @@ where
                     ScryptoPackage::Global(address) => address,
                 };
                 let global_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
-                let package_node_id = self.node_method_deref(global_node_id)?.unwrap();
+
                 let package = self.execute_in_mode::<_, _, RuntimeError>(
                     ExecutionMode::ScryptoInterpreter,
                     |system_api| {
                         let handle = system_api.lock_substate(
-                            package_node_id,
+                            global_node_id,
                             SubstateOffset::Package(PackageOffset::Package),
                             LockFlags::read_only(),
                         )?;
@@ -1394,7 +1415,6 @@ where
                 // Pass the package ref
                 // TODO: remove? currently needed for `Runtime::package_address()` API.
                 node_refs_to_copy.insert(global_node_id);
-                node_refs_to_copy.insert(package_node_id);
 
                 // Find the abi
                 let abi = package
@@ -1446,8 +1466,7 @@ where
                     self.scrypto_interpreter
                         .create_executor(&package.code, invocation.args().clone()),
                     REActor::Function(ResolvedFunction::Scrypto {
-                        package_address: package_address,
-                        package_id: package_node_id.into(),
+                        package_address,
                         blueprint_name: function_ident.blueprint_name.clone(),
                         ident: function_ident.function_name.clone(),
                         export_name: fn_abi.export_name.clone(),
@@ -1464,12 +1483,14 @@ where
                 };
 
                 // Deref if global
-                let resolved_receiver =
-                    if let Some(derefed) = self.node_method_deref(original_node_id)? {
-                        ResolvedReceiver::derefed(derefed, original_node_id)
-                    } else {
-                        ResolvedReceiver::new(original_node_id)
-                    };
+                // TODO: Move into kernel
+                let resolved_receiver = if let Some((derefed, derefed_lock)) =
+                    self.node_method_deref(original_node_id)?
+                {
+                    ResolvedReceiver::derefed(derefed, original_node_id, derefed_lock)
+                } else {
+                    ResolvedReceiver::new(original_node_id)
+                };
 
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
@@ -1489,16 +1510,14 @@ where
                         Ok(component_info)
                     },
                 )?;
-                let package_node_id = self
-                    .node_method_deref(RENodeId::Global(GlobalAddress::Package(
-                        component_info.package_address,
-                    )))?
-                    .unwrap();
                 let package = self.execute_in_mode::<_, _, RuntimeError>(
                     ExecutionMode::ScryptoInterpreter,
                     |system_api| {
+                        let package_global = RENodeId::Global(GlobalAddress::Package(
+                            component_info.package_address,
+                        ));
                         let handle = system_api.lock_substate(
-                            package_node_id,
+                            package_global,
                             SubstateOffset::Package(PackageOffset::Package),
                             LockFlags::read_only(),
                         )?;
@@ -1570,7 +1589,6 @@ where
                     REActor::Method(
                         ResolvedMethod::Scrypto {
                             package_address: component_info.package_address,
-                            package_id: package_node_id.into(),
                             blueprint_name: component_info.blueprint_name,
                             ident: method_ident.method_name.clone(),
                             export_name: fn_abi.export_name.clone(),

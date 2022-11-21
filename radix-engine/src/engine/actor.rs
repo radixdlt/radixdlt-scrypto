@@ -1,6 +1,6 @@
 use crate::types::*;
 use radix_engine_interface::api::types::{
-    NativeFunction, NativeMethod, PackageId, RENodeId, TransactionProcessorFunction,
+    NativeFunction, NativeMethod, RENodeId, TransactionProcessorFunction,
 };
 
 /// Resolved receiver including info whether receiver was derefed
@@ -8,15 +8,15 @@ use radix_engine_interface::api::types::{
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResolvedReceiver {
-    pub derefed_from: Option<RENodeId>,
+    pub derefed_from: Option<(RENodeId, LockHandle)>,
     pub receiver: RENodeId,
 }
 
 impl ResolvedReceiver {
-    pub fn derefed(receiver: RENodeId, from: RENodeId) -> Self {
+    pub fn derefed(receiver: RENodeId, from: RENodeId, lock_handle: LockHandle) -> Self {
         Self {
             receiver,
-            derefed_from: Some(from),
+            derefed_from: Some((from, lock_handle)),
         }
     }
 
@@ -33,7 +33,6 @@ impl ResolvedReceiver {
 pub enum ResolvedFunction {
     Scrypto {
         package_address: PackageAddress,
-        package_id: PackageId,
         blueprint_name: String,
         ident: String,
         export_name: String,
@@ -47,7 +46,6 @@ pub enum ResolvedFunction {
 pub enum ResolvedMethod {
     Scrypto {
         package_address: PackageAddress,
-        package_id: PackageId,
         blueprint_name: String,
         ident: String,
         export_name: String,

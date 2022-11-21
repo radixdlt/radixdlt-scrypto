@@ -113,7 +113,7 @@ impl AuthModule {
                     ) => EpochManager::method_auth(method),
                     (
                         ResolvedMethod::Scrypto {
-                            package_id,
+                            package_address,
                             blueprint_name,
                             ident,
                             ..
@@ -123,7 +123,7 @@ impl AuthModule {
                             ..
                         },
                     ) => {
-                        let node_id = RENodeId::Package(package_id);
+                        let node_id = RENodeId::Global(GlobalAddress::Package(package_address));
                         let offset = SubstateOffset::Package(PackageOffset::Package);
                         let handle =
                             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
@@ -153,15 +153,16 @@ impl AuthModule {
                             state
                         };
                         {
-                            let offset = SubstateOffset::Component(ComponentOffset::Info);
+                            let offset =
+                                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
                             let handle = system_api.lock_substate(
                                 component_node_id,
                                 offset,
                                 LockFlags::read_only(),
                             )?;
                             let substate_ref = system_api.get_ref(handle)?;
-                            let info = substate_ref.component_info();
-                            let auth = info.method_authorization(&state, &schema, &ident);
+                            let access_rules = substate_ref.access_rules();
+                            let auth = access_rules.method_authorization(&state, &schema, &ident);
                             system_api.drop_lock(handle)?;
                             auth
                         }
