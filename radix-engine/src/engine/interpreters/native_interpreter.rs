@@ -101,11 +101,12 @@ impl<N: NativeInvocation> Resolver<N> for NativeResolver {
         let (actor, call_frame_update) = match info {
             NativeInvocationInfo::Method(method, receiver, mut call_frame_update) => {
                 // TODO: Move this logic into kernel
-                let resolved_receiver = if let Some(derefed) = deref.deref(receiver)? {
-                    ResolvedReceiver::derefed(derefed, receiver)
-                } else {
-                    ResolvedReceiver::new(receiver)
-                };
+                let resolved_receiver =
+                    if let Some((derefed, derefed_lock)) = deref.deref(receiver)? {
+                        ResolvedReceiver::derefed(derefed, receiver, derefed_lock)
+                    } else {
+                        ResolvedReceiver::new(receiver)
+                    };
                 let resolved_node_id = resolved_receiver.receiver;
                 call_frame_update.node_refs_to_copy.insert(resolved_node_id);
 
