@@ -1,5 +1,6 @@
 use crate::model::InvokeError;
 use radix_engine_interface::data::IndexedScryptoValue;
+use sbor::rust::num::NonZeroUsize;
 use sbor::rust::sync::{Arc, Mutex};
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
@@ -36,7 +37,7 @@ pub struct WasmerInstanceEnv {
 
 pub struct WasmerEngine {
     store: Store,
-    modules_cache: RefCell<HashMap<Hash, Arc<WasmerModule>>>,
+    modules_cache: RefCell<lru::LruCache<Hash, Arc<WasmerModule>>>,
 }
 
 pub fn send_value(instance: &Instance, value: &[u8]) -> Result<usize, InvokeError<WasmError>> {
@@ -221,8 +222,7 @@ impl WasmInstance for WasmerInstance {
 
 #[derive(Debug, Clone)]
 pub struct EngineOptions {
-    #[allow(dead_code)]
-    max_cache_size_bytes: u64,
+    max_cache_size_bytes: usize,
 }
 
 impl Default for WasmerEngine {
@@ -234,10 +234,11 @@ impl Default for WasmerEngine {
 }
 
 impl WasmerEngine {
-    #[allow(unused_variables)]
     pub fn new(options: EngineOptions) -> Self {
         let compiler = Singlepass::new();
-        let modules_cache = RefCell::new(HashMap::new());
+        let modules_cache = RefCell::new(lru::LruCache::new(
+            NonZeroUsize::new(options.max_cache_size_bytes / (1024 * 1024)).unwrap(),
+        ));
         Self {
             store: Store::new(&Universal::new(compiler).engine()),
             modules_cache,
@@ -251,7 +252,7 @@ impl WasmEngine for WasmerEngine {
     fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmerInstance {
         let code_hash = &instrumented_code.code_hash;
         {
-            if let Some(cached_module) = self.modules_cache.borrow().get(code_hash) {
+            if let Some(cached_module) = self.modules_cache.borrow_mut().get(code_hash) {
                 return cached_module.instantiate();
             }
         }
@@ -265,7 +266,7 @@ impl WasmEngine for WasmerEngine {
 
         self.modules_cache
             .borrow_mut()
-            .insert(*code_hash, new_module.clone());
+            .put(*code_hash, new_module.clone());
 
         new_module.instantiate()
     }

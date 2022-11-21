@@ -1,7 +1,7 @@
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::cell::RefCell;
-use sbor::rust::collections::HashMap;
+use sbor::rust::num::NonZeroUsize;
 use sbor::rust::sync::Arc;
 use wasmi::*;
 
@@ -213,12 +213,11 @@ impl WasmInstance for WasmiInstance {
 
 #[derive(Debug, Clone)]
 pub struct EngineOptions {
-    #[allow(dead_code)]
-    max_cache_size_bytes: u64,
+    max_cache_size_bytes: usize,
 }
 
 pub struct WasmiEngine {
-    modules_cache: RefCell<HashMap<Hash, Arc<WasmiModule>>>,
+    modules_cache: RefCell<lru::LruCache<Hash, Arc<WasmiModule>>>,
 }
 
 impl Default for WasmiEngine {
@@ -230,13 +229,11 @@ impl Default for WasmiEngine {
 }
 
 impl WasmiEngine {
-    #[allow(unused_variables)]
     pub fn new(options: EngineOptions) -> Self {
-        // TODO: limit size
-        let cache = RefCell::new(HashMap::new());
-        Self {
-            modules_cache: cache,
-        }
+        let modules_cache = RefCell::new(lru::LruCache::new(
+            NonZeroUsize::new(options.max_cache_size_bytes / (1024 * 1024)).unwrap(),
+        ));
+        Self { modules_cache }
     }
 }
 
@@ -246,7 +243,7 @@ impl WasmEngine for WasmiEngine {
     fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmiInstance {
         let code_hash = &instrumented_code.code_hash;
         {
-            if let Some(cached_module) = self.modules_cache.borrow().get(code_hash) {
+            if let Some(cached_module) = self.modules_cache.borrow_mut().get(code_hash) {
                 return cached_module.instantiate();
             }
         }
@@ -260,7 +257,7 @@ impl WasmEngine for WasmiEngine {
 
         self.modules_cache
             .borrow_mut()
-            .insert(*code_hash, new_module.clone());
+            .put(*code_hash, new_module.clone());
 
         new_module.instantiate()
     }

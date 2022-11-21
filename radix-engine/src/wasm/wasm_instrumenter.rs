@@ -1,19 +1,18 @@
 use radix_engine_interface::crypto::hash;
 use sbor::rust::cell::RefCell;
-use sbor::rust::collections::HashMap;
+use sbor::rust::num::NonZeroUsize;
 use sbor::rust::sync::Arc;
 
 use crate::types::*;
 use crate::wasm::{WasmMeteringConfig, WasmModule};
 
 pub struct WasmInstrumenter {
-    cache: RefCell<HashMap<(Hash, Hash), Arc<Vec<u8>>>>,
+    cache: RefCell<lru::LruCache<(Hash, Hash), Arc<Vec<u8>>>>,
 }
 
 #[derive(Debug, Clone)]
 pub struct InstrumenterOptions {
-    #[allow(dead_code)]
-    max_cache_size_bytes: u64,
+    max_cache_size_bytes: usize,
 }
 
 impl Default for WasmInstrumenter {
@@ -30,9 +29,10 @@ pub struct InstrumentedCode {
 }
 
 impl WasmInstrumenter {
-    pub fn new(_options: InstrumenterOptions) -> Self {
-        // TODO: limit size
-        let cache = RefCell::new(HashMap::new());
+    pub fn new(options: InstrumenterOptions) -> Self {
+        let cache = RefCell::new(lru::LruCache::new(
+            NonZeroUsize::new(options.max_cache_size_bytes / (1024 * 1024)).unwrap(),
+        ));
 
         Self { cache }
     }
@@ -46,7 +46,7 @@ impl WasmInstrumenter {
         let cache_key = (code_hash, *wasm_metering_config.identifier());
 
         {
-            if let Some(cached) = self.cache.borrow().get(&cache_key) {
+            if let Some(cached) = self.cache.borrow_mut().get(&cache_key) {
                 return InstrumentedCode {
                     code: cached.clone(),
                     code_hash,
@@ -58,7 +58,7 @@ impl WasmInstrumenter {
 
         self.cache
             .borrow_mut()
-            .insert(cache_key, instrumented_ref.clone());
+            .put(cache_key, instrumented_ref.clone());
 
         InstrumentedCode {
             code: instrumented_ref,
