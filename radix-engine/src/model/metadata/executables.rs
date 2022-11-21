@@ -18,7 +18,7 @@ impl NativeExecutable for MetadataSetInvocation {
         let node_id = input.receiver;
 
         // TODO: Move this into a more static check once node types implemented
-        if !matches!(node_id, RENodeId::Package(..)) {
+        if !matches!(node_id, RENodeId::Global(GlobalAddress::Package(_))) {
             return Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,
             ));
