@@ -4,9 +4,10 @@ use crate::engine::{
 };
 use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{
-    AuthZoneOffset, BucketOffset, ComponentOffset, GlobalOffset, KeyValueStoreOffset,
-    NativeFunction, NativeMethod, PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset,
-    SubstateOffset, TransactionProcessorFunction, VaultOffset, WorktopOffset,
+    AccessRulesOffset, AuthZoneOffset, BucketOffset, ComponentOffset, GlobalOffset,
+    KeyValueStoreOffset, NativeFunction, NativeMethod, PackageOffset, ProofOffset, RENodeId,
+    ResourceManagerOffset, SubstateOffset, TransactionProcessorFunction, VaultOffset,
+    WorktopOffset,
 };
 
 pub struct VisibilityProperties;
@@ -143,6 +144,9 @@ impl VisibilityProperties {
                     flags == LockFlags::read_only()
                 }
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
+                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => {
+                    flags == LockFlags::read_only()
+                }
                 _ => false,
             },
             (ExecutionMode::ScryptoInterpreter, offset) => match offset {
