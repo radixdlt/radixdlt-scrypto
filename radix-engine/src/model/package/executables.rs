@@ -2,7 +2,7 @@ use core::fmt::Debug;
 use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId};
 
 use crate::engine::*;
-use crate::model::{GlobalAddressSubstate, PackageSubstate};
+use crate::model::{GlobalAddressSubstate, MetadataSubstate, PackageSubstate};
 use crate::types::*;
 use crate::wasm::*;
 
@@ -54,7 +54,11 @@ impl NativeExecutable for PackagePublishInvocation {
             ))
         })?;
 
-        let node_id = system_api.create_node(RENode::Package(package))?;
+        let metadata_substate = MetadataSubstate {
+            metadata: invocation.metadata
+        };
+
+        let node_id = system_api.create_node(RENode::Package(package, metadata_substate))?;
         let package_id: PackageId = node_id.into();
 
         let global_node_id =

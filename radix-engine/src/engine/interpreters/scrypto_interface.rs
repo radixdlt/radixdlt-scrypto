@@ -75,9 +75,6 @@ where
                     AccessRulesSubstate {
                         access_rules: Vec::new(),
                     },
-                    MetadataSubstate {
-                        metadata: HashMap::new(),
-                    }
                 )
             }
             ScryptoRENode::KeyValueStore => RENode::KeyValueStore(KeyValueStore::new()),

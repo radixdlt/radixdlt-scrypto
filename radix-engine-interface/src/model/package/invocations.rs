@@ -1,3 +1,4 @@
+use sbor::rust::collections::HashMap;
 use crate::api::api::SysInvocation;
 use crate::crypto::Blob;
 use crate::model::*;
@@ -9,6 +10,7 @@ use crate::wasm::*;
 pub struct PackagePublishInvocation {
     pub code: Blob,
     pub abi: Blob,
+    pub metadata: HashMap<String, String>,
 }
 
 impl SysInvocation for PackagePublishInvocation {

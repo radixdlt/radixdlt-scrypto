@@ -532,6 +532,7 @@ impl TransactionProcessor {
                     .sys_invoke(PackagePublishInvocation {
                         code: code.clone(),
                         abi: abi.clone(),
+                        metadata: HashMap::new(),
                     })
                     .map(|address| IndexedScryptoValue::from_typed(&address))
                     .map_err(InvokeError::Downstream),
