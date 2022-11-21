@@ -755,4 +755,11 @@ impl<'a> SubstateRefMut<'a> {
             _ => panic!("Not access rules"),
         }
     }
+
+    pub fn metadata(&mut self) -> &mut MetadataSubstate {
+        match self {
+            SubstateRefMut::Metadata(value) => *value,
+            _ => panic!("Not metadata"),
+        }
+    }
 }
