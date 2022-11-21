@@ -91,7 +91,7 @@ macro_rules! try_from_large_into_large{
                                 other = <$o>::zero() - other;
                             }
                         }
-                        if (other.leading_zeros() as i32) < <$o>::BITS as i32 - <$t>::BITS as i32 {
+                        if (other.leading_zeros() as i32) <= <$o>::BITS as i32 - <$t>::BITS as i32 {
                             return Err([<Parse $t Error>]::Overflow);
                         }
                         let mut other_vec = other.0.to_vec();
