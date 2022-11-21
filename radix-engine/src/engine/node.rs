@@ -8,7 +8,9 @@ use radix_engine_interface::api::types::{
 
 #[derive(Debug)]
 pub enum RENode {
-    Global(GlobalAddressSubstate),
+    Global(
+        GlobalAddressSubstate,
+    ),
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     AuthZone(AuthZoneStackSubstate),
@@ -17,6 +19,7 @@ pub enum RENode {
         ComponentInfoSubstate,
         ComponentStateSubstate,
         AccessRulesSubstate,
+        MetadataSubstate,
     ),
     Worktop(WorktopSubstate),
     Package(PackageSubstate),
@@ -65,7 +68,7 @@ impl RENode {
                     );
                 }
             }
-            RENode::Component(info, state, access_rules) => {
+            RENode::Component(info, state, access_rules, metadata) => {
                 substates.insert(
                     SubstateOffset::Component(ComponentOffset::Info),
                     info.into(),
@@ -77,6 +80,10 @@ impl RENode {
                 substates.insert(
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                     access_rules.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    metadata.into(),
                 );
             }
             RENode::Worktop(worktop) => {

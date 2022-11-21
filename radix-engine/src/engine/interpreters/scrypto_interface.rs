@@ -3,11 +3,8 @@ use crate::engine::{
     ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
-use crate::model::{
-    AccessRulesSubstate, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate,
-    KeyValueStore, RuntimeSubstate,
-};
-use crate::types::ScryptoInvocation;
+use crate::model::{AccessRulesSubstate, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore, MetadataSubstate, RuntimeSubstate};
+use crate::types::{HashMap, ScryptoInvocation};
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative, SysNativeInvokable};
 use radix_engine_interface::api::types::{
@@ -78,6 +75,9 @@ where
                     AccessRulesSubstate {
                         access_rules: Vec::new(),
                     },
+                    MetadataSubstate {
+                        metadata: HashMap::new(),
+                    }
                 )
             }
             ScryptoRENode::KeyValueStore => RENode::KeyValueStore(KeyValueStore::new()),

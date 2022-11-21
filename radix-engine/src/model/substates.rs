@@ -15,6 +15,7 @@ pub enum PersistedSubstate {
     ResourceManager(ResourceManagerSubstate),
     ComponentInfo(ComponentInfoSubstate),
     AccessRules(AccessRulesSubstate),
+    Metadata(MetadataSubstate),
     ComponentState(ComponentStateSubstate),
     Package(PackageSubstate),
     Vault(VaultSubstate),
@@ -48,6 +49,7 @@ impl PersistedSubstate {
             PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
             PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
             PersistedSubstate::AccessRules(value) => RuntimeSubstate::AccessRules(value),
+            PersistedSubstate::Metadata(value) => RuntimeSubstate::Metadata(value),
             PersistedSubstate::ResourceManager(value) => RuntimeSubstate::ResourceManager(value),
             PersistedSubstate::ComponentInfo(value) => RuntimeSubstate::ComponentInfo(value),
             PersistedSubstate::ComponentState(value) => RuntimeSubstate::ComponentState(value),
@@ -74,6 +76,7 @@ pub enum RuntimeSubstate {
     ResourceManager(ResourceManagerSubstate),
     ComponentInfo(ComponentInfoSubstate),
     AccessRules(AccessRulesSubstate),
+    Metadata(MetadataSubstate),
     ComponentState(ComponentStateSubstate),
     Package(PackageSubstate),
     Vault(VaultRuntimeSubstate),
@@ -91,6 +94,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
             RuntimeSubstate::AccessRules(value) => PersistedSubstate::AccessRules(value.clone()),
+            RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value.clone()),
             RuntimeSubstate::ResourceManager(value) => {
                 PersistedSubstate::ResourceManager(value.clone())
             }
@@ -123,6 +127,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
             RuntimeSubstate::AccessRules(value) => PersistedSubstate::AccessRules(value),
+            RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => PersistedSubstate::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => PersistedSubstate::ComponentInfo(value),
             RuntimeSubstate::ComponentState(value) => PersistedSubstate::ComponentState(value),
@@ -181,6 +186,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Global(value) => SubstateRefMut::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRefMut::EpochManager(value),
             RuntimeSubstate::AccessRules(value) => SubstateRefMut::AccessRules(value),
+            RuntimeSubstate::Metadata(value) => SubstateRefMut::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => SubstateRefMut::ComponentInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRefMut::ComponentState(value),
@@ -200,6 +206,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Global(value) => SubstateRef::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
             RuntimeSubstate::AccessRules(value) => SubstateRef::AccessRules(value),
+            RuntimeSubstate::Metadata(value) => SubstateRef::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => SubstateRef::ComponentInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRef::ComponentState(value),
@@ -266,6 +273,12 @@ impl RuntimeSubstate {
 impl Into<RuntimeSubstate> for AccessRulesSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::AccessRules(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for MetadataSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::Metadata(self)
     }
 }
 
@@ -451,6 +464,7 @@ pub enum SubstateRef<'a> {
     ResourceManager(&'a ResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
     AccessRules(&'a AccessRulesSubstate),
+    Metadata(&'a MetadataSubstate),
     Global(&'a GlobalAddressSubstate),
 }
 
@@ -649,6 +663,7 @@ pub enum SubstateRefMut<'a> {
     ResourceManager(&'a mut ResourceManagerSubstate),
     EpochManager(&'a mut EpochManagerSubstate),
     AccessRules(&'a mut AccessRulesSubstate),
+    Metadata(&'a mut MetadataSubstate),
     Global(&'a mut GlobalAddressSubstate),
     Bucket(&'a mut BucketSubstate),
     Proof(&'a mut ProofSubstate),
