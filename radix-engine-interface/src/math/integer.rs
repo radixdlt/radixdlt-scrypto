@@ -284,7 +284,7 @@ types! {
         type: U320,
         self.0: [u8; 40],
         self.zero(): U320([0u8; 40]),
-        U256::default(): U320([0u8; 40]),
+        U320::default(): U320([0u8; 40]),
         format_var: f,
         format_expr: {
             fmt(*self, f, self.0.len() * 8)
@@ -309,17 +309,17 @@ types! {
         format_expr: {
             fmt(*self, f, self.0.len() * 8)
         },
-    }
+    },
     {
         type: U728,
         self.0: [u8; 91],
         self.zero(): U728([0u8; 91]),
-        U256::default(): U728([0u8; 91]),
+        U728::default(): U728([0u8; 91]),
         format_var: f,
         format_expr: {
             fmt(*self, f, self.0.len() * 8)
         },
-    },
+    }
 }
 
 macro_rules! sbor_codec {
