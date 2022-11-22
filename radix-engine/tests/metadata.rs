@@ -1,3 +1,4 @@
+use radix_engine::engine::{AuthError, ModuleError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
@@ -5,14 +6,14 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
-fn can_set_package_metadata() {
+fn cannot_set_package_metadata_with_no_owner() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package(code, HashMap::new())
+        .publish_package_no_owner(code, HashMap::new())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let package_address = receipt.expect_commit().entity_changes.new_package_addresses[0];
@@ -33,7 +34,12 @@ fn can_set_package_metadata() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_success();
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))));
     let metadata = test_runner.get_metadata(GlobalAddress::Package(package_address));
-    assert_eq!(metadata.get("name").unwrap(), "best package ever!");
+    assert!(metadata.get("name").is_none());
+    /*
+    receipt.expect_commit_success();
+    assert_eq!(metadata.get("name"), "best package ever!");
+
+     */
 }

@@ -84,6 +84,19 @@ impl AuthModule {
             },
             REActor::Method(method, resolved_receiver) => {
                 match (method, resolved_receiver) {
+                    (ResolvedMethod::Native(NativeMethod::Metadata(MetadataMethod::Set)), ..) => {
+                        if let Some((RENodeId::Global(GlobalAddress::Package(package_address)), ..)) = resolved_receiver.derefed_from {
+                            let non_fungible_id = NonFungibleId::from_bytes(scrypto_encode(&package_address));
+                            let non_fungible_address = NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id);
+                            vec![
+                                MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::Require(
+                                    HardResourceOrNonFungible::NonFungible(non_fungible_address))
+                                ))
+                            ]
+                        } else {
+                            vec![MethodAuthorization::DenyAll]
+                        }
+                    },
                     (
                         ResolvedMethod::Native(NativeMethod::ResourceManager(ref method)),
                         ResolvedReceiver {
