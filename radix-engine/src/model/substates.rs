@@ -93,6 +93,7 @@ pub enum RuntimeSubstate {
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     Worktop(WorktopSubstate),
+    RoyaltyManager(RoyaltyManagerSubstate),
 }
 
 impl RuntimeSubstate {
@@ -128,7 +129,8 @@ impl RuntimeSubstate {
             RuntimeSubstate::AuthZone(..)
             | RuntimeSubstate::Bucket(..)
             | RuntimeSubstate::Proof(..)
-            | RuntimeSubstate::Worktop(..) => {
+            | RuntimeSubstate::Worktop(..)
+            | RuntimeSubstate::RoyaltyManager(..) => {
                 panic!("Should not get here");
             }
         }
@@ -162,7 +164,8 @@ impl RuntimeSubstate {
             RuntimeSubstate::AuthZone(..)
             | RuntimeSubstate::Bucket(..)
             | RuntimeSubstate::Proof(..)
-            | RuntimeSubstate::Worktop(..) => {
+            | RuntimeSubstate::Worktop(..)
+            | RuntimeSubstate::RoyaltyManager(..) => {
                 panic!("Should not get here");
             }
         }
@@ -220,6 +223,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Bucket(value) => SubstateRefMut::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRefMut::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
+            RuntimeSubstate::RoyaltyManager(value) => SubstateRefMut::RoyaltyManager(value),
         }
     }
 
@@ -245,6 +249,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Bucket(value) => SubstateRef::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRef::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
+            RuntimeSubstate::RoyaltyManager(value) => SubstateRef::RoyaltyManager(value),
         }
     }
 
@@ -330,6 +335,12 @@ impl Into<RuntimeSubstate> for ComponentStateSubstate {
 impl Into<RuntimeSubstate> for ResourceManagerSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::ResourceManager(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for RoyaltyManagerSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::RoyaltyManager(self)
     }
 }
 
@@ -474,6 +485,7 @@ impl Into<AccessRulesSubstate> for RuntimeSubstate {
 pub enum SubstateRef<'a> {
     AuthZone(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
+    RoyaltyManager(&'a RoyaltyManagerSubstate),
     Proof(&'a ProofSubstate),
     Bucket(&'a BucketSubstate),
     ComponentInfo(&'a ComponentInfoSubstate),
@@ -567,6 +579,13 @@ impl<'a> SubstateRef<'a> {
         match self {
             SubstateRef::Worktop(value) => *value,
             _ => panic!("Not a worktop"),
+        }
+    }
+
+    pub fn royalty_manager(&self) -> &RoyaltyManagerSubstate {
+        match self {
+            SubstateRef::RoyaltyManager(value) => *value,
+            _ => panic!("Not a royalty manager"),
         }
     }
 
@@ -707,6 +726,7 @@ pub enum SubstateRefMut<'a> {
     Bucket(&'a mut BucketSubstate),
     Proof(&'a mut ProofSubstate),
     Worktop(&'a mut WorktopSubstate),
+    RoyaltyManager(&'a mut RoyaltyManagerSubstate),
     AuthZone(&'a mut AuthZoneStackSubstate),
 }
 
@@ -722,6 +742,13 @@ impl<'a> SubstateRefMut<'a> {
         match self {
             SubstateRefMut::Worktop(value) => *value,
             _ => panic!("Not a worktop"),
+        }
+    }
+
+    pub fn royalty_manager(&mut self) -> &mut RoyaltyManagerSubstate {
+        match self {
+            SubstateRefMut::RoyaltyManager(value) => *value,
+            _ => panic!("Not a royalty manager"),
         }
     }
 

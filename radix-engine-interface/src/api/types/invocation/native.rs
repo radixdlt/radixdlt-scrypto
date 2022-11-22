@@ -38,6 +38,7 @@ pub enum NativeMethod {
     Vault(VaultMethod),
     Proof(ProofMethod),
     Worktop(WorktopMethod),
+    RoyaltyManager(RoyaltyManagerMethod),
 }
 
 // Native method enum used by Kernel SystemAPI and WASM
@@ -346,6 +347,29 @@ pub enum WorktopMethod {
     AssertContains,
     AssertContainsAmount,
     AssertContainsNonFungibles,
+    Drain,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum RoyaltyManagerMethod {
+    Put,
+    Take,
     Drain,
 }
 

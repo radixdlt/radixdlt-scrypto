@@ -18,6 +18,7 @@ pub enum RENodeId {
     Proof(ProofId),
     AuthZoneStack(AuthZoneId),
     Worktop,
+    RoyaltyManager,
 
     Global(GlobalAddress),
     KeyValueStore(KeyValueStoreId),
@@ -182,6 +183,11 @@ pub enum EpochManagerOffset {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum RoyaltyManagerOffset {
+    RoyaltyManager,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum BucketOffset {
     Bucket,
 }
@@ -213,6 +219,7 @@ pub enum SubstateOffset {
     Bucket(BucketOffset),
     Proof(ProofOffset),
     Worktop(WorktopOffset),
+    RoyaltyManager(RoyaltyManagerOffset),
 }
 
 /// TODO: separate space addresses?

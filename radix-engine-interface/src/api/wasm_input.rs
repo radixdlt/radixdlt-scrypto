@@ -40,6 +40,7 @@ pub enum NativeMethodInvocation {
     Component(ComponentMethodInvocation),
     Package(PackageMethodInvocation),
     EpochManager(EpochManagerMethodInvocation),
+    RoyaltyManager(RoyaltyManagerMethodInvocation),
     AuthZone(AuthZoneMethodInvocation),
     ResourceManager(ResourceManagerMethodInvocation),
     Bucket(BucketMethodInvocation),
@@ -85,6 +86,14 @@ pub enum EpochManagerFunctionInvocation {
 pub enum EpochManagerMethodInvocation {
     GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
     SetEpoch(EpochManagerSetEpochInvocation),
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum RoyaltyManagerMethodInvocation {
+    Put(RoyaltyManagerPutInvocation),
+    Take(RoyaltyManagerTakeInvocation),
+    Drain(RoyaltyManagerDrainInvocation),
 }
 
 #[derive(Debug)]

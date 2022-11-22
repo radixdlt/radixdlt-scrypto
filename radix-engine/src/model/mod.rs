@@ -1,31 +1,31 @@
+mod abi_extractor;
 mod auth;
+mod auth_converter;
 mod component;
 mod epoch_manager;
+mod fn_resolver;
 mod global;
 mod kv_store;
-mod package;
-mod resources;
-mod transaction_processor;
-
-mod abi_extractor;
-mod auth_converter;
-mod fn_resolver;
 mod method_authorization;
+mod package;
 mod package_extractor;
+mod resources;
+mod royalty_manager;
 mod substates;
-
-pub use auth::*;
-pub use component::*;
-pub use epoch_manager::*;
-pub use global::*;
-pub use kv_store::*;
-pub use package::*;
-pub use resources::*;
-pub use transaction_processor::*;
+mod transaction_processor;
 
 pub use crate::engine::InvokeError;
 pub use abi_extractor::*;
+pub use auth::*;
 pub use auth_converter::convert;
+pub use component::*;
+pub use epoch_manager::*;
 pub use fn_resolver::*;
+pub use global::*;
+pub use kv_store::*;
 pub use method_authorization::*;
+pub use package::*;
 pub use package_extractor::{extract_abi, ExtractAbiError};
+pub use resources::*;
+pub use royalty_manager::*;
+pub use transaction_processor::*;

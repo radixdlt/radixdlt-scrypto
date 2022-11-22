@@ -24,6 +24,7 @@ pub enum RENode {
     NonFungibleStore(NonFungibleStore),
     ResourceManager(ResourceManagerSubstate),
     EpochManager(EpochManagerSubstate),
+    RoyaltyManager(RoyaltyManagerSubstate),
 }
 
 impl RENode {
@@ -105,10 +106,16 @@ impl RENode {
                     );
                 }
             }
-            RENode::EpochManager(system) => {
+            RENode::EpochManager(epoch_manager) => {
                 substates.insert(
                     SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
-                    system.into(),
+                    epoch_manager.into(),
+                );
+            }
+            RENode::RoyaltyManager(royalty_manager) => {
+                substates.insert(
+                    SubstateOffset::RoyaltyManager(RoyaltyManagerOffset::RoyaltyManager),
+                    royalty_manager.into(),
                 );
             }
         }
