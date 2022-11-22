@@ -1,7 +1,4 @@
-use crate::engine::{
-    Invokable, Kernel, KernelError, LockFlags, NativeInvocation, REActor, RENode, ResolvedFunction,
-    ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi,
-};
+use crate::engine::{Invokable, InvokableMethod, Kernel, KernelError, LockFlags, NativeInvocation, NativeInvocationMethod, REActor, RENode, ResolvedFunction, ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     AccessRulesSubstate, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate,
@@ -9,7 +6,7 @@ use crate::model::{
 };
 use crate::types::ScryptoInvocation;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative, SysNativeInvokable};
+use radix_engine_interface::api::api::{EngineApi, SysInvokableNative, SysInvokableNativeMethod, SysNativeInvokable, SysNativeMethodInvokable};
 use radix_engine_interface::api::types::{
     Level, LockHandle, RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoRENode, SubstateOffset,
@@ -33,6 +30,25 @@ impl<'g, 's, W, R> SysInvokableNative<RuntimeError> for Kernel<'g, 's, W, R>
 where
     W: WasmEngine,
     R: FeeReserve,
+{
+}
+
+impl<'g, 's, W, R, N, T> SysNativeMethodInvokable<N, RuntimeError> for Kernel<'g, 's, W, R>
+    where
+        W: WasmEngine,
+        R: FeeReserve,
+        N: ScryptoNativeInvocation<ScryptoOutput = T> + NativeInvocationMethod<Output = T>,
+{
+    fn sys_invoke_method(&mut self, input: N) -> Result<T, RuntimeError> {
+        self.invoke_method(input)
+    }
+}
+
+
+impl<'g, 's, W, R> SysInvokableNativeMethod<RuntimeError> for Kernel<'g, 's, W, R>
+    where
+        W: WasmEngine,
+        R: FeeReserve,
 {
 }
 

@@ -5,6 +5,7 @@ use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use crate::api::api::SysInvokableNativeMethod;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -175,7 +176,7 @@ pub enum PackageFunctionInvocation {
 }
 
 impl NativeFnInvocation {
-    pub fn invoke<Y: SysInvokableNative<E>, E>(
+    pub fn invoke<Y: SysInvokableNative<E> + SysInvokableNativeMethod<E>, E>(
         self,
         system_api: &mut Y,
     ) -> Result<IndexedScryptoValue, E> {
@@ -302,7 +303,7 @@ impl NativeFnInvocation {
                 }
                 NativeMethodInvocation::Metadata(metadata_method) => match metadata_method {
                     MetadataMethodInvocation::Set(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke_method(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::ResourceManager(resman_method) => match resman_method {

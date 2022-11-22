@@ -39,6 +39,13 @@ where
     fn invoke(&mut self, input: I) -> Result<I::Output, RuntimeError>;
 }
 
+pub trait InvokableMethod<I>
+    where
+        I: Invocation,
+{
+    fn invoke_method(&mut self, input: I) -> Result<I::Output, RuntimeError>;
+}
+
 pub trait SystemApi {
     fn execute_in_mode<X, RTN, E>(
         &mut self,

@@ -1,7 +1,7 @@
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::types::*;
-use radix_engine_interface::api::api::SysInvokableNative;
+use radix_engine_interface::api::api::{SysInvokableNative, SysInvokableNativeMethod, SysNativeMethodInvokable};
 use radix_engine_interface::api::types::{
     AccessRulesMethod, AuthZoneMethod, BucketMethod, EpochManagerFunction, EpochManagerMethod,
     NativeFn, NativeFunction, NativeMethod, PackageFunction, ProofMethod, ResourceManagerFunction,
@@ -17,7 +17,7 @@ pub fn parse_and_invoke_native_fn<'a, Y>(
     system_api: &mut Y,
 ) -> Result<IndexedScryptoValue, RuntimeError>
 where
-    Y: SysInvokableNative<RuntimeError>,
+    Y: SysInvokableNative<RuntimeError> + SysInvokableNativeMethod<RuntimeError>,
 {
     match native_fn {
         NativeFn::Function(native_function) => match native_function {
@@ -276,7 +276,7 @@ where
                     let invocation: MetadataSetInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke_method(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
             },

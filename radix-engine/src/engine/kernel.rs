@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
+use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative, SysInvokableNativeMethod};
 use radix_engine_interface::api::types::{
     AuthZoneOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle, PackageOffset,
     ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver, SubstateId,
@@ -701,6 +701,7 @@ pub trait Executor {
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>
+            + SysInvokableNativeMethod<RuntimeError>
             + Invokable<ResourceManagerSetResourceAddressInvocation>;
 }
 
@@ -754,11 +755,33 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::Invoke {
-                    rtn: &rtn, // TODO: Better abstraction here
+                    rtn: &rtn,
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
+
+        Ok(rtn)
+    }
+}
+
+impl<'g, 's, W, R, N> InvokableMethod<N> for Kernel<'g, 's, W, R>
+    where
+        W: WasmEngine,
+        R: FeeReserve,
+        N: NativeInvocationMethod,
+{
+    fn invoke_method(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
+        // Change to kernel mode
+        let saved_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
+
+        let (actor, call_frame_update, executor) = invocation.resolve(self)?;
+
+        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
+
+        // Restore previous mode
+        self.execution_mode = saved_mode;
 
         Ok(rtn)
     }

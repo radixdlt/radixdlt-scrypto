@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
+use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative, SysInvokableNativeMethod};
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent,
     ProofId, RENodeId, TransactionProcessorFunction,
@@ -103,7 +103,8 @@ impl<'a> NativeInvocation for TransactionProcessorRunInvocation<'a> {
         Y: SystemApi
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>,
+            + SysInvokableNative<RuntimeError>
+            + SysInvokableNativeMethod<RuntimeError>,
     {
         TransactionProcessor::run(invocation, system_api)
             .map(|rtn| (rtn, CallFrameUpdate::empty()))
@@ -221,7 +222,8 @@ impl TransactionProcessor {
         Y: SystemApi
             + EngineApi<RuntimeError>
             + Invokable<ScryptoInvocation>
-            + SysInvokableNative<RuntimeError>,
+            + SysInvokableNative<RuntimeError>
+            + SysInvokableNativeMethod<RuntimeError>,
     {
         for request in input.runtime_validations.as_ref() {
             Self::perform_validation(request, env)?;

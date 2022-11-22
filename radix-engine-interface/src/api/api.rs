@@ -15,6 +15,11 @@ pub trait SysNativeInvokable<I: Invocation, E> {
     fn sys_invoke(&mut self, invocation: I) -> Result<I::Output, E>;
 }
 
+pub trait SysNativeMethodInvokable<I: Invocation, E> {
+    fn sys_invoke_method(&mut self, invocation: I) -> Result<I::Output, E>;
+}
+
+
 pub trait EngineApi<E: Debug> {
     fn sys_invoke_scrypto_function(
         &mut self,
@@ -44,6 +49,10 @@ pub trait EngineApi<E: Debug> {
     fn sys_emit_log(&mut self, level: Level, message: String) -> Result<(), E>;
 }
 
+pub trait SysInvokableNativeMethod<E>:
+    SysNativeMethodInvokable<MetadataSetInvocation, E> {
+}
+
 pub trait SysInvokableNative<E>:
     SysNativeInvokable<AuthZonePopInvocation, E>
     + SysNativeInvokable<AuthZonePushInvocation, E>
@@ -53,7 +62,6 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<AuthZoneClearInvocation, E>
     + SysNativeInvokable<AuthZoneDrainInvocation, E>
     + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
-    + SysNativeInvokable<MetadataSetInvocation, E>
     + SysNativeInvokable<BucketTakeInvocation, E>
     + SysNativeInvokable<BucketPutInvocation, E>
     + SysNativeInvokable<BucketTakeNonFungiblesInvocation, E>
