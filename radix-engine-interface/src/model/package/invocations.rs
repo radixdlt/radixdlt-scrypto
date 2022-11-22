@@ -1,9 +1,9 @@
-use sbor::rust::collections::HashMap;
 use crate::api::api::SysInvocation;
 use crate::crypto::Blob;
 use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
+use sbor::rust::collections::HashMap;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]

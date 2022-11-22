@@ -1,7 +1,5 @@
-use crate::model::{convert, ComponentStateSubstate, MethodAuthorization};
+use crate::model::convert;
 use crate::types::*;
-use radix_engine_interface::abi::Type;
-use radix_engine_interface::data::IndexedScryptoValue;
 
 /// A transient resource container.
 #[derive(Debug, Clone, PartialEq, Eq)]

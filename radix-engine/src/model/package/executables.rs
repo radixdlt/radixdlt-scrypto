@@ -55,7 +55,7 @@ impl NativeExecutable for PackagePublishInvocation {
         })?;
 
         let metadata_substate = MetadataSubstate {
-            metadata: invocation.metadata
+            metadata: invocation.metadata,
         };
 
         let node_id = system_api.create_node(RENode::Package(package, metadata_substate))?;

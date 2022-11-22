@@ -164,3 +164,78 @@ impl<N: NativeExecutable> Executor for NativeExecutor<N> {
         N::execute(self.0, system_api)
     }
 }
+
+pub struct NativeMethodResolver;
+
+impl<N: NativeInvocationMethod> Resolver<N> for NativeMethodResolver {
+    type Exec = NativeMethodExecutor<N>;
+
+    fn resolve<D: MethodDeref>(
+        invocation: N,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&invocation);
+
+        let (receiver, args, method, mut call_frame_update) = invocation.resolve();
+        let receiver = receiver.into();
+
+        // TODO: Move this logic into kernel
+        let resolved_receiver = if let Some((derefed, derefed_lock)) = deref.deref(receiver)? {
+            ResolvedReceiver::derefed(derefed, receiver, derefed_lock)
+        } else {
+            ResolvedReceiver::new(receiver)
+        };
+        let resolved_node_id = resolved_receiver.receiver;
+        call_frame_update.node_refs_to_copy.insert(resolved_node_id);
+
+        let actor = REActor::Method(ResolvedMethod::Native(method), resolved_receiver);
+
+        let executor = NativeMethodExecutor(receiver.into(), args, input);
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+pub struct NativeMethodExecutor<N: NativeInvocationMethod>(
+    pub RENodeId,
+    pub N::Args,
+    pub IndexedScryptoValue,
+);
+
+impl<N: NativeInvocationMethod> Executor for NativeMethodExecutor<N> {
+    type Output = N::Output;
+
+    fn args(&self) -> &IndexedScryptoValue {
+        &self.2
+    }
+
+    fn execute<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi
+            + Invokable<ScryptoInvocation>
+            + EngineApi<RuntimeError>
+            + SysInvokableNative<RuntimeError>
+            + Invokable<ResourceManagerSetResourceAddressInvocation>,
+    {
+        N::execute(self.0, self.1, system_api)
+    }
+}
+
+pub trait NativeInvocationMethod: Invocation + Encode<ScryptoCustomTypeId> + Debug {
+    type Receiver: Into<RENodeId>;
+    type Args;
+
+    fn resolve(self) -> (Self::Receiver, Self::Args, NativeMethod, CallFrameUpdate);
+
+    fn execute<Y>(
+        receiver: RENodeId,
+        args: Self::Args,
+        system_api: &mut Y,
+    ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi
+            + Invokable<ScryptoInvocation>
+            + EngineApi<RuntimeError>
+            + SysInvokableNative<RuntimeError>
+            + Invokable<ResourceManagerSetResourceAddressInvocation>;
+}

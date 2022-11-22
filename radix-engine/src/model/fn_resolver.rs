@@ -5,7 +5,6 @@ use radix_engine_interface::api::types::{
     ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
     WorktopMethod,
 };
-use crate::engine::RENode;
 
 pub fn resolve_native_function(
     blueprint_name: &str,
@@ -73,9 +72,7 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
             MetadataMethod::from_str(method_name)
                 .ok()
                 .map(NativeMethod::Metadata)
-        },
-        RENodeId::Global(_)
-        | RENodeId::KeyValueStore(_)
-        | RENodeId::NonFungibleStore(_) => None
+        }
+        RENodeId::KeyValueStore(_) | RENodeId::NonFungibleStore(_) => None,
     }
 }

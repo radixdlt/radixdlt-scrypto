@@ -3,7 +3,10 @@ use crate::engine::{
     ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
-use crate::model::{AccessRulesSubstate, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore, RuntimeSubstate};
+use crate::model::{
+    AccessRulesSubstate, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate,
+    KeyValueStore, RuntimeSubstate,
+};
 use crate::types::{HashMap, ScryptoInvocation};
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative, SysNativeInvokable};
