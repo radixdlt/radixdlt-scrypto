@@ -1,0 +1,4 @@
+CALL_METHOD ComponentAddress("account_sim1qv7nnz9mfnp89msxl8n0pqjjx0yjcdms56tzpnjanedsl77keh") "create_proof_by_amount" Decimal("1") ResourceAddress("resource_sim1qzxcrac59cy2v9lpcpmf82qel3cjj25v3k5m09rxurgqehgxzu");
+CALL_METHOD ComponentAddress("component_sim1qftacppvmr9ezmekxqpq58en0nk954x0a7jv2zz0hc7q8utaxr") "lock_fee" Decimal("100");
+MINT_FUNGIBLE ResourceAddress("resource_sim1qp85esuv8xx0g8gcqeysjzq6s4yuplfnuc82h8s8d6gqqs0nm9") Decimal("200");
+CALL_METHOD ComponentAddress("account_sim1qv7nnz9mfnp89msxl8n0pqjjx0yjcdms56tzpnjanedsl77keh") "deposit_batch" Expression("ENTIRE_WORKTOP");
