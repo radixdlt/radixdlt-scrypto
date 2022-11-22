@@ -31,6 +31,7 @@ pub enum VaultOp {
     Put(Decimal),    // TODO: add non-fungible support
     Take(Decimal),
     LockFee,
+    LockRoyalty,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -200,6 +201,9 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
                 }
                 (NativeMethod::Vault(VaultMethod::LockFee), RENodeId::Vault(vault_id)) => {
                     Self::handle_vault_lock_fee(track, caller, &vault_id)
+                }
+                (NativeMethod::Vault(VaultMethod::LockRoyalty), RENodeId::Vault(vault_id)) => {
+                    Self::handle_vault_lock_royalty(track, caller, &vault_id)
                 }
                 _ => {}
             }
@@ -576,6 +580,16 @@ impl ExecutionTraceModule {
             .vault_ops
             .push((actor.clone(), vault_id.clone(), VaultOp::LockFee));
     }
+
+    fn handle_vault_lock_royalty<'s, R: FeeReserve>(
+        track: &mut Track<'s, R>,
+        actor: &REActor,
+        vault_id: &VaultId,
+    ) {
+        track
+            .vault_ops
+            .push((actor.clone(), vault_id.clone(), VaultOp::LockRoyalty));
+    }
 }
 
 impl ExecutionTraceReceipt {
@@ -622,6 +636,7 @@ impl ExecutionTraceReceipt {
                                 vault_locked_by.insert(vault_id, component_id);
                             }
                         }
+                        VaultOp::LockRoyalty => todo!(),
                     };
                 }
             }

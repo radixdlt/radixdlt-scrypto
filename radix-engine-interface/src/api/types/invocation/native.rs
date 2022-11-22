@@ -286,6 +286,7 @@ pub enum BucketMethod {
 pub enum VaultMethod {
     Take,
     LockFee,
+    LockRoyalty,
     Put,
     TakeNonFungibles,
     GetAmount,

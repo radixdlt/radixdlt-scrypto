@@ -35,6 +35,7 @@ impl ResourceManagerSubstate {
     ) -> Result<ResourceManagerSubstate, InvokeError<ResourceManagerError>> {
         let mut vault_method_table: HashMap<VaultMethod, ResourceMethodRule> = HashMap::new();
         vault_method_table.insert(VaultMethod::LockFee, Protected(Withdraw));
+        vault_method_table.insert(VaultMethod::LockRoyalty, Protected(Withdraw));
         vault_method_table.insert(VaultMethod::Take, Protected(Withdraw));
         vault_method_table.insert(VaultMethod::Put, Protected(Deposit));
         vault_method_table.insert(VaultMethod::GetAmount, Public);

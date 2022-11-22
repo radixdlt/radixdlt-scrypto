@@ -24,6 +24,8 @@ pub enum VaultError {
     LockFeeNotRadixToken,
     LockFeeInsufficientBalance,
     LockFeeRepayFailure(FeeReserveError),
+    LockRoyaltyNotRadixToken,
+    LockRoyaltyInsufficientBalance,
 }
 
 impl NativeExecutable for VaultTakeInvocation {
@@ -170,6 +172,30 @@ impl NativeInvocation for VaultLockFeeInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Vault(VaultMethod::LockFee),
+            RENodeId::Vault(self.receiver),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+impl NativeExecutable for VaultLockRoyaltyInvocation {
+    type NativeOutput = ();
+
+    fn execute<'a, Y>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi,
+    {
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for VaultLockRoyaltyInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Vault(VaultMethod::LockRoyalty),
             RENodeId::Vault(self.receiver),
             CallFrameUpdate::empty(),
         )

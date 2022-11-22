@@ -174,6 +174,10 @@ where
                         .system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    VaultMethodInvocation::LockRoyalty(invocation) => self
+                        .system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::TakeNonFungibles(invocation) => self
                         .system_api
                         .sys_invoke(invocation)

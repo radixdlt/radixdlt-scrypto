@@ -75,6 +75,7 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<VaultTakeInvocation, E>
     + SysNativeInvokable<VaultPutInvocation, E>
     + SysNativeInvokable<VaultLockFeeInvocation, E>
+    + SysNativeInvokable<VaultLockRoyaltyInvocation, E>
     + SysNativeInvokable<VaultTakeNonFungiblesInvocation, E>
     + SysNativeInvokable<VaultGetAmountInvocation, E>
     + SysNativeInvokable<VaultGetResourceAddressInvocation, E>
