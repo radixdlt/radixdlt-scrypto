@@ -1,7 +1,9 @@
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::types::*;
-use radix_engine_interface::api::api::{SysInvokableNative, SysInvokableNativeMethod, SysNativeMethodInvokable};
+use radix_engine_interface::api::api::{
+    SysInvokableNative, SysInvokableNativeMethod,
+};
 use radix_engine_interface::api::types::{
     AccessRulesMethod, AuthZoneMethod, BucketMethod, EpochManagerFunction, EpochManagerMethod,
     NativeFn, NativeFunction, NativeMethod, PackageFunction, ProofMethod, ResourceManagerFunction,

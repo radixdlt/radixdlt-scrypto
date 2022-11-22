@@ -268,6 +268,14 @@ impl RuntimeSubstate {
             panic!("Not a KVEntry");
         }
     }
+
+    pub fn metadata(&self) -> &MetadataSubstate {
+        if let RuntimeSubstate::Metadata(metadata) = self {
+            metadata
+        } else {
+            panic!("Not metadata");
+        }
+    }
 }
 
 impl Into<RuntimeSubstate> for AccessRulesSubstate {
@@ -446,6 +454,16 @@ impl Into<AccessRulesSubstate> for RuntimeSubstate {
             substate
         } else {
             panic!("Not access rules");
+        }
+    }
+}
+
+impl Into<MetadataSubstate> for RuntimeSubstate {
+    fn into(self) -> MetadataSubstate {
+        if let RuntimeSubstate::Metadata(substate) = self {
+            substate
+        } else {
+            panic!("Not metadata");
         }
     }
 }

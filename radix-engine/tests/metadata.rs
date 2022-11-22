@@ -1,14 +1,9 @@
-use radix_engine::engine::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::model::PackageError;
 use radix_engine::types::*;
-use radix_engine::wasm::*;
 use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
-/*
 #[test]
 fn can_set_package_metadata() {
     // Arrange
@@ -39,5 +34,6 @@ fn can_set_package_metadata() {
 
     // Assert
     receipt.expect_commit_success();
+    let metadata = test_runner.get_metadata(GlobalAddress::Package(package_address));
+    assert_eq!(metadata.get("name").unwrap(), "best package ever!");
 }
- */

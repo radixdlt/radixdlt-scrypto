@@ -1,14 +1,17 @@
-use crate::engine::{ApplicationError, CallFrameUpdate, InterpreterError, Invokable, LockFlags, NativeInvocation, NativeInvocationInfo, NativeInvocationMethod, RuntimeError, SystemApi};
+use crate::engine::{
+    CallFrameUpdate, InterpreterError, Invokable, LockFlags,
+    NativeInvocationMethod, RuntimeError, SystemApi,
+};
+use crate::model::ResourceManagerSetResourceAddressInvocation;
 use crate::types::*;
 use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
-use radix_engine_interface::api::types::{GlobalAddress, NativeMethod, RENodeId, SubstateOffset};
+use radix_engine_interface::api::types::{NativeMethod, RENodeId, SubstateOffset};
 use radix_engine_interface::model::*;
-use crate::model::ResourceManagerSetResourceAddressInvocation;
 
 impl NativeInvocationMethod for MetadataSetInvocation {
     type Args = MetadataSetArgs;
 
-    fn info(self) -> (RENodeId, Self::Args, NativeMethod, CallFrameUpdate) {
+    fn resolve(self) -> (RENodeId, Self::Args, NativeMethod, CallFrameUpdate) {
         (
             self.receiver,
             MetadataSetArgs {
@@ -25,14 +28,15 @@ impl NativeInvocationMethod for MetadataSetInvocation {
         args: Self::Args,
         system_api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi
+    where
+        Y: SystemApi
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>
-            + Invokable<ResourceManagerSetResourceAddressInvocation> {
+            + Invokable<ResourceManagerSetResourceAddressInvocation>,
+    {
         // TODO: Move this into a more static check once node types implemented
-        if !matches!(receiver, RENodeId::Global(GlobalAddress::Package(_))) {
+        if !matches!(receiver, RENodeId::Package(..)) {
             return Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,
             ));

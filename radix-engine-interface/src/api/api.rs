@@ -19,7 +19,6 @@ pub trait SysNativeMethodInvokable<I: Invocation, E> {
     fn sys_invoke_method(&mut self, invocation: I) -> Result<I::Output, E>;
 }
 
-
 pub trait EngineApi<E: Debug> {
     fn sys_invoke_scrypto_function(
         &mut self,

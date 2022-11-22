@@ -39,8 +39,8 @@ where
 }
 
 pub trait InvokableMethod<I>
-    where
-        I: Invocation,
+where
+    I: Invocation,
 {
     fn invoke_method(&mut self, input: I) -> Result<I::Output, RuntimeError>;
 }

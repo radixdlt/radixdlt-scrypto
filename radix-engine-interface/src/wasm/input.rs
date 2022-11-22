@@ -1,3 +1,4 @@
+use crate::api::api::SysInvokableNativeMethod;
 use crate::api::types::*;
 use crate::scrypto;
 use radix_engine_interface::api::api::SysInvokableNative;
@@ -5,7 +6,6 @@ use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use crate::api::api::SysInvokableNativeMethod;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]

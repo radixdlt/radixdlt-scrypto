@@ -1,7 +1,9 @@
 use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
-use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative, SysInvokableNativeMethod, SysNativeMethodInvokable};
+use radix_engine_interface::api::api::{
+    EngineApi, Invocation, SysInvokableNative, SysInvokableNativeMethod,
+};
 use radix_engine_interface::api::types::{NativeFunction, NativeMethod, RENodeId};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
 use sbor::rust::fmt::Debug;
@@ -106,8 +108,8 @@ impl<I: NativeInvocation> ExecutableInvocation for I {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         let input = IndexedScryptoValue::from_typed(&self);
         let info = self.info();
@@ -137,7 +139,6 @@ impl<I: NativeInvocation> ExecutableInvocation for I {
     }
 }
 
-
 pub struct NativeExecutor<N: NativeInvocation>(pub N, pub IndexedScryptoValue);
 
 impl<N: NativeInvocation> Executor for NativeExecutor<N> {
@@ -159,7 +160,6 @@ impl<N: NativeInvocation> Executor for NativeExecutor<N> {
         N::execute(self.0, system_api)
     }
 }
-
 
 pub struct NativeMethodExecutor<N: NativeInvocationMethod>(
     pub RENodeId,
@@ -189,18 +189,18 @@ impl<N: NativeInvocationMethod> Executor for NativeMethodExecutor<N> {
 pub trait NativeInvocationMethod: Invocation + Encode<ScryptoCustomTypeId> + Debug {
     type Args;
 
-    fn info(self) -> (RENodeId, Self::Args, NativeMethod, CallFrameUpdate);
+    fn resolve(self) -> (RENodeId, Self::Args, NativeMethod, CallFrameUpdate);
 
-    fn resolve<D: MethodDeref>(
+    fn prepare<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, NativeMethodExecutor<Self>), RuntimeError>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         let input = IndexedScryptoValue::from_typed(&self);
 
-        let (receiver, args, method, mut call_frame_update) = self.info();
+        let (receiver, args, method, mut call_frame_update) = self.resolve();
 
         // TODO: Move this logic into kernel
         let resolved_receiver = if let Some((derefed, derefed_lock)) = deref.deref(receiver)? {
@@ -213,7 +213,7 @@ pub trait NativeInvocationMethod: Invocation + Encode<ScryptoCustomTypeId> + Deb
 
         let actor = REActor::Method(ResolvedMethod::Native(method), resolved_receiver);
 
-        let executor = NativeMethodExecutor(receiver.into(), args, input);
+        let executor = NativeMethodExecutor(resolved_node_id, args, input);
 
         Ok((actor, call_frame_update, executor))
     }

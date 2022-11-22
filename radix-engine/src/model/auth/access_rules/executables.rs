@@ -1,11 +1,14 @@
-use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
-use crate::engine::{ApplicationError, CallFrameUpdate, InterpreterError, Invokable, LockFlags, MethodDeref, NativeInvocation, NativeInvocationInfo, NativeInvocationMethod, NativeMethodExecutor, REActor, RuntimeError, SystemApi};
+use crate::engine::{
+    ApplicationError, CallFrameUpdate, InterpreterError, Invokable, LockFlags,
+    NativeInvocationMethod, RuntimeError, SystemApi,
+};
+use crate::model::ResourceManagerSetResourceAddressInvocation;
 use crate::types::*;
+use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
 use radix_engine_interface::api::types::{
     AccessRulesMethod, GlobalAddress, NativeMethod, PackageOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
-use crate::model::ResourceManagerSetResourceAddressInvocation;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum AccessRulesError {
@@ -15,7 +18,7 @@ pub enum AccessRulesError {
 impl NativeInvocationMethod for AccessRulesAddAccessCheckInvocation {
     type Args = AccessRules;
 
-    fn info(self) -> (RENodeId, Self::Args, NativeMethod, CallFrameUpdate) {
+    fn resolve(self) -> (RENodeId, Self::Args, NativeMethod, CallFrameUpdate) {
         (
             self.receiver,
             self.access_rules,
@@ -24,7 +27,18 @@ impl NativeInvocationMethod for AccessRulesAddAccessCheckInvocation {
         )
     }
 
-    fn execute<Y>(receiver: RENodeId, args: Self::Args, system_api: &mut Y) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError> where Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError> + SysInvokableNative<RuntimeError> + Invokable<ResourceManagerSetResourceAddressInvocation> {
+    fn execute<Y>(
+        receiver: RENodeId,
+        args: Self::Args,
+        system_api: &mut Y,
+    ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi
+            + Invokable<ScryptoInvocation>
+            + EngineApi<RuntimeError>
+            + SysInvokableNative<RuntimeError>
+            + Invokable<ResourceManagerSetResourceAddressInvocation>,
+    {
         // TODO: Move this into a more static check once node types implemented
         if !matches!(receiver, RENodeId::Component(..)) {
             return Err(RuntimeError::InterpreterError(
