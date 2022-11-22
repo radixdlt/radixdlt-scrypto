@@ -444,6 +444,7 @@ pub enum SubstateRef<'a> {
     Bucket(&'a BucketSubstate),
     ComponentInfo(&'a ComponentInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
+    ComponentRoyaltyConfig(&'a ComponentRoyaltyConfigSubstate),
     NonFungible(&'a NonFungibleSubstate),
     KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
     Package(&'a PackageSubstate),
@@ -462,6 +463,7 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::ResourceManager(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::ComponentInfo(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::ComponentState(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::ComponentRoyaltyConfig(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::Package(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::NonFungible(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::KeyValueStoreEntry(value) => IndexedScryptoValue::from_typed(*value),
@@ -494,6 +496,13 @@ impl<'a> SubstateRef<'a> {
         match self {
             SubstateRef::ComponentInfo(info) => *info,
             _ => panic!("Not a component info"),
+        }
+    }
+
+    pub fn component_royalty_config(&self) -> &ComponentRoyaltyConfigSubstate {
+        match self {
+            SubstateRef::ComponentRoyaltyConfig(info) => *info,
+            _ => panic!("Not a component royalty config"),
         }
     }
 
