@@ -1,6 +1,6 @@
 use crate::engine::{
-    CallFrameUpdate, InterpreterError, Invokable, LockFlags,
-    NativeInvocationMethod, RuntimeError, SystemApi,
+    CallFrameUpdate, InterpreterError, Invokable, LockFlags, NativeInvocationMethod, RuntimeError,
+    SystemApi,
 };
 use crate::model::ResourceManagerSetResourceAddressInvocation;
 use crate::types::*;

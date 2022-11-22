@@ -7,7 +7,9 @@ use radix_engine::engine::{Invokable, Kernel, KernelError, ModuleError, ScryptoI
 use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
-use radix_engine::model::{export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate, MetadataSubstate};
+use radix_engine::model::{
+    export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate, MetadataSubstate,
+};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
@@ -98,7 +100,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
-            .map(|s| s.substate.to_runtime()).unwrap();
+            .map(|s| s.substate.to_runtime())
+            .unwrap();
 
         let underlying_node = global.global().node_deref();
 
@@ -109,7 +112,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 underlying_node,
                 SubstateOffset::Metadata(MetadataOffset::Metadata),
             ))
-            .map(|s| s.substate.to_runtime()).unwrap();
+            .map(|s| s.substate.to_runtime())
+            .unwrap();
 
         let metadata: MetadataSubstate = metadata.into();
         metadata.metadata
