@@ -21,6 +21,7 @@ pub use sbor::rust::collections::*;
 pub use sbor::rust::fmt;
 pub use sbor::rust::format;
 pub use sbor::rust::marker::PhantomData;
+pub use sbor::rust::num::NonZeroUsize;
 pub use sbor::rust::ops::AddAssign;
 pub use sbor::rust::ptr;
 pub use sbor::rust::rc::Rc;
@@ -32,8 +33,6 @@ pub use sbor::rust::vec::Vec;
 pub use sbor::{Decode, DecodeError, Encode, SborPath, SborPathBuf, SborTypeId, SborValue, TypeId};
 
 pub use scrypto::abi::{BlueprintAbi, Fields, Fn, Type, Variant};
-
-use std::fmt::Debug;
 
 // methods and macros
 use crate::engine::Invocation;

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::model::extract_abi;
 use radix_engine::wasm::DefaultWasmEngine;
@@ -7,6 +5,7 @@ use radix_engine::wasm::InstrumentedCode;
 use radix_engine::wasm::WasmEngine;
 use radix_engine::wasm::WasmValidator;
 use radix_engine_interface::crypto::hash;
+use sbor::rust::sync::Arc;
 
 fn bench_wasm_validation(c: &mut Criterion) {
     let code = include_bytes!("../../assets/account.wasm");
