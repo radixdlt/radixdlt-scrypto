@@ -1,6 +1,6 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, LockFlags, NativeInvocation,
-    NativeInvocationInfo, RENode, RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, LockFlags, NativeInvocation, NativeInvocationInfo, RENode,
+    RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserveError;
 use crate::model::{
@@ -39,8 +39,8 @@ impl NativeInvocation for VaultTakeInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -81,8 +81,8 @@ impl NativeInvocation for VaultPutInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -117,8 +117,8 @@ impl NativeInvocation for VaultLockFeeInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -177,8 +177,8 @@ impl NativeInvocation for VaultTakeNonFungiblesInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -221,8 +221,8 @@ impl NativeInvocation for VaultGetAmountInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -249,8 +249,8 @@ impl NativeInvocation for VaultGetResourceAddressInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -280,8 +280,8 @@ impl NativeInvocation for VaultGetNonFungibleIdsInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -312,8 +312,8 @@ impl NativeInvocation for VaultCreateProofInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -352,8 +352,8 @@ impl NativeInvocation for VaultCreateProofByAmountInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -393,8 +393,8 @@ impl NativeInvocation for VaultCreateProofByIdsInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);

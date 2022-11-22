@@ -686,15 +686,6 @@ where
     }
 }
 
-pub trait Resolver<I: Invocation> {
-    type Exec: Executor<Output = <I as Invocation>::Output>;
-
-    fn resolve<D: MethodDeref>(
-        invocation: I,
-        deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
-}
-
 pub trait Executor {
     type Output: Debug;
 
@@ -713,13 +704,23 @@ pub trait Executor {
             + Invokable<ResourceManagerSetResourceAddressInvocation>;
 }
 
+pub trait ExecutableInvocation: Invocation {
+    type Exec: Executor<Output = Self::Output>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
+}
+
 impl<'g, 's, W, R, N> Invokable<N> for Kernel<'g, 's, W, R>
 where
     W: WasmEngine,
     R: FeeReserve,
-    N: NativeInvocation,
+    N: ExecutableInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
+        /*
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,
@@ -734,12 +735,13 @@ where
             )
             .map_err(RuntimeError::ModuleError)?;
         }
+         */
 
         // Change to kernel mode
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (actor, call_frame_update, executor) = NativeResolver::resolve(invocation, self)?;
+        let (actor, call_frame_update, executor) = invocation.resolve(self)?;
 
         let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 

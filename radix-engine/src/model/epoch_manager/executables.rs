@@ -1,6 +1,6 @@
 use crate::engine::{
-    AuthModule, CallFrameUpdate, Invokable, LockFlags, NativeInvocation,
-    NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError, SystemApi,
+    AuthModule, CallFrameUpdate, Invokable, LockFlags, NativeInvocation, NativeInvocationInfo,
+    REActor, RENode, ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
@@ -35,8 +35,8 @@ impl NativeInvocation for EpochManagerCreateInvocation {
         _invocation: Self,
         system_api: &mut Y,
     ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi + Invokable<ScryptoInvocation>,
+    where
+        Y: SystemApi + Invokable<ScryptoInvocation>,
     {
         let node_id =
             system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
@@ -68,8 +68,8 @@ impl NativeInvocation for EpochManagerGetCurrentEpochInvocation {
     }
 
     fn execute<Y>(_input: Self, system_api: &mut Y) -> Result<(u64, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -96,8 +96,8 @@ impl NativeInvocation for EpochManagerSetEpochInvocation {
     }
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {

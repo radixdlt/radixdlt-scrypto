@@ -1,13 +1,10 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, InterpreterError, Invokable, LockFlags,
-    NativeInvocation, NativeInvocationInfo, RuntimeError,
-    SystemApi,
+    ApplicationError, CallFrameUpdate, InterpreterError, Invokable, LockFlags, NativeInvocation,
+    NativeInvocationInfo, RuntimeError, SystemApi,
 };
 use crate::types::*;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
-use radix_engine_interface::api::types::{
-    GlobalAddress, NativeMethod, RENodeId, SubstateOffset,
-};
+use radix_engine_interface::api::types::{GlobalAddress, NativeMethod, RENodeId, SubstateOffset};
 use radix_engine_interface::model::*;
 
 impl NativeInvocation for MetadataSetInvocation {
@@ -20,8 +17,8 @@ impl NativeInvocation for MetadataSetInvocation {
     }
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = input.receiver;
 

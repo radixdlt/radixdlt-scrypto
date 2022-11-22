@@ -43,8 +43,8 @@ impl NativeInvocation for PackagePublishInvocation {
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi + Invokable<ScryptoInvocation>,
+    where
+        Y: SystemApi + Invokable<ScryptoInvocation>,
     {
         let code = system_api.read_blob(&invocation.code.0)?.to_vec();
         let blob = system_api.read_blob(&invocation.abi.0)?;

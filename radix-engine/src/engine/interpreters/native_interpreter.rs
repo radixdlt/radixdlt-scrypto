@@ -83,16 +83,33 @@ pub enum NativeInvocationInfo {
     Method(NativeMethod, RENodeId, CallFrameUpdate),
 }
 
-pub struct NativeResolver;
+pub trait NativeInvocation: Invocation + Encode<ScryptoCustomTypeId> + Debug {
+    fn info(&self) -> NativeInvocationInfo;
 
-impl<N: NativeInvocation> Resolver<N> for NativeResolver {
-    type Exec = NativeExecutor<N>;
+    fn execute<Y>(
+        invocation: Self,
+        system_api: &mut Y,
+    ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi
+            + Invokable<ScryptoInvocation>
+            + EngineApi<RuntimeError>
+            + SysInvokableNative<RuntimeError>
+            + Invokable<ResourceManagerSetResourceAddressInvocation>;
+}
+
+impl<I: NativeInvocation> ExecutableInvocation for I {
+    type Exec = NativeExecutor<Self>;
 
     fn resolve<D: MethodDeref>(
-        invocation: N,
+        self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let info = invocation.info();
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+        where
+            Self: Sized,
+    {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let info = self.info();
         let (actor, call_frame_update) = match info {
             NativeInvocationInfo::Method(method, receiver, mut call_frame_update) => {
                 // TODO: Move this logic into kernel
@@ -114,26 +131,11 @@ impl<N: NativeInvocation> Resolver<N> for NativeResolver {
             }
         };
 
-        let input = IndexedScryptoValue::from_typed(&invocation);
-        let executor = NativeExecutor(invocation, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
 
-pub trait NativeInvocation: Invocation + Encode<ScryptoCustomTypeId> + Debug {
-    fn info(&self) -> NativeInvocationInfo;
-
-    fn execute<Y>(
-        invocation: Self,
-        system_api: &mut Y,
-    ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi
-            + Invokable<ScryptoInvocation>
-            + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>
-            + Invokable<ResourceManagerSetResourceAddressInvocation>;
-}
 
 pub struct NativeExecutor<N: NativeInvocation>(pub N, pub IndexedScryptoValue);
 
@@ -155,11 +157,6 @@ impl<N: NativeInvocation> Executor for NativeExecutor<N> {
         N::execute(self.0, system_api)
     }
 }
-
-
-
-
-
 
 /*
 pub struct NativeMethodResolver;

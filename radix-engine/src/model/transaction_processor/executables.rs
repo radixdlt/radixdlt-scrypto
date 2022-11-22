@@ -99,8 +99,8 @@ impl<'a> NativeInvocation for TransactionProcessorRunInvocation<'a> {
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi
+    where
+        Y: SystemApi
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,

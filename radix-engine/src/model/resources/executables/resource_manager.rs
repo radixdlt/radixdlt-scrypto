@@ -65,8 +65,8 @@ impl NativeInvocation for ResourceManagerBucketBurnInvocation {
     }
 
     fn execute<Y>(invocation: Self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi + Invokable<ScryptoInvocation> + SysInvokableNative<RuntimeError>,
+    where
+        Y: SystemApi + Invokable<ScryptoInvocation> + SysInvokableNative<RuntimeError>,
     {
         let bucket = Bucket(invocation.bucket.0);
         bucket.sys_burn(env)?;
@@ -74,7 +74,6 @@ impl NativeInvocation for ResourceManagerBucketBurnInvocation {
         Ok(((), CallFrameUpdate::empty()))
     }
 }
-
 
 impl NativeInvocation for ResourceManagerCreateInvocation {
     fn info(&self) -> NativeInvocationInfo {
@@ -246,7 +245,6 @@ impl NativeInvocation for ResourceManagerCreateInvocation {
     }
 }
 
-
 impl NativeInvocation for ResourceManagerBurnInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
@@ -337,8 +335,8 @@ impl NativeInvocation for ResourceManagerUpdateAuthInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -383,8 +381,8 @@ impl NativeInvocation for ResourceManagerLockAuthInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -429,8 +427,8 @@ impl NativeInvocation for ResourceManagerCreateVaultInvocation {
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(Vault, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -470,8 +468,8 @@ impl NativeInvocation for ResourceManagerCreateBucketInvocation {
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -599,8 +597,8 @@ impl NativeInvocation for ResourceManagerGetMetadataInvocation {
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(HashMap<String, String>, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -630,8 +628,8 @@ impl NativeInvocation for ResourceManagerGetResourceTypeInvocation {
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(ResourceType, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -661,8 +659,8 @@ impl NativeInvocation for ResourceManagerGetTotalSupplyInvocation {
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -691,8 +689,8 @@ impl NativeInvocation for ResourceManagerUpdateMetadataInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -730,8 +728,8 @@ impl NativeInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -791,8 +789,8 @@ impl NativeInvocation for ResourceManagerNonFungibleExistsInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(bool, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -838,8 +836,8 @@ impl NativeInvocation for ResourceManagerGetNonFungibleInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<([Vec<u8>; 2], CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -885,13 +883,11 @@ impl NativeInvocation for ResourceManagerGetNonFungibleInvocation {
     }
 }
 
-
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerSetResourceAddressInvocation {
     pub receiver: ResourceAddress,
 }
-
 
 impl Invocation for ResourceManagerSetResourceAddressInvocation {
     type Output = ();
@@ -907,8 +903,8 @@ impl NativeInvocation for ResourceManagerSetResourceAddressInvocation {
     }
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {

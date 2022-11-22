@@ -1,6 +1,6 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, LockFlags, NativeInvocation,
-    NativeInvocationInfo, RENode, RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, LockFlags, NativeInvocation, NativeInvocationInfo, RENode,
+    RuntimeError, SystemApi,
 };
 use crate::model::{InvokeError, ProofError};
 use crate::types::*;
@@ -33,8 +33,8 @@ impl NativeInvocation for AuthZonePopInvocation {
     }
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -71,8 +71,8 @@ impl NativeInvocation for AuthZonePushInvocation {
     }
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -110,8 +110,8 @@ impl NativeInvocation for AuthZoneCreateProofInvocation {
     }
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -162,8 +162,8 @@ impl NativeInvocation for AuthZoneCreateProofByAmountInvocation {
     }
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -215,8 +215,8 @@ impl NativeInvocation for AuthZoneCreateProofByIdsInvocation {
     }
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -266,8 +266,8 @@ impl NativeInvocation for AuthZoneClearInvocation {
     }
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -293,8 +293,8 @@ impl NativeInvocation for AuthZoneDrainInvocation {
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Vec<Proof>, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);

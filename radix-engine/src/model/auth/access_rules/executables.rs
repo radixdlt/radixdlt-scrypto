@@ -1,6 +1,6 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, InterpreterError, LockFlags,
-    NativeInvocation, NativeInvocationInfo, RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, InterpreterError, LockFlags, NativeInvocation,
+    NativeInvocationInfo, RuntimeError, SystemApi,
 };
 use crate::types::*;
 use radix_engine_interface::api::types::{
@@ -23,8 +23,8 @@ impl NativeInvocation for AccessRulesAddAccessCheckInvocation {
     }
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = input.receiver;
 
