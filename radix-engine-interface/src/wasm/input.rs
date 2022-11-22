@@ -172,7 +172,8 @@ pub enum WorktopMethodInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum PackageFunctionInvocation {
-    Publish(PackagePublishInvocation),
+    PublishNoOwner(PackagePublishNoOwnerInvocation),
+    PublishWithOwner(PackagePublishWithOwnerInvocation),
 }
 
 impl NativeFnInvocation {
@@ -196,7 +197,10 @@ impl NativeFnInvocation {
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeFunctionInvocation::Package(invocation) => match invocation {
-                    PackageFunctionInvocation::Publish(invocation) => system_api
+                    PackageFunctionInvocation::PublishNoOwner(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    PackageFunctionInvocation::PublishWithOwner(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },

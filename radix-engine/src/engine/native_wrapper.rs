@@ -47,12 +47,23 @@ where
                     InterpreterError::InvalidInvocation,
                 ));
             }
-            NativeFunction::Package(PackageFunction::Publish) => {
-                let invocation: PackagePublishInvocation = scrypto_decode(&args)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
-                system_api
-                    .sys_invoke(invocation)
-                    .map(|a| IndexedScryptoValue::from_typed(&a))
+            NativeFunction::Package(package_function) => {
+                match package_function {
+                    PackageFunction::PublishNoOwner => {
+                        let invocation: PackagePublishNoOwnerInvocation = scrypto_decode(&args)
+                            .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                        system_api
+                            .sys_invoke(invocation)
+                            .map(|a| IndexedScryptoValue::from_typed(&a))
+                    }
+                    PackageFunction::PublishWithOwner => {
+                        let invocation: PackagePublishWithOwnerInvocation = scrypto_decode(&args)
+                            .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                        system_api
+                            .sys_invoke(invocation)
+                            .map(|a| IndexedScryptoValue::from_typed(&a))
+                    }
+                }
             }
         },
         NativeFn::Method(native_method) => match native_method {

@@ -110,6 +110,7 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<WorktopAssertContainsAmountInvocation, E>
     + SysNativeInvokable<WorktopAssertContainsNonFungiblesInvocation, E>
     + SysNativeInvokable<WorktopDrainInvocation, E>
-    + SysNativeInvokable<PackagePublishInvocation, E>
+    + SysNativeInvokable<PackagePublishNoOwnerInvocation, E>
+    + SysNativeInvokable<PackagePublishWithOwnerInvocation, E>
 {
 }

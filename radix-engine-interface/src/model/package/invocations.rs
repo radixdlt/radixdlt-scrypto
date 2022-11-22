@@ -8,24 +8,48 @@ use sbor::rust::string::String;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct PackagePublishInvocation {
+pub struct PackagePublishNoOwnerInvocation {
     pub code: Blob,
     pub abi: Blob,
     pub metadata: HashMap<String, String>,
 }
 
-impl Invocation for PackagePublishInvocation {
+impl Invocation for PackagePublishNoOwnerInvocation {
     type Output = PackageAddress;
 }
 
-impl ScryptoNativeInvocation for PackagePublishInvocation {
+impl ScryptoNativeInvocation for PackagePublishNoOwnerInvocation {
     type ScryptoOutput = PackageAddress;
 }
 
-impl Into<NativeFnInvocation> for PackagePublishInvocation {
+impl Into<NativeFnInvocation> for PackagePublishNoOwnerInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::Package(
-            PackageFunctionInvocation::Publish(self),
+            PackageFunctionInvocation::PublishNoOwner(self),
+        ))
+    }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct PackagePublishWithOwnerInvocation {
+    pub code: Blob,
+    pub abi: Blob,
+    pub metadata: HashMap<String, String>,
+}
+
+impl Invocation for PackagePublishWithOwnerInvocation {
+    type Output = (PackageAddress, Bucket);
+}
+
+impl ScryptoNativeInvocation for PackagePublishWithOwnerInvocation {
+    type ScryptoOutput = (PackageAddress, Bucket);
+}
+
+impl Into<NativeFnInvocation> for PackagePublishWithOwnerInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Function(NativeFunctionInvocation::Package(
+            PackageFunctionInvocation::PublishWithOwner(self),
         ))
     }
 }

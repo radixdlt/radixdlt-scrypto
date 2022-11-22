@@ -155,7 +155,8 @@ impl FeeTable {
                 }
             }
             NativeFunction::Package(package_fn) => match package_fn {
-                PackageFunction::Publish => self.fixed_low + input.raw.len() as u32 * 2,
+                PackageFunction::PublishNoOwner => self.fixed_low + input.raw.len() as u32 * 2,
+                PackageFunction::PublishWithOwner => self.fixed_low + input.raw.len() as u32 * 2,
             },
             NativeFunction::EpochManager(system_ident) => match system_ident {
                 EpochManagerFunction::Create => self.fixed_low,

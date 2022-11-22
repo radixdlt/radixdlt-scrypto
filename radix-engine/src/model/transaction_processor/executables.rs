@@ -533,7 +533,7 @@ impl TransactionProcessor {
                     })
                 }
                 Instruction::PublishPackage { code, abi } => env
-                    .sys_invoke(PackagePublishInvocation {
+                    .sys_invoke(PackagePublishNoOwnerInvocation {
                         code: code.clone(),
                         abi: abi.clone(),
                         metadata: HashMap::new(),

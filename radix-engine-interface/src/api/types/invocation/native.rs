@@ -344,7 +344,8 @@ pub enum WorktopMethod {
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum PackageFunction {
-    Publish,
+    PublishNoOwner,
+    PublishWithOwner,
 }
 
 #[derive(
