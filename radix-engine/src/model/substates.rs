@@ -142,7 +142,13 @@ impl RuntimeSubstate {
             RuntimeSubstate::ResourceManager(value) => PersistedSubstate::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => PersistedSubstate::ComponentInfo(value),
             RuntimeSubstate::ComponentState(value) => PersistedSubstate::ComponentState(value),
+            RuntimeSubstate::ComponentRoyaltyConfig(value) => {
+                PersistedSubstate::ComponentRoyaltyConfig(value)
+            }
             RuntimeSubstate::Package(value) => PersistedSubstate::Package(value),
+            RuntimeSubstate::PackageRoyaltyConfig(value) => {
+                PersistedSubstate::PackageRoyaltyConfig(value)
+            }
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value)
@@ -200,7 +206,13 @@ impl RuntimeSubstate {
             RuntimeSubstate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => SubstateRefMut::ComponentInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRefMut::ComponentState(value),
+            RuntimeSubstate::ComponentRoyaltyConfig(value) => {
+                SubstateRefMut::ComponentRoyaltyConfig(value)
+            }
             RuntimeSubstate::Package(value) => SubstateRefMut::Package(value),
+            RuntimeSubstate::PackageRoyaltyConfig(value) => {
+                SubstateRefMut::PackageRoyaltyConfig(value)
+            }
             RuntimeSubstate::Vault(value) => SubstateRefMut::Vault(value),
             RuntimeSubstate::NonFungible(value) => SubstateRefMut::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
@@ -219,7 +231,13 @@ impl RuntimeSubstate {
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => SubstateRef::ComponentInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRef::ComponentState(value),
+            RuntimeSubstate::ComponentRoyaltyConfig(value) => {
+                SubstateRef::ComponentRoyaltyConfig(value)
+            }
             RuntimeSubstate::Package(value) => SubstateRef::Package(value),
+            RuntimeSubstate::PackageRoyaltyConfig(value) => {
+                SubstateRef::PackageRoyaltyConfig(value)
+            }
             RuntimeSubstate::Vault(value) => SubstateRef::Vault(value),
             RuntimeSubstate::NonFungible(value) => SubstateRef::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
@@ -464,6 +482,7 @@ pub enum SubstateRef<'a> {
     NonFungible(&'a NonFungibleSubstate),
     KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
     Package(&'a PackageSubstate),
+    PackageRoyaltyConfig(&'a PackageRoyaltyConfigSubstate),
     Vault(&'a VaultRuntimeSubstate),
     ResourceManager(&'a ResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
@@ -481,6 +500,7 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::ComponentState(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::ComponentRoyaltyConfig(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::Package(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::PackageRoyaltyConfig(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::NonFungible(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::KeyValueStoreEntry(value) => IndexedScryptoValue::from_typed(*value),
             _ => panic!("Unsupported scrypto value"),
@@ -519,6 +539,13 @@ impl<'a> SubstateRef<'a> {
         match self {
             SubstateRef::ComponentRoyaltyConfig(info) => *info,
             _ => panic!("Not a component royalty config"),
+        }
+    }
+
+    pub fn package_royalty_config(&self) -> &PackageRoyaltyConfigSubstate {
+        match self {
+            SubstateRef::PackageRoyaltyConfig(info) => *info,
+            _ => panic!("Not a package royalty config"),
         }
     }
 

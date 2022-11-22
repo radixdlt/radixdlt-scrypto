@@ -26,7 +26,7 @@ impl NativeExecutable for ComponentSetRoyaltyConfigInvocation {
         let mut substate_mut = system_api.get_ref_mut(handle)?;
         substate_mut.component_royalty_config().royalty_config = input.royalty_config;
 
-        system_api.drop_lock(handle);
+        system_api.drop_lock(handle)?;
 
         Ok(((), CallFrameUpdate::empty()))
     }

@@ -1,7 +1,7 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use radix_engine_interface::api::types::{
-    ComponentOffset, GlobalAddress, RENodeId, SubstateId, SubstateOffset,
+    ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::scrypto;
@@ -84,19 +84,37 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
         };
 
         // Load package royalty config
-
-        // Load component royalty config
         let node_id = RENodeId::Global(GlobalAddress::Package(*package_address));
-        let offset = SubstateOffset::Component(ComponentOffset::RoyaltyConfig);
+        let offset = SubstateOffset::Package(PackageOffset::RoyaltyConfig);
+        // TODO: deref
         track
             .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
             .map_err(RoyaltyError::from)?;
-        let component_royalty_config = track
+        let royalty_config = track
             .get_substate(node_id, &offset)
-            .component_royalty_config();
+            .package_royalty_config();
         track
             .release_lock(SubstateId(node_id, offset.clone()), false)
             .map_err(RoyaltyError::from)?;
+        // TODO: apply royalty
+
+        // Load component royalty config
+        if let Some(component_address) = optional_component_address {
+            let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+            let offset = SubstateOffset::Component(ComponentOffset::RoyaltyConfig);
+            // TODO: deref
+            track
+                .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
+                .map_err(RoyaltyError::from)?;
+            let royalty_config = track
+                .get_substate(node_id, &offset)
+                .component_royalty_config();
+            track
+                .release_lock(SubstateId(node_id, offset.clone()), false)
+                .map_err(RoyaltyError::from)?;
+
+            // TODO: apply royalty
+        }
 
         Ok(())
     }
