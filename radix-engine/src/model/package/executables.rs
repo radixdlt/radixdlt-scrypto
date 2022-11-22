@@ -1,10 +1,16 @@
 use core::fmt::Debug;
-use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId};
+use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId, RENodeId};
 
 use crate::engine::*;
+use crate::engine::{
+    CallFrameUpdate, LockFlags, NativeExecutable, NativeInvocation, NativeInvocationInfo,
+    RuntimeError, SystemApi,
+};
 use crate::model::{GlobalAddressSubstate, PackageSubstate};
 use crate::types::*;
 use crate::wasm::*;
+use radix_engine_interface::api::types::{NativeMethod, SubstateOffset};
+use radix_engine_interface::model::*;
 
 pub struct Package;
 
@@ -69,6 +75,37 @@ impl NativeInvocation for PackagePublishInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Function(
             NativeFunction::Package(PackageFunction::Publish),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+impl NativeExecutable for PackageSetRoyaltyConfigInvocation {
+    type NativeOutput = ();
+
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi,
+    {
+        // TODO: auth check
+        let node_id = RENodeId::Global(GlobalAddress::Package(input.receiver));
+        let offset = SubstateOffset::Package(PackageOffset::RoyaltyConfig);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let mut substate_mut = system_api.get_ref_mut(handle)?;
+        substate_mut.package_royalty_config().royalty_config = input.royalty_config;
+
+        system_api.drop_lock(handle);
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for PackageSetRoyaltyConfigInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Package(PackageMethod::SetRoyaltyConfig),
+            RENodeId::Global(GlobalAddress::Package(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }

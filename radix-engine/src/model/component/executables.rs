@@ -19,12 +19,14 @@ impl NativeExecutable for ComponentSetRoyaltyConfigInvocation {
         Y: SystemApi,
     {
         // TODO: auth check
-
+        let node_id = input.receiver;
         let offset = SubstateOffset::Component(ComponentOffset::RoyaltyConfig);
-        let handle = system_api.lock_substate(input.receiver, offset, LockFlags::MUTABLE)?;
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = system_api.get_ref_mut(handle)?;
         substate_mut.component_royalty_config().royalty_config = input.royalty_config;
+
+        system_api.drop_lock(handle);
 
         Ok(((), CallFrameUpdate::empty()))
     }

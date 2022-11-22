@@ -4,6 +4,7 @@ use crate::model::InvokeError;
 use crate::types::{scrypto_decode, scrypto_encode, Encode, ScryptoInvocation};
 use crate::wasm::*;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::api::wasm_input::PackageMethodInvocation;
 use radix_engine_interface::api::wasm_input::{
     AccessRulesMethodInvocation, AuthZoneMethodInvocation, BucketMethodInvocation,
     ComponentMethodInvocation, EpochManagerFunctionInvocation, EpochManagerMethodInvocation,
@@ -72,6 +73,12 @@ where
             NativeFnInvocation::Method(native_method) => match native_method {
                 NativeMethodInvocation::Component(component_method) => match component_method {
                     ComponentMethodInvocation::SetRoyaltyConfig(invocation) => self
+                        .system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                },
+                NativeMethodInvocation::Package(package_method) => match package_method {
+                    PackageMethodInvocation::SetRoyaltyConfig(invocation) => self
                         .system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),

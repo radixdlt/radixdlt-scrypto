@@ -8,6 +8,7 @@ use crate::scrypto;
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentSetRoyaltyConfigInvocation {
+    /// Either global or local component
     pub receiver: RENodeId,
     pub royalty_config: RoyaltyConfig,
 }

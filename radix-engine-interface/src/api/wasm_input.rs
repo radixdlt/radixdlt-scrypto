@@ -38,6 +38,7 @@ pub enum NativeFnInvocation {
 pub enum NativeMethodInvocation {
     AccessRules(AccessRulesMethodInvocation),
     Component(ComponentMethodInvocation),
+    Package(PackageMethodInvocation),
     EpochManager(EpochManagerMethodInvocation),
     AuthZone(AuthZoneMethodInvocation),
     ResourceManager(ResourceManagerMethodInvocation),
@@ -65,6 +66,12 @@ pub enum AccessRulesMethodInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ComponentMethodInvocation {
     SetRoyaltyConfig(ComponentSetRoyaltyConfigInvocation),
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum PackageMethodInvocation {
+    SetRoyaltyConfig(PackageSetRoyaltyConfigInvocation),
 }
 
 #[derive(Debug)]

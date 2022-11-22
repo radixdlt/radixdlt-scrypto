@@ -13,10 +13,12 @@ pub enum PersistedSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
     ResourceManager(ResourceManagerSubstate),
-    ComponentInfo(ComponentInfoSubstate),
     AccessRules(AccessRulesSubstate),
+    ComponentInfo(ComponentInfoSubstate),
     ComponentState(ComponentStateSubstate),
+    ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     Package(PackageSubstate),
+    PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
     Vault(VaultSubstate),
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
@@ -51,7 +53,13 @@ impl PersistedSubstate {
             PersistedSubstate::ResourceManager(value) => RuntimeSubstate::ResourceManager(value),
             PersistedSubstate::ComponentInfo(value) => RuntimeSubstate::ComponentInfo(value),
             PersistedSubstate::ComponentState(value) => RuntimeSubstate::ComponentState(value),
+            PersistedSubstate::ComponentRoyaltyConfig(value) => {
+                RuntimeSubstate::ComponentRoyaltyConfig(value)
+            }
             PersistedSubstate::Package(value) => RuntimeSubstate::Package(value),
+            PersistedSubstate::PackageRoyaltyConfig(value) => {
+                RuntimeSubstate::PackageRoyaltyConfig(value)
+            }
             PersistedSubstate::Vault(value) => {
                 RuntimeSubstate::Vault(VaultRuntimeSubstate::new(value.0))
             }
@@ -72,10 +80,12 @@ pub enum RuntimeSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
     ResourceManager(ResourceManagerSubstate),
-    ComponentInfo(ComponentInfoSubstate),
     AccessRules(AccessRulesSubstate),
+    ComponentInfo(ComponentInfoSubstate),
     ComponentState(ComponentStateSubstate),
+    ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     Package(PackageSubstate),
+    PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
     Vault(VaultRuntimeSubstate),
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
@@ -100,7 +110,13 @@ impl RuntimeSubstate {
             RuntimeSubstate::ComponentState(value) => {
                 PersistedSubstate::ComponentState(value.clone())
             }
+            RuntimeSubstate::ComponentRoyaltyConfig(value) => {
+                PersistedSubstate::ComponentRoyaltyConfig(value.clone())
+            }
             RuntimeSubstate::Package(value) => PersistedSubstate::Package(value.clone()),
+            RuntimeSubstate::PackageRoyaltyConfig(value) => {
+                PersistedSubstate::PackageRoyaltyConfig(value.clone())
+            }
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value.clone()),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value.clone())
@@ -652,6 +668,7 @@ pub enum SubstateRefMut<'a> {
     ComponentInfo(&'a mut ComponentInfoSubstate),
     ComponentState(&'a mut ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a mut ComponentRoyaltyConfigSubstate),
+    PackageRoyaltyConfig(&'a mut PackageRoyaltyConfigSubstate),
     NonFungible(&'a mut NonFungibleSubstate),
     KeyValueStoreEntry(&'a mut KeyValueStoreEntrySubstate),
     Package(&'a mut PackageSubstate),
@@ -741,6 +758,13 @@ impl<'a> SubstateRefMut<'a> {
         match self {
             SubstateRefMut::ComponentRoyaltyConfig(value) => *value,
             _ => panic!("Not component royalty config"),
+        }
+    }
+
+    pub fn package_royalty_config(&mut self) -> &mut PackageRoyaltyConfigSubstate {
+        match self {
+            SubstateRefMut::PackageRoyaltyConfig(value) => *value,
+            _ => panic!("Not package royalty config"),
         }
     }
 

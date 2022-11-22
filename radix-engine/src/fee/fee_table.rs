@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::{
     AccessRulesMethod, AuthZoneMethod, BucketMethod, ComponentMethod, EpochManagerFunction,
-    EpochManagerMethod, NativeFunction, NativeMethod, PackageFunction, ProofMethod,
+    EpochManagerMethod, NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
     ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
     WorktopMethod,
 };
@@ -236,6 +236,9 @@ impl FeeTable {
             },
             NativeMethod::Component(method_ident) => match method_ident {
                 ComponentMethod::SetRoyaltyConfig => self.fixed_medium,
+            },
+            NativeMethod::Package(method_ident) => match method_ident {
+                PackageMethod::SetRoyaltyConfig => self.fixed_medium,
             },
             NativeMethod::Vault(vault_ident) => {
                 match vault_ident {

@@ -9,6 +9,12 @@ pub struct PackageSubstate {
     pub blueprint_abis: HashMap<String, BlueprintAbi>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct PackageRoyaltyConfigSubstate {
+    pub royalty_config: HashMap<String, RoyaltyConfig>,
+}
+
 impl Debug for PackageSubstate {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("PackageSubstate").finish()
