@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent,
     ProofId, RENodeId, TransactionProcessorFunction,
@@ -47,23 +47,8 @@ pub enum TransactionProcessorError {
     IdAllocationError(IdAllocationError),
 }
 
-impl<'b> NativeExecutable for TransactionProcessorRunInvocation<'b> {
-    type NativeOutput = Vec<Vec<u8>>;
-
-    fn execute<Y>(
-        invocation: Self,
-        system_api: &mut Y,
-    ) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation>
-            + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>,
-    {
-        TransactionProcessor::run(invocation, system_api)
-            .map(|rtn| (rtn, CallFrameUpdate::empty()))
-            .map_err(|e| e.into())
-    }
+impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
+    type Output = Vec<Vec<u8>>;
 }
 
 impl<'a> NativeInvocation for TransactionProcessorRunInvocation<'a> {
@@ -108,6 +93,21 @@ impl<'a> NativeInvocation for TransactionProcessorRunInvocation<'a> {
                 node_refs_to_copy,
             },
         )
+    }
+
+    fn execute<Y>(
+        invocation: Self,
+        system_api: &mut Y,
+    ) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi
+            + Invokable<ScryptoInvocation>
+            + EngineApi<RuntimeError>
+            + SysInvokableNative<RuntimeError>,
+    {
+        TransactionProcessor::run(invocation, system_api)
+            .map(|rtn| (rtn, CallFrameUpdate::empty()))
+            .map_err(|e| e.into())
     }
 }
 

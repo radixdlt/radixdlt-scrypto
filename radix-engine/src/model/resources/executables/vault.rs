@@ -1,5 +1,5 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, LockFlags, NativeExecutable, NativeInvocation,
+    ApplicationError, CallFrameUpdate, LockFlags, NativeInvocation,
     NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserveError;
@@ -26,15 +26,21 @@ pub enum VaultError {
     LockFeeRepayFailure(FeeReserveError),
 }
 
-impl NativeExecutable for VaultTakeInvocation {
-    type NativeOutput = Bucket;
+impl NativeInvocation for VaultTakeInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Vault(VaultMethod::Take),
+            RENodeId::Vault(self.receiver),
+            CallFrameUpdate::empty(),
+        )
+    }
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -62,25 +68,21 @@ impl NativeExecutable for VaultTakeInvocation {
     }
 }
 
-impl NativeInvocation for VaultTakeInvocation {
+impl NativeInvocation for VaultPutInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Vault(VaultMethod::Take),
+            NativeMethod::Vault(VaultMethod::Put),
             RENodeId::Vault(self.receiver),
-            CallFrameUpdate::empty(),
+            CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0)),
         )
     }
-}
-
-impl NativeExecutable for VaultPutInvocation {
-    type NativeOutput = ();
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -102,25 +104,21 @@ impl NativeExecutable for VaultPutInvocation {
     }
 }
 
-impl NativeInvocation for VaultPutInvocation {
+impl NativeInvocation for VaultLockFeeInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Vault(VaultMethod::Put),
+            NativeMethod::Vault(VaultMethod::LockFee),
             RENodeId::Vault(self.receiver),
-            CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0)),
+            CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for VaultLockFeeInvocation {
-    type NativeOutput = ();
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -166,25 +164,21 @@ impl NativeExecutable for VaultLockFeeInvocation {
     }
 }
 
-impl NativeInvocation for VaultLockFeeInvocation {
+impl NativeInvocation for VaultTakeNonFungiblesInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Vault(VaultMethod::LockFee),
+            NativeMethod::Vault(VaultMethod::TakeNonFungibles),
             RENodeId::Vault(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for VaultTakeNonFungiblesInvocation {
-    type NativeOutput = Bucket;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -214,25 +208,21 @@ impl NativeExecutable for VaultTakeNonFungiblesInvocation {
     }
 }
 
-impl NativeInvocation for VaultTakeNonFungiblesInvocation {
+impl NativeInvocation for VaultGetAmountInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Vault(VaultMethod::TakeNonFungibles),
+            NativeMethod::Vault(VaultMethod::GetAmount),
             RENodeId::Vault(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for VaultGetAmountInvocation {
-    type NativeOutput = Decimal;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -246,25 +236,21 @@ impl NativeExecutable for VaultGetAmountInvocation {
     }
 }
 
-impl NativeInvocation for VaultGetAmountInvocation {
+impl NativeInvocation for VaultGetResourceAddressInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Vault(VaultMethod::GetAmount),
+            NativeMethod::Vault(VaultMethod::GetResourceAddress),
             RENodeId::Vault(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for VaultGetResourceAddressInvocation {
-    type NativeOutput = ResourceAddress;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -281,25 +267,21 @@ impl NativeExecutable for VaultGetResourceAddressInvocation {
     }
 }
 
-impl NativeInvocation for VaultGetResourceAddressInvocation {
+impl NativeInvocation for VaultGetNonFungibleIdsInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Vault(VaultMethod::GetResourceAddress),
+            NativeMethod::Vault(VaultMethod::GetNonFungibleIds),
             RENodeId::Vault(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for VaultGetNonFungibleIdsInvocation {
-    type NativeOutput = BTreeSet<NonFungibleId>;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -317,25 +299,21 @@ impl NativeExecutable for VaultGetNonFungibleIdsInvocation {
     }
 }
 
-impl NativeInvocation for VaultGetNonFungibleIdsInvocation {
+impl NativeInvocation for VaultCreateProofInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Vault(VaultMethod::GetNonFungibleIds),
+            NativeMethod::Vault(VaultMethod::CreateProof),
             RENodeId::Vault(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for VaultCreateProofInvocation {
-    type NativeOutput = Proof;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -361,25 +339,21 @@ impl NativeExecutable for VaultCreateProofInvocation {
     }
 }
 
-impl NativeInvocation for VaultCreateProofInvocation {
+impl NativeInvocation for VaultCreateProofByAmountInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Vault(VaultMethod::CreateProof),
+            NativeMethod::Vault(VaultMethod::CreateProofByAmount),
             RENodeId::Vault(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for VaultCreateProofByAmountInvocation {
-    type NativeOutput = Proof;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -406,25 +380,21 @@ impl NativeExecutable for VaultCreateProofByAmountInvocation {
     }
 }
 
-impl NativeInvocation for VaultCreateProofByAmountInvocation {
+impl NativeInvocation for VaultCreateProofByIdsInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Vault(VaultMethod::CreateProofByAmount),
+            NativeMethod::Vault(VaultMethod::CreateProofByIds),
             RENodeId::Vault(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for VaultCreateProofByIdsInvocation {
-    type NativeOutput = Proof;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Vault(input.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
@@ -448,15 +418,5 @@ impl NativeExecutable for VaultCreateProofByIdsInvocation {
             Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
         ))
-    }
-}
-
-impl NativeInvocation for VaultCreateProofByIdsInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Vault(VaultMethod::CreateProofByIds),
-            RENodeId::Vault(self.receiver),
-            CallFrameUpdate::empty(),
-        )
     }
 }

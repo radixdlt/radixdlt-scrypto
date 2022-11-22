@@ -31,15 +31,20 @@ impl Package {
     }
 }
 
-impl NativeExecutable for PackagePublishInvocation {
-    type NativeOutput = PackageAddress;
+impl NativeInvocation for PackagePublishInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Function(
+            NativeFunction::Package(PackageFunction::Publish),
+            CallFrameUpdate::empty(),
+        )
+    }
 
     fn execute<Y>(
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + Invokable<ScryptoInvocation>,
+        where
+            Y: SystemApi + Invokable<ScryptoInvocation>,
     {
         let code = system_api.read_blob(&invocation.code.0)?.to_vec();
         let blob = system_api.read_blob(&invocation.abi.0)?;
@@ -66,14 +71,5 @@ impl NativeExecutable for PackagePublishInvocation {
 
         let package_address: PackageAddress = global_node_id.into();
         Ok((package_address, CallFrameUpdate::empty()))
-    }
-}
-
-impl NativeInvocation for PackagePublishInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Function(
-            NativeFunction::Package(PackageFunction::Publish),
-            CallFrameUpdate::empty(),
-        )
     }
 }

@@ -18,11 +18,13 @@ pub struct ProofGetAmountInvocation {
     pub receiver: ProofId,
 }
 
-impl SysInvocation for ProofGetAmountInvocation {
+impl Invocation for ProofGetAmountInvocation {
     type Output = Decimal;
 }
 
-impl ScryptoNativeInvocation for ProofGetAmountInvocation {}
+impl ScryptoNativeInvocation for ProofGetAmountInvocation {
+    type ScryptoOutput = Decimal;
+}
 
 impl Into<NativeFnInvocation> for ProofGetAmountInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -37,11 +39,13 @@ pub struct ProofGetNonFungibleIdsInvocation {
     pub receiver: ProofId,
 }
 
-impl SysInvocation for ProofGetNonFungibleIdsInvocation {
+impl Invocation for ProofGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
 }
 
-impl ScryptoNativeInvocation for ProofGetNonFungibleIdsInvocation {}
+impl ScryptoNativeInvocation for ProofGetNonFungibleIdsInvocation {
+    type ScryptoOutput = BTreeSet<NonFungibleId>;
+}
 
 impl Into<NativeFnInvocation> for ProofGetNonFungibleIdsInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -56,11 +60,13 @@ pub struct ProofGetResourceAddressInvocation {
     pub receiver: ProofId,
 }
 
-impl SysInvocation for ProofGetResourceAddressInvocation {
+impl Invocation for ProofGetResourceAddressInvocation {
     type Output = ResourceAddress;
 }
 
-impl ScryptoNativeInvocation for ProofGetResourceAddressInvocation {}
+impl ScryptoNativeInvocation for ProofGetResourceAddressInvocation {
+    type ScryptoOutput = ResourceAddress;
+}
 
 impl Into<NativeFnInvocation> for ProofGetResourceAddressInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -75,11 +81,13 @@ pub struct ProofCloneInvocation {
     pub receiver: ProofId,
 }
 
-impl SysInvocation for ProofCloneInvocation {
+impl Invocation for ProofCloneInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for ProofCloneInvocation {}
+impl ScryptoNativeInvocation for ProofCloneInvocation {
+    type ScryptoOutput = Proof;
+}
 
 impl Into<NativeFnInvocation> for ProofCloneInvocation {
     fn into(self) -> NativeFnInvocation {

@@ -1,5 +1,5 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, LockFlags, NativeExecutable, NativeInvocation,
+    ApplicationError, CallFrameUpdate, LockFlags, NativeInvocation,
     NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::model::{BucketSubstate, Resource, ResourceOperationError};
@@ -23,12 +23,18 @@ pub enum WorktopError {
     CouldNotDrop,
 }
 
-impl NativeExecutable for WorktopPutInvocation {
-    type NativeOutput = ();
+impl NativeInvocation for WorktopPutInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Worktop(WorktopMethod::Put),
+            RENodeId::Worktop,
+            CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0)),
+        )
+    }
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -49,25 +55,23 @@ impl NativeExecutable for WorktopPutInvocation {
     }
 }
 
-impl NativeInvocation for WorktopPutInvocation {
+impl NativeInvocation for WorktopTakeAmountInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Worktop(WorktopMethod::Put),
+            NativeMethod::Worktop(WorktopMethod::TakeAmount),
             RENodeId::Worktop,
-            CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0)),
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
+                self.resource_address,
+            ))),
         )
     }
-}
-
-impl NativeExecutable for WorktopTakeAmountInvocation {
-    type NativeOutput = Bucket;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -112,27 +116,23 @@ impl NativeExecutable for WorktopTakeAmountInvocation {
     }
 }
 
-impl NativeInvocation for WorktopTakeAmountInvocation {
+impl NativeInvocation for WorktopTakeAllInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Worktop(WorktopMethod::TakeAmount),
+            NativeMethod::Worktop(WorktopMethod::TakeAll),
             RENodeId::Worktop,
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
                 self.resource_address,
             ))),
         )
     }
-}
-
-impl NativeExecutable for WorktopTakeAllInvocation {
-    type NativeOutput = Bucket;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -176,27 +176,23 @@ impl NativeExecutable for WorktopTakeAllInvocation {
     }
 }
 
-impl NativeInvocation for WorktopTakeAllInvocation {
+impl NativeInvocation for WorktopTakeNonFungiblesInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Worktop(WorktopMethod::TakeAll),
+            NativeMethod::Worktop(WorktopMethod::TakeNonFungibles),
             RENodeId::Worktop,
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
                 self.resource_address,
             ))),
         )
     }
-}
-
-impl NativeExecutable for WorktopTakeNonFungiblesInvocation {
-    type NativeOutput = Bucket;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -242,41 +238,6 @@ impl NativeExecutable for WorktopTakeNonFungiblesInvocation {
     }
 }
 
-impl NativeInvocation for WorktopTakeNonFungiblesInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Worktop(WorktopMethod::TakeNonFungibles),
-            RENodeId::Worktop,
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address,
-            ))),
-        )
-    }
-}
-
-impl NativeExecutable for WorktopAssertContainsInvocation {
-    type NativeOutput = ();
-
-    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
-    {
-        let node_id = RENodeId::Worktop;
-        let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
-
-        let substate_ref = system_api.get_ref(worktop_handle)?;
-        let worktop = substate_ref.worktop();
-        if worktop.total_amount(input.resource_address).is_zero() {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::WorktopError(WorktopError::AssertionFailed),
-            ));
-        }
-
-        Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
 impl NativeInvocation for WorktopAssertContainsInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
@@ -287,14 +248,10 @@ impl NativeInvocation for WorktopAssertContainsInvocation {
             ))),
         )
     }
-}
-
-impl NativeExecutable for WorktopAssertContainsAmountInvocation {
-    type NativeOutput = ();
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -302,7 +259,7 @@ impl NativeExecutable for WorktopAssertContainsAmountInvocation {
 
         let substate_ref = system_api.get_ref(worktop_handle)?;
         let worktop = substate_ref.worktop();
-        if worktop.total_amount(input.resource_address) < input.amount {
+        if worktop.total_amount(input.resource_address).is_zero() {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::WorktopError(WorktopError::AssertionFailed),
             ));
@@ -322,14 +279,41 @@ impl NativeInvocation for WorktopAssertContainsAmountInvocation {
             ))),
         )
     }
-}
-
-impl NativeExecutable for WorktopAssertContainsNonFungiblesInvocation {
-    type NativeOutput = ();
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
+    {
+        let node_id = RENodeId::Worktop;
+        let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
+        let worktop_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+
+        let substate_ref = system_api.get_ref(worktop_handle)?;
+        let worktop = substate_ref.worktop();
+        if worktop.total_amount(input.resource_address) < input.amount {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::WorktopError(WorktopError::AssertionFailed),
+            ));
+        }
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for WorktopAssertContainsNonFungiblesInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Worktop(WorktopMethod::AssertContainsNonFungibles),
+            RENodeId::Worktop,
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
+                self.resource_address,
+            ))),
+        )
+    }
+
+    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -355,27 +339,21 @@ impl NativeExecutable for WorktopAssertContainsNonFungiblesInvocation {
     }
 }
 
-impl NativeInvocation for WorktopAssertContainsNonFungiblesInvocation {
+impl NativeInvocation for WorktopDrainInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Worktop(WorktopMethod::AssertContainsNonFungibles),
+            NativeMethod::Worktop(WorktopMethod::Drain),
             RENodeId::Worktop,
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address,
-            ))),
+            CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for WorktopDrainInvocation {
-    type NativeOutput = Vec<Bucket>;
 
     fn execute<Y>(
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(Vec<Bucket>, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -414,15 +392,5 @@ impl NativeExecutable for WorktopDrainInvocation {
                 node_refs_to_copy: HashSet::new(),
             },
         ))
-    }
-}
-
-impl NativeInvocation for WorktopDrainInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Worktop(WorktopMethod::Drain),
-            RENodeId::Worktop,
-            CallFrameUpdate::empty(),
-        )
     }
 }

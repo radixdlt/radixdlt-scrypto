@@ -12,11 +12,13 @@ pub struct AccessRulesAddAccessCheckInvocation {
     pub access_rules: AccessRules,
 }
 
-impl SysInvocation for AccessRulesAddAccessCheckInvocation {
+impl Invocation for AccessRulesAddAccessCheckInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for AccessRulesAddAccessCheckInvocation {}
+impl ScryptoNativeInvocation for AccessRulesAddAccessCheckInvocation {
+    type ScryptoOutput = ();
+}
 
 impl Into<NativeFnInvocation> for AccessRulesAddAccessCheckInvocation {
     fn into(self) -> NativeFnInvocation {

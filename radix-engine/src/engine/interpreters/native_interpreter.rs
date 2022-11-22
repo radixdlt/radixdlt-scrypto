@@ -1,10 +1,9 @@
 use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
 use radix_engine_interface::api::types::{NativeFunction, NativeMethod, RENodeId};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
-use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
 use sbor::*;
 
@@ -84,10 +83,6 @@ pub enum NativeInvocationInfo {
     Method(NativeMethod, RENodeId, CallFrameUpdate),
 }
 
-impl<N: NativeExecutable> Invocation for N {
-    type Output = <N as NativeExecutable>::NativeOutput;
-}
-
 pub struct NativeResolver;
 
 impl<N: NativeInvocation> Resolver<N> for NativeResolver {
@@ -125,28 +120,24 @@ impl<N: NativeInvocation> Resolver<N> for NativeResolver {
     }
 }
 
-pub trait NativeInvocation: NativeExecutable + Encode<ScryptoCustomTypeId> + Debug {
+pub trait NativeInvocation: Invocation + Encode<ScryptoCustomTypeId> + Debug {
     fn info(&self) -> NativeInvocationInfo;
-}
-
-pub trait NativeExecutable: Invocation {
-    type NativeOutput: Debug;
 
     fn execute<Y>(
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi
+        where
+            Y: SystemApi
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>
             + Invokable<ResourceManagerSetResourceAddressInvocation>;
 }
 
-pub struct NativeExecutor<N: NativeExecutable>(pub N, pub IndexedScryptoValue);
+pub struct NativeExecutor<N: NativeInvocation>(pub N, pub IndexedScryptoValue);
 
-impl<N: NativeExecutable> Executor for NativeExecutor<N> {
+impl<N: NativeInvocation> Executor for NativeExecutor<N> {
     type Output = <N as Invocation>::Output;
 
     fn args(&self) -> &IndexedScryptoValue {
@@ -165,6 +156,12 @@ impl<N: NativeExecutable> Executor for NativeExecutor<N> {
     }
 }
 
+
+
+
+
+
+/*
 pub struct NativeMethodResolver;
 
 impl<N: NativeInvocationMethod> Resolver<N> for NativeMethodResolver {
@@ -239,3 +236,5 @@ pub trait NativeInvocationMethod: Invocation + Encode<ScryptoCustomTypeId> + Deb
             + SysInvokableNative<RuntimeError>
             + Invokable<ResourceManagerSetResourceAddressInvocation>;
 }
+
+ */

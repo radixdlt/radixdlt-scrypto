@@ -1,19 +1,17 @@
 use crate::api::types::ScryptoActor;
 use crate::crypto::Hash;
-use crate::data::ScryptoCustomTypeId;
 use crate::model::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::Decode;
 
 use super::types::*;
 
-pub trait SysInvocation {
-    type Output: Debug + Decode<ScryptoCustomTypeId>;
+pub trait Invocation {
+    type Output: Debug;
 }
 
-pub trait SysNativeInvokable<I: SysInvocation, E> {
+pub trait SysNativeInvokable<I: Invocation, E> {
     fn sys_invoke(&mut self, invocation: I) -> Result<I::Output, E>;
 }
 

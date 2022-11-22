@@ -1,5 +1,5 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, Invokable, LockFlags, NativeExecutable, NativeInvocation,
+    ApplicationError, CallFrameUpdate, Invokable, LockFlags, NativeInvocation,
     NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::model::{
@@ -8,7 +8,7 @@ use crate::model::{
 };
 use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
-use radix_engine_interface::api::api::SysInvokableNative;
+use radix_engine_interface::api::api::{Invocation, SysInvokableNative};
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFunction, NativeMethod, NonFungibleStoreId, NonFungibleStoreOffset,
     RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset,
@@ -40,20 +40,6 @@ pub enum ResourceManagerError {
     ResourceAddressAlreadySet,
 }
 
-impl NativeExecutable for ResourceManagerBucketBurnInvocation {
-    type NativeOutput = ();
-
-    fn execute<Y>(invocation: Self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + Invokable<ScryptoInvocation> + SysInvokableNative<RuntimeError>,
-    {
-        let bucket = Bucket(invocation.bucket.0);
-        bucket.sys_burn(env)?;
-
-        Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
 impl NativeInvocation for ResourceManagerBucketBurnInvocation {
     fn info(&self) -> NativeInvocationInfo {
         let bucket = RENodeId::Bucket(self.bucket.0);
@@ -77,10 +63,41 @@ impl NativeInvocation for ResourceManagerBucketBurnInvocation {
             },
         )
     }
+
+    fn execute<Y>(invocation: Self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi + Invokable<ScryptoInvocation> + SysInvokableNative<RuntimeError>,
+    {
+        let bucket = Bucket(invocation.bucket.0);
+        bucket.sys_burn(env)?;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
 }
 
-impl NativeExecutable for ResourceManagerCreateInvocation {
-    type NativeOutput = (ResourceAddress, Option<Bucket>);
+
+impl NativeInvocation for ResourceManagerCreateInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        let mut node_refs_to_copy = HashSet::new();
+
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            ECDSA_SECP256K1_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            EDDSA_ED25519_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+
+        NativeInvocationInfo::Function(
+            NativeFunction::ResourceManager(ResourceManagerFunction::Create),
+            CallFrameUpdate {
+                nodes_to_move: vec![],
+                node_refs_to_copy,
+            },
+        )
+    }
 
     fn execute<Y>(
         invocation: Self,
@@ -229,32 +246,15 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerCreateInvocation {
+
+impl NativeInvocation for ResourceManagerBurnInvocation {
     fn info(&self) -> NativeInvocationInfo {
-        let mut node_refs_to_copy = HashSet::new();
-
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            ECDSA_SECP256K1_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            EDDSA_ED25519_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
-
-        NativeInvocationInfo::Function(
-            NativeFunction::ResourceManager(ResourceManagerFunction::Create),
-            CallFrameUpdate {
-                nodes_to_move: vec![],
-                node_refs_to_copy,
-            },
+        NativeInvocationInfo::Method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
+            CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0)),
         )
     }
-}
-
-impl NativeExecutable for ResourceManagerBurnInvocation {
-    type NativeOutput = ();
 
     fn execute<'a, Y>(
         input: Self,
@@ -324,25 +324,21 @@ impl NativeExecutable for ResourceManagerBurnInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerBurnInvocation {
+impl NativeInvocation for ResourceManagerUpdateAuthInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
+            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0)),
+            CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ResourceManagerUpdateAuthInvocation {
-    type NativeOutput = ();
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -374,25 +370,21 @@ impl NativeExecutable for ResourceManagerUpdateAuthInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerUpdateAuthInvocation {
+impl NativeInvocation for ResourceManagerLockAuthInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
+            NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ResourceManagerLockAuthInvocation {
-    type NativeOutput = ();
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -424,25 +416,21 @@ impl NativeExecutable for ResourceManagerLockAuthInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerLockAuthInvocation {
+impl NativeInvocation for ResourceManagerCreateVaultInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
+            NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault),
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ResourceManagerCreateVaultInvocation {
-    type NativeOutput = Vault;
 
     fn execute<'a, Y>(
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(Vault, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -469,25 +457,21 @@ impl NativeExecutable for ResourceManagerCreateVaultInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerCreateVaultInvocation {
+impl NativeInvocation for ResourceManagerCreateBucketInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault),
+            NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ResourceManagerCreateBucketInvocation {
-    type NativeOutput = Bucket;
 
     fn execute<'a, Y>(
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -514,18 +498,14 @@ impl NativeExecutable for ResourceManagerCreateBucketInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerCreateBucketInvocation {
+impl NativeInvocation for ResourceManagerMintInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
+            NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ResourceManagerMintInvocation {
-    type NativeOutput = Bucket;
 
     fn execute<'a, Y>(
         input: Self,
@@ -606,25 +586,21 @@ impl NativeExecutable for ResourceManagerMintInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerMintInvocation {
+impl NativeInvocation for ResourceManagerGetMetadataInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
+            NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ResourceManagerGetMetadataInvocation {
-    type NativeOutput = HashMap<String, String>;
 
     fn execute<'a, Y>(
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(HashMap<String, String>, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -641,25 +617,21 @@ impl NativeExecutable for ResourceManagerGetMetadataInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerGetMetadataInvocation {
+impl NativeInvocation for ResourceManagerGetResourceTypeInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
+            NativeMethod::ResourceManager(ResourceManagerMethod::GetResourceType),
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ResourceManagerGetResourceTypeInvocation {
-    type NativeOutput = ResourceType;
 
     fn execute<'a, Y>(
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(ResourceType, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -676,25 +648,21 @@ impl NativeExecutable for ResourceManagerGetResourceTypeInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerGetResourceTypeInvocation {
+impl NativeInvocation for ResourceManagerGetTotalSupplyInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::GetResourceType),
+            NativeMethod::ResourceManager(ResourceManagerMethod::GetTotalSupply),
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ResourceManagerGetTotalSupplyInvocation {
-    type NativeOutput = Decimal;
 
     fn execute<'a, Y>(
         _input: Self,
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -710,25 +678,21 @@ impl NativeExecutable for ResourceManagerGetTotalSupplyInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerGetTotalSupplyInvocation {
+impl NativeInvocation for ResourceManagerUpdateMetadataInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::GetTotalSupply),
+            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateMetadata),
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ResourceManagerUpdateMetadataInvocation {
-    type NativeOutput = ();
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -753,25 +717,21 @@ impl NativeExecutable for ResourceManagerUpdateMetadataInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerUpdateMetadataInvocation {
+impl NativeInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateMetadata),
+            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData),
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ResourceManagerUpdateNonFungibleDataInvocation {
-    type NativeOutput = ();
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -818,25 +778,21 @@ impl NativeExecutable for ResourceManagerUpdateNonFungibleDataInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
+impl NativeInvocation for ResourceManagerNonFungibleExistsInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData),
+            NativeMethod::ResourceManager(ResourceManagerMethod::NonFungibleExists),
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ResourceManagerNonFungibleExistsInvocation {
-    type NativeOutput = bool;
 
     fn execute<'a, Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(bool, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -869,25 +825,21 @@ impl NativeExecutable for ResourceManagerNonFungibleExistsInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerNonFungibleExistsInvocation {
+impl NativeInvocation for ResourceManagerGetNonFungibleInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::NonFungibleExists),
+            NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible),
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ResourceManagerGetNonFungibleInvocation {
-    type NativeOutput = [Vec<u8>; 2];
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<([Vec<u8>; 2], CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -933,22 +885,30 @@ impl NativeExecutable for ResourceManagerGetNonFungibleInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerGetNonFungibleInvocation {
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ResourceManagerSetResourceAddressInvocation {
+    pub receiver: ResourceAddress,
+}
+
+
+impl Invocation for ResourceManagerSetResourceAddressInvocation {
+    type Output = ();
+}
+
+impl NativeInvocation for ResourceManagerSetResourceAddressInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible),
+            NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ResourceManagerSetResourceAddressInvocation {
-    type NativeOutput = ();
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -970,15 +930,5 @@ impl NativeExecutable for ResourceManagerSetResourceAddressInvocation {
             })?;
 
         Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
-impl NativeInvocation for ResourceManagerSetResourceAddressInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
     }
 }

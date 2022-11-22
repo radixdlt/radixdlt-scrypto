@@ -1,5 +1,5 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, LockFlags, NativeExecutable, NativeInvocation,
+    ApplicationError, CallFrameUpdate, LockFlags, NativeInvocation,
     NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::model::{InvokeError, ResourceOperationError};
@@ -26,15 +26,21 @@ pub enum ProofError {
     InvalidRequestData(DecodeError),
 }
 
-impl NativeExecutable for ProofGetAmountInvocation {
-    type NativeOutput = Decimal;
+impl NativeInvocation for ProofGetAmountInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Proof(ProofMethod::GetAmount),
+            RENodeId::Proof(self.receiver),
+            CallFrameUpdate::empty(),
+        )
+    }
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Proof(input.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
@@ -46,25 +52,21 @@ impl NativeExecutable for ProofGetAmountInvocation {
     }
 }
 
-impl NativeInvocation for ProofGetAmountInvocation {
+impl NativeInvocation for ProofGetNonFungibleIdsInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Proof(ProofMethod::GetAmount),
+            NativeMethod::Proof(ProofMethod::GetNonFungibleIds),
             RENodeId::Proof(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ProofGetNonFungibleIdsInvocation {
-    type NativeOutput = BTreeSet<NonFungibleId>;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Proof(input.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
@@ -82,25 +84,21 @@ impl NativeExecutable for ProofGetNonFungibleIdsInvocation {
     }
 }
 
-impl NativeInvocation for ProofGetNonFungibleIdsInvocation {
+impl NativeInvocation for ProofGetResourceAddressInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Proof(ProofMethod::GetNonFungibleIds),
+            NativeMethod::Proof(ProofMethod::GetResourceAddress),
             RENodeId::Proof(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ProofGetResourceAddressInvocation {
-    type NativeOutput = ResourceAddress;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Proof(input.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
@@ -117,22 +115,18 @@ impl NativeExecutable for ProofGetResourceAddressInvocation {
     }
 }
 
-impl NativeInvocation for ProofGetResourceAddressInvocation {
+impl NativeInvocation for ProofCloneInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Proof(ProofMethod::GetResourceAddress),
+            NativeMethod::Proof(ProofMethod::Clone),
             RENodeId::Proof(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for ProofCloneInvocation {
-    type NativeOutput = Proof;
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Proof(input.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
@@ -146,15 +140,5 @@ impl NativeExecutable for ProofCloneInvocation {
             Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
         ))
-    }
-}
-
-impl NativeInvocation for ProofCloneInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Proof(ProofMethod::Clone),
-            RENodeId::Proof(self.receiver),
-            CallFrameUpdate::empty(),
-        )
     }
 }

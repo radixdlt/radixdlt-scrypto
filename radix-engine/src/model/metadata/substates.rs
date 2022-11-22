@@ -1,4 +1,3 @@
-use crate::model::convert;
 use crate::types::*;
 
 /// A transient resource container.

@@ -1,5 +1,5 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, InterpreterError, LockFlags, NativeExecutable,
+    ApplicationError, CallFrameUpdate, InterpreterError, LockFlags,
     NativeInvocation, NativeInvocationInfo, RuntimeError, SystemApi,
 };
 use crate::types::*;
@@ -13,12 +13,18 @@ pub enum AccessRulesError {
     BlueprintFunctionNotFound(String),
 }
 
-impl NativeExecutable for AccessRulesAddAccessCheckInvocation {
-    type NativeOutput = ();
+impl NativeInvocation for AccessRulesAddAccessCheckInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::AccessRules(AccessRulesMethod::AddAccessCheck),
+            self.receiver,
+            CallFrameUpdate::empty(),
+        )
+    }
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = input.receiver;
 
@@ -75,15 +81,5 @@ impl NativeExecutable for AccessRulesAddAccessCheckInvocation {
         access_rules.access_rules.push(input.access_rules);
 
         Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
-impl NativeInvocation for AccessRulesAddAccessCheckInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::AccessRules(AccessRulesMethod::AddAccessCheck),
-            self.receiver,
-            CallFrameUpdate::empty(),
-        )
     }
 }

@@ -1,5 +1,5 @@
 use crate::engine::{
-    AuthModule, CallFrameUpdate, Invokable, LockFlags, NativeExecutable, NativeInvocation,
+    AuthModule, CallFrameUpdate, Invokable, LockFlags, NativeInvocation,
     NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::model::{
@@ -23,15 +23,20 @@ pub struct EpochManager {
     pub info: EpochManagerSubstate,
 }
 
-impl NativeExecutable for EpochManagerCreateInvocation {
-    type NativeOutput = SystemAddress;
+impl NativeInvocation for EpochManagerCreateInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Function(
+            NativeFunction::EpochManager(EpochManagerFunction::Create),
+            CallFrameUpdate::empty(),
+        )
+    }
 
     fn execute<Y>(
         _invocation: Self,
         system_api: &mut Y,
     ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + Invokable<ScryptoInvocation>,
+        where
+            Y: SystemApi + Invokable<ScryptoInvocation>,
     {
         let node_id =
             system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
@@ -53,21 +58,18 @@ impl NativeExecutable for EpochManagerCreateInvocation {
     }
 }
 
-impl NativeInvocation for EpochManagerCreateInvocation {
+impl NativeInvocation for EpochManagerGetCurrentEpochInvocation {
     fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Function(
-            NativeFunction::EpochManager(EpochManagerFunction::Create),
+        NativeInvocationInfo::Method(
+            NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
+            RENodeId::Global(GlobalAddress::System(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for EpochManagerGetCurrentEpochInvocation {
-    type NativeOutput = u64;
 
     fn execute<Y>(_input: Self, system_api: &mut Y) -> Result<(u64, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -84,22 +86,18 @@ impl NativeExecutable for EpochManagerGetCurrentEpochInvocation {
     }
 }
 
-impl NativeInvocation for EpochManagerGetCurrentEpochInvocation {
+impl NativeInvocation for EpochManagerSetEpochInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
+            NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
             RENodeId::Global(GlobalAddress::System(self.receiver)),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for EpochManagerSetEpochInvocation {
-    type NativeOutput = ();
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -113,16 +111,6 @@ impl NativeExecutable for EpochManagerSetEpochInvocation {
         substate_mut.epoch_manager().epoch = input.epoch;
 
         Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
-impl NativeInvocation for EpochManagerSetEpochInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
-            RENodeId::Global(GlobalAddress::System(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
     }
 }
 

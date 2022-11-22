@@ -1,5 +1,5 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, LockFlags, NativeExecutable, NativeInvocation,
+    ApplicationError, CallFrameUpdate, LockFlags, NativeInvocation,
     NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::model::{InvokeError, ProofError};
@@ -23,12 +23,18 @@ pub enum AuthZoneError {
     NoMethodSpecified,
 }
 
-impl NativeExecutable for AuthZonePopInvocation {
-    type NativeOutput = Proof;
+impl NativeInvocation for AuthZonePopInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::AuthZone(AuthZoneMethod::Pop),
+            RENodeId::AuthZoneStack(self.receiver),
+            CallFrameUpdate::empty(),
+        )
+    }
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -55,22 +61,18 @@ impl NativeExecutable for AuthZonePopInvocation {
     }
 }
 
-impl NativeInvocation for AuthZonePopInvocation {
+impl NativeInvocation for AuthZonePushInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::AuthZone(AuthZoneMethod::Pop),
+            NativeMethod::AuthZone(AuthZoneMethod::Push),
             RENodeId::AuthZoneStack(self.receiver),
-            CallFrameUpdate::empty(),
+            CallFrameUpdate::move_node(RENodeId::Proof(self.proof.0)),
         )
     }
-}
-
-impl NativeExecutable for AuthZonePushInvocation {
-    type NativeOutput = ();
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -96,22 +98,20 @@ impl NativeExecutable for AuthZonePushInvocation {
     }
 }
 
-impl NativeInvocation for AuthZonePushInvocation {
+impl NativeInvocation for AuthZoneCreateProofInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::AuthZone(AuthZoneMethod::Push),
+            NativeMethod::AuthZone(AuthZoneMethod::CreateProof),
             RENodeId::AuthZoneStack(self.receiver),
-            CallFrameUpdate::move_node(RENodeId::Proof(self.proof.0)),
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
+                self.resource_address,
+            ))),
         )
     }
-}
-
-impl NativeExecutable for AuthZoneCreateProofInvocation {
-    type NativeOutput = Proof;
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -150,24 +150,20 @@ impl NativeExecutable for AuthZoneCreateProofInvocation {
     }
 }
 
-impl NativeInvocation for AuthZoneCreateProofInvocation {
+impl NativeInvocation for AuthZoneCreateProofByAmountInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::AuthZone(AuthZoneMethod::CreateProof),
+            NativeMethod::AuthZone(AuthZoneMethod::CreateProofByAmount),
             RENodeId::AuthZoneStack(self.receiver),
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
                 self.resource_address,
             ))),
         )
     }
-}
-
-impl NativeExecutable for AuthZoneCreateProofByAmountInvocation {
-    type NativeOutput = Proof;
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -207,24 +203,20 @@ impl NativeExecutable for AuthZoneCreateProofByAmountInvocation {
     }
 }
 
-impl NativeInvocation for AuthZoneCreateProofByAmountInvocation {
+impl NativeInvocation for AuthZoneCreateProofByIdsInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::AuthZone(AuthZoneMethod::CreateProofByAmount),
+            NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds),
             RENodeId::AuthZoneStack(self.receiver),
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
                 self.resource_address,
             ))),
         )
     }
-}
-
-impl NativeExecutable for AuthZoneCreateProofByIdsInvocation {
-    type NativeOutput = Proof;
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -264,24 +256,18 @@ impl NativeExecutable for AuthZoneCreateProofByIdsInvocation {
     }
 }
 
-impl NativeInvocation for AuthZoneCreateProofByIdsInvocation {
+impl NativeInvocation for AuthZoneClearInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds),
+            NativeMethod::AuthZone(AuthZoneMethod::Clear),
             RENodeId::AuthZoneStack(self.receiver),
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address,
-            ))),
+            CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for AuthZoneClearInvocation {
-    type NativeOutput = ();
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -294,25 +280,21 @@ impl NativeExecutable for AuthZoneClearInvocation {
     }
 }
 
-impl NativeInvocation for AuthZoneClearInvocation {
+impl NativeInvocation for AuthZoneDrainInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::AuthZone(AuthZoneMethod::Clear),
+            NativeMethod::AuthZone(AuthZoneMethod::Drain),
             RENodeId::AuthZoneStack(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for AuthZoneDrainInvocation {
-    type NativeOutput = Vec<Proof>;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Vec<Proof>, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -340,15 +322,5 @@ impl NativeExecutable for AuthZoneDrainInvocation {
                 node_refs_to_copy: HashSet::new(),
             },
         ))
-    }
-}
-
-impl NativeInvocation for AuthZoneDrainInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::AuthZone(AuthZoneMethod::Drain),
-            RENodeId::AuthZoneStack(self.receiver),
-            CallFrameUpdate::empty(),
-        )
     }
 }

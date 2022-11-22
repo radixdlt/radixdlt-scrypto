@@ -7,7 +7,7 @@ use crate::model::{
     AccessRulesSubstate, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate,
     KeyValueStore, RuntimeSubstate,
 };
-use crate::types::{HashMap, ScryptoInvocation};
+use crate::types::ScryptoInvocation;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative, SysNativeInvokable};
 use radix_engine_interface::api::types::{
@@ -22,7 +22,7 @@ impl<'g, 's, W, R, N, T> SysNativeInvokable<N, RuntimeError> for Kernel<'g, 's, 
 where
     W: WasmEngine,
     R: FeeReserve,
-    N: ScryptoNativeInvocation<Output = T> + NativeInvocation<Output = T>,
+    N: ScryptoNativeInvocation<ScryptoOutput = T> + NativeInvocation<Output = T>,
 {
     fn sys_invoke(&mut self, input: N) -> Result<T, RuntimeError> {
         self.invoke(input)

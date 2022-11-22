@@ -31,9 +31,7 @@ pub use sbor::{Decode, DecodeError, Encode, SborPath, SborPathBuf, SborTypeId, S
 pub use scrypto::abi::{BlueprintAbi, Fields, Fn, Type, Variant};
 
 use std::fmt::Debug;
-
-// methods and macros
-use crate::engine::Invocation;
+use radix_engine_interface::api::api::Invocation;
 
 /// Scrypto function/method invocation.
 #[derive(Debug)]
@@ -52,18 +50,5 @@ impl ScryptoInvocation {
             ScryptoInvocation::Function(_, args) => &args,
             ScryptoInvocation::Method(_, args) => &args,
         }
-    }
-}
-
-#[derive(Debug)]
-pub struct NativeMethodInvocation(pub NativeMethod, pub RENodeId, pub IndexedScryptoValue);
-
-impl Invocation for NativeMethodInvocation {
-    type Output = IndexedScryptoValue;
-}
-
-impl NativeMethodInvocation {
-    pub fn args(&self) -> &IndexedScryptoValue {
-        &self.2
     }
 }

@@ -1,9 +1,10 @@
-use crate::api::api::SysInvocation;
+use crate::api::api::Invocation;
 use crate::crypto::Blob;
 use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
 use sbor::rust::collections::HashMap;
+use sbor::rust::string::String;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -13,11 +14,13 @@ pub struct PackagePublishInvocation {
     pub metadata: HashMap<String, String>,
 }
 
-impl SysInvocation for PackagePublishInvocation {
+impl Invocation for PackagePublishInvocation {
     type Output = PackageAddress;
 }
 
-impl ScryptoNativeInvocation for PackagePublishInvocation {}
+impl ScryptoNativeInvocation for PackagePublishInvocation {
+    type ScryptoOutput = PackageAddress;
+}
 
 impl Into<NativeFnInvocation> for PackagePublishInvocation {
     fn into(self) -> NativeFnInvocation {

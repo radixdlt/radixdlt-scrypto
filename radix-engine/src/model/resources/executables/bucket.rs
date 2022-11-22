@@ -1,5 +1,5 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, LockFlags, NativeExecutable, NativeInvocation,
+    ApplicationError, CallFrameUpdate, LockFlags, NativeInvocation,
     NativeInvocationInfo, RENode, RuntimeError, SystemApi,
 };
 use crate::model::{BucketSubstate, ProofError, ResourceOperationError};
@@ -22,15 +22,21 @@ pub enum BucketError {
     MethodNotFound(BucketMethod),
 }
 
-impl NativeExecutable for BucketTakeInvocation {
-    type NativeOutput = Bucket;
+impl NativeInvocation for BucketTakeInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Bucket(BucketMethod::Take),
+            RENodeId::Bucket(self.receiver),
+            CallFrameUpdate::empty(),
+        )
+    }
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Bucket(input.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -53,22 +59,18 @@ impl NativeExecutable for BucketTakeInvocation {
     }
 }
 
-impl NativeInvocation for BucketTakeInvocation {
+impl NativeInvocation for BucketCreateProofInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Bucket(BucketMethod::Take),
+            NativeMethod::Bucket(BucketMethod::CreateProof),
             RENodeId::Bucket(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for BucketCreateProofInvocation {
-    type NativeOutput = Proof;
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Bucket(input.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -90,25 +92,21 @@ impl NativeExecutable for BucketCreateProofInvocation {
     }
 }
 
-impl NativeInvocation for BucketCreateProofInvocation {
+impl NativeInvocation for BucketTakeNonFungiblesInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Bucket(BucketMethod::CreateProof),
+            NativeMethod::Bucket(BucketMethod::TakeNonFungibles),
             RENodeId::Bucket(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for BucketTakeNonFungiblesInvocation {
-    type NativeOutput = Bucket;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Bucket(input.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -131,25 +129,21 @@ impl NativeExecutable for BucketTakeNonFungiblesInvocation {
     }
 }
 
-impl NativeInvocation for BucketTakeNonFungiblesInvocation {
+impl NativeInvocation for BucketGetNonFungibleIdsInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Bucket(BucketMethod::TakeNonFungibles),
+            NativeMethod::Bucket(BucketMethod::GetNonFungibleIds),
             RENodeId::Bucket(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for BucketGetNonFungibleIdsInvocation {
-    type NativeOutput = BTreeSet<NonFungibleId>;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Bucket(input.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -167,25 +161,21 @@ impl NativeExecutable for BucketGetNonFungibleIdsInvocation {
     }
 }
 
-impl NativeInvocation for BucketGetNonFungibleIdsInvocation {
+impl NativeInvocation for BucketGetAmountInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Bucket(BucketMethod::GetNonFungibleIds),
+            NativeMethod::Bucket(BucketMethod::GetAmount),
             RENodeId::Bucket(self.receiver),
             CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for BucketGetAmountInvocation {
-    type NativeOutput = Decimal;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Bucket(input.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -197,22 +187,18 @@ impl NativeExecutable for BucketGetAmountInvocation {
     }
 }
 
-impl NativeInvocation for BucketGetAmountInvocation {
+impl NativeInvocation for BucketPutInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Bucket(BucketMethod::GetAmount),
+            NativeMethod::Bucket(BucketMethod::Put),
             RENodeId::Bucket(self.receiver),
-            CallFrameUpdate::empty(),
+            CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0)),
         )
     }
-}
-
-impl NativeExecutable for BucketPutInvocation {
-    type NativeOutput = ();
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Bucket(input.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -233,25 +219,21 @@ impl NativeExecutable for BucketPutInvocation {
     }
 }
 
-impl NativeInvocation for BucketPutInvocation {
+impl NativeInvocation for BucketGetResourceAddressInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Bucket(BucketMethod::Put),
+            NativeMethod::Bucket(BucketMethod::GetResourceAddress),
             RENodeId::Bucket(self.receiver),
-            CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0)),
+            CallFrameUpdate::empty(),
         )
     }
-}
-
-impl NativeExecutable for BucketGetResourceAddressInvocation {
-    type NativeOutput = ResourceAddress;
 
     fn execute<Y>(
         input: Self,
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = RENodeId::Bucket(input.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
@@ -265,15 +247,5 @@ impl NativeExecutable for BucketGetResourceAddressInvocation {
                 bucket.resource_address(),
             ))),
         ))
-    }
-}
-
-impl NativeInvocation for BucketGetResourceAddressInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Bucket(BucketMethod::GetResourceAddress),
-            RENodeId::Bucket(self.receiver),
-            CallFrameUpdate::empty(),
-        )
     }
 }

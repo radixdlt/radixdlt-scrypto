@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
 use radix_engine_interface::api::types::{
     AuthZoneOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle, PackageOffset,
     ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver, SubstateId,

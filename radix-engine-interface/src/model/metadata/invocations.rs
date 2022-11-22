@@ -12,11 +12,13 @@ pub struct MetadataSetInvocation {
     pub value: String,
 }
 
-impl SysInvocation for MetadataSetInvocation {
+impl Invocation for MetadataSetInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for MetadataSetInvocation {}
+impl ScryptoNativeInvocation for MetadataSetInvocation {
+    type ScryptoOutput = ();
+}
 
 impl Into<NativeFnInvocation> for MetadataSetInvocation {
     fn into(self) -> NativeFnInvocation {

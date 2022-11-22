@@ -1,21 +1,27 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, InterpreterError, Invocation, Invokable, LockFlags,
-    NativeExecutable, NativeInvocation, NativeInvocationInfo, NativeInvocationMethod, RuntimeError,
+    ApplicationError, CallFrameUpdate, InterpreterError, Invokable, LockFlags,
+    NativeInvocation, NativeInvocationInfo, RuntimeError,
     SystemApi,
 };
 use crate::types::*;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
 use radix_engine_interface::api::types::{
-    AccessRulesMethod, GlobalAddress, NativeMethod, PackageOffset, RENodeId, SubstateOffset,
+    GlobalAddress, NativeMethod, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
 
-impl NativeExecutable for MetadataSetInvocation {
-    type NativeOutput = ();
+impl NativeInvocation for MetadataSetInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Metadata(MetadataMethod::Set),
+            self.receiver,
+            CallFrameUpdate::empty(),
+        )
+    }
 
     fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
+        where
+            Y: SystemApi,
     {
         let node_id = input.receiver;
 
@@ -37,16 +43,7 @@ impl NativeExecutable for MetadataSetInvocation {
     }
 }
 
-impl NativeInvocation for MetadataSetInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Metadata(MetadataMethod::Set),
-            self.receiver,
-            CallFrameUpdate::empty(),
-        )
-    }
-}
-
+/*
 impl NativeInvocationMethod for MetadataSetInvocation {
     type Receiver = RENodeId;
     type Args = MetadataSetArgs;
@@ -97,3 +94,5 @@ pub struct MetadataSetArgs {
     pub key: String,
     pub value: String,
 }
+
+ */
