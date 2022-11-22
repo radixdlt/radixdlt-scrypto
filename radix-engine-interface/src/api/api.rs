@@ -50,7 +50,9 @@ pub trait EngineApi<E: Debug> {
 }
 
 pub trait SysInvokableNativeMethod<E>:
-    SysNativeMethodInvokable<MetadataSetInvocation, E> {
+    SysNativeMethodInvokable<MetadataSetInvocation, E>
+    + SysNativeMethodInvokable<AccessRulesAddAccessCheckInvocation, E>
+{
 }
 
 pub trait SysInvokableNative<E>:
@@ -61,7 +63,6 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<AuthZoneCreateProofByIdsInvocation, E>
     + SysNativeInvokable<AuthZoneClearInvocation, E>
     + SysNativeInvokable<AuthZoneDrainInvocation, E>
-    + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
     + SysNativeInvokable<BucketTakeInvocation, E>
     + SysNativeInvokable<BucketPutInvocation, E>
     + SysNativeInvokable<BucketTakeNonFungiblesInvocation, E>

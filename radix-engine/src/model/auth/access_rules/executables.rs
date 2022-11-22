@@ -1,35 +1,32 @@
-use crate::engine::{
-    ApplicationError, CallFrameUpdate, InterpreterError, LockFlags, NativeInvocation,
-    NativeInvocationInfo, RuntimeError, SystemApi,
-};
+use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
+use crate::engine::{ApplicationError, CallFrameUpdate, InterpreterError, Invokable, LockFlags, MethodDeref, NativeInvocation, NativeInvocationInfo, NativeInvocationMethod, NativeMethodExecutor, REActor, RuntimeError, SystemApi};
 use crate::types::*;
 use radix_engine_interface::api::types::{
     AccessRulesMethod, GlobalAddress, NativeMethod, PackageOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
+use crate::model::ResourceManagerSetResourceAddressInvocation;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum AccessRulesError {
     BlueprintFunctionNotFound(String),
 }
 
-impl NativeInvocation for AccessRulesAddAccessCheckInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::AccessRules(AccessRulesMethod::AddAccessCheck),
+impl NativeInvocationMethod for AccessRulesAddAccessCheckInvocation {
+    type Args = AccessRules;
+
+    fn info(self) -> (RENodeId, Self::Args, NativeMethod, CallFrameUpdate) {
+        (
             self.receiver,
+            self.access_rules,
+            NativeMethod::AccessRules(AccessRulesMethod::AddAccessCheck),
             CallFrameUpdate::empty(),
         )
     }
 
-    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
-    {
-        let node_id = input.receiver;
-
+    fn execute<Y>(receiver: RENodeId, args: Self::Args, system_api: &mut Y) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError> where Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError> + SysInvokableNative<RuntimeError> + Invokable<ResourceManagerSetResourceAddressInvocation> {
         // TODO: Move this into a more static check once node types implemented
-        if !matches!(node_id, RENodeId::Component(..)) {
+        if !matches!(receiver, RENodeId::Component(..)) {
             return Err(RuntimeError::InterpreterError(
                 InterpreterError::InvalidInvocation,
             ));
@@ -38,7 +35,7 @@ impl NativeInvocation for AccessRulesAddAccessCheckInvocation {
         // Abi checks
         {
             let offset = SubstateOffset::Component(ComponentOffset::Info);
-            let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+            let handle = system_api.lock_substate(receiver, offset, LockFlags::read_only())?;
 
             let (package_id, blueprint_name) = {
                 let substate_ref = system_api.get_ref(handle)?;
@@ -62,7 +59,7 @@ impl NativeInvocation for AccessRulesAddAccessCheckInvocation {
                     blueprint_name, package_id
                 )
             });
-            for (func_name, _) in input.access_rules.iter() {
+            for (func_name, _) in args.iter() {
                 if !blueprint_abi.contains_fn(func_name.as_str()) {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::AccessRulesError(
@@ -74,11 +71,11 @@ impl NativeInvocation for AccessRulesAddAccessCheckInvocation {
         }
 
         let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = system_api.lock_substate(receiver, offset, LockFlags::MUTABLE)?;
 
         let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
         let access_rules = substate_ref_mut.access_rules();
-        access_rules.access_rules.push(input.access_rules);
+        access_rules.access_rules.push(args);
 
         Ok(((), CallFrameUpdate::empty()))
     }

@@ -267,7 +267,7 @@ where
                     let invocation: AccessRulesAddAccessCheckInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke_method(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
             },

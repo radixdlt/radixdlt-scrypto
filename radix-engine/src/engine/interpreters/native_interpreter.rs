@@ -187,7 +187,6 @@ impl<N: NativeInvocationMethod> Executor for NativeMethodExecutor<N> {
 }
 
 pub trait NativeInvocationMethod: Invocation + Encode<ScryptoCustomTypeId> + Debug {
-    type Receiver: Into<RENodeId>;
     type Args;
 
     fn info(self) -> (RENodeId, Self::Args, NativeMethod, CallFrameUpdate);

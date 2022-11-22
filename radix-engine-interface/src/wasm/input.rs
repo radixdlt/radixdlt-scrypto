@@ -297,7 +297,7 @@ impl NativeFnInvocation {
                 NativeMethodInvocation::AccessRules(access_rules_method) => {
                     match access_rules_method {
                         AccessRulesMethodInvocation::AddAccessCheck(invocation) => system_api
-                            .sys_invoke(invocation)
+                            .sys_invoke_method(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                     }
                 }
