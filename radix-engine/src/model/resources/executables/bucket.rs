@@ -1,6 +1,7 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref, NativeProgram,
-    REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi, TypedExecutor,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
+    NativeExecutor, NativeProgram, REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError,
+    SystemApi,
 };
 use crate::model::{BucketSubstate, ProofError, ResourceOperationError};
 use crate::types::*;
@@ -24,7 +25,7 @@ pub enum BucketError {
 }
 
 impl ExecutableInvocation for BucketTakeInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -37,7 +38,7 @@ impl ExecutableInvocation for BucketTakeInvocation {
             ResolvedMethod::Native(NativeMethod::Bucket(BucketMethod::Take)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -71,7 +72,7 @@ impl NativeProgram for BucketTakeInvocation {
 }
 
 impl ExecutableInvocation for BucketCreateProofInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -84,7 +85,7 @@ impl ExecutableInvocation for BucketCreateProofInvocation {
             ResolvedMethod::Native(NativeMethod::Bucket(BucketMethod::CreateProof)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -117,7 +118,7 @@ impl NativeProgram for BucketCreateProofInvocation {
 }
 
 impl ExecutableInvocation for BucketTakeNonFungiblesInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -130,7 +131,7 @@ impl ExecutableInvocation for BucketTakeNonFungiblesInvocation {
             ResolvedMethod::Native(NativeMethod::Bucket(BucketMethod::TakeNonFungibles)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -164,7 +165,7 @@ impl NativeProgram for BucketTakeNonFungiblesInvocation {
 }
 
 impl ExecutableInvocation for BucketGetNonFungibleIdsInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -177,7 +178,7 @@ impl ExecutableInvocation for BucketGetNonFungibleIdsInvocation {
             ResolvedMethod::Native(NativeMethod::Bucket(BucketMethod::GetNonFungibleIds)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -208,7 +209,7 @@ impl NativeProgram for BucketGetNonFungibleIdsInvocation {
 }
 
 impl ExecutableInvocation for BucketGetAmountInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -221,7 +222,7 @@ impl ExecutableInvocation for BucketGetAmountInvocation {
             ResolvedMethod::Native(NativeMethod::Bucket(BucketMethod::GetAmount)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -244,7 +245,7 @@ impl NativeProgram for BucketGetAmountInvocation {
 }
 
 impl ExecutableInvocation for BucketPutInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -260,7 +261,7 @@ impl ExecutableInvocation for BucketPutInvocation {
             ResolvedMethod::Native(NativeMethod::Bucket(BucketMethod::Put)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -292,7 +293,7 @@ impl NativeProgram for BucketPutInvocation {
 }
 
 impl ExecutableInvocation for BucketGetResourceAddressInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -305,7 +306,7 @@ impl ExecutableInvocation for BucketGetResourceAddressInvocation {
             ResolvedMethod::Native(NativeMethod::Bucket(BucketMethod::GetResourceAddress)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }

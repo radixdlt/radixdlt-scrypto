@@ -1,6 +1,7 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref, NativeProgram,
-    REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi, TypedExecutor,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
+    NativeExecutor, NativeProgram, REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError,
+    SystemApi,
 };
 use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
@@ -28,7 +29,7 @@ pub enum ProofError {
 }
 
 impl ExecutableInvocation for ProofGetAmountInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -41,7 +42,7 @@ impl ExecutableInvocation for ProofGetAmountInvocation {
             ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::GetAmount)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -64,7 +65,7 @@ impl NativeProgram for ProofGetAmountInvocation {
 }
 
 impl ExecutableInvocation for ProofGetNonFungibleIdsInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -77,7 +78,7 @@ impl ExecutableInvocation for ProofGetNonFungibleIdsInvocation {
             ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::GetNonFungibleIds)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -109,7 +110,7 @@ impl NativeProgram for ProofGetNonFungibleIdsInvocation {
 }
 
 impl ExecutableInvocation for ProofGetResourceAddressInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -122,7 +123,7 @@ impl ExecutableInvocation for ProofGetResourceAddressInvocation {
             ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::GetResourceAddress)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -150,7 +151,7 @@ impl NativeProgram for ProofGetResourceAddressInvocation {
 }
 
 impl ExecutableInvocation for ProofCloneInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -163,7 +164,7 @@ impl ExecutableInvocation for ProofCloneInvocation {
             ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::Clone)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }

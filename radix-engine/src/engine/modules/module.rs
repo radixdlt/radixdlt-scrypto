@@ -9,12 +9,6 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::fmt::Debug;
 
-#[derive(Debug)]
-pub enum InvocationInfo<'a> {
-    Native(&'a NativeInvocationInfo),
-    Scrypto(&'a ScryptoInvocation),
-}
-
 pub enum SysCallInput<'a> {
     Invoke {
         invocation: &'a dyn Debug,

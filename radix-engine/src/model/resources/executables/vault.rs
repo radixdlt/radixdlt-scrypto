@@ -1,6 +1,7 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref, NativeProgram,
-    REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi, TypedExecutor,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
+    NativeExecutor, NativeProgram, REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError,
+    SystemApi,
 };
 use crate::fee::FeeReserveError;
 use crate::model::{
@@ -28,7 +29,7 @@ pub enum VaultError {
 }
 
 impl ExecutableInvocation for VaultTakeInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -41,7 +42,7 @@ impl ExecutableInvocation for VaultTakeInvocation {
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::Take)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -80,7 +81,7 @@ impl NativeProgram for VaultTakeInvocation {
 }
 
 impl ExecutableInvocation for VaultPutInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -96,7 +97,7 @@ impl ExecutableInvocation for VaultPutInvocation {
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::Put)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -129,7 +130,7 @@ impl NativeProgram for VaultPutInvocation {
 }
 
 impl ExecutableInvocation for VaultLockFeeInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -142,7 +143,7 @@ impl ExecutableInvocation for VaultLockFeeInvocation {
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::LockFee)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -199,7 +200,7 @@ impl NativeProgram for VaultLockFeeInvocation {
 }
 
 impl ExecutableInvocation for VaultTakeNonFungiblesInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -212,7 +213,7 @@ impl ExecutableInvocation for VaultTakeNonFungiblesInvocation {
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::TakeNonFungibles)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -253,7 +254,7 @@ impl NativeProgram for VaultTakeNonFungiblesInvocation {
 }
 
 impl ExecutableInvocation for VaultGetAmountInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -266,7 +267,7 @@ impl ExecutableInvocation for VaultGetAmountInvocation {
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::GetAmount)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -291,7 +292,7 @@ impl NativeProgram for VaultGetAmountInvocation {
 }
 
 impl ExecutableInvocation for VaultGetResourceAddressInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -304,7 +305,7 @@ impl ExecutableInvocation for VaultGetResourceAddressInvocation {
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::GetResourceAddress)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -335,7 +336,7 @@ impl NativeProgram for VaultGetResourceAddressInvocation {
 }
 
 impl ExecutableInvocation for VaultGetNonFungibleIdsInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -348,7 +349,7 @@ impl ExecutableInvocation for VaultGetNonFungibleIdsInvocation {
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::GetNonFungibleIds)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -380,7 +381,7 @@ impl NativeProgram for VaultGetNonFungibleIdsInvocation {
 }
 
 impl ExecutableInvocation for VaultCreateProofInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -393,7 +394,7 @@ impl ExecutableInvocation for VaultCreateProofInvocation {
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::CreateProof)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -430,7 +431,7 @@ impl NativeProgram for VaultCreateProofInvocation {
 }
 
 impl ExecutableInvocation for VaultCreateProofByAmountInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -443,7 +444,7 @@ impl ExecutableInvocation for VaultCreateProofByAmountInvocation {
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::CreateProofByAmount)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -481,7 +482,7 @@ impl NativeProgram for VaultCreateProofByAmountInvocation {
 }
 
 impl ExecutableInvocation for VaultCreateProofByIdsInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -494,7 +495,7 @@ impl ExecutableInvocation for VaultCreateProofByIdsInvocation {
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::CreateProofByIds)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }

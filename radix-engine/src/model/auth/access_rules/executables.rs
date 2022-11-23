@@ -1,7 +1,7 @@
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, InterpreterError,
-    Invokable, LockFlags, MethodDeref, NativeProgram, REActor, ResolvedMethod, RuntimeError,
-    SystemApi, TypedExecutor,
+    Invokable, LockFlags, MethodDeref, NativeExecutor, NativeProgram, REActor, ResolvedMethod,
+    RuntimeError, SystemApi,
 };
 use crate::model::ResourceManagerSetResourceAddressInvocation;
 use crate::types::*;
@@ -18,7 +18,7 @@ pub enum AccessRulesError {
 }
 
 impl ExecutableInvocation for AccessRulesAddAccessCheckInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         mut self,
@@ -41,7 +41,7 @@ impl ExecutableInvocation for AccessRulesAddAccessCheckInvocation {
             resolved_receiver,
         );
 
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }

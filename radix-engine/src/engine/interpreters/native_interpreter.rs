@@ -1,11 +1,10 @@
 use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
-use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
-use radix_engine_interface::api::types::{NativeFunction, NativeMethod, RENodeId};
-use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
+use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::fmt::Debug;
-use sbor::*;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
     fn into(self) -> RuntimeError {
@@ -76,66 +75,6 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
-// TODO: This should be cleaned up
-#[derive(Debug)]
-pub enum NativeInvocationInfo {
-    Function(NativeFunction, CallFrameUpdate),
-    Method(NativeMethod, RENodeId, CallFrameUpdate),
-}
-
-pub trait NativeInvocation: Invocation + Encode<ScryptoCustomTypeId> + Debug {
-    fn info(&self) -> NativeInvocationInfo;
-
-    fn execute<Y>(
-        invocation: Self,
-        system_api: &mut Y,
-    ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation>
-            + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>
-            + Invokable<ResourceManagerSetResourceAddressInvocation>;
-}
-
-impl<I: NativeInvocation> ExecutableInvocation for I {
-    type Exec = NativeExecutor<Self>;
-
-    fn prepare<D: MethodDeref>(
-        self,
-        deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let input = IndexedScryptoValue::from_typed(&self);
-        let info = self.info();
-        let (actor, call_frame_update) = match info {
-            NativeInvocationInfo::Method(method, receiver, mut call_frame_update) => {
-                // TODO: Move this logic into kernel
-                let resolved_receiver =
-                    if let Some((derefed, derefed_lock)) = deref.deref(receiver)? {
-                        ResolvedReceiver::derefed(derefed, receiver, derefed_lock)
-                    } else {
-                        ResolvedReceiver::new(receiver)
-                    };
-                let resolved_node_id = resolved_receiver.receiver;
-                call_frame_update.node_refs_to_copy.insert(resolved_node_id);
-
-                let actor = REActor::Method(ResolvedMethod::Native(method), resolved_receiver);
-                (actor, call_frame_update)
-            }
-            NativeInvocationInfo::Function(native_function, call_frame_update) => {
-                let actor = REActor::Function(ResolvedFunction::Native(native_function));
-                (actor, call_frame_update)
-            }
-        };
-
-        let executor = NativeExecutor(self, input);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
 pub trait NativeProgram {
     type Output: Debug;
     fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
@@ -147,9 +86,9 @@ pub trait NativeProgram {
             + Invokable<ResourceManagerSetResourceAddressInvocation>;
 }
 
-pub struct TypedExecutor<N: NativeProgram>(pub N, pub IndexedScryptoValue);
+pub struct NativeExecutor<N: NativeProgram>(pub N, pub IndexedScryptoValue);
 
-impl<N: NativeProgram> Executor for TypedExecutor<N> {
+impl<N: NativeProgram> Executor for NativeExecutor<N> {
     type Output = N::Output;
 
     fn args(&self) -> &IndexedScryptoValue {
@@ -165,27 +104,6 @@ impl<N: NativeProgram> Executor for TypedExecutor<N> {
             + Invokable<ResourceManagerSetResourceAddressInvocation>,
     {
         self.0.main(system_api)
-    }
-}
-
-pub struct NativeExecutor<N: NativeInvocation>(pub N, pub IndexedScryptoValue);
-
-impl<N: NativeInvocation> Executor for NativeExecutor<N> {
-    type Output = <N as Invocation>::Output;
-
-    fn args(&self) -> &IndexedScryptoValue {
-        &self.1
-    }
-
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation>
-            + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>
-            + Invokable<ResourceManagerSetResourceAddressInvocation>,
-    {
-        N::execute(self.0, system_api)
     }
 }
 

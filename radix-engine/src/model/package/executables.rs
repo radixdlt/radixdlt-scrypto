@@ -34,7 +34,7 @@ impl Package {
 }
 
 impl ExecutableInvocation for PackagePublishNoOwnerInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -45,7 +45,7 @@ impl ExecutableInvocation for PackagePublishNoOwnerInvocation {
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Package(
             PackageFunction::PublishNoOwner,
         )));
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -87,7 +87,7 @@ impl NativeProgram for PackagePublishNoOwnerInvocation {
 }
 
 impl ExecutableInvocation for PackagePublishWithOwnerInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -98,7 +98,7 @@ impl ExecutableInvocation for PackagePublishWithOwnerInvocation {
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Package(
             PackageFunction::PublishWithOwner,
         )));
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }

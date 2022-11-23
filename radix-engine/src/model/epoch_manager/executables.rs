@@ -1,7 +1,7 @@
 use crate::engine::{
     deref_and_update, AuthModule, CallFrameUpdate, ExecutableInvocation, Invokable, LockFlags,
-    MethodDeref, NativeProgram, REActor, RENode, ResolvedFunction, ResolvedMethod, RuntimeError,
-    SystemApi, TypedExecutor,
+    MethodDeref, NativeExecutor, NativeProgram, REActor, RENode, ResolvedFunction, ResolvedMethod,
+    RuntimeError, SystemApi,
 };
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
@@ -27,7 +27,7 @@ pub struct EpochManager {
 }
 
 impl ExecutableInvocation for EpochManagerCreateInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -41,7 +41,7 @@ impl ExecutableInvocation for EpochManagerCreateInvocation {
             EpochManagerFunction::Create,
         )));
         let call_frame_update = CallFrameUpdate::empty();
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
 
         Ok((actor, call_frame_update, executor))
     }
@@ -80,7 +80,7 @@ impl NativeProgram for EpochManagerCreateInvocation {
 pub struct EpochManagerGetCurrentEpochExecutable(RENodeId);
 
 impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
-    type Exec = TypedExecutor<EpochManagerGetCurrentEpochExecutable>;
+    type Exec = NativeExecutor<EpochManagerGetCurrentEpochExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -100,7 +100,7 @@ impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
             )),
             resolved_receiver,
         );
-        let executor = TypedExecutor(
+        let executor = NativeExecutor(
             EpochManagerGetCurrentEpochExecutable(resolved_receiver.receiver),
             input,
         );
@@ -127,7 +127,7 @@ impl NativeProgram for EpochManagerGetCurrentEpochExecutable {
 pub struct EpochManagerSetEpochExecutable(RENodeId, u64);
 
 impl ExecutableInvocation for EpochManagerSetEpochInvocation {
-    type Exec = TypedExecutor<EpochManagerSetEpochExecutable>;
+    type Exec = NativeExecutor<EpochManagerSetEpochExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -145,7 +145,7 @@ impl ExecutableInvocation for EpochManagerSetEpochInvocation {
             ResolvedMethod::Native(NativeMethod::EpochManager(EpochManagerMethod::SetEpoch)),
             resolved_receiver,
         );
-        let executor = TypedExecutor(
+        let executor = NativeExecutor(
             EpochManagerSetEpochExecutable(resolved_receiver.receiver, self.epoch),
             input,
         );

@@ -1,6 +1,7 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref, NativeProgram,
-    REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi, TypedExecutor,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
+    NativeExecutor, NativeProgram, REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError,
+    SystemApi,
 };
 use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
@@ -25,7 +26,7 @@ pub enum WorktopError {
 }
 
 impl ExecutableInvocation for WorktopPutInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -41,7 +42,7 @@ impl ExecutableInvocation for WorktopPutInvocation {
             ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::Put)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -73,7 +74,7 @@ impl NativeProgram for WorktopPutInvocation {
 }
 
 impl ExecutableInvocation for WorktopTakeAmountInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -91,7 +92,7 @@ impl ExecutableInvocation for WorktopTakeAmountInvocation {
             ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::TakeAmount)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -146,7 +147,7 @@ impl NativeProgram for WorktopTakeAmountInvocation {
 }
 
 impl ExecutableInvocation for WorktopTakeAllInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -164,7 +165,7 @@ impl ExecutableInvocation for WorktopTakeAllInvocation {
             ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::TakeAll)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -219,7 +220,7 @@ impl NativeProgram for WorktopTakeAllInvocation {
 }
 
 impl ExecutableInvocation for WorktopTakeNonFungiblesInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -237,7 +238,7 @@ impl ExecutableInvocation for WorktopTakeNonFungiblesInvocation {
             ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::TakeNonFungibles)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -294,7 +295,7 @@ impl NativeProgram for WorktopTakeNonFungiblesInvocation {
 }
 
 impl ExecutableInvocation for WorktopAssertContainsInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -312,7 +313,7 @@ impl ExecutableInvocation for WorktopAssertContainsInvocation {
             ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::AssertContains)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -341,7 +342,7 @@ impl NativeProgram for WorktopAssertContainsInvocation {
 }
 
 impl ExecutableInvocation for WorktopAssertContainsAmountInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -359,7 +360,7 @@ impl ExecutableInvocation for WorktopAssertContainsAmountInvocation {
             ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::AssertContainsAmount)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -388,7 +389,7 @@ impl NativeProgram for WorktopAssertContainsAmountInvocation {
 }
 
 impl ExecutableInvocation for WorktopAssertContainsNonFungiblesInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -408,7 +409,7 @@ impl ExecutableInvocation for WorktopAssertContainsNonFungiblesInvocation {
             )),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -445,7 +446,7 @@ impl NativeProgram for WorktopAssertContainsNonFungiblesInvocation {
 }
 
 impl ExecutableInvocation for WorktopDrainInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -458,7 +459,7 @@ impl ExecutableInvocation for WorktopDrainInvocation {
             ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::Drain)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }

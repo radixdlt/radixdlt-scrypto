@@ -1,7 +1,7 @@
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Invokable,
-    LockFlags, MethodDeref, NativeInvocation, NativeInvocationInfo, NativeProgram, REActor, RENode,
-    ResolvedFunction, ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi, TypedExecutor,
+    LockFlags, MethodDeref, NativeExecutor, NativeProgram, REActor, RENode, ResolvedFunction,
+    ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{
     BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
@@ -43,7 +43,7 @@ pub enum ResourceManagerError {
 }
 
 impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -54,7 +54,7 @@ impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
             ResourceManagerFunction::BurnBucket,
         )));
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -74,7 +74,7 @@ impl NativeProgram for ResourceManagerBucketBurnInvocation {
 }
 
 impl ExecutableInvocation for ResourceManagerCreateInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -85,7 +85,7 @@ impl ExecutableInvocation for ResourceManagerCreateInvocation {
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
             ResourceManagerFunction::Create,
         )));
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -243,7 +243,7 @@ impl NativeProgram for ResourceManagerCreateInvocation {
 pub struct ResourceManagerBurnExecutable(RENodeId, Bucket);
 
 impl ExecutableInvocation for ResourceManagerBurnInvocation {
-    type Exec = TypedExecutor<ResourceManagerBurnExecutable>;
+    type Exec = NativeExecutor<ResourceManagerBurnExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -260,7 +260,7 @@ impl ExecutableInvocation for ResourceManagerBurnInvocation {
             ResolvedMethod::Native(NativeMethod::ResourceManager(ResourceManagerMethod::Burn)),
             resolved_receiver,
         );
-        let executor = TypedExecutor(
+        let executor = NativeExecutor(
             ResourceManagerBurnExecutable(resolved_receiver.receiver, self.bucket),
             input,
         );
@@ -332,7 +332,7 @@ impl NativeProgram for ResourceManagerBurnExecutable {
 pub struct ResourceManagerUpdateAuthExecutable(RENodeId, ResourceMethodAuthKey, AccessRule);
 
 impl ExecutableInvocation for ResourceManagerUpdateAuthInvocation {
-    type Exec = TypedExecutor<ResourceManagerUpdateAuthExecutable>;
+    type Exec = NativeExecutor<ResourceManagerUpdateAuthExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -351,7 +351,7 @@ impl ExecutableInvocation for ResourceManagerUpdateAuthInvocation {
             )),
             resolved_receiver,
         );
-        let executor = TypedExecutor(
+        let executor = NativeExecutor(
             ResourceManagerUpdateAuthExecutable(
                 resolved_receiver.receiver,
                 self.method,
@@ -393,7 +393,7 @@ impl NativeProgram for ResourceManagerUpdateAuthExecutable {
 }
 
 impl ExecutableInvocation for ResourceManagerLockAuthInvocation {
-    type Exec = TypedExecutor<ResourceManagerLockAuthExecutable>;
+    type Exec = NativeExecutor<ResourceManagerLockAuthExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -412,7 +412,7 @@ impl ExecutableInvocation for ResourceManagerLockAuthInvocation {
             )),
             resolved_receiver,
         );
-        let executor = TypedExecutor(
+        let executor = NativeExecutor(
             ResourceManagerLockAuthExecutable(resolved_receiver.receiver, self.method),
             input,
         );
@@ -452,7 +452,7 @@ impl NativeProgram for ResourceManagerLockAuthExecutable {
 }
 
 impl ExecutableInvocation for ResourceManagerCreateVaultInvocation {
-    type Exec = TypedExecutor<ResourceManagerCreateVaultExecutable>;
+    type Exec = NativeExecutor<ResourceManagerCreateVaultExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -471,7 +471,7 @@ impl ExecutableInvocation for ResourceManagerCreateVaultInvocation {
             )),
             resolved_receiver,
         );
-        let executor = TypedExecutor(
+        let executor = NativeExecutor(
             ResourceManagerCreateVaultExecutable(resolved_receiver.receiver),
             input,
         );
@@ -509,7 +509,7 @@ impl NativeProgram for ResourceManagerCreateVaultExecutable {
 }
 
 impl ExecutableInvocation for ResourceManagerCreateBucketInvocation {
-    type Exec = TypedExecutor<ResourceManagerCreateBucketExecutable>;
+    type Exec = NativeExecutor<ResourceManagerCreateBucketExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -528,7 +528,7 @@ impl ExecutableInvocation for ResourceManagerCreateBucketInvocation {
             )),
             resolved_receiver,
         );
-        let executor = TypedExecutor(
+        let executor = NativeExecutor(
             ResourceManagerCreateBucketExecutable(resolved_receiver.receiver),
             input,
         );
@@ -566,7 +566,7 @@ impl NativeProgram for ResourceManagerCreateBucketExecutable {
 }
 
 impl ExecutableInvocation for ResourceManagerMintInvocation {
-    type Exec = TypedExecutor<ResourceManagerMintExecutable>;
+    type Exec = NativeExecutor<ResourceManagerMintExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -583,7 +583,7 @@ impl ExecutableInvocation for ResourceManagerMintInvocation {
             ResolvedMethod::Native(NativeMethod::ResourceManager(ResourceManagerMethod::Mint)),
             resolved_receiver,
         );
-        let executor = TypedExecutor(
+        let executor = NativeExecutor(
             ResourceManagerMintExecutable(resolved_receiver.receiver, self.mint_params),
             input,
         );
@@ -665,7 +665,7 @@ impl NativeProgram for ResourceManagerMintExecutable {
 }
 
 impl ExecutableInvocation for ResourceManagerGetMetadataInvocation {
-    type Exec = TypedExecutor<ResourceManagerGetMetadataExecutable>;
+    type Exec = NativeExecutor<ResourceManagerGetMetadataExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -684,7 +684,7 @@ impl ExecutableInvocation for ResourceManagerGetMetadataInvocation {
             )),
             resolved_receiver,
         );
-        let executor = TypedExecutor(
+        let executor = NativeExecutor(
             ResourceManagerGetMetadataExecutable(resolved_receiver.receiver),
             input,
         );
@@ -715,7 +715,7 @@ impl NativeProgram for ResourceManagerGetMetadataExecutable {
 }
 
 impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
-    type Exec = TypedExecutor<ResourceManagerGetResourceTypeExecutable>;
+    type Exec = NativeExecutor<ResourceManagerGetResourceTypeExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -734,7 +734,7 @@ impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
             )),
             resolved_receiver,
         );
-        let executor = TypedExecutor(
+        let executor = NativeExecutor(
             ResourceManagerGetResourceTypeExecutable(resolved_receiver.receiver),
             input,
         );
@@ -765,7 +765,7 @@ impl NativeProgram for ResourceManagerGetResourceTypeExecutable {
 }
 
 impl ExecutableInvocation for ResourceManagerGetTotalSupplyInvocation {
-    type Exec = TypedExecutor<ResourceManagerGetTotalSupplyExecutable>;
+    type Exec = NativeExecutor<ResourceManagerGetTotalSupplyExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -784,7 +784,7 @@ impl ExecutableInvocation for ResourceManagerGetTotalSupplyInvocation {
             )),
             resolved_receiver,
         );
-        let executor = TypedExecutor(
+        let executor = NativeExecutor(
             ResourceManagerGetTotalSupplyExecutable(resolved_receiver.receiver),
             input,
         );
@@ -811,7 +811,7 @@ impl NativeProgram for ResourceManagerGetTotalSupplyExecutable {
 }
 
 impl ExecutableInvocation for ResourceManagerUpdateMetadataInvocation {
-    type Exec = TypedExecutor<ResourceManagerUpdateMetadataExecutable>;
+    type Exec = NativeExecutor<ResourceManagerUpdateMetadataExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -830,7 +830,7 @@ impl ExecutableInvocation for ResourceManagerUpdateMetadataInvocation {
             )),
             resolved_receiver,
         );
-        let executor = TypedExecutor(
+        let executor = NativeExecutor(
             ResourceManagerUpdateMetadataExecutable(resolved_receiver.receiver, self.metadata),
             input,
         );
@@ -866,7 +866,7 @@ impl NativeProgram for ResourceManagerUpdateMetadataExecutable {
 }
 
 impl ExecutableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
-    type Exec = TypedExecutor<ResourceManagerUpdateNonFungibleDataExecutable>;
+    type Exec = NativeExecutor<ResourceManagerUpdateNonFungibleDataExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -885,7 +885,7 @@ impl ExecutableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
             )),
             resolved_receiver,
         );
-        let executor = TypedExecutor(
+        let executor = NativeExecutor(
             ResourceManagerUpdateNonFungibleDataExecutable(
                 resolved_receiver.receiver,
                 self.id,
@@ -947,7 +947,7 @@ impl NativeProgram for ResourceManagerUpdateNonFungibleDataExecutable {
 }
 
 impl ExecutableInvocation for ResourceManagerNonFungibleExistsInvocation {
-    type Exec = TypedExecutor<ResourceManagerNonFungibleExistsExecutable>;
+    type Exec = NativeExecutor<ResourceManagerNonFungibleExistsExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -966,7 +966,7 @@ impl ExecutableInvocation for ResourceManagerNonFungibleExistsInvocation {
             )),
             resolved_receiver,
         );
-        let executor = TypedExecutor(
+        let executor = NativeExecutor(
             ResourceManagerNonFungibleExistsExecutable(resolved_receiver.receiver, self.id),
             input,
         );
@@ -1010,7 +1010,7 @@ impl NativeProgram for ResourceManagerNonFungibleExistsExecutable {
 }
 
 impl ExecutableInvocation for ResourceManagerGetNonFungibleInvocation {
-    type Exec = TypedExecutor<ResourceManagerGetNonFungibleExecutable>;
+    type Exec = NativeExecutor<ResourceManagerGetNonFungibleExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -1029,7 +1029,7 @@ impl ExecutableInvocation for ResourceManagerGetNonFungibleInvocation {
             )),
             resolved_receiver,
         );
-        let executor = TypedExecutor(
+        let executor = NativeExecutor(
             ResourceManagerGetNonFungibleExecutable(resolved_receiver.receiver, self.id),
             input,
         );
@@ -1095,31 +1095,50 @@ impl Invocation for ResourceManagerSetResourceAddressInvocation {
     type Output = ();
 }
 
-impl NativeInvocation for ResourceManagerSetResourceAddressInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
-    }
+impl ExecutableInvocation for ResourceManagerSetResourceAddressInvocation {
+    type Exec = NativeExecutor<ResourceManagerSetResourceAddressExecutable>;
 
-    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn prepare<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = deref_and_update(
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
+            &mut call_frame_update,
+            deref,
+        )?;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::ResourceManager(
+                ResourceManagerMethod::GetNonFungible,
+            )),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ResourceManagerSetResourceAddressExecutable(resolved_receiver.receiver, self.receiver),
+            input,
+        );
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+pub struct ResourceManagerSetResourceAddressExecutable(RENodeId, ResourceAddress);
+
+impl NativeProgram for ResourceManagerSetResourceAddressExecutable {
+    type Output = ();
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
         substate_mut
             .resource_manager()
-            .set_resource_address(input.receiver)
+            .set_resource_address(self.1)
             .map_err(|e| match e {
                 InvokeError::Error(e) => {
                     RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))

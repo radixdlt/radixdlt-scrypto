@@ -51,13 +51,21 @@ impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<Vec<u8>>;
 }
 
-impl<'a> NativeInvocation for TransactionProcessorRunInvocation<'a> {
-    fn info(&self) -> NativeInvocationInfo {
-        let mut node_refs_to_copy = HashSet::new();
+impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
+    type Exec = NativeExecutor<Self>;
+
+    fn prepare<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+
         // TODO: Remove serialization
-        let value = IndexedScryptoValue::from_typed(self);
-        for global_address in value.global_references() {
-            node_refs_to_copy.insert(RENodeId::Global(global_address));
+        for global_address in input.global_references() {
+            call_frame_update
+                .node_refs_to_copy
+                .insert(RENodeId::Global(global_address));
         }
 
         // TODO: This can be refactored out once any type in sbor is implemented
@@ -70,42 +78,53 @@ impl<'a> NativeInvocation for TransactionProcessorRunInvocation<'a> {
                     let scrypto_value =
                         IndexedScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                     for global_address in scrypto_value.global_references() {
-                        node_refs_to_copy.insert(RENodeId::Global(global_address));
+                        call_frame_update
+                            .node_refs_to_copy
+                            .insert(RENodeId::Global(global_address));
                     }
                 }
                 _ => {}
             }
         }
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            ECDSA_SECP256K1_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            EDDSA_ED25519_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::Resource(
+                ECDSA_SECP256K1_TOKEN,
+            )));
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::Resource(
+                EDDSA_ED25519_TOKEN,
+            )));
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
-        NativeInvocationInfo::Function(
+        let actor = REActor::Function(ResolvedFunction::Native(
             NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
-            CallFrameUpdate {
-                nodes_to_move: vec![],
-                node_refs_to_copy,
-            },
-        )
+        ));
+        let executor = NativeExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
     }
+}
 
-    fn execute<Y>(
-        invocation: Self,
-        system_api: &mut Y,
-    ) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
+impl<'a> NativeProgram for TransactionProcessorRunInvocation<'a> {
+    type Output = Vec<Vec<u8>>;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
-        TransactionProcessor::run(invocation, system_api)
+        TransactionProcessor::run(self, system_api)
             .map(|rtn| (rtn, CallFrameUpdate::empty()))
             .map_err(|e| e.into())
     }

@@ -1,6 +1,7 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref, NativeProgram,
-    REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi, TypedExecutor,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
+    NativeExecutor, NativeProgram, REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError,
+    SystemApi,
 };
 use crate::model::{InvokeError, ProofError};
 use crate::types::*;
@@ -25,7 +26,7 @@ pub enum AuthZoneError {
 }
 
 impl ExecutableInvocation for AuthZonePopInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -42,7 +43,7 @@ impl ExecutableInvocation for AuthZonePopInvocation {
             resolved_receiver,
         );
 
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -80,7 +81,7 @@ impl NativeProgram for AuthZonePopInvocation {
 }
 
 impl ExecutableInvocation for AuthZonePushInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -100,7 +101,7 @@ impl ExecutableInvocation for AuthZonePushInvocation {
             resolved_receiver,
         );
 
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -137,7 +138,7 @@ impl NativeProgram for AuthZonePushInvocation {
 }
 
 impl ExecutableInvocation for AuthZoneCreateProofInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -159,7 +160,7 @@ impl ExecutableInvocation for AuthZoneCreateProofInvocation {
             resolved_receiver,
         );
 
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -209,7 +210,7 @@ impl NativeProgram for AuthZoneCreateProofInvocation {
 }
 
 impl ExecutableInvocation for AuthZoneCreateProofByAmountInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -231,7 +232,7 @@ impl ExecutableInvocation for AuthZoneCreateProofByAmountInvocation {
             resolved_receiver,
         );
 
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -282,7 +283,7 @@ impl NativeProgram for AuthZoneCreateProofByAmountInvocation {
 }
 
 impl ExecutableInvocation for AuthZoneCreateProofByIdsInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -304,7 +305,7 @@ impl ExecutableInvocation for AuthZoneCreateProofByIdsInvocation {
             resolved_receiver,
         );
 
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -355,7 +356,7 @@ impl NativeProgram for AuthZoneCreateProofByIdsInvocation {
 }
 
 impl ExecutableInvocation for AuthZoneClearInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -372,7 +373,7 @@ impl ExecutableInvocation for AuthZoneClearInvocation {
             resolved_receiver,
         );
 
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -396,7 +397,7 @@ impl NativeProgram for AuthZoneClearInvocation {
 }
 
 impl ExecutableInvocation for AuthZoneDrainInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         self,
@@ -413,7 +414,7 @@ impl ExecutableInvocation for AuthZoneDrainInvocation {
             resolved_receiver,
         );
 
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }

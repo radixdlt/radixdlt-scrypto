@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, CallFrameUpdate, ExecutableInvocation, InterpreterError, LockFlags,
-    MethodDeref, NativeProgram, REActor, ResolvedMethod, RuntimeError, SystemApi, TypedExecutor,
+    MethodDeref, NativeExecutor, NativeProgram, REActor, ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::types::*;
 use radix_engine_interface::api::api::EngineApi;
@@ -9,7 +9,7 @@ use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
 impl ExecutableInvocation for MetadataSetInvocation {
-    type Exec = TypedExecutor<Self>;
+    type Exec = NativeExecutor<Self>;
 
     fn prepare<D: MethodDeref>(
         mut self,
@@ -33,7 +33,7 @@ impl ExecutableInvocation for MetadataSetInvocation {
             resolved_receiver,
         );
 
-        let executor = TypedExecutor(self, input);
+        let executor = NativeExecutor(self, input);
         Ok((actor, call_frame_update, executor))
     }
 }
