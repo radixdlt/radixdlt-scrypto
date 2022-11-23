@@ -90,21 +90,21 @@ pub trait SysInvokableNative2<E>:
     + SysNativeInvokable2<ResourceManagerUpdateNonFungibleDataInvocation, E>
     + SysNativeInvokable2<ResourceManagerNonFungibleExistsInvocation, E>
     + SysNativeInvokable2<ResourceManagerGetNonFungibleInvocation, E>
+    + SysNativeInvokable2<VaultTakeInvocation, E>
+    + SysNativeInvokable2<VaultPutInvocation, E>
+    + SysNativeInvokable2<VaultLockFeeInvocation, E>
+    + SysNativeInvokable2<VaultTakeNonFungiblesInvocation, E>
+    + SysNativeInvokable2<VaultGetAmountInvocation, E>
+    + SysNativeInvokable2<VaultGetResourceAddressInvocation, E>
+    + SysNativeInvokable2<VaultGetNonFungibleIdsInvocation, E>
+    + SysNativeInvokable2<VaultCreateProofInvocation, E>
+    + SysNativeInvokable2<VaultCreateProofByAmountInvocation, E>
+    + SysNativeInvokable2<VaultCreateProofByIdsInvocation, E>
 {
 }
 
 pub trait SysInvokableNative<E>:
-    SysNativeInvokable<VaultTakeInvocation, E>
-    + SysNativeInvokable<VaultPutInvocation, E>
-    + SysNativeInvokable<VaultLockFeeInvocation, E>
-    + SysNativeInvokable<VaultTakeNonFungiblesInvocation, E>
-    + SysNativeInvokable<VaultGetAmountInvocation, E>
-    + SysNativeInvokable<VaultGetResourceAddressInvocation, E>
-    + SysNativeInvokable<VaultGetNonFungibleIdsInvocation, E>
-    + SysNativeInvokable<VaultCreateProofInvocation, E>
-    + SysNativeInvokable<VaultCreateProofByAmountInvocation, E>
-    + SysNativeInvokable<VaultCreateProofByIdsInvocation, E>
-    + SysNativeInvokable<WorktopPutInvocation, E>
+    SysNativeInvokable<WorktopPutInvocation, E>
     + SysNativeInvokable<WorktopTakeAmountInvocation, E>
     + SysNativeInvokable<WorktopTakeAllInvocation, E>
     + SysNativeInvokable<WorktopTakeNonFungiblesInvocation, E>

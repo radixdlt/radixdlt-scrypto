@@ -267,34 +267,34 @@ impl NativeFnInvocation {
                 },
                 NativeMethodInvocation::Vault(vault_method) => match vault_method {
                     VaultMethodInvocation::Take(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::Put(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::LockFee(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::TakeNonFungibles(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::GetAmount(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::GetResourceAddress(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::GetNonFungibleIds(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::CreateProof(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::CreateProofByAmount(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::CreateProofByIds(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::AccessRules(access_rules_method) => {

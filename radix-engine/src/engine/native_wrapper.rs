@@ -204,70 +204,70 @@ where
                     let invocation: VaultTakeInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 VaultMethod::Put => {
                     let invocation: VaultPutInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 VaultMethod::LockFee => {
                     let invocation: VaultLockFeeInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 VaultMethod::TakeNonFungibles => {
                     let invocation: VaultTakeNonFungiblesInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 VaultMethod::GetAmount => {
                     let invocation: VaultGetAmountInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 VaultMethod::GetResourceAddress => {
                     let invocation: VaultGetResourceAddressInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 VaultMethod::GetNonFungibleIds => {
                     let invocation: VaultGetNonFungibleIdsInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 VaultMethod::CreateProof => {
                     let invocation: VaultCreateProofInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 VaultMethod::CreateProofByAmount => {
                     let invocation: VaultCreateProofByAmountInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 VaultMethod::CreateProofByIds => {
                     let invocation: VaultCreateProofByIdsInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
             },
