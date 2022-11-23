@@ -364,28 +364,28 @@ impl NativeFnInvocation {
                 }
                 NativeMethodInvocation::Worktop(worktop_method) => match worktop_method {
                     WorktopMethodInvocation::TakeNonFungibles(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     WorktopMethodInvocation::Put(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     WorktopMethodInvocation::Drain(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     WorktopMethodInvocation::AssertContainsNonFungibles(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     WorktopMethodInvocation::AssertContains(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     WorktopMethodInvocation::AssertContainsAmount(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     WorktopMethodInvocation::TakeAll(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     WorktopMethodInvocation::TakeAmount(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
             },

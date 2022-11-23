@@ -416,21 +416,21 @@ where
                     let invocation: WorktopTakeNonFungiblesInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 WorktopMethod::Put => {
                     let invocation: WorktopPutInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 WorktopMethod::Drain => {
                     let invocation: WorktopDrainInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 WorktopMethod::AssertContainsNonFungibles => {
@@ -439,14 +439,14 @@ where
                             RuntimeError::KernelError(KernelError::InvalidSborValue(e))
                         })?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 WorktopMethod::AssertContains => {
                     let invocation: WorktopAssertContainsInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 WorktopMethod::AssertContainsAmount => {
@@ -455,21 +455,21 @@ where
                         RuntimeError::KernelError(KernelError::InvalidSborValue(e))
                     })?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 WorktopMethod::TakeAll => {
                     let invocation: WorktopTakeAllInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 WorktopMethod::TakeAmount => {
                     let invocation: WorktopTakeAmountInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
             },

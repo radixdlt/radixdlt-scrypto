@@ -100,17 +100,15 @@ pub trait SysInvokableNative2<E>:
     + SysNativeInvokable2<VaultCreateProofInvocation, E>
     + SysNativeInvokable2<VaultCreateProofByAmountInvocation, E>
     + SysNativeInvokable2<VaultCreateProofByIdsInvocation, E>
+    + SysNativeInvokable2<WorktopPutInvocation, E>
+    + SysNativeInvokable2<WorktopTakeAmountInvocation, E>
+    + SysNativeInvokable2<WorktopTakeAllInvocation, E>
+    + SysNativeInvokable2<WorktopTakeNonFungiblesInvocation, E>
+    + SysNativeInvokable2<WorktopAssertContainsInvocation, E>
+    + SysNativeInvokable2<WorktopAssertContainsAmountInvocation, E>
+    + SysNativeInvokable2<WorktopAssertContainsNonFungiblesInvocation, E>
+    + SysNativeInvokable2<WorktopDrainInvocation, E>
 {
 }
 
-pub trait SysInvokableNative<E>:
-    SysNativeInvokable<WorktopPutInvocation, E>
-    + SysNativeInvokable<WorktopTakeAmountInvocation, E>
-    + SysNativeInvokable<WorktopTakeAllInvocation, E>
-    + SysNativeInvokable<WorktopTakeNonFungiblesInvocation, E>
-    + SysNativeInvokable<WorktopAssertContainsInvocation, E>
-    + SysNativeInvokable<WorktopAssertContainsAmountInvocation, E>
-    + SysNativeInvokable<WorktopAssertContainsNonFungiblesInvocation, E>
-    + SysNativeInvokable<WorktopDrainInvocation, E>
-{
-}
+pub trait SysInvokableNative<E> {}
