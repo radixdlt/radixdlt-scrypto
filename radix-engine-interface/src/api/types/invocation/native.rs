@@ -32,13 +32,13 @@ pub enum NativeMethod {
     Component(ComponentMethod), // TODO: investigate whether to make royalty universal and take any "receiver".
     Package(PackageMethod),
     EpochManager(EpochManagerMethod),
-    AuthZone(AuthZoneMethod),
+    AuthZoneStack(AuthZoneStackMethod),
+    RoyaltyReserve(RoyaltyReserveMethod),
     ResourceManager(ResourceManagerMethod),
     Bucket(BucketMethod),
     Vault(VaultMethod),
     Proof(ProofMethod),
     Worktop(WorktopMethod),
-    RoyaltyManager(RoyaltyManagerMethod),
 }
 
 // Native method enum used by Kernel SystemAPI and WASM
@@ -174,7 +174,7 @@ pub enum EpochManagerMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum AuthZoneMethod {
+pub enum AuthZoneStackMethod {
     Pop,
     Push,
     CreateProof,
@@ -367,7 +367,7 @@ pub enum WorktopMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum RoyaltyManagerMethod {
+pub enum RoyaltyReserveMethod {
     Put,
     Take,
     Drain,

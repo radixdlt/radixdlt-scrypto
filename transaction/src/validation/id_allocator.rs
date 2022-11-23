@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::{
-    AuthZoneId, BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId, PackageId, ProofId,
-    ResourceManagerId, VaultId,
+    AuthZoneStackId, BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId, PackageId,
+    ProofId, ResourceManagerId, RoyaltyReserveId, VaultId,
 };
 use radix_engine_interface::constants::*;
 use radix_engine_interface::crypto::{hash, Hash};
@@ -117,7 +117,11 @@ impl IdAllocator {
         Ok(u128::from_le_bytes(hash(data).lower_16_bytes()))
     }
 
-    pub fn new_auth_zone_id(&mut self) -> Result<AuthZoneId, IdAllocationError> {
+    pub fn new_auth_zone_id(&mut self) -> Result<AuthZoneStackId, IdAllocationError> {
+        Ok(self.next()?)
+    }
+
+    pub fn new_royalty_reserve_id(&mut self) -> Result<RoyaltyReserveId, IdAllocationError> {
         Ok(self.next()?)
     }
 

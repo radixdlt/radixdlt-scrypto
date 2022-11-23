@@ -1,8 +1,8 @@
 use radix_engine_interface::api::types::{
-    AccessRulesMethod, AuthZoneMethod, BucketMethod, ComponentMethod, EpochManagerFunction,
+    AccessRulesMethod, AuthZoneStackMethod, BucketMethod, ComponentMethod, EpochManagerFunction,
     EpochManagerMethod, NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
-    ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
-    WorktopMethod,
+    ResourceManagerFunction, ResourceManagerMethod, RoyaltyReserveMethod,
+    TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
@@ -175,17 +175,22 @@ impl FeeTable {
         _input: &IndexedScryptoValue,
     ) -> u32 {
         match native_method {
-            NativeMethod::AuthZone(auth_zone_ident) => {
+            NativeMethod::AuthZoneStack(auth_zone_ident) => {
                 match auth_zone_ident {
-                    AuthZoneMethod::Pop => self.fixed_low,
-                    AuthZoneMethod::Push => self.fixed_low,
-                    AuthZoneMethod::CreateProof => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
-                    AuthZoneMethod::CreateProofByAmount => self.fixed_high,
-                    AuthZoneMethod::CreateProofByIds => self.fixed_high,
-                    AuthZoneMethod::Clear => self.fixed_high,
-                    AuthZoneMethod::Drain => self.fixed_high,
+                    AuthZoneStackMethod::Pop => self.fixed_low,
+                    AuthZoneStackMethod::Push => self.fixed_low,
+                    AuthZoneStackMethod::CreateProof => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
+                    AuthZoneStackMethod::CreateProofByAmount => self.fixed_high,
+                    AuthZoneStackMethod::CreateProofByIds => self.fixed_high,
+                    AuthZoneStackMethod::Clear => self.fixed_high,
+                    AuthZoneStackMethod::Drain => self.fixed_high,
                 }
             }
+            NativeMethod::RoyaltyReserve(method_ident) => match method_ident {
+                RoyaltyReserveMethod::Put => self.fixed_medium,
+                RoyaltyReserveMethod::Take => self.fixed_medium,
+                RoyaltyReserveMethod::Drain => self.fixed_medium,
+            },
             NativeMethod::EpochManager(system_ident) => match system_ident {
                 EpochManagerMethod::GetCurrentEpoch => self.fixed_low,
                 EpochManagerMethod::SetEpoch => self.fixed_low,

@@ -40,8 +40,8 @@ pub enum NativeMethodInvocation {
     Component(ComponentMethodInvocation),
     Package(PackageMethodInvocation),
     EpochManager(EpochManagerMethodInvocation),
-    RoyaltyManager(RoyaltyManagerMethodInvocation),
-    AuthZone(AuthZoneMethodInvocation),
+    AuthZoneStack(AuthZoneStackMethodInvocation),
+    RoyaltyReserve(RoyaltyReserveMethodInvocation),
     ResourceManager(ResourceManagerMethodInvocation),
     Bucket(BucketMethodInvocation),
     Vault(VaultMethodInvocation),
@@ -90,15 +90,15 @@ pub enum EpochManagerMethodInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum RoyaltyManagerMethodInvocation {
-    Put(RoyaltyManagerPutInvocation),
-    Take(RoyaltyManagerTakeInvocation),
-    Drain(RoyaltyManagerDrainInvocation),
+pub enum RoyaltyReserveMethodInvocation {
+    Put(RoyaltyReservePutInvocation),
+    Take(RoyaltyReserveTakeInvocation),
+    Drain(RoyaltyReserveDrainInvocation),
 }
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum AuthZoneMethodInvocation {
+pub enum AuthZoneStackMethodInvocation {
     Pop(AuthZonePopInvocation),
     Push(AuthZonePushInvocation),
     CreateProof(AuthZoneCreateProofInvocation),

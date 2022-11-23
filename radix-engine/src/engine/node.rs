@@ -1,7 +1,7 @@
 use crate::model::*;
 use crate::types::*;
 use radix_engine_interface::api::types::{
-    AuthZoneOffset, BucketOffset, ComponentOffset, EpochManagerOffset, GlobalOffset,
+    AuthZoneStackOffset, BucketOffset, ComponentOffset, EpochManagerOffset, GlobalOffset,
     KeyValueStoreOffset, NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset,
     SubstateOffset, VaultOffset, WorktopOffset,
 };
@@ -11,7 +11,8 @@ pub enum RENode {
     Global(GlobalAddressSubstate),
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
-    AuthZone(AuthZoneStackSubstate),
+    AuthZoneStack(AuthZoneStackSubstate),
+    RoyaltyReserve(RoyaltyReserveSubstate),
     Vault(VaultRuntimeSubstate),
     Component(
         ComponentInfoSubstate,
@@ -24,7 +25,6 @@ pub enum RENode {
     NonFungibleStore(NonFungibleStore),
     ResourceManager(ResourceManagerSubstate),
     EpochManager(EpochManagerSubstate),
-    RoyaltyManager(RoyaltyManagerSubstate),
 }
 
 impl RENode {
@@ -43,9 +43,9 @@ impl RENode {
                     RuntimeSubstate::Proof(proof),
                 );
             }
-            RENode::AuthZone(auth_zone) => {
+            RENode::AuthZoneStack(auth_zone) => {
                 substates.insert(
-                    SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+                    SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack),
                     RuntimeSubstate::AuthZone(auth_zone),
                 );
             }
@@ -112,10 +112,10 @@ impl RENode {
                     epoch_manager.into(),
                 );
             }
-            RENode::RoyaltyManager(royalty_manager) => {
+            RENode::RoyaltyReserve(royalty_reserve) => {
                 substates.insert(
-                    SubstateOffset::RoyaltyManager(RoyaltyManagerOffset::RoyaltyManager),
-                    royalty_manager.into(),
+                    SubstateOffset::RoyaltyReserve(RoyaltyReserveOffset::RoyaltyReserve),
+                    royalty_reserve.into(),
                 );
             }
         }

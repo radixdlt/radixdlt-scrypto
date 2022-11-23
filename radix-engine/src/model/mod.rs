@@ -10,7 +10,7 @@ mod method_authorization;
 mod package;
 mod package_extractor;
 mod resources;
-mod royalty_manager;
+mod royalty;
 mod substates;
 mod transaction_processor;
 
@@ -27,5 +27,5 @@ pub use method_authorization::*;
 pub use package::*;
 pub use package_extractor::{extract_abi, ExtractAbiError};
 pub use resources::*;
-pub use royalty_manager::*;
+pub use royalty::*;
 pub use transaction_processor::*;

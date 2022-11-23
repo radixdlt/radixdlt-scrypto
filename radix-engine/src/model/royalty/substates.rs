@@ -2,11 +2,11 @@ use crate::model::*;
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RoyaltyManagerSubstate {
+pub struct RoyaltyReserveSubstate {
     pub balance: Resource,
 }
 
-impl RoyaltyManagerSubstate {
+impl RoyaltyReserveSubstate {
     pub fn take(&mut self, amount: Decimal) -> Result<Resource, ResourceOperationError> {
         self.balance.take_by_amount(amount)
     }

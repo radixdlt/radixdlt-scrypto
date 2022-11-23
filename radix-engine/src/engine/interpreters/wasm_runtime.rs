@@ -5,8 +5,9 @@ use crate::types::{scrypto_decode, scrypto_encode, Encode, ScryptoInvocation};
 use crate::wasm::*;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
 use radix_engine_interface::api::wasm_input::PackageMethodInvocation;
+use radix_engine_interface::api::wasm_input::RoyaltyReserveMethodInvocation;
 use radix_engine_interface::api::wasm_input::{
-    AccessRulesMethodInvocation, AuthZoneMethodInvocation, BucketMethodInvocation,
+    AccessRulesMethodInvocation, AuthZoneStackMethodInvocation, BucketMethodInvocation,
     ComponentMethodInvocation, EpochManagerFunctionInvocation, EpochManagerMethodInvocation,
     NativeFnInvocation, NativeFunctionInvocation, NativeMethodInvocation,
     PackageFunctionInvocation, ProofMethodInvocation, RadixEngineInput,
@@ -113,32 +114,46 @@ where
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
-                NativeMethodInvocation::AuthZone(auth_zone_method) => match auth_zone_method {
-                    AuthZoneMethodInvocation::Pop(invocation) => self
+                NativeMethodInvocation::AuthZoneStack(auth_zone_method) => match auth_zone_method {
+                    AuthZoneStackMethodInvocation::Pop(invocation) => self
                         .system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneMethodInvocation::Push(invocation) => self
+                    AuthZoneStackMethodInvocation::Push(invocation) => self
                         .system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneMethodInvocation::CreateProof(invocation) => self
+                    AuthZoneStackMethodInvocation::CreateProof(invocation) => self
                         .system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneMethodInvocation::CreateProofByAmount(invocation) => self
+                    AuthZoneStackMethodInvocation::CreateProofByAmount(invocation) => self
                         .system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneMethodInvocation::CreateProofByIds(invocation) => self
+                    AuthZoneStackMethodInvocation::CreateProofByIds(invocation) => self
                         .system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneMethodInvocation::Clear(invocation) => self
+                    AuthZoneStackMethodInvocation::Clear(invocation) => self
                         .system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneMethodInvocation::Drain(invocation) => self
+                    AuthZoneStackMethodInvocation::Drain(invocation) => self
+                        .system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                },
+                NativeMethodInvocation::RoyaltyReserve(royalty_method) => match royalty_method {
+                    RoyaltyReserveMethodInvocation::Put(invocation) => self
+                        .system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    RoyaltyReserveMethodInvocation::Take(invocation) => self
+                        .system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    RoyaltyReserveMethodInvocation::Drain(invocation) => self
                         .system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),

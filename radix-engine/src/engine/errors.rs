@@ -213,7 +213,7 @@ pub enum ApplicationError {
 
     WorktopError(WorktopError),
 
-    RoyaltyManagerError(RoyaltyManagerError),
+    RoyaltyReserveError(RoyaltyReserveError),
 
     AuthZoneError(AuthZoneError),
 }

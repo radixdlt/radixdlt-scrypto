@@ -1,5 +1,6 @@
 pub type LockHandle = u32;
-pub type AuthZoneId = u32;
+pub type AuthZoneStackId = u32;
+pub type RoyaltyReserveId = u32;
 pub type BucketId = u32;
 pub type ProofId = u32;
 

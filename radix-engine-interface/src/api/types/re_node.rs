@@ -16,9 +16,9 @@ pub enum ScryptoRENode {
 pub enum RENodeId {
     Bucket(BucketId),
     Proof(ProofId),
-    AuthZoneStack(AuthZoneId),
+    AuthZoneStack(AuthZoneStackId),
+    RoyaltyReserve(RoyaltyReserveId),
     Worktop,
-    RoyaltyManager,
 
     Global(GlobalAddress),
     KeyValueStore(KeyValueStoreId),
@@ -51,6 +51,7 @@ impl Into<u32> for RENodeId {
             RENodeId::Bucket(id) => id,
             RENodeId::Proof(id) => id,
             RENodeId::AuthZoneStack(id) => id,
+            RENodeId::RoyaltyReserve(id) => id,
             _ => panic!("Not a transient id"),
         }
     }
@@ -129,8 +130,8 @@ impl Into<ResourceAddress> for GlobalAddress {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum AuthZoneOffset {
-    AuthZone,
+pub enum AuthZoneStackOffset {
+    AuthZoneStack,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -183,8 +184,8 @@ pub enum EpochManagerOffset {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum RoyaltyManagerOffset {
-    RoyaltyManager,
+pub enum RoyaltyReserveOffset {
+    RoyaltyReserve,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -207,7 +208,7 @@ pub enum WorktopOffset {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum SubstateOffset {
     Global(GlobalOffset),
-    AuthZone(AuthZoneOffset),
+    AuthZone(AuthZoneStackOffset),
     Component(ComponentOffset),
     AccessRules(AccessRulesOffset),
     Package(PackageOffset),
@@ -219,7 +220,7 @@ pub enum SubstateOffset {
     Bucket(BucketOffset),
     Proof(ProofOffset),
     Worktop(WorktopOffset),
-    RoyaltyManager(RoyaltyManagerOffset),
+    RoyaltyReserve(RoyaltyReserveOffset),
 }
 
 /// TODO: separate space addresses?

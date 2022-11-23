@@ -4,7 +4,7 @@ use crate::engine::{
 };
 use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{
-    AccessRulesOffset, AuthZoneOffset, BucketOffset, ComponentOffset, GlobalOffset,
+    AccessRulesOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, GlobalOffset,
     KeyValueStoreOffset, NativeFunction, NativeMethod, PackageOffset, ProofOffset, RENodeId,
     ResourceManagerOffset, SubstateOffset, TransactionProcessorFunction, VaultOffset,
     WorktopOffset,
@@ -46,7 +46,9 @@ impl VisibilityProperties {
                 _ => false,
             },
             RENodeId::Proof(..) => match actor {
-                REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..) => true,
+                REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..) => {
+                    true
+                }
                 REActor::Method(ResolvedMethod::Native(NativeMethod::Proof(..)), ..) => true,
                 REActor::Function(ResolvedFunction::Native(
                     NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
@@ -127,12 +129,12 @@ impl VisibilityProperties {
             (ExecutionMode::DropNode, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => true,
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
-                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => true,
+                SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack) => true,
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
                 _ => false,
             },
             (ExecutionMode::AuthModule, offset) => match offset {
-                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => true,
+                SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack) => true,
                 // TODO: Remove these and use AuthRulesSubstate
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
                     flags == LockFlags::read_only()
