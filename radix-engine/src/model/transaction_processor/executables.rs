@@ -179,7 +179,7 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<(), InvokeError<TransactionProcessorError>>
     where
-        Y: SysInvokableNative<RuntimeError>,
+        Y: SysInvokableNative2<RuntimeError>,
     {
         let should_skip_assertion = request.skip_assertion;
         match &request.validation {

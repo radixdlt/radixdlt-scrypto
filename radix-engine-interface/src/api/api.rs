@@ -50,6 +50,8 @@ pub trait EngineApi<E: Debug> {
 
 pub trait SysInvokableNative2<E>:
     SysNativeInvokable2<EpochManagerCreateInvocation, E>
+    + SysNativeInvokable2<EpochManagerSetEpochInvocation, E>
+    + SysNativeInvokable2<EpochManagerGetCurrentEpochInvocation, E>
     + SysNativeInvokable2<MetadataSetInvocation, E>
     + SysNativeInvokable2<AccessRulesAddAccessCheckInvocation, E>
     + SysNativeInvokable2<AuthZonePopInvocation, E>
@@ -100,8 +102,6 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ResourceManagerUpdateNonFungibleDataInvocation, E>
     + SysNativeInvokable<ResourceManagerNonFungibleExistsInvocation, E>
     + SysNativeInvokable<ResourceManagerGetNonFungibleInvocation, E>
-    + SysNativeInvokable<EpochManagerSetEpochInvocation, E>
-    + SysNativeInvokable<EpochManagerGetCurrentEpochInvocation, E>
     + SysNativeInvokable<WorktopPutInvocation, E>
     + SysNativeInvokable<WorktopTakeAmountInvocation, E>
     + SysNativeInvokable<WorktopTakeAllInvocation, E>

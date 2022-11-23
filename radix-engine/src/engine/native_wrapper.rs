@@ -400,14 +400,14 @@ where
                         RuntimeError::KernelError(KernelError::InvalidSborValue(e))
                     })?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 EpochManagerMethod::SetEpoch => {
                     let invocation: EpochManagerSetEpochInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
             },

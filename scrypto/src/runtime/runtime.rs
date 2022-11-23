@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
+use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable2};
 use radix_engine_interface::api::types::{
     ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
 };
@@ -24,10 +24,10 @@ impl Runtime {
 
     pub fn sys_current_epoch<Y, E>(env: &mut Y) -> Result<u64, E>
     where
-        Y: SysNativeInvokable<EpochManagerGetCurrentEpochInvocation, E>,
+        Y: SysNativeInvokable2<EpochManagerGetCurrentEpochInvocation, E>,
         E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
     {
-        env.sys_invoke(EpochManagerGetCurrentEpochInvocation {
+        env.sys_invoke2(EpochManagerGetCurrentEpochInvocation {
             receiver: EPOCH_MANAGER,
         })
     }

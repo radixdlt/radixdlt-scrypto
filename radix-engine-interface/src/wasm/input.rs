@@ -355,10 +355,10 @@ impl NativeFnInvocation {
                 NativeMethodInvocation::EpochManager(epoch_manager_method) => {
                     match epoch_manager_method {
                         EpochManagerMethodInvocation::GetCurrentEpoch(invocation) => system_api
-                            .sys_invoke(invocation)
+                            .sys_invoke2(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                         EpochManagerMethodInvocation::SetEpoch(invocation) => system_api
-                            .sys_invoke(invocation)
+                            .sys_invoke2(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                     }
                 }

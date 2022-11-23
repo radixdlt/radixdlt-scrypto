@@ -1,7 +1,7 @@
 use crate::engine::{
-    AuthModule, CallFrameUpdate, ExecutableInvocation, Invokable, LockFlags, MethodDeref,
-    NativeInvocation, NativeInvocationInfo, NativeProgram, REActor, RENode, ResolvedFunction,
-    ResolvedReceiver, RuntimeError, SystemApi, TypedExecutor,
+    deref_and_update, AuthModule, CallFrameUpdate, ExecutableInvocation, Invokable, LockFlags,
+    MethodDeref, NativeProgram, REActor, RENode, ResolvedFunction, ResolvedMethod, RuntimeError,
+    SystemApi, TypedExecutor,
 };
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
@@ -24,6 +24,27 @@ pub enum EpochManagerError {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct EpochManager {
     pub info: EpochManagerSubstate,
+}
+
+impl ExecutableInvocation for EpochManagerCreateInvocation {
+    type Exec = TypedExecutor<Self>;
+
+    fn prepare<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
+            EpochManagerFunction::Create,
+        )));
+        let call_frame_update = CallFrameUpdate::empty();
+        let executor = TypedExecutor(self, input);
+
+        Ok((actor, call_frame_update, executor))
+    }
 }
 
 impl NativeProgram for EpochManagerCreateInvocation {
@@ -57,79 +78,94 @@ impl NativeProgram for EpochManagerCreateInvocation {
     }
 }
 
-impl ExecutableInvocation for EpochManagerCreateInvocation {
-    type Exec = TypedExecutor<Self>;
+pub struct EpochManagerGetCurrentEpochExecutable(RENodeId);
+
+impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
+    type Exec = TypedExecutor<EpochManagerGetCurrentEpochExecutable>;
 
     fn prepare<D: MethodDeref>(
         self,
-        _deref: &mut D,
+        deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
         let input = IndexedScryptoValue::from_typed(&self);
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
-            EpochManagerFunction::Create,
-        )));
-        let call_frame_update = CallFrameUpdate::empty();
-        let executor = TypedExecutor(self, input);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::EpochManager(
+                EpochManagerMethod::GetCurrentEpoch,
+            )),
+            resolved_receiver,
+        );
+        let executor = TypedExecutor(
+            EpochManagerGetCurrentEpochExecutable(resolved_receiver.receiver),
+            input,
+        );
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeInvocation for EpochManagerGetCurrentEpochInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
-            RENodeId::Global(GlobalAddress::System(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
-    }
+impl NativeProgram for EpochManagerGetCurrentEpochExecutable {
+    type Output = u64;
 
-    fn execute<Y>(_input: Self, system_api: &mut Y) -> Result<(u64, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, system_api: &mut Y) -> Result<(u64, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
-
+        let handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
         let system = substate_ref.epoch_manager();
-
         Ok((system.epoch, CallFrameUpdate::empty()))
     }
 }
 
-impl NativeInvocation for EpochManagerSetEpochInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
-            RENodeId::Global(GlobalAddress::System(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
-    }
+pub struct EpochManagerSetEpochExecutable(RENodeId, u64);
 
-    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+impl ExecutableInvocation for EpochManagerSetEpochInvocation {
+    type Exec = TypedExecutor<EpochManagerSetEpochExecutable>;
+
+    fn prepare<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::EpochManager(EpochManagerMethod::SetEpoch)),
+            resolved_receiver,
+        );
+        let executor = TypedExecutor(
+            EpochManagerSetEpochExecutable(resolved_receiver.receiver, self.epoch),
+            input,
+        );
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProgram for EpochManagerSetEpochExecutable {
+    type Output = ();
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-
+        let handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = system_api.get_ref_mut(handle)?;
-        substate_mut.epoch_manager().epoch = input.epoch;
-
+        substate_mut.epoch_manager().epoch = self.1;
         Ok(((), CallFrameUpdate::empty()))
     }
 }
