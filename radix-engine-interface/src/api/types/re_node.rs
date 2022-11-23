@@ -33,7 +33,6 @@ pub enum RENodeType {
     EpochManager,
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum RENodeId {

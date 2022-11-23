@@ -351,11 +351,13 @@ impl CallFrame {
         }
     }
 
-    pub fn create_node(
+    pub fn create_node<'f, 's, R: FeeReserve>(
         &mut self,
-        heap: &mut Heap,
         node_id: RENodeId,
         re_node: RENode,
+        heap: &mut Heap,
+        track: &'f mut Track<'s, R>,
+        push_to_store: bool,
     ) -> Result<(), RuntimeError> {
         let substates = re_node.to_substates();
 
@@ -365,16 +367,27 @@ impl CallFrame {
             for child_id in owned {
                 SubstateProperties::verify_can_own(&offset, child_id)?;
                 self.take_node_internal(child_id)?;
+                if push_to_store {
+                    heap.move_node_to_store(track, child_id)?;
+                }
             }
         }
 
-        // Insert node into heap
-        let heap_root_node = HeapRENode {
-            substates,
-            //child_nodes,
-        };
-        heap.create_node(node_id, heap_root_node);
-        self.owned_root_nodes.insert(node_id, 0u32);
+        if push_to_store {
+            for (offset, substate) in substates {
+                track.insert_substate(SubstateId(node_id, offset), substate);
+            }
+
+            self.add_stored_ref(node_id);
+        } else {
+            // Insert node into heap
+            let heap_root_node = HeapRENode {
+                substates,
+                //child_nodes,
+            };
+            heap.create_node(node_id, heap_root_node);
+            self.owned_root_nodes.insert(node_id, 0u32);
+        }
 
         Ok(())
     }
@@ -382,18 +395,6 @@ impl CallFrame {
     pub fn add_stored_ref(&mut self, node_id: RENodeId) {
         self.node_refs
             .insert(node_id, RENodeRefData::new(RENodeLocation::Store));
-    }
-
-    pub fn move_owned_node_to_store<'f, 's, R: FeeReserve>(
-        &mut self,
-        heap: &mut Heap,
-        track: &'f mut Track<'s, R>,
-        node_id: RENodeId,
-    ) -> Result<(), RuntimeError> {
-        self.take_node_internal(node_id)?;
-        heap.move_node_to_store(track, node_id)?;
-
-        Ok(())
     }
 
     pub fn owned_nodes(&self) -> Vec<RENodeId> {
