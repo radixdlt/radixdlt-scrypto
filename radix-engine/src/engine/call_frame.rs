@@ -84,6 +84,8 @@ pub struct CallFrame {
 
     next_lock_handle: LockHandle,
     locks: HashMap<LockHandle, SubstateLock>,
+
+    allocated_ids: HashSet<RENodeId>,
 }
 
 impl CallFrame {
@@ -267,6 +269,7 @@ impl CallFrame {
             owned_root_nodes: HashMap::new(),
             next_lock_handle: 0u32,
             locks: HashMap::new(),
+            allocated_ids: HashSet::new(),
         }
     }
 
@@ -295,6 +298,7 @@ impl CallFrame {
             owned_root_nodes: owned_heap_nodes,
             next_lock_handle: 0u32,
             locks: HashMap::new(),
+            allocated_ids: HashSet::new(),
         };
 
         Ok(frame)
@@ -351,6 +355,10 @@ impl CallFrame {
         }
     }
 
+    pub fn add_allocated_id(&mut self, node_id: RENodeId) {
+        self.allocated_ids.insert(node_id);
+    }
+
     pub fn create_node<'f, 's, R: FeeReserve>(
         &mut self,
         node_id: RENodeId,
@@ -358,7 +366,14 @@ impl CallFrame {
         heap: &mut Heap,
         track: &'f mut Track<'s, R>,
         push_to_store: bool,
+        force_create: bool, // TODO: Figure out better abstraction to remove this
     ) -> Result<(), RuntimeError> {
+        if !force_create && !self.allocated_ids.remove(&node_id) {
+            return Err(RuntimeError::CallFrameError(
+                CallFrameError::RENodeIdWasNotAllocated(node_id),
+            ));
+        }
+
         let substates = re_node.to_substates();
 
         for (offset, substate) in &substates {
@@ -399,6 +414,16 @@ impl CallFrame {
 
     pub fn owned_nodes(&self) -> Vec<RENodeId> {
         self.owned_root_nodes.keys().cloned().collect()
+    }
+
+    pub fn verify_allocated_ids_empty(&self) -> Result<(), RuntimeError> {
+        if !self.allocated_ids.is_empty() {
+            return Err(RuntimeError::CallFrameError(
+                CallFrameError::CallFrameCleanupAllocatedIdsNotEmpty,
+            ));
+        }
+
+        Ok(())
     }
 
     /// Removes node from call frame and re-owns any children

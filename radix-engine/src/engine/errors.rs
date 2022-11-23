@@ -130,6 +130,8 @@ pub enum CallFrameError {
     RENodeNotVisible(RENodeId),
     RENodeNotOwned(RENodeId),
     MovingLockedRENode(RENodeId),
+    RENodeIdWasNotAllocated(RENodeId),
+    CallFrameCleanupAllocatedIdsNotEmpty,
 }
 
 impl From<CallFrameError> for RuntimeError {

@@ -209,6 +209,7 @@ where
                     &mut self.heap,
                     &mut self.track,
                     true,
+                    true,
                 )?;
 
                 Ok(true)
@@ -295,7 +296,11 @@ where
             }
 
             Ok(())
-        })
+        })?;
+
+        self.current_frame.verify_allocated_ids_empty()?;
+
+        Ok(())
     }
 
     fn run<X: Executor>(
@@ -833,7 +838,7 @@ where
     fn allocate_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
         // TODO: Add costing
 
-        match node_type {
+        let node_id = match node_type {
             RENodeType::AuthZoneStack => self
                 .id_allocator
                 .new_auth_zone_id()
@@ -898,7 +903,11 @@ where
                 .new_component_address(self.transaction_hash)
                 .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
         }
-        .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))
+        .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+
+        self.current_frame.add_allocated_id(node_id);
+
+        Ok(node_id)
     }
 
     fn create_node(&mut self, re_node: RENode) -> Result<RENodeId, RuntimeError> {
@@ -984,6 +993,7 @@ where
             &mut self.heap,
             &mut self.track,
             push_to_store,
+            false,
         )?;
 
         // Restore current mode
