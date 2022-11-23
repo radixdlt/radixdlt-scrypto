@@ -1,5 +1,5 @@
 use crate::resource::{ComponentAuthZone, NonFungible, ScryptoProof};
-use radix_engine_interface::api::api::{SysNativeInvokable, SysNativeInvokable2};
+use radix_engine_interface::api::api::SysNativeInvokable2;
 use radix_engine_interface::data::ScryptoCustomTypeId;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
@@ -16,7 +16,7 @@ pub trait SysBucket {
         sys_calls: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: SysNativeInvokable<ResourceManagerCreateBucketInvocation, E>;
+        Y: SysNativeInvokable2<ResourceManagerCreateBucketInvocation, E>;
 
     fn sys_burn<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
         self,
@@ -45,9 +45,9 @@ impl SysBucket for Bucket {
         sys_calls: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: SysNativeInvokable<ResourceManagerCreateBucketInvocation, E>,
+        Y: SysNativeInvokable2<ResourceManagerCreateBucketInvocation, E>,
     {
-        sys_calls.sys_invoke(ResourceManagerCreateBucketInvocation { receiver })
+        sys_calls.sys_invoke2(ResourceManagerCreateBucketInvocation { receiver })
     }
 
     fn sys_burn<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(

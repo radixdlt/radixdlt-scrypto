@@ -3,7 +3,7 @@ use crate::fee::*;
 use crate::model::InvokeError;
 use crate::types::{scrypto_decode, scrypto_encode, Encode, ScryptoInvocation};
 use crate::wasm::*;
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative, SysInvokableNative2};
+use radix_engine_interface::api::api::{EngineApi, SysInvokableNative2};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
 use radix_engine_interface::wasm::*;
 use sbor::rust::vec::Vec;
@@ -14,20 +14,14 @@ use sbor::rust::vec::Vec;
 /// the system api will bill properly.
 pub struct RadixEngineWasmRuntime<'y, Y>
 where
-    Y: SystemApi
-        + EngineApi<RuntimeError>
-        + Invokable<ScryptoInvocation>
-        + SysInvokableNative<RuntimeError>,
+    Y: SystemApi + EngineApi<RuntimeError> + Invokable<ScryptoInvocation>,
 {
     system_api: &'y mut Y,
 }
 
 impl<'y, Y> RadixEngineWasmRuntime<'y, Y>
 where
-    Y: SystemApi
-        + EngineApi<RuntimeError>
-        + Invokable<ScryptoInvocation>
-        + SysInvokableNative<RuntimeError>,
+    Y: SystemApi + EngineApi<RuntimeError> + Invokable<ScryptoInvocation>,
 {
     pub fn new(system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime { system_api }
@@ -43,7 +37,6 @@ where
     Y: SystemApi
         + EngineApi<RuntimeError>
         + Invokable<ScryptoInvocation>
-        + SysInvokableNative<RuntimeError>
         + SysInvokableNative2<RuntimeError>,
 {
     // TODO: expose API for reading blobs

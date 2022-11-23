@@ -8,7 +8,7 @@ use crate::model::{
     HardResourceOrNonFungible, MethodAuthorization, ResourceManagerSetResourceAddressInvocation,
 };
 use crate::types::*;
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
     EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction,
     NativeMethod, RENodeId, SubstateOffset,
@@ -55,7 +55,6 @@ impl NativeProgram for EpochManagerCreateInvocation {
         Y: SystemApi
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>
             + Invokable<ResourceManagerSetResourceAddressInvocation>,
     {
         let node_id =

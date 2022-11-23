@@ -1,6 +1,4 @@
-use radix_engine_interface::api::api::{
-    EngineApi, Invocation, SysInvokableNative, SysInvokableNative2,
-};
+use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative2};
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent,
     ProofId, RENodeId, TransactionProcessorFunction,
@@ -105,7 +103,6 @@ impl<'a> NativeInvocation for TransactionProcessorRunInvocation<'a> {
         Y: SystemApi
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>
             + SysInvokableNative2<RuntimeError>,
     {
         TransactionProcessor::run(invocation, system_api)
@@ -140,9 +137,7 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<IndexedScryptoValue, InvokeError<TransactionProcessorError>>
     where
-        Y: EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>
-            + SysInvokableNative2<RuntimeError>,
+        Y: EngineApi<RuntimeError> + SysInvokableNative2<RuntimeError>,
     {
         let mut value = args.dom;
         for (expression, path) in args.expressions {
@@ -226,7 +221,6 @@ impl TransactionProcessor {
         Y: SystemApi
             + EngineApi<RuntimeError>
             + Invokable<ScryptoInvocation>
-            + SysInvokableNative<RuntimeError>
             + SysInvokableNative2<RuntimeError>,
     {
         for request in input.runtime_validations.as_ref() {

@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable, SysNativeInvokable2};
+use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable2};
 use radix_engine_interface::api::types::{
     Level, LockHandle, RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoRENode, SubstateOffset,
@@ -55,13 +55,6 @@ pub fn call_engine_to_raw(_input: RadixEngineInput) -> Vec<u8> {
 pub struct SyscallError;
 
 pub struct ScryptoEnv;
-
-impl<N: ScryptoNativeInvocation> SysNativeInvokable<N, SyscallError> for ScryptoEnv {
-    fn sys_invoke(&mut self, input: N) -> Result<N::Output, SyscallError> {
-        let rtn = call_engine(RadixEngineInput::InvokeNativeFn(input.into()));
-        Ok(rtn)
-    }
-}
 
 impl<N: ScryptoNativeInvocation> SysNativeInvokable2<N, SyscallError> for ScryptoEnv {
     fn sys_invoke2(&mut self, input: N) -> Result<N::Output, SyscallError> {
@@ -156,7 +149,7 @@ macro_rules! scrypto_env_native_fn {
         $(
             $vis $fn $fn_name ($($args)*) -> $rtn {
                 let mut env = crate::engine::scrypto_env::ScryptoEnv;
-                radix_engine_interface::api::api::SysNativeInvokable::sys_invoke(&mut env, $arg).unwrap()
+                radix_engine_interface::api::api::SysNativeInvokable2::sys_invoke2(&mut env, $arg).unwrap()
             }
         )+
     };

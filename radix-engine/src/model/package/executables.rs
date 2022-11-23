@@ -1,5 +1,5 @@
 use core::fmt::Debug;
-use radix_engine_interface::api::api::{SysInvokableNative, SysInvokableNative2};
+use radix_engine_interface::api::api::SysInvokableNative2;
 use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId};
 use radix_engine_interface::data::IndexedScryptoValue;
 
@@ -55,7 +55,7 @@ impl NativeProgram for PackagePublishNoOwnerInvocation {
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation> + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + Invokable<ScryptoInvocation>,
     {
         let code = system_api.read_blob(&self.code.0)?.to_vec();
         let blob = system_api.read_blob(&self.abi.0)?;

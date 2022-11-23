@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::SysNativeInvokable;
+use radix_engine_interface::api::api::SysNativeInvokable2;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 
@@ -18,7 +18,7 @@ impl ResourceManager {
     pub fn set_mintable(&mut self, access_rule: AccessRule) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+            .sys_invoke2(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Mint,
                 access_rule,
@@ -29,7 +29,7 @@ impl ResourceManager {
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+            .sys_invoke2(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Burn,
                 access_rule,
@@ -40,7 +40,7 @@ impl ResourceManager {
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) -> () {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+            .sys_invoke2(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Withdraw,
                 access_rule,
@@ -51,7 +51,7 @@ impl ResourceManager {
     pub fn set_depositable(&mut self, access_rule: AccessRule) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+            .sys_invoke2(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Deposit,
                 access_rule,
@@ -62,7 +62,7 @@ impl ResourceManager {
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+            .sys_invoke2(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::UpdateMetadata,
                 access_rule,
@@ -73,7 +73,7 @@ impl ResourceManager {
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+            .sys_invoke2(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::UpdateNonFungibleData,
                 access_rule,
@@ -84,7 +84,7 @@ impl ResourceManager {
     pub fn lock_mintable(&mut self) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
+            .sys_invoke2(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Mint,
             })
@@ -94,7 +94,7 @@ impl ResourceManager {
     pub fn lock_burnable(&mut self) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
+            .sys_invoke2(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Burn,
             })
@@ -104,7 +104,7 @@ impl ResourceManager {
     pub fn lock_withdrawable(&mut self) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
+            .sys_invoke2(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Withdraw,
             })
@@ -114,7 +114,7 @@ impl ResourceManager {
     pub fn lock_depositable(&mut self) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
+            .sys_invoke2(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::Deposit,
             })
@@ -124,7 +124,7 @@ impl ResourceManager {
     pub fn lock_updateable_metadata(&mut self) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
+            .sys_invoke2(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::UpdateMetadata,
             })
@@ -134,7 +134,7 @@ impl ResourceManager {
     pub fn lock_updateable_non_fungible_data(&mut self) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
+            .sys_invoke2(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
                 method: ResourceMethodAuthKey::UpdateNonFungibleData,
             })
@@ -144,7 +144,7 @@ impl ResourceManager {
     fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerMintInvocation {
+            .sys_invoke2(ResourceManagerMintInvocation {
                 mint_params,
                 receiver: self.0,
             })
@@ -154,7 +154,7 @@ impl ResourceManager {
     fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerUpdateNonFungibleDataInvocation {
+            .sys_invoke2(ResourceManagerUpdateNonFungibleDataInvocation {
                 id,
                 data,
                 receiver: self.0,
@@ -165,7 +165,7 @@ impl ResourceManager {
     fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerGetNonFungibleInvocation {
+            .sys_invoke2(ResourceManagerGetNonFungibleInvocation {
                 id,
                 receiver: self.0,
             })

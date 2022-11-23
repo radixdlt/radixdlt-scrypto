@@ -11,10 +11,6 @@ pub trait Invocation: Debug {
     type Output: Debug;
 }
 
-pub trait SysNativeInvokable<I: Invocation, E> {
-    fn sys_invoke(&mut self, invocation: I) -> Result<I::Output, E>;
-}
-
 pub trait SysNativeInvokable2<I: Invocation, E> {
     fn sys_invoke2(&mut self, invocation: I) -> Result<I::Output, E>;
 }
@@ -110,5 +106,3 @@ pub trait SysInvokableNative2<E>:
     + SysNativeInvokable2<WorktopDrainInvocation, E>
 {
 }
-
-pub trait SysInvokableNative<E> {}

@@ -5,7 +5,7 @@ use crate::engine::{
 };
 use crate::model::ResourceManagerSetResourceAddressInvocation;
 use crate::types::*;
-use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
+use radix_engine_interface::api::api::{EngineApi, Invocation};
 use radix_engine_interface::api::types::{
     AccessRulesMethod, GlobalAddress, NativeMethod, PackageOffset, RENodeId, SubstateOffset,
 };
@@ -57,7 +57,6 @@ impl NativeProgram for AccessRulesAddAccessCheckInvocation {
         Y: SystemApi
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>
             + Invokable<ResourceManagerSetResourceAddressInvocation>,
     {
         // Abi checks
