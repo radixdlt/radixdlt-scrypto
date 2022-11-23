@@ -61,6 +61,8 @@ pub trait SysInvokableNative2<E>:
     + SysNativeInvokable2<AuthZoneCreateProofByIdsInvocation, E>
     + SysNativeInvokable2<AuthZoneClearInvocation, E>
     + SysNativeInvokable2<AuthZoneDrainInvocation, E>
+    + SysNativeInvokable2<PackagePublishNoOwnerInvocation, E>
+    + SysNativeInvokable2<PackagePublishWithOwnerInvocation, E>
 {
 }
 
@@ -110,7 +112,5 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<WorktopAssertContainsAmountInvocation, E>
     + SysNativeInvokable<WorktopAssertContainsNonFungiblesInvocation, E>
     + SysNativeInvokable<WorktopDrainInvocation, E>
-    + SysNativeInvokable<PackagePublishNoOwnerInvocation, E>
-    + SysNativeInvokable<PackagePublishWithOwnerInvocation, E>
 {
 }

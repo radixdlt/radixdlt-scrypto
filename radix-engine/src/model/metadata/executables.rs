@@ -8,24 +8,6 @@ use radix_engine_interface::api::types::{NativeMethod, RENodeId, SubstateOffset}
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
-impl NativeProgram for MetadataSetInvocation {
-    type Output = ();
-
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + EngineApi<RuntimeError>,
-    {
-        let offset = SubstateOffset::Metadata(MetadataOffset::Metadata);
-        let handle = system_api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
-
-        let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-        let metadata = substate_ref_mut.metadata();
-        metadata.metadata.insert(self.key, self.value);
-
-        Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
 impl ExecutableInvocation for MetadataSetInvocation {
     type Exec = TypedExecutor<Self>;
 
@@ -53,5 +35,23 @@ impl ExecutableInvocation for MetadataSetInvocation {
 
         let executor = TypedExecutor(self, input);
         Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProgram for MetadataSetInvocation {
+    type Output = ();
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError>,
+    {
+        let offset = SubstateOffset::Metadata(MetadataOffset::Metadata);
+        let handle = system_api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
+
+        let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+        let metadata = substate_ref_mut.metadata();
+        metadata.metadata.insert(self.key, self.value);
+
+        Ok(((), CallFrameUpdate::empty()))
     }
 }

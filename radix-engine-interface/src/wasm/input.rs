@@ -197,10 +197,10 @@ impl NativeFnInvocation {
                 },
                 NativeFunctionInvocation::Package(invocation) => match invocation {
                     PackageFunctionInvocation::PublishNoOwner(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     PackageFunctionInvocation::PublishWithOwner(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
             },
