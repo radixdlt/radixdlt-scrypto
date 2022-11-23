@@ -9,7 +9,7 @@ use crate::model::{
 };
 use crate::types::ScryptoInvocation;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative2, SysNativeInvokable2};
+use radix_engine_interface::api::api::{EngineApi, SysInvokableNative, SysNativeInvokable};
 use radix_engine_interface::api::types::{
     Level, LockHandle, RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoRENode, SubstateOffset,
@@ -20,18 +20,18 @@ use radix_engine_interface::wasm::*;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
-impl<'g, 's, W, R, N, T> SysNativeInvokable2<N, RuntimeError> for Kernel<'g, 's, W, R>
+impl<'g, 's, W, R, N, T> SysNativeInvokable<N, RuntimeError> for Kernel<'g, 's, W, R>
 where
     W: WasmEngine,
     R: FeeReserve,
     N: ScryptoNativeInvocation<ScryptoOutput = T> + ExecutableInvocation<Output = T>,
 {
-    fn sys_invoke2(&mut self, invocation: N) -> Result<T, RuntimeError> {
+    fn sys_invoke(&mut self, invocation: N) -> Result<T, RuntimeError> {
         self.invoke(invocation)
     }
 }
 
-impl<'g, 's, W, R> SysInvokableNative2<RuntimeError> for Kernel<'g, 's, W, R>
+impl<'g, 's, W, R> SysInvokableNative<RuntimeError> for Kernel<'g, 's, W, R>
 where
     W: WasmEngine,
     R: FeeReserve,

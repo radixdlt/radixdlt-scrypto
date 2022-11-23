@@ -3,7 +3,7 @@ use crate::fee::*;
 use crate::model::InvokeError;
 use crate::types::{scrypto_decode, scrypto_encode, Encode, ScryptoInvocation};
 use crate::wasm::*;
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative2};
+use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
 use radix_engine_interface::wasm::*;
 use sbor::rust::vec::Vec;
@@ -37,7 +37,7 @@ where
     Y: SystemApi
         + EngineApi<RuntimeError>
         + Invokable<ScryptoInvocation>
-        + SysInvokableNative2<RuntimeError>,
+        + SysInvokableNative<RuntimeError>,
 {
     // TODO: expose API for reading blobs
     // TODO: do we want to allow dynamic creation of blobs?

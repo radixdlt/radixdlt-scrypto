@@ -9,7 +9,7 @@ use crate::model::{
 };
 use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
-use radix_engine_interface::api::api::{Invocation, SysInvokableNative2};
+use radix_engine_interface::api::api::{Invocation, SysInvokableNative};
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFunction, NativeMethod, NonFungibleStoreId, NonFungibleStoreOffset,
     RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset,
@@ -64,7 +64,7 @@ impl NativeProgram for ResourceManagerBucketBurnInvocation {
 
     fn main<Y>(self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation> + SysInvokableNative2<RuntimeError>,
+        Y: SystemApi + Invokable<ScryptoInvocation> + SysInvokableNative<RuntimeError>,
     {
         let bucket = Bucket(self.bucket.0);
         bucket.sys_burn(env)?;

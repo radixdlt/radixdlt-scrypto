@@ -1,5 +1,5 @@
 use core::fmt::Debug;
-use radix_engine_interface::api::api::SysInvokableNative2;
+use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId};
 use radix_engine_interface::data::IndexedScryptoValue;
 
@@ -111,7 +111,7 @@ impl NativeProgram for PackagePublishWithOwnerInvocation {
         system_api: &mut Y,
     ) -> Result<((PackageAddress, Bucket), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + SysInvokableNative2<RuntimeError>,
+        Y: SystemApi + SysInvokableNative<RuntimeError>,
     {
         let code = system_api.read_blob(&self.code.0)?.to_vec();
         let blob = system_api.read_blob(&self.abi.0)?;
@@ -148,7 +148,7 @@ impl NativeProgram for PackagePublishWithOwnerInvocation {
             mint_params: MintParams::NonFungible { entries },
         };
 
-        let bucket = system_api.sys_invoke2(mint_invocation)?;
+        let bucket = system_api.sys_invoke(mint_invocation)?;
         let bucket_node_id = RENodeId::Bucket(bucket.0);
 
         Ok((

@@ -11,8 +11,8 @@ pub trait Invocation: Debug {
     type Output: Debug;
 }
 
-pub trait SysNativeInvokable2<I: Invocation, E> {
-    fn sys_invoke2(&mut self, invocation: I) -> Result<I::Output, E>;
+pub trait SysNativeInvokable<I: Invocation, E> {
+    fn sys_invoke(&mut self, invocation: I) -> Result<I::Output, E>;
 }
 
 pub trait EngineApi<E: Debug> {
@@ -44,65 +44,65 @@ pub trait EngineApi<E: Debug> {
     fn sys_emit_log(&mut self, level: Level, message: String) -> Result<(), E>;
 }
 
-pub trait SysInvokableNative2<E>:
-    SysNativeInvokable2<EpochManagerCreateInvocation, E>
-    + SysNativeInvokable2<EpochManagerSetEpochInvocation, E>
-    + SysNativeInvokable2<EpochManagerGetCurrentEpochInvocation, E>
-    + SysNativeInvokable2<MetadataSetInvocation, E>
-    + SysNativeInvokable2<AccessRulesAddAccessCheckInvocation, E>
-    + SysNativeInvokable2<AuthZonePopInvocation, E>
-    + SysNativeInvokable2<AuthZonePushInvocation, E>
-    + SysNativeInvokable2<AuthZoneCreateProofInvocation, E>
-    + SysNativeInvokable2<AuthZoneCreateProofByAmountInvocation, E>
-    + SysNativeInvokable2<AuthZoneCreateProofByIdsInvocation, E>
-    + SysNativeInvokable2<AuthZoneClearInvocation, E>
-    + SysNativeInvokable2<AuthZoneDrainInvocation, E>
-    + SysNativeInvokable2<PackagePublishNoOwnerInvocation, E>
-    + SysNativeInvokable2<PackagePublishWithOwnerInvocation, E>
-    + SysNativeInvokable2<BucketTakeInvocation, E>
-    + SysNativeInvokable2<BucketPutInvocation, E>
-    + SysNativeInvokable2<BucketTakeNonFungiblesInvocation, E>
-    + SysNativeInvokable2<BucketGetNonFungibleIdsInvocation, E>
-    + SysNativeInvokable2<BucketGetAmountInvocation, E>
-    + SysNativeInvokable2<BucketGetResourceAddressInvocation, E>
-    + SysNativeInvokable2<BucketCreateProofInvocation, E>
-    + SysNativeInvokable2<BucketCreateProofInvocation, E>
-    + SysNativeInvokable2<ProofCloneInvocation, E>
-    + SysNativeInvokable2<ProofGetAmountInvocation, E>
-    + SysNativeInvokable2<ProofGetNonFungibleIdsInvocation, E>
-    + SysNativeInvokable2<ProofGetResourceAddressInvocation, E>
-    + SysNativeInvokable2<ResourceManagerBucketBurnInvocation, E>
-    + SysNativeInvokable2<ResourceManagerCreateInvocation, E>
-    + SysNativeInvokable2<ResourceManagerBurnInvocation, E>
-    + SysNativeInvokable2<ResourceManagerUpdateAuthInvocation, E>
-    + SysNativeInvokable2<ResourceManagerLockAuthInvocation, E>
-    + SysNativeInvokable2<ResourceManagerCreateVaultInvocation, E>
-    + SysNativeInvokable2<ResourceManagerCreateBucketInvocation, E>
-    + SysNativeInvokable2<ResourceManagerMintInvocation, E>
-    + SysNativeInvokable2<ResourceManagerGetMetadataInvocation, E>
-    + SysNativeInvokable2<ResourceManagerGetResourceTypeInvocation, E>
-    + SysNativeInvokable2<ResourceManagerGetTotalSupplyInvocation, E>
-    + SysNativeInvokable2<ResourceManagerUpdateMetadataInvocation, E>
-    + SysNativeInvokable2<ResourceManagerUpdateNonFungibleDataInvocation, E>
-    + SysNativeInvokable2<ResourceManagerNonFungibleExistsInvocation, E>
-    + SysNativeInvokable2<ResourceManagerGetNonFungibleInvocation, E>
-    + SysNativeInvokable2<VaultTakeInvocation, E>
-    + SysNativeInvokable2<VaultPutInvocation, E>
-    + SysNativeInvokable2<VaultLockFeeInvocation, E>
-    + SysNativeInvokable2<VaultTakeNonFungiblesInvocation, E>
-    + SysNativeInvokable2<VaultGetAmountInvocation, E>
-    + SysNativeInvokable2<VaultGetResourceAddressInvocation, E>
-    + SysNativeInvokable2<VaultGetNonFungibleIdsInvocation, E>
-    + SysNativeInvokable2<VaultCreateProofInvocation, E>
-    + SysNativeInvokable2<VaultCreateProofByAmountInvocation, E>
-    + SysNativeInvokable2<VaultCreateProofByIdsInvocation, E>
-    + SysNativeInvokable2<WorktopPutInvocation, E>
-    + SysNativeInvokable2<WorktopTakeAmountInvocation, E>
-    + SysNativeInvokable2<WorktopTakeAllInvocation, E>
-    + SysNativeInvokable2<WorktopTakeNonFungiblesInvocation, E>
-    + SysNativeInvokable2<WorktopAssertContainsInvocation, E>
-    + SysNativeInvokable2<WorktopAssertContainsAmountInvocation, E>
-    + SysNativeInvokable2<WorktopAssertContainsNonFungiblesInvocation, E>
-    + SysNativeInvokable2<WorktopDrainInvocation, E>
+pub trait SysInvokableNative<E>:
+    SysNativeInvokable<EpochManagerCreateInvocation, E>
+    + SysNativeInvokable<EpochManagerSetEpochInvocation, E>
+    + SysNativeInvokable<EpochManagerGetCurrentEpochInvocation, E>
+    + SysNativeInvokable<MetadataSetInvocation, E>
+    + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
+    + SysNativeInvokable<AuthZonePopInvocation, E>
+    + SysNativeInvokable<AuthZonePushInvocation, E>
+    + SysNativeInvokable<AuthZoneCreateProofInvocation, E>
+    + SysNativeInvokable<AuthZoneCreateProofByAmountInvocation, E>
+    + SysNativeInvokable<AuthZoneCreateProofByIdsInvocation, E>
+    + SysNativeInvokable<AuthZoneClearInvocation, E>
+    + SysNativeInvokable<AuthZoneDrainInvocation, E>
+    + SysNativeInvokable<PackagePublishNoOwnerInvocation, E>
+    + SysNativeInvokable<PackagePublishWithOwnerInvocation, E>
+    + SysNativeInvokable<BucketTakeInvocation, E>
+    + SysNativeInvokable<BucketPutInvocation, E>
+    + SysNativeInvokable<BucketTakeNonFungiblesInvocation, E>
+    + SysNativeInvokable<BucketGetNonFungibleIdsInvocation, E>
+    + SysNativeInvokable<BucketGetAmountInvocation, E>
+    + SysNativeInvokable<BucketGetResourceAddressInvocation, E>
+    + SysNativeInvokable<BucketCreateProofInvocation, E>
+    + SysNativeInvokable<BucketCreateProofInvocation, E>
+    + SysNativeInvokable<ProofCloneInvocation, E>
+    + SysNativeInvokable<ProofGetAmountInvocation, E>
+    + SysNativeInvokable<ProofGetNonFungibleIdsInvocation, E>
+    + SysNativeInvokable<ProofGetResourceAddressInvocation, E>
+    + SysNativeInvokable<ResourceManagerBucketBurnInvocation, E>
+    + SysNativeInvokable<ResourceManagerCreateInvocation, E>
+    + SysNativeInvokable<ResourceManagerBurnInvocation, E>
+    + SysNativeInvokable<ResourceManagerUpdateAuthInvocation, E>
+    + SysNativeInvokable<ResourceManagerLockAuthInvocation, E>
+    + SysNativeInvokable<ResourceManagerCreateVaultInvocation, E>
+    + SysNativeInvokable<ResourceManagerCreateBucketInvocation, E>
+    + SysNativeInvokable<ResourceManagerMintInvocation, E>
+    + SysNativeInvokable<ResourceManagerGetMetadataInvocation, E>
+    + SysNativeInvokable<ResourceManagerGetResourceTypeInvocation, E>
+    + SysNativeInvokable<ResourceManagerGetTotalSupplyInvocation, E>
+    + SysNativeInvokable<ResourceManagerUpdateMetadataInvocation, E>
+    + SysNativeInvokable<ResourceManagerUpdateNonFungibleDataInvocation, E>
+    + SysNativeInvokable<ResourceManagerNonFungibleExistsInvocation, E>
+    + SysNativeInvokable<ResourceManagerGetNonFungibleInvocation, E>
+    + SysNativeInvokable<VaultTakeInvocation, E>
+    + SysNativeInvokable<VaultPutInvocation, E>
+    + SysNativeInvokable<VaultLockFeeInvocation, E>
+    + SysNativeInvokable<VaultTakeNonFungiblesInvocation, E>
+    + SysNativeInvokable<VaultGetAmountInvocation, E>
+    + SysNativeInvokable<VaultGetResourceAddressInvocation, E>
+    + SysNativeInvokable<VaultGetNonFungibleIdsInvocation, E>
+    + SysNativeInvokable<VaultCreateProofInvocation, E>
+    + SysNativeInvokable<VaultCreateProofByAmountInvocation, E>
+    + SysNativeInvokable<VaultCreateProofByIdsInvocation, E>
+    + SysNativeInvokable<WorktopPutInvocation, E>
+    + SysNativeInvokable<WorktopTakeAmountInvocation, E>
+    + SysNativeInvokable<WorktopTakeAllInvocation, E>
+    + SysNativeInvokable<WorktopTakeNonFungiblesInvocation, E>
+    + SysNativeInvokable<WorktopAssertContainsInvocation, E>
+    + SysNativeInvokable<WorktopAssertContainsAmountInvocation, E>
+    + SysNativeInvokable<WorktopAssertContainsNonFungiblesInvocation, E>
+    + SysNativeInvokable<WorktopDrainInvocation, E>
 {
 }
