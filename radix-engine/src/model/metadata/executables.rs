@@ -1,59 +1,57 @@
 use crate::engine::{
-    CallFrameUpdate, InterpreterError, Invokable, LockFlags, NativeInvocationMethod, RuntimeError,
-    SystemApi,
+    deref_and_update, CallFrameUpdate, ExecutableInvocation, InterpreterError, LockFlags,
+    MethodDeref, NativeProgram, REActor, ResolvedMethod, RuntimeError, SystemApi, TypedExecutor,
 };
-use crate::model::ResourceManagerSetResourceAddressInvocation;
 use crate::types::*;
-use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
+use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{NativeMethod, RENodeId, SubstateOffset};
+use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
-impl NativeInvocationMethod for MetadataSetInvocation {
-    type Args = MetadataSetArgs;
+impl NativeProgram for MetadataSetInvocation {
+    type Output = ();
 
-    fn resolve(self) -> (RENodeId, Self::Args, NativeMethod, CallFrameUpdate) {
-        (
-            self.receiver,
-            MetadataSetArgs {
-                key: self.key,
-                value: self.value,
-            },
-            NativeMethod::Metadata(MetadataMethod::Set),
-            CallFrameUpdate::empty(),
-        )
-    }
-
-    fn execute<Y>(
-        receiver: RENodeId,
-        args: Self::Args,
-        system_api: &mut Y,
-    ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation>
-            + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>
-            + Invokable<ResourceManagerSetResourceAddressInvocation>,
+        Y: SystemApi + EngineApi<RuntimeError>,
     {
-        // TODO: Move this into a more static check once node types implemented
-        if !matches!(receiver, RENodeId::Package(..)) {
-            return Err(RuntimeError::InterpreterError(
-                InterpreterError::InvalidInvocation,
-            ));
-        }
-
         let offset = SubstateOffset::Metadata(MetadataOffset::Metadata);
-        let handle = system_api.lock_substate(receiver, offset, LockFlags::MUTABLE)?;
+        let handle = system_api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
 
         let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
         let metadata = substate_ref_mut.metadata();
-        metadata.metadata.insert(args.key, args.value);
+        metadata.metadata.insert(self.key, self.value);
 
         Ok(((), CallFrameUpdate::empty()))
     }
 }
 
-pub struct MetadataSetArgs {
-    pub key: String,
-    pub value: String,
+impl ExecutableInvocation for MetadataSetInvocation {
+    type Exec = TypedExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        mut self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+
+        let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
+
+        // TODO: Move this into a more static check once node types implemented
+        if !matches!(resolved_receiver.receiver, RENodeId::Package(..)) {
+            return Err(RuntimeError::InterpreterError(
+                InterpreterError::InvalidInvocation,
+            ));
+        }
+
+        self.receiver = resolved_receiver.receiver;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Metadata(MetadataMethod::Set)),
+            resolved_receiver,
+        );
+
+        let executor = TypedExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
 }

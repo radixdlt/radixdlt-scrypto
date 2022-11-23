@@ -1,7 +1,6 @@
-use crate::api::api::SysInvokableNativeMethod;
 use crate::api::types::*;
 use crate::scrypto;
-use radix_engine_interface::api::api::SysInvokableNative;
+use radix_engine_interface::api::api::{SysInvokableNative, SysInvokableNative2};
 use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -177,15 +176,15 @@ pub enum PackageFunctionInvocation {
 }
 
 impl NativeFnInvocation {
-    pub fn invoke<Y: SysInvokableNative<E> + SysInvokableNativeMethod<E>, E>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<IndexedScryptoValue, E> {
+    pub fn invoke<Y, E>(self, system_api: &mut Y) -> Result<IndexedScryptoValue, E>
+    where
+        Y: SysInvokableNative<E> + SysInvokableNative2<E>,
+    {
         match self {
             NativeFnInvocation::Function(native_function) => match native_function {
                 NativeFunctionInvocation::EpochManager(invocation) => match invocation {
                     EpochManagerFunctionInvocation::Create(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeFunctionInvocation::ResourceManager(invocation) => match invocation {
@@ -301,13 +300,13 @@ impl NativeFnInvocation {
                 NativeMethodInvocation::AccessRules(access_rules_method) => {
                     match access_rules_method {
                         AccessRulesMethodInvocation::AddAccessCheck(invocation) => system_api
-                            .sys_invoke_method(invocation)
+                            .sys_invoke2(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                     }
                 }
                 NativeMethodInvocation::Metadata(metadata_method) => match metadata_method {
                     MetadataMethodInvocation::Set(invocation) => system_api
-                        .sys_invoke_method(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::ResourceManager(resman_method) => match resman_method {

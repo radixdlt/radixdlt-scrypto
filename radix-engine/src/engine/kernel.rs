@@ -1,5 +1,5 @@
 use radix_engine_interface::api::api::{
-    EngineApi, Invocation, SysInvokableNative, SysInvokableNativeMethod,
+    EngineApi, Invocation, SysInvokableNative, SysInvokableNative2,
 };
 use radix_engine_interface::api::types::{
     AuthZoneOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle, PackageOffset,
@@ -711,7 +711,7 @@ pub trait Executor {
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>
-            + SysInvokableNativeMethod<RuntimeError>
+            + SysInvokableNative2<RuntimeError>
             + Invokable<ResourceManagerSetResourceAddressInvocation>;
 }
 
@@ -765,53 +765,6 @@ where
                 SysCallOutput::Invoke { rtn: &rtn },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(rtn)
-    }
-}
-
-impl<'g, 's, W, R, N> InvokableMethod<N> for Kernel<'g, 's, W, R>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-    N: NativeInvocationMethod,
-{
-    fn invoke_method(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::Invoke {
-                    invocation: &invocation,
-                    input_size: 0,  // TODO: Fix this
-                    value_count: 0, // TODO: Fix this
-                    depth: self.current_frame.depth,
-                },
-            )
-                .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // Change to kernel mode
-        let saved_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
-        let (actor, call_frame_update, executor) = invocation.prepare(self)?;
-
-        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
-
-        // Restore previous mode
-        self.execution_mode = saved_mode;
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::Invoke { rtn: &rtn },
-            )
-                .map_err(RuntimeError::ModuleError)?;
         }
 
         Ok(rtn)

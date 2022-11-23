@@ -1,16 +1,19 @@
 use crate::engine::{
-    AuthModule, CallFrameUpdate, Invokable, LockFlags, NativeInvocation, NativeInvocationInfo,
-    REActor, RENode, ResolvedReceiver, RuntimeError, SystemApi,
+    AuthModule, CallFrameUpdate, ExecutableInvocation, Invokable, LockFlags, MethodDeref,
+    NativeInvocation, NativeInvocationInfo, NativeProgram, REActor, RENode, ResolvedFunction,
+    ResolvedReceiver, RuntimeError, SystemApi, TypedExecutor,
 };
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
-    HardResourceOrNonFungible, MethodAuthorization,
+    HardResourceOrNonFungible, MethodAuthorization, ResourceManagerSetResourceAddressInvocation,
 };
 use crate::types::*;
+use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
 use radix_engine_interface::api::types::{
     EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction,
     NativeMethod, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
@@ -23,20 +26,16 @@ pub struct EpochManager {
     pub info: EpochManagerSubstate,
 }
 
-impl NativeInvocation for EpochManagerCreateInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Function(
-            NativeFunction::EpochManager(EpochManagerFunction::Create),
-            CallFrameUpdate::empty(),
-        )
-    }
+impl NativeProgram for EpochManagerCreateInvocation {
+    type Output = SystemAddress;
 
-    fn execute<Y>(
-        _invocation: Self,
-        system_api: &mut Y,
-    ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation>,
+        Y: SystemApi
+            + Invokable<ScryptoInvocation>
+            + EngineApi<RuntimeError>
+            + SysInvokableNative<RuntimeError>
+            + Invokable<ResourceManagerSetResourceAddressInvocation>,
     {
         let node_id =
             system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
@@ -55,6 +54,27 @@ impl NativeInvocation for EpochManagerCreateInvocation {
         };
 
         Ok((system_address, update))
+    }
+}
+
+impl ExecutableInvocation for EpochManagerCreateInvocation {
+    type Exec = TypedExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
+            EpochManagerFunction::Create,
+        )));
+        let call_frame_update = CallFrameUpdate::empty();
+        let executor = TypedExecutor(self, input);
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 

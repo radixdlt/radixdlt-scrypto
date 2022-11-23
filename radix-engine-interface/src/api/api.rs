@@ -15,8 +15,8 @@ pub trait SysNativeInvokable<I: Invocation, E> {
     fn sys_invoke(&mut self, invocation: I) -> Result<I::Output, E>;
 }
 
-pub trait SysNativeMethodInvokable<I: Invocation, E> {
-    fn sys_invoke_method(&mut self, invocation: I) -> Result<I::Output, E>;
+pub trait SysNativeInvokable2<I: Invocation, E> {
+    fn sys_invoke2(&mut self, invocation: I) -> Result<I::Output, E>;
 }
 
 pub trait EngineApi<E: Debug> {
@@ -48,9 +48,10 @@ pub trait EngineApi<E: Debug> {
     fn sys_emit_log(&mut self, level: Level, message: String) -> Result<(), E>;
 }
 
-pub trait SysInvokableNativeMethod<E>:
-    SysNativeMethodInvokable<MetadataSetInvocation, E>
-    + SysNativeMethodInvokable<AccessRulesAddAccessCheckInvocation, E>
+pub trait SysInvokableNative2<E>:
+    SysNativeInvokable2<EpochManagerCreateInvocation, E>
+    + SysNativeInvokable2<MetadataSetInvocation, E>
+    + SysNativeInvokable2<AccessRulesAddAccessCheckInvocation, E>
 {
 }
 
@@ -99,7 +100,6 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ResourceManagerUpdateNonFungibleDataInvocation, E>
     + SysNativeInvokable<ResourceManagerNonFungibleExistsInvocation, E>
     + SysNativeInvokable<ResourceManagerGetNonFungibleInvocation, E>
-    + SysNativeInvokable<EpochManagerCreateInvocation, E>
     + SysNativeInvokable<EpochManagerSetEpochInvocation, E>
     + SysNativeInvokable<EpochManagerGetCurrentEpochInvocation, E>
     + SysNativeInvokable<WorktopPutInvocation, E>
