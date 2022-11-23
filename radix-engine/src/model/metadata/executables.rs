@@ -11,7 +11,7 @@ use radix_engine_interface::model::*;
 impl NativeProgram for MetadataSetInvocation {
     type Output = ();
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {

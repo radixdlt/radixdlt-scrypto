@@ -49,7 +49,7 @@ impl ExecutableInvocation for AccessRulesAddAccessCheckInvocation {
 impl NativeProgram for AccessRulesAddAccessCheckInvocation {
     type Output = ();
 
-    fn execute<Y>(
+    fn main<Y>(
         self,
         system_api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>

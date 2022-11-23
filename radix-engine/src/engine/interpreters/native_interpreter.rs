@@ -141,10 +141,7 @@ impl<I: NativeInvocation> ExecutableInvocation for I {
 
 pub trait NativeProgram {
     type Output: Debug;
-    fn execute<Y>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
@@ -170,7 +167,7 @@ impl<N: NativeProgram> Executor for TypedExecutor<N> {
             + SysInvokableNative<RuntimeError>
             + Invokable<ResourceManagerSetResourceAddressInvocation>,
     {
-        self.0.execute(system_api)
+        self.0.main(system_api)
     }
 }
 

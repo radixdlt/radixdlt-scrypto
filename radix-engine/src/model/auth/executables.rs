@@ -1,6 +1,6 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, LockFlags, NativeInvocation, NativeInvocationInfo, RENode,
-    RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref, NativeProgram,
+    REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi, TypedExecutor,
 };
 use crate::model::{InvokeError, ProofError};
 use crate::types::*;
@@ -8,6 +8,7 @@ use radix_engine_interface::api::types::{
     AuthZoneMethod, AuthZoneOffset, GlobalAddress, NativeMethod, ProofId, ProofOffset, RENodeId,
     ResourceManagerOffset, SubstateOffset,
 };
+use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 use sbor::rust::vec::Vec;
 
@@ -23,20 +24,37 @@ pub enum AuthZoneError {
     NoMethodSpecified,
 }
 
-impl NativeInvocation for AuthZonePopInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::AuthZone(AuthZoneMethod::Pop),
-            RENodeId::AuthZoneStack(self.receiver),
-            CallFrameUpdate::empty(),
-        )
-    }
+impl ExecutableInvocation for AuthZonePopInvocation {
+    type Exec = TypedExecutor<Self>;
 
-    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn prepare<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+
+        let receiver = RENodeId::AuthZoneStack(self.receiver);
+        let resolved_receiver = ResolvedReceiver::new(receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::Pop)),
+            resolved_receiver,
+        );
+
+        let executor = TypedExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProgram for AuthZonePopInvocation {
+    type Output = Proof;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::AuthZoneStack(input.receiver);
+        let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
@@ -61,24 +79,44 @@ impl NativeInvocation for AuthZonePopInvocation {
     }
 }
 
-impl NativeInvocation for AuthZonePushInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::AuthZone(AuthZoneMethod::Push),
-            RENodeId::AuthZoneStack(self.receiver),
-            CallFrameUpdate::move_node(RENodeId::Proof(self.proof.0)),
-        )
-    }
+impl ExecutableInvocation for AuthZonePushInvocation {
+    type Exec = TypedExecutor<Self>;
 
-    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn prepare<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+
+        let receiver = RENodeId::AuthZoneStack(self.receiver);
+        let resolved_receiver = ResolvedReceiver::new(receiver);
+        let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        call_frame_update
+            .nodes_to_move
+            .push(RENodeId::Proof(self.proof.0));
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::Push)),
+            resolved_receiver,
+        );
+
+        let executor = TypedExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProgram for AuthZonePushInvocation {
+    type Output = ();
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::AuthZoneStack(input.receiver);
+        let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        let node_id = RENodeId::Proof(input.proof.0);
+        let node_id = RENodeId::Proof(self.proof.0);
         let handle = system_api.lock_substate(
             node_id,
             SubstateOffset::Proof(ProofOffset::Proof),
@@ -98,27 +136,47 @@ impl NativeInvocation for AuthZonePushInvocation {
     }
 }
 
-impl NativeInvocation for AuthZoneCreateProofInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::AuthZone(AuthZoneMethod::CreateProof),
-            RENodeId::AuthZoneStack(self.receiver),
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address,
-            ))),
-        )
-    }
+impl ExecutableInvocation for AuthZoneCreateProofInvocation {
+    type Exec = TypedExecutor<Self>;
 
-    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn prepare<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+
+        let receiver = RENodeId::AuthZoneStack(self.receiver);
+        let resolved_receiver = ResolvedReceiver::new(receiver);
+        let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::Resource(
+                self.resource_address,
+            )));
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::CreateProof)),
+            resolved_receiver,
+        );
+
+        let executor = TypedExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProgram for AuthZoneCreateProofInvocation {
+    type Output = Proof;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::AuthZoneStack(input.receiver);
+        let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let resource_type = {
-            let resource_id = RENodeId::Global(GlobalAddress::Resource(input.resource_address));
+            let resource_id = RENodeId::Global(GlobalAddress::Resource(self.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
             let resource_handle =
                 system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
@@ -131,7 +189,7 @@ impl NativeInvocation for AuthZoneCreateProofInvocation {
             let auth_zone = substate_mut.auth_zone();
             let proof = auth_zone
                 .cur_auth_zone()
-                .create_proof(input.resource_address, resource_type)
+                .create_proof(self.resource_address, resource_type)
                 .map_err(|e| match e {
                     InvokeError::Downstream(runtime_error) => runtime_error,
                     InvokeError::Error(e) => {
@@ -150,27 +208,47 @@ impl NativeInvocation for AuthZoneCreateProofInvocation {
     }
 }
 
-impl NativeInvocation for AuthZoneCreateProofByAmountInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::AuthZone(AuthZoneMethod::CreateProofByAmount),
-            RENodeId::AuthZoneStack(self.receiver),
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address,
-            ))),
-        )
-    }
+impl ExecutableInvocation for AuthZoneCreateProofByAmountInvocation {
+    type Exec = TypedExecutor<Self>;
 
-    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn prepare<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+
+        let receiver = RENodeId::AuthZoneStack(self.receiver);
+        let resolved_receiver = ResolvedReceiver::new(receiver);
+        let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::Resource(
+                self.resource_address,
+            )));
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::CreateProofByAmount)),
+            resolved_receiver,
+        );
+
+        let executor = TypedExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProgram for AuthZoneCreateProofByAmountInvocation {
+    type Output = Proof;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::AuthZoneStack(input.receiver);
+        let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let resource_type = {
-            let resource_id = RENodeId::Global(GlobalAddress::Resource(input.resource_address));
+            let resource_id = RENodeId::Global(GlobalAddress::Resource(self.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
             let resource_handle =
                 system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
@@ -183,7 +261,7 @@ impl NativeInvocation for AuthZoneCreateProofByAmountInvocation {
             let auth_zone = substate_mut.auth_zone();
             let proof = auth_zone
                 .cur_auth_zone()
-                .create_proof_by_amount(input.amount, input.resource_address, resource_type)
+                .create_proof_by_amount(self.amount, self.resource_address, resource_type)
                 .map_err(|e| match e {
                     InvokeError::Downstream(runtime_error) => runtime_error,
                     InvokeError::Error(e) => {
@@ -203,27 +281,47 @@ impl NativeInvocation for AuthZoneCreateProofByAmountInvocation {
     }
 }
 
-impl NativeInvocation for AuthZoneCreateProofByIdsInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds),
-            RENodeId::AuthZoneStack(self.receiver),
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(
-                self.resource_address,
-            ))),
-        )
-    }
+impl ExecutableInvocation for AuthZoneCreateProofByIdsInvocation {
+    type Exec = TypedExecutor<Self>;
 
-    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn prepare<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+
+        let receiver = RENodeId::AuthZoneStack(self.receiver);
+        let resolved_receiver = ResolvedReceiver::new(receiver);
+        let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::Resource(
+                self.resource_address,
+            )));
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds)),
+            resolved_receiver,
+        );
+
+        let executor = TypedExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProgram for AuthZoneCreateProofByIdsInvocation {
+    type Output = Proof;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::AuthZoneStack(input.receiver);
+        let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let resource_type = {
-            let resource_id = RENodeId::Global(GlobalAddress::Resource(input.resource_address));
+            let resource_id = RENodeId::Global(GlobalAddress::Resource(self.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
             let resource_handle =
                 system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
@@ -236,7 +334,7 @@ impl NativeInvocation for AuthZoneCreateProofByIdsInvocation {
             let auth_zone = substate_ref.auth_zone();
             let proof = auth_zone
                 .cur_auth_zone()
-                .create_proof_by_ids(&input.ids, input.resource_address, resource_type)
+                .create_proof_by_ids(&self.ids, self.resource_address, resource_type)
                 .map_err(|e| match e {
                     InvokeError::Downstream(runtime_error) => runtime_error,
                     InvokeError::Error(e) => {
@@ -256,20 +354,37 @@ impl NativeInvocation for AuthZoneCreateProofByIdsInvocation {
     }
 }
 
-impl NativeInvocation for AuthZoneClearInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::AuthZone(AuthZoneMethod::Clear),
-            RENodeId::AuthZoneStack(self.receiver),
-            CallFrameUpdate::empty(),
-        )
-    }
+impl ExecutableInvocation for AuthZoneClearInvocation {
+    type Exec = TypedExecutor<Self>;
 
-    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn prepare<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+
+        let receiver = RENodeId::AuthZoneStack(self.receiver);
+        let resolved_receiver = ResolvedReceiver::new(receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::Clear)),
+            resolved_receiver,
+        );
+
+        let executor = TypedExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProgram for AuthZoneClearInvocation {
+    type Output = ();
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::AuthZoneStack(input.receiver);
+        let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
@@ -280,23 +395,37 @@ impl NativeInvocation for AuthZoneClearInvocation {
     }
 }
 
-impl NativeInvocation for AuthZoneDrainInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::AuthZone(AuthZoneMethod::Drain),
-            RENodeId::AuthZoneStack(self.receiver),
-            CallFrameUpdate::empty(),
-        )
-    }
+impl ExecutableInvocation for AuthZoneDrainInvocation {
+    type Exec = TypedExecutor<Self>;
 
-    fn execute<Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<(Vec<Proof>, CallFrameUpdate), RuntimeError>
+    fn prepare<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+
+        let receiver = RENodeId::AuthZoneStack(self.receiver);
+        let resolved_receiver = ResolvedReceiver::new(receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::Drain)),
+            resolved_receiver,
+        );
+
+        let executor = TypedExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProgram for AuthZoneDrainInvocation {
+    type Output = Vec<Proof>;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Vec<Proof>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::AuthZoneStack(input.receiver);
+        let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 

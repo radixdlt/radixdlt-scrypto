@@ -52,18 +52,18 @@ pub trait SysInvokableNative2<E>:
     SysNativeInvokable2<EpochManagerCreateInvocation, E>
     + SysNativeInvokable2<MetadataSetInvocation, E>
     + SysNativeInvokable2<AccessRulesAddAccessCheckInvocation, E>
+    + SysNativeInvokable2<AuthZonePopInvocation, E>
+    + SysNativeInvokable2<AuthZonePushInvocation, E>
+    + SysNativeInvokable2<AuthZoneCreateProofInvocation, E>
+    + SysNativeInvokable2<AuthZoneCreateProofByAmountInvocation, E>
+    + SysNativeInvokable2<AuthZoneCreateProofByIdsInvocation, E>
+    + SysNativeInvokable2<AuthZoneClearInvocation, E>
+    + SysNativeInvokable2<AuthZoneDrainInvocation, E>
 {
 }
 
 pub trait SysInvokableNative<E>:
-    SysNativeInvokable<AuthZonePopInvocation, E>
-    + SysNativeInvokable<AuthZonePushInvocation, E>
-    + SysNativeInvokable<AuthZoneCreateProofInvocation, E>
-    + SysNativeInvokable<AuthZoneCreateProofByAmountInvocation, E>
-    + SysNativeInvokable<AuthZoneCreateProofByIdsInvocation, E>
-    + SysNativeInvokable<AuthZoneClearInvocation, E>
-    + SysNativeInvokable<AuthZoneDrainInvocation, E>
-    + SysNativeInvokable<BucketTakeInvocation, E>
+    SysNativeInvokable<BucketTakeInvocation, E>
     + SysNativeInvokable<BucketPutInvocation, E>
     + SysNativeInvokable<BucketTakeNonFungiblesInvocation, E>
     + SysNativeInvokable<BucketGetNonFungibleIdsInvocation, E>

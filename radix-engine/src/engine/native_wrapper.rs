@@ -121,21 +121,21 @@ where
                     let invocation: AuthZonePopInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 AuthZoneMethod::Push => {
                     let invocation: AuthZonePushInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 AuthZoneMethod::CreateProof => {
                     let invocation: AuthZoneCreateProofInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 AuthZoneMethod::CreateProofByAmount => {
@@ -144,28 +144,28 @@ where
                         RuntimeError::KernelError(KernelError::InvalidSborValue(e))
                     })?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 AuthZoneMethod::CreateProofByIds => {
                     let invocation: AuthZoneCreateProofByIdsInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 AuthZoneMethod::Clear => {
                     let invocation: AuthZoneClearInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 AuthZoneMethod::Drain => {
                     let invocation: AuthZoneDrainInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
             },

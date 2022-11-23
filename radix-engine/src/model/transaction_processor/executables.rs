@@ -140,7 +140,9 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<IndexedScryptoValue, InvokeError<TransactionProcessorError>>
     where
-        Y: EngineApi<RuntimeError> + SysInvokableNative<RuntimeError>,
+        Y: EngineApi<RuntimeError>
+            + SysInvokableNative<RuntimeError>
+            + SysInvokableNative2<RuntimeError>,
     {
         let mut value = args.dom;
         for (expression, path) in args.expressions {

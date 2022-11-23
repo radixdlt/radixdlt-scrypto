@@ -230,25 +230,25 @@ impl NativeFnInvocation {
                 },
                 NativeMethodInvocation::AuthZone(auth_zone_method) => match auth_zone_method {
                     AuthZoneMethodInvocation::Pop(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     AuthZoneMethodInvocation::Push(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     AuthZoneMethodInvocation::CreateProof(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     AuthZoneMethodInvocation::CreateProofByAmount(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     AuthZoneMethodInvocation::CreateProofByIds(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     AuthZoneMethodInvocation::Clear(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     AuthZoneMethodInvocation::Drain(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::Proof(proof_method) => match proof_method {

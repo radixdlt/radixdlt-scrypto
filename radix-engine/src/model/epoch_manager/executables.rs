@@ -29,7 +29,7 @@ pub struct EpochManager {
 impl NativeProgram for EpochManagerCreateInvocation {
     type Output = SystemAddress;
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
