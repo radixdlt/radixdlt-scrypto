@@ -23,7 +23,7 @@ pub trait SysBucket {
         env: &mut Y,
     ) -> Result<(), E>
     where
-        Y: SysNativeInvokable<ResourceManagerBurnInvocation, E>
+        Y: SysNativeInvokable2<ResourceManagerBurnInvocation, E>
             + SysNativeInvokable2<BucketGetResourceAddressInvocation, E>;
 
     fn sys_resource_address<Y, E>(&self, env: &mut Y) -> Result<ResourceAddress, E>
@@ -55,11 +55,11 @@ impl SysBucket for Bucket {
         env: &mut Y,
     ) -> Result<(), E>
     where
-        Y: SysNativeInvokable<ResourceManagerBurnInvocation, E>
+        Y: SysNativeInvokable2<ResourceManagerBurnInvocation, E>
             + SysNativeInvokable2<BucketGetResourceAddressInvocation, E>,
     {
         let receiver = self.sys_resource_address(env)?;
-        env.sys_invoke(ResourceManagerBurnInvocation {
+        env.sys_invoke2(ResourceManagerBurnInvocation {
             receiver,
             bucket: Bucket(self.0),
         })

@@ -147,6 +147,7 @@ pub trait NativeProgram {
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>
+            + SysInvokableNative2<RuntimeError>
             + Invokable<ResourceManagerSetResourceAddressInvocation>;
 }
 
@@ -165,6 +166,7 @@ impl<N: NativeProgram> Executor for TypedExecutor<N> {
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>
+            + SysInvokableNative2<RuntimeError>
             + Invokable<ResourceManagerSetResourceAddressInvocation>,
     {
         self.0.main(system_api)

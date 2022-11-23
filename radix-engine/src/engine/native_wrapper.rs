@@ -32,14 +32,14 @@ where
                 let invocation: ResourceManagerBucketBurnInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                 system_api
-                    .sys_invoke(invocation)
+                    .sys_invoke2(invocation)
                     .map(|a| IndexedScryptoValue::from_typed(&a))
             }
             NativeFunction::ResourceManager(ResourceManagerFunction::Create) => {
                 let invocation: ResourceManagerCreateInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                 system_api
-                    .sys_invoke(invocation)
+                    .sys_invoke2(invocation)
                     .map(|a| IndexedScryptoValue::from_typed(&a))
             }
             NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run) => {
@@ -294,28 +294,28 @@ where
                     let invocation: ResourceManagerBurnInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::UpdateAuth => {
                     let invocation: ResourceManagerUpdateAuthInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::LockAuth => {
                     let invocation: ResourceManagerLockAuthInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::CreateVault => {
                     let invocation: ResourceManagerCreateVaultInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::CreateBucket => {
@@ -324,21 +324,21 @@ where
                         RuntimeError::KernelError(KernelError::InvalidSborValue(e))
                     })?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::Mint => {
                     let invocation: ResourceManagerMintInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::GetMetadata => {
                     let invocation: ResourceManagerGetMetadataInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::GetResourceType => {
@@ -347,21 +347,21 @@ where
                             RuntimeError::KernelError(KernelError::InvalidSborValue(e))
                         })?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::GetTotalSupply => {
                     let invocation: ResourceManagerGetTotalSupplyInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::UpdateMetadata => {
                     let invocation: ResourceManagerUpdateMetadataInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::UpdateNonFungibleData => {
@@ -370,7 +370,7 @@ where
                             RuntimeError::KernelError(KernelError::InvalidSborValue(e))
                         })?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::NonFungibleExists => {
@@ -379,14 +379,14 @@ where
                             RuntimeError::KernelError(KernelError::InvalidSborValue(e))
                         })?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::GetNonFungible => {
                     let invocation: ResourceManagerGetNonFungibleInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::SetResourceAddress => Err(RuntimeError::InterpreterError(

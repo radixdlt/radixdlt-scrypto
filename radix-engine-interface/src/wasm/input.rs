@@ -189,10 +189,10 @@ impl NativeFnInvocation {
                 },
                 NativeFunctionInvocation::ResourceManager(invocation) => match invocation {
                     ResourceManagerFunctionInvocation::Create(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerFunctionInvocation::BurnBucket(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeFunctionInvocation::Package(invocation) => match invocation {
@@ -311,45 +311,45 @@ impl NativeFnInvocation {
                 },
                 NativeMethodInvocation::ResourceManager(resman_method) => match resman_method {
                     ResourceManagerMethodInvocation::Burn(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::UpdateAuth(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::LockAuth(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::CreateVault(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::CreateBucket(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::Mint(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::GetMetadata(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::GetResourceType(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::GetTotalSupply(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::UpdateMetadata(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::UpdateNonFungibleData(invocation) => {
                         system_api
-                            .sys_invoke(invocation)
+                            .sys_invoke2(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a))
                     }
                     ResourceManagerMethodInvocation::NonFungibleExists(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::GetNonFungible(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::EpochManager(epoch_manager_method) => {
