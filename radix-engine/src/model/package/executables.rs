@@ -88,8 +88,8 @@ impl NativeInvocation for PackagePublishWithOwnerInvocation {
         invocation: Self,
         system_api: &mut Y,
     ) -> Result<((PackageAddress, Bucket), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi + Invokable<ScryptoInvocation> + SysInvokableNative<RuntimeError>,
+    where
+        Y: SystemApi + Invokable<ScryptoInvocation> + SysInvokableNative<RuntimeError>,
     {
         let code = system_api.read_blob(&invocation.code.0)?.to_vec();
         let blob = system_api.read_blob(&invocation.abi.0)?;
@@ -123,15 +123,15 @@ impl NativeInvocation for PackagePublishWithOwnerInvocation {
 
         let mint_invocation = ResourceManagerMintInvocation {
             receiver: ENTITY_OWNER_TOKEN,
-            mint_params: MintParams::NonFungible {
-                entries
-            },
+            mint_params: MintParams::NonFungible { entries },
         };
 
         let bucket = system_api.sys_invoke(mint_invocation)?;
         let bucket_node_id = RENodeId::Bucket(bucket.0);
 
-
-        Ok(((package_address, bucket), CallFrameUpdate::move_node(bucket_node_id)))
+        Ok((
+            (package_address, bucket),
+            CallFrameUpdate::move_node(bucket_node_id),
+        ))
     }
 }

@@ -1,5 +1,9 @@
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::{BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, PackageFunction, ProofId, RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver};
+use radix_engine_interface::api::types::{
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, PackageFunction, ProofId,
+    RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent,
+    ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
+};
 use radix_engine_interface::args;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::{hash, Blob, Hash};
@@ -538,7 +542,8 @@ impl ManifestBuilder {
                 abi: Blob(abi_hash),
                 metadata: HashMap::new(),
             }),
-        }).0
+        })
+        .0
     }
 
     /// Builds a transaction manifest.

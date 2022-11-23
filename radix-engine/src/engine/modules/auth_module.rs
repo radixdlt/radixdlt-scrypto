@@ -85,34 +85,47 @@ impl AuthModule {
             REActor::Method(method, resolved_receiver) => {
                 match (method, resolved_receiver) {
                     (ResolvedMethod::Native(NativeMethod::Metadata(MetadataMethod::Set)), ..) => {
-                        if let Some((RENodeId::Global(GlobalAddress::Package(package_address)), ..)) = resolved_receiver.derefed_from {
-                            let non_fungible_id = NonFungibleId::from_bytes(scrypto_encode(&package_address));
-                            let non_fungible_address = NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id);
-                            vec![
-                                MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::Require(
-                                    HardResourceOrNonFungible::NonFungible(non_fungible_address))
-                                ))
-                            ]
+                        if let Some((
+                            RENodeId::Global(GlobalAddress::Package(package_address)),
+                            ..,
+                        )) = resolved_receiver.derefed_from
+                        {
+                            let non_fungible_id =
+                                NonFungibleId::from_bytes(scrypto_encode(&package_address));
+                            let non_fungible_address =
+                                NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id);
+                            vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                                HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                                    non_fungible_address,
+                                )),
+                            ))]
                         } else {
                             vec![MethodAuthorization::DenyAll]
                         }
-                    },
+                    }
                     (
                         ResolvedMethod::Native(NativeMethod::ResourceManager(ref method)),
                         ResolvedReceiver {
                             receiver: RENodeId::ResourceManager(resource_id),
                             derefed_from,
-
                         },
                     ) => {
                         match (method, derefed_from) {
-                            (ResourceManagerMethod::Mint, Some((RENodeId::Global(GlobalAddress::Resource(resource_address)), ..))) if resource_address.eq(&ENTITY_OWNER_TOKEN) => {
+                            (
+                                ResourceManagerMethod::Mint,
+                                Some((
+                                    RENodeId::Global(GlobalAddress::Resource(resource_address)),
+                                    ..,
+                                )),
+                            ) if resource_address.eq(&ENTITY_OWNER_TOKEN) => {
                                 let actor = system_api.get_actor();
                                 match actor {
                                     // TODO: Use associated function badge instead
-                                    REActor::Function(ResolvedFunction::Native(NativeFunction::Package(PackageFunction::PublishWithOwner))) => {
+                                    REActor::Function(ResolvedFunction::Native(
+                                        NativeFunction::Package(PackageFunction::PublishWithOwner),
+                                    )) => {
                                         vec![MethodAuthorization::AllowAll]
-                                    },
+                                    }
                                     _ => {
                                         vec![MethodAuthorization::DenyAll]
                                     }
@@ -120,10 +133,14 @@ impl AuthModule {
                             }
                             _ => {
                                 let node_id = RENodeId::ResourceManager(resource_id);
-                                let offset =
-                                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                                let handle =
-                                    system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+                                let offset = SubstateOffset::ResourceManager(
+                                    ResourceManagerOffset::ResourceManager,
+                                );
+                                let handle = system_api.lock_substate(
+                                    node_id,
+                                    offset,
+                                    LockFlags::read_only(),
+                                )?;
                                 let substate_ref = system_api.get_ref(handle)?;
                                 let resource_manager = substate_ref.resource_manager();
                                 let method_auth =

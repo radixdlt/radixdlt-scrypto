@@ -124,7 +124,9 @@ where
             .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
         kernel
             .current_frame
-            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(ENTITY_OWNER_TOKEN)));
+            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(
+                ENTITY_OWNER_TOKEN,
+            )));
         kernel
             .current_frame
             .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)));
@@ -1132,9 +1134,7 @@ where
                     return maybe_lock_handle;
                 }
             }
-            Err(err) => {
-                return Err(err)
-            },
+            Err(err) => return Err(err),
         };
 
         if let Some(lock_handle) = derefed_lock {

@@ -32,7 +32,6 @@ pub use sbor::{Decode, DecodeError, Encode, SborPath, SborPathBuf, SborTypeId, S
 pub use scrypto::abi::{BlueprintAbi, Fields, Fn, Type, Variant};
 
 use radix_engine_interface::api::api::Invocation;
-use std::fmt::Debug;
 
 /// Scrypto function/method invocation.
 #[derive(Debug)]

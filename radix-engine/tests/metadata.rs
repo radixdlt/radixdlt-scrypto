@@ -35,7 +35,12 @@ fn cannot_set_package_metadata_with_no_owner() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
+        )
+    });
     let metadata = test_runner.get_metadata(GlobalAddress::Package(package_address));
     assert!(metadata.get("name").is_none());
 }
@@ -74,7 +79,10 @@ fn can_set_package_metadata_with_owner() {
             }),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![NonFungibleAddress::from_public_key(&public_key)]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_commit_success();
