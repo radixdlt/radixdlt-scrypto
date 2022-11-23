@@ -3,7 +3,6 @@ use crate::engine::{
     Invokable, LockFlags, MethodDeref, NativeExecutor, NativeProgram, REActor, ResolvedMethod,
     RuntimeError, SystemApi,
 };
-use crate::model::ResourceManagerSetResourceAddressInvocation;
 use crate::types::*;
 use radix_engine_interface::api::api::{EngineApi, Invocation};
 use radix_engine_interface::api::types::{
@@ -54,10 +53,7 @@ impl NativeProgram for AccessRulesAddAccessCheckInvocation {
         system_api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation>
-            + EngineApi<RuntimeError>
-            + Invokable<ResourceManagerSetResourceAddressInvocation>,
+        Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
     {
         // Abi checks
         {

@@ -9,7 +9,7 @@ use crate::model::{
 };
 use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
-use radix_engine_interface::api::api::{Invocation, SysInvokableNative};
+use radix_engine_interface::api::api::{Invocation, SysInvokableNative, SysNativeInvokable};
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFunction, NativeMethod, NonFungibleStoreId, NonFungibleStoreOffset,
     RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset,
@@ -100,7 +100,7 @@ impl NativeProgram for ResourceManagerCreateInvocation {
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
-            + Invokable<ResourceManagerSetResourceAddressInvocation>,
+            + SysNativeInvokable<ResourceManagerSetResourceAddressInvocation, RuntimeError>,
     {
         let node_id = if matches!(self.resource_type, ResourceType::NonFungible) {
             let nf_store_node_id =
@@ -197,7 +197,7 @@ impl NativeProgram for ResourceManagerCreateInvocation {
         let resource_address: ResourceAddress = global_node_id.into();
 
         // FIXME this is temporary workaround for the resource address resolution problem
-        system_api.invoke(ResourceManagerSetResourceAddressInvocation {
+        system_api.sys_invoke(ResourceManagerSetResourceAddressInvocation {
             receiver: resource_address,
         })?;
 

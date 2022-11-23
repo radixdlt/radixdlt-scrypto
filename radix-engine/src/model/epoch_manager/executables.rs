@@ -5,7 +5,7 @@ use crate::engine::{
 };
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
-    HardResourceOrNonFungible, MethodAuthorization, ResourceManagerSetResourceAddressInvocation,
+    HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
 use radix_engine_interface::api::api::EngineApi;
@@ -52,10 +52,7 @@ impl NativeProgram for EpochManagerCreateInvocation {
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation>
-            + EngineApi<RuntimeError>
-            + Invokable<ResourceManagerSetResourceAddressInvocation>,
+        Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
     {
         let node_id =
             system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
