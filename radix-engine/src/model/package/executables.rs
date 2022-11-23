@@ -129,8 +129,9 @@ impl NativeInvocation for PackagePublishWithOwnerInvocation {
         };
 
         let bucket = system_api.sys_invoke(mint_invocation)?;
+        let bucket_node_id = RENodeId::Bucket(bucket.0);
 
 
-        Ok(((package_address, bucket), CallFrameUpdate::empty()))
+        Ok(((package_address, bucket), CallFrameUpdate::move_node(bucket_node_id)))
     }
 }

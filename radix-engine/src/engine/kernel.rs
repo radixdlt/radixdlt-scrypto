@@ -451,6 +451,9 @@ where
             self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
                 AuthModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
             })?;
+            self.execute_in_mode(ExecutionMode::EntityModule, |system_api| {
+                EntityModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
+            })?;
             self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
                 NodeMoveModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
             })?;
