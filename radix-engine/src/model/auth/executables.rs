@@ -28,7 +28,7 @@ pub enum AuthZoneError {
 impl ExecutableInvocation for AuthZonePopInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -83,7 +83,7 @@ impl NativeProgram for AuthZonePopInvocation {
 impl ExecutableInvocation for AuthZonePushInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -140,7 +140,7 @@ impl NativeProgram for AuthZonePushInvocation {
 impl ExecutableInvocation for AuthZoneCreateProofInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -212,7 +212,7 @@ impl NativeProgram for AuthZoneCreateProofInvocation {
 impl ExecutableInvocation for AuthZoneCreateProofByAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -285,7 +285,7 @@ impl NativeProgram for AuthZoneCreateProofByAmountInvocation {
 impl ExecutableInvocation for AuthZoneCreateProofByIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -358,7 +358,7 @@ impl NativeProgram for AuthZoneCreateProofByIdsInvocation {
 impl ExecutableInvocation for AuthZoneClearInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -399,7 +399,7 @@ impl NativeProgram for AuthZoneClearInvocation {
 impl ExecutableInvocation for AuthZoneDrainInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

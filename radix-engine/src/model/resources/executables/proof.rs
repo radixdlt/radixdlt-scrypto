@@ -31,7 +31,7 @@ pub enum ProofError {
 impl ExecutableInvocation for ProofGetAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -67,7 +67,7 @@ impl NativeProgram for ProofGetAmountInvocation {
 impl ExecutableInvocation for ProofGetNonFungibleIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -112,7 +112,7 @@ impl NativeProgram for ProofGetNonFungibleIdsInvocation {
 impl ExecutableInvocation for ProofGetResourceAddressInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -153,7 +153,7 @@ impl NativeProgram for ProofGetResourceAddressInvocation {
 impl ExecutableInvocation for ProofCloneInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

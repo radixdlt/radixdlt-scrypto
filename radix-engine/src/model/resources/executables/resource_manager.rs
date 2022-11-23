@@ -45,7 +45,7 @@ pub enum ResourceManagerError {
 impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -76,7 +76,7 @@ impl NativeProgram for ResourceManagerBucketBurnInvocation {
 impl ExecutableInvocation for ResourceManagerCreateInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -245,7 +245,7 @@ pub struct ResourceManagerBurnExecutable(RENodeId, Bucket);
 impl ExecutableInvocation for ResourceManagerBurnInvocation {
     type Exec = NativeExecutor<ResourceManagerBurnExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -334,7 +334,7 @@ pub struct ResourceManagerUpdateAuthExecutable(RENodeId, ResourceMethodAuthKey, 
 impl ExecutableInvocation for ResourceManagerUpdateAuthInvocation {
     type Exec = NativeExecutor<ResourceManagerUpdateAuthExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -395,7 +395,7 @@ impl NativeProgram for ResourceManagerUpdateAuthExecutable {
 impl ExecutableInvocation for ResourceManagerLockAuthInvocation {
     type Exec = NativeExecutor<ResourceManagerLockAuthExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -454,7 +454,7 @@ impl NativeProgram for ResourceManagerLockAuthExecutable {
 impl ExecutableInvocation for ResourceManagerCreateVaultInvocation {
     type Exec = NativeExecutor<ResourceManagerCreateVaultExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -511,7 +511,7 @@ impl NativeProgram for ResourceManagerCreateVaultExecutable {
 impl ExecutableInvocation for ResourceManagerCreateBucketInvocation {
     type Exec = NativeExecutor<ResourceManagerCreateBucketExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -568,7 +568,7 @@ impl NativeProgram for ResourceManagerCreateBucketExecutable {
 impl ExecutableInvocation for ResourceManagerMintInvocation {
     type Exec = NativeExecutor<ResourceManagerMintExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -667,7 +667,7 @@ impl NativeProgram for ResourceManagerMintExecutable {
 impl ExecutableInvocation for ResourceManagerGetMetadataInvocation {
     type Exec = NativeExecutor<ResourceManagerGetMetadataExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -717,7 +717,7 @@ impl NativeProgram for ResourceManagerGetMetadataExecutable {
 impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
     type Exec = NativeExecutor<ResourceManagerGetResourceTypeExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -767,7 +767,7 @@ impl NativeProgram for ResourceManagerGetResourceTypeExecutable {
 impl ExecutableInvocation for ResourceManagerGetTotalSupplyInvocation {
     type Exec = NativeExecutor<ResourceManagerGetTotalSupplyExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -813,7 +813,7 @@ impl NativeProgram for ResourceManagerGetTotalSupplyExecutable {
 impl ExecutableInvocation for ResourceManagerUpdateMetadataInvocation {
     type Exec = NativeExecutor<ResourceManagerUpdateMetadataExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -868,7 +868,7 @@ impl NativeProgram for ResourceManagerUpdateMetadataExecutable {
 impl ExecutableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
     type Exec = NativeExecutor<ResourceManagerUpdateNonFungibleDataExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -949,7 +949,7 @@ impl NativeProgram for ResourceManagerUpdateNonFungibleDataExecutable {
 impl ExecutableInvocation for ResourceManagerNonFungibleExistsInvocation {
     type Exec = NativeExecutor<ResourceManagerNonFungibleExistsExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1012,7 +1012,7 @@ impl NativeProgram for ResourceManagerNonFungibleExistsExecutable {
 impl ExecutableInvocation for ResourceManagerGetNonFungibleInvocation {
     type Exec = NativeExecutor<ResourceManagerGetNonFungibleExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1098,7 +1098,7 @@ impl Invocation for ResourceManagerSetResourceAddressInvocation {
 impl ExecutableInvocation for ResourceManagerSetResourceAddressInvocation {
     type Exec = NativeExecutor<ResourceManagerSetResourceAddressExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

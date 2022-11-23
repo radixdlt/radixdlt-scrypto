@@ -29,7 +29,7 @@ pub struct EpochManager {
 impl ExecutableInvocation for EpochManagerCreateInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -79,7 +79,7 @@ pub struct EpochManagerGetCurrentEpochExecutable(RENodeId);
 impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
     type Exec = NativeExecutor<EpochManagerGetCurrentEpochExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -126,7 +126,7 @@ pub struct EpochManagerSetEpochExecutable(RENodeId, u64);
 impl ExecutableInvocation for EpochManagerSetEpochInvocation {
     type Exec = NativeExecutor<EpochManagerSetEpochExecutable>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>

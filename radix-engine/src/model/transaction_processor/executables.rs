@@ -54,7 +54,7 @@ impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
 impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

@@ -11,7 +11,7 @@ use radix_engine_interface::model::*;
 impl ExecutableInvocation for MetadataSetInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

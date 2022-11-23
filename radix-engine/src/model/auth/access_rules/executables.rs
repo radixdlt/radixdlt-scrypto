@@ -19,7 +19,7 @@ pub enum AccessRulesError {
 impl ExecutableInvocation for AccessRulesAddAccessCheckInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

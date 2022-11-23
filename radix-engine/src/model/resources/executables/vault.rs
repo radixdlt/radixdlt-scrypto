@@ -31,7 +31,7 @@ pub enum VaultError {
 impl ExecutableInvocation for VaultTakeInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -83,7 +83,7 @@ impl NativeProgram for VaultTakeInvocation {
 impl ExecutableInvocation for VaultPutInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -132,7 +132,7 @@ impl NativeProgram for VaultPutInvocation {
 impl ExecutableInvocation for VaultLockFeeInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -202,7 +202,7 @@ impl NativeProgram for VaultLockFeeInvocation {
 impl ExecutableInvocation for VaultTakeNonFungiblesInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -256,7 +256,7 @@ impl NativeProgram for VaultTakeNonFungiblesInvocation {
 impl ExecutableInvocation for VaultGetAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -294,7 +294,7 @@ impl NativeProgram for VaultGetAmountInvocation {
 impl ExecutableInvocation for VaultGetResourceAddressInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -338,7 +338,7 @@ impl NativeProgram for VaultGetResourceAddressInvocation {
 impl ExecutableInvocation for VaultGetNonFungibleIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -383,7 +383,7 @@ impl NativeProgram for VaultGetNonFungibleIdsInvocation {
 impl ExecutableInvocation for VaultCreateProofInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -433,7 +433,7 @@ impl NativeProgram for VaultCreateProofInvocation {
 impl ExecutableInvocation for VaultCreateProofByAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -484,7 +484,7 @@ impl NativeProgram for VaultCreateProofByAmountInvocation {
 impl ExecutableInvocation for VaultCreateProofByIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

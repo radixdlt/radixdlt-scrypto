@@ -36,7 +36,7 @@ impl Package {
 impl ExecutableInvocation for PackagePublishNoOwnerInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -89,7 +89,7 @@ impl NativeProgram for PackagePublishNoOwnerInvocation {
 impl ExecutableInvocation for PackagePublishWithOwnerInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

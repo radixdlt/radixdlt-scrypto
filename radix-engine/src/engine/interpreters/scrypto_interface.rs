@@ -1,56 +1,23 @@
 use crate::engine::{
-    ExecutableInvocation, Invokable, Kernel, KernelError, LockFlags, REActor, RENode,
-    ResolvedFunction, ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi,
+    Invokable, Kernel, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
+    ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
 use crate::model::{
     AccessRulesSubstate, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate,
-    KeyValueStore, ResourceManagerSetResourceAddressInvocation, RuntimeSubstate,
+    KeyValueStore, RuntimeSubstate,
 };
 use crate::types::ScryptoInvocation;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative, SysNativeInvokable};
+use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
     Level, LockHandle, RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
-use radix_engine_interface::wasm::*;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-
-impl<'g, 's, W, R> SysNativeInvokable<ResourceManagerSetResourceAddressInvocation, RuntimeError>
-    for Kernel<'g, 's, W, R>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-{
-    fn sys_invoke(
-        &mut self,
-        invocation: ResourceManagerSetResourceAddressInvocation,
-    ) -> Result<(), RuntimeError> {
-        self.invoke(invocation)
-    }
-}
-
-impl<'g, 's, W, R, N, T> SysNativeInvokable<N, RuntimeError> for Kernel<'g, 's, W, R>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-    N: ScryptoNativeInvocation<ScryptoOutput = T> + ExecutableInvocation<Output = T>,
-{
-    fn sys_invoke(&mut self, invocation: N) -> Result<T, RuntimeError> {
-        self.invoke(invocation)
-    }
-}
-
-impl<'g, 's, W, R> SysInvokableNative<RuntimeError> for Kernel<'g, 's, W, R>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-{
-}
 
 impl<'g, 's, W, R> EngineApi<RuntimeError> for Kernel<'g, 's, W, R>
 where

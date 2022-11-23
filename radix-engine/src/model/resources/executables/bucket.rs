@@ -27,7 +27,7 @@ pub enum BucketError {
 impl ExecutableInvocation for BucketTakeInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -74,7 +74,7 @@ impl NativeProgram for BucketTakeInvocation {
 impl ExecutableInvocation for BucketCreateProofInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -120,7 +120,7 @@ impl NativeProgram for BucketCreateProofInvocation {
 impl ExecutableInvocation for BucketTakeNonFungiblesInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -167,7 +167,7 @@ impl NativeProgram for BucketTakeNonFungiblesInvocation {
 impl ExecutableInvocation for BucketGetNonFungibleIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -211,7 +211,7 @@ impl NativeProgram for BucketGetNonFungibleIdsInvocation {
 impl ExecutableInvocation for BucketGetAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -247,7 +247,7 @@ impl NativeProgram for BucketGetAmountInvocation {
 impl ExecutableInvocation for BucketPutInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -295,7 +295,7 @@ impl NativeProgram for BucketPutInvocation {
 impl ExecutableInvocation for BucketGetResourceAddressInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

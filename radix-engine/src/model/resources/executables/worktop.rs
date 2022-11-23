@@ -28,7 +28,7 @@ pub enum WorktopError {
 impl ExecutableInvocation for WorktopPutInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -76,7 +76,7 @@ impl NativeProgram for WorktopPutInvocation {
 impl ExecutableInvocation for WorktopTakeAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -149,7 +149,7 @@ impl NativeProgram for WorktopTakeAmountInvocation {
 impl ExecutableInvocation for WorktopTakeAllInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -222,7 +222,7 @@ impl NativeProgram for WorktopTakeAllInvocation {
 impl ExecutableInvocation for WorktopTakeNonFungiblesInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -297,7 +297,7 @@ impl NativeProgram for WorktopTakeNonFungiblesInvocation {
 impl ExecutableInvocation for WorktopAssertContainsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -344,7 +344,7 @@ impl NativeProgram for WorktopAssertContainsInvocation {
 impl ExecutableInvocation for WorktopAssertContainsAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -391,7 +391,7 @@ impl NativeProgram for WorktopAssertContainsAmountInvocation {
 impl ExecutableInvocation for WorktopAssertContainsNonFungiblesInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -448,7 +448,7 @@ impl NativeProgram for WorktopAssertContainsNonFungiblesInvocation {
 impl ExecutableInvocation for WorktopDrainInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn prepare<D: MethodDeref>(
+    fn resolve<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
