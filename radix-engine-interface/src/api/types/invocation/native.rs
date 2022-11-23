@@ -18,7 +18,7 @@ pub struct NativeMethodIdent {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum NativeFn {
     Method(NativeMethod),
     Function(NativeFunction),
@@ -26,7 +26,7 @@ pub enum NativeFn {
 
 // Native function enum used by Kernel SystemAPI and WASM
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum NativeMethod {
     AccessRules(AccessRulesMethod),
     Metadata(MetadataMethod),
@@ -41,7 +41,7 @@ pub enum NativeMethod {
 
 // Native method enum used by Kernel SystemAPI and WASM
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum NativeFunction {
     EpochManager(EpochManagerFunction),
     ResourceManager(ResourceManagerFunction),

@@ -82,13 +82,15 @@ impl NativeProgram for AccessRulesAddAccessCheckInvocation {
                     blueprint_name, package_id
                 )
             });
-            for (func_name, _) in self.access_rules.iter() {
-                if !blueprint_abi.contains_fn(func_name.as_str()) {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::AccessRulesError(
-                            AccessRulesError::BlueprintFunctionNotFound(func_name.to_string()),
-                        ),
-                    ));
+            for (key, _) in self.access_rules.iter() {
+                if let AccessRuleKey::ScryptoMethod(func_name) = key {
+                    if !blueprint_abi.contains_fn(func_name.as_str()) {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::AccessRulesError(
+                                AccessRulesError::BlueprintFunctionNotFound(func_name.to_string()),
+                            ),
+                        ));
+                    }
                 }
             }
         }

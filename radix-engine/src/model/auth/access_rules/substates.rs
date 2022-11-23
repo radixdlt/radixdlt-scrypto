@@ -16,14 +16,16 @@ impl AccessRulesSubstate {
         &self,
         component_state: &ComponentStateSubstate,
         schema: &Type,
-        method_name: &str,
+        method_name: String,
     ) -> Vec<MethodAuthorization> {
+        let key = AccessRuleKey::ScryptoMethod(method_name);
+
         let data = IndexedScryptoValue::from_slice(&component_state.raw)
             .expect("Failed to decode component state");
 
         let mut authorizations = Vec::new();
         for auth in &self.access_rules {
-            let method_auth = auth.get(method_name);
+            let method_auth = auth.get(&key);
             let authorization = convert(schema, &data, method_auth);
             authorizations.push(authorization);
         }

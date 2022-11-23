@@ -208,7 +208,7 @@ impl AuthModule {
                             )?;
                             let substate_ref = system_api.get_ref(handle)?;
                             let access_rules = substate_ref.access_rules();
-                            let auth = access_rules.method_authorization(&state, &schema, &ident);
+                            let auth = access_rules.method_authorization(&state, &schema, ident);
                             system_api.drop_lock(handle)?;
                             auth
                         }

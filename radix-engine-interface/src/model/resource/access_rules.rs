@@ -1,3 +1,4 @@
+use radix_engine_interface::api::types::NativeFn;
 use sbor::rust::collections::hash_map::Iter;
 use sbor::rust::collections::HashMap;
 use sbor::rust::str;
@@ -7,11 +8,18 @@ use sbor::rust::string::ToString;
 use crate::model::*;
 use crate::scrypto;
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+pub enum AccessRuleKey {
+    ScryptoMethod(String),
+    Native(NativeFn),
+}
+
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 pub struct AccessRules {
-    method_auth: HashMap<String, AccessRule>,
+    method_auth: HashMap<AccessRuleKey, AccessRule>,
     default_auth: AccessRule,
 }
 
@@ -23,19 +31,20 @@ impl AccessRules {
         }
     }
 
-    pub fn get(&self, method_name: &str) -> &AccessRule {
-        self.method_auth
-            .get(method_name)
-            .unwrap_or(&self.default_auth)
+    pub fn get(&self, key: &AccessRuleKey) -> &AccessRule {
+        self.method_auth.get(key).unwrap_or(&self.default_auth)
     }
 
     pub fn get_default(&self) -> &AccessRule {
         &self.default_auth
     }
 
+    // TODO: Move into scrypto repo
     pub fn method(mut self, method_name: &str, method_auth: AccessRule) -> Self {
-        self.method_auth
-            .insert(method_name.to_string(), method_auth);
+        self.method_auth.insert(
+            AccessRuleKey::ScryptoMethod(method_name.to_string()),
+            method_auth,
+        );
         self
     }
 
@@ -44,7 +53,7 @@ impl AccessRules {
         self
     }
 
-    pub fn iter(&self) -> Iter<'_, String, AccessRule> {
+    pub fn iter(&self) -> Iter<'_, AccessRuleKey, AccessRule> {
         let l = self.method_auth.iter();
         l
     }
