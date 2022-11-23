@@ -71,15 +71,15 @@ pub trait SysInvokableNative2<E>:
     + SysNativeInvokable2<BucketGetResourceAddressInvocation, E>
     + SysNativeInvokable2<BucketCreateProofInvocation, E>
     + SysNativeInvokable2<BucketCreateProofInvocation, E>
+    + SysNativeInvokable2<ProofCloneInvocation, E>
+    + SysNativeInvokable2<ProofGetAmountInvocation, E>
+    + SysNativeInvokable2<ProofGetNonFungibleIdsInvocation, E>
+    + SysNativeInvokable2<ProofGetResourceAddressInvocation, E>
 {
 }
 
 pub trait SysInvokableNative<E>:
-    SysNativeInvokable<ProofCloneInvocation, E>
-    + SysNativeInvokable<ProofGetAmountInvocation, E>
-    + SysNativeInvokable<ProofGetNonFungibleIdsInvocation, E>
-    + SysNativeInvokable<ProofGetResourceAddressInvocation, E>
-    + SysNativeInvokable<VaultTakeInvocation, E>
+    SysNativeInvokable<VaultTakeInvocation, E>
     + SysNativeInvokable<VaultPutInvocation, E>
     + SysNativeInvokable<VaultLockFeeInvocation, E>
     + SysNativeInvokable<VaultTakeNonFungiblesInvocation, E>

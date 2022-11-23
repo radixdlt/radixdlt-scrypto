@@ -253,16 +253,16 @@ impl NativeFnInvocation {
                 },
                 NativeMethodInvocation::Proof(proof_method) => match proof_method {
                     ProofMethodInvocation::GetAmount(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ProofMethodInvocation::GetNonFungibleIds(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ProofMethodInvocation::GetResourceAddress(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ProofMethodInvocation::Clone(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::Vault(vault_method) => match vault_method {

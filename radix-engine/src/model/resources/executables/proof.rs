@@ -1,12 +1,13 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, LockFlags, NativeInvocation, NativeInvocationInfo, RENode,
-    RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref, NativeProgram,
+    REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi, TypedExecutor,
 };
 use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeMethod, ProofMethod, ProofOffset, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,23 +27,33 @@ pub enum ProofError {
     InvalidRequestData(DecodeError),
 }
 
-impl NativeInvocation for ProofGetAmountInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Proof(ProofMethod::GetAmount),
-            RENodeId::Proof(self.receiver),
-            CallFrameUpdate::empty(),
-        )
-    }
+impl ExecutableInvocation for ProofGetAmountInvocation {
+    type Exec = TypedExecutor<Self>;
 
-    fn execute<Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+    fn prepare<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let receiver = RENodeId::Proof(self.receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::GetAmount)),
+            ResolvedReceiver::new(receiver),
+        );
+        let executor = TypedExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProgram for ProofGetAmountInvocation {
+    type Output = Decimal;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::Proof(input.receiver);
+        let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
         let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
@@ -52,23 +63,36 @@ impl NativeInvocation for ProofGetAmountInvocation {
     }
 }
 
-impl NativeInvocation for ProofGetNonFungibleIdsInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Proof(ProofMethod::GetNonFungibleIds),
-            RENodeId::Proof(self.receiver),
-            CallFrameUpdate::empty(),
-        )
-    }
+impl ExecutableInvocation for ProofGetNonFungibleIdsInvocation {
+    type Exec = TypedExecutor<Self>;
 
-    fn execute<Y>(
-        input: Self,
+    fn prepare<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let receiver = RENodeId::Proof(self.receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::GetNonFungibleIds)),
+            ResolvedReceiver::new(receiver),
+        );
+        let executor = TypedExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProgram for ProofGetNonFungibleIdsInvocation {
+    type Output = BTreeSet<NonFungibleId>;
+
+    fn main<Y>(
+        self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::Proof(input.receiver);
+        let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
         let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
@@ -84,23 +108,33 @@ impl NativeInvocation for ProofGetNonFungibleIdsInvocation {
     }
 }
 
-impl NativeInvocation for ProofGetResourceAddressInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Proof(ProofMethod::GetResourceAddress),
-            RENodeId::Proof(self.receiver),
-            CallFrameUpdate::empty(),
-        )
-    }
+impl ExecutableInvocation for ProofGetResourceAddressInvocation {
+    type Exec = TypedExecutor<Self>;
 
-    fn execute<Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
+    fn prepare<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let receiver = RENodeId::Proof(self.receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::GetResourceAddress)),
+            ResolvedReceiver::new(receiver),
+        );
+        let executor = TypedExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProgram for ProofGetResourceAddressInvocation {
+    type Output = ResourceAddress;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::Proof(input.receiver);
+        let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
         let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
@@ -115,20 +149,33 @@ impl NativeInvocation for ProofGetResourceAddressInvocation {
     }
 }
 
-impl NativeInvocation for ProofCloneInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Proof(ProofMethod::Clone),
-            RENodeId::Proof(self.receiver),
-            CallFrameUpdate::empty(),
-        )
-    }
+impl ExecutableInvocation for ProofCloneInvocation {
+    type Exec = TypedExecutor<Self>;
 
-    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn prepare<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let receiver = RENodeId::Proof(self.receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::Clone)),
+            ResolvedReceiver::new(receiver),
+        );
+        let executor = TypedExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProgram for ProofCloneInvocation {
+    type Output = Proof;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::Proof(input.receiver);
+        let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
         let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
