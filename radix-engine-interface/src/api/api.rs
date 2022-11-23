@@ -63,19 +63,19 @@ pub trait SysInvokableNative2<E>:
     + SysNativeInvokable2<AuthZoneDrainInvocation, E>
     + SysNativeInvokable2<PackagePublishNoOwnerInvocation, E>
     + SysNativeInvokable2<PackagePublishWithOwnerInvocation, E>
+    + SysNativeInvokable2<BucketTakeInvocation, E>
+    + SysNativeInvokable2<BucketPutInvocation, E>
+    + SysNativeInvokable2<BucketTakeNonFungiblesInvocation, E>
+    + SysNativeInvokable2<BucketGetNonFungibleIdsInvocation, E>
+    + SysNativeInvokable2<BucketGetAmountInvocation, E>
+    + SysNativeInvokable2<BucketGetResourceAddressInvocation, E>
+    + SysNativeInvokable2<BucketCreateProofInvocation, E>
+    + SysNativeInvokable2<BucketCreateProofInvocation, E>
 {
 }
 
 pub trait SysInvokableNative<E>:
-    SysNativeInvokable<BucketTakeInvocation, E>
-    + SysNativeInvokable<BucketPutInvocation, E>
-    + SysNativeInvokable<BucketTakeNonFungiblesInvocation, E>
-    + SysNativeInvokable<BucketGetNonFungibleIdsInvocation, E>
-    + SysNativeInvokable<BucketGetAmountInvocation, E>
-    + SysNativeInvokable<BucketGetResourceAddressInvocation, E>
-    + SysNativeInvokable<BucketCreateProofInvocation, E>
-    + SysNativeInvokable<BucketCreateProofInvocation, E>
-    + SysNativeInvokable<ProofCloneInvocation, E>
+    SysNativeInvokable<ProofCloneInvocation, E>
     + SysNativeInvokable<ProofGetAmountInvocation, E>
     + SysNativeInvokable<ProofGetNonFungibleIdsInvocation, E>
     + SysNativeInvokable<ProofGetResourceAddressInvocation, E>

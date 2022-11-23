@@ -1,5 +1,5 @@
 use crate::resource::{ComponentAuthZone, NonFungible, ScryptoProof};
-use radix_engine_interface::api::api::SysNativeInvokable;
+use radix_engine_interface::api::api::{SysNativeInvokable, SysNativeInvokable2};
 use radix_engine_interface::data::ScryptoCustomTypeId;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
@@ -24,11 +24,11 @@ pub trait SysBucket {
     ) -> Result<(), E>
     where
         Y: SysNativeInvokable<ResourceManagerBurnInvocation, E>
-            + SysNativeInvokable<BucketGetResourceAddressInvocation, E>;
+            + SysNativeInvokable2<BucketGetResourceAddressInvocation, E>;
 
     fn sys_resource_address<Y, E>(&self, env: &mut Y) -> Result<ResourceAddress, E>
     where
-        Y: SysNativeInvokable<BucketGetResourceAddressInvocation, E>,
+        Y: SysNativeInvokable2<BucketGetResourceAddressInvocation, E>,
         E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>;
 
     fn sys_create_proof<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
@@ -36,7 +36,7 @@ pub trait SysBucket {
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: SysNativeInvokable<BucketCreateProofInvocation, E>;
+        Y: SysNativeInvokable2<BucketCreateProofInvocation, E>;
 }
 
 impl SysBucket for Bucket {
@@ -56,7 +56,7 @@ impl SysBucket for Bucket {
     ) -> Result<(), E>
     where
         Y: SysNativeInvokable<ResourceManagerBurnInvocation, E>
-            + SysNativeInvokable<BucketGetResourceAddressInvocation, E>,
+            + SysNativeInvokable2<BucketGetResourceAddressInvocation, E>,
     {
         let receiver = self.sys_resource_address(env)?;
         env.sys_invoke(ResourceManagerBurnInvocation {
@@ -67,10 +67,10 @@ impl SysBucket for Bucket {
 
     fn sys_resource_address<Y, E>(&self, env: &mut Y) -> Result<ResourceAddress, E>
     where
-        Y: SysNativeInvokable<BucketGetResourceAddressInvocation, E>,
+        Y: SysNativeInvokable2<BucketGetResourceAddressInvocation, E>,
         E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
     {
-        env.sys_invoke(BucketGetResourceAddressInvocation { receiver: self.0 })
+        env.sys_invoke2(BucketGetResourceAddressInvocation { receiver: self.0 })
     }
 
     fn sys_create_proof<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
@@ -78,9 +78,9 @@ impl SysBucket for Bucket {
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: SysNativeInvokable<BucketCreateProofInvocation, E>,
+        Y: SysNativeInvokable2<BucketCreateProofInvocation, E>,
     {
-        sys_calls.sys_invoke(BucketCreateProofInvocation { receiver: self.0 })
+        sys_calls.sys_invoke2(BucketCreateProofInvocation { receiver: self.0 })
     }
 }
 

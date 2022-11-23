@@ -207,25 +207,25 @@ impl NativeFnInvocation {
             NativeFnInvocation::Method(native_method) => match native_method {
                 NativeMethodInvocation::Bucket(bucket_method) => match bucket_method {
                     BucketMethodInvocation::Take(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     BucketMethodInvocation::CreateProof(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     BucketMethodInvocation::TakeNonFungibles(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     BucketMethodInvocation::GetNonFungibleIds(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     BucketMethodInvocation::GetAmount(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     BucketMethodInvocation::Put(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     BucketMethodInvocation::GetResourceAddress(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .sys_invoke2(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::AuthZone(auth_zone_method) => match auth_zone_method {
