@@ -179,10 +179,18 @@ where
                     (info.package_address, info.blueprint_name.clone());
                 system_api.drop_lock(handle)?;
 
-                let component_address = system_api
-                    .id_allocator
-                    .new_component_address(transaction_hash, package_address, &blueprint_name)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+                let component_address = match (package_address, blueprint_name.as_str()) {
+                    (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => {
+                        system_api
+                            .id_allocator
+                            .new_account_address(transaction_hash)
+                    }
+                    _ => {
+                        system_api
+                            .id_allocator
+                            .new_component_address(transaction_hash)
+                    }
+                }.map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
                 Ok((
                     GlobalAddress::Component(component_address),
@@ -953,6 +961,75 @@ where
         }
 
         Ok(node)
+    }
+
+    fn allocate_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
+        // TODO: Add costing
+
+        match node_type {
+            RENodeType::AuthZoneStack => {
+                self.id_allocator.new_auth_zone_id()
+                    .map(|id| RENodeId::AuthZoneStack(id))
+            }
+            RENodeType::Bucket => {
+                self.id_allocator.new_bucket_id()
+                    .map(|id| RENodeId::Bucket(id))
+            }
+            RENodeType::Proof => {
+                self.id_allocator.new_proof_id()
+                    .map(|id| RENodeId::Proof(id))
+            }
+            RENodeType::Worktop => Ok(RENodeId::Worktop),
+            RENodeType::Vault => {
+                self.id_allocator.new_vault_id(self.transaction_hash)
+                    .map(|id| RENodeId::Vault(id))
+            }
+            RENodeType::KeyValueStore => {
+                self.id_allocator.new_kv_store_id(self.transaction_hash)
+                    .map(|id| RENodeId::KeyValueStore(id))
+            }
+            RENodeType::NonFungibleStore => {
+                self.id_allocator.new_nf_store_id(self.transaction_hash)
+                    .map(|id| RENodeId::NonFungibleStore(id))
+            }
+            RENodeType::Package => {
+                // Security Alert: ensure ID allocating will practically never fail
+                self.id_allocator.new_package_id(self.transaction_hash)
+                    .map(|id| RENodeId::Package(id))
+            }
+            RENodeType::ResourceManager => {
+                self.id_allocator.new_resource_manager_id(self.transaction_hash)
+                    .map(|id| RENodeId::ResourceManager(id))
+            }
+            RENodeType::Component => {
+                self.id_allocator.new_component_id(self.transaction_hash)
+                    .map(|id| RENodeId::Component(id))
+            }
+            RENodeType::EpochManager => {
+                self.id_allocator.new_component_id(self.transaction_hash)
+                    .map(|id| RENodeId::EpochManager(id))
+            }
+            RENodeType::GlobalPackage => {
+                self.id_allocator.new_package_address(self.transaction_hash)
+                    .map(|address| RENodeId::Global(GlobalAddress::Package(address)))
+            }
+            RENodeType::GlobalEpochManager => {
+                self.id_allocator.new_system_address(self.transaction_hash)
+                    .map(|address| RENodeId::Global(GlobalAddress::System(address)))
+            }
+            RENodeType::GlobalResourceManager => {
+                self.id_allocator.new_resource_address(self.transaction_hash)
+                    .map(|address| RENodeId::Global(GlobalAddress::Resource(address)))
+            }
+            RENodeType::GlobalAccount => {
+                self.id_allocator.new_account_address(self.transaction_hash)
+                    .map(|address| RENodeId::Global(GlobalAddress::Component(address)))
+            }
+            RENodeType::GlobalComponent => {
+                self.id_allocator.new_component_address(self.transaction_hash)
+                    .map(|address| RENodeId::Global(GlobalAddress::Component(address)))
+            }
+        }.map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))
     }
 
     fn create_node(&mut self, re_node: RENode) -> Result<RENodeId, RuntimeError> {

@@ -11,6 +11,29 @@ pub enum ScryptoRENode {
     KeyValueStore,
 }
 
+// TODO: Remove when better type system implemented
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum RENodeType {
+    Bucket,
+    Proof,
+    AuthZoneStack,
+    Worktop,
+    GlobalAccount,
+    GlobalComponent,
+    GlobalResourceManager,
+    GlobalPackage,
+    GlobalEpochManager,
+    KeyValueStore,
+    NonFungibleStore,
+    Component,
+    Vault,
+    ResourceManager,
+    Package,
+    EpochManager,
+}
+
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum RENodeId {

@@ -66,6 +66,8 @@ pub trait SystemApi {
     /// Removes an RENode and all of it's children from the Heap
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;
 
+    fn allocate_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError>;
+
     /// Creates a new RENode
     fn create_node(&mut self, re_node: RENode) -> Result<RENodeId, RuntimeError>;
 
