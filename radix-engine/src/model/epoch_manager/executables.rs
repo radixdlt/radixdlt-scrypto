@@ -60,7 +60,7 @@ impl NativeProgram for EpochManagerCreateInvocation {
 impl ExecutableInvocation for EpochManagerCreateInvocation {
     type Exec = TypedExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn prepare<D: MethodDeref>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>

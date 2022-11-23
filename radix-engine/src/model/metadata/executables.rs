@@ -29,7 +29,7 @@ impl NativeProgram for MetadataSetInvocation {
 impl ExecutableInvocation for MetadataSetInvocation {
     type Exec = TypedExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn prepare<D: MethodDeref>(
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

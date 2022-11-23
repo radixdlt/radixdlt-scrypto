@@ -104,7 +104,7 @@ pub trait NativeInvocation: Invocation + Encode<ScryptoCustomTypeId> + Debug {
 impl<I: NativeInvocation> ExecutableInvocation for I {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn prepare<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>

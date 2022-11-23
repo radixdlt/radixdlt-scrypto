@@ -718,7 +718,7 @@ pub trait Executor {
 pub trait ExecutableInvocation: Invocation {
     type Exec: Executor<Output = Self::Output>;
 
-    fn resolve<D: MethodDeref>(
+    fn prepare<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
@@ -750,7 +750,7 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (actor, call_frame_update, executor) = invocation.resolve(self)?;
+        let (actor, call_frame_update, executor) = invocation.prepare(self)?;
 
         let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 
