@@ -129,12 +129,12 @@ impl VisibilityProperties {
             (ExecutionMode::DropNode, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => true,
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
-                SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack) => true,
+                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
                 _ => false,
             },
             (ExecutionMode::AuthModule, offset) => match offset {
-                SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack) => true,
+                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
                 // TODO: Remove these and use AuthRulesSubstate
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
                     flags == LockFlags::read_only()

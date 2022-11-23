@@ -208,7 +208,8 @@ pub enum WorktopOffset {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum SubstateOffset {
     Global(GlobalOffset),
-    AuthZone(AuthZoneStackOffset),
+    AuthZoneStack(AuthZoneStackOffset),
+    RoyaltyReserve(RoyaltyReserveOffset),
     Component(ComponentOffset),
     AccessRules(AccessRulesOffset),
     Package(PackageOffset),
@@ -220,7 +221,6 @@ pub enum SubstateOffset {
     Bucket(BucketOffset),
     Proof(ProofOffset),
     Worktop(WorktopOffset),
-    RoyaltyReserve(RoyaltyReserveOffset),
 }
 
 /// TODO: separate space addresses?

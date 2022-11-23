@@ -345,7 +345,7 @@ where
                 RENodeId::AuthZoneStack(..) => {
                     let handle = system_api.lock_substate(
                         node_id,
-                        SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack),
+                        SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                         LockFlags::MUTABLE,
                     )?;
                     let mut substate_ref_mut = system_api.get_ref_mut(handle)?;

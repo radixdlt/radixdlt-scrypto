@@ -45,7 +45,7 @@ impl RENode {
             }
             RENode::AuthZoneStack(auth_zone) => {
                 substates.insert(
-                    SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack),
+                    SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                     RuntimeSubstate::AuthZone(auth_zone),
                 );
             }

@@ -45,7 +45,7 @@ impl AuthModule {
         ) {
             let handle = system_api.lock_substate(
                 auth_zone_id,
-                SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack),
+                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                 LockFlags::MUTABLE,
             )?;
             let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
@@ -212,7 +212,7 @@ impl AuthModule {
 
         let handle = system_api.lock_substate(
             auth_zone_id,
-            SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack),
+            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),
         )?;
         let substate_ref = system_api.get_ref(handle)?;
@@ -252,7 +252,7 @@ impl AuthModule {
             .unwrap();
         let handle = system_api.lock_substate(
             auth_zone_id,
-            SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack),
+            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
         {

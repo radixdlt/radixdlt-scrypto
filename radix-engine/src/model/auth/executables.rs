@@ -31,7 +31,7 @@ impl NativeExecutable for AuthZonePopInvocation {
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
-        let offset = SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack);
+        let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let proof = {
@@ -73,7 +73,7 @@ impl NativeExecutable for AuthZonePushInvocation {
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
-        let offset = SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack);
+        let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let node_id = RENodeId::Proof(input.proof.0);
@@ -114,7 +114,7 @@ impl NativeExecutable for AuthZoneCreateProofInvocation {
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
-        let offset = SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack);
+        let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let resource_type = {
@@ -170,7 +170,7 @@ impl NativeExecutable for AuthZoneCreateProofByAmountInvocation {
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
-        let offset = SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack);
+        let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let resource_type = {
@@ -227,7 +227,7 @@ impl NativeExecutable for AuthZoneCreateProofByIdsInvocation {
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
-        let offset = SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack);
+        let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let resource_type = {
@@ -284,7 +284,7 @@ impl NativeExecutable for AuthZoneClearInvocation {
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
-        let offset = SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack);
+        let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
         let auth_zone = substate_mut.auth_zone();
@@ -315,7 +315,7 @@ impl NativeExecutable for AuthZoneDrainInvocation {
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(input.receiver);
-        let offset = SubstateOffset::AuthZone(AuthZoneStackOffset::AuthZoneStack);
+        let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let proofs = {
