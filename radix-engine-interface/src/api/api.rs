@@ -7,7 +7,7 @@ use sbor::rust::vec::Vec;
 
 use super::types::*;
 
-pub trait Invocation {
+pub trait Invocation: Debug {
     type Output: Debug;
 }
 

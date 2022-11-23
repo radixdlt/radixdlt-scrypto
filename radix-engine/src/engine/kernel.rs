@@ -731,14 +731,13 @@ where
     N: ExecutableInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
-        /*
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    info: InvocationInfo::Native(&invocation.info()),
+                    invocation: &invocation,
                     input_size: 0,  // TODO: Fix this
                     value_count: 0, // TODO: Fix this
                     depth: self.current_frame.depth,
@@ -746,7 +745,6 @@ where
             )
             .map_err(RuntimeError::ModuleError)?;
         }
-         */
 
         // Change to kernel mode
         let saved_mode = self.execution_mode;
@@ -780,6 +778,21 @@ where
     N: NativeInvocationMethod,
 {
     fn invoke_method(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallInput::Invoke {
+                    invocation: &invocation,
+                    input_size: 0,  // TODO: Fix this
+                    value_count: 0, // TODO: Fix this
+                    depth: self.current_frame.depth,
+                },
+            )
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
         // Change to kernel mode
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
@@ -790,6 +803,16 @@ where
 
         // Restore previous mode
         self.execution_mode = saved_mode;
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallOutput::Invoke { rtn: &rtn },
+            )
+                .map_err(RuntimeError::ModuleError)?;
+        }
 
         Ok(rtn)
     }
@@ -811,7 +834,7 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    info: InvocationInfo::Scrypto(&invocation),
+                    invocation: &invocation,
                     input_size: invocation.args().raw.len() as u32,
                     value_count: invocation.args().value_count() as u32,
                     depth: self.current_frame.depth,

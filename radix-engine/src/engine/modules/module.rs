@@ -17,7 +17,7 @@ pub enum InvocationInfo<'a> {
 
 pub enum SysCallInput<'a> {
     Invoke {
-        info: InvocationInfo<'a>,
+        invocation: &'a dyn Debug,
         input_size: u32,
         value_count: u32,
         depth: usize,
