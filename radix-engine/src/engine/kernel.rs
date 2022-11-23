@@ -9,10 +9,10 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::*;
 
+use sbor::rust::fmt::Debug;
+use sbor::rust::mem;
 use scrypto::access_rule_node;
 use scrypto::rule;
-use std::fmt::Debug;
-use std::mem;
 use transaction::errors::IdAllocationError;
 use transaction::model::AuthZoneParams;
 use transaction::validation::*;

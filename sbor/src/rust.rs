@@ -15,6 +15,8 @@ pub use alloc::str;
 #[cfg(feature = "alloc")]
 pub use alloc::string;
 #[cfg(feature = "alloc")]
+pub use alloc::sync;
+#[cfg(feature = "alloc")]
 pub use alloc::vec;
 #[cfg(feature = "alloc")]
 pub use core::cell;
@@ -30,6 +32,8 @@ pub use core::iter;
 pub use core::marker;
 #[cfg(feature = "alloc")]
 pub use core::mem;
+#[cfg(feature = "alloc")]
+pub use core::num;
 #[cfg(feature = "alloc")]
 pub use core::ops;
 #[cfg(feature = "alloc")]
@@ -60,6 +64,8 @@ pub use std::marker;
 #[cfg(not(feature = "alloc"))]
 pub use std::mem;
 #[cfg(not(feature = "alloc"))]
+pub use std::num;
+#[cfg(not(feature = "alloc"))]
 pub use std::ops;
 #[cfg(not(feature = "alloc"))]
 pub use std::ptr;
@@ -71,6 +77,8 @@ pub use std::slice;
 pub use std::str;
 #[cfg(not(feature = "alloc"))]
 pub use std::string;
+#[cfg(not(feature = "alloc"))]
+pub use std::sync;
 #[cfg(not(feature = "alloc"))]
 pub use std::vec;
 

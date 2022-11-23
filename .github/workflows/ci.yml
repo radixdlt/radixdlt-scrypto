@@ -189,6 +189,9 @@ jobs:
     - name: Run tests
       run: cargo test
       working-directory: radix-engine
+    - name: Run tests (no_std)
+      run: cargo test --no-default-features --features alloc
+      working-directory: radix-engine
   radix-engine-wasmer:
     name: Run Radix Engine tests with Wasmer
     runs-on: ${{ matrix.os }}

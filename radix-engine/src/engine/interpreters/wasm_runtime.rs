@@ -6,6 +6,7 @@ use crate::wasm::*;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative, SysInvokableNativeMethod};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
 use radix_engine_interface::wasm::*;
+use sbor::rust::vec::Vec;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
 ///
