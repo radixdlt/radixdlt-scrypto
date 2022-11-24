@@ -1,4 +1,4 @@
-mod auth_zone;
+mod auth;
 mod component;
 mod epoch_manager;
 mod global;
@@ -14,7 +14,7 @@ mod method_authorization;
 mod package_extractor;
 mod substates;
 
-pub use auth_zone::*;
+pub use auth::*;
 pub use component::*;
 pub use epoch_manager::*;
 pub use global::*;

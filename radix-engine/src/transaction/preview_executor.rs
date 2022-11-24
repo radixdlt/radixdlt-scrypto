@@ -35,22 +35,24 @@ pub fn execute_preview<S: ReadableSubstateStore, W: WasmEngine, IHM: IntentHashM
 
     let validator = NotarizedTransactionValidator::new(validation_config);
 
-    let executable = validator
-        .validate_preview_intent(&preview_intent, intent_hash_manager)
-        .map_err(PreviewError::TransactionValidationError)?;
+    let receipt = {
+        let executable = validator
+            .validate_preview_intent(&preview_intent, intent_hash_manager)
+            .map_err(PreviewError::TransactionValidationError)?;
 
-    let mut fee_reserve = SystemLoanFeeReserve::default();
-    if preview_intent.flags.unlimited_loan {
-        fee_reserve.credit(PREVIEW_CREDIT);
-    }
+        let mut fee_reserve = SystemLoanFeeReserve::default();
+        if preview_intent.flags.unlimited_loan {
+            fee_reserve.credit(PREVIEW_CREDIT);
+        }
 
-    let receipt = execute_transaction_with_fee_reserve(
-        substate_store,
-        scrypto_interpreter,
-        SystemLoanFeeReserve::default(),
-        &ExecutionConfig::default(),
-        &executable,
-    );
+        execute_transaction_with_fee_reserve(
+            substate_store,
+            scrypto_interpreter,
+            SystemLoanFeeReserve::default(),
+            &ExecutionConfig::default(),
+            &executable,
+        )
+    };
 
     Ok(PreviewResult {
         intent: preview_intent,

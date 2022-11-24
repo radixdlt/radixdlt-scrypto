@@ -6,12 +6,24 @@ use crate::rust::rc::Rc;
 use crate::type_id::*;
 use crate::*;
 
-impl<'a, X: CustomTypeId, E: Encoder<X>, B: ?Sized + 'a + ToOwned + Encode<X, E> + TypeId<X>>
-    Encode<X, E> for Cow<'a, B>
+impl<'a, X: CustomTypeId, E: Encoder<X>, T: ?Sized + Encode<X, E>> Encode<X, E> for &T {
+    #[inline]
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        (*self).encode_type_id(encoder)
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        (*self).encode_body(encoder)
+    }
+}
+
+impl<'a, X: CustomTypeId, E: Encoder<X>, B: ?Sized + 'a + ToOwned + Encode<X, E>> Encode<X, E>
+    for Cow<'a, B>
 {
     #[inline]
     fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(B::type_id())
+        self.as_ref().encode_type_id(encoder)
     }
 
     #[inline]
@@ -20,10 +32,10 @@ impl<'a, X: CustomTypeId, E: Encoder<X>, B: ?Sized + 'a + ToOwned + Encode<X, E>
     }
 }
 
-impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> for Box<T> {
+impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E>> Encode<X, E> for Box<T> {
     #[inline]
     fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(T::type_id())
+        self.as_ref().encode_type_id(encoder)
     }
 
     #[inline]
@@ -32,10 +44,10 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> f
     }
 }
 
-impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> for Rc<T> {
+impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E>> Encode<X, E> for Rc<T> {
     #[inline]
     fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(T::type_id())
+        self.as_ref().encode_type_id(encoder)
     }
 
     #[inline]
@@ -44,10 +56,10 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> f
     }
 }
 
-impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> for RefCell<T> {
+impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E>> Encode<X, E> for RefCell<T> {
     #[inline]
     fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(T::type_id())
+        self.borrow().encode_type_id(encoder)
     }
 
     #[inline]

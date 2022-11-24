@@ -8,7 +8,7 @@ pub trait Encode<X: CustomTypeId, E: Encoder<X>> {
 
     /// Encodes the SBOR body of the type to the encoder.
     ///
-    /// You likely want to call `encoder.encode_body` instead of this method. See
+    /// You may want to call `encoder.encode_deeper_body` instead of this method. See
     /// the below section for details.
     ///
     /// ## Direct calls and SBOR Depth
@@ -16,6 +16,8 @@ pub trait Encode<X: CustomTypeId, E: Encoder<X>> {
     /// In order to avoid SBOR depth differentials and disagreement about whether a payload
     /// is valid, typed codec implementations should ensure that the SBOR depth as measured
     /// during the encoding/decoding process agrees with the SborValue codec.
+    ///
+    /// Each layer of the SborValue counts as one depth.
     ///
     /// If the encoder you're writing is embedding a child type (and is represented as such
     /// in the SborValue type), then you should call `encoder.encode_body` to increment

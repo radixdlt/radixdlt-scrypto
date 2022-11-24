@@ -13,7 +13,7 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> f
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.encode_body(self.as_slice())?;
+        self.as_slice().encode_body(encoder)?;
         Ok(())
     }
 }
@@ -29,7 +29,7 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> f
         encoder.write_type_id(T::type_id())?;
         encoder.write_size(self.len())?;
         for v in self {
-            encoder.encode_body(v)?;
+            encoder.encode_deeper_body(v)?;
         }
         Ok(())
     }
@@ -48,14 +48,14 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X> + Ord + Hash> E
         encoder.write_type_id(T::type_id())?;
         encoder.write_size(self.len())?;
         for v in self {
-            encoder.encode_body(v)?;
+            encoder.encode_deeper_body(v)?;
         }
         Ok(())
     }
 }
 
-impl<X: CustomTypeId, E: Encoder<X>, K: Encode<X, E> + TypeId<X>, V: Encode<X, E> + TypeId<X>>
-    Encode<X, E> for BTreeMap<K, V>
+impl<X: CustomTypeId, E: Encoder<X>, K: Encode<X, E>, V: Encode<X, E>> Encode<X, E>
+    for BTreeMap<K, V>
 {
     #[inline]
     fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -67,20 +67,14 @@ impl<X: CustomTypeId, E: Encoder<X>, K: Encode<X, E> + TypeId<X>, V: Encode<X, E
         encoder.write_type_id(<(K, V)>::type_id())?;
         encoder.write_size(self.len())?;
         for (k, v) in self {
-            encoder.write_size(2)?;
-            encoder.encode(k)?;
-            encoder.encode(v)?;
+            encoder.encode_deeper_body(&(k, v))?;
         }
         Ok(())
     }
 }
 
-impl<
-        X: CustomTypeId,
-        E: Encoder<X>,
-        K: Encode<X, E> + TypeId<X> + Ord + Hash,
-        V: Encode<X, E> + TypeId<X>,
-    > Encode<X, E> for HashMap<K, V>
+impl<X: CustomTypeId, E: Encoder<X>, K: Encode<X, E> + Ord + Hash, V: Encode<X, E>> Encode<X, E>
+    for HashMap<K, V>
 {
     #[inline]
     fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -93,9 +87,7 @@ impl<
         encoder.write_size(self.len())?;
         let keys: BTreeSet<&K> = self.keys().collect();
         for key in keys {
-            encoder.write_size(2)?;
-            encoder.encode(key)?;
-            encoder.encode(self.get(key).unwrap())?;
+            encoder.encode_deeper_body(&(key, self.get(key).unwrap()))?;
         }
         Ok(())
     }
@@ -122,7 +114,7 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>> Decode<X, D> f
         } else {
             let mut result = Vec::<T>::with_capacity(if len <= 1024 { len } else { 1024 });
             for _ in 0..len {
-                result.push(decoder.decode_body_with_type_id(element_type_id)?);
+                result.push(decoder.decode_deeper_body_with_type_id(element_type_id)?);
             }
             Ok(result)
         }
@@ -157,12 +149,8 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X> + Hash + Eq> De
     }
 }
 
-impl<
-        X: CustomTypeId,
-        D: Decoder<X>,
-        K: Decode<X, D> + TypeId<X> + Ord,
-        V: Decode<X, D> + TypeId<X>,
-    > Decode<X, D> for BTreeMap<K, V>
+impl<X: CustomTypeId, D: Decoder<X>, K: Decode<X, D> + Ord, V: Decode<X, D>> Decode<X, D>
+    for BTreeMap<K, V>
 {
     #[inline]
     fn decode_body_with_type_id(
@@ -175,12 +163,8 @@ impl<
     }
 }
 
-impl<
-        X: CustomTypeId,
-        D: Decoder<X>,
-        K: Decode<X, D> + TypeId<X> + Hash + Eq,
-        V: Decode<X, D> + TypeId<X>,
-    > Decode<X, D> for HashMap<K, V>
+impl<X: CustomTypeId, D: Decoder<X>, K: Decode<X, D> + Hash + Eq, V: Decode<X, D>> Decode<X, D>
+    for HashMap<K, V>
 {
     #[inline]
     fn decode_body_with_type_id(

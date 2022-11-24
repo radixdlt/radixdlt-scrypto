@@ -27,21 +27,52 @@ impl AuthModule {
         NonFungibleId::from_u32(1)
     }
 
+    pub fn on_call_frame_enter<Y: SystemApi>(
+        call_frame_update: &mut CallFrameUpdate,
+        actor: &REActor,
+        system_api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        let refed = system_api.get_visible_node_ids()?;
+        let auth_zone_id = refed
+            .into_iter()
+            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
+            .unwrap();
+        call_frame_update.node_refs_to_copy.insert(auth_zone_id);
+
+        if !matches!(
+            actor,
+            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..)
+        ) {
+            let handle = system_api.lock_substate(
+                auth_zone_id,
+                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+                LockFlags::MUTABLE,
+            )?;
+            let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+            let auth_zone_ref_mut = substate_ref_mut.auth_zone();
+
+            // New auth zone frame managed by the AuthModule
+            auth_zone_ref_mut.new_frame(actor);
+            system_api.drop_lock(handle)?;
+        }
+
+        Ok(())
+    }
+
     pub fn on_before_frame_start<Y, X>(
         actor: &REActor,
         executor: &X,
         system_api: &mut Y,
-    ) -> Result<HashSet<RENodeId>, InvokeError<AuthError>>
+    ) -> Result<(), RuntimeError>
     where
         Y: SystemApi,
         X: Executor,
     {
-        let mut new_refs = HashSet::new();
         if matches!(
             actor,
             REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..)
         ) {
-            return Ok(new_refs);
+            return Ok(());
         }
 
         let method_auths = match actor.clone() {
@@ -82,7 +113,7 @@ impl AuthModule {
                     ) => EpochManager::method_auth(method),
                     (
                         ResolvedMethod::Scrypto {
-                            package_id,
+                            package_address,
                             blueprint_name,
                             ident,
                             ..
@@ -92,7 +123,7 @@ impl AuthModule {
                             ..
                         },
                     ) => {
-                        let node_id = RENodeId::Package(package_id);
+                        let node_id = RENodeId::Global(GlobalAddress::Package(package_address));
                         let offset = SubstateOffset::Package(PackageOffset::Package);
                         let handle =
                             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
@@ -122,15 +153,16 @@ impl AuthModule {
                             state
                         };
                         {
-                            let offset = SubstateOffset::Component(ComponentOffset::Info);
+                            let offset =
+                                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
                             let handle = system_api.lock_substate(
                                 component_node_id,
                                 offset,
                                 LockFlags::read_only(),
                             )?;
                             let substate_ref = system_api.get_ref(handle)?;
-                            let info = substate_ref.component_info();
-                            let auth = info.method_authorization(&state, &schema, &ident);
+                            let access_rules = substate_ref.access_rules();
+                            let auth = access_rules.method_authorization(&state, &schema, &ident);
                             system_api.drop_lock(handle)?;
                             auth
                         }
@@ -181,32 +213,28 @@ impl AuthModule {
         let handle = system_api.lock_substate(
             auth_zone_id,
             SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
-            LockFlags::MUTABLE,
+            LockFlags::read_only(),
         )?;
-        let mut substate_mut_ref = system_api.get_ref_mut(handle)?;
-        let auth_zone_ref_mut = substate_mut_ref.auth_zone();
+        let substate_ref = system_api.get_ref(handle)?;
+        let auth_zone_ref = substate_ref.auth_zone();
 
         // Authorization check
-        auth_zone_ref_mut
+        auth_zone_ref
             .check_auth(actor, method_auths)
             .map_err(|(authorization, error)| {
-                InvokeError::Error(AuthError::Unauthorized {
+                RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
                     actor: actor.clone(),
                     authorization,
                     error,
-                })
+                }))
             })?;
-
-        // New auth zone frame managed by the AuthModule
-        auth_zone_ref_mut.new_frame(actor);
-        new_refs.insert(auth_zone_id);
 
         system_api.drop_lock(handle)?;
 
-        Ok(new_refs)
+        Ok(())
     }
 
-    pub fn on_frame_end<Y>(system_api: &mut Y) -> Result<(), InvokeError<AuthError>>
+    pub fn on_call_frame_exit<Y>(system_api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: SystemApi,
     {

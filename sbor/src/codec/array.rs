@@ -18,7 +18,7 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> f
             encoder.write_slice(slice)?;
         } else {
             for v in self {
-                encoder.encode_body(v)?;
+                encoder.encode_deeper_body(v)?;
             }
         }
         Ok(())
@@ -34,7 +34,7 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>, const N: usize
     }
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.encode_body(self.as_slice())
+        self.as_slice().encode_body(encoder)
     }
 }
 
@@ -61,7 +61,7 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>, const N: usize
 
         // Decode element by element
         for elem in &mut data[..] {
-            elem.write(decoder.decode_body_with_type_id(element_type_id)?);
+            elem.write(decoder.decode_deeper_body_with_type_id(element_type_id)?);
         }
 
         // Use &mut as an assertion of unique "ownership"
