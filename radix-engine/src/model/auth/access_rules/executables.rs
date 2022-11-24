@@ -3,18 +3,22 @@ use crate::engine::{
     Invokable, LockFlags, MethodDeref, NativeExecutor, NativeProgram, REActor, ResolvedMethod,
     RuntimeError, SystemApi,
 };
+use crate::model::{MethodAuthorization, MethodAuthorizationError};
 use crate::types::*;
-use radix_engine_interface::api::api::{EngineApi, Invocation};
+use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
 use radix_engine_interface::api::types::{
     AccessRulesMethod, GlobalAddress, NativeMethod, PackageOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum AccessRulesError {
     BlueprintFunctionNotFound(String),
     InvalidIndex(u32),
+    InvalidAuth(MethodAuthorization, MethodAuthorizationError),
+    CannotSetAccessRuleOnSetAccessRule,
 }
 
 impl ExecutableInvocation for AccessRulesAddAccessCheckInvocation {
@@ -141,15 +145,57 @@ impl NativeProgram for AccessRulesSetAccessRuleInvocation {
 
     fn main<Y>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
+        Y: SystemApi
+            + Invokable<ScryptoInvocation>
+            + EngineApi<RuntimeError>
+            + SysInvokableNative<RuntimeError>,
     {
-        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let handle = system_api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
+        // TODO: Should this invariant be inforced in a more static/structural way?
+        if self.key.eq(&AccessRuleKey::Native(NativeFn::Method(
+            NativeMethod::AccessRules(AccessRulesMethod::SetAccessRule),
+        ))) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::AccessRulesError(
+                    AccessRulesError::CannotSetAccessRuleOnSetAccessRule,
+                ),
+            ));
+        }
 
-        let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+        let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
+
+        let authorization = {
+            let substate_ref = api.get_ref(handle)?;
+            let access_rules_substate = substate_ref.access_rules();
+            access_rules_substate.mutability_authorization(&self.key)
+        };
+
+        // Manual Auth
+        {
+            let owned_node_ids = api.sys_get_visible_nodes()?;
+            let node_id = owned_node_ids
+                .into_iter()
+                .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+                .expect("AuthZone does not exist");
+
+            let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+            let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+            let substate_ref = api.get_ref(handle)?;
+            let auth_zone_substate = substate_ref.auth_zone();
+
+            auth_zone_substate
+                .check_auth(false, authorization)
+                .map_err(|(authorization, error)| {
+                    RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
+                        AccessRulesError::InvalidAuth(authorization, error),
+                    ))
+                })?;
+        }
+
+        let mut substate_ref_mut = api.get_ref_mut(handle)?;
         let access_rules_substate = substate_ref_mut.access_rules();
         let access_rules_list = &mut access_rules_substate.access_rules;
         let index: usize = self.index.try_into().unwrap();

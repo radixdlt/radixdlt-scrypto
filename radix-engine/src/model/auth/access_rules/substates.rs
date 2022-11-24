@@ -51,16 +51,11 @@ impl AccessRulesSubstate {
     pub fn mutability_authorization(&self, key: &AccessRuleKey) -> Vec<MethodAuthorization> {
         let mut authorizations = Vec::new();
         for auth in &self.access_rules {
-            match auth.get_mutability(key) {
-                AccessRuleMutability::LOCKED => {
-                    authorizations.push(MethodAuthorization::DenyAll);
-                }
-                AccessRuleMutability::MUTABLE(access_rule) => {
-                    let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), access_rule);
-                    authorizations.push(authorization);
-                }
-            }
+            let method_auth = auth.get_mutability(&key);
 
+            // TODO: Remove
+            let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), method_auth);
+            authorizations.push(authorization);
         }
 
         authorizations

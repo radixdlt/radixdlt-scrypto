@@ -15,27 +15,14 @@ pub enum AccessRuleKey {
     Native(NativeFn),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
-pub enum AccessRuleMutability {
-    LOCKED,
-    MUTABLE(AccessRule),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
-pub struct AccessRulesMutability {
-    method_auth_mutability: HashMap<AccessRuleKey, AccessRuleMutability>,
-    default_auth_mutability: AccessRuleMutability,
-}
-
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 pub struct AccessRules {
     method_auth: HashMap<AccessRuleKey, AccessRule>,
     default_auth: AccessRule,
-    mutability: AccessRulesMutability,
+    method_auth_mutability: HashMap<AccessRuleKey, AccessRule>,
+    default_auth_mutability: AccessRule,
 }
 
 impl AccessRules {
@@ -43,15 +30,15 @@ impl AccessRules {
         Self {
             method_auth: HashMap::new(),
             default_auth: AccessRule::DenyAll,
-            mutability: AccessRulesMutability {
-                method_auth_mutability: HashMap::new(),
-                default_auth_mutability: AccessRuleMutability::LOCKED,
-            },
+            method_auth_mutability: HashMap::new(),
+            default_auth_mutability: AccessRule::DenyAll,
         }
     }
 
-    pub fn get_mutability(&self, key: &AccessRuleKey) -> &AccessRuleMutability {
-        self.mutability.method_auth_mutability.get(key).unwrap_or(&self.mutability.default_auth_mutability)
+    pub fn get_mutability(&self, key: &AccessRuleKey) -> &AccessRule {
+        self.method_auth_mutability
+            .get(key)
+            .unwrap_or(&self.default_auth_mutability)
     }
 
     pub fn get(&self, key: &AccessRuleKey) -> &AccessRule {

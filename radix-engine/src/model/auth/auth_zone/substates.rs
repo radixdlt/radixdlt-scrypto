@@ -1,4 +1,3 @@
-use crate::engine::{REActor, ResolvedReceiver};
 use crate::model::MethodAuthorizationError::NotAuthorized;
 use crate::model::{
     AuthZoneError, HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
@@ -6,7 +5,6 @@ use crate::model::{
     ProofSubstate,
 };
 use crate::types::*;
-use radix_engine_interface::api::types::{GlobalAddress, RENodeId};
 use sbor::rust::ops::Fn;
 
 struct AuthVerification;

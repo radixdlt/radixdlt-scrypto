@@ -3,7 +3,9 @@ use crate::engine::{
     NativeExecutor, NativeProgram, REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError,
     SystemApi,
 };
-use crate::model::{convert, InvokeError, MethodAuthorization, MethodAuthorizationError, ProofError};
+use crate::model::{
+    convert, InvokeError, MethodAuthorization, MethodAuthorizationError, ProofError,
+};
 use crate::types::*;
 use radix_engine_interface::api::types::{
     AuthZoneMethod, AuthZoneOffset, GlobalAddress, NativeMethod, ProofId, ProofOffset, RENodeId,
@@ -485,8 +487,8 @@ impl NativeProgram for AuthZoneAssertAccessRule {
     type Output = ();
 
     fn main<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
@@ -499,7 +501,9 @@ impl NativeProgram for AuthZoneAssertAccessRule {
         auth_zone_ref
             .check_auth(false, vec![authorization])
             .map_err(|(authorization, error)| {
-                RuntimeError::ApplicationError(ApplicationError::AuthZoneError(AuthZoneError::AssertAccessRuleError(authorization, error)))
+                RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
+                    AuthZoneError::AssertAccessRuleError(authorization, error),
+                ))
             })?;
 
         api.drop_lock(handle)?;

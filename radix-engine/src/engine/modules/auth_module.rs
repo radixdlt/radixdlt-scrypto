@@ -98,19 +98,14 @@ impl AuthModule {
             },
             REActor::Method(method, resolved_receiver) => {
                 match (method, resolved_receiver) {
-
-                    (ResolvedMethod::Native(NativeMethod::AccessRules(AccessRulesMethod::SetAccessRule)), ..) => {
-                        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-                        let handle = system_api.lock_substate(
-                            resolved_receiver.receiver,
-                            offset,
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = system_api.get_ref(handle)?;
-                        let access_rules = substate_ref.access_rules();
-                        // TODO: Remove executor.args()
-                        let invocation: AccessRulesSetAccessRuleInvocation = scrypto_decode(&executor.args().raw).unwrap();
-                        access_rules.mutability_authorization(&invocation.key)
+                    // SetAccessRule auth is done manually within the method
+                    (
+                        ResolvedMethod::Native(NativeMethod::AccessRules(
+                            AccessRulesMethod::SetAccessRule,
+                        )),
+                        ..,
+                    ) => {
+                        vec![]
                     }
                     (ResolvedMethod::Native(method), ..)
                         if matches!(method, NativeMethod::Metadata(..))
