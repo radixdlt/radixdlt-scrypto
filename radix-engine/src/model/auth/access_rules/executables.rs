@@ -14,6 +14,7 @@ use radix_engine_interface::model::*;
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum AccessRulesError {
     BlueprintFunctionNotFound(String),
+    InvalidIndex(u32),
 }
 
 impl ExecutableInvocation for AccessRulesAddAccessCheckInvocation {
@@ -101,6 +102,62 @@ impl NativeProgram for AccessRulesAddAccessCheckInvocation {
         let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
         let access_rules = substate_ref_mut.access_rules();
         access_rules.access_rules.push(self.access_rules);
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl ExecutableInvocation for AccessRulesSetAccessRuleInvocation {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        mut self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+
+        let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
+        // TODO: Move this into a more static check once node types implemented
+        if !matches!(resolved_receiver.receiver, RENodeId::Component(..)) {
+            return Err(RuntimeError::InterpreterError(
+                InterpreterError::InvalidInvocation,
+            ));
+        }
+        self.receiver = resolved_receiver.receiver;
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::AccessRules(AccessRulesMethod::AddAccessCheck)),
+            resolved_receiver,
+        );
+
+        let executor = NativeExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+
+impl NativeProgram for AccessRulesSetAccessRuleInvocation {
+    type Output = ();
+
+    fn main<Y>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
+    {
+        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+        let handle = system_api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
+
+        let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+        let access_rules_substate = substate_ref_mut.access_rules();
+        let access_rules_list = &mut access_rules_substate.access_rules;
+        let index: usize = self.index.try_into().unwrap();
+        let access_rules = access_rules_list.get_mut(index)
+            .ok_or(RuntimeError::ApplicationError(ApplicationError::AccessRulesError(AccessRulesError::InvalidIndex(self.index))))?;
+
+        access_rules.set_access_rule(self.key, self.rule);
 
         Ok(((), CallFrameUpdate::empty()))
     }

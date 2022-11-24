@@ -61,19 +61,19 @@ impl NativeProgram for EpochManagerCreateInvocation {
         let epoch_manager = EpochManagerSubstate { epoch: 0 };
 
         let auth_non_fungible = NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::supervisor_id());
-        let access_rules = AccessRules::new()
-            .set_access_rule(
-                AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
-                    EpochManagerMethod::SetEpoch,
-                ))),
-                rule!(require(auth_non_fungible)),
-            )
-            .set_access_rule(
-                AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
-                    EpochManagerMethod::GetCurrentEpoch,
-                ))),
-                rule!(allow_all),
-            );
+        let mut access_rules = AccessRules::new();
+        access_rules.set_access_rule(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
+                EpochManagerMethod::SetEpoch,
+            ))),
+            rule!(require(auth_non_fungible)),
+        );
+        access_rules.set_access_rule(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
+                EpochManagerMethod::GetCurrentEpoch,
+            ))),
+            rule!(allow_all),
+        );
 
         let access_rules_substate = AccessRulesSubstate {
             access_rules: vec![access_rules],

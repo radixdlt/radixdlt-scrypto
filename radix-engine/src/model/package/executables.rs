@@ -158,20 +158,22 @@ impl NativeProgram for PackagePublishWithOwnerInvocation {
         };
 
         let bucket = api.sys_invoke(mint_invocation)?;
+        let mut access_rules = AccessRules::new();
+        access_rules.set_access_rule(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
+            rule!(require(non_fungible_address)),
+        );
 
-        let access_rules = AccessRulesSubstate {
-            access_rules: vec![AccessRules::new().set_access_rule(
-                AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                    MetadataMethod::Set,
-                ))),
-                rule!(require(non_fungible_address)),
-            )],
+        let access_rules_substate = AccessRulesSubstate {
+            access_rules: vec![access_rules],
         };
 
         let node_id = api.allocate_node_id(RENodeType::Package)?;
         api.create_node(
             node_id,
-            RENode::Package(package, metadata_substate, access_rules),
+            RENode::Package(package, metadata_substate, access_rules_substate),
         )?;
         let package_id: PackageId = node_id.into();
 

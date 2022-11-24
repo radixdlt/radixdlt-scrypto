@@ -50,6 +50,7 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<EpochManagerGetCurrentEpochInvocation, E>
     + SysNativeInvokable<MetadataSetInvocation, E>
     + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
+    + SysNativeInvokable<AccessRulesSetAccessRuleInvocation, E>
     + SysNativeInvokable<AuthZonePopInvocation, E>
     + SysNativeInvokable<AuthZonePushInvocation, E>
     + SysNativeInvokable<AuthZoneCreateProofInvocation, E>

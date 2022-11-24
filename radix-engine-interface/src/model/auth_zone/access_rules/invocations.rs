@@ -27,3 +27,28 @@ impl Into<NativeFnInvocation> for AccessRulesAddAccessCheckInvocation {
         ))
     }
 }
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct AccessRulesSetAccessRuleInvocation {
+    pub receiver: RENodeId,
+    pub index: u32,
+    pub key: AccessRuleKey,
+    pub rule: AccessRule,
+}
+
+impl Invocation for AccessRulesSetAccessRuleInvocation {
+    type Output = ();
+}
+
+impl ScryptoNativeInvocation for AccessRulesSetAccessRuleInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<NativeFnInvocation> for AccessRulesSetAccessRuleInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::AccessRules(
+            AccessRulesMethodInvocation::SetAccessRule(self)
+        ))
+    }
+}
