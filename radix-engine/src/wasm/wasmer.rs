@@ -20,17 +20,53 @@ pub struct WasmerModule {
     code_size_bytes: usize,
 }
 
+// IMPORTANT:
+// The below implementation is not yet checked rigorously enough for production use
+// TODO: Address the below issues before considering production use.
+
 pub struct WasmerInstance {
     instance: Instance,
-    // Runtime pointer is shared by the instance and every function that requires `env`.
-    // It is updated every time the `invoke_export` is called and `Arc` ensures that the
-    // update applies to all the owners.
+
+    /// This field stores a (masked) runtime pointer to `Box<dyn WasmRuntime>` which is shared
+    /// by the instance and each WasmerInstanceEnv (every function that requires `env`).
+    ///
+    /// On every call into the WASM (ie every call to `invoke_export`), a &mut System API is
+    /// temporarily wrapped in the `Box<dyn WasmRuntime>` and this pointer is updated.
+    ///
+    /// Because same pointer (via Arc cloning), it shared in each `WasmerInstanceEnv`,
+    /// and so they can use it to call into the current `WasmRuntime` / `&mut System API`.
+    ///
+    /// For information on why the pointer is masked, see the docs for `WasmerInstanceEnv`
     runtime_ptr: Arc<Mutex<usize>>,
 }
 
+// We explicitly mark WasmerInstance as not Sync/Send because of its masked raw pointer
+unsafe impl !Sync for WasmerInstance {}
+unsafe impl !Send for WasmerInstance {}
+
+/// The WasmerInstanceEnv implements WasmerEnv - and this needs to be `Send + Sync` for
+/// Wasmer to work (see `Function::new_native_with_env`).
+///
+/// This is likely because Wasmer wants to be forward-compatible with multi-threaded WASM,
+/// or that it uses multiple threads internally.
+///
+/// Currently, the SystemAPI is not Sync (and so should not be accessed by multiple threads)
+/// we believe our use of Wasmer does not allow it to call us from multiple threads -
+/// but we need to double-check this.
+///
+/// In any case, we temporarily work around this incompatibility by masking the pointer as a usize.
+///
+/// There are still a number of changes we should consider to improve things:
+/// * `WasmerInstanceEnv` shouldn't contain an Instance - just a memory reference - see
+///    the docs on the `WasmerEnv` trait
+/// * If we instantiate the module just before we call into it, we could potentially pass an actual
+///   `Arc<Mutex<T>>` for `a', T: WasmRuntime<'a>` (wrapping a `&'a mut SystemAPI`) into the WasmerInstanceEnv
+///   on *module instantiation*. In this case, it doesn't need to be on a WasmerInstance at all
+/// * Else at the very least, change this to be a pointer type, and manually implement Sync/Send
 #[derive(Clone)]
 pub struct WasmerInstanceEnv {
     instance: LazyInit<Instance>,
+    /// See notes on `WasmerInstance.runtime_ptr`
     runtime_ptr: Arc<Mutex<usize>>,
 }
 
