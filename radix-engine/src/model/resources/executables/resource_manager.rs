@@ -101,8 +101,6 @@ impl NativeProgram for ResourceManagerCreateInvocation {
         Y: SystemApi + Invokable<ScryptoInvocation>,
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
-        let resource_address: ResourceAddress = global_node_id.into();
-        println!("address: {:?}", resource_address.to_vec());
 
         let underlying_node_id = if matches!(self.resource_type, ResourceType::NonFungible) {
             let node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
