@@ -48,7 +48,7 @@ impl ScryptoNativeInvocation for AccessRulesSetAccessRuleInvocation {
 impl Into<NativeFnInvocation> for AccessRulesSetAccessRuleInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AccessRules(
-            AccessRulesMethodInvocation::SetAccessRule(self)
+            AccessRulesMethodInvocation::SetAccessRule(self),
         ))
     }
 }

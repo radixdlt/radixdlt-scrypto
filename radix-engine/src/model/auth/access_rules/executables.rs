@@ -136,7 +136,6 @@ impl ExecutableInvocation for AccessRulesSetAccessRuleInvocation {
     }
 }
 
-
 impl NativeProgram for AccessRulesSetAccessRuleInvocation {
     type Output = ();
 
@@ -144,8 +143,8 @@ impl NativeProgram for AccessRulesSetAccessRuleInvocation {
         self,
         system_api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
+    where
+        Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
     {
         let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
         let handle = system_api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
@@ -154,8 +153,12 @@ impl NativeProgram for AccessRulesSetAccessRuleInvocation {
         let access_rules_substate = substate_ref_mut.access_rules();
         let access_rules_list = &mut access_rules_substate.access_rules;
         let index: usize = self.index.try_into().unwrap();
-        let access_rules = access_rules_list.get_mut(index)
-            .ok_or(RuntimeError::ApplicationError(ApplicationError::AccessRulesError(AccessRulesError::InvalidIndex(self.index))))?;
+        let access_rules =
+            access_rules_list
+                .get_mut(index)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::AccessRulesError(AccessRulesError::InvalidIndex(self.index)),
+                ))?;
 
         access_rules.set_access_rule(self.key, self.rule);
 

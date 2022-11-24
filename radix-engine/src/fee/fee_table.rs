@@ -234,6 +234,7 @@ impl FeeTable {
             },
             NativeMethod::AccessRules(component_ident) => match component_ident {
                 AccessRulesMethod::AddAccessCheck => self.fixed_low,
+                AccessRulesMethod::SetAccessRule => self.fixed_low,
             },
             NativeMethod::Metadata(metadata_method) => match metadata_method {
                 MetadataMethod::Set => self.fixed_low,
