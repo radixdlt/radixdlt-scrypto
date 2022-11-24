@@ -23,7 +23,7 @@ pub struct ResourceManagerSubstate {
     pub authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule>,
     pub total_supply: Decimal,
     pub nf_store_id: Option<NonFungibleStoreId>,
-    pub resource_address: Option<ResourceAddress>, // always set after instantiation
+    pub resource_address: ResourceAddress, // always set after instantiation
 }
 
 impl ResourceManagerSubstate {
@@ -32,6 +32,7 @@ impl ResourceManagerSubstate {
         metadata: HashMap<String, String>,
         mut auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         nf_store_id: Option<NonFungibleStoreId>,
+        resource_address: ResourceAddress,
     ) -> Result<ResourceManagerSubstate, InvokeError<ResourceManagerError>> {
         let mut vault_method_table: HashMap<VaultMethod, ResourceMethodRule> = HashMap::new();
         vault_method_table.insert(VaultMethod::LockFee, Protected(Withdraw));
@@ -91,7 +92,7 @@ impl ResourceManagerSubstate {
             authorization,
             total_supply: 0.into(),
             nf_store_id,
-            resource_address: None,
+            resource_address,
         };
 
         Ok(resource_manager)
@@ -188,21 +189,6 @@ impl ResourceManagerSubstate {
         new_metadata: HashMap<String, String>,
     ) -> Result<(), InvokeError<ResourceManagerError>> {
         self.metadata = new_metadata;
-
-        Ok(())
-    }
-
-    pub fn set_resource_address(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<(), InvokeError<ResourceManagerError>> {
-        if self.resource_address.is_some() {
-            return Err(InvokeError::Error(
-                ResourceManagerError::ResourceAddressAlreadySet,
-            ));
-        }
-
-        self.resource_address = Some(resource_address);
 
         Ok(())
     }

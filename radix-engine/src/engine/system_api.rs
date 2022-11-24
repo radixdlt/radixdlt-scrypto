@@ -66,8 +66,13 @@ pub trait SystemApi {
     /// Removes an RENode and all of it's children from the Heap
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;
 
+    /// Allocates a new node id useable for create_node
+    fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError>;
+
     /// Creates a new RENode
-    fn create_node(&mut self, re_node: RENode) -> Result<RENodeId, RuntimeError>;
+    /// TODO: Remove, replace with lock_substate + get_ref_mut use
+    fn create_node(&mut self, node_id: RENodeId, re_node: RENode)
+        -> Result<RENodeId, RuntimeError>;
 
     /// Locks a visible substate
     fn lock_substate(

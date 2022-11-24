@@ -100,16 +100,16 @@ impl ExecutableInvocation for WorktopTakeAmountInvocation {
 impl NativeProgram for WorktopTakeAmountInvocation {
     type Output = Bucket;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let worktop_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let maybe_resource = {
-            let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
+            let mut substate_mut = api.get_ref_mut(worktop_handle)?;
             let worktop = substate_mut.worktop();
             let maybe_resource = worktop
                 .take(self.amount, self.resource_address)
@@ -129,15 +129,19 @@ impl NativeProgram for WorktopTakeAmountInvocation {
                 let offset =
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                 let resource_handle =
-                    system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
-                let substate_ref = system_api.get_ref(resource_handle)?;
+                    api.lock_substate(resource_id, offset, LockFlags::read_only())?;
+                let substate_ref = api.get_ref(resource_handle)?;
                 substate_ref.resource_manager().resource_type
             };
 
             Resource::new_empty(self.resource_address, resource_type)
         };
-        let bucket_id = system_api
-            .create_node(RENode::Bucket(BucketSubstate::new(resource_resource)))?
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        let bucket_id = api
+            .create_node(
+                node_id,
+                RENode::Bucket(BucketSubstate::new(resource_resource)),
+            )?
             .into();
         Ok((
             Bucket(bucket_id),
@@ -173,16 +177,16 @@ impl ExecutableInvocation for WorktopTakeAllInvocation {
 impl NativeProgram for WorktopTakeAllInvocation {
     type Output = Bucket;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let worktop_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let maybe_resource = {
-            let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
+            let mut substate_mut = api.get_ref_mut(worktop_handle)?;
             let worktop = substate_mut.worktop();
             let maybe_resource = worktop.take_all(self.resource_address).map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::WorktopError(
@@ -200,16 +204,20 @@ impl NativeProgram for WorktopTakeAllInvocation {
                 let offset =
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                 let resource_handle =
-                    system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
-                let substate_ref = system_api.get_ref(resource_handle)?;
+                    api.lock_substate(resource_id, offset, LockFlags::read_only())?;
+                let substate_ref = api.get_ref(resource_handle)?;
                 substate_ref.resource_manager().resource_type
             };
 
             Resource::new_empty(self.resource_address, resource_type)
         };
 
-        let bucket_id = system_api
-            .create_node(RENode::Bucket(BucketSubstate::new(resource_resource)))?
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        let bucket_id = api
+            .create_node(
+                node_id,
+                RENode::Bucket(BucketSubstate::new(resource_resource)),
+            )?
             .into();
 
         Ok((
@@ -246,16 +254,16 @@ impl ExecutableInvocation for WorktopTakeNonFungiblesInvocation {
 impl NativeProgram for WorktopTakeNonFungiblesInvocation {
     type Output = Bucket;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let worktop_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let maybe_resource = {
-            let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
+            let mut substate_mut = api.get_ref_mut(worktop_handle)?;
             let worktop = substate_mut.worktop();
             let maybe_resource = worktop
                 .take_non_fungibles(&self.ids, self.resource_address)
@@ -275,16 +283,20 @@ impl NativeProgram for WorktopTakeNonFungiblesInvocation {
                 let offset =
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                 let resource_handle =
-                    system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
-                let substate_ref = system_api.get_ref(resource_handle)?;
+                    api.lock_substate(resource_id, offset, LockFlags::read_only())?;
+                let substate_ref = api.get_ref(resource_handle)?;
                 substate_ref.resource_manager().resource_type
             };
 
             Resource::new_empty(self.resource_address, resource_type)
         };
 
-        let bucket_id = system_api
-            .create_node(RENode::Bucket(BucketSubstate::new(resource_resource)))?
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        let bucket_id = api
+            .create_node(
+                node_id,
+                RENode::Bucket(BucketSubstate::new(resource_resource)),
+            )?
             .into();
 
         Ok((
@@ -467,17 +479,17 @@ impl ExecutableInvocation for WorktopDrainInvocation {
 impl NativeProgram for WorktopDrainInvocation {
     type Output = Vec<Bucket>;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Vec<Bucket>, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(Vec<Bucket>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let worktop_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let mut resources = Vec::new();
         {
-            let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
+            let mut substate_mut = api.get_ref_mut(worktop_handle)?;
             let worktop = substate_mut.worktop();
             for (_, resource) in worktop.resources.drain() {
                 let taken = resource.borrow_mut().take_all_liquid().map_err(|e| {
@@ -494,8 +506,9 @@ impl NativeProgram for WorktopDrainInvocation {
         let mut buckets = Vec::new();
         let mut nodes_to_move = Vec::new();
         for resource in resources {
-            let bucket_id = system_api
-                .create_node(RENode::Bucket(BucketSubstate::new(resource)))?
+            let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+            let bucket_id = api
+                .create_node(node_id, RENode::Bucket(BucketSubstate::new(resource)))?
                 .into();
             buckets.push(Bucket(bucket_id));
             nodes_to_move.push(RENodeId::Bucket(bucket_id));

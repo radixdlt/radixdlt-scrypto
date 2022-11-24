@@ -103,6 +103,7 @@ pub enum KernelError {
     InvalidOffset(SubstateOffset),
     InvalidOwnership(SubstateOffset, RENodeId),
     InvalidOverwrite,
+    InvalidId(RENodeId),
 
     // Actor Constraints
     InvalidDropNodeVisibility {
@@ -130,6 +131,8 @@ pub enum CallFrameError {
     RENodeNotVisible(RENodeId),
     RENodeNotOwned(RENodeId),
     MovingLockedRENode(RENodeId),
+    RENodeIdWasNotAllocated(RENodeId),
+    CallFrameCleanupAllocatedIdsNotEmpty,
 }
 
 impl From<CallFrameError> for RuntimeError {

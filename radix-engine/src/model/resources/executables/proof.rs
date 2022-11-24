@@ -172,17 +172,21 @@ impl ExecutableInvocation for ProofCloneInvocation {
 impl NativeProgram for ProofCloneInvocation {
     type Output = Proof;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Proof(self.receiver);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
-        let substate_ref = system_api.get_ref(handle)?;
+        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let substate_ref = api.get_ref(handle)?;
         let proof = substate_ref.proof();
         let cloned_proof = proof.clone();
-        let proof_id = system_api.create_node(RENode::Proof(cloned_proof))?.into();
+
+        let node_id = api.allocate_node_id(RENodeType::Proof)?;
+        let proof_id = api
+            .create_node(node_id, RENode::Proof(cloned_proof))?
+            .into();
 
         Ok((
             Proof(proof_id),
