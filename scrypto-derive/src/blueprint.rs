@@ -103,7 +103,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     fns,
                 };
 
-                ::scrypto::buffer::scrypto_encode_to_buffer(&output)
+                ::scrypto::buffer::scrypto_encode_to_buffer(&output).unwrap()
             }
         }
     };
@@ -257,7 +257,7 @@ fn generate_dispatcher(
                 let stmt: Stmt = parse_quote! {
                     let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(
                         &#module_ident::#bp_ident::#ident(#(#dispatch_args),*)
-                    );
+                    ).unwrap();
                 };
                 trace!("Generated stmt: {}", quote! { #stmt });
                 stmts.push(stmt);
@@ -605,7 +605,7 @@ mod tests {
                     );
                     let state: DataRef<Test_impl::Test> = component_data.get();
 
-                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(state.deref(), input.arg0));
+                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(state.deref(), input.arg0)).unwrap();
                     rtn
                 }
 
@@ -621,7 +621,7 @@ mod tests {
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                     let input: Test_y_Input = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
-                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::y(input.arg0));
+                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::y(input.arg0)).unwrap();
                     rtn
                 }
 
@@ -652,7 +652,7 @@ mod tests {
                         structure,
                         fns,
                     };
-                    ::scrypto::buffer::scrypto_encode_to_buffer(&output)
+                    ::scrypto::buffer::scrypto_encode_to_buffer(&output).unwrap()
                 }
 
                 #[allow(non_camel_case_types)]
@@ -735,7 +735,7 @@ mod tests {
                         structure,
                         fns,
                     };
-                    ::scrypto::buffer::scrypto_encode_to_buffer(&output)
+                    ::scrypto::buffer::scrypto_encode_to_buffer(&output).unwrap()
                 }
 
                 #[allow(non_camel_case_types)]

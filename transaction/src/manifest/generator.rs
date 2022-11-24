@@ -10,7 +10,7 @@ use radix_engine_interface::crypto::{
 };
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue,
-    ScryptoTypeId, ScryptoValue,
+    ScryptoSborTypeId, ScryptoValue,
 };
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
@@ -32,7 +32,7 @@ use crate::validation::*;
 macro_rules! args_from_value_vec {
     ($args: expr) => {{
         let input_struct = ::sbor::SborValue::Struct { fields: $args };
-        ::sbor::encode_any(&input_struct)
+        ::radix_engine_interface::data::scrypto_encode(&input_struct).unwrap()
     }};
 }
 
@@ -66,6 +66,7 @@ pub enum GeneratorError {
     InvalidEcdsaSecp256k1Signature(String),
     InvalidEddsaEd25519PublicKey(String),
     InvalidEddsaEd25519Signature(String),
+    SborEncodeError(EncodeError),
     BlobNotFound(String),
     NameResolverError(NameResolverError),
     IdValidationError(IdValidationError),
@@ -486,7 +487,8 @@ pub fn generate_instruction(
                 },
                 args: scrypto_encode(&ResourceManagerBucketBurnInvocation {
                     bucket: Bucket(bucket_id),
-                }),
+                })
+                .unwrap(),
             }
         }
         ast::Instruction::MintFungible {
@@ -506,7 +508,7 @@ pub fn generate_instruction(
                     receiver: RENodeId::Global(GlobalAddress::Resource(resource_address)),
                     method_name: ResourceManagerMethod::Mint.to_string(),
                 },
-                args: scrypto_encode(&input),
+                args: scrypto_encode(&input).unwrap(),
             }
         }
     })
@@ -532,7 +534,7 @@ fn generate_args(
     for v in values {
         let value = generate_value(v, None, resolver, bech32_decoder, blobs)?;
 
-        result.push(encode_any(&value));
+        result.push(scrypto_encode(&value).map_err(|err| GeneratorError::SborEncodeError(err))?);
     }
     Ok(result)
 }
@@ -1136,7 +1138,7 @@ fn generate_singletons(
     Ok(result)
 }
 
-fn generate_type_id(ty: &ast::Type) -> ScryptoTypeId {
+fn generate_type_id(ty: &ast::Type) -> ScryptoSborTypeId {
     match ty {
         ast::Type::Unit => SborTypeId::Unit,
         ast::Type::Bool => SborTypeId::Bool,
@@ -1429,7 +1431,8 @@ mod tests {
                     mint_params: MintParams::Fungible {
                         amount: Decimal::from_str("100").unwrap(),
                     },
-                }),
+                })
+                .unwrap(),
             }
         );
     }

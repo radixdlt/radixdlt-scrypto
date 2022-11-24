@@ -49,7 +49,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let scrypto_interpreter = ScryptoInterpreter {
             wasm_metering_config: WasmMeteringConfig::new(
                 InstructionCostRules::tiered(1, 5, 10, 5000),
-                512,
+                1024,
             ),
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
@@ -637,15 +637,15 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let mut entries = HashMap::new();
         entries.insert(
             NonFungibleId::from_u32(1),
-            (scrypto_encode(&()), scrypto_encode(&())),
+            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
         entries.insert(
             NonFungibleId::from_u32(2),
-            (scrypto_encode(&()), scrypto_encode(&())),
+            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
         entries.insert(
             NonFungibleId::from_u32(3),
-            (scrypto_encode(&()), scrypto_encode(&())),
+            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

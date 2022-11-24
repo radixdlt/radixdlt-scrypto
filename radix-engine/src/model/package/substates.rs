@@ -11,7 +11,9 @@ pub struct PackageSubstate {
 
 impl Debug for PackageSubstate {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PackageSubstate").finish()
+        f.debug_struct("PackageSubstate")
+            .field("blueprint_abis", &self.blueprint_abis)
+            .finish()
     }
 }
 

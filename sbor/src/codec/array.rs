@@ -2,41 +2,48 @@ use crate::rust::mem::MaybeUninit;
 use crate::type_id::*;
 use crate::*;
 
-impl<X: CustomTypeId, T: Encode<X> + TypeId<X>> Encode<X> for [T] {
+impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> for [T] {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
+
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(T::type_id());
-        encoder.write_size(self.len());
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(T::type_id())?;
+        encoder.write_size(self.len())?;
         if T::type_id() == SborTypeId::U8 || T::type_id() == SborTypeId::I8 {
             let ptr = self.as_ptr().cast::<u8>();
             let slice = unsafe { sbor::rust::slice::from_raw_parts(ptr, self.len()) };
-            encoder.write_slice(slice);
+            encoder.write_slice(slice)?;
         } else {
             for v in self {
-                v.encode_body(encoder);
+                encoder.encode_deeper_body(v)?;
             }
         }
+        Ok(())
     }
 }
 
-impl<X: CustomTypeId, T: Encode<X> + TypeId<X>, const N: usize> Encode<X> for [T; N] {
+impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>, const N: usize> Encode<X, E>
+    for [T; N]
+{
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        self.as_slice().encode_body(encoder);
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.as_slice().encode_body(encoder)
     }
 }
 
-impl<X: CustomTypeId, T: Decode<X> + TypeId<X>, const N: usize> Decode<X> for [T; N] {
+impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>, const N: usize> Decode<X, D>
+    for [T; N]
+{
+    #[inline]
     fn decode_body_with_type_id(
-        decoder: &mut Decoder<X>,
+        decoder: &mut D,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
@@ -54,7 +61,7 @@ impl<X: CustomTypeId, T: Decode<X> + TypeId<X>, const N: usize> Decode<X> for [T
 
         // Decode element by element
         for elem in &mut data[..] {
-            elem.write(T::decode_body_with_type_id(decoder, element_type_id)?);
+            elem.write(decoder.decode_deeper_body_with_type_id(element_type_id)?);
         }
 
         // Use &mut as an assertion of unique "ownership"

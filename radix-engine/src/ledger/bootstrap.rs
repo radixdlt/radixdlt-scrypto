@@ -245,7 +245,7 @@ where
             wasm_instrumenter: WasmInstrumenter::default(),
             wasm_metering_config: WasmMeteringConfig::new(
                 InstructionCostRules::tiered(1, 5, 10, 5000),
-                512,
+                1024,
             ),
         };
 
@@ -282,7 +282,7 @@ mod tests {
         let wasm_engine = DefaultWasmEngine::default();
         let wasm_instrumenter = WasmInstrumenter::default();
         let wasm_metering_config =
-            WasmMeteringConfig::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512);
+            WasmMeteringConfig::new(InstructionCostRules::tiered(1, 5, 10, 5000), 1024);
         let scrypto_interpreter = ScryptoInterpreter {
             wasm_engine,
             wasm_instrumenter,

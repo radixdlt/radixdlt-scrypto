@@ -1,7 +1,7 @@
 use colored::*;
 use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_interface::api::types::{GlobalAddress, Level};
-use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
+use radix_engine_interface::data::{IndexedScryptoValue, ScryptoDecode};
 use radix_engine_interface::model::*;
 use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
 use transaction::model::*;
@@ -217,7 +217,7 @@ impl TransactionReceipt {
         }
     }
 
-    pub fn output<T: Decode<ScryptoCustomTypeId>>(&self, nth: usize) -> T {
+    pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {
         scrypto_decode::<T>(&self.expect_commit_success()[nth][..])
             .expect("Wrong instruction output type!")
     }
