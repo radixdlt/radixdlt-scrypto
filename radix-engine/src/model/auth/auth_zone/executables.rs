@@ -3,7 +3,7 @@ use crate::engine::{
     NativeExecutor, NativeProgram, REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError,
     SystemApi,
 };
-use crate::model::{InvokeError, ProofError};
+use crate::model::{convert, InvokeError, MethodAuthorization, MethodAuthorizationError, ProofError};
 use crate::types::*;
 use radix_engine_interface::api::types::{
     AuthZoneMethod, AuthZoneOffset, GlobalAddress, NativeMethod, ProofId, ProofOffset, RENodeId,
@@ -23,6 +23,7 @@ pub enum AuthZoneError {
     CouldNotGetProof,
     CouldNotGetResource,
     NoMethodSpecified,
+    AssertAccessRuleError(MethodAuthorization, MethodAuthorizationError),
 }
 
 impl ExecutableInvocation for AuthZonePopInvocation {
@@ -454,5 +455,55 @@ impl NativeProgram for AuthZoneDrainInvocation {
                 node_refs_to_copy: HashSet::new(),
             },
         ))
+    }
+}
+
+impl ExecutableInvocation for AuthZoneAssertAccessRule {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+
+        let receiver = RENodeId::AuthZoneStack(self.receiver);
+        let resolved_receiver = ResolvedReceiver::new(receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::Drain)),
+            resolved_receiver,
+        );
+
+        let executor = NativeExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProgram for AuthZoneAssertAccessRule {
+    type Output = ();
+
+    fn main<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi,
+    {
+        let node_id = RENodeId::AuthZoneStack(self.receiver);
+        let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+        let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let substate_ref = api.get_ref(handle)?;
+        let auth_zone_ref = substate_ref.auth_zone();
+        let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), &self.access_rule);
+
+        // Authorization check
+        auth_zone_ref
+            .check_auth(false, vec![authorization])
+            .map_err(|(authorization, error)| {
+                RuntimeError::ApplicationError(ApplicationError::AuthZoneError(AuthZoneError::AssertAccessRuleError(authorization, error)))
+            })?;
+
+        api.drop_lock(handle)?;
+
+        Ok(((), CallFrameUpdate::empty()))
     }
 }

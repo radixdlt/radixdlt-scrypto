@@ -52,11 +52,25 @@ impl AuthModule {
             let auth_zone_ref_mut = substate_ref_mut.auth_zone();
 
             // New auth zone frame managed by the AuthModule
-            auth_zone_ref_mut.new_frame(actor);
+            let is_barrier = Self::is_barrier(actor);
+            auth_zone_ref_mut.new_frame(is_barrier);
             system_api.drop_lock(handle)?;
         }
 
         Ok(())
+    }
+
+    fn is_barrier(actor: &REActor) -> bool {
+        matches!(
+            actor,
+            REActor::Method(
+                _,
+                ResolvedReceiver {
+                    derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
+                    ..
+                }
+            )
+        )
     }
 
     pub fn on_before_frame_start<Y, X>(
@@ -267,10 +281,11 @@ impl AuthModule {
         )?;
         let substate_ref = system_api.get_ref(handle)?;
         let auth_zone_ref = substate_ref.auth_zone();
+        let is_barrier = Self::is_barrier(actor);
 
         // Authorization check
         auth_zone_ref
-            .check_auth(actor, method_auths)
+            .check_auth(is_barrier, method_auths)
             .map_err(|(authorization, error)| {
                 RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
                     actor: actor.clone(),

@@ -93,6 +93,7 @@ pub enum AuthZoneMethodInvocation {
     CreateProofByIds(AuthZoneCreateProofByIdsInvocation),
     Clear(AuthZoneClearInvocation),
     Drain(AuthZoneDrainInvocation),
+    AssertAuthRule(AuthZoneAssertAccessRule),
 }
 
 #[derive(Debug)]
@@ -251,6 +252,10 @@ impl NativeFnInvocation {
                     AuthZoneMethodInvocation::Drain(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    AuthZoneMethodInvocation::AssertAuthRule(invocation) =>
+                        system_api
+                            .sys_invoke(invocation)
+                            .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::Proof(proof_method) => match proof_method {
                     ProofMethodInvocation::GetAmount(invocation) => system_api

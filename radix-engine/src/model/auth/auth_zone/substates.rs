@@ -225,26 +225,13 @@ impl AuthZoneStackSubstate {
         }
     }
 
-    fn is_barrier(actor: &REActor) -> bool {
-        matches!(
-            actor,
-            REActor::Method(
-                _,
-                ResolvedReceiver {
-                    derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
-                    ..
-                }
-            )
-        )
-    }
-
     pub fn check_auth(
         &self,
-        to: &REActor,
+        is_barrier: bool,
         method_auths: Vec<MethodAuthorization>,
     ) -> Result<(), (MethodAuthorization, MethodAuthorizationError)> {
         let mut barrier_crossings_allowed = 1u32;
-        if Self::is_barrier(to) {
+        if is_barrier {
             barrier_crossings_allowed -= 1;
         }
 
@@ -256,8 +243,7 @@ impl AuthZoneStackSubstate {
         Ok(())
     }
 
-    pub fn new_frame(&mut self, actor: &REActor) {
-        let barrier = Self::is_barrier(actor);
+    pub fn new_frame(&mut self, barrier: bool) {
         let auth_zone = AuthZone::empty(barrier);
         self.auth_zones.push(auth_zone);
     }

@@ -168,3 +168,26 @@ impl Into<NativeFnInvocation> for AuthZoneDrainInvocation {
         ))
     }
 }
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct AuthZoneAssertAccessRule {
+    pub receiver: AuthZoneId,
+    pub access_rule: AccessRule,
+}
+
+impl Invocation for AuthZoneAssertAccessRule {
+    type Output = ();
+}
+
+impl ScryptoNativeInvocation for AuthZoneAssertAccessRule {
+    type ScryptoOutput = ();
+}
+
+impl Into<NativeFnInvocation> for AuthZoneAssertAccessRule {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::AuthZone(
+            AuthZoneMethodInvocation::AssertAuthRule(self),
+        ))
+    }
+}
