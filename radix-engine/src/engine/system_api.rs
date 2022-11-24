@@ -4,6 +4,7 @@ use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use bitflags::bitflags;
 use radix_engine_interface::api::types::{Level, LockHandle, RENodeId, SubstateOffset, VaultId};
+use sbor::rust::fmt::Debug;
 
 bitflags! {
     #[derive(Encode, Decode, TypeId)]
@@ -31,7 +32,7 @@ pub struct LockInfo {
 }
 
 pub trait Invocation {
-    type Output: Traceable + 'static;
+    type Output: Debug;
 }
 
 pub trait Invokable<I>

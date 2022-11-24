@@ -1,3 +1,4 @@
+use crate::engine::node_move_module::NodeMoveError;
 use crate::engine::{ExecutionMode, LockFlags, REActor};
 use radix_engine_interface::api::types::{
     GlobalAddress, LockHandle, NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,
@@ -56,6 +57,9 @@ pub enum RuntimeError {
 
     /// An error occurred within application logic, like the RE models.
     ApplicationError(ApplicationError),
+
+    /// An unexpected error occurred
+    UnexpectedError(String),
 }
 
 impl From<KernelError> for RuntimeError {
@@ -118,8 +122,6 @@ pub enum KernelError {
         offset: SubstateOffset,
         flags: LockFlags,
     },
-    CantMoveDownstream(RENodeId),
-    CantMoveUpstream(RENodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -156,6 +158,7 @@ pub enum InterpreterError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ModuleError {
+    NodeMoveError(NodeMoveError),
     AuthError(AuthError),
     CostingError(CostingError),
     ExecutionTraceError(ExecutionTraceError),
@@ -200,7 +203,7 @@ pub enum ApplicationError {
 
     ResourceManagerError(ResourceManagerError),
 
-    ComponentError(ComponentError),
+    AccessRulesError(AccessRulesError),
 
     BucketError(BucketError),
 

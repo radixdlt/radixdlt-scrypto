@@ -4,8 +4,8 @@ use crate::engine::{
 };
 use crate::fee::FeeReserve;
 use crate::model::{
-    ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore,
-    RuntimeSubstate,
+    AccessRulesSubstate, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate,
+    KeyValueStore, RuntimeSubstate,
 };
 use crate::types::ScryptoInvocation;
 use crate::wasm::WasmEngine;
@@ -18,6 +18,8 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 
 impl<'g, 's, W, R, N, T> SysNativeInvokable<N, RuntimeError> for Kernel<'g, 's, W, R>
 where
@@ -74,8 +76,11 @@ where
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
                 // Create component
                 RENode::Component(
-                    ComponentInfoSubstate::new(package_address, blueprint_name, Vec::new()),
+                    ComponentInfoSubstate::new(package_address, blueprint_name),
                     ComponentStateSubstate::new(state),
+                    AccessRulesSubstate {
+                        access_rules: Vec::new(),
+                    },
                 )
             }
             ScryptoRENode::KeyValueStore => RENode::KeyValueStore(KeyValueStore::new()),

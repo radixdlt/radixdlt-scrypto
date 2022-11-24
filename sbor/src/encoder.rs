@@ -48,7 +48,10 @@ pub trait Encoder<X: CustomTypeId>: Sized {
     ///   * Transparent wrappers
     /// * Where the use of the inner type is invisible to SborValue, ie:
     ///   * Where the use of `value.encode_body` is coincidental / code re-use
-    fn encode_deeper_body<T: Encode<X, Self> + ?Sized>(&mut self, value: &T) -> Result<(), EncodeError>;
+    fn encode_deeper_body<T: Encode<X, Self> + ?Sized>(
+        &mut self,
+        value: &T,
+    ) -> Result<(), EncodeError>;
 
     #[inline]
     fn write_type_id(&mut self, ty: SborTypeId<X>) -> Result<(), EncodeError> {
@@ -120,7 +123,10 @@ impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> VecEncoder<'a, X, MAX_DEPTH> {
 }
 
 impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> Encoder<X> for VecEncoder<'a, X, MAX_DEPTH> {
-    fn encode_deeper_body<T: Encode<X, Self> + ?Sized>(&mut self, value: &T) -> Result<(), EncodeError> {
+    fn encode_deeper_body<T: Encode<X, Self> + ?Sized>(
+        &mut self,
+        value: &T,
+    ) -> Result<(), EncodeError> {
         self.track_stack_depth_increase()?;
         value.encode_body(self)?;
         self.track_stack_depth_decrease()

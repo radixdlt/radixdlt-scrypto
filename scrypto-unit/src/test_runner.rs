@@ -7,7 +7,9 @@ use radix_engine::engine::{Invokable, Kernel, KernelError, ModuleError, ScryptoI
 use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
-use radix_engine::model::{export_abi, export_abi_by_component, extract_abi};
+use radix_engine::model::{
+    export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate,
+};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
@@ -202,6 +204,20 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
         self.load_account_from_faucet(account);
         (pub_key, priv_key, account)
+    }
+
+    pub fn deref_component_address(&mut self, component_address: ComponentAddress) -> RENodeId {
+        let substate: GlobalAddressSubstate = self
+            .execution_stores
+            .get_root_store()
+            .get_substate(&SubstateId(
+                RENodeId::Global(GlobalAddress::Component(component_address)),
+                SubstateOffset::Global(GlobalOffset::Global),
+            ))
+            .map(|output| output.substate.to_runtime().into())
+            .unwrap();
+
+        substate.node_deref()
     }
 
     pub fn new_allocated_account(

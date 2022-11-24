@@ -54,6 +54,16 @@ pub struct SubstateLock {
     pub flags: LockFlags,
 }
 
+struct RENodeRefData {
+    location: RENodeLocation,
+}
+
+impl RENodeRefData {
+    fn new(location: RENodeLocation) -> Self {
+        RENodeRefData { location }
+    }
+}
+
 // TODO: reduce fields visibility
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
@@ -66,14 +76,14 @@ pub struct CallFrame {
     pub actor: REActor,
 
     /// All ref nodes accessible by this call frame (does not include owned nodes).
-    pub node_refs: HashMap<RENodeId, RENodeLocation>,
+    node_refs: HashMap<RENodeId, RENodeRefData>,
 
     /// Owned nodes which by definition must live on heap
-    owned_root_nodes: HashSet<RENodeId>,
+    /// Also keeps track of number of locks on this node
+    owned_root_nodes: HashMap<RENodeId, u32>,
 
     next_lock_handle: LockHandle,
     locks: HashMap<LockHandle, SubstateLock>,
-    node_lock_count: HashMap<RENodeId, u32>,
 }
 
 impl CallFrame {
@@ -114,13 +124,14 @@ impl CallFrame {
 
         // Expand references
         {
-            // TODO: Figure out how to drop these references as well on reference drop
             for global_address in &global_references {
                 let node_id = RENodeId::Global(global_address.clone());
-                self.node_refs.insert(node_id, RENodeLocation::Store);
+                self.node_refs
+                    .insert(node_id, RENodeRefData::new(RENodeLocation::Store));
             }
             for child_id in &substate_owned_nodes {
-                self.node_refs.insert(*child_id, location);
+                self.node_refs
+                    .insert(*child_id, RENodeRefData::new(location));
             }
         }
 
@@ -136,21 +147,11 @@ impl CallFrame {
         );
         self.next_lock_handle = self.next_lock_handle + 1;
 
-        let counter = self.node_lock_count.entry(node_id).or_insert(0u32);
-        *counter += 1;
+        if let Some(counter) = self.owned_root_nodes.get_mut(&node_id) {
+            *counter += 1;
+        }
 
         Ok(lock_handle)
-    }
-
-    pub fn get_lock_info(&self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
-        let substate_lock = self
-            .locks
-            .get(&lock_handle)
-            .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
-
-        Ok(LockInfo {
-            offset: substate_lock.substate_pointer.2.clone(),
-        })
     }
 
     pub fn drop_lock<'s, R: FeeReserve>(
@@ -204,18 +205,17 @@ impl CallFrame {
             }
         }
 
+        // Global references need not be dropped
+        // Substate Locks downstream may also continue to live
         for refed_node in substate_lock.substate_owned_nodes {
             self.node_refs.remove(&refed_node);
         }
 
-        let counter = self
-            .node_lock_count
-            .entry(substate_lock.substate_pointer.1)
-            .or_insert(0u32);
-        *counter -= 1;
-        if *counter == 0 {
-            self.node_lock_count
-                .remove(&substate_lock.substate_pointer.1);
+        if let Some(counter) = self
+            .owned_root_nodes
+            .get_mut(&substate_lock.substate_pointer.1)
+        {
+            *counter -= 1;
         }
 
         let flags = substate_lock.flags;
@@ -240,6 +240,17 @@ impl CallFrame {
         Ok(())
     }
 
+    pub fn get_lock_info(&self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
+        let substate_lock = self
+            .locks
+            .get(&lock_handle)
+            .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
+
+        Ok(LockInfo {
+            offset: substate_lock.substate_pointer.2.clone(),
+        })
+    }
+
     fn get_lock(&self, lock_handle: LockHandle) -> Result<&SubstateLock, KernelError> {
         self.locks
             .get(&lock_handle)
@@ -253,10 +264,9 @@ impl CallFrame {
                 NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
             )),
             node_refs: HashMap::new(),
-            owned_root_nodes: HashSet::new(),
+            owned_root_nodes: HashMap::new(),
             next_lock_handle: 0u32,
             locks: HashMap::new(),
-            node_lock_count: HashMap::new(),
         }
     }
 
@@ -265,17 +275,17 @@ impl CallFrame {
         actor: REActor,
         call_frame_update: CallFrameUpdate,
     ) -> Result<Self, RuntimeError> {
-        let mut owned_heap_nodes = HashSet::new();
+        let mut owned_heap_nodes = HashMap::new();
         let mut next_node_refs = HashMap::new();
 
         for node_id in call_frame_update.nodes_to_move {
             parent.take_node_internal(node_id)?;
-            owned_heap_nodes.insert(node_id);
+            owned_heap_nodes.insert(node_id, 0u32);
         }
 
         for node_id in call_frame_update.node_refs_to_copy {
             let location = parent.get_node_location(node_id)?;
-            next_node_refs.insert(node_id, location);
+            next_node_refs.insert(node_id, RENodeRefData::new(location));
         }
 
         let frame = Self {
@@ -285,7 +295,6 @@ impl CallFrame {
             owned_root_nodes: owned_heap_nodes,
             next_lock_handle: 0u32,
             locks: HashMap::new(),
-            node_lock_count: HashMap::new(),
         };
 
         Ok(frame)
@@ -299,16 +308,17 @@ impl CallFrame {
         for node_id in update.nodes_to_move {
             // move re nodes to upstream call frame.
             from.take_node_internal(node_id)?;
-            to.owned_root_nodes.insert(node_id);
+            to.owned_root_nodes.insert(node_id, 0u32);
         }
 
         for node_id in update.node_refs_to_copy {
             // Make sure not to allow owned nodes to be passed as references upstream
-            let location = from
+            let ref_data = from
                 .node_refs
                 .get(&node_id)
                 .ok_or(CallFrameError::RENodeNotVisible(node_id))?;
-            to.node_refs.insert(node_id, location.clone());
+            to.node_refs
+                .insert(node_id, RENodeRefData::new(ref_data.location.clone()));
         }
 
         Ok(())
@@ -319,24 +329,26 @@ impl CallFrame {
         heap: &mut Heap,
         track: &mut Track<'s, R>,
     ) -> Result<(), RuntimeError> {
-        let lock_ids: Vec<LockHandle> = self.locks.keys().cloned().collect();
-        for lock in lock_ids {
-            self.drop_lock(heap, track, lock)?;
+        let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
+
+        for lock_handle in lock_handles {
+            self.drop_lock(heap, track, lock_handle)?;
         }
 
         Ok(())
     }
 
     fn take_node_internal(&mut self, node_id: RENodeId) -> Result<(), CallFrameError> {
-        if self.node_lock_count.contains_key(&node_id) {
-            return Err(CallFrameError::MovingLockedRENode(node_id));
+        match self.owned_root_nodes.remove(&node_id) {
+            None => Err(CallFrameError::RENodeNotOwned(node_id)),
+            Some(lock_count) => {
+                if lock_count == 0 {
+                    Ok(())
+                } else {
+                    Err(CallFrameError::MovingLockedRENode(node_id))
+                }
+            }
         }
-
-        if !self.owned_root_nodes.remove(&node_id) {
-            return Err(CallFrameError::RENodeNotOwned(node_id));
-        }
-
-        Ok(())
     }
 
     pub fn create_node(
@@ -362,9 +374,14 @@ impl CallFrame {
             //child_nodes,
         };
         heap.create_node(node_id, heap_root_node);
-        self.owned_root_nodes.insert(node_id);
+        self.owned_root_nodes.insert(node_id, 0u32);
 
         Ok(())
+    }
+
+    pub fn add_stored_ref(&mut self, node_id: RENodeId) {
+        self.node_refs
+            .insert(node_id, RENodeRefData::new(RENodeLocation::Store));
     }
 
     pub fn move_owned_node_to_store<'f, 's, R: FeeReserve>(
@@ -380,7 +397,7 @@ impl CallFrame {
     }
 
     pub fn owned_nodes(&self) -> Vec<RENodeId> {
-        self.owned_root_nodes.iter().cloned().collect()
+        self.owned_root_nodes.keys().cloned().collect()
     }
 
     /// Removes node from call frame and re-owns any children
@@ -394,7 +411,7 @@ impl CallFrame {
         for (_, substate) in &node.substates {
             let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
             for child_node in child_nodes {
-                self.owned_root_nodes.insert(child_node);
+                self.owned_root_nodes.insert(child_node, 0u32);
             }
         }
 
@@ -466,10 +483,10 @@ impl CallFrame {
     pub fn get_node_location(&self, node_id: RENodeId) -> Result<RENodeLocation, CallFrameError> {
         // Find node
         let node_pointer = {
-            if self.owned_root_nodes.contains(&node_id) {
+            if self.owned_root_nodes.contains_key(&node_id) {
                 RENodeLocation::Heap
-            } else if let Some(pointer) = self.node_refs.get(&node_id) {
-                pointer.clone()
+            } else if let Some(ref_data) = self.node_refs.get(&node_id) {
+                ref_data.location.clone()
             } else {
                 return Err(CallFrameError::RENodeNotVisible(node_id));
             }
@@ -480,7 +497,7 @@ impl CallFrame {
 
     pub fn get_visible_nodes(&self) -> Vec<RENodeId> {
         let mut node_ids: Vec<RENodeId> = self.node_refs.keys().cloned().collect();
-        let owned_ids: Vec<RENodeId> = self.owned_root_nodes.iter().cloned().collect();
+        let owned_ids: Vec<RENodeId> = self.owned_root_nodes.keys().cloned().collect();
         node_ids.extend(owned_ids);
         node_ids
     }
