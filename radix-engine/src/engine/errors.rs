@@ -103,6 +103,7 @@ pub enum KernelError {
     InvalidOffset(SubstateOffset),
     InvalidOwnership(SubstateOffset, RENodeId),
     InvalidOverwrite,
+    InvalidId(RENodeId),
 
     // Actor Constraints
     InvalidDropNodeVisibility {

@@ -46,23 +46,25 @@ impl ExecutableInvocation for BucketTakeInvocation {
 impl NativeProgram for BucketTakeInvocation {
     type Output = Bucket;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let bucket_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
+        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
         let container = bucket.take(self.amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceOperationError(e),
             ))
         })?;
-        let bucket_id = system_api
-            .create_node(RENode::Bucket(BucketSubstate::new(container)))?
+
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        let bucket_id = api
+            .create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?
             .into();
         Ok((
             Bucket(bucket_id),
@@ -93,15 +95,15 @@ impl ExecutableInvocation for BucketCreateProofInvocation {
 impl NativeProgram for BucketCreateProofInvocation {
     type Output = Proof;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let bucket_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
+        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
         let proof = bucket.create_proof(self.receiver).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
@@ -109,7 +111,8 @@ impl NativeProgram for BucketCreateProofInvocation {
             )))
         })?;
 
-        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+        let node_id = api.allocate_node_id(RENodeType::Proof)?;
+        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
         Ok((
             Proof(proof_id),
             CallFrameUpdate::move_node(RENodeId::Proof(proof_id)),
@@ -139,23 +142,25 @@ impl ExecutableInvocation for BucketTakeNonFungiblesInvocation {
 impl NativeProgram for BucketTakeNonFungiblesInvocation {
     type Output = Bucket;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let bucket_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
+        let mut substate_mut = api.get_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
         let container = bucket.take_non_fungibles(&self.ids).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceOperationError(e),
             ))
         })?;
-        let bucket_id = system_api
-            .create_node(RENode::Bucket(BucketSubstate::new(container)))?
+
+        let node_id = api.allocate_node_id(RENodeType::Proof)?;
+        let bucket_id = api
+            .create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?
             .into();
         Ok((
             Bucket(bucket_id),

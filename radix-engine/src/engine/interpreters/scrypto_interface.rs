@@ -11,9 +11,10 @@ use crate::types::ScryptoInvocation;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
-    Level, LockHandle, RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent,
-    ScryptoRENode, SubstateOffset,
+    ComponentOffset, Level, LockHandle, RENodeId, RENodeType, ScryptoActor, ScryptoFunctionIdent,
+    ScryptoMethodIdent, ScryptoRENode, SubstateOffset,
 };
+use radix_engine_interface::constants::ACCOUNT_PACKAGE;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::string::String;
@@ -49,24 +50,55 @@ where
     }
 
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
-        let node = match node {
-            ScryptoRENode::GlobalComponent(component_id) => RENode::Global(
-                GlobalAddressSubstate::Component(scrypto::component::Component(component_id)),
-            ),
+        let (node_id, node) = match node {
+            ScryptoRENode::GlobalComponent(component_id) => {
+                // TODO: Remove this check
+                let node_id = {
+                    let handle = self.lock_substate(
+                        RENodeId::Component(component_id),
+                        SubstateOffset::Component(ComponentOffset::Info),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = self.get_ref(handle)?;
+                    let node_id = if substate_ref
+                        .component_info()
+                        .package_address
+                        .eq(&ACCOUNT_PACKAGE)
+                    {
+                        self.allocate_node_id(RENodeType::GlobalAccount)?
+                    } else {
+                        self.allocate_node_id(RENodeType::GlobalComponent)?
+                    };
+                    self.drop_lock(handle)?;
+                    node_id
+                };
+
+                let node = RENode::Global(GlobalAddressSubstate::Component(
+                    scrypto::component::Component(component_id),
+                ));
+                (node_id, node)
+            }
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
+                let node_id = self.allocate_node_id(RENodeType::Component)?;
                 // Create component
-                RENode::Component(
+                let node = RENode::Component(
                     ComponentInfoSubstate::new(package_address, blueprint_name),
                     ComponentStateSubstate::new(state),
                     AccessRulesSubstate {
                         access_rules: Vec::new(),
                     },
-                )
+                );
+
+                (node_id, node)
             }
-            ScryptoRENode::KeyValueStore => RENode::KeyValueStore(KeyValueStore::new()),
+            ScryptoRENode::KeyValueStore => {
+                let node_id = self.allocate_node_id(RENodeType::KeyValueStore)?;
+                let node = RENode::KeyValueStore(KeyValueStore::new());
+                (node_id, node)
+            }
         };
 
-        self.create_node(node)
+        self.create_node(node_id, node)
     }
 
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {

@@ -50,16 +50,21 @@ impl ExecutableInvocation for EpochManagerCreateInvocation {
 impl NativeProgram for EpochManagerCreateInvocation {
     type Output = SystemAddress;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
     {
-        let node_id =
-            system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
+        let node_id = api.allocate_node_id(RENodeType::EpochManager)?;
+        let underlying_node_id = api.create_node(
+            node_id,
+            RENode::EpochManager(EpochManagerSubstate { epoch: 0 }),
+        )?;
 
-        let global_node_id = system_api.create_node(RENode::Global(
-            GlobalAddressSubstate::System(node_id.into()),
-        ))?;
+        let node_id = api.allocate_node_id(RENodeType::GlobalEpochManager)?;
+        let global_node_id = api.create_node(
+            node_id,
+            RENode::Global(GlobalAddressSubstate::System(underlying_node_id.into())),
+        )?;
 
         let system_address: SystemAddress = global_node_id.into();
         let mut node_refs_to_copy = HashSet::new();

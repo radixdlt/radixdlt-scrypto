@@ -95,16 +95,17 @@ impl NativeProgram for ResourceManagerCreateInvocation {
 
     fn main<Y>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<((ResourceAddress, Option<Bucket>), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
             + SysNativeInvokable<ResourceManagerSetResourceAddressInvocation, RuntimeError>,
     {
-        let node_id = if matches!(self.resource_type, ResourceType::NonFungible) {
+        let underlying_node_id = if matches!(self.resource_type, ResourceType::NonFungible) {
+            let node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
             let nf_store_node_id =
-                system_api.create_node(RENode::NonFungibleStore(NonFungibleStore::new()))?;
+                api.create_node(node_id, RENode::NonFungibleStore(NonFungibleStore::new()))?;
             let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
 
             let mut resource_manager = ResourceManagerSubstate::new(
@@ -126,17 +127,14 @@ impl NativeProgram for ResourceManagerCreateInvocation {
                         let offset = SubstateOffset::NonFungibleStore(
                             NonFungibleStoreOffset::Entry(non_fungible_id.clone()),
                         );
-                        let non_fungible_handle = system_api.lock_substate(
-                            nf_store_node_id,
-                            offset,
-                            LockFlags::MUTABLE,
-                        )?;
-                        let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
+                        let non_fungible_handle =
+                            api.lock_substate(nf_store_node_id, offset, LockFlags::MUTABLE)?;
+                        let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
                         let non_fungible_mut = substate_mut.non_fungible();
                         *non_fungible_mut = NonFungibleSubstate(Some(
                             NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
                         ));
-                        system_api.drop_lock(non_fungible_handle)?;
+                        api.drop_lock(non_fungible_handle)?;
                     }
                     resource_manager.total_supply = entries.len().into();
                 } else {
@@ -147,7 +145,9 @@ impl NativeProgram for ResourceManagerCreateInvocation {
                     ));
                 }
             }
-            system_api.create_node(RENode::ResourceManager(resource_manager))?
+
+            let node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
+            api.create_node(node_id, RENode::ResourceManager(resource_manager))?
         } else {
             let mut resource_manager = ResourceManagerSubstate::new(
                 self.resource_type,
@@ -189,15 +189,20 @@ impl NativeProgram for ResourceManagerCreateInvocation {
                     ));
                 }
             }
-            system_api.create_node(RENode::ResourceManager(resource_manager))?
+
+            let node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
+            api.create_node(node_id, RENode::ResourceManager(resource_manager))?
         };
-        let global_node_id = system_api.create_node(RENode::Global(
-            GlobalAddressSubstate::Resource(node_id.into()),
-        ))?;
+
+        let node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let global_node_id = api.create_node(
+            node_id,
+            RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+        )?;
         let resource_address: ResourceAddress = global_node_id.into();
 
         // FIXME this is temporary workaround for the resource address resolution problem
-        system_api.sys_invoke(ResourceManagerSetResourceAddressInvocation {
+        api.sys_invoke(ResourceManagerSetResourceAddressInvocation {
             receiver: resource_address,
         })?;
 
@@ -214,8 +219,10 @@ impl NativeProgram for ResourceManagerCreateInvocation {
                     amount,
                 ),
             };
-            let bucket_id = system_api
-                .create_node(RENode::Bucket(BucketSubstate::new(container)))?
+
+            let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+            let bucket_id = api
+                .create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?
                 .into();
             Some(Bucket(bucket_id))
         } else {
@@ -484,21 +491,23 @@ pub struct ResourceManagerCreateVaultExecutable(RENodeId);
 impl NativeProgram for ResourceManagerCreateVaultExecutable {
     type Output = Vault;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Vault, CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<(Vault, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
-        let substate_ref = system_api.get_ref(resman_handle)?;
+        let substate_ref = api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
         let resource = Resource::new_empty(
             resource_manager.resource_address.unwrap(),
             resource_manager.resource_type,
         );
-        let vault_id = system_api
-            .create_node(RENode::Vault(VaultRuntimeSubstate::new(resource)))?
+
+        let node_id = api.allocate_node_id(RENodeType::Vault)?;
+        let vault_id = api
+            .create_node(node_id, RENode::Vault(VaultRuntimeSubstate::new(resource)))?
             .into();
 
         Ok((
@@ -541,21 +550,23 @@ pub struct ResourceManagerCreateBucketExecutable(RENodeId);
 impl NativeProgram for ResourceManagerCreateBucketExecutable {
     type Output = Bucket;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
-        let substate_ref = system_api.get_ref(resman_handle)?;
+        let substate_ref = api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
         let container = Resource::new_empty(
             resource_manager.resource_address.unwrap(),
             resource_manager.resource_type,
         );
-        let bucket_id = system_api
-            .create_node(RENode::Bucket(BucketSubstate::new(container)))?
+
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        let bucket_id = api
+            .create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?
             .into();
 
         Ok((
@@ -596,15 +607,15 @@ pub struct ResourceManagerMintExecutable(RENodeId, MintParams);
 impl NativeProgram for ResourceManagerMintExecutable {
     type Output = Bucket;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
         let (resource, non_fungibles) = {
-            let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
+            let mut substate_mut = api.get_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
             let result = resource_manager
                 .mint(self.1, resource_manager.resource_address.unwrap())
@@ -617,12 +628,13 @@ impl NativeProgram for ResourceManagerMintExecutable {
             result
         };
 
-        let bucket_id = system_api
-            .create_node(RENode::Bucket(BucketSubstate::new(resource)))?
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        let bucket_id = api
+            .create_node(node_id, RENode::Bucket(BucketSubstate::new(resource)))?
             .into();
 
         let (nf_store_id, resource_address) = {
-            let substate_ref = system_api.get_ref(resman_handle)?;
+            let substate_ref = api.get_ref(resman_handle)?;
             let resource_manager = substate_ref.resource_manager();
             (
                 resource_manager.nf_store_id.clone(),
@@ -634,11 +646,10 @@ impl NativeProgram for ResourceManagerMintExecutable {
             let node_id = RENodeId::NonFungibleStore(nf_store_id.unwrap());
             let offset =
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone()));
-            let non_fungible_handle =
-                system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+            let non_fungible_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
             {
-                let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
+                let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
                 let non_fungible_mut = substate_mut.non_fungible();
 
                 if non_fungible_mut.0.is_some() {
@@ -654,7 +665,7 @@ impl NativeProgram for ResourceManagerMintExecutable {
                 *non_fungible_mut = NonFungibleSubstate(Some(non_fungible));
             }
 
-            system_api.drop_lock(non_fungible_handle)?;
+            api.drop_lock(non_fungible_handle)?;
         }
 
         Ok((

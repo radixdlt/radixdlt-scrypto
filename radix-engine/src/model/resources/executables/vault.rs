@@ -50,16 +50,16 @@ impl ExecutableInvocation for VaultTakeInvocation {
 impl NativeProgram for VaultTakeInvocation {
     type Output = Bucket;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
         let vault_handle =
-            system_api.lock_substate(RENodeId::Vault(self.receiver), offset, LockFlags::MUTABLE)?;
+            api.lock_substate(RENodeId::Vault(self.receiver), offset, LockFlags::MUTABLE)?;
 
         let container = {
-            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault.take(self.amount).map_err(|e| match e {
                 InvokeError::Error(e) => {
@@ -69,8 +69,9 @@ impl NativeProgram for VaultTakeInvocation {
             })?
         };
 
-        let bucket_id = system_api
-            .create_node(RENode::Bucket(BucketSubstate::new(container)))?
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        let bucket_id = api
+            .create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?
             .into();
 
         Ok((
@@ -221,16 +222,16 @@ impl ExecutableInvocation for VaultTakeNonFungiblesInvocation {
 impl NativeProgram for VaultTakeNonFungiblesInvocation {
     type Output = Bucket;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let vault_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let container = {
-            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
                 .take_non_fungibles(&self.non_fungible_ids)
@@ -242,8 +243,9 @@ impl NativeProgram for VaultTakeNonFungiblesInvocation {
                 })?
         };
 
-        let bucket_id = system_api
-            .create_node(RENode::Bucket(BucketSubstate::new(container)))?
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        let bucket_id = api
+            .create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?
             .into();
 
         Ok((
@@ -402,16 +404,16 @@ impl ExecutableInvocation for VaultCreateProofInvocation {
 impl NativeProgram for VaultCreateProofInvocation {
     type Output = Proof;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let vault_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let proof = {
-            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
                 .create_proof(ResourceContainerId::Vault(self.receiver))
@@ -421,7 +423,9 @@ impl NativeProgram for VaultCreateProofInvocation {
                     ))
                 })?
         };
-        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+
+        let node_id = api.allocate_node_id(RENodeType::Proof)?;
+        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
 
         Ok((
             Proof(proof_id),
@@ -452,16 +456,16 @@ impl ExecutableInvocation for VaultCreateProofByAmountInvocation {
 impl NativeProgram for VaultCreateProofByAmountInvocation {
     type Output = Proof;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let vault_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let proof = {
-            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
                 .create_proof_by_amount(self.amount, ResourceContainerId::Vault(self.receiver))
@@ -472,7 +476,8 @@ impl NativeProgram for VaultCreateProofByAmountInvocation {
                 })?
         };
 
-        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+        let node_id = api.allocate_node_id(RENodeType::Proof)?;
+        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
 
         Ok((
             Proof(proof_id),
@@ -503,16 +508,16 @@ impl ExecutableInvocation for VaultCreateProofByIdsInvocation {
 impl NativeProgram for VaultCreateProofByIdsInvocation {
     type Output = Proof;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let vault_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let proof = {
-            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
                 .create_proof_by_ids(&self.ids, ResourceContainerId::Vault(self.receiver))
@@ -523,7 +528,8 @@ impl NativeProgram for VaultCreateProofByIdsInvocation {
                 })?
         };
 
-        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+        let node_id = api.allocate_node_id(RENodeType::Proof)?;
+        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
 
         Ok((
             Proof(proof_id),

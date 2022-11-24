@@ -51,16 +51,16 @@ impl ExecutableInvocation for AuthZonePopInvocation {
 impl NativeProgram for AuthZonePopInvocation {
     type Output = Proof;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
-        let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let auth_zone_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let proof = {
-            let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
+            let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
             let auth_zone = substate_mut.auth_zone();
             let proof = auth_zone.cur_auth_zone_mut().pop().map_err(|e| match e {
                 InvokeError::Downstream(runtime_error) => runtime_error,
@@ -71,7 +71,8 @@ impl NativeProgram for AuthZonePopInvocation {
             proof
         };
 
-        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+        let node_id = api.allocate_node_id(RENodeType::Proof)?;
+        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
 
         Ok((
             Proof(proof_id),
@@ -168,25 +169,24 @@ impl ExecutableInvocation for AuthZoneCreateProofInvocation {
 impl NativeProgram for AuthZoneCreateProofInvocation {
     type Output = Proof;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
-        let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let auth_zone_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let resource_type = {
             let resource_id = RENodeId::Global(GlobalAddress::Resource(self.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let resource_handle =
-                system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
-            let substate_ref = system_api.get_ref(resource_handle)?;
+            let resource_handle = api.lock_substate(resource_id, offset, LockFlags::read_only())?;
+            let substate_ref = api.get_ref(resource_handle)?;
             substate_ref.resource_manager().resource_type
         };
 
         let proof = {
-            let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
+            let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
             let auth_zone = substate_mut.auth_zone();
             let proof = auth_zone
                 .cur_auth_zone()
@@ -200,7 +200,8 @@ impl NativeProgram for AuthZoneCreateProofInvocation {
             proof
         };
 
-        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+        let node_id = api.allocate_node_id(RENodeType::Proof)?;
+        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
 
         Ok((
             Proof(proof_id),
@@ -240,25 +241,24 @@ impl ExecutableInvocation for AuthZoneCreateProofByAmountInvocation {
 impl NativeProgram for AuthZoneCreateProofByAmountInvocation {
     type Output = Proof;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
-        let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let auth_zone_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let resource_type = {
             let resource_id = RENodeId::Global(GlobalAddress::Resource(self.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let resource_handle =
-                system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
-            let substate_ref = system_api.get_ref(resource_handle)?;
+            let resource_handle = api.lock_substate(resource_id, offset, LockFlags::read_only())?;
+            let substate_ref = api.get_ref(resource_handle)?;
             substate_ref.resource_manager().resource_type
         };
 
         let proof = {
-            let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
+            let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
             let auth_zone = substate_mut.auth_zone();
             let proof = auth_zone
                 .cur_auth_zone()
@@ -273,7 +273,8 @@ impl NativeProgram for AuthZoneCreateProofByAmountInvocation {
             proof
         };
 
-        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+        let node_id = api.allocate_node_id(RENodeType::Proof)?;
+        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
 
         Ok((
             Proof(proof_id),
@@ -313,25 +314,24 @@ impl ExecutableInvocation for AuthZoneCreateProofByIdsInvocation {
 impl NativeProgram for AuthZoneCreateProofByIdsInvocation {
     type Output = Proof;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
-        let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let auth_zone_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let resource_type = {
             let resource_id = RENodeId::Global(GlobalAddress::Resource(self.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let resource_handle =
-                system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
-            let substate_ref = system_api.get_ref(resource_handle)?;
+            let resource_handle = api.lock_substate(resource_id, offset, LockFlags::read_only())?;
+            let substate_ref = api.get_ref(resource_handle)?;
             substate_ref.resource_manager().resource_type
         };
 
         let proof = {
-            let substate_ref = system_api.get_ref(auth_zone_handle)?;
+            let substate_ref = api.get_ref(auth_zone_handle)?;
             let auth_zone = substate_ref.auth_zone();
             let proof = auth_zone
                 .cur_auth_zone()
@@ -346,7 +346,8 @@ impl NativeProgram for AuthZoneCreateProofByIdsInvocation {
             proof
         };
 
-        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+        let node_id = api.allocate_node_id(RENodeType::Proof)?;
+        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
 
         Ok((
             Proof(proof_id),
@@ -422,16 +423,16 @@ impl ExecutableInvocation for AuthZoneDrainInvocation {
 impl NativeProgram for AuthZoneDrainInvocation {
     type Output = Vec<Proof>;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Vec<Proof>, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(Vec<Proof>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
-        let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let auth_zone_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let proofs = {
-            let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
+            let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
             let auth_zone = substate_mut.auth_zone();
             let proofs = auth_zone.cur_auth_zone_mut().drain();
             proofs
@@ -440,7 +441,8 @@ impl NativeProgram for AuthZoneDrainInvocation {
         let mut proof_ids: Vec<Proof> = Vec::new();
         let mut nodes_to_move = Vec::new();
         for proof in proofs {
-            let proof_id: ProofId = system_api.create_node(RENode::Proof(proof))?.into();
+            let node_id = api.allocate_node_id(RENodeType::Proof)?;
+            let proof_id: ProofId = api.create_node(node_id, RENode::Proof(proof))?.into();
             proof_ids.push(Proof(proof_id));
             nodes_to_move.push(RENodeId::Proof(proof_id));
         }

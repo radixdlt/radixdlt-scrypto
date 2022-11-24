@@ -113,7 +113,8 @@ where
                     auth_zone_params.initial_proofs.into_iter().collect(),
                 );
 
-                system_api.create_node(RENode::AuthZone(auth_zone))?;
+                let node_id = system_api.allocate_node_id(RENodeType::AuthZoneStack)?;
+                system_api.create_node(node_id, RENode::AuthZone(auth_zone))?;
 
                 Ok(())
             })
@@ -835,7 +836,7 @@ where
         Ok(node)
     }
 
-    fn allocate_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
+    fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
         // TODO: Add costing
 
         let node_id = match node_type {
@@ -910,7 +911,11 @@ where
         Ok(node_id)
     }
 
-    fn create_node(&mut self, re_node: RENode) -> Result<RENodeId, RuntimeError> {
+    fn create_node(
+        &mut self,
+        node_id: RENodeId,
+        re_node: RENode,
+    ) -> Result<RENodeId, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,
@@ -938,11 +943,23 @@ where
             ));
         }
 
-        // TODO: For Scrypto components, check state against blueprint schema
-
-        let node_type = match &re_node {
-            RENode::Global(GlobalAddressSubstate::Package(..)) => RENodeType::GlobalPackage,
-            RENode::Global(GlobalAddressSubstate::Component(component)) => {
+        match (node_id, &re_node) {
+            (
+                RENodeId::Global(GlobalAddress::Package(..)),
+                RENode::Global(GlobalAddressSubstate::Package(..)),
+            ) => {}
+            (
+                RENodeId::Global(GlobalAddress::Resource(..)),
+                RENode::Global(GlobalAddressSubstate::Resource(..)),
+            ) => {}
+            (
+                RENodeId::Global(GlobalAddress::System(..)),
+                RENode::Global(GlobalAddressSubstate::System(..)),
+            ) => {}
+            (
+                RENodeId::Global(address),
+                RENode::Global(GlobalAddressSubstate::Component(component)),
+            ) => {
                 // TODO: Get rid of this logic
                 let (package_address, blueprint_name) = self
                     .execute_in_mode::<_, _, RuntimeError>(
@@ -962,31 +979,43 @@ where
                         },
                     )?;
 
-                match (package_address, blueprint_name.as_str()) {
-                    (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => RENodeType::GlobalAccount,
-                    _ => RENodeType::GlobalComponent,
+                match address {
+                    GlobalAddress::Component(ComponentAddress::Account(..)) => {
+                        if !(package_address.eq(&ACCOUNT_PACKAGE)
+                            && blueprint_name.eq(&ACCOUNT_BLUEPRINT))
+                        {
+                            return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id)));
+                        }
+                    }
+                    GlobalAddress::Component(ComponentAddress::Normal(..)) => {
+                        if package_address.eq(&ACCOUNT_PACKAGE)
+                            && blueprint_name.eq(&ACCOUNT_BLUEPRINT)
+                        {
+                            return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id)));
+                        }
+                    }
+                    _ => {
+                        return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id)));
+                    }
                 }
             }
-            RENode::Global(GlobalAddressSubstate::Resource(..)) => {
-                RENodeType::GlobalResourceManager
-            }
-            RENode::Global(GlobalAddressSubstate::System(..)) => RENodeType::GlobalEpochManager,
-            RENode::Bucket(..) => RENodeType::Bucket,
-            RENode::Proof(..) => RENodeType::Proof,
-            RENode::AuthZone(..) => RENodeType::AuthZoneStack,
-            RENode::Vault(..) => RENodeType::Vault,
-            RENode::Component(..) => RENodeType::Component,
-            RENode::Worktop(..) => RENodeType::Worktop,
-            RENode::Package(..) => RENodeType::Package,
-            RENode::KeyValueStore(..) => RENodeType::KeyValueStore,
-            RENode::NonFungibleStore(..) => RENodeType::NonFungibleStore,
-            RENode::ResourceManager(..) => RENodeType::ResourceManager,
-            RENode::EpochManager(..) => RENodeType::EpochManager,
-        };
+            (RENodeId::Bucket(..), RENode::Bucket(..)) => {}
+            (RENodeId::Proof(..), RENode::Proof(..)) => {}
+            (RENodeId::AuthZoneStack(..), RENode::AuthZone(..)) => {}
+            (RENodeId::Vault(..), RENode::Vault(..)) => {}
+            (RENodeId::Component(..), RENode::Component(..)) => {}
+            (RENodeId::Worktop, RENode::Worktop(..)) => {}
+            (RENodeId::Package(..), RENode::Package(..)) => {}
+            (RENodeId::KeyValueStore(..), RENode::KeyValueStore(..)) => {}
+            (RENodeId::NonFungibleStore(..), RENode::NonFungibleStore(..)) => {}
+            (RENodeId::ResourceManager(..), RENode::ResourceManager(..)) => {}
+            (RENodeId::EpochManager(..), RENode::EpochManager(..)) => {}
+            _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
+        }
 
-        let node_id = self.allocate_id(node_type)?;
+        // TODO: For Scrypto components, check state against blueprint schema
+
         let push_to_store = matches!(re_node, RENode::Global(..));
-
         self.current_frame.create_node(
             node_id,
             re_node,
