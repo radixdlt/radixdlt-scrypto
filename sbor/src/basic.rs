@@ -23,8 +23,17 @@ pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomTypeId, DEFAULT_BASIC_MAX_DEP
 pub type BasicSborValue = SborValue<NoCustomTypeId, NoCustomValue>;
 pub type BasicSborTypeId = SborTypeId<NoCustomTypeId>;
 
-// These trait "aliases" should only be used for parameters, never implementations
-// Implementations should implement the underlying traits (TypeId<NoCustomTypeId>/Encode<NoCustomTypeId, E>/Decode<NoCustomTypeId, D>)
+// The following trait "aliases" are to be used in parameters.
+//
+// They are much nicer to read than the underlying traits, but because they are "new", and are defined
+// via blanket impls, they can only be used for parameters, but cannot be used for implementations.
+//
+// Implementations should instead implement the underlying traits:
+// * TypeId<X> (impl over all X: CustomTypeId)
+// * Encode<X, E> (impl over all X: CustomTypeId, E: Encoder<X>)
+// * Decode<X, D> (impl over all X: CustomTypeId, D: Decoder<X>)
+//
+// TODO: Change these to be Trait aliases once stable in rust: https://github.com/rust-lang/rust/issues/41517
 pub trait BasicTypeId: TypeId<NoCustomTypeId> {}
 impl<T: TypeId<NoCustomTypeId> + ?Sized> BasicTypeId for T {}
 
