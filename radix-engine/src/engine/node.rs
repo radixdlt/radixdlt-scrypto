@@ -23,7 +23,7 @@ pub enum RENode {
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
     ResourceManager(ResourceManagerSubstate),
-    EpochManager(EpochManagerSubstate),
+    EpochManager(EpochManagerSubstate, AccessRulesSubstate),
 }
 
 impl RENode {
@@ -113,10 +113,14 @@ impl RENode {
                     );
                 }
             }
-            RENode::EpochManager(system) => {
+            RENode::EpochManager(system, access_rules) => {
                 substates.insert(
                     SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                     system.into(),
+                );
+                substates.insert(
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    access_rules.into(),
                 );
             }
         }

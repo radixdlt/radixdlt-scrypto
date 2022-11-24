@@ -4,7 +4,7 @@ use crate::engine::{
     RuntimeError, SystemApi,
 };
 use crate::model::{
-    EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
+    AccessRulesSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
     HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
@@ -15,6 +15,8 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
+use scrypto::access_rule_node;
+use scrypto::rule;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum EpochManagerError {
@@ -55,9 +57,31 @@ impl NativeProgram for EpochManagerCreateInvocation {
         Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
     {
         let node_id = api.allocate_node_id(RENodeType::EpochManager)?;
+
+        let epoch_manager = EpochManagerSubstate { epoch: 0 };
+
+        let auth_non_fungible = NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::supervisor_id());
+        let access_rules = AccessRules::new()
+            .set_access_rule(
+                AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
+                    EpochManagerMethod::SetEpoch,
+                ))),
+                rule!(require(auth_non_fungible)),
+            )
+            .set_access_rule(
+                AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
+                    EpochManagerMethod::GetCurrentEpoch,
+                ))),
+                rule!(allow_all),
+            );
+
+        let access_rules_substate = AccessRulesSubstate {
+            access_rules: vec![access_rules],
+        };
+
         let underlying_node_id = api.create_node(
             node_id,
-            RENode::EpochManager(EpochManagerSubstate { epoch: 0 }),
+            RENode::EpochManager(epoch_manager, access_rules_substate),
         )?;
 
         let node_id = api.allocate_node_id(RENodeType::GlobalEpochManager)?;
@@ -181,19 +205,6 @@ impl EpochManager {
                     )),
                 ))]
             }
-        }
-    }
-
-    pub fn method_auth(method: &EpochManagerMethod) -> Vec<MethodAuthorization> {
-        match method {
-            EpochManagerMethod::SetEpoch => {
-                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                    HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                        NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::supervisor_id()),
-                    )),
-                ))]
-            }
-            _ => vec![],
         }
     }
 }

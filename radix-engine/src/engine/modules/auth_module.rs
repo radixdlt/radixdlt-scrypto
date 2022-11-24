@@ -84,9 +84,11 @@ impl AuthModule {
             },
             REActor::Method(method, resolved_receiver) => {
                 match (method, resolved_receiver) {
-                    (ResolvedMethod::Native(NativeMethod::Metadata(MetadataMethod::Set)), ..) => {
-                        let offset =
-                            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+                    (ResolvedMethod::Native(method), ..)
+                        if matches!(method, NativeMethod::Metadata(..))
+                            || matches!(method, NativeMethod::EpochManager(..)) =>
+                    {
+                        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
                         let handle = system_api.lock_substate(
                             resolved_receiver.receiver,
                             offset,
@@ -94,7 +96,7 @@ impl AuthModule {
                         )?;
                         let substate_ref = system_api.get_ref(handle)?;
                         let access_rules = substate_ref.access_rules();
-                        let auth = access_rules.native_fn_authorization(NativeFn::Method(NativeMethod::Metadata(MetadataMethod::Set)));
+                        let auth = access_rules.native_fn_authorization(NativeFn::Method(method));
                         system_api.drop_lock(handle)?;
                         auth
                     }
@@ -145,13 +147,6 @@ impl AuthModule {
                             }
                         }
                     }
-                    (
-                        ResolvedMethod::Native(NativeMethod::EpochManager(ref method)),
-                        ResolvedReceiver {
-                            receiver: RENodeId::EpochManager(..),
-                            ..
-                        },
-                    ) => EpochManager::method_auth(method),
                     (
                         ResolvedMethod::Scrypto {
                             package_address,

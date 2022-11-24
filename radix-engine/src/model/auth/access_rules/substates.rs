@@ -33,10 +33,7 @@ impl AccessRulesSubstate {
         authorizations
     }
 
-    pub fn native_fn_authorization(
-        &self,
-        native_fn: NativeFn,
-    ) -> Vec<MethodAuthorization> {
+    pub fn native_fn_authorization(&self, native_fn: NativeFn) -> Vec<MethodAuthorization> {
         let key = AccessRuleKey::Native(native_fn);
 
         let mut authorizations = Vec::new();
