@@ -19,6 +19,7 @@ macro_rules! encode_tuple {
     };
 }
 
+encode_tuple! { 1 0 A }
 encode_tuple! { 2 0 A 1 B }
 encode_tuple! { 3 0 A 1 B 2 C }
 encode_tuple! { 4 0 A 1 B 2 C 3 D }
@@ -37,12 +38,13 @@ macro_rules! decode_tuple {
                 decoder.check_preloaded_type_id(type_id, Self::type_id())?;
                 decoder.read_and_check_size($n)?;
 
-                Ok(($(decoder.decode::<$name>()?),+))
+                Ok(($(decoder.decode::<$name>()?,)+))
             }
         }
     };
 }
 
+decode_tuple! { 1 0 A }
 decode_tuple! { 2 0 A 1 B }
 decode_tuple! { 3 0 A 1 B 2 C }
 decode_tuple! { 4 0 A 1 B 2 C 3 D }

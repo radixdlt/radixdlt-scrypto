@@ -16,20 +16,6 @@ impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for str {
     }
 }
 
-impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for &str {
-    #[inline]
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
-    }
-
-    #[inline]
-    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_size(self.len())?;
-        encoder.write_slice(self.as_bytes())?;
-        Ok(())
-    }
-}
-
 impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for String {
     #[inline]
     fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -38,7 +24,7 @@ impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for String {
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.encode_body(self.as_str())
+        self.as_str().encode_body(encoder)
     }
 }
 

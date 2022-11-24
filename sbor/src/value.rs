@@ -8,14 +8,15 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
 
-/// CV is CustomValue
+/// Y is the CustomValue type. This is likely an enum, capturing all the custom values for the
+/// particular SBOR extension.
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type") // See https://serde.rs/enum-representations.html
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SborValue<X: CustomTypeId, CV> {
+pub enum SborValue<X: CustomTypeId, Y> {
     Unit,
     Bool {
         value: bool,
@@ -55,25 +56,25 @@ pub enum SborValue<X: CustomTypeId, CV> {
     },
 
     Struct {
-        fields: Vec<SborValue<X, CV>>,
+        fields: Vec<SborValue<X, Y>>,
     },
     Enum {
         discriminator: String,
-        fields: Vec<SborValue<X, CV>>,
+        fields: Vec<SborValue<X, Y>>,
     },
     Array {
         element_type_id: SborTypeId<X>,
-        elements: Vec<SborValue<X, CV>>,
+        elements: Vec<SborValue<X, Y>>,
     },
     Tuple {
-        elements: Vec<SborValue<X, CV>>,
+        elements: Vec<SborValue<X, Y>>,
     },
     Custom {
-        value: CV,
+        value: Y,
     },
 }
 
-impl<X: CustomTypeId, E: Encoder<X>, CV: Encode<X, E>> Encode<X, E> for SborValue<X, CV> {
+impl<X: CustomTypeId, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for SborValue<X, Y> {
     #[inline]
     fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
@@ -102,43 +103,43 @@ impl<X: CustomTypeId, E: Encoder<X>, CV: Encode<X, E>> Encode<X, E> for SborValu
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             SborValue::Unit => {
-                encoder.encode_body(&())?;
+                (()).encode_body(encoder)?;
             }
             SborValue::Bool { value } => {
-                encoder.encode_body(value)?;
+                value.encode_body(encoder)?;
             }
             SborValue::I8 { value } => {
-                encoder.encode_body(value)?;
+                value.encode_body(encoder)?;
             }
             SborValue::I16 { value } => {
-                encoder.encode_body(value)?;
+                value.encode_body(encoder)?;
             }
             SborValue::I32 { value } => {
-                encoder.encode_body(value)?;
+                value.encode_body(encoder)?;
             }
             SborValue::I64 { value } => {
-                encoder.encode_body(value)?;
+                value.encode_body(encoder)?;
             }
             SborValue::I128 { value } => {
-                encoder.encode_body(value)?;
+                value.encode_body(encoder)?;
             }
             SborValue::U8 { value } => {
-                encoder.encode_body(value)?;
+                value.encode_body(encoder)?;
             }
             SborValue::U16 { value } => {
-                encoder.encode_body(value)?;
+                value.encode_body(encoder)?;
             }
             SborValue::U32 { value } => {
-                encoder.encode_body(value)?;
+                value.encode_body(encoder)?;
             }
             SborValue::U64 { value } => {
-                encoder.encode_body(value)?;
+                value.encode_body(encoder)?;
             }
             SborValue::U128 { value } => {
-                encoder.encode_body(value)?;
+                value.encode_body(encoder)?;
             }
             SborValue::String { value } => {
-                encoder.encode_body(value)?;
+                value.encode_body(encoder)?;
             }
             SborValue::Struct { fields } => {
                 encoder.write_size(fields.len())?;
@@ -174,14 +175,14 @@ impl<X: CustomTypeId, E: Encoder<X>, CV: Encode<X, E>> Encode<X, E> for SborValu
             }
             // custom
             SborValue::Custom { value } => {
-                encoder.encode_body(value)?;
+                value.encode_body(encoder)?;
             }
         }
         Ok(())
     }
 }
 
-impl<X: CustomTypeId, D: Decoder<X>, CV: Decode<X, D>> Decode<X, D> for SborValue<X, CV> {
+impl<X: CustomTypeId, D: Decoder<X>, Y: Decode<X, D>> Decode<X, D> for SborValue<X, Y> {
     #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
@@ -190,51 +191,51 @@ impl<X: CustomTypeId, D: Decoder<X>, CV: Decode<X, D>> Decode<X, D> for SborValu
         match type_id {
             // primitive types
             SborTypeId::Unit => {
-                decoder.decode_body_with_type_id::<()>(type_id)?;
+                <()>::decode_body_with_type_id(decoder, type_id)?;
                 Ok(SborValue::Unit)
             }
             SborTypeId::Bool => Ok(SborValue::Bool {
-                value: decoder.decode_body_with_type_id::<bool>(type_id)?,
+                value: <bool>::decode_body_with_type_id(decoder, type_id)?,
             }),
             SborTypeId::I8 => Ok(SborValue::I8 {
-                value: decoder.decode_body_with_type_id::<i8>(type_id)?,
+                value: <i8>::decode_body_with_type_id(decoder, type_id)?,
             }),
             SborTypeId::I16 => Ok(SborValue::I16 {
-                value: decoder.decode_body_with_type_id::<i16>(type_id)?,
+                value: <i16>::decode_body_with_type_id(decoder, type_id)?,
             }),
             SborTypeId::I32 => Ok(SborValue::I32 {
-                value: decoder.decode_body_with_type_id::<i32>(type_id)?,
+                value: <i32>::decode_body_with_type_id(decoder, type_id)?,
             }),
             SborTypeId::I64 => Ok(SborValue::I64 {
-                value: decoder.decode_body_with_type_id::<i64>(type_id)?,
+                value: <i64>::decode_body_with_type_id(decoder, type_id)?,
             }),
             SborTypeId::I128 => Ok(SborValue::I128 {
-                value: decoder.decode_body_with_type_id::<i128>(type_id)?,
+                value: <i128>::decode_body_with_type_id(decoder, type_id)?,
             }),
             SborTypeId::U8 => Ok(SborValue::U8 {
-                value: decoder.decode_body_with_type_id::<u8>(type_id)?,
+                value: <u8>::decode_body_with_type_id(decoder, type_id)?,
             }),
             SborTypeId::U16 => Ok(SborValue::U16 {
-                value: decoder.decode_body_with_type_id::<u16>(type_id)?,
+                value: <u16>::decode_body_with_type_id(decoder, type_id)?,
             }),
             SborTypeId::U32 => Ok(SborValue::U32 {
-                value: decoder.decode_body_with_type_id::<u32>(type_id)?,
+                value: <u32>::decode_body_with_type_id(decoder, type_id)?,
             }),
             SborTypeId::U64 => Ok(SborValue::U64 {
-                value: decoder.decode_body_with_type_id::<u64>(type_id)?,
+                value: <u64>::decode_body_with_type_id(decoder, type_id)?,
             }),
             SborTypeId::U128 => Ok(SborValue::U128 {
-                value: decoder.decode_body_with_type_id::<u128>(type_id)?,
+                value: <u128>::decode_body_with_type_id(decoder, type_id)?,
             }),
             SborTypeId::String => Ok(SborValue::String {
-                value: decoder.decode_body_with_type_id::<String>(type_id)?,
+                value: <String>::decode_body_with_type_id(decoder, type_id)?,
             }),
             // struct & enum
             SborTypeId::Struct => {
                 // number of fields
                 let len = decoder.read_size()?;
                 // fields
-                let mut fields = Vec::new();
+                let mut fields = Vec::with_capacity(if len <= 1024 { len } else { 1024 });
                 for _ in 0..len {
                     fields.push(decoder.decode()?);
                 }
@@ -242,11 +243,11 @@ impl<X: CustomTypeId, D: Decoder<X>, CV: Decode<X, D>> Decode<X, D> for SborValu
             }
             SborTypeId::Enum => {
                 // discriminator
-                let discriminator = decoder.decode_body_with_type_id::<String>(String::type_id())?;
+                let discriminator = decoder.read_discriminator()?;
                 // number of fields
                 let len = decoder.read_size()?;
                 // fields
-                let mut fields = Vec::new();
+                let mut fields = Vec::with_capacity(if len <= 1024 { len } else { 1024 });
                 for _ in 0..len {
                     fields.push(decoder.decode()?);
                 }
@@ -262,7 +263,7 @@ impl<X: CustomTypeId, D: Decoder<X>, CV: Decode<X, D>> Decode<X, D> for SborValu
                 // length
                 let len = decoder.read_size()?;
                 // values
-                let mut elements = Vec::new();
+                let mut elements = Vec::with_capacity(if len <= 1024 { len } else { 1024 });
                 for _ in 0..len {
                     elements.push(decoder.decode_body_with_type_id(element_type_id)?);
                 }
@@ -275,22 +276,22 @@ impl<X: CustomTypeId, D: Decoder<X>, CV: Decode<X, D>> Decode<X, D> for SborValu
                 //length
                 let len = decoder.read_size()?;
                 // values
-                let mut elements = Vec::new();
+                let mut elements = Vec::with_capacity(if len <= 1024 { len } else { 1024 });
                 for _ in 0..len {
                     elements.push(decoder.decode()?);
                 }
                 Ok(SborValue::Tuple { elements })
             }
             SborTypeId::Custom(_) => Ok(SborValue::Custom {
-                value: decoder.decode_body_with_type_id(type_id)?,
+                value: Y::decode_body_with_type_id(decoder, type_id)?,
             }),
         }
     }
 }
 
-pub fn traverse_any<X: CustomTypeId, CV, V: CustomValueVisitor<CV, Err = E>, E>(
+pub fn traverse_any<X: CustomTypeId, Y, V: CustomValueVisitor<Y, Err = E>, E>(
     path: &mut SborPathBuf,
-    value: &SborValue<X, CV>,
+    value: &SborValue<X, Y>,
     visitor: &mut V,
 ) -> Result<(), E> {
     match value {
@@ -340,10 +341,10 @@ pub fn traverse_any<X: CustomTypeId, CV, V: CustomValueVisitor<CV, Err = E>, E>(
     Ok(())
 }
 
-pub trait CustomValueVisitor<CV> {
+pub trait CustomValueVisitor<Y> {
     type Err;
 
-    fn visit(&mut self, path: &mut SborPathBuf, value: &CV) -> Result<(), Self::Err>;
+    fn visit(&mut self, path: &mut SborPathBuf, value: &Y) -> Result<(), Self::Err>;
 }
 
 #[cfg(test)]

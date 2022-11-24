@@ -34,7 +34,7 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>, const N: usize
     }
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.encode_body(self.as_slice())
+        self.as_slice().encode_body(encoder)
     }
 }
 
