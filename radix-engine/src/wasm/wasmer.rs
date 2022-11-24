@@ -24,6 +24,10 @@ pub struct WasmerModule {
 // The below implementation is not yet checked rigorously enough for production use
 // TODO: Address the below issues before considering production use.
 
+/// WARNING - this type should not actually be Send + Sync - it should really store a raw pointer,
+/// not a raw pointer masked as a usize.
+///
+/// For information on why the pointer is masked, see the docs for `WasmerInstanceEnv`
 pub struct WasmerInstance {
     instance: Instance,
 
@@ -41,10 +45,6 @@ pub struct WasmerInstance {
     /// For information on why the pointer is masked, see the docs for `WasmerInstanceEnv`
     runtime_ptr: Arc<Mutex<usize>>,
 }
-
-// We explicitly mark WasmerInstance as not Sync/Send because of its masked raw pointer
-unsafe impl !Sync for WasmerInstance {}
-unsafe impl !Send for WasmerInstance {}
 
 /// The WasmerInstanceEnv implements WasmerEnv - and this needs to be `Send + Sync` for
 /// Wasmer to work (see `Function::new_native_with_env`).
