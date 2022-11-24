@@ -2,9 +2,11 @@ use core::fmt::Debug;
 use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId};
 use radix_engine_interface::data::IndexedScryptoValue;
+use scrypto::access_rule_node;
+use scrypto::rule;
 
 use crate::engine::*;
-use crate::model::{GlobalAddressSubstate, MetadataSubstate, PackageSubstate};
+use crate::model::{AccessRulesSubstate, GlobalAddressSubstate, MetadataSubstate, PackageSubstate};
 use crate::types::*;
 use crate::wasm::*;
 
@@ -74,13 +76,19 @@ impl NativeProgram for PackagePublishNoOwnerInvocation {
             metadata: self.metadata,
         };
 
+        let access_rules = AccessRulesSubstate {
+            access_rules: vec![AccessRules::new()],
+        };
         let node_id = api.allocate_node_id(RENodeType::Package)?;
-        let node_id = api.create_node(node_id, RENode::Package(package, metadata_substate))?;
+        api.create_node(
+            node_id,
+            RENode::Package(package, metadata_substate, access_rules),
+        )?;
         let package_id: PackageId = node_id.into();
 
-        let node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
-        let global_node_id = api.create_node(
-            node_id,
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
+        api.create_node(
+            global_node_id,
             RENode::Global(GlobalAddressSubstate::Package(package_id)),
         )?;
 
@@ -134,19 +142,12 @@ impl NativeProgram for PackagePublishWithOwnerInvocation {
             metadata: self.metadata,
         };
 
-        let node_id = api.allocate_node_id(RENodeType::Package)?;
-        let node_id = api.create_node(node_id, RENode::Package(package, metadata_substate))?;
-        let package_id: PackageId = node_id.into();
-
-        let node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
-        let global_node_id = api.create_node(
-            node_id,
-            RENode::Global(GlobalAddressSubstate::Package(package_id)),
-        )?;
-
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
         let package_address: PackageAddress = global_node_id.into();
 
         let non_fungible_id = NonFungibleId::from_bytes(scrypto_encode(&package_address));
+        let non_fungible_address =
+            NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id.clone());
 
         let mut entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)> = HashMap::new();
         entries.insert(non_fungible_id, (vec![], vec![]));
@@ -157,6 +158,28 @@ impl NativeProgram for PackagePublishWithOwnerInvocation {
         };
 
         let bucket = api.sys_invoke(mint_invocation)?;
+
+        let access_rules = AccessRulesSubstate {
+            access_rules: vec![AccessRules::new().set_access_rule(
+                AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                    MetadataMethod::Set,
+                ))),
+                rule!(require(non_fungible_address)),
+            )],
+        };
+
+        let node_id = api.allocate_node_id(RENodeType::Package)?;
+        api.create_node(
+            node_id,
+            RENode::Package(package, metadata_substate, access_rules),
+        )?;
+        let package_id: PackageId = node_id.into();
+
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::Package(package_id)),
+        )?;
+
         let bucket_node_id = RENodeId::Bucket(bucket.0);
 
         Ok((

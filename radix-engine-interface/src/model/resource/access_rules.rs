@@ -48,6 +48,11 @@ impl AccessRules {
         self
     }
 
+    pub fn set_access_rule(mut self, key: AccessRuleKey, method_auth: AccessRule) -> Self {
+        self.method_auth.insert(key, method_auth);
+        self
+    }
+
     pub fn default(mut self, method_auth: AccessRule) -> Self {
         self.default_auth = method_auth;
         self
