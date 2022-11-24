@@ -53,9 +53,6 @@ pub enum ScryptoCustomTypeId {
 }
 
 impl CustomTypeId for ScryptoCustomTypeId {
-    // 0x5c for [5c]rypto - (91 in decimal)
-    const PAYLOAD_PREFIX: u8 = 0x5c;
-
     fn as_u8(&self) -> u8 {
         match self {
             Self::PackageAddress => TYPE_PACKAGE_ADDRESS,

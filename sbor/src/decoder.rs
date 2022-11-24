@@ -38,10 +38,11 @@ pub enum DecodeError {
 pub trait Decoder<X: CustomTypeId>: Sized {
     /// Consumes the Decoder and decodes the value as a full payload
     ///
-    /// This includes a check of the payload prefix byte
+    /// This includes a check of the payload prefix byte: It's the intention that each version of SBOR
+    /// or change to the custom codecs should be given its own prefix
     #[inline]
-    fn decode_payload<T: Decode<X, Self>>(mut self) -> Result<T, DecodeError> {
-        self.read_and_check_payload_prefix()?;
+    fn decode_payload<T: Decode<X, Self>>(mut self, expected_prefix: u8) -> Result<T, DecodeError> {
+        self.read_and_check_payload_prefix(expected_prefix)?;
         let value = self.decode()?;
         self.check_end()?;
         Ok(value)
@@ -131,12 +132,12 @@ pub trait Decoder<X: CustomTypeId>: Sized {
     }
 
     #[inline]
-    fn read_and_check_payload_prefix(&mut self) -> Result<(), DecodeError> {
+    fn read_and_check_payload_prefix(&mut self, expected_prefix: u8) -> Result<(), DecodeError> {
         let actual_payload_prefix = self.read_byte()?;
-        if actual_payload_prefix != X::PAYLOAD_PREFIX {
+        if actual_payload_prefix != expected_prefix {
             return Err(DecodeError::UnexpectedPayloadPrefix {
                 actual: actual_payload_prefix,
-                expected: X::PAYLOAD_PREFIX,
+                expected: expected_prefix,
             });
         }
 

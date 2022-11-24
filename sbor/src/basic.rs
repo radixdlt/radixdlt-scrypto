@@ -23,6 +23,9 @@ pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomTypeId, DEFAULT_BASIC_MAX_DEP
 pub type BasicSborValue = SborValue<NoCustomTypeId, NoCustomValue>;
 pub type BasicSborTypeId = SborTypeId<NoCustomTypeId>;
 
+// 5b for (basic) [5b]or - (90 in decimal)
+pub const BASIC_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5b;
+
 // The following trait "aliases" are to be used in parameters.
 //
 // They are much nicer to read than the underlying traits, but because they are "new", and are defined
@@ -47,19 +50,16 @@ impl<T: for<'a> Encode<NoCustomTypeId, BasicEncoder<'a>> + ?Sized> BasicEncode f
 pub fn basic_encode<T: BasicEncode + ?Sized>(v: &T) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);
     let encoder = BasicEncoder::new(&mut buf);
-    encoder.encode_payload(v)?;
+    encoder.encode_payload(v, BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
     Ok(buf)
 }
 
 /// Decode an instance of `T` from a slice.
 pub fn basic_decode<T: BasicDecode>(buf: &[u8]) -> Result<T, DecodeError> {
-    BasicDecoder::new(buf).decode_payload()
+    BasicDecoder::new(buf).decode_payload(BASIC_SBOR_V1_PAYLOAD_PREFIX)
 }
 
 impl CustomTypeId for NoCustomTypeId {
-    // 5b for (basic) [5b]or - (90 in decimal)
-    const PAYLOAD_PREFIX: u8 = 0x5b;
-
     fn as_u8(&self) -> u8 {
         panic!("No custom type")
     }

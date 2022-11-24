@@ -31,6 +31,9 @@ pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomTypeId, MAX_SCRYPTO_SB
 pub type ScryptoSborTypeId = SborTypeId<ScryptoCustomTypeId>;
 pub type ScryptoValue = SborValue<ScryptoCustomTypeId, ScryptoCustomValue>;
 
+// 0x5c for [5c]rypto - (91 in decimal)
+pub const SCRYPTO_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5c;
+
 // The following trait "aliases" are to be used in parameters.
 //
 // They are much nicer to read than the underlying traits, but because they are "new", and are defined
@@ -55,13 +58,13 @@ impl<T: for<'a> Encode<ScryptoCustomTypeId, ScryptoEncoder<'a>> + ?Sized> Scrypt
 pub fn scrypto_encode<T: ScryptoEncode + ?Sized>(value: &T) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);
     let encoder = ScryptoEncoder::new(&mut buf);
-    encoder.encode_payload(value)?;
+    encoder.encode_payload(value, SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
     Ok(buf)
 }
 
 /// Decodes a data structure from a byte array.
 pub fn scrypto_decode<T: ScryptoDecode>(buf: &[u8]) -> Result<T, DecodeError> {
-    ScryptoDecoder::new(buf).decode_payload()
+    ScryptoDecoder::new(buf).decode_payload(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
 }
 
 #[macro_export]
@@ -78,7 +81,7 @@ macro_rules! args {
         use ::sbor::Encoder;
         let mut buf = ::sbor::rust::vec::Vec::new();
         let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut buf);
-        encoder.write_payload_prefix().unwrap();
+        encoder.write_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX).unwrap();
         encoder.write_type_id(radix_engine_interface::data::ScryptoSborTypeId::Struct).unwrap();
         // Hack: stringify to skip ownership move semantics
         encoder.write_size(radix_engine_interface::count!($(stringify!($args)),*)).unwrap();
@@ -353,7 +356,9 @@ mod tests {
     ) -> Vec<u8> {
         let mut buf = Vec::new();
         let encoder = VecEncoder::<ScryptoCustomTypeId, 255>::new(&mut buf);
-        encoder.encode_payload(value).unwrap();
+        encoder
+            .encode_payload(value, SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+            .unwrap();
         buf
     }
 
@@ -364,7 +369,9 @@ mod tests {
         payload: &'a [u8],
     ) -> T {
         let decoder = VecDecoder::<ScryptoCustomTypeId, 255>::new(payload);
-        decoder.decode_payload().unwrap()
+        decoder
+            .decode_payload(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+            .unwrap()
     }
 
     fn build_value_of_vec_of_depth(depth: u8) -> ScryptoValue {
