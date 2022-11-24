@@ -68,7 +68,7 @@ mod tests {
 
     #[test]
     fn test_non_fungible_address_codec() {
-        let expected = "00ed9100551d7fae91eaf413e50a3c5a59f8b96af9f1297890a8f4200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
+        let expected = "00b91737ee8a4de59d49dad40de5560e5754466ac84cf5432ea95d200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
         let private_key = EcdsaSecp256k1PrivateKey::from_bytes(&[1u8; 32]).unwrap();
         let public_key = private_key.public_key();
         let auth_address = NonFungibleAddress::new(

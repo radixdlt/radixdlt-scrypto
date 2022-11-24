@@ -9,7 +9,7 @@ use crate::model::{
 };
 use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
-use radix_engine_interface::api::api::{Invocation, SysInvokableNative, SysNativeInvokable};
+use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFunction, NativeMethod, NonFungibleStoreId, NonFungibleStoreOffset,
     RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset,
@@ -98,10 +98,12 @@ impl NativeProgram for ResourceManagerCreateInvocation {
         api: &mut Y,
     ) -> Result<((ResourceAddress, Option<Bucket>), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation>
-            + SysNativeInvokable<ResourceManagerSetResourceAddressInvocation, RuntimeError>,
+        Y: SystemApi + Invokable<ScryptoInvocation>,
     {
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let resource_address: ResourceAddress = global_node_id.into();
+        println!("address: {:?}", resource_address.to_vec());
+
         let underlying_node_id = if matches!(self.resource_type, ResourceType::NonFungible) {
             let node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
             let nf_store_node_id =
@@ -113,6 +115,7 @@ impl NativeProgram for ResourceManagerCreateInvocation {
                 self.metadata,
                 self.access_rules,
                 Some(nf_store_id),
+                global_node_id.into(),
             )
             .map_err(|e| match e {
                 InvokeError::Error(e) => {
@@ -154,6 +157,7 @@ impl NativeProgram for ResourceManagerCreateInvocation {
                 self.metadata,
                 self.access_rules,
                 None,
+                global_node_id.into(),
             )
             .map_err(|e| match e {
                 InvokeError::Error(e) => {
@@ -194,17 +198,11 @@ impl NativeProgram for ResourceManagerCreateInvocation {
             api.create_node(node_id, RENode::ResourceManager(resource_manager))?
         };
 
-        let node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let global_node_id = api.create_node(
-            node_id,
+            global_node_id,
             RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
         )?;
         let resource_address: ResourceAddress = global_node_id.into();
-
-        // FIXME this is temporary workaround for the resource address resolution problem
-        api.sys_invoke(ResourceManagerSetResourceAddressInvocation {
-            receiver: resource_address,
-        })?;
 
         // Mint
         let bucket = if let Some(mint_params) = self.mint_params {
@@ -292,7 +290,7 @@ impl NativeProgram for ResourceManagerBurnExecutable {
         {
             let substate_ref = system_api.get_ref(resman_handle)?;
             let resource_manager = substate_ref.resource_manager();
-            if Some(bucket.resource_address()) != resource_manager.resource_address {
+            if bucket.resource_address() != resource_manager.resource_address {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
                         ResourceManagerError::MismatchingBucketResource,
@@ -501,7 +499,7 @@ impl NativeProgram for ResourceManagerCreateVaultExecutable {
         let substate_ref = api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
         let resource = Resource::new_empty(
-            resource_manager.resource_address.unwrap(),
+            resource_manager.resource_address,
             resource_manager.resource_type,
         );
 
@@ -560,7 +558,7 @@ impl NativeProgram for ResourceManagerCreateBucketExecutable {
         let substate_ref = api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
         let container = Resource::new_empty(
-            resource_manager.resource_address.unwrap(),
+            resource_manager.resource_address,
             resource_manager.resource_type,
         );
 
@@ -618,7 +616,7 @@ impl NativeProgram for ResourceManagerMintExecutable {
             let mut substate_mut = api.get_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
             let result = resource_manager
-                .mint(self.1, resource_manager.resource_address.unwrap())
+                .mint(self.1, resource_manager.resource_address)
                 .map_err(|e| match e {
                     InvokeError::Error(e) => {
                         RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
@@ -638,7 +636,7 @@ impl NativeProgram for ResourceManagerMintExecutable {
             let resource_manager = substate_ref.resource_manager();
             (
                 resource_manager.nf_store_id.clone(),
-                resource_manager.resource_address.unwrap(),
+                resource_manager.resource_address,
             )
         };
 
@@ -931,7 +929,7 @@ impl NativeProgram for ResourceManagerUpdateNonFungibleDataExecutable {
                 }
                 InvokeError::Downstream(runtime_error) => runtime_error,
             })?;
-        let resource_address = resource_manager.resource_address.unwrap();
+        let resource_address = resource_manager.resource_address;
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
         let offset =
@@ -1073,7 +1071,7 @@ impl NativeProgram for ResourceManagerGetNonFungibleExecutable {
             })?;
 
         let non_fungible_address =
-            NonFungibleAddress::new(resource_manager.resource_address.unwrap(), self.1.clone());
+            NonFungibleAddress::new(resource_manager.resource_address, self.1.clone());
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
         let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(self.1));
@@ -1093,70 +1091,5 @@ impl NativeProgram for ResourceManagerGetNonFungibleExecutable {
                 )),
             ));
         }
-    }
-}
-
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerSetResourceAddressInvocation {
-    pub receiver: ResourceAddress,
-}
-
-impl Invocation for ResourceManagerSetResourceAddressInvocation {
-    type Output = ();
-}
-
-impl ExecutableInvocation for ResourceManagerSetResourceAddressInvocation {
-    type Exec = NativeExecutor<ResourceManagerSetResourceAddressExecutable>;
-
-    fn resolve<D: MethodDeref>(
-        self,
-        deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            deref,
-        )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetNonFungible,
-            )),
-            resolved_receiver,
-        );
-        let executor = NativeExecutor(
-            ResourceManagerSetResourceAddressExecutable(resolved_receiver.receiver, self.receiver),
-            input,
-        );
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-pub struct ResourceManagerSetResourceAddressExecutable(RENodeId, ResourceAddress);
-
-impl NativeProgram for ResourceManagerSetResourceAddressExecutable {
-    type Output = ();
-
-    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
-    {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
-
-        let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-        substate_mut
-            .resource_manager()
-            .set_resource_address(self.1)
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                }
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            })?;
-
-        Ok(((), CallFrameUpdate::empty()))
     }
 }

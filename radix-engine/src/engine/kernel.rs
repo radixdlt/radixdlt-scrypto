@@ -1,6 +1,4 @@
-use radix_engine_interface::api::api::{
-    EngineApi, Invocation, SysInvokableNative, SysNativeInvokable,
-};
+use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
 use radix_engine_interface::api::types::{
     AuthZoneOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle, PackageOffset,
     ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver, SubstateId,
@@ -591,8 +589,7 @@ pub trait Executor {
         Y: SystemApi
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>
-            + SysNativeInvokable<ResourceManagerSetResourceAddressInvocation, RuntimeError>;
+            + SysInvokableNative<RuntimeError>;
 }
 
 pub trait ExecutableInvocation: Invocation {
