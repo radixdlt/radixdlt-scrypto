@@ -27,14 +27,16 @@ pub struct WasmerModule {
 pub struct WasmerInstance {
     instance: Instance,
 
-    /// This field stores a (masked) runtime pointer to `Box<dyn WasmRuntime>` which is shared
+    /// This field stores a (masked) runtime pointer to a `Box<dyn WasmRuntime>` which is shared
     /// by the instance and each WasmerInstanceEnv (every function that requires `env`).
     ///
-    /// On every call into the WASM (ie every call to `invoke_export`), a &mut System API is
-    /// temporarily wrapped in the `Box<dyn WasmRuntime>` and this pointer is updated.
+    /// On every call into the WASM (ie every call to `invoke_export`), a `&'a mut System API` is
+    /// wrapped in a temporary `RadixEngineWasmRuntime<'a>` and boxed, and a pointer to the freshly
+    /// created `Box<dyn WasmRuntime>` is written behind the Mutex into this field.
     ///
-    /// Because same pointer (via Arc cloning), it shared in each `WasmerInstanceEnv`,
-    /// and so they can use it to call into the current `WasmRuntime` / `&mut System API`.
+    /// This same Mutex (via Arc cloning) is shared into each `WasmerInstanceEnv`, and so
+    /// when the WASM makes calls back into env, it can read the pointer to the current
+    /// WasmRuntime, and use that to call into the `&mut System API`.
     ///
     /// For information on why the pointer is masked, see the docs for `WasmerInstanceEnv`
     runtime_ptr: Arc<Mutex<usize>>,
