@@ -40,7 +40,6 @@ pub trait ScryptoVault {
     fn take_internal(&mut self, amount: Decimal) -> Bucket;
     fn lock_fee_internal(&mut self, amount: Decimal) -> ();
     fn lock_contingent_fee_internal(&mut self, amount: Decimal) -> ();
-    fn lock_royalty_internal(&mut self, amount: Decimal) -> ();
     fn put(&mut self, bucket: Bucket) -> ();
     fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket;
     fn resource_address(&self) -> ResourceAddress;
@@ -50,7 +49,6 @@ pub trait ScryptoVault {
     fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof;
     fn lock_fee<A: Into<Decimal>>(&mut self, amount: A);
     fn lock_contingent_fee<A: Into<Decimal>>(&mut self, amount: A);
-    fn lock_royalty<A: Into<Decimal>>(&mut self, amount: A);
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket;
     fn take_all(&mut self) -> Bucket;
     fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Bucket;
@@ -104,13 +102,6 @@ impl ScryptoVault for Vault {
             }
         }
 
-        fn lock_royalty_internal(&mut self, amount: Decimal) -> () {
-            VaultLockRoyaltyInvocation {
-                receiver: self.0,
-                amount,
-            }
-        }
-
 
         fn put(&mut self, bucket: Bucket) -> () {
             VaultPutInvocation {
@@ -158,11 +149,6 @@ impl ScryptoVault for Vault {
     /// Unused fee will be refunded to the vaults from the most recently locked to the least.
     fn lock_fee<A: Into<Decimal>>(&mut self, amount: A) {
         self.lock_fee_internal(amount.into())
-    }
-
-    /// Locks the specified amount as transaction fee.
-    fn lock_royalty<A: Into<Decimal>>(&mut self, amount: A) {
-        self.lock_royalty_internal(amount.into())
     }
 
     /// Locks the given amount of resource as contingent fee.

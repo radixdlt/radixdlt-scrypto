@@ -222,27 +222,6 @@ impl Into<NativeFnInvocation> for VaultLockFeeInvocation {
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct VaultLockRoyaltyInvocation {
-    pub receiver: VaultId,
-    pub amount: Decimal,
-}
-
-impl SysInvocation for VaultLockRoyaltyInvocation {
-    type Output = ();
-}
-
-impl ScryptoNativeInvocation for VaultLockRoyaltyInvocation {}
-
-impl Into<NativeFnInvocation> for VaultLockRoyaltyInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::LockRoyalty(self),
-        ))
-    }
-}
-
 #[derive(PartialEq, Eq, Hash)]
 pub struct Vault(pub VaultId);
 

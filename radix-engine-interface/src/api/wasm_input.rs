@@ -150,7 +150,6 @@ pub enum BucketMethodInvocation {
 pub enum VaultMethodInvocation {
     Take(VaultTakeInvocation),
     LockFee(VaultLockFeeInvocation),
-    LockRoyalty(VaultLockRoyaltyInvocation),
     Put(VaultPutInvocation),
     TakeNonFungibles(VaultTakeNonFungiblesInvocation),
     GetAmount(VaultGetAmountInvocation),

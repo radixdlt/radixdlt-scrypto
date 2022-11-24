@@ -257,7 +257,6 @@ impl FeeTable {
                     VaultMethod::CreateProofByAmount => self.fixed_high,
                     VaultMethod::CreateProofByIds => self.fixed_high,
                     VaultMethod::LockFee => self.fixed_medium,
-                    VaultMethod::LockRoyalty => self.fixed_medium,
                 }
             }
         }

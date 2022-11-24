@@ -235,13 +235,6 @@ where
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                VaultMethod::LockRoyalty => {
-                    let invocation: VaultLockRoyaltyInvocation = scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
-                    system_api
-                        .sys_invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a))
-                }
                 VaultMethod::TakeNonFungibles => {
                     let invocation: VaultTakeNonFungiblesInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
