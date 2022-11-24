@@ -6,6 +6,7 @@ use radix_engine_interface::data::ScryptoCustomTypeId;
 use radix_engine_interface::model::*;
 use sbor::rust::collections::HashMap;
 use sbor::rust::fmt::Debug;
+use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 

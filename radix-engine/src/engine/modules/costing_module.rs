@@ -366,7 +366,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
     ) -> Result<Resource, ModuleError> {
         track
             .fee_reserve
-            .repay(vault_id, fee, contingent)
+            .lock_fee(vault_id, fee, contingent)
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 

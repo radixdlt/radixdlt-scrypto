@@ -7,6 +7,7 @@ use crate::crypto::Blob;
 use crate::model::*;
 use crate::scrypto;
 use sbor::rust::collections::HashMap;
+use sbor::rust::string::String;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]

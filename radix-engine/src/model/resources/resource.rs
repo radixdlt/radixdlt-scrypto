@@ -181,8 +181,9 @@ impl Resource {
         }
     }
 
-    pub fn take_all(&mut self) -> Result<Resource, ResourceOperationError> {
+    pub fn take_all(&mut self) -> Resource {
         self.take_by_amount(self.amount())
+            .expect("Take all from `Resource` should not fail")
     }
 
     fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceOperationError> {
