@@ -50,6 +50,10 @@ impl AccessRules {
         }
     }
 
+    pub fn get_mutability(&self, key: &AccessRuleKey) -> &AccessRuleMutability {
+        self.mutability.method_auth_mutability.get(key).unwrap_or(&self.mutability.default_auth_mutability)
+    }
+
     pub fn get(&self, key: &AccessRuleKey) -> &AccessRule {
         self.method_auth.get(key).unwrap_or(&self.default_auth)
     }
