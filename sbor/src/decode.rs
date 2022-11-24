@@ -5,7 +5,7 @@ use crate::type_id::*;
 pub trait Decode<X: CustomTypeId, D: Decoder<X>>: Sized {
     /// Decodes the type from the decoder, using a preloaded type id.
     ///
-    /// You likely want to call `decoder.decode_body_with_type_id` instead of this method. See
+    /// You may want to call `decoder.decode_deeper_body_with_type_id` instead of this method. See
     /// the below section for details.
     ///
     /// ## Direct calls and SBOR Depth
@@ -13,6 +13,8 @@ pub trait Decode<X: CustomTypeId, D: Decoder<X>>: Sized {
     /// In order to avoid SBOR depth differentials and disagreement about whether a payload
     /// is valid, typed codec implementations should ensure that the SBOR depth as measured
     /// during the encoding/decoding process agrees with the SborValue codec.
+    ///
+    /// Each layer of the SborValue counts as one depth.
     ///
     /// If the decoder you're writing is embedding a child type (and is represented as such
     /// in the SborValue type), then you should call `decoder.decode_body_with_type_id` to increment

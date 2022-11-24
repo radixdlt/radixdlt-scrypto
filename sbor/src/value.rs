@@ -164,7 +164,7 @@ impl<X: CustomTypeId, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for SborValue
                 encoder.write_type_id(*element_type_id)?;
                 encoder.write_size(elements.len())?;
                 for item in elements {
-                    encoder.encode_body(item)?;
+                    encoder.encode_deeper_body(item)?;
                 }
             }
             SborValue::Tuple { elements } => {
@@ -265,7 +265,7 @@ impl<X: CustomTypeId, D: Decoder<X>, Y: Decode<X, D>> Decode<X, D> for SborValue
                 // values
                 let mut elements = Vec::with_capacity(if len <= 1024 { len } else { 1024 });
                 for _ in 0..len {
-                    elements.push(decoder.decode_body_with_type_id(element_type_id)?);
+                    elements.push(decoder.decode_deeper_body_with_type_id(element_type_id)?);
                 }
                 Ok(SborValue::Array {
                     element_type_id,

@@ -29,7 +29,7 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> f
         encoder.write_type_id(T::type_id())?;
         encoder.write_size(self.len())?;
         for v in self {
-            encoder.encode_body(v)?;
+            encoder.encode_deeper_body(v)?;
         }
         Ok(())
     }
@@ -48,7 +48,7 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X> + Ord + Hash> E
         encoder.write_type_id(T::type_id())?;
         encoder.write_size(self.len())?;
         for v in self {
-            encoder.encode_body(v)?;
+            encoder.encode_deeper_body(v)?;
         }
         Ok(())
     }
@@ -67,7 +67,7 @@ impl<X: CustomTypeId, E: Encoder<X>, K: Encode<X, E>, V: Encode<X, E>> Encode<X,
         encoder.write_type_id(<(K, V)>::type_id())?;
         encoder.write_size(self.len())?;
         for (k, v) in self {
-            encoder.encode_body(&(k, v))?;
+            encoder.encode_deeper_body(&(k, v))?;
         }
         Ok(())
     }
@@ -87,7 +87,7 @@ impl<X: CustomTypeId, E: Encoder<X>, K: Encode<X, E> + Ord + Hash, V: Encode<X, 
         encoder.write_size(self.len())?;
         let keys: BTreeSet<&K> = self.keys().collect();
         for key in keys {
-            encoder.encode_body(&(key, self.get(key).unwrap()))?;
+            encoder.encode_deeper_body(&(key, self.get(key).unwrap()))?;
         }
         Ok(())
     }
@@ -114,7 +114,7 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>> Decode<X, D> f
         } else {
             let mut result = Vec::<T>::with_capacity(if len <= 1024 { len } else { 1024 });
             for _ in 0..len {
-                result.push(decoder.decode_body_with_type_id(element_type_id)?);
+                result.push(decoder.decode_deeper_body_with_type_id(element_type_id)?);
             }
             Ok(result)
         }

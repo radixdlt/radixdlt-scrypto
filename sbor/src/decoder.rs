@@ -47,12 +47,12 @@ pub trait Decoder<X: CustomTypeId>: Sized {
     /// This method decodes the value's SBOR type id, and then its SBOR body.
     fn decode<T: Decode<X, Self>>(&mut self) -> Result<T, DecodeError> {
         let type_id = self.read_type_id()?;
-        self.decode_body_with_type_id(type_id)
+        self.decode_deeper_body_with_type_id(type_id)
     }
 
-    /// Decodes the SBOR body of the value as part of a larger payload.
+    /// Decodes the SBOR body of a child value as part of a larger payload.
     ///
-    /// In some cases, you may wish to directly call `T::decode_body_with_type_id` instead of this method.
+    /// In many cases, you may wish to directly call `T::decode_body_with_type_id` instead of this method.
     /// See the below section for details.
     ///
     /// ## Direct calls and SBOR Depth
@@ -61,18 +61,20 @@ pub trait Decoder<X: CustomTypeId>: Sized {
     /// is valid, typed codec implementations should ensure that the SBOR depth as measured
     /// during the encoding/decoding process agrees with the SborValue codec.
     ///
+    /// Each layer of the SborValue counts as one depth.
+    ///
     /// If the decoder you're writing is embedding a child type (and is represented as such
     /// in the SborValue type), then you should call `decoder.decode_body_with_type_id` to increment
     /// the SBOR depth tracker.
     ///
-    /// You should only call `T::decode_body_with_type_id` directly when the decoding of that type
+    /// You should call `T::decode_body_with_type_id` directly when the decoding of that type
     /// into an SborValue doesn't increase the SBOR depth in the decoder, that is:
     /// * When the wrapping type is invisible to the SborValue, ie:
     ///   * Smart pointers
     ///   * Transparent wrappers
     /// * Where the use of the inner type is invisible to SborValue, ie:
     ///   * Where the use of `T::decode_body_with_type_id` is coincidental / code re-use
-    fn decode_body_with_type_id<T: Decode<X, Self>>(
+    fn decode_deeper_body_with_type_id<T: Decode<X, Self>>(
         &mut self,
         type_id: SborTypeId<X>,
     ) -> Result<T, DecodeError>;
@@ -204,7 +206,7 @@ impl<'de, X: CustomTypeId, const MAX_DEPTH: u8> VecDecoder<'de, X, MAX_DEPTH> {
 }
 
 impl<'de, X: CustomTypeId, const MAX_DEPTH: u8> Decoder<X> for VecDecoder<'de, X, MAX_DEPTH> {
-    fn decode_body_with_type_id<T: Decode<X, Self>>(
+    fn decode_deeper_body_with_type_id<T: Decode<X, Self>>(
         &mut self,
         type_id: SborTypeId<X>,
     ) -> Result<T, DecodeError> {
