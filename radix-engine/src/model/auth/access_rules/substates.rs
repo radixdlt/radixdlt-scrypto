@@ -32,4 +32,22 @@ impl AccessRulesSubstate {
 
         authorizations
     }
+
+    pub fn native_fn_authorization(
+        &self,
+        native_fn: NativeFn,
+    ) -> Vec<MethodAuthorization> {
+        let key = AccessRuleKey::Native(native_fn);
+
+        let mut authorizations = Vec::new();
+        for auth in &self.access_rules {
+            let method_auth = auth.get(&key);
+
+            // TODO: Remove
+            let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), method_auth);
+            authorizations.push(authorization);
+        }
+
+        authorizations
+    }
 }

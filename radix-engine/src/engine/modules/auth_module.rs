@@ -85,23 +85,18 @@ impl AuthModule {
             REActor::Method(method, resolved_receiver) => {
                 match (method, resolved_receiver) {
                     (ResolvedMethod::Native(NativeMethod::Metadata(MetadataMethod::Set)), ..) => {
-                        if let Some((
-                            RENodeId::Global(GlobalAddress::Package(package_address)),
-                            ..,
-                        )) = resolved_receiver.derefed_from
-                        {
-                            let non_fungible_id =
-                                NonFungibleId::from_bytes(scrypto_encode(&package_address));
-                            let non_fungible_address =
-                                NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id);
-                            vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                                HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                                    non_fungible_address,
-                                )),
-                            ))]
-                        } else {
-                            vec![MethodAuthorization::DenyAll]
-                        }
+                        let offset =
+                            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+                        let handle = system_api.lock_substate(
+                            resolved_receiver.receiver,
+                            offset,
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = system_api.get_ref(handle)?;
+                        let access_rules = substate_ref.access_rules();
+                        let auth = access_rules.native_fn_authorization(NativeFn::Method(NativeMethod::Metadata(MetadataMethod::Set)));
+                        system_api.drop_lock(handle)?;
+                        auth
                     }
                     (
                         ResolvedMethod::Native(NativeMethod::ResourceManager(ref method)),
