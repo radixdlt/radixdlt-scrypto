@@ -2,33 +2,32 @@ use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
     ComponentOffset, KeyValueStoreOffset, LockHandle, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomTypeId};
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
-use sbor::{Decode, Encode};
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
 use crate::component::{ComponentStateSubstate, KeyValueStoreEntrySubstate};
 
-pub struct DataRef<V: Encode<ScryptoCustomTypeId>> {
+pub struct DataRef<V: ScryptoEncode> {
     lock_handle: LockHandle,
     value: V,
 }
 
-impl<V: fmt::Display + Encode<ScryptoCustomTypeId>> fmt::Display for DataRef<V> {
+impl<V: fmt::Display + ScryptoEncode> fmt::Display for DataRef<V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.value.fmt(f)
     }
 }
 
-impl<V: Encode<ScryptoCustomTypeId>> DataRef<V> {
+impl<V: ScryptoEncode> DataRef<V> {
     pub fn new(lock_handle: LockHandle, value: V) -> DataRef<V> {
         DataRef { lock_handle, value }
     }
 }
 
-impl<V: Encode<ScryptoCustomTypeId>> Deref for DataRef<V> {
+impl<V: ScryptoEncode> Deref for DataRef<V> {
     type Target = V;
 
     fn deref(&self) -> &Self::Target {
@@ -36,26 +35,26 @@ impl<V: Encode<ScryptoCustomTypeId>> Deref for DataRef<V> {
     }
 }
 
-impl<V: Encode<ScryptoCustomTypeId>> Drop for DataRef<V> {
+impl<V: ScryptoEncode> Drop for DataRef<V> {
     fn drop(&mut self) {
         let mut syscalls = ScryptoEnv;
         syscalls.sys_drop_lock(self.lock_handle).unwrap();
     }
 }
 
-pub struct DataRefMut<V: Encode<ScryptoCustomTypeId>> {
+pub struct DataRefMut<V: ScryptoEncode> {
     lock_handle: LockHandle,
     offset: SubstateOffset,
     value: V,
 }
 
-impl<V: fmt::Display + Encode<ScryptoCustomTypeId>> fmt::Display for DataRefMut<V> {
+impl<V: fmt::Display + ScryptoEncode> fmt::Display for DataRefMut<V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.value.fmt(f)
     }
 }
 
-impl<V: Encode<ScryptoCustomTypeId>> DataRefMut<V> {
+impl<V: ScryptoEncode> DataRefMut<V> {
     pub fn new(lock_handle: LockHandle, offset: SubstateOffset, value: V) -> DataRefMut<V> {
         DataRefMut {
             lock_handle,
@@ -65,16 +64,16 @@ impl<V: Encode<ScryptoCustomTypeId>> DataRefMut<V> {
     }
 }
 
-impl<V: Encode<ScryptoCustomTypeId>> Drop for DataRefMut<V> {
+impl<V: ScryptoEncode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
         let mut syscalls = ScryptoEnv;
-        let bytes = scrypto_encode(&self.value);
+        let bytes = scrypto_encode(&self.value).unwrap();
         let substate = match &self.offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
-                scrypto_encode(&KeyValueStoreEntrySubstate(Some(bytes)))
+                scrypto_encode(&KeyValueStoreEntrySubstate(Some(bytes))).unwrap()
             }
             SubstateOffset::Component(ComponentOffset::State) => {
-                scrypto_encode(&ComponentStateSubstate { raw: bytes })
+                scrypto_encode(&ComponentStateSubstate { raw: bytes }).unwrap()
             }
             s @ _ => panic!("Unsupported substate: {:?}", s),
         };
@@ -84,7 +83,7 @@ impl<V: Encode<ScryptoCustomTypeId>> Drop for DataRefMut<V> {
     }
 }
 
-impl<V: Encode<ScryptoCustomTypeId>> Deref for DataRefMut<V> {
+impl<V: ScryptoEncode> Deref for DataRefMut<V> {
     type Target = V;
 
     fn deref(&self) -> &Self::Target {
@@ -92,19 +91,19 @@ impl<V: Encode<ScryptoCustomTypeId>> Deref for DataRefMut<V> {
     }
 }
 
-impl<V: Encode<ScryptoCustomTypeId>> DerefMut for DataRefMut<V> {
+impl<V: ScryptoEncode> DerefMut for DataRefMut<V> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.value
     }
 }
 
-pub struct DataPointer<V: 'static + Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>> {
+pub struct DataPointer<V: 'static + ScryptoEncode + ScryptoDecode> {
     node_id: RENodeId,
     offset: SubstateOffset,
     phantom_data: PhantomData<V>,
 }
 
-impl<V: 'static + Encode<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>> DataPointer<V> {
+impl<V: 'static + ScryptoEncode + ScryptoDecode> DataPointer<V> {
     pub fn new(node_id: RENodeId, offset: SubstateOffset) -> Self {
         Self {
             node_id,

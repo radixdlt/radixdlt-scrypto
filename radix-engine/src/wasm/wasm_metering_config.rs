@@ -21,7 +21,7 @@ impl WasmMeteringConfig {
             instruction_cost_rules,
             max_stack_size,
         };
-        let hash = hash(scrypto_encode(&params));
+        let hash = hash(scrypto_encode(&params).unwrap());
         Self { params, hash }
     }
 

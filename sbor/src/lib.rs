@@ -11,10 +11,14 @@ pub mod basic;
 pub mod codec;
 /// SBOR constants
 pub mod constants;
-/// SBOR decoding.
+/// SBOR decode trait.
 pub mod decode;
-/// SBOR encoding.
+/// SBOR decoding.
+pub mod decoder;
+/// SBOR encode trait.
 pub mod encode;
+/// SBOR encoding.
+pub mod encoder;
 /// SBOR paths.
 pub mod path;
 /// A facade of Rust types.
@@ -26,27 +30,13 @@ pub mod value;
 
 pub use basic::*;
 pub use constants::*;
-pub use decode::{Decode, DecodeError, Decoder};
-pub use encode::{Encode, Encoder};
+pub use decode::Decode;
+pub use decoder::{DecodeError, Decoder, VecDecoder};
+pub use encode::Encode;
+pub use encoder::{EncodeError, Encoder, VecEncoder};
 pub use path::{SborPath, SborPathBuf};
 pub use type_id::*;
 pub use value::*;
-
-/// Encode a `T` into byte array.
-pub fn encode<X: CustomTypeId, T: Encode<X> + ?Sized>(v: &T) -> crate::rust::vec::Vec<u8> {
-    let mut buf = crate::rust::vec::Vec::with_capacity(512);
-    let mut enc = Encoder::new(&mut buf);
-    v.encode(&mut enc);
-    buf
-}
-
-/// Decode an instance of `T` from a slice.
-pub fn decode<X: CustomTypeId, T: Decode<X>>(buf: &[u8]) -> Result<T, DecodeError> {
-    let mut dec = Decoder::new(buf);
-    let v = T::decode(&mut dec)?;
-    dec.check_end()?;
-    Ok(v)
-}
 
 // Re-export derives
 extern crate sbor_derive;

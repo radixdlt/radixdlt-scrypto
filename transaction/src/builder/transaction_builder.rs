@@ -32,7 +32,7 @@ impl TransactionBuilder {
 
     pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
         let intent = self.transaction_intent();
-        let intent_payload = scrypto_encode(&intent);
+        let intent_payload = scrypto_encode(&intent).unwrap();
         self.intent_signatures.push(signer.sign(&intent_payload));
         self
     }
@@ -44,7 +44,7 @@ impl TransactionBuilder {
 
     pub fn notarize<S: Signer>(mut self, signer: &S) -> Self {
         let signed_intent = self.signed_transaction_intent();
-        let signed_intent_payload = scrypto_encode(&signed_intent);
+        let signed_intent_payload = scrypto_encode(&signed_intent).unwrap();
         self.notary_signature = Some(signer.sign(&signed_intent_payload).signature());
         self
     }
@@ -109,7 +109,7 @@ mod tests {
             .notarize(&private_key)
             .build();
 
-        let bytes = transaction.to_bytes();
+        let bytes = transaction.to_bytes().unwrap();
         NotarizedTransaction::from_slice(&bytes).unwrap();
     }
 }

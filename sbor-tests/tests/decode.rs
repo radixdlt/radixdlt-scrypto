@@ -40,10 +40,10 @@ fn test_decode_struct() {
         0,  // number of fields
     ];
 
-    let mut decoder = Decoder::<NoCustomTypeId>::new(&bytes);
-    let a = TestStructNamed::decode(&mut decoder).unwrap();
-    let b = TestStructUnnamed::decode(&mut decoder).unwrap();
-    let c = TestStructUnit::decode(&mut decoder).unwrap();
+    let mut decoder = BasicDecoder::new(&bytes);
+    let a = decoder.decode::<TestStructNamed>().unwrap();
+    let b = decoder.decode::<TestStructUnnamed>().unwrap();
+    let c = decoder.decode::<TestStructUnit>().unwrap();
 
     assert_eq!(TestStructNamed { state: 3 }, a);
     assert_eq!(TestStructUnnamed(3), b);
@@ -73,10 +73,10 @@ fn test_decode_enum() {
         0,  // number of fields
     ];
 
-    let mut decoder = Decoder::<NoCustomTypeId>::new(&bytes);
-    let a = TestEnum::decode(&mut decoder).unwrap();
-    let b = TestEnum::decode(&mut decoder).unwrap();
-    let c = TestEnum::decode(&mut decoder).unwrap();
+    let mut decoder = BasicDecoder::new(&bytes);
+    let a = decoder.decode::<TestEnum>().unwrap();
+    let b = decoder.decode::<TestEnum>().unwrap();
+    let c = decoder.decode::<TestEnum>().unwrap();
 
     assert_eq!(TestEnum::A { x: 2, y: 3 }, a);
     assert_eq!(TestEnum::B(1), b);
@@ -95,8 +95,8 @@ fn test_decode_empty_enum() {
         9, 3, 0, 0, 0, // field value
     ];
 
-    let mut decoder = Decoder::<NoCustomTypeId>::new(&bytes);
-    let result = EmptyEnum::decode(&mut decoder);
+    let mut decoder = BasicDecoder::new(&bytes);
+    let result = decoder.decode::<EmptyEnum>();
 
     assert!(matches!(result, Err(DecodeError::UnknownDiscriminator(_))));
 }

@@ -4,13 +4,12 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::crypto::*;
-use radix_engine_interface::data::{scrypto_decode, ScryptoCustomTypeId};
+use radix_engine_interface::data::{scrypto_decode, ScryptoDecode, ScryptoTypeId};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
-use sbor::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
 /// The transaction runtime.
@@ -25,7 +24,7 @@ impl Runtime {
     pub fn sys_current_epoch<Y, E>(env: &mut Y) -> Result<u64, E>
     where
         Y: SysNativeInvokable<EpochManagerGetCurrentEpochInvocation, E>,
-        E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>,
+        E: Debug + ScryptoTypeId + ScryptoDecode,
     {
         env.sys_invoke(EpochManagerGetCurrentEpochInvocation {
             receiver: EPOCH_MANAGER,
@@ -53,7 +52,7 @@ impl Runtime {
     }
 
     /// Invokes a function on a blueprint.
-    pub fn call_function<S1: AsRef<str>, S2: AsRef<str>, T: Decode<ScryptoCustomTypeId>>(
+    pub fn call_function<S1: AsRef<str>, S2: AsRef<str>, T: ScryptoDecode>(
         package_address: PackageAddress,
         blueprint_name: S1,
         function_name: S2,
@@ -74,7 +73,7 @@ impl Runtime {
     }
 
     /// Invokes a method on a component.
-    pub fn call_method<S: AsRef<str>, T: Decode<ScryptoCustomTypeId>>(
+    pub fn call_method<S: AsRef<str>, T: ScryptoDecode>(
         component_address: ComponentAddress,
         method: S,
         args: Vec<u8>,
