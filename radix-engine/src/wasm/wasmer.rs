@@ -18,7 +18,6 @@ use super::InstrumentedCode;
 // The below integration of Wasmer is not yet checked rigorously enough for production use
 // TODO: Address the below issues before considering production use.
 
-
 /// A `WasmerModule` defines a parsed WASM module, which is a template which can be instantiated.
 ///
 /// Unlike `WasmerInstance`, this is correctly `Send + Sync` - which is good, because this is the
@@ -28,8 +27,6 @@ pub struct WasmerModule {
     #[allow(dead_code)]
     code_size_bytes: usize,
 }
-
-
 
 /// WARNING - this type should not actually be Send + Sync - it should really store a raw pointer,
 /// not a raw pointer masked as a usize.
