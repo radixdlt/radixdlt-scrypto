@@ -14,15 +14,22 @@ use crate::wasm::traits::*;
 
 use super::InstrumentedCode;
 
+// IMPORTANT:
+// The below integration of Wasmer is not yet checked rigorously enough for production use
+// TODO: Address the below issues before considering production use.
+
+
+/// A `WasmerModule` defines a parsed WASM module, which is a template which can be instantiated.
+///
+/// Unlike `WasmerInstance`, this is correctly `Send + Sync` - which is good, because this is the
+/// thing which is cached in the ScryptoInterpreter caches.
 pub struct WasmerModule {
     module: Module,
     #[allow(dead_code)]
     code_size_bytes: usize,
 }
 
-// IMPORTANT:
-// The below implementation is not yet checked rigorously enough for production use
-// TODO: Address the below issues before considering production use.
+
 
 /// WARNING - this type should not actually be Send + Sync - it should really store a raw pointer,
 /// not a raw pointer masked as a usize.
