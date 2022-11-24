@@ -18,8 +18,8 @@ pub enum NoCustomTypeId {}
 pub enum NoCustomValue {}
 
 pub const DEFAULT_BASIC_MAX_DEPTH: u8 = 64;
-pub type BasicEncoder<'a> = VecEncoder<'a, NoCustomTypeId, DEFAULT_BASIC_MAX_DEPTH>;
-pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomTypeId, DEFAULT_BASIC_MAX_DEPTH>;
+pub type BasicEncoder<'a> = VecEncoder<'a, NoCustomTypeId>;
+pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomTypeId>;
 pub type BasicSborValue = SborValue<NoCustomTypeId, NoCustomValue>;
 pub type BasicSborTypeId = SborTypeId<NoCustomTypeId>;
 
@@ -46,14 +46,14 @@ impl<T: for<'a> Encode<NoCustomTypeId, BasicEncoder<'a>> + ?Sized> BasicEncode f
 /// Encode a `T` into byte array.
 pub fn basic_encode<T: BasicEncode + ?Sized>(v: &T) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);
-    let encoder = BasicEncoder::new(&mut buf);
+    let encoder = BasicEncoder::new(&mut buf, DEFAULT_BASIC_MAX_DEPTH);
     encoder.encode_payload(v)?;
     Ok(buf)
 }
 
 /// Decode an instance of `T` from a slice.
 pub fn basic_decode<T: BasicDecode>(buf: &[u8]) -> Result<T, DecodeError> {
-    BasicDecoder::new(buf).decode_payload()
+    BasicDecoder::new(buf, DEFAULT_BASIC_MAX_DEPTH).decode_payload()
 }
 
 impl CustomTypeId for NoCustomTypeId {

@@ -536,7 +536,7 @@ mod tests {
         );
 
         let mut bytes2 = Vec::new();
-        let mut encoder = BasicEncoder::new(&mut bytes2);
+        let mut encoder = BasicEncoder::new(&mut bytes2, DEFAULT_BASIC_MAX_DEPTH);
         encoder.encode(&value).unwrap();
         assert_eq!(bytes2, bytes);
     }
@@ -576,7 +576,7 @@ mod tests {
 
     pub fn encode_array_of_depth(depth: u8) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
-        let mut encoder = BasicEncoder::new(&mut buf);
+        let mut encoder = BasicEncoder::new(&mut buf, 100);
         encoder.write_type_id(SborTypeId::Array)?;
         // Encodes depth - 1 array bodies
         for _ in 1..depth {
@@ -592,7 +592,7 @@ mod tests {
 
     pub fn encode_struct_of_depth(depth: u8) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
-        let mut encoder = BasicEncoder::new(&mut buf);
+        let mut encoder = BasicEncoder::new(&mut buf, 100);
         // Encodes depth - 1 structs containing 1 child
         for _ in 1..depth {
             encoder.write_type_id(SborTypeId::Struct)?;
@@ -607,7 +607,7 @@ mod tests {
 
     pub fn encode_tuple_of_depth(depth: u8) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
-        let mut encoder = BasicEncoder::new(&mut buf);
+        let mut encoder = BasicEncoder::new(&mut buf, 100);
         // Encodes depth - 1 structs containing 1 child
         for _ in 1..depth {
             encoder.write_type_id(SborTypeId::Tuple)?;

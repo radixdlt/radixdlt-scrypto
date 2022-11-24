@@ -24,10 +24,40 @@ pub use schema_matcher::*;
 pub use schema_path::*;
 pub use value_formatter::*;
 
-pub const MAX_SCRYPTO_SBOR_DEPTH: u8 = 64;
+enum PayloadType {
+    ENGINE_PERSISTED_SUBSTATE,
+    ENGINE_RUNTIME_SUBSTATE,
+    SCRYPTO_INTERFACE,
+    NON_FUNGIBLE_ID,
+    TRANSACTION_ARGUMENT,
+    TRANSACTION_ARGUMENTS_WRAPPER_STRUCT,
+    TRANSACTION_MANIFEST,
+    TRANSACTION_SIGNED,
+    TRANSACTION_NOTARIZED,
+    CUSTOM { max_depth: u8 },
+}
 
-pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomTypeId, MAX_SCRYPTO_SBOR_DEPTH>;
-pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomTypeId, MAX_SCRYPTO_SBOR_DEPTH>;
+const ANY_DEPTH: PayloadType = PayloadType::CUSTOM { max_depth: 255 };
+
+impl PayloadType {
+    fn get_max_depth(&self) -> u8 {
+        match self {
+            PayloadType::ENGINE_PERSISTED_SUBSTATE => 64,
+            PayloadType::ENGINE_RUNTIME_SUBSTATE => 50,
+            PayloadType::SCRYPTO_INTERFACE => 48,
+            PayloadType::NON_FUNGIBLE_ID => 32,
+            PayloadType::TRANSACTION_ARGUMENT => 48,
+            PayloadType::TRANSACTION_ARGUMENTS_WRAPPER_STRUCT => 49, // 1 more than argument
+            PayloadType::TRANSACTION_MANIFEST => 55,
+            PayloadType::TRANSACTION_SIGNED => 60,
+            PayloadType::TRANSACTION_NOTARIZED => 64,
+            PayloadType::CUSTOM { max_depth } => *max_depth, // For use in other systems (eg the node)
+        }
+    }
+}
+
+pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomTypeId>;
+pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomTypeId>;
 pub type ScryptoSborTypeId = SborTypeId<ScryptoCustomTypeId>;
 pub type ScryptoValue = SborValue<ScryptoCustomTypeId, ScryptoCustomValue>;
 
@@ -52,16 +82,16 @@ pub trait ScryptoEncode: for<'a> Encode<ScryptoCustomTypeId, ScryptoEncoder<'a>>
 impl<T: for<'a> Encode<ScryptoCustomTypeId, ScryptoEncoder<'a>> + ?Sized> ScryptoEncode for T {}
 
 /// Encodes a data structure into byte array.
-pub fn scrypto_encode<T: ScryptoEncode + ?Sized>(value: &T) -> Result<Vec<u8>, EncodeError> {
+pub fn scrypto_encode<T: ScryptoEncode + ?Sized>(value: &T, payload_type: PayloadType) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);
-    let encoder = ScryptoEncoder::new(&mut buf);
+    let encoder = ScryptoEncoder::new(&mut buf, payload_type.get_max_depth());
     encoder.encode_payload(value)?;
     Ok(buf)
 }
 
 /// Decodes a data structure from a byte array.
-pub fn scrypto_decode<T: ScryptoDecode>(buf: &[u8]) -> Result<T, DecodeError> {
-    ScryptoDecoder::new(buf).decode_payload()
+pub fn scrypto_decode<T: ScryptoDecode>(buf: &[u8], payload_type: PayloadType) -> Result<T, DecodeError> {
+    ScryptoDecoder::new(buf, payload_type.get_max_depth()).decode_payload()
 }
 
 #[macro_export]

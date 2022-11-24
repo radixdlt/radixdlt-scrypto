@@ -91,17 +91,19 @@ pub trait Encoder<X: CustomTypeId>: Sized {
 }
 
 /// An `Encoder` abstracts the logic for writing core types into a byte buffer.
-pub struct VecEncoder<'a, X: CustomTypeId, const MAX_DEPTH: u8> {
+pub struct VecEncoder<'a, X: CustomTypeId> {
     buf: &'a mut Vec<u8>,
     stack_depth: u8,
+    max_depth: u8,
     phantom: PhantomData<X>,
 }
 
-impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> VecEncoder<'a, X, MAX_DEPTH> {
-    pub fn new(buf: &'a mut Vec<u8>) -> Self {
+impl<'a, X: CustomTypeId> VecEncoder<'a, X> {
+    pub fn new(buf: &'a mut Vec<u8>, max_depth: u8) -> Self {
         Self {
             buf,
             stack_depth: 0,
+            max_depth,
             phantom: PhantomData,
         }
     }
@@ -109,8 +111,8 @@ impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> VecEncoder<'a, X, MAX_DEPTH> {
     #[inline]
     fn track_stack_depth_increase(&mut self) -> Result<(), EncodeError> {
         self.stack_depth += 1;
-        if self.stack_depth > MAX_DEPTH {
-            return Err(EncodeError::MaxDepthExceeded(MAX_DEPTH));
+        if self.stack_depth > self.max_depth {
+            return Err(EncodeError::MaxDepthExceeded(self.max_depth));
         }
         Ok(())
     }
@@ -122,7 +124,7 @@ impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> VecEncoder<'a, X, MAX_DEPTH> {
     }
 }
 
-impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> Encoder<X> for VecEncoder<'a, X, MAX_DEPTH> {
+impl<'a, X: CustomTypeId> Encoder<X> for VecEncoder<'a, X> {
     fn encode_deeper_body<T: Encode<X, Self> + ?Sized>(
         &mut self,
         value: &T,
@@ -194,7 +196,7 @@ mod tests {
     #[test]
     pub fn test_encoding() {
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = BasicEncoder::new(&mut bytes);
+        let mut enc = BasicEncoder::new(&mut bytes, 100);
         do_encoding(&mut enc).unwrap();
 
         assert_eq!(
@@ -248,7 +250,7 @@ mod tests {
         set.insert(2);
         let x = crate::rust::borrow::Cow::Borrowed(&set);
         let mut bytes = Vec::with_capacity(512);
-        let mut encoder = BasicEncoder::new(&mut bytes);
+        let mut encoder = BasicEncoder::new(&mut bytes, 100);
         encoder.encode(&x).unwrap();
         assert_eq!(bytes, vec![32, 7, 2, 1, 2]) // Same as set above
     }
@@ -258,7 +260,7 @@ mod tests {
         use crate::rust::borrow::Cow;
         let x: Cow<u8> = Cow::Owned(5u8);
         let mut bytes = Vec::with_capacity(512);
-        let mut encoder = BasicEncoder::new(&mut bytes);
+        let mut encoder = BasicEncoder::new(&mut bytes, 100);
         encoder.encode(&x).unwrap();
         assert_eq!(bytes, vec![7, 5])
     }
@@ -267,7 +269,7 @@ mod tests {
     pub fn test_encode_box() {
         let x = Box::new(5u8);
         let mut bytes = Vec::with_capacity(512);
-        let mut encoder = BasicEncoder::new(&mut bytes);
+        let mut encoder = BasicEncoder::new(&mut bytes, 100);
         encoder.encode(&x).unwrap();
         assert_eq!(bytes, vec![7, 5])
     }
@@ -276,7 +278,7 @@ mod tests {
     pub fn test_encode_rc() {
         let x = crate::rust::rc::Rc::new(5u8);
         let mut bytes = Vec::with_capacity(512);
-        let mut encoder = BasicEncoder::new(&mut bytes);
+        let mut encoder = BasicEncoder::new(&mut bytes, 100);
         encoder.encode(&x).unwrap();
         assert_eq!(bytes, vec![7, 5])
     }
@@ -285,7 +287,7 @@ mod tests {
     pub fn test_encode_ref_cell() {
         let x = crate::rust::cell::RefCell::new(5u8);
         let mut bytes = Vec::with_capacity(512);
-        let mut encoder = BasicEncoder::new(&mut bytes);
+        let mut encoder = BasicEncoder::new(&mut bytes, 100);
         encoder.encode(&x).unwrap();
         assert_eq!(bytes, vec![7, 5])
     }
