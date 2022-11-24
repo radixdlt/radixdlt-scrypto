@@ -33,7 +33,6 @@ pub enum NativeMethod {
     Package(PackageMethod),
     EpochManager(EpochManagerMethod),
     AuthZoneStack(AuthZoneStackMethod),
-    RoyaltyReserve(RoyaltyReserveMethod),
     ResourceManager(ResourceManagerMethod),
     Bucket(BucketMethod),
     Vault(VaultMethod),
@@ -346,29 +345,6 @@ pub enum WorktopMethod {
     AssertContains,
     AssertContainsAmount,
     AssertContainsNonFungibles,
-    Drain,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
-#[strum(serialize_all = "snake_case")]
-pub enum RoyaltyReserveMethod {
-    Put,
-    Take,
     Drain,
 }
 

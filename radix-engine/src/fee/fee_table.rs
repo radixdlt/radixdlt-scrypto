@@ -1,8 +1,8 @@
 use radix_engine_interface::api::types::{
     AccessRulesMethod, AuthZoneStackMethod, BucketMethod, ComponentMethod, EpochManagerFunction,
     EpochManagerMethod, NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
-    ResourceManagerFunction, ResourceManagerMethod, RoyaltyReserveMethod,
-    TransactionProcessorFunction, VaultMethod, WorktopMethod,
+    ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
+    WorktopMethod,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
@@ -186,11 +186,6 @@ impl FeeTable {
                     AuthZoneStackMethod::Drain => self.fixed_high,
                 }
             }
-            NativeMethod::RoyaltyReserve(method_ident) => match method_ident {
-                RoyaltyReserveMethod::Put => self.fixed_medium,
-                RoyaltyReserveMethod::Take => self.fixed_medium,
-                RoyaltyReserveMethod::Drain => self.fixed_medium,
-            },
             NativeMethod::EpochManager(system_ident) => match system_ident {
                 EpochManagerMethod::GetCurrentEpoch => self.fixed_low,
                 EpochManagerMethod::SetEpoch => self.fixed_low,

@@ -214,8 +214,6 @@ pub enum ApplicationError {
 
     WorktopError(WorktopError),
 
-    RoyaltyReserveError(RoyaltyReserveError),
-
     AuthZoneError(AuthZoneError),
 }
 

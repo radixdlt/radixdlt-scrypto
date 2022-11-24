@@ -236,9 +236,9 @@ where
                 let auth_zone_id = id_allocator.new_auth_zone_id()?;
                 Ok(RENodeId::AuthZoneStack(auth_zone_id))
             }
-            RENode::RoyaltyReserve(..) => {
-                let auth_zone_id = id_allocator.new_royalty_reserve_id()?;
-                Ok(RENodeId::RoyaltyReserve(auth_zone_id))
+            RENode::FeeReserve(..) => {
+                let auth_zone_id = id_allocator.new_fee_reserve_id()?;
+                Ok(RENodeId::FeeReserve(auth_zone_id))
             }
             RENode::Bucket(..) => {
                 let bucket_id = id_allocator.new_bucket_id()?;

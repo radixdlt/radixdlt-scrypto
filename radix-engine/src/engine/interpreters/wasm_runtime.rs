@@ -5,7 +5,6 @@ use crate::types::{scrypto_decode, scrypto_encode, ScryptoInvocation};
 use crate::wasm::*;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
 use radix_engine_interface::api::wasm_input::PackageMethodInvocation;
-use radix_engine_interface::api::wasm_input::RoyaltyReserveMethodInvocation;
 use radix_engine_interface::api::wasm_input::{
     AccessRulesMethodInvocation, AuthZoneStackMethodInvocation, BucketMethodInvocation,
     ComponentMethodInvocation, EpochManagerFunctionInvocation, EpochManagerMethodInvocation,
@@ -140,20 +139,6 @@ where
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     AuthZoneStackMethodInvocation::Drain(invocation) => self
-                        .system_api
-                        .sys_invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                },
-                NativeMethodInvocation::RoyaltyReserve(royalty_method) => match royalty_method {
-                    RoyaltyReserveMethodInvocation::Put(invocation) => self
-                        .system_api
-                        .sys_invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    RoyaltyReserveMethodInvocation::Take(invocation) => self
-                        .system_api
-                        .sys_invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    RoyaltyReserveMethodInvocation::Drain(invocation) => self
                         .system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),

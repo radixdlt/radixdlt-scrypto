@@ -12,7 +12,7 @@ pub enum RENode {
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     AuthZoneStack(AuthZoneStackSubstate),
-    RoyaltyReserve(RoyaltyReserveSubstate),
+    FeeReserve(FeeReserveSubstate),
     Vault(VaultRuntimeSubstate),
     Component(
         ComponentInfoSubstate,
@@ -112,10 +112,10 @@ impl RENode {
                     epoch_manager.into(),
                 );
             }
-            RENode::RoyaltyReserve(royalty_reserve) => {
+            RENode::FeeReserve(fee_reserve) => {
                 substates.insert(
-                    SubstateOffset::RoyaltyReserve(RoyaltyReserveOffset::RoyaltyReserve),
-                    royalty_reserve.into(),
+                    SubstateOffset::FeeReserve(FeeReserveOffset::FeeReserve),
+                    fee_reserve.into(),
                 );
             }
         }

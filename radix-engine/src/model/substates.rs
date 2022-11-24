@@ -93,7 +93,7 @@ pub enum RuntimeSubstate {
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     Worktop(WorktopSubstate),
-    RoyaltyReserve(RoyaltyReserveSubstate),
+    FeeReserve(FeeReserveSubstate),
 }
 
 impl RuntimeSubstate {
@@ -130,7 +130,7 @@ impl RuntimeSubstate {
             | RuntimeSubstate::Bucket(..)
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
-            | RuntimeSubstate::RoyaltyReserve(..) => {
+            | RuntimeSubstate::FeeReserve(..) => {
                 panic!("Should not get here");
             }
         }
@@ -165,7 +165,7 @@ impl RuntimeSubstate {
             | RuntimeSubstate::Bucket(..)
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
-            | RuntimeSubstate::RoyaltyReserve(..) => {
+            | RuntimeSubstate::FeeReserve(..) => {
                 panic!("Should not get here");
             }
         }
@@ -223,7 +223,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Bucket(value) => SubstateRefMut::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRefMut::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
-            RuntimeSubstate::RoyaltyReserve(value) => SubstateRefMut::RoyaltyReserve(value),
+            RuntimeSubstate::FeeReserve(value) => SubstateRefMut::FeeReserve(value),
         }
     }
 
@@ -249,7 +249,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Bucket(value) => SubstateRef::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRef::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
-            RuntimeSubstate::RoyaltyReserve(value) => SubstateRef::RoyaltyReserve(value),
+            RuntimeSubstate::FeeReserve(value) => SubstateRef::FeeReserve(value),
         }
     }
 
@@ -338,9 +338,9 @@ impl Into<RuntimeSubstate> for ResourceManagerSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for RoyaltyReserveSubstate {
+impl Into<RuntimeSubstate> for FeeReserveSubstate {
     fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::RoyaltyReserve(self)
+        RuntimeSubstate::FeeReserve(self)
     }
 }
 
@@ -485,7 +485,7 @@ impl Into<AccessRulesSubstate> for RuntimeSubstate {
 pub enum SubstateRef<'a> {
     AuthZone(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
-    RoyaltyReserve(&'a RoyaltyReserveSubstate),
+    FeeReserve(&'a FeeReserveSubstate),
     Proof(&'a ProofSubstate),
     Bucket(&'a BucketSubstate),
     ComponentInfo(&'a ComponentInfoSubstate),
@@ -582,10 +582,10 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn royalty_reserve(&self) -> &RoyaltyReserveSubstate {
+    pub fn fee_reserve(&self) -> &FeeReserveSubstate {
         match self {
-            SubstateRef::RoyaltyReserve(value) => *value,
-            _ => panic!("Not a royalty reserve"),
+            SubstateRef::FeeReserve(value) => *value,
+            _ => panic!("Not a fee reserve"),
         }
     }
 
@@ -726,7 +726,7 @@ pub enum SubstateRefMut<'a> {
     Bucket(&'a mut BucketSubstate),
     Proof(&'a mut ProofSubstate),
     Worktop(&'a mut WorktopSubstate),
-    RoyaltyReserve(&'a mut RoyaltyReserveSubstate),
+    FeeReserve(&'a mut FeeReserveSubstate),
     AuthZone(&'a mut AuthZoneStackSubstate),
 }
 
@@ -745,10 +745,10 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn royalty_reserve(&mut self) -> &mut RoyaltyReserveSubstate {
+    pub fn fee_reserve(&mut self) -> &mut FeeReserveSubstate {
         match self {
-            SubstateRefMut::RoyaltyReserve(value) => *value,
-            _ => panic!("Not a royalty reserve"),
+            SubstateRefMut::FeeReserve(value) => *value,
+            _ => panic!("Not a fee reserve"),
         }
     }
 

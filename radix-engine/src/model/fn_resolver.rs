@@ -41,10 +41,6 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
             .ok()
             .map(NativeMethod::AuthZoneStack),
 
-        RENodeId::RoyaltyReserve(_) => RoyaltyReserveMethod::from_str(method_name)
-            .ok()
-            .map(NativeMethod::RoyaltyReserve),
-
         RENodeId::Worktop => WorktopMethod::from_str(method_name)
             .ok()
             .map(NativeMethod::Worktop),
@@ -75,6 +71,7 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
         RENodeId::Global(_)
         | RENodeId::KeyValueStore(_)
         | RENodeId::NonFungibleStore(_)
-        | RENodeId::Package(_) => None,
+        | RENodeId::Package(_)
+        | RENodeId::FeeReserve(_) => None,
     }
 }

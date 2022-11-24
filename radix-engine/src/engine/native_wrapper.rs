@@ -160,29 +160,6 @@ where
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
             },
-            NativeMethod::RoyaltyReserve(royalty_reserve_method) => match royalty_reserve_method {
-                RoyaltyReserveMethod::Put => {
-                    let invocation: RoyaltyReservePutInvocation = scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
-                    system_api
-                        .sys_invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a))
-                }
-                RoyaltyReserveMethod::Take => {
-                    let invocation: RoyaltyReserveTakeInvocation = scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
-                    system_api
-                        .sys_invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a))
-                }
-                RoyaltyReserveMethod::Drain => {
-                    let invocation: RoyaltyReserveDrainInvocation = scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
-                    system_api
-                        .sys_invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a))
-                }
-            },
             NativeMethod::Proof(proof_method) => match proof_method {
                 ProofMethod::GetAmount => {
                     let invocation: ProofGetAmountInvocation = scrypto_decode(&args)

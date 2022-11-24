@@ -17,7 +17,7 @@ pub enum RENodeId {
     Bucket(BucketId),
     Proof(ProofId),
     AuthZoneStack(AuthZoneStackId),
-    RoyaltyReserve(RoyaltyReserveId),
+    FeeReserve(FeeReserveId),
     Worktop,
 
     Global(GlobalAddress),
@@ -51,7 +51,7 @@ impl Into<u32> for RENodeId {
             RENodeId::Bucket(id) => id,
             RENodeId::Proof(id) => id,
             RENodeId::AuthZoneStack(id) => id,
-            RENodeId::RoyaltyReserve(id) => id,
+            RENodeId::FeeReserve(id) => id,
             _ => panic!("Not a transient id"),
         }
     }
@@ -184,8 +184,8 @@ pub enum EpochManagerOffset {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum RoyaltyReserveOffset {
-    RoyaltyReserve,
+pub enum FeeReserveOffset {
+    FeeReserve,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -209,7 +209,7 @@ pub enum WorktopOffset {
 pub enum SubstateOffset {
     Global(GlobalOffset),
     AuthZoneStack(AuthZoneStackOffset),
-    RoyaltyReserve(RoyaltyReserveOffset),
+    FeeReserve(FeeReserveOffset),
     Component(ComponentOffset),
     AccessRules(AccessRulesOffset),
     Package(PackageOffset),
