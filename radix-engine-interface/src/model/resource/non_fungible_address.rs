@@ -137,11 +137,11 @@ impl FromPublicKey for NonFungibleAddress {
         match public_key {
             PublicKey::EcdsaSecp256k1(public_key) => NonFungibleAddress::new(
                 ECDSA_SECP256K1_TOKEN,
-                NonFungibleId::from_bytes(hash(public_key.to_vec()).lower_26_bytes().into()),
+                NonFungibleId::from_bytes(&hash(public_key.to_vec()).lower_26_bytes()),
             ),
             PublicKey::EddsaEd25519(public_key) => NonFungibleAddress::new(
                 EDDSA_ED25519_TOKEN,
-                NonFungibleId::from_bytes(hash(public_key.to_vec()).lower_26_bytes().into()),
+                NonFungibleId::from_bytes(&hash(public_key.to_vec()).lower_26_bytes()),
             ),
         }
     }
@@ -166,7 +166,7 @@ mod tests {
             )
             .expect("Resource address from str failed.");
         let non_fungible_id = NonFungibleId::from_bytes(
-            hex::decode("30071000000071dba5dd36e30de857049805fd1553cd")
+            &hex::decode("30071000000071dba5dd36e30de857049805fd1553cd")
                 .expect("Invalid NonFungibleId hex"),
         );
         let non_fungible_address = NonFungibleAddress::new(resource_address, non_fungible_id);

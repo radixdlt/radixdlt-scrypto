@@ -29,7 +29,7 @@ pub enum NonFungibleIdType {
 
 impl NonFungibleId {
     /// Creates a non-fungible ID from an arbitrary byte array.
-    pub fn from_bytes(v: Vec<u8>) -> Self {
+    pub fn from_bytes(v: &[u8]) -> Self {
         Self { 
             value: scrypto_encode(&v).expect("Error encoding byte array"),
             id_type: NonFungibleIdType::Bytes
@@ -51,7 +51,7 @@ impl NonFungibleId {
             id_type: NonFungibleIdType::Number
         }
     }
-    
+
     /// Creates a non-fungible ID from a Decimal number.
     pub fn from_decimal(u: Decimal) -> Self {
         Self { 
@@ -76,12 +76,19 @@ impl NonFungibleId {
         }
     }
 
+    /// Returns non-fungible ID type.
     pub fn id_type(&self) -> NonFungibleIdType {
         self.id_type
+    }
+
+    /// Returns non-fungible ID value.
+    pub fn value(&self) -> &[u8] {
+        &self.value
     }
 }
 
 impl Default for NonFungibleIdType {
+    /// Default value of non-fungible ID type is UUID
     fn default() -> Self { 
         NonFungibleIdType::UUID
     }
@@ -130,7 +137,7 @@ fn validate_id(slice: &[u8]) -> Result<NonFungibleIdType, DecodeError> {
         }
         ScryptoSborTypeId::U128 => {
             decoder.read_slice(16)?;
-            ret = NonFungibleIdType::Number;
+            ret = NonFungibleIdType::UUID;
         }
         ScryptoSborTypeId::Array => {
             let element_type_id = decoder.read_type_id()?;
@@ -239,13 +246,27 @@ impl fmt::Debug for NonFungibleId {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sbor::rust::vec;
+
+    #[test]
+    fn test_non_fungible_id_type() {
+        assert_eq!(NonFungibleId::from_u32(1u32).id_type(), NonFungibleIdType::Number);
+        assert_eq!(NonFungibleId::from_u64(1u64).id_type(), NonFungibleIdType::Number);
+        assert_eq!(NonFungibleId::from_string("test").id_type(), NonFungibleIdType::String);
+        assert_eq!(NonFungibleId::from_uuid(1u128).id_type(), NonFungibleIdType::UUID);
+        assert_eq!(NonFungibleId::from_bytes(&[1,2,3]).id_type(), NonFungibleIdType::Bytes);
+    }
+
+    #[test]
+    fn test_non_fungible_id_type_default() {
+        assert_eq!(NonFungibleIdType::default(), NonFungibleIdType::UUID);
+    }
 
     #[test]
     fn test_non_fungible_id_string_rep() {
+        // internal buffer representation: <non-fungible-id: 5c><sbor type id><bytes>
         assert_eq!(
             NonFungibleId::from_str("5c2007023575").unwrap(),
-            NonFungibleId::from_bytes(vec![53u8, 117u8]),
+            NonFungibleId::from_bytes(&[53u8, 117u8]),
         );
         assert_eq!(
             NonFungibleId::from_str("5c0905000000").unwrap(),
@@ -254,6 +275,14 @@ mod tests {
         assert_eq!(
             NonFungibleId::from_str("5c0a0500000000000000").unwrap(),
             NonFungibleId::from_u64(5)
+        );
+        assert_eq!(
+            NonFungibleId::from_str("5c0b05000000000000000000000000000000").unwrap(),
+            NonFungibleId::from_uuid(5)
+        );
+        assert_eq!(
+            NonFungibleId::from_str("5c0c0474657374").unwrap(),
+            NonFungibleId::from_string("test")
         );
     }
 }

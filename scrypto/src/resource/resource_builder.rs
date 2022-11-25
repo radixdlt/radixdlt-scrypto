@@ -234,7 +234,6 @@ impl NonFungibleResourceBuilder {
         for (id, e) in entries {
             encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }
-// todo MS: check ids
         self.build(Some(MintParams::NonFungible { entries: encoded }))
             .1
             .unwrap()

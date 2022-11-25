@@ -232,11 +232,11 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
     let non_fungible_address = NonFungibleAddress::new(
         ECDSA_SECP256K1_TOKEN,
-        NonFungibleId::from_bytes(pk.to_vec()),
+        NonFungibleId::from_bytes(&pk.to_vec()),
     );
     let other_non_fungible_address = NonFungibleAddress::new(
         ECDSA_SECP256K1_TOKEN,
-        NonFungibleId::from_bytes(other_public_key.to_vec()),
+        NonFungibleId::from_bytes(&other_public_key.to_vec()),
     );
     let players = [non_fungible_address, other_non_fungible_address.clone()];
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())

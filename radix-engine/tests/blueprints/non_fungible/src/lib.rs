@@ -253,5 +253,20 @@ blueprint! {
             vault.put(bucket);
             NonFungibleTest { vault }.instantiate().globalize();
         }
+
+        pub fn create_wrong_non_fungible_id_type() -> Bucket {
+            // creating non-fungible id with id type set to default (UUID)
+            ResourceBuilder::new_non_fungible() 
+                .metadata("name", "Katz's Sandwiches")
+                .initial_supply([
+                    (
+                        NonFungibleId::from_u32(0),
+                        Sandwich {
+                            name: "Zero".to_owned(),
+                            available: true,
+                        },
+                    )
+                ])
+        }
     }
 }
