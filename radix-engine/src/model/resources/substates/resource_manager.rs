@@ -60,7 +60,6 @@ impl ResourceManagerSubstate {
         method_table.insert(ResourceManagerMethod::GetTotalSupply, Public);
         method_table.insert(ResourceManagerMethod::CreateVault, Public);
         method_table.insert(ResourceManagerMethod::Burn, Protected(Burn));
-        method_table.insert(ResourceManagerMethod::SetResourceAddress, Public);
 
         // Non Fungible methods
         method_table.insert(

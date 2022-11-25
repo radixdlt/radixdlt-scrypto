@@ -215,7 +215,6 @@ pub enum ResourceManagerMethod {
     NonFungibleExists,
     CreateBucket,
     CreateVault,
-    SetResourceAddress,
 }
 
 #[derive(
