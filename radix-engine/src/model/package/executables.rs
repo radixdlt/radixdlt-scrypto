@@ -163,6 +163,12 @@ impl NativeProgram for PackagePublishWithOwnerInvocation {
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,
             ))),
+            rule!(require(non_fungible_address.clone())),
+        );
+        access_rules.set_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
             rule!(require(non_fungible_address)),
         );
 

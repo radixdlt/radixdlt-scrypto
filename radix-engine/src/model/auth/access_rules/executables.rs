@@ -122,11 +122,13 @@ impl ExecutableInvocation for AccessRulesSetAccessRuleInvocation {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
-        // TODO: Move this into a more static check once node types implemented
-        if !matches!(resolved_receiver.receiver, RENodeId::Component(..)) {
-            return Err(RuntimeError::InterpreterError(
-                InterpreterError::InvalidInvocation,
-            ));
+        match resolved_receiver.receiver {
+            RENodeId::Component(..) | RENodeId::Package(..) => {},
+            _ => {
+                return Err(RuntimeError::InterpreterError(
+                    InterpreterError::InvalidInvocation,
+                ));
+            }
         }
         self.receiver = resolved_receiver.receiver;
 
