@@ -38,7 +38,7 @@ pub enum ResourceManagerError {
     NotNonFungible,
     MismatchingBucketResource,
     ResourceAddressAlreadySet,
-    NonfungibleIdTypeDoesNotMatch,
+    NonFungibleIdTypeDoesNotMatch,
 }
 
 impl NativeExecutable for ResourceManagerBucketBurnInvocation {
@@ -116,7 +116,7 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
                         if non_fungible_id.id_type() != invocation.resource_type.id_type() {
                             return Err(RuntimeError::ApplicationError(
                                 ApplicationError::ResourceManagerError(
-                                    ResourceManagerError::NonfungibleIdTypeDoesNotMatch,
+                                    ResourceManagerError::NonFungibleIdTypeDoesNotMatch,
                                 ),
                             ))
                         }

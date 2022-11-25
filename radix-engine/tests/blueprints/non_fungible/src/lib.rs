@@ -259,7 +259,7 @@ blueprint! {
             ResourceBuilder::new_non_fungible() 
                 .metadata("name", "Katz's Sandwiches")
                 .initial_supply([
-                    (
+                    ( // adding non-fungible id with id type Number
                         NonFungibleId::from_u32(0),
                         Sandwich {
                             name: "Zero".to_owned(),
