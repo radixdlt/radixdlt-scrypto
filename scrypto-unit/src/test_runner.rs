@@ -312,7 +312,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         path.set_extension("wasm");
 
         // Extract ABI
-        let code = fs::read(path).unwrap();
+        let code = fs::read(&path).unwrap_or_else(|err| {
+            panic!(
+                "Failed to read built WASM from path {:?} - {:?}",
+                &path, err
+            )
+        });
         let abi = extract_abi(&code).unwrap();
 
         self.publish_package(code, abi)
@@ -862,6 +867,7 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
 pub fn generate_single_function_abi(
     blueprint_name: &str,
     function_name: &str,
+    output_type: Type,
 ) -> HashMap<String, BlueprintAbi> {
     let mut blueprint_abis = HashMap::new();
     blueprint_abis.insert(
@@ -875,7 +881,7 @@ pub fn generate_single_function_abi(
                     name: "Any".to_string(),
                     fields: Fields::Named { named: vec![] },
                 },
-                output: Type::Unit,
+                output: output_type,
                 export_name: format!("{}_{}", blueprint_name, function_name),
             }],
         },

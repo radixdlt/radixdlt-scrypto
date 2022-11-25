@@ -11,8 +11,16 @@ pub enum EncodeError {
 
 pub trait Encoder<X: CustomTypeId>: Sized {
     /// Consumes the Encoder and encodes the value as a full payload
+    ///
+    /// It starts by writing the payload prefix: It's the intention that each version of SBOR
+    /// or change to the custom codecs should be given its own prefix
     #[inline]
-    fn encode_payload<T: Encode<X, Self> + ?Sized>(mut self, value: &T) -> Result<(), EncodeError> {
+    fn encode_payload<T: Encode<X, Self> + ?Sized>(
+        mut self,
+        value: &T,
+        payload_prefix: u8,
+    ) -> Result<(), EncodeError> {
+        self.write_payload_prefix(payload_prefix)?;
         self.encode(value)
     }
 
@@ -52,6 +60,11 @@ pub trait Encoder<X: CustomTypeId>: Sized {
         &mut self,
         value: &T,
     ) -> Result<(), EncodeError>;
+
+    #[inline]
+    fn write_payload_prefix(&mut self, payload_prefix: u8) -> Result<(), EncodeError> {
+        self.write_byte(payload_prefix)
+    }
 
     #[inline]
     fn write_type_id(&mut self, ty: SborTypeId<X>) -> Result<(), EncodeError> {
