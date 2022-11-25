@@ -439,8 +439,8 @@ mod tests {
             y: map1,
             z: map2,
         };
-        let bytes = basic_encode(&data).unwrap();
-        let value = basic_decode(&bytes).unwrap();
+        let encoded_typed_value = basic_encode(&data).unwrap();
+        let sbor_value = basic_decode(&encoded_typed_value).unwrap();
 
         assert_eq!(
             BasicSborValue::Struct {
@@ -532,13 +532,12 @@ mod tests {
                     }
                 ]
             },
-            value
+            sbor_value
         );
 
-        let mut bytes2 = Vec::new();
-        let mut encoder = BasicEncoder::new(&mut bytes2);
-        encoder.encode(&value).unwrap();
-        assert_eq!(bytes2, bytes);
+        let encoded_sbor_value = basic_encode(&sbor_value).unwrap();
+
+        assert_eq!(encoded_sbor_value, encoded_typed_value);
     }
 
     #[test]
@@ -577,6 +576,7 @@ mod tests {
     pub fn encode_array_of_depth(depth: u8) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
         let mut encoder = BasicEncoder::new(&mut buf);
+        encoder.write_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
         encoder.write_type_id(SborTypeId::Array)?;
         // Encodes depth - 1 array bodies
         for _ in 1..depth {
@@ -593,6 +593,7 @@ mod tests {
     pub fn encode_struct_of_depth(depth: u8) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
         let mut encoder = BasicEncoder::new(&mut buf);
+        encoder.write_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
         // Encodes depth - 1 structs containing 1 child
         for _ in 1..depth {
             encoder.write_type_id(SborTypeId::Struct)?;
@@ -608,6 +609,7 @@ mod tests {
     pub fn encode_tuple_of_depth(depth: u8) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
         let mut encoder = BasicEncoder::new(&mut buf);
+        encoder.write_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
         // Encodes depth - 1 structs containing 1 child
         for _ in 1..depth {
             encoder.write_type_id(SborTypeId::Tuple)?;
