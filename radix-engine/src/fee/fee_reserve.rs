@@ -17,7 +17,11 @@ pub enum FeeReserveError {
 }
 
 pub trait FeeReserve {
-    fn consume_royalty(&mut self, amount: Decimal) -> Result<(), FeeReserveError>;
+    fn consume_royalty(
+        &mut self,
+        collector: RoyaltyCollector,
+        amount: Decimal,
+    ) -> Result<(), FeeReserveError>;
 
     fn consume_flat<T: ToString>(
         &mut self,
@@ -62,6 +66,13 @@ pub trait FeeReserve {
     fn cost_unit_owed(&self) -> u32;
 }
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum RoyaltyCollector {
+    Package(PackageAddress),
+    Component(ComponentId),
+}
+
 #[derive(Debug)]
 pub struct SystemLoanFeeReserve {
     /// The price of cost unit
@@ -84,6 +95,8 @@ pub struct SystemLoanFeeReserve {
     check_point: u32,
     /// Cost breakdown
     cost_breakdown: HashMap<String, u32>,
+    /// Royalty
+    royalty: HashMap<RoyaltyCollector, Decimal>,
 }
 
 impl SystemLoanFeeReserve {
@@ -104,6 +117,7 @@ impl SystemLoanFeeReserve {
             limit: cost_unit_limit,
             check_point: system_loan,
             cost_breakdown: HashMap::new(),
+            royalty: HashMap::new(),
         }
     }
 
@@ -168,10 +182,17 @@ impl SystemLoanFeeReserve {
 }
 
 impl FeeReserve for SystemLoanFeeReserve {
-    fn consume_royalty(&mut self, amount: Decimal) -> Result<(), FeeReserveError> {
-        // TODO: not finished yet
+    fn consume_royalty(
+        &mut self,
+        collector: RoyaltyCollector,
+        amount: Decimal,
+    ) -> Result<(), FeeReserveError> {
         if self.balance.1 >= amount {
             self.balance.1 -= amount;
+            self.royalty
+                .entry(collector)
+                .or_default()
+                .add_assign(amount);
             Ok(())
         } else {
             Err(FeeReserveError::InsufficientBalance)
@@ -275,6 +296,7 @@ impl FeeReserve for SystemLoanFeeReserve {
             tip_percentage: self.tip_percentage,
             burned: self.cost_unit_price * self.consumed,
             tipped: Decimal::from(self.tip_price()) * self.consumed,
+            royalty: self.royalty,
             payments: self.payments,
             cost_breakdown: self.cost_breakdown,
         }

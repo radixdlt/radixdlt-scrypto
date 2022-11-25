@@ -1,3 +1,4 @@
+use super::RoyaltyCollector;
 use crate::model::Resource;
 use crate::types::*;
 use radix_engine_interface::api::types::VaultId;
@@ -19,6 +20,8 @@ pub struct FeeSummary {
     pub burned: Decimal,
     /// The total amount of XRD tipped to validators.
     pub tipped: Decimal,
+    /// The total royalty.
+    pub royalty: HashMap<RoyaltyCollector, Decimal>,
     /// The fee payments
     pub payments: Vec<(VaultId, Resource, bool)>,
     /// The cost breakdown

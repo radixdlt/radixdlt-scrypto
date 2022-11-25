@@ -1,5 +1,5 @@
 use crate::engine::*;
-use crate::fee::FeeReserve;
+use crate::fee::{FeeReserve, RoyaltyCollector};
 use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateId, SubstateOffset,
 };
@@ -42,7 +42,7 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         // Identify the function, and optional component address
-        let (package_address, blueprint_name, fn_ident, optional_component_address) = match actor {
+        let (package_address, blueprint_name, fn_ident, optional_component_id) = match actor {
             REActor::Function(function) => match function {
                 ResolvedFunction::Scrypto {
                     package_address,
@@ -61,18 +61,8 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
                     ident,
                     ..
                 } => {
-                    // TODO: does it make sense to apply royalty on local components?
-                    if let Some((
-                        RENodeId::Global(GlobalAddress::Component(component_address)),
-                        _,
-                    )) = receiver.derefed_from
-                    {
-                        (
-                            package_address,
-                            blueprint_name,
-                            ident,
-                            Some(component_address),
-                        )
+                    if let RENodeId::Component(component_id) = receiver.receiver {
+                        (package_address, blueprint_name, ident, Some(component_id))
                     } else {
                         (package_address, blueprint_name, ident, None)
                     }
@@ -83,7 +73,7 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
             },
         };
 
-        // Load package royalty config
+        // Apply package royalty config
         let node_id = RENodeId::Global(GlobalAddress::Package(*package_address));
         let offset = SubstateOffset::Package(PackageOffset::RoyaltyConfig);
         // TODO: deref
@@ -98,22 +88,26 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
             .map_err(RoyaltyError::from)?;
         // TODO: apply royalty
 
-        // Load component royalty config
-        if let Some(component_address) = optional_component_address {
-            let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+        // Apply component royalty config
+        if let Some(component_id) = optional_component_id {
+            let node_id = RENodeId::Component(component_id);
             let offset = SubstateOffset::Component(ComponentOffset::RoyaltyConfig);
-            // TODO: deref
             track
                 .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
                 .map_err(RoyaltyError::from)?;
-            let royalty_config = track
-                .get_substate(node_id, &offset)
-                .component_royalty_config();
+            let substate = track.get_substate(node_id, &offset);
+            let royalty = substate
+                .component_royalty_config()
+                .royalty_config
+                .get_rule(fn_ident)
+                .clone();
+            track
+                .fee_reserve
+                .consume_royalty(RoyaltyCollector::Component(component_id), royalty)
+                .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             track
                 .release_lock(SubstateId(node_id, offset.clone()), false)
                 .map_err(RoyaltyError::from)?;
-
-            // TODO: apply royalty
         }
 
         Ok(())
