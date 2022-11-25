@@ -22,16 +22,19 @@
     (local.set 
       $0
       (call $scrypto_alloc
-        (local.get $return_length)
+        (i32.add
+          (local.get $return_length)
+          (i32.const 1)
+        )
       )
     )
 
-    ;; But skip the first 4 padder bytes before writing the response!
+    ;; But skip the first 5 padder bytes before writing the response!
     (local.set
       $curr_pointer
       (i32.add
         (local.get $0)
-        (i32.const 4)
+        (i32.const 5)
       )
     )
 

@@ -149,8 +149,8 @@ mod tests {
                 Instruction::ReturnToWorktop { bucket_id: 513 },
                 Instruction::TakeFromWorktopByIds {
                     ids: BTreeSet::from([
-                        NonFungibleId::from_str("0905000000").unwrap(),
-                        NonFungibleId::from_str("0907000000").unwrap(),
+                        NonFungibleId::from_str("5c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap(),
+                        NonFungibleId::from_str("5c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap(),
                     ]),
                     resource_address: bech32_decoder
                         .validate_and_decode_resource_address(

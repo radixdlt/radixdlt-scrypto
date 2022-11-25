@@ -48,10 +48,12 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                             use ::sbor::{type_id::*, *};
                             use ::scrypto::data::*;
                             let mut decoder_nm = ScryptoDecoder::new(immutable_data);
+                            decoder_nm.read_and_check_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                             decoder_nm.read_and_check_type_id(ScryptoSborTypeId::Struct)?;
                             decoder_nm.read_and_check_size(#im_n)?;
 
                             let mut decoder_m = ScryptoDecoder::new(mutable_data);
+                            decoder_m.read_and_check_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                             decoder_m.read_and_check_type_id(ScryptoSborTypeId::Struct)?;
                             decoder_m.read_and_check_size(#m_n)?;
 
@@ -72,6 +74,7 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
 
                             let mut bytes = Vec::with_capacity(512);
                             let mut encoder = ScryptoEncoder::new(&mut bytes);
+                            encoder.write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                             encoder.write_type_id(ScryptoSborTypeId::Struct)?;
                             encoder.write_size(#im_n)?;
                             #(
@@ -88,6 +91,7 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
 
                             let mut bytes = Vec::with_capacity(512);
                             let mut encoder = ScryptoEncoder::new(&mut bytes);
+                            encoder.write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                             encoder.write_type_id(ScryptoSborTypeId::Struct)?;
                             encoder.write_size(#m_n)?;
                             #(
@@ -180,9 +184,11 @@ mod tests {
                         use ::sbor::{type_id::*, *};
                         use ::scrypto::data::*;
                         let mut decoder_nm = ScryptoDecoder::new(immutable_data);
+                        decoder_nm.read_and_check_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                         decoder_nm.read_and_check_type_id(ScryptoSborTypeId::Struct)?;
                         decoder_nm.read_and_check_size(1)?;
                         let mut decoder_m = ScryptoDecoder::new(mutable_data);
+                        decoder_m.read_and_check_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                         decoder_m.read_and_check_type_id(ScryptoSborTypeId::Struct)?;
                         decoder_m.read_and_check_size(1)?;
                         let decoded = Self {
@@ -198,6 +204,7 @@ mod tests {
                         use ::scrypto::data::*;
                         let mut bytes = Vec::with_capacity(512);
                         let mut encoder = ScryptoEncoder::new(&mut bytes);
+                        encoder.write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                         encoder.write_type_id(ScryptoSborTypeId::Struct)?;
                         encoder.write_size(1)?;
                         encoder.encode(&self.field_1)?;
@@ -209,6 +216,7 @@ mod tests {
                         use ::scrypto::data::*;
                         let mut bytes = Vec::with_capacity(512);
                         let mut encoder = ScryptoEncoder::new(&mut bytes);
+                        encoder.write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                         encoder.write_type_id(ScryptoSborTypeId::Struct)?;
                         encoder.write_size(1)?;
                         encoder.encode(&self.field_2)?;
