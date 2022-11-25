@@ -652,7 +652,6 @@ CALL_NATIVE_FUNCTION "TransactionProcessor" "run";
         )
         .unwrap();
         let manifest2 = decompile(&manifest.instructions, &network).unwrap();
-        println!("{}", manifest2);
         assert_eq!(
             manifest2,
             r#"CALL_METHOD ComponentAddress("component_sim1qgvyxt5rrjhwctw7krgmgkrhv82zuamcqkq75tkkrwgs00m736") "free_xrd";
@@ -685,7 +684,6 @@ CALL_NATIVE_METHOD Global("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy
         let manifest = compile(manifest_str, &network, blobs).unwrap();
 
         let manifest2 = decompile(&manifest.instructions, &network).unwrap();
-        println!("{}", manifest2);
         assert_eq!(
             manifest2,
             r#"TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");
