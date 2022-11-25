@@ -102,12 +102,13 @@ impl<N: NativeInvocation> Resolver<N> for NativeResolver {
                 // TODO: Move this logic into kernel
                 let resolved_receiver =
                     if let Some((derefed, derefed_lock)) = deref.deref(receiver)? {
+                        call_frame_update.node_refs_to_copy.insert(receiver);
+                        call_frame_update.node_refs_to_copy.insert(derefed);
                         ResolvedReceiver::derefed(derefed, receiver, derefed_lock)
                     } else {
+                        call_frame_update.node_refs_to_copy.insert(receiver);
                         ResolvedReceiver::new(receiver)
                     };
-                let resolved_node_id = resolved_receiver.receiver;
-                call_frame_update.node_refs_to_copy.insert(resolved_node_id);
 
                 let actor = REActor::Method(ResolvedMethod::Native(method), resolved_receiver);
                 (actor, call_frame_update)
