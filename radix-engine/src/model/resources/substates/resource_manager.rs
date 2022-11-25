@@ -4,7 +4,7 @@ use crate::model::{
 };
 use crate::types::*;
 use radix_engine_interface::api::types::{
-    BucketMethod, NonFungibleStoreId, ResourceManagerMethod, VaultMethod,
+    BucketMethod, NonFungibleStoreId, VaultMethod,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::math::Decimal;
@@ -17,7 +17,7 @@ use radix_engine_interface::model::*;
 pub struct ResourceManagerSubstate {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub method_table: HashMap<ResourceManagerMethod, ResourceMethodRule>,
+    //pub method_table: HashMap<ResourceManagerMethod, ResourceMethodRule>,
     pub vault_method_table: HashMap<VaultMethod, ResourceMethodRule>,
     pub bucket_method_table: HashMap<BucketMethod, ResourceMethodRule>,
     pub authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule>,
@@ -48,6 +48,7 @@ impl ResourceManagerSubstate {
 
         let bucket_method_table: HashMap<BucketMethod, ResourceMethodRule> = HashMap::new();
 
+        /*
         let mut method_table: HashMap<ResourceManagerMethod, ResourceMethodRule> = HashMap::new();
         method_table.insert(ResourceManagerMethod::Mint, Protected(Mint));
         method_table.insert(
@@ -68,6 +69,7 @@ impl ResourceManagerSubstate {
         );
         method_table.insert(ResourceManagerMethod::NonFungibleExists, Public);
         method_table.insert(ResourceManagerMethod::GetNonFungible, Public);
+         */
 
         let mut authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule> = HashMap::new();
         for (auth_entry_key, default) in [
@@ -86,7 +88,6 @@ impl ResourceManagerSubstate {
         let resource_manager = ResourceManagerSubstate {
             resource_type,
             metadata,
-            method_table,
             vault_method_table,
             bucket_method_table,
             authorization,
@@ -98,6 +99,7 @@ impl ResourceManagerSubstate {
         Ok(resource_manager)
     }
 
+    /*
     pub fn get_auth(
         &self,
         method: ResourceManagerMethod,
@@ -140,6 +142,7 @@ impl ResourceManagerSubstate {
             },
         }
     }
+     */
 
     pub fn check_amount(&self, amount: Decimal) -> Result<(), InvokeError<ResourceManagerError>> {
         let divisibility = self.resource_type.divisibility();

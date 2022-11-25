@@ -110,7 +110,7 @@ impl AuthModule {
                     }
                     (ResolvedMethod::Native(method), ..)
                         if matches!(method, NativeMethod::Metadata(..))
-                            || matches!(method, NativeMethod::EpochManager(..)) =>
+                            || matches!(method, NativeMethod::EpochManager(..)) || matches!(method, NativeMethod::ResourceManager(..)) =>
                     {
                         let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
                         let handle = system_api.lock_substate(
@@ -124,6 +124,7 @@ impl AuthModule {
                         system_api.drop_lock(handle)?;
                         auth
                     }
+                    /*
                     (
                         ResolvedMethod::Native(NativeMethod::ResourceManager(ref method)),
                         ResolvedReceiver {
@@ -171,6 +172,7 @@ impl AuthModule {
                             }
                         }
                     }
+                     */
                     (
                         ResolvedMethod::Scrypto {
                             package_address,
