@@ -12,6 +12,8 @@ use crate::wasm::*;
 use radix_engine_interface::api::types::{NativeMethod, SubstateOffset};
 use radix_engine_interface::model::*;
 
+use super::PackageRoyaltyConfigSubstate;
+
 pub struct Package;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -59,8 +61,11 @@ impl NativeExecutable for PackagePublishInvocation {
                 PackageError::InvalidWasm(e),
             ))
         })?;
+        let package_royalty_config = PackageRoyaltyConfigSubstate {
+            royalty_config: HashMap::new(), // TODO: add user interface
+        };
 
-        let node_id = system_api.create_node(RENode::Package(package))?;
+        let node_id = system_api.create_node(RENode::Package(package, package_royalty_config))?;
         let package_id: PackageId = node_id.into();
 
         let global_node_id =

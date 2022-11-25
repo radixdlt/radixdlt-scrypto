@@ -18,9 +18,10 @@ pub enum RENode {
         ComponentInfoSubstate,
         ComponentStateSubstate,
         AccessRulesSubstate,
+        ComponentRoyaltyConfigSubstate,
     ),
     Worktop(WorktopSubstate),
-    Package(PackageSubstate),
+    Package(PackageSubstate, PackageRoyaltyConfigSubstate),
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
     ResourceManager(ResourceManagerSubstate),
@@ -66,7 +67,7 @@ impl RENode {
                     );
                 }
             }
-            RENode::Component(info, state, access_rules) => {
+            RENode::Component(info, state, access_rules, royalty_config) => {
                 substates.insert(
                     SubstateOffset::Component(ComponentOffset::Info),
                     info.into(),
@@ -79,6 +80,10 @@ impl RENode {
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                     access_rules.into(),
                 );
+                substates.insert(
+                    SubstateOffset::Component(ComponentOffset::RoyaltyConfig),
+                    royalty_config.into(),
+                );
             }
             RENode::Worktop(worktop) => {
                 substates.insert(
@@ -86,10 +91,14 @@ impl RENode {
                     RuntimeSubstate::Worktop(worktop),
                 );
             }
-            RENode::Package(package) => {
+            RENode::Package(package, package_royalty_config) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Package),
                     package.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Package(PackageOffset::RoyaltyConfig),
+                    package_royalty_config.into(),
                 );
             }
             RENode::ResourceManager(resource_manager) => {

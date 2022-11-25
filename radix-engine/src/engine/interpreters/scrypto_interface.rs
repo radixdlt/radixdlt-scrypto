@@ -4,8 +4,8 @@ use crate::engine::{
 };
 use crate::fee::FeeReserve;
 use crate::model::{
-    AccessRulesSubstate, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate,
-    KeyValueStore, RuntimeSubstate,
+    AccessRulesSubstate, ComponentInfoSubstate, ComponentRoyaltyConfigSubstate,
+    ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore, RuntimeSubstate,
 };
 use crate::types::ScryptoInvocation;
 use crate::wasm::WasmEngine;
@@ -18,6 +18,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::model::RoyaltyConfig;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
@@ -80,6 +81,9 @@ where
                     ComponentStateSubstate::new(state),
                     AccessRulesSubstate {
                         access_rules: Vec::new(),
+                    },
+                    ComponentRoyaltyConfigSubstate {
+                        royalty_config: RoyaltyConfig::default(), // TODO: add user interface
                     },
                 )
             }

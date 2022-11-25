@@ -76,6 +76,8 @@ pub struct SystemLoanFeeReserve {
     owed: u32,
     /// The total cost units consumed
     consumed: u32,
+    /// The total cost units deferred
+    deferred: u32,
     /// The max number of cost units that can be consumed
     limit: u32,
     /// At which point the system loan repayment is checked
@@ -98,6 +100,7 @@ impl SystemLoanFeeReserve {
             balance: (system_loan, Decimal::zero()),
             owed: system_loan,
             consumed: 0,
+            deferred: 0,
             limit: cost_unit_limit,
             check_point: system_loan,
             cost_breakdown: HashMap::new(),
@@ -107,7 +110,7 @@ impl SystemLoanFeeReserve {
     /// Credits cost units.
     pub fn credit_cost_units(&mut self, n: u32) -> Result<(), FeeReserveError> {
         self.balance.0 = Self::checked_add(self.balance.0, n)?;
-        self.attempt_to_repay_full_loan();
+        self.attempt_to_repay_all();
         Ok(())
     }
 
@@ -133,20 +136,30 @@ impl SystemLoanFeeReserve {
         }
     }
 
-    /// Repays loan in full.
-    fn repay_full_loan(&mut self) -> Result<(), FeeReserveError> {
+    /// Repays loan and deferred costs in full.
+    fn repay_all(&mut self) -> Result<(), FeeReserveError> {
         self.debt_cost_units(self.owed)
             .map_err(|_| FeeReserveError::LoanRepaymentFailed)?;
         self.owed = 0;
+
+        self.debt_cost_units(self.deferred)
+            .map_err(|_| FeeReserveError::LoanRepaymentFailed)?;
+        self.consumed += self.deferred;
+        self.deferred = 0;
+
         Ok(())
     }
 
-    fn attempt_to_repay_full_loan(&mut self) {
-        self.repay_full_loan().ok();
+    fn attempt_to_repay_all(&mut self) {
+        self.repay_all().ok();
     }
 
     fn checked_add(a: u32, b: u32) -> Result<u32, FeeReserveError> {
         a.checked_add(b).ok_or(FeeReserveError::Overflow)
+    }
+
+    fn checked_add3(a: u32, b: u32, c: u32) -> Result<u32, FeeReserveError> {
+        Self::checked_add(Self::checked_add(a, b)?, c)
     }
 
     fn tip_price(&self) -> Decimal {
@@ -172,24 +185,22 @@ impl FeeReserve for SystemLoanFeeReserve {
         deferred: bool,
     ) -> Result<(), FeeReserveError> {
         // Check limit
-        let new_consumed = Self::checked_add(self.consumed, n)?;
-        if new_consumed > self.limit {
+        let total = Self::checked_add3(self.consumed, self.deferred, n)?;
+        if total > self.limit {
             return Err(FeeReserveError::LimitExceeded);
         }
 
         // Update balance or owed
         if !deferred {
             self.debt_cost_units(n)?;
+            self.consumed += n;
         } else {
             assert!(
                 self.consumed < self.check_point,
                 "All deferred fee consumption must be before system loan checkpoint"
             );
-            self.owed = self.owed.checked_add(n).ok_or(FeeReserveError::Overflow)?;
+            self.deferred += n;
         }
-
-        // Update consumed
-        self.consumed = new_consumed;
 
         // Update cost breakdown
         self.cost_breakdown
@@ -198,8 +209,8 @@ impl FeeReserve for SystemLoanFeeReserve {
             .add_assign(n);
 
         // Check system loan
-        if self.consumed >= self.check_point && self.owed > 0 {
-            self.repay_full_loan()?;
+        if self.consumed >= self.check_point && (self.owed > 0 || self.deferred > 0) {
+            self.repay_all()?;
         }
         Ok(())
     }
@@ -252,16 +263,18 @@ impl FeeReserve for SystemLoanFeeReserve {
 
     fn finalize(mut self) -> FeeSummary {
         // In case transaction finishes before system loan checkpoint.
-        self.attempt_to_repay_full_loan();
+        self.attempt_to_repay_all();
+
+        // println!("{:?}", self);
 
         FeeSummary {
-            loan_fully_repaid: self.owed == 0,
+            loan_fully_repaid: self.owed == 0 && self.deferred == 0,
             cost_unit_limit: self.limit,
             cost_unit_consumed: self.consumed,
             cost_unit_price: self.cost_unit_price,
             tip_percentage: self.tip_percentage,
-            burned: self.cost_unit_price * (self.consumed - self.owed),
-            tipped: Decimal::from(self.tip_price()) * (self.consumed - self.owed),
+            burned: self.cost_unit_price * self.consumed,
+            tipped: Decimal::from(self.tip_price()) * self.consumed,
             payments: self.payments,
             cost_breakdown: self.cost_breakdown,
         }

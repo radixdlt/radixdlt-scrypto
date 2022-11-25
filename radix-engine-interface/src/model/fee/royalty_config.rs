@@ -40,7 +40,7 @@ impl RoyaltyConfigBuilder {
         }
     }
 
-    pub fn add_rule(&mut self, method: &str, amount: Decimal) -> &mut Self {
+    pub fn add_rule(mut self, method: &str, amount: Decimal) -> Self {
         self.rules.insert(method.to_string(), amount);
         self
     }

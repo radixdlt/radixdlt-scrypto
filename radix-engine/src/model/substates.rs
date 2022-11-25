@@ -338,6 +338,12 @@ impl Into<RuntimeSubstate> for ResourceManagerSubstate {
     }
 }
 
+impl Into<RuntimeSubstate> for ComponentRoyaltyConfigSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::ComponentRoyaltyConfig(self)
+    }
+}
+
 impl Into<RuntimeSubstate> for FeeReserveSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::FeeReserve(self)
@@ -362,6 +368,12 @@ impl Into<RuntimeSubstate> for KeyValueStoreEntrySubstate {
     }
 }
 
+impl Into<RuntimeSubstate> for PackageRoyaltyConfigSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::PackageRoyaltyConfig(self)
+    }
+}
+
 impl Into<ComponentInfoSubstate> for RuntimeSubstate {
     fn into(self) -> ComponentInfoSubstate {
         if let RuntimeSubstate::ComponentInfo(component) = self {
@@ -378,6 +390,26 @@ impl Into<ComponentStateSubstate> for RuntimeSubstate {
             component_state
         } else {
             panic!("Not a component");
+        }
+    }
+}
+
+impl Into<ComponentRoyaltyConfigSubstate> for RuntimeSubstate {
+    fn into(self) -> ComponentRoyaltyConfigSubstate {
+        if let RuntimeSubstate::ComponentRoyaltyConfig(config) = self {
+            config
+        } else {
+            panic!("Not a component royalty config");
+        }
+    }
+}
+
+impl Into<PackageRoyaltyConfigSubstate> for RuntimeSubstate {
+    fn into(self) -> PackageRoyaltyConfigSubstate {
+        if let RuntimeSubstate::PackageRoyaltyConfig(config) = self {
+            config
+        } else {
+            panic!("Not a package royalty config");
         }
     }
 }
@@ -714,10 +746,10 @@ pub enum SubstateRefMut<'a> {
     ComponentInfo(&'a mut ComponentInfoSubstate),
     ComponentState(&'a mut ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a mut ComponentRoyaltyConfigSubstate),
+    Package(&'a mut PackageSubstate),
     PackageRoyaltyConfig(&'a mut PackageRoyaltyConfigSubstate),
     NonFungible(&'a mut NonFungibleSubstate),
     KeyValueStoreEntry(&'a mut KeyValueStoreEntrySubstate),
-    Package(&'a mut PackageSubstate),
     Vault(&'a mut VaultRuntimeSubstate),
     ResourceManager(&'a mut ResourceManagerSubstate),
     EpochManager(&'a mut EpochManagerSubstate),
