@@ -9,25 +9,81 @@ use sbor::*;
 use crate::abi::*;
 use crate::data::*;
 use crate::scrypto_type;
+use crate::math::Decimal;
+use crate::Describe;
 
 /// Represents a key for a non-fungible resource
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct NonFungibleId(pub Vec<u8>);
+pub struct NonFungibleId{ 
+    id_type: NonFungibleIdType,
+    value: Vec<u8>
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Encode, Decode, Describe)]
+pub enum NonFungibleIdType {
+    String,
+    Number,
+    Bytes,
+    UUID
+}
 
 impl NonFungibleId {
     /// Creates a non-fungible ID from an arbitrary byte array.
     pub fn from_bytes(v: Vec<u8>) -> Self {
-        Self(scrypto_encode(&v).expect("Error encoding byte array"))
+        Self { 
+            value: scrypto_encode(&v).expect("Error encoding byte array"),
+            id_type: NonFungibleIdType::Bytes
+        }
     }
 
     /// Creates a non-fungible ID from a `u32` number.
     pub fn from_u32(u: u32) -> Self {
-        Self(scrypto_encode(&u).expect("Error encoding u32"))
+        Self { 
+            value: scrypto_encode(&u).expect("Error encoding u32"),
+            id_type: NonFungibleIdType::Number
+        }
     }
 
     /// Creates a non-fungible ID from a `u64` number.
     pub fn from_u64(u: u64) -> Self {
-        Self(scrypto_encode(&u).expect("Error encoding u64"))
+        Self { 
+            value: scrypto_encode(&u).expect("Error encoding u64"),
+            id_type: NonFungibleIdType::Number
+        }
+    }
+    
+    /// Creates a non-fungible ID from a Decimal number.
+    pub fn from_decimal(u: Decimal) -> Self {
+        Self { 
+            value: scrypto_encode(&u).expect("Error encoding Decimal"),
+            id_type: NonFungibleIdType::Number
+        }
+    }
+
+    /// Creates a non-fungible ID from a String.
+    pub fn from_string(s: &str) -> Self {
+        Self { 
+            value: scrypto_encode(&s).expect("Error encoding String"),
+            id_type: NonFungibleIdType::String
+        }
+    }
+
+    /// Creates a non-fungible ID from a UUID.
+    pub fn from_uuid(u: u128) -> Self {
+        Self { 
+            value: scrypto_encode(&u).expect("Error encoding UUID"),
+            id_type: NonFungibleIdType::UUID
+        }
+    }
+
+    pub fn id_type(&self) -> NonFungibleIdType {
+        self.id_type
+    }
+}
+
+impl Default for NonFungibleIdType {
+    fn default() -> Self { 
+        NonFungibleIdType::UUID
     }
 }
 
@@ -57,7 +113,8 @@ impl fmt::Display for ParseNonFungibleIdError {
 //========
 
 // Manually validating non-fungible id instead of using ScryptoValue to reduce code size.
-fn validate_id(slice: &[u8]) -> Result<(), DecodeError> {
+fn validate_id(slice: &[u8]) -> Result<NonFungibleIdType, DecodeError> {
+    let ret: NonFungibleIdType;
     let mut decoder = ScryptoDecoder::new(slice);
     decoder.read_and_check_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
     let type_id = decoder.read_type_id()?;
@@ -65,21 +122,33 @@ fn validate_id(slice: &[u8]) -> Result<(), DecodeError> {
         // TODO: add more allowed types as agreed
         ScryptoSborTypeId::U32 => {
             decoder.read_slice(4)?;
+            ret = NonFungibleIdType::Number;
         }
         ScryptoSborTypeId::U64 => {
             decoder.read_slice(8)?;
+            ret = NonFungibleIdType::Number;
+        }
+        ScryptoSborTypeId::U128 => {
+            decoder.read_slice(16)?;
+            ret = NonFungibleIdType::Number;
         }
         ScryptoSborTypeId::Array => {
             let element_type_id = decoder.read_type_id()?;
             if element_type_id == ScryptoSborTypeId::U8 {
                 let size = decoder.read_size()?;
                 decoder.read_slice(size)?;
+                ret = NonFungibleIdType::Bytes;
             } else {
                 return Err(DecodeError::UnexpectedTypeId {
                     actual: element_type_id.as_u8(),
                     expected: ScryptoSborTypeId::U8.as_u8(),
                 });
             }
+        }
+        ScryptoSborTypeId::String => {
+            let size = decoder.read_size()?;
+            decoder.read_slice(size)?;
+            ret = NonFungibleIdType::String;
         }
         type_id => {
             return Err(DecodeError::UnexpectedTypeId {
@@ -89,21 +158,30 @@ fn validate_id(slice: &[u8]) -> Result<(), DecodeError> {
         }
     }
 
-    decoder.check_end()
+    match decoder.check_end() {
+        Ok(()) => Ok(ret),
+        Err(e) => Err(e)
+    }
 }
 
 impl TryFrom<&[u8]> for NonFungibleId {
     type Error = ParseNonFungibleIdError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        validate_id(slice).map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
-        Ok(Self(slice.to_vec()))
+        let id_type = match validate_id(slice) {
+            Ok(v) => v,
+            Err(_) => return Err(ParseNonFungibleIdError::InvalidValue)
+        };
+        Ok(Self {
+            value: slice.to_vec(),
+            id_type 
+        })
     }
 }
 
 impl NonFungibleId {
     pub fn to_vec(&self) -> Vec<u8> {
-        self.0.clone()
+        self.value.clone()
     }
 }
 
@@ -112,6 +190,7 @@ scrypto_type!(
     ScryptoCustomTypeId::NonFungibleId,
     Type::NonFungibleId
 );
+
 
 //======
 // text
@@ -127,9 +206,26 @@ impl FromStr for NonFungibleId {
     }
 }
 
+impl fmt::Display for NonFungibleIdType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        match self {
+            NonFungibleIdType::Bytes => write!(f, "Bytes"),
+            NonFungibleIdType::Number => write!(f, "Number"),
+            NonFungibleIdType::String => write!(f, "String"),
+            NonFungibleIdType::UUID => write!(f, "UUID"),
+        }
+    }
+}
+
+impl fmt::Debug for NonFungibleIdType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
 impl fmt::Display for NonFungibleId {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", hex::encode(&self.0))
+        write!(f, "{}", hex::encode(&self.value))
     }
 }
 
@@ -138,6 +234,7 @@ impl fmt::Debug for NonFungibleId {
         write!(f, "{}", self.to_string())
     }
 }
+
 
 #[cfg(test)]
 mod tests {

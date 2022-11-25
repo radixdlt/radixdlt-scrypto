@@ -79,7 +79,7 @@ pub fn create_genesis() -> SystemTransaction {
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
-                ResourceType::NonFungible,
+                ResourceType::NonFungible { id_type: NonFungibleIdType::default() },
                 metadata,
                 access_rules,
                 initial_supply
@@ -102,7 +102,7 @@ pub fn create_genesis() -> SystemTransaction {
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
-                ResourceType::NonFungible,
+                ResourceType::NonFungible { id_type: NonFungibleIdType::default() },
                 metadata,
                 access_rules,
                 initial_supply
@@ -177,7 +177,7 @@ pub fn create_genesis() -> SystemTransaction {
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
-                ResourceType::NonFungible,
+                ResourceType::NonFungible { id_type: NonFungibleIdType::default() },
                 metadata,
                 access_rules,
                 initial_supply

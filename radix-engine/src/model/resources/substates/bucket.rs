@@ -40,7 +40,7 @@ impl BucketSubstate {
             ResourceType::Fungible { .. } => {
                 self.create_proof_by_amount(self.total_amount(), container_id)
             }
-            ResourceType::NonFungible => self.create_proof_by_ids(
+            ResourceType::NonFungible { .. } => self.create_proof_by_ids(
                 &self
                     .total_ids()
                     .expect("Failed to list non-fungible IDs on non-fungible Bucket"),

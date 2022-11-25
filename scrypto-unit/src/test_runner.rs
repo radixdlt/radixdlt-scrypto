@@ -26,7 +26,7 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
 use radix_engine_interface::dec;
 
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::model::{FromPublicKey, AccessRule, NonFungibleIdType};
 use scrypto::{access_rule_node, rule};
 
 use transaction::builder::ManifestBuilder;
@@ -656,7 +656,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
-                ResourceType::NonFungible,
+                ResourceType::NonFungible { id_type: NonFungibleIdType::Number },
                 HashMap::new(),
                 access_rules,
                 Some(MintParams::NonFungible { entries }),

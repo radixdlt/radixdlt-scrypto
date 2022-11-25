@@ -571,7 +571,7 @@ mod tests {
                     function_name: ResourceManagerFunction::Create.to_string(),
                 },
                 args: scrypto_encode(&BadResourceManagerCreateInput {
-                    resource_type: ResourceType::NonFungible,
+                    resource_type: ResourceType::NonFungible { id_type: NonFungibleIdType::default() },
                     metadata: HashMap::new(),
                     access_rules: HashMap::new(),
                 })
@@ -581,7 +581,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(manifest, "CALL_NATIVE_FUNCTION \"ResourceManager\" \"create\" Enum(\"NonFungible\") Array<Tuple>() Array<Tuple>();\n");
+        assert_eq!(manifest, "CALL_NATIVE_FUNCTION \"ResourceManager\" \"create\" Enum(\"NonFungible\", Enum(\"UUID\")) Array<Tuple>() Array<Tuple>();\n");
     }
 
     #[test]

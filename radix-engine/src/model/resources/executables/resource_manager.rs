@@ -38,6 +38,7 @@ pub enum ResourceManagerError {
     NotNonFungible,
     MismatchingBucketResource,
     ResourceAddressAlreadySet,
+    NonfungibleIdTypeDoesNotMatch,
 }
 
 impl NativeExecutable for ResourceManagerBucketBurnInvocation {
@@ -91,7 +92,7 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
             + Invokable<ScryptoInvocation>
             + Invokable<ResourceManagerSetResourceAddressInvocation>,
     {
-        let node_id = if matches!(invocation.resource_type, ResourceType::NonFungible) {
+        let node_id = if matches!(invocation.resource_type, ResourceType::NonFungible { .. }) {
             let nf_store_node_id =
                 system_api.create_node(RENode::NonFungibleStore(NonFungibleStore::new()))?;
             let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
@@ -112,6 +113,13 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
             if let Some(mint_params) = &invocation.mint_params {
                 if let MintParams::NonFungible { entries } = mint_params {
                     for (non_fungible_id, data) in entries {
+                        if non_fungible_id.id_type() != invocation.resource_type.id_type() {
+                            return Err(RuntimeError::ApplicationError(
+                                ApplicationError::ResourceManagerError(
+                                    ResourceManagerError::NonfungibleIdTypeDoesNotMatch,
+                                ),
+                            ))
+                        }
                         let offset = SubstateOffset::NonFungibleStore(
                             NonFungibleStoreOffset::Entry(non_fungible_id.clone()),
                         );
@@ -195,7 +203,10 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
             let container = match mint_params {
                 MintParams::NonFungible { entries } => {
                     let ids = entries.into_keys().collect();
-                    Resource::new_non_fungible(resource_address, ids)
+                    Resource::new_non_fungible(
+                        resource_address, 
+                        ids, 
+                        invocation.resource_type.id_type())
                 }
                 MintParams::Fungible { amount } => Resource::new_fungible(
                     resource_address,
