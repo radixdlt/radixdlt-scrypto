@@ -19,19 +19,16 @@ impl BorrowedPackage {
         Runtime::call_function(self.0, blueprint_name, function, args)
     }
 
-    pub fn set_royalty_config(
-        &mut self,
-        royalty_config: HashMap<String, RoyaltyConfig>,
-    ) -> &mut Self {
+    pub fn set_royalty_config(&self, royalty_config: HashMap<String, RoyaltyConfig>) -> &Self {
         self.sys_set_royalty_config(royalty_config, &mut ScryptoEnv)
             .unwrap()
     }
 
     pub fn sys_set_royalty_config<Y, E: Debug + ScryptoDecode>(
-        &mut self,
+        &self,
         royalty_config: HashMap<String, RoyaltyConfig>,
         sys_calls: &mut Y,
-    ) -> Result<&mut Self, E>
+    ) -> Result<&Self, E>
     where
         Y: EngineApi<E> + SysNativeInvokable<PackageSetRoyaltyConfigInvocation, E>,
     {

@@ -23,5 +23,18 @@ blueprint! {
 
             local_component.globalize()
         }
+
+        pub fn enable_royalty() -> PackageAddress {
+            let package_address = Runtime::package_address();
+
+            borrow_package!(package_address).set_royalty_config(HashMap::from([(
+                "RoyaltyTest".to_owned(),
+                RoyaltyConfigBuilder::new()
+                    .add_rule("paid_method", dec!("0.2"))
+                    .default(dec!("0")),
+            )]));
+
+            package_address
+        }
     }
 }

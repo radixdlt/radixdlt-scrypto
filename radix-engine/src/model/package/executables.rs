@@ -97,8 +97,8 @@ impl NativeExecutable for PackageSetRoyaltyConfigInvocation {
         let offset = SubstateOffset::Package(PackageOffset::RoyaltyConfig);
         let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = system_api.get_ref_mut(handle)?;
-        substate_mut.package_royalty_config().royalty_config = input.royalty_config;
+        let mut substate = system_api.get_ref_mut(handle)?;
+        substate.package_royalty_config().royalty_config = input.royalty_config;
 
         system_api.drop_lock(handle)?;
 

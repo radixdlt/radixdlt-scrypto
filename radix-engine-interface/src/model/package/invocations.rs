@@ -34,7 +34,7 @@ impl Into<NativeFnInvocation> for PackagePublishInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PackageSetRoyaltyConfigInvocation {
     pub receiver: PackageAddress,
-    pub royalty_config: HashMap<String, RoyaltyConfig>, // TODO: optimize to allow per
+    pub royalty_config: HashMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
 }
 
 impl SysInvocation for PackageSetRoyaltyConfigInvocation {
