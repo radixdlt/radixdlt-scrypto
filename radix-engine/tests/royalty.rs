@@ -42,7 +42,7 @@ where
 }
 
 #[test]
-fn should_succeed_when_fee_is_paid() {
+fn test_component_royalty() {
     let receipt = run_manifest(
         "create_component_with_royalty_enabled",
         |component_address| {
@@ -54,4 +54,5 @@ fn should_succeed_when_fee_is_paid() {
     );
 
     receipt.expect_commit_success();
+    assert_eq!(dec!("0.1"), receipt.execution.fee_summary.royalty)
 }

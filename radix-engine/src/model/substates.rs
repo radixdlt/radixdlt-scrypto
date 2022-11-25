@@ -668,17 +668,17 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::Global(global) => {
                 let mut owned_nodes = HashSet::new();
                 match global {
-                    GlobalAddressSubstate::Resource(resource_address) => {
-                        owned_nodes.insert(RENodeId::ResourceManager(*resource_address))
+                    GlobalAddressSubstate::Resource(resource_manager_id) => {
+                        owned_nodes.insert(RENodeId::ResourceManager(*resource_manager_id))
                     }
-                    GlobalAddressSubstate::Component(component) => {
-                        owned_nodes.insert(RENodeId::Component(component.0))
+                    GlobalAddressSubstate::Component(component_id) => {
+                        owned_nodes.insert(RENodeId::Component(*component_id))
                     }
                     GlobalAddressSubstate::System(epoch_manager_id) => {
                         owned_nodes.insert(RENodeId::EpochManager(*epoch_manager_id))
                     }
-                    GlobalAddressSubstate::Package(package_address) => {
-                        owned_nodes.insert(RENodeId::Package(*package_address))
+                    GlobalAddressSubstate::Package(package_id) => {
+                        owned_nodes.insert(RENodeId::Package(*package_id))
                     }
                 };
 

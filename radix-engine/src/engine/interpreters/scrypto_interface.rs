@@ -71,9 +71,9 @@ where
 
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
         let node = match node {
-            ScryptoRENode::GlobalComponent(component_id) => RENode::Global(
-                GlobalAddressSubstate::Component(scrypto::component::Component(component_id)),
-            ),
+            ScryptoRENode::GlobalComponent(component_id) => {
+                RENode::Global(GlobalAddressSubstate::Component(component_id))
+            }
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
                 // Create component
                 RENode::Component(

@@ -70,7 +70,7 @@ pub trait FeeReserve {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum RoyaltyCollector {
     Package(PackageAddress),
-    Component(ComponentId),
+    Component(ComponentAddress),
 }
 
 #[derive(Debug)]
@@ -288,6 +288,10 @@ impl FeeReserve for SystemLoanFeeReserve {
 
         // println!("{:?}", self);
 
+        let mut total_royalty = Decimal::ZERO;
+        self.royalty.values().for_each(|x| {
+            total_royalty += *x;
+        });
         FeeSummary {
             loan_fully_repaid: self.owed == 0 && self.deferred == 0,
             cost_unit_limit: self.limit,
@@ -296,9 +300,10 @@ impl FeeReserve for SystemLoanFeeReserve {
             tip_percentage: self.tip_percentage,
             burned: self.cost_unit_price * self.consumed,
             tipped: Decimal::from(self.tip_price()) * self.consumed,
-            royalty: self.royalty,
+            royalty: total_royalty,
             payments: self.payments,
             cost_breakdown: self.cost_breakdown,
+            royalty_breakdown: self.royalty,
         }
     }
 

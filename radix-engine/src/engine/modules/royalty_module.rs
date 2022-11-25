@@ -1,9 +1,12 @@
 use crate::engine::*;
 use crate::fee::{FeeReserve, RoyaltyCollector};
+use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{
-    ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateId, SubstateOffset,
+    ComponentOffset, GlobalAddress, GlobalOffset, PackageOffset, RENodeId, SubstateId,
+    SubstateOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::math::Decimal;
 use radix_engine_interface::scrypto;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,8 +29,8 @@ impl From<TrackError> for RoyaltyError {
     }
 }
 
-impl RoyaltyModule {
-    pub fn new() -> Self {
+impl Default for RoyaltyModule {
+    fn default() -> Self {
         Self {}
     }
 }
@@ -42,7 +45,7 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         // Identify the function, and optional component address
-        let (package_address, blueprint_name, fn_ident, optional_component_id) = match actor {
+        let (package_address, blueprint_name, fn_ident, optional_component_address) = match actor {
             REActor::Function(function) => match function {
                 ResolvedFunction::Scrypto {
                     package_address,
@@ -61,8 +64,15 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
                     ident,
                     ..
                 } => {
-                    if let RENodeId::Component(component_id) = receiver.receiver {
-                        (package_address, blueprint_name, ident, Some(component_id))
+                    if let Some(RENodeId::Global(GlobalAddress::Component(component_address))) =
+                        receiver.derefed_from.map(|tuple| tuple.0)
+                    {
+                        (
+                            package_address,
+                            blueprint_name,
+                            ident,
+                            Some(component_address),
+                        )
                     } else {
                         (package_address, blueprint_name, ident, None)
                     }
@@ -74,22 +84,61 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
         };
 
         // Apply package royalty config
-        let node_id = RENodeId::Global(GlobalAddress::Package(*package_address));
+        let package_id = {
+            let node_id = RENodeId::Global(GlobalAddress::Package(*package_address));
+            let offset = SubstateOffset::Global(GlobalOffset::Global);
+            track
+                .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
+                .map_err(RoyaltyError::from)?;
+            let substate = track.get_substate(node_id, &offset);
+            let package_id = match substate.global_address() {
+                GlobalAddressSubstate::Package(id) => *id,
+                _ => panic!("Unexpected global address substate type"),
+            };
+            track
+                .release_lock(SubstateId(node_id, offset.clone()), false)
+                .map_err(RoyaltyError::from)?;
+            package_id
+        };
+        let node_id = RENodeId::Package(package_id);
         let offset = SubstateOffset::Package(PackageOffset::RoyaltyConfig);
-        // TODO: deref
         track
             .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
             .map_err(RoyaltyError::from)?;
-        let royalty_config = track
-            .get_substate(node_id, &offset)
-            .package_royalty_config();
+        let substate = track.get_substate(node_id, &offset);
+        let royalty = substate
+            .package_royalty_config()
+            .royalty_config
+            .get(blueprint_name)
+            .map(|x| x.get_rule(fn_ident).clone())
+            .unwrap_or(Decimal::ZERO);
+        track
+            .fee_reserve
+            .consume_royalty(RoyaltyCollector::Package(*package_address), royalty)
+            .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
         track
             .release_lock(SubstateId(node_id, offset.clone()), false)
             .map_err(RoyaltyError::from)?;
-        // TODO: apply royalty
 
         // Apply component royalty config
-        if let Some(component_id) = optional_component_id {
+        if let Some(component_address) = optional_component_address {
+            let component_id = {
+                let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+                let offset = SubstateOffset::Global(GlobalOffset::Global);
+                track
+                    .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
+                    .map_err(RoyaltyError::from)?;
+                let substate = track.get_substate(node_id, &offset);
+                let component_id = match substate.global_address() {
+                    GlobalAddressSubstate::Component(id) => *id,
+                    _ => panic!("Unexpected global address substate type"),
+                };
+                track
+                    .release_lock(SubstateId(node_id, offset.clone()), false)
+                    .map_err(RoyaltyError::from)?;
+                component_id
+            };
+
             let node_id = RENodeId::Component(component_id);
             let offset = SubstateOffset::Component(ComponentOffset::RoyaltyConfig);
             track
@@ -103,7 +152,7 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
                 .clone();
             track
                 .fee_reserve
-                .consume_royalty(RoyaltyCollector::Component(component_id), royalty)
+                .consume_royalty(RoyaltyCollector::Component(component_address), royalty)
                 .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             track
                 .release_lock(SubstateId(node_id, offset.clone()), false)

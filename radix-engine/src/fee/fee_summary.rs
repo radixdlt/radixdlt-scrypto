@@ -21,9 +21,11 @@ pub struct FeeSummary {
     /// The total amount of XRD tipped to validators.
     pub tipped: Decimal,
     /// The total royalty.
-    pub royalty: HashMap<RoyaltyCollector, Decimal>,
+    pub royalty: Decimal,
     /// The fee payments
     pub payments: Vec<(VaultId, Resource, bool)>,
     /// The cost breakdown
     pub cost_breakdown: HashMap<String, u32>,
+    /// The royalty breakdown.
+    pub royalty_breakdown: HashMap<RoyaltyCollector, Decimal>,
 }
