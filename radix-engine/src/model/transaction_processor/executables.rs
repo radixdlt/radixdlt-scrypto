@@ -164,8 +164,10 @@ impl TransactionProcessor {
                     let val = path
                         .get_from_value_mut(&mut value)
                         .expect("Failed to locate an expression value using SBOR path");
-                    *val =
-                        decode_any(&scrypto_encode(&buckets)).expect("Failed to decode Vec<Bucket>")
+                    *val = scrypto_decode(
+                        &scrypto_encode(&buckets).expect("Failed to encode Vec<Bucket>"),
+                    )
+                    .expect("Failed to decode Vec<Bucket>")
                 }
                 "ENTIRE_AUTH_ZONE" => {
                     let proofs =
@@ -174,8 +176,10 @@ impl TransactionProcessor {
                     let val = path
                         .get_from_value_mut(&mut value)
                         .expect("Failed to locate an expression value using SBOR path");
-                    *val =
-                        decode_any(&scrypto_encode(&proofs)).expect("Failed to decode Vec<Proof>")
+                    *val = scrypto_decode(
+                        &scrypto_encode(&proofs).expect("Failed to encode Vec<Proof>"),
+                    )
+                    .expect("Failed to decode Vec<Proof>")
                 }
                 _ => {} // no-op
             }

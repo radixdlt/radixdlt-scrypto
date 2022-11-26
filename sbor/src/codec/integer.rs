@@ -1,38 +1,41 @@
 use crate::type_id::*;
 use crate::*;
 
-impl<X: CustomTypeId> Encode<X> for i8 {
+impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for i8 {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
+
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        encoder.write_byte(*self as u8);
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_byte(*self as u8)
     }
 }
 
-impl<X: CustomTypeId> Encode<X> for u8 {
+impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for u8 {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
+
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        encoder.write_byte(*self);
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_byte(*self)
     }
 }
 
 macro_rules! encode_int {
     ($type:ident, $type_id:ident) => {
-        impl<X: CustomTypeId> Encode<X> for $type {
+        impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for $type {
             #[inline]
-            fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-                encoder.write_type_id(Self::type_id());
+            fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+                encoder.write_type_id(Self::type_id())
             }
+
             #[inline]
-            fn encode_body(&self, encoder: &mut Encoder<X>) {
-                encoder.write_slice(&(*self).to_le_bytes());
+            fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+                encoder.write_slice(&(*self).to_le_bytes())
             }
         }
     };
@@ -47,31 +50,34 @@ encode_int!(u32, TYPE_U32);
 encode_int!(u64, TYPE_U64);
 encode_int!(u128, TYPE_U128);
 
-impl<X: CustomTypeId> Encode<X> for isize {
+impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for isize {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
+
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        (*self as i64).encode_body(encoder);
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        (*self as i64).encode_body(encoder)
     }
 }
 
-impl<X: CustomTypeId> Encode<X> for usize {
+impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for usize {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-        encoder.write_type_id(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
     }
+
     #[inline]
-    fn encode_body(&self, encoder: &mut Encoder<X>) {
-        (*self as u64).encode_body(encoder);
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        (*self as u64).encode_body(encoder)
     }
 }
 
-impl<X: CustomTypeId> Decode<X> for i8 {
+impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for i8 {
+    #[inline]
     fn decode_body_with_type_id(
-        decoder: &mut Decoder<X>,
+        decoder: &mut D,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
@@ -80,9 +86,10 @@ impl<X: CustomTypeId> Decode<X> for i8 {
     }
 }
 
-impl<X: CustomTypeId> Decode<X> for u8 {
+impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for u8 {
+    #[inline]
     fn decode_body_with_type_id(
-        decoder: &mut Decoder<X>,
+        decoder: &mut D,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
@@ -93,9 +100,10 @@ impl<X: CustomTypeId> Decode<X> for u8 {
 
 macro_rules! decode_int {
     ($type:ident, $type_id:ident, $n:expr) => {
-        impl<X: CustomTypeId> Decode<X> for $type {
+        impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for $type {
+            #[inline]
             fn decode_body_with_type_id(
-                decoder: &mut Decoder<X>,
+                decoder: &mut D,
                 type_id: SborTypeId<X>,
             ) -> Result<Self, DecodeError> {
                 decoder.check_preloaded_type_id(type_id, Self::type_id())?;
@@ -117,9 +125,10 @@ decode_int!(u32, TYPE_U32, 4);
 decode_int!(u64, TYPE_U64, 8);
 decode_int!(u128, TYPE_U128, 16);
 
-impl<X: CustomTypeId> Decode<X> for isize {
+impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for isize {
+    #[inline]
     fn decode_body_with_type_id(
-        decoder: &mut Decoder<X>,
+        decoder: &mut D,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
@@ -127,9 +136,10 @@ impl<X: CustomTypeId> Decode<X> for isize {
     }
 }
 
-impl<X: CustomTypeId> Decode<X> for usize {
+impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for usize {
+    #[inline]
     fn decode_body_with_type_id(
-        decoder: &mut Decoder<X>,
+        decoder: &mut D,
         type_id: SborTypeId<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;

@@ -39,7 +39,7 @@ pub extern "C" fn LargeReturnSize_abi(_input: *mut u8) -> *mut u8 {
             export_name: "LargeReturnSize_f_main".to_string(),
         }],
     };
-    ::scrypto::buffer::scrypto_encode_to_buffer(&abi)
+    ::scrypto::buffer::scrypto_encode_to_buffer(&abi).unwrap()
 }
 
 #[no_mangle]
@@ -62,7 +62,7 @@ pub extern "C" fn MaxReturnSize_abi(_input: *mut u8) -> *mut u8 {
         }],
     };
 
-    ::scrypto::buffer::scrypto_encode_to_buffer(&abi)
+    ::scrypto::buffer::scrypto_encode_to_buffer(&abi).unwrap()
 }
 
 #[no_mangle]
@@ -85,7 +85,7 @@ pub extern "C" fn ZeroReturnSize_abi(_input: *mut u8) -> *mut u8 {
         }],
     };
 
-    ::scrypto::buffer::scrypto_encode_to_buffer(&abi)
+    ::scrypto::buffer::scrypto_encode_to_buffer(&abi).unwrap()
 }
 
 blueprint! {

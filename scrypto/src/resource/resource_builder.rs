@@ -234,7 +234,7 @@ impl NonFungibleResourceBuilder {
     {
         let mut encoded = HashMap::new();
         for (id, e) in entries {
-            encoded.insert(id, (e.immutable_data(), e.mutable_data()));
+            encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }
 
         self.build(Some(MintParams::NonFungible { entries: encoded }))

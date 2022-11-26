@@ -640,6 +640,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "lru"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6e8aaa3f231bb4bd57b84b2d5dc3ae7f350265df8aa96492e0bc394a1571909"
+
+[[package]]
 name = "memchr"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -854,6 +860,7 @@ dependencies = [
  "colored",
  "hex",
  "indexmap",
+ "lru",
  "moka",
  "parity-wasm",
  "radix-engine-constants",
@@ -879,8 +886,6 @@ dependencies = [
  "quote",
  "sbor",
  "scrypto-abi",
- "serde",
- "serde_json",
  "syn",
  "uuid",
 ]
@@ -1437,18 +1442,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 name = "utils"
 version = "0.7.0"
 dependencies = [
- "bech32",
- "forward_ref",
- "hex",
- "num-bigint",
- "num-traits",
- "paste",
  "sbor",
- "scrypto-abi",
- "scrypto-derive",
- "sha2 0.10.6",
- "sha3",
- "strum",
 ]
 
 [[package]]

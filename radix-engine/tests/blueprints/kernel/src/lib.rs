@@ -38,7 +38,7 @@ blueprint! {
             let input = RadixEngineInput::CreateNode(ScryptoRENode::Component(
                 Runtime::package_address(),
                 "invalid_blueprint".to_owned(),
-                scrypto_encode(&NodeCreate {}),
+                scrypto_encode(&NodeCreate {}).unwrap(),
             ));
             let _: ComponentId = call_engine(input);
         }
@@ -48,7 +48,7 @@ blueprint! {
             let input = RadixEngineInput::CreateNode(ScryptoRENode::Component(
                 package_address,
                 "NodeCreate".to_owned(),
-                scrypto_encode(&NodeCreate {}),
+                scrypto_encode(&NodeCreate {}).unwrap(),
             ));
             let _: ComponentId = call_engine(input);
         }

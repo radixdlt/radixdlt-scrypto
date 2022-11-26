@@ -1,6 +1,6 @@
-use sbor::rust::collections::HashMap;
-
 use crate::model::KeyValueStoreEntrySubstate;
+use sbor::rust::collections::HashMap;
+use sbor::rust::vec::Vec;
 
 #[derive(Debug)]
 pub struct KeyValueStore {

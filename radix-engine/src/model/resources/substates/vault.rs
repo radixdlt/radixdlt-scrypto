@@ -4,7 +4,7 @@ use crate::model::{
     ResourceOperationError, VaultError,
 };
 use crate::types::*;
-use std::ops::Deref;
+use sbor::rust::ops::Deref;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]

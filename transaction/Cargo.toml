@@ -18,6 +18,6 @@ serde_with = { version = "2.0.1" }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "scrypto/std", "hex/std", "ed25519-dalek/std", "secp256k1/std"]
-alloc = ["sbor/alloc", "scrypto/alloc", "hex/alloc", "ed25519-dalek/alloc", "secp256k1/alloc"]
+std = ["sbor/std", "radix-engine-interface/std", "scrypto/std", "hex/std", "ed25519-dalek/std", "secp256k1/std", "utils/std"]
+alloc = ["sbor/alloc", "radix-engine-interface/alloc", "scrypto/alloc", "hex/alloc", "ed25519-dalek/alloc", "secp256k1/alloc", "utils/alloc"]
 serde = ["serde/derive", "scrypto/serde"]

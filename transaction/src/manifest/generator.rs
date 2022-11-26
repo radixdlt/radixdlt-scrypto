@@ -9,8 +9,8 @@ use radix_engine_interface::crypto::{
     EddsaEd25519Signature, Hash,
 };
 use radix_engine_interface::data::{
-    args, scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId,
-    ScryptoCustomValue, ScryptoTypeId, ScryptoValue,
+    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue,
+    ScryptoSborTypeId, ScryptoValue,
 };
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
@@ -32,7 +32,7 @@ use crate::validation::*;
 macro_rules! args_from_value_vec {
     ($args: expr) => {{
         let input_struct = ::sbor::SborValue::Struct { fields: $args };
-        ::sbor::encode_any(&input_struct)
+        ::radix_engine_interface::data::scrypto_encode(&input_struct).unwrap()
     }};
 }
 
@@ -66,6 +66,7 @@ pub enum GeneratorError {
     InvalidEcdsaSecp256k1Signature(String),
     InvalidEddsaEd25519PublicKey(String),
     InvalidEddsaEd25519Signature(String),
+    SborEncodeError(EncodeError),
     BlobNotFound(String),
     NameResolverError(NameResolverError),
     IdValidationError(IdValidationError),
@@ -486,7 +487,8 @@ pub fn generate_instruction(
                 },
                 args: scrypto_encode(&ResourceManagerBucketBurnInvocation {
                     bucket: Bucket(bucket_id),
-                }),
+                })
+                .unwrap(),
             }
         }
         ast::Instruction::MintFungible {
@@ -506,7 +508,7 @@ pub fn generate_instruction(
                     receiver: RENodeId::Global(GlobalAddress::Resource(resource_address)),
                     method_name: ResourceManagerMethod::Mint.to_string(),
                 },
-                args: args!(input),
+                args: scrypto_encode(&input).unwrap(),
             }
         }
     })
@@ -532,7 +534,7 @@ fn generate_args(
     for v in values {
         let value = generate_value(v, None, resolver, bech32_decoder, blobs)?;
 
-        result.push(encode_any(&value));
+        result.push(scrypto_encode(&value).map_err(|err| GeneratorError::SborEncodeError(err))?);
     }
     Ok(result)
 }
@@ -1136,7 +1138,7 @@ fn generate_singletons(
     Ok(result)
 }
 
-fn generate_type_id(ty: &ast::Type) -> ScryptoTypeId {
+fn generate_type_id(ty: &ast::Type) -> ScryptoSborTypeId {
     match ty {
         ast::Type::Unit => SborTypeId::Unit,
         ast::Type::Bool => SborTypeId::Bool,
@@ -1202,6 +1204,7 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
+    use radix_engine_interface::args;
     use radix_engine_interface::core::NetworkDefinition;
     use radix_engine_interface::pdec;
 
@@ -1357,9 +1360,14 @@ mod tests {
     #[test]
     fn test_instructions() {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
-        let component1 = bech32_decoder
+        let component = bech32_decoder
             .validate_and_decode_component_address(
                 "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum",
+            )
+            .unwrap();
+        let resource = bech32_decoder
+            .validate_and_decode_resource_address(
+                "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak",
             )
             .unwrap();
 
@@ -1367,32 +1375,20 @@ mod tests {
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
-                resource_address: Bech32Decoder::for_simulator()
-                    .validate_and_decode_resource_address(
-                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
-                    )
-                    .unwrap(),
+                resource_address: resource,
             }
         );
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
-                resource_address: Bech32Decoder::for_simulator()
-                    .validate_and_decode_resource_address(
-                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
-                    )
-                    .unwrap(),
+                resource_address: resource
             }
         );
         generate_instruction_ok!(
             r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
             Instruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
-                resource_address: Bech32Decoder::for_simulator()
-                    .validate_and_decode_resource_address(
-                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
-                    )
-                    .unwrap(),
+                resource_address: resource,
             }
         );
         generate_instruction_ok!(
@@ -1417,10 +1413,26 @@ mod tests {
             r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
             Instruction::CallMethod {
                 method_ident: ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Global(component1),
+                    receiver: ScryptoReceiver::Global(component),
                     method_name: "refill".to_string(),
                 },
                 args: args!()
+            }
+        );
+        generate_instruction_ok!(
+            r#"MINT_FUNGIBLE  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Decimal("100");"#,
+            Instruction::CallNativeMethod {
+                method_ident: NativeMethodIdent {
+                    receiver: RENodeId::Global(GlobalAddress::Resource(resource)),
+                    method_name: ResourceManagerMethod::Mint.to_string(),
+                },
+                args: scrypto_encode(&ResourceManagerMintInvocation {
+                    receiver: resource,
+                    mint_params: MintParams::Fungible {
+                        amount: Decimal::from_str("100").unwrap(),
+                    },
+                })
+                .unwrap(),
             }
         );
     }

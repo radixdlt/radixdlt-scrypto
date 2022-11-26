@@ -24,7 +24,7 @@ blueprint! {
 
 #[no_mangle]
 pub extern "C" fn AbiComponent2_main(_input: *mut u8) -> *mut u8 {
-    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+    ::scrypto::buffer::scrypto_encode_to_buffer(&()).unwrap()
 }
 
 #[no_mangle]
@@ -159,5 +159,5 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8) -> *mut u8 {
         ],
     };
 
-    ::scrypto::buffer::scrypto_encode_to_buffer(&abi)
+    ::scrypto::buffer::scrypto_encode_to_buffer(&abi).unwrap()
 }

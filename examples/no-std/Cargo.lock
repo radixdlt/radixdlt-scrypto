@@ -227,8 +227,6 @@ dependencies = [
  "quote",
  "sbor",
  "scrypto-abi",
- "serde",
- "serde_json",
  "syn",
  "uuid",
 ]
@@ -428,18 +426,7 @@ checksum = "c4f5b37a154999a8f3f98cc23a628d850e154479cd94decf3414696e12e31aaf"
 name = "utils"
 version = "0.7.0"
 dependencies = [
- "bech32",
- "forward_ref",
- "hex",
- "num-bigint",
- "num-traits",
- "paste",
  "sbor",
- "scrypto-abi",
- "scrypto-derive",
- "sha2",
- "sha3",
- "strum",
 ]
 
 [[package]]

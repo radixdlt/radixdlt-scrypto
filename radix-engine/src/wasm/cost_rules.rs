@@ -243,7 +243,7 @@ impl Rules for InstructionCostRules {
 mod tests {
     use super::*;
     use crate::wasm::WasmModule;
-    use wabt::{wasm2wat, wat2wasm};
+    use wabt::wat2wasm;
 
     #[test]
     fn test_cost_rules() {
@@ -271,7 +271,6 @@ mod tests {
             .to_bytes()
             .unwrap()
             .0;
-        println!("{}", wasm2wat(&transformed).unwrap());
 
         // Costs:
         // 12 = 10 (local.get) + 1 (i32.const) + 1 (i32.mul)

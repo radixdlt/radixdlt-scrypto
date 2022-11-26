@@ -51,7 +51,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         let scrypto_interpreter = ScryptoInterpreter {
             wasm_metering_config: WasmMeteringConfig::new(
                 InstructionCostRules::tiered(1, 5, 10, 5000),
-                512,
+                1024,
             ),
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
@@ -287,7 +287,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         path.set_extension("wasm");
 
         // Extract ABI
-        let code = fs::read(path).unwrap();
+        let code = fs::read(&path).unwrap_or_else(|err| {
+            panic!(
+                "Failed to read built WASM from path {:?} - {:?}",
+                &path, err
+            )
+        });
         let abi = extract_abi(&code).unwrap();
 
         self.publish_package(code, abi)
@@ -584,15 +589,15 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         let mut entries = HashMap::new();
         entries.insert(
             NonFungibleId::from_u32(1),
-            (scrypto_encode(&()), scrypto_encode(&())),
+            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
         entries.insert(
             NonFungibleId::from_u32(2),
-            (scrypto_encode(&()), scrypto_encode(&())),
+            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
         entries.insert(
             NonFungibleId::from_u32(3),
-            (scrypto_encode(&()), scrypto_encode(&())),
+            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -809,6 +814,7 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
 pub fn generate_single_function_abi(
     blueprint_name: &str,
     function_name: &str,
+    output_type: Type,
 ) -> HashMap<String, BlueprintAbi> {
     let mut blueprint_abis = HashMap::new();
     blueprint_abis.insert(
@@ -822,7 +828,7 @@ pub fn generate_single_function_abi(
                     name: "Any".to_string(),
                     fields: Fields::Named { named: vec![] },
                 },
-                output: Type::Unit,
+                output: output_type,
                 export_name: format!("{}_{}", blueprint_name, function_name),
             }],
         },

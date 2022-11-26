@@ -110,12 +110,15 @@ mod tests {
     use crate::wasm::DefaultWasmEngine;
 
     const _: () = {
-        fn assert_send<T: Send>() {}
         fn assert_sync<T: Sync>() {}
 
-        // RFC 2056
         fn assert_all() {
-            assert_send::<ScryptoInterpreter<DefaultWasmEngine>>();
+            // The ScryptoInterpreter struct captures the code and module template caches.
+            // We therefore share a ScryptoInterpreter as a shared cache across Engine runs on the node.
+            // This allows EG multiple mempool submission validations via the Core API at the same time
+            // This test ensures the requirement for this cache to be Sync isn't broken
+            // (At least when we compile with std, as the node does)
+            #[cfg(not(feature = "alloc"))]
             assert_sync::<ScryptoInterpreter<DefaultWasmEngine>>();
         }
     };

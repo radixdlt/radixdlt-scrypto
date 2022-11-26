@@ -110,7 +110,8 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                     args: scrypto_encode(&VaultTakeInvocation {
                         receiver: vault_id,
                         amount: Decimal::from("1.0"),
-                    }),
+                    })
+                    .unwrap(),
                 })
                 .0
                 .call_method(

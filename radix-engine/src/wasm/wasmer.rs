@@ -1,8 +1,6 @@
-use std::sync::{Arc, Mutex};
-
 use crate::model::InvokeError;
-use moka::sync::Cache;
 use radix_engine_interface::data::IndexedScryptoValue;
+use sbor::rust::sync::{Arc, Mutex};
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
     Universal, Val, WasmerEnv,
@@ -16,28 +14,74 @@ use crate::wasm::traits::*;
 
 use super::InstrumentedCode;
 
+// IMPORTANT:
+// The below integration of Wasmer is not yet checked rigorously enough for production use
+// TODO: Address the below issues before considering production use.
+
+/// A `WasmerModule` defines a parsed WASM module, which is a template which can be instantiated.
+///
+/// Unlike `WasmerInstance`, this is correctly `Send + Sync` - which is good, because this is the
+/// thing which is cached in the ScryptoInterpreter caches.
 pub struct WasmerModule {
     module: Module,
+    #[allow(dead_code)]
     code_size_bytes: usize,
 }
 
+/// WARNING - this type should not actually be Send + Sync - it should really store a raw pointer,
+/// not a raw pointer masked as a usize.
+///
+/// For information on why the pointer is masked, see the docs for `WasmerInstanceEnv`
 pub struct WasmerInstance {
     instance: Instance,
-    // Runtime pointer is shared by the instance and every function that requires `env`.
-    // It is updated every time the `invoke_export` is called and `Arc` ensures that the
-    // update applies to all the owners.
+
+    /// This field stores a (masked) runtime pointer to a `Box<dyn WasmRuntime>` which is shared
+    /// by the instance and each WasmerInstanceEnv (every function that requires `env`).
+    ///
+    /// On every call into the WASM (ie every call to `invoke_export`), a `&'a mut System API` is
+    /// wrapped in a temporary `RadixEngineWasmRuntime<'a>` and boxed, and a pointer to the freshly
+    /// created `Box<dyn WasmRuntime>` is written behind the Mutex into this field.
+    ///
+    /// This same Mutex (via Arc cloning) is shared into each `WasmerInstanceEnv`, and so
+    /// when the WASM makes calls back into env, it can read the pointer to the current
+    /// WasmRuntime, and use that to call into the `&mut System API`.
+    ///
+    /// For information on why the pointer is masked, see the docs for `WasmerInstanceEnv`
     runtime_ptr: Arc<Mutex<usize>>,
 }
 
+/// The WasmerInstanceEnv implements WasmerEnv - and this needs to be `Send + Sync` for
+/// Wasmer to work (see `Function::new_native_with_env`).
+///
+/// This is likely because Wasmer wants to be forward-compatible with multi-threaded WASM,
+/// or that it uses multiple threads internally.
+///
+/// Currently, the SystemAPI is not Sync (and so should not be accessed by multiple threads)
+/// we believe our use of Wasmer does not allow it to call us from multiple threads -
+/// but we need to double-check this.
+///
+/// In any case, we temporarily work around this incompatibility by masking the pointer as a usize.
+///
+/// There are still a number of changes we should consider to improve things:
+/// * `WasmerInstanceEnv` shouldn't contain an Instance - just a memory reference - see
+///    the docs on the `WasmerEnv` trait
+/// * If we instantiate the module just before we call into it, we could potentially pass an actual
+///   `Arc<Mutex<T>>` for `a', T: WasmRuntime<'a>` (wrapping a `&'a mut SystemAPI`) into the WasmerInstanceEnv
+///   on *module instantiation*. In this case, it doesn't need to be on a WasmerInstance at all
+/// * Else at the very least, change this to be a pointer type, and manually implement Sync/Send
 #[derive(Clone)]
 pub struct WasmerInstanceEnv {
     instance: LazyInit<Instance>,
+    /// See notes on `WasmerInstance.runtime_ptr`
     runtime_ptr: Arc<Mutex<usize>>,
 }
 
 pub struct WasmerEngine {
     store: Store,
-    modules_cache: Cache<Hash, Arc<WasmerModule>>,
+    #[cfg(not(feature = "moka"))]
+    modules_cache: RefCell<lru::LruCache<Hash, Arc<WasmerModule>>>,
+    #[cfg(feature = "moka")]
+    modules_cache: moka::sync::Cache<Hash, Arc<WasmerModule>>,
 }
 
 pub fn send_value(instance: &Instance, value: &[u8]) -> Result<usize, InvokeError<WasmError>> {
@@ -222,7 +266,7 @@ impl WasmInstance for WasmerInstance {
 
 #[derive(Debug, Clone)]
 pub struct EngineOptions {
-    max_cache_size_bytes: u64,
+    max_cache_size_bytes: usize,
 }
 
 impl Default for WasmerEngine {
@@ -236,12 +280,17 @@ impl Default for WasmerEngine {
 impl WasmerEngine {
     pub fn new(options: EngineOptions) -> Self {
         let compiler = Singlepass::new();
-        let modules_cache = Cache::builder()
+        #[cfg(not(feature = "moka"))]
+        let modules_cache = RefCell::new(lru::LruCache::new(
+            NonZeroUsize::new(options.max_cache_size_bytes / (1024 * 1024)).unwrap(),
+        ));
+        #[cfg(feature = "moka")]
+        let modules_cache = moka::sync::Cache::builder()
             .weigher(|_key: &Hash, value: &Arc<WasmerModule>| -> u32 {
                 // Approximate the module entry size by the code size
                 value.code_size_bytes.try_into().unwrap_or(u32::MAX)
             })
-            .max_capacity(options.max_cache_size_bytes)
+            .max_capacity(options.max_cache_size_bytes as u64)
             .build();
         Self {
             store: Store::new(&Universal::new(compiler).engine()),
@@ -255,6 +304,13 @@ impl WasmEngine for WasmerEngine {
 
     fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmerInstance {
         let code_hash = &instrumented_code.code_hash;
+        #[cfg(not(feature = "moka"))]
+        {
+            if let Some(cached_module) = self.modules_cache.borrow_mut().get(code_hash) {
+                return cached_module.instantiate();
+            }
+        }
+        #[cfg(feature = "moka")]
         if let Some(cached_module) = self.modules_cache.get(code_hash) {
             return cached_module.instantiate();
         }
@@ -266,6 +322,11 @@ impl WasmEngine for WasmerEngine {
             code_size_bytes: code.len(),
         });
 
+        #[cfg(not(feature = "moka"))]
+        self.modules_cache
+            .borrow_mut()
+            .put(*code_hash, new_module.clone());
+        #[cfg(feature = "moka")]
         self.modules_cache.insert(*code_hash, new_module.clone());
 
         new_module.instantiate()

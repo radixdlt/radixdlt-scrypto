@@ -33,7 +33,8 @@ fn non_existing_vault_should_cause_error() {
             args: scrypto_encode(&VaultTakeInvocation {
                 receiver: non_existing_vault_id,
                 amount: Decimal::one(),
-            }),
+            })
+            .unwrap(),
         })
         .0
         .call_method(
@@ -73,7 +74,7 @@ fn cannot_get_amount_on_direct_vault_access() {
                 receiver: RENodeId::Vault(vault_id),
                 method_name: "get_amount".to_string(),
             },
-            args: scrypto_encode(&VaultGetAmountInvocation { receiver: vault_id }),
+            args: scrypto_encode(&VaultGetAmountInvocation { receiver: vault_id }).unwrap(),
         })
         .0
         .build();
@@ -109,7 +110,8 @@ fn cannot_take_on_non_recallable_vault() {
             args: scrypto_encode(&VaultTakeInvocation {
                 receiver: vault_id,
                 amount: Decimal::one(),
-            }),
+            })
+            .unwrap(),
         })
         .0
         .call_method(
@@ -162,7 +164,8 @@ fn can_take_on_recallable_vault() {
             args: scrypto_encode(&VaultTakeInvocation {
                 receiver: vault_id,
                 amount: Decimal::one(),
-            }),
+            })
+            .unwrap(),
         })
         .0
         .call_method(

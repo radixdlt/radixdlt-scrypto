@@ -27,6 +27,8 @@ pub enum BuildError {
 
     AbiExtractionError(ExtractAbiError),
 
+    AbiEncodeError(sbor::EncodeError),
+
     InvalidManifestFile(PathBuf),
 }
 
@@ -169,8 +171,11 @@ pub fn build_package<P: AsRef<Path>>(
     let wasm =
         fs::read(&wasm_path).map_err(|err| BuildError::IOErrorAtPath(err, wasm_path.clone()))?;
     let abi = extract_abi(&wasm).map_err(BuildError::AbiExtractionError)?;
-    fs::write(&abi_path, scrypto_encode(&abi))
-        .map_err(|err| BuildError::IOErrorAtPath(err, abi_path.clone()))?;
+    fs::write(
+        &abi_path,
+        scrypto_encode(&abi).map_err(BuildError::AbiEncodeError)?,
+    )
+    .map_err(|err| BuildError::IOErrorAtPath(err, abi_path.clone()))?;
 
     // Build without ABI
     run_cargo_build(&manifest_path, &target_path, trace, true)?;

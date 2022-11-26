@@ -34,15 +34,17 @@ impl Default for SerializedInMemorySubstateStore {
 impl ReadableSubstateStore for SerializedInMemorySubstateStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.substates
-            .get(&scrypto_encode(substate_id))
+            .get(&scrypto_encode(substate_id).expect("Could not encode substate id"))
             .map(|b| scrypto_decode(&b).unwrap())
     }
 }
 
 impl WriteableSubstateStore for SerializedInMemorySubstateStore {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
-        self.substates
-            .insert(scrypto_encode(&substate_id), scrypto_encode(&substate));
+        self.substates.insert(
+            scrypto_encode(&substate_id).expect("Could not encode substate id"),
+            scrypto_encode(&substate).expect("Could not encode substate"),
+        );
     }
 }
 
