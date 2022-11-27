@@ -14,6 +14,7 @@ pub enum AuthError {
         authorization: MethodAuthorization,
         error: MethodAuthorizationError,
     },
+    CouldNotEncodePackageAddress,
 }
 
 pub struct AuthModule;
@@ -90,8 +91,13 @@ impl AuthModule {
                             ..,
                         )) = resolved_receiver.derefed_from
                         {
-                            let non_fungible_id =
-                                NonFungibleId::from_bytes(scrypto_encode(&package_address));
+                            let bytes = scrypto_encode(&package_address).map_err(|_| {
+                                RuntimeError::ModuleError(ModuleError::AuthError(
+                                    AuthError::CouldNotEncodePackageAddress,
+                                ))
+                            })?;
+
+                            let non_fungible_id = NonFungibleId::from_bytes(bytes);
                             let non_fungible_address =
                                 NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id);
                             vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(

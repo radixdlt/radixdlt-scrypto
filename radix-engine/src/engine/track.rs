@@ -477,7 +477,9 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         &mut self,
         transaction: &Executable,
     ) -> Result<(), FeeReserveError> {
-        let encoded_instructions_byte_length = scrypto_encode(transaction.instructions()).len();
+        let encoded_instructions_byte_length = scrypto_encode(transaction.instructions())
+            .expect("Valid transaction had instructions which couldn't be encoded")
+            .len();
         let blobs_size = {
             let mut total_size: usize = 0;
             for blob in transaction.blobs() {
@@ -742,7 +744,9 @@ impl<'s> FinalizingTrack<'s> {
     ) -> Option<OutputId> {
         substate_store.get_substate(&substate_id).map(|s| OutputId {
             substate_id: substate_id.clone(),
-            substate_hash: hash(scrypto_encode(&s.substate)),
+            substate_hash: hash(
+                scrypto_encode(&s.substate).expect("Saved substate couldn't be re-encoded"),
+            ),
             version: s.version,
         })
     }

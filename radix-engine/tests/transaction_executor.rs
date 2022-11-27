@@ -129,7 +129,7 @@ fn test_normal_transaction_flow() {
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::new(
             InstructionCostRules::tiered(1, 5, 10, 5000),
-            512,
+            1024,
         ),
     };
 
@@ -141,7 +141,8 @@ fn test_normal_transaction_flow() {
         start_epoch_inclusive: 0,
         end_epoch_exclusive: 0 + DEFAULT_MAX_EPOCH_RANGE,
     })
-    .to_bytes();
+    .to_bytes()
+    .unwrap();
 
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
     let transaction = validator

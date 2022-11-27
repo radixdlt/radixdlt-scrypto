@@ -19,7 +19,6 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use sbor::*;
 use scrypto::abi::*;
 use scrypto::access_rule_node;
 use scrypto::rule;
@@ -34,16 +33,10 @@ macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
         let mut fields = Vec::new();
         for arg in $args {
-            fields.push(
-                ::sbor::decode_any::<
-                    ::scrypto::data::ScryptoCustomTypeId,
-                    ::scrypto::data::ScryptoCustomValue,
-                >(&arg)
-                .unwrap(),
-            );
+            fields.push(::scrypto::data::scrypto_decode(&arg).unwrap());
         }
-        let input_struct = ::sbor::SborValue::Struct { fields };
-        ::sbor::encode_any(&input_struct)
+        let input_struct = ::scrypto::data::ScryptoValue::Struct { fields };
+        ::scrypto::data::scrypto_encode(&input_struct).unwrap()
     }};
 }
 
@@ -341,7 +334,7 @@ impl ManifestBuilder {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
-            args: scrypto_encode(&input),
+            args: scrypto_encode(&input).unwrap(),
         });
 
         self
@@ -411,11 +404,10 @@ impl ManifestBuilder {
 
         let mut fields = Vec::new();
         for arg in arguments {
-            fields
-                .push(::sbor::decode_any::<ScryptoCustomTypeId, ScryptoCustomValue>(&arg).unwrap());
+            fields.push(scrypto_decode(&arg).unwrap());
         }
-        let input_struct = ::sbor::SborValue::Struct { fields };
-        let bytes = ::sbor::encode_any(&input_struct);
+        let input_struct = ScryptoValue::Struct { fields };
+        let bytes = scrypto_encode(&input_struct).unwrap();
 
         Ok(self
             .add_instruction(Instruction::CallFunction {
@@ -509,7 +501,7 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        let abi = scrypto_encode(&abi);
+        let abi = scrypto_encode(&abi).unwrap();
         let abi_hash = hash(&abi);
         self.blobs.insert(abi_hash, abi);
 
@@ -528,7 +520,7 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        let abi = scrypto_encode(&abi);
+        let abi = scrypto_encode(&abi).unwrap();
         let abi_hash = hash(&abi);
         self.blobs.insert(abi_hash, abi);
 
@@ -541,7 +533,8 @@ impl ManifestBuilder {
                 code: Blob(code_hash),
                 abi: Blob(abi_hash),
                 metadata: HashMap::new(),
-            }),
+            })
+            .unwrap(),
         })
         .0
     }
@@ -684,7 +677,8 @@ impl ManifestBuilder {
             args: scrypto_encode(&ResourceManagerMintInvocation {
                 receiver: resource_address,
                 mint_params: MintParams::Fungible { amount },
-            }),
+            })
+            .unwrap(),
         });
         self
     }
@@ -701,7 +695,8 @@ impl ManifestBuilder {
                     args: scrypto_encode(&ResourceManagerBurnInvocation {
                         receiver: resource_address,
                         bucket: Bucket(bucket_id),
-                    }),
+                    })
+                    .unwrap(),
                 })
                 .0
         })
@@ -725,7 +720,8 @@ impl ManifestBuilder {
                         args: scrypto_encode(&ResourceManagerBurnInvocation {
                             receiver: non_fungible_address.resource_address(),
                             bucket: Bucket(bucket_id),
-                        }),
+                        })
+                        .unwrap(),
                     })
                     .0
             },
@@ -992,13 +988,13 @@ impl ManifestBuilder {
                             let value = arg.parse::<Decimal>().map_err(|_| {
                                 BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                             })?;
-                            Ok(scrypto_encode(&value))
+                            Ok(scrypto_encode(&value).unwrap())
                         }
                         Type::PreciseDecimal => {
                             let value = arg.parse::<PreciseDecimal>().map_err(|_| {
                                 BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                             })?;
-                            Ok(scrypto_encode(&value))
+                            Ok(scrypto_encode(&value).unwrap())
                         }
                         Type::PackageAddress => {
                             let value = self
@@ -1007,7 +1003,7 @@ impl ManifestBuilder {
                                 .map_err(|_| {
                                     BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                                 })?;
-                            Ok(scrypto_encode(&value))
+                            Ok(scrypto_encode(&value).unwrap())
                         }
                         Type::ComponentAddress => {
                             let value = self
@@ -1016,7 +1012,7 @@ impl ManifestBuilder {
                                 .map_err(|_| {
                                     BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                                 })?;
-                            Ok(scrypto_encode(&value))
+                            Ok(scrypto_encode(&value).unwrap())
                         }
                         Type::ResourceAddress => {
                             let value = self
@@ -1025,19 +1021,19 @@ impl ManifestBuilder {
                                 .map_err(|_| {
                                     BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                                 })?;
-                            Ok(scrypto_encode(&value))
+                            Ok(scrypto_encode(&value).unwrap())
                         }
                         Type::Hash => {
                             let value = arg.parse::<Hash>().map_err(|_| {
                                 BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                             })?;
-                            Ok(scrypto_encode(&value))
+                            Ok(scrypto_encode(&value).unwrap())
                         }
                         Type::NonFungibleId => {
                             let value = arg.parse::<NonFungibleId>().map_err(|_| {
                                 BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                             })?;
-                            Ok(scrypto_encode(&value))
+                            Ok(scrypto_encode(&value).unwrap())
                         }
                         Type::Bucket => {
                             let resource_specifier = parse_resource_specifier(arg, &self.decoder)
@@ -1076,7 +1072,7 @@ impl ManifestBuilder {
                                     .unwrap()
                                 }
                             };
-                            Ok(scrypto_encode(&Bucket(bucket_id)))
+                            Ok(scrypto_encode(&Bucket(bucket_id)).unwrap())
                         }
                         Type::Proof => {
                             let resource_specifier = parse_resource_specifier(arg, &self.decoder)
@@ -1113,7 +1109,7 @@ impl ManifestBuilder {
                                     }
                                 }
                             };
-                            Ok(scrypto_encode(&Proof(proof_id)))
+                            Ok(scrypto_encode(&Proof(proof_id)).unwrap())
                         }
                         _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
                     };
@@ -1134,13 +1130,13 @@ impl ManifestBuilder {
         arg: &str,
     ) -> Result<Vec<u8>, BuildArgsError>
     where
-        T: FromStr + Encode<ScryptoCustomTypeId>,
+        T: FromStr + ScryptoEncode,
         T::Err: fmt::Debug,
     {
         let value = arg
             .parse::<T>()
             .map_err(|_| BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned()))?;
-        Ok(scrypto_encode(&value))
+        Ok(scrypto_encode(&value).unwrap())
     }
 }
 

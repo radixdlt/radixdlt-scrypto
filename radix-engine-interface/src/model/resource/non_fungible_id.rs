@@ -17,17 +17,17 @@ pub struct NonFungibleId(pub Vec<u8>);
 impl NonFungibleId {
     /// Creates a non-fungible ID from an arbitrary byte array.
     pub fn from_bytes(v: Vec<u8>) -> Self {
-        Self(scrypto_encode(&v))
+        Self(scrypto_encode(&v).expect("Error encoding byte array"))
     }
 
     /// Creates a non-fungible ID from a `u32` number.
     pub fn from_u32(u: u32) -> Self {
-        Self(scrypto_encode(&u))
+        Self(scrypto_encode(&u).expect("Error encoding u32"))
     }
 
     /// Creates a non-fungible ID from a `u64` number.
     pub fn from_u64(u: u64) -> Self {
-        Self(scrypto_encode(&u))
+        Self(scrypto_encode(&u).expect("Error encoding u64"))
     }
 }
 
@@ -56,34 +56,35 @@ impl fmt::Display for ParseNonFungibleIdError {
 // binary
 //========
 
-// Manually validating non-fungible id instead of using any codec to reduce code size.
+// Manually validating non-fungible id instead of using ScryptoValue to reduce code size.
 fn validate_id(slice: &[u8]) -> Result<(), DecodeError> {
     let mut decoder = ScryptoDecoder::new(slice);
+    decoder.read_and_check_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
     let type_id = decoder.read_type_id()?;
     match type_id {
         // TODO: add more allowed types as agreed
-        ScryptoTypeId::U32 => {
+        ScryptoSborTypeId::U32 => {
             decoder.read_slice(4)?;
         }
-        ScryptoTypeId::U64 => {
+        ScryptoSborTypeId::U64 => {
             decoder.read_slice(8)?;
         }
-        ScryptoTypeId::Array => {
+        ScryptoSborTypeId::Array => {
             let element_type_id = decoder.read_type_id()?;
-            if element_type_id == ScryptoTypeId::U8 {
+            if element_type_id == ScryptoSborTypeId::U8 {
                 let size = decoder.read_size()?;
                 decoder.read_slice(size)?;
             } else {
                 return Err(DecodeError::UnexpectedTypeId {
                     actual: element_type_id.as_u8(),
-                    expected: ScryptoTypeId::U8.as_u8(),
+                    expected: ScryptoSborTypeId::U8.as_u8(),
                 });
             }
         }
         type_id => {
             return Err(DecodeError::UnexpectedTypeId {
                 actual: type_id.as_u8(),
-                expected: ScryptoTypeId::U32.as_u8(), // TODO: make it a vec
+                expected: ScryptoSborTypeId::U32.as_u8(), // TODO: make it a vec
             });
         }
     }
@@ -146,15 +147,15 @@ mod tests {
     #[test]
     fn test_non_fungible_id_string_rep() {
         assert_eq!(
-            NonFungibleId::from_str("2007023575").unwrap(),
+            NonFungibleId::from_str("5c2007023575").unwrap(),
             NonFungibleId::from_bytes(vec![53u8, 117u8]),
         );
         assert_eq!(
-            NonFungibleId::from_str("0905000000").unwrap(),
+            NonFungibleId::from_str("5c0905000000").unwrap(),
             NonFungibleId::from_u32(5)
         );
         assert_eq!(
-            NonFungibleId::from_str("0a0500000000000000").unwrap(),
+            NonFungibleId::from_str("5c0a0500000000000000").unwrap(),
             NonFungibleId::from_u64(5)
         );
     }

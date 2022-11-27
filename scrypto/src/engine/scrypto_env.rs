@@ -4,7 +4,7 @@ use radix_engine_interface::api::types::{
     ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::ScryptoCustomTypeId;
+use radix_engine_interface::data::ScryptoDecode;
 use radix_engine_interface::wasm::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -18,11 +18,11 @@ extern "C" {
 
 /// Utility function for making a radix engine call.
 #[cfg(target_arch = "wasm32")]
-pub fn call_engine<V: Decode<ScryptoCustomTypeId>>(input: RadixEngineInput) -> V {
+pub fn call_engine<V: ScryptoDecode>(input: RadixEngineInput) -> V {
     use crate::buffer::{scrypto_decode_from_buffer, *};
 
     unsafe {
-        let input_ptr = scrypto_encode_to_buffer(&input);
+        let input_ptr = scrypto_encode_to_buffer(&input).unwrap();
         let output_ptr = radix_engine(input_ptr);
         scrypto_decode_from_buffer::<V>(output_ptr).unwrap()
     }
@@ -34,7 +34,7 @@ pub fn call_engine_to_raw(input: RadixEngineInput) -> Vec<u8> {
     use crate::buffer::{scrypto_buffer_to_vec, *};
 
     unsafe {
-        let input_ptr = scrypto_encode_to_buffer(&input);
+        let input_ptr = scrypto_encode_to_buffer(&input).unwrap();
         let output_ptr = radix_engine(input_ptr);
         scrypto_buffer_to_vec(output_ptr)
     }
@@ -42,7 +42,7 @@ pub fn call_engine_to_raw(input: RadixEngineInput) -> Vec<u8> {
 
 /// Utility function for making a radix engine call.
 #[cfg(not(target_arch = "wasm32"))]
-pub fn call_engine<V: Decode<ScryptoCustomTypeId>>(_input: RadixEngineInput) -> V {
+pub fn call_engine<V: ScryptoDecode>(_input: RadixEngineInput) -> V {
     todo!()
 }
 /// Utility function for making a radix engine call.
@@ -161,7 +161,7 @@ macro_rules! sys_env_native_fn {
         $vis $fn $fn_name<Y, E>($($args)*, env: &mut Y) -> Result<$rtn, E>
         where
             Y: radix_engine_interface::api::api::SysNativeInvokable<$invocation, E>,
-            E: sbor::rust::fmt::Debug + TypeId<radix_engine_interface::data::ScryptoCustomTypeId> + Decode<radix_engine_interface::data::ScryptoCustomTypeId>,
+            E: sbor::rust::fmt::Debug + TypeId<radix_engine_interface::data::ScryptoCustomTypeId> + radix_engine_interface::data::ScryptoDecode,
         {
             radix_engine_interface::api::api::SysNativeInvokable::sys_invoke(env, $invocation { $($invocation_args)* })
         }
@@ -171,7 +171,7 @@ macro_rules! sys_env_native_fn {
         $vis $fn $fn_name<Y, E>(env: &mut Y) -> Result<$rtn, E>
         where
             Y: radix_engine_interface::api::api::SysNativeInvokable<$invocation, E>,
-            E: sbor::rust::fmt::Debug + TypeId<radix_engine_interface::data::ScryptoCustomTypeId> + Decode<radix_engine_interface::data::ScryptoCustomTypeId>,
+            E: sbor::rust::fmt::Debug + TypeId<radix_engine_interface::data::ScryptoCustomTypeId> + radix_engine_interface::data::ScryptoDecode,
         {
             radix_engine_interface::api::api::SysNativeInvokable::sys_invoke(env, $invocation { $($invocation_args)* })
         }

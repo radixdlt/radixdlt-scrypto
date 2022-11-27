@@ -29,7 +29,8 @@ fn cannot_set_package_metadata_with_no_owner() {
                 receiver: RENodeId::Global(GlobalAddress::Package(package_address)),
                 key: "name".to_string(),
                 value: "best package ever!".to_string(),
-            }),
+            })
+            .unwrap(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -76,7 +77,8 @@ fn can_set_package_metadata_with_owner() {
                 receiver: RENodeId::Global(GlobalAddress::Package(package_address)),
                 key: "name".to_string(),
                 value: "best package ever!".to_string(),
-            }),
+            })
+            .unwrap(),
         )
         .build();
     let receipt = test_runner.execute_manifest(

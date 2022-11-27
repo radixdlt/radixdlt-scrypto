@@ -246,6 +246,7 @@ macro_rules! type_id_tuple {
     };
 }
 
+type_id_tuple! { 1 0 A }
 type_id_tuple! { 2 0 A 1 B }
 type_id_tuple! { 3 0 A 1 B 2 C }
 type_id_tuple! { 4 0 A 1 B 2 C 3 D }

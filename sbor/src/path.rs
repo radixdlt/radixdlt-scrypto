@@ -1,7 +1,7 @@
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::value::SborValue;
-use crate::{CustomTypeId, CustomValue};
+use crate::CustomTypeId;
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct SborPathBuf(Vec<usize>);
@@ -35,7 +35,7 @@ impl SborPath {
         SborPath(path)
     }
 
-    pub fn get_from_value<'a, X: CustomTypeId, Y: CustomValue<X>>(
+    pub fn get_from_value<'a, X: CustomTypeId, Y>(
         &'a self,
         value: &'a SborValue<X, Y>,
     ) -> Option<&'a SborValue<X, Y>> {
@@ -43,7 +43,7 @@ impl SborPath {
         rel_path.get_from(value)
     }
 
-    pub fn get_from_value_mut<'a, X: CustomTypeId, Y: CustomValue<X>>(
+    pub fn get_from_value_mut<'a, X: CustomTypeId, Y>(
         &'a self,
         value: &'a mut SborValue<X, Y>,
     ) -> Option<&'a mut SborValue<X, Y>> {
@@ -66,7 +66,7 @@ impl<'a> SborValueRetriever<'a> {
         (index, SborValueRetriever(extended_path))
     }
 
-    fn get_from_vector<X: CustomTypeId, Y: CustomValue<X>>(
+    fn get_from_vector<X: CustomTypeId, Y>(
         &self,
         values: &'a [SborValue<X, Y>],
     ) -> Option<&'a SborValue<X, Y>> {
@@ -76,7 +76,7 @@ impl<'a> SborValueRetriever<'a> {
             .and_then(|value| next_path.get_from(value))
     }
 
-    fn get_from<X: CustomTypeId, Y: CustomValue<X>>(
+    fn get_from<X: CustomTypeId, Y>(
         self,
         value: &'a SborValue<X, Y>,
     ) -> Option<&'a SborValue<X, Y>> {
@@ -93,7 +93,7 @@ impl<'a> SborValueRetriever<'a> {
         }
     }
 
-    fn get_from_vector_mut<X: CustomTypeId, Y: CustomValue<X>>(
+    fn get_from_vector_mut<X: CustomTypeId, Y>(
         &self,
         values: &'a mut [SborValue<X, Y>],
     ) -> Option<&'a mut SborValue<X, Y>> {
@@ -103,7 +103,7 @@ impl<'a> SborValueRetriever<'a> {
             .and_then(|value| next_path.get_from_mut(value))
     }
 
-    fn get_from_mut<X: CustomTypeId, Y: CustomValue<X>>(
+    fn get_from_mut<X: CustomTypeId, Y>(
         self,
         value: &'a mut SborValue<X, Y>,
     ) -> Option<&'a mut SborValue<X, Y>> {

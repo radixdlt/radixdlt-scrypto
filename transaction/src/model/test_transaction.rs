@@ -34,7 +34,7 @@ impl TestTransaction {
     }
 
     pub fn get_executable<'a>(&'a self, initial_proofs: Vec<NonFungibleAddress>) -> Executable<'a> {
-        let transaction_hash = self.transaction.hash();
+        let transaction_hash = self.transaction.hash().unwrap();
         let intent = &self.transaction.signed_intent.intent;
 
         Executable::new(

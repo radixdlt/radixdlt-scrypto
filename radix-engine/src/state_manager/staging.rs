@@ -126,9 +126,7 @@ impl<'t, 's, S: ReadableSubstateStore> StagedSubstateStore<'t, 's, S> {
 
         let node = self.stores.nodes.get(&id).unwrap();
         if let Some(output) = node.outputs.get(substate_id) {
-            // TODO: Remove encoding/decoding
-            let encoded_output = scrypto_encode(output);
-            return Some(scrypto_decode(&encoded_output).unwrap());
+            return Some(output.clone());
         }
 
         self.get_substate_recurse(substate_id, node.parent_id)

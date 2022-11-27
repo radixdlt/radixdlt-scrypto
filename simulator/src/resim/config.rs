@@ -48,7 +48,7 @@ pub fn get_configs() -> Result<Configs, Error> {
 }
 
 pub fn set_configs(configs: &Configs) -> Result<(), Error> {
-    fs::write(get_configs_path()?, scrypto_encode(configs)).map_err(Error::IOError)
+    fs::write(get_configs_path()?, scrypto_encode(configs).unwrap()).map_err(Error::IOError)
 }
 
 pub fn get_default_account() -> Result<ComponentAddress, Error> {

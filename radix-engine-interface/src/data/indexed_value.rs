@@ -13,6 +13,8 @@ use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ScryptoValueDecodeError {
+    RawValueEncodeError(EncodeError),
+    TypedValueEncodeError(EncodeError),
     DecodeError(DecodeError),
     ValueIndexingError(ValueIndexingError),
 }
@@ -51,13 +53,14 @@ impl IndexedScryptoValue {
         Self::from_typed(&())
     }
 
-    pub fn from_typed<T: Encode<ScryptoCustomTypeId>>(value: &T) -> Self {
-        let bytes = encode(value);
+    pub fn from_typed<T: ScryptoEncode + ?Sized>(value: &T) -> Self {
+        let bytes =
+            scrypto_encode(value).expect("Failed to encode trusted value for IndexedScryptoValue");
         Self::from_slice(&bytes).expect("Failed to convert trusted value into IndexedScryptoValue")
     }
 
     pub fn from_slice(slice: &[u8]) -> Result<Self, ScryptoValueDecodeError> {
-        let value = decode_any(slice).map_err(ScryptoValueDecodeError::DecodeError)?;
+        let value = scrypto_decode(slice).map_err(ScryptoValueDecodeError::DecodeError)?;
         Self::from_value(value)
     }
 
@@ -69,7 +72,8 @@ impl IndexedScryptoValue {
         }
 
         Ok(Self {
-            raw: encode_any(&value),
+            raw: scrypto_encode(&value)
+                .map_err(|err| ScryptoValueDecodeError::RawValueEncodeError(err))?,
             dom: value,
             component_addresses: visitor.component_addresses,
             resource_addresses: visitor.resource_addresses,
@@ -165,7 +169,8 @@ impl IndexedScryptoValue {
         }
         self.bucket_ids = new_bucket_ids;
 
-        self.raw = encode_any(&self.dom);
+        self.raw = scrypto_encode(&self.dom)
+            .expect("Previously encodable raw value is no longer encodable after replacement");
 
         Ok(())
     }
@@ -240,7 +245,7 @@ impl ScryptoCustomValueVisitor {
     }
 }
 
-impl CustomValueVisitor<ScryptoCustomTypeId, ScryptoCustomValue> for ScryptoCustomValueVisitor {
+impl CustomValueVisitor<ScryptoCustomValue> for ScryptoCustomValueVisitor {
     type Err = ValueIndexingError;
 
     fn visit(
@@ -332,7 +337,7 @@ mod tests {
 
     #[test]
     fn should_reject_duplicate_ids() {
-        let buckets = scrypto_encode(&vec![Bucket(0), Bucket(0)]);
+        let buckets = scrypto_encode(&vec![Bucket(0), Bucket(0)]).unwrap();
         assert_eq!(
             IndexedScryptoValue::from_slice(&buckets),
             Err(ScryptoValueDecodeError::ValueIndexingError(

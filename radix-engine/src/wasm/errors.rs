@@ -85,6 +85,7 @@ pub enum WasmError {
     MemoryAllocError,
     MemoryAccessError,
     InvalidScryptoValue(ScryptoValueDecodeError),
+    InvalidScryptoValueResponse(EncodeError),
     WasmError(String),
     FunctionNotFound,
     InvalidRadixEngineInput,
