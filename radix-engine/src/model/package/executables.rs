@@ -17,6 +17,7 @@ pub enum PackageError {
     InvalidWasm(PrepareError),
     BlueprintNotFound,
     MethodNotFound(String),
+    CouldNotEncodePackageAddress,
 }
 
 impl Package {
@@ -145,8 +146,13 @@ impl NativeProgram for PackagePublishWithOwnerInvocation {
         )?;
 
         let package_address: PackageAddress = global_node_id.into();
+        let bytes = scrypto_encode(&package_address).map_err(|_| {
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::CouldNotEncodePackageAddress,
+            ))
+        })?;
 
-        let non_fungible_id = NonFungibleId::from_bytes(scrypto_encode(&package_address));
+        let non_fungible_id = NonFungibleId::from_bytes(bytes);
 
         let mut entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)> = HashMap::new();
         entries.insert(non_fungible_id, (vec![], vec![]));

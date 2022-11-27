@@ -1,12 +1,11 @@
 use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
 use radix_engine_interface::api::types::{ProofId, RENodeId};
-use radix_engine_interface::data::ScryptoCustomTypeId;
+use radix_engine_interface::data::{ScryptoDecode, ScryptoTypeId};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
-use sbor::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
 
@@ -47,13 +46,13 @@ impl From<NonFungibleAddress> for ProofValidationMode {
 }
 
 pub trait SysProof {
-    fn sys_clone<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
+    fn sys_clone<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
         &self,
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
     where
         Y: EngineApi<E> + SysNativeInvokable<ProofCloneInvocation, E>;
-    fn sys_drop<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
+    fn sys_drop<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
         self,
         sys_calls: &mut Y,
     ) -> Result<(), E>
@@ -62,7 +61,7 @@ pub trait SysProof {
 }
 
 impl SysProof for Proof {
-    fn sys_clone<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
+    fn sys_clone<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
         &self,
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
@@ -72,7 +71,7 @@ impl SysProof for Proof {
         sys_calls.sys_invoke(ProofCloneInvocation { receiver: self.0 })
     }
 
-    fn sys_drop<Y, E: Debug + TypeId<ScryptoCustomTypeId> + Decode<ScryptoCustomTypeId>>(
+    fn sys_drop<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
         self,
         sys_calls: &mut Y,
     ) -> Result<(), E>

@@ -39,8 +39,8 @@ pub enum ScryptoCustomValue {
     NonFungibleId(NonFungibleId),
 }
 
-impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
-    fn encode_type_id(&self, encoder: &mut ScryptoEncoder) {
+impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for ScryptoCustomValue {
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             ScryptoCustomValue::PackageAddress(_) => {
                 encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::PackageAddress))
@@ -105,7 +105,7 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
         }
     }
 
-    fn encode_body(&self, encoder: &mut ScryptoEncoder) {
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             // TODO: vector free
             ScryptoCustomValue::PackageAddress(v) => encoder.write_slice(&v.to_vec()),
@@ -119,13 +119,13 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
             ScryptoCustomValue::Vault(v) => encoder.write_slice(v.as_slice()),
             ScryptoCustomValue::Expression(v) => {
                 let buf = v.to_vec();
-                encoder.write_size(buf.len());
+                encoder.write_size(buf.len())?;
                 encoder.write_slice(&buf)
             }
             ScryptoCustomValue::Blob(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::NonFungibleAddress(v) => {
                 let buf = v.to_vec();
-                encoder.write_size(buf.len());
+                encoder.write_size(buf.len())?;
                 encoder.write_slice(&buf)
             }
             ScryptoCustomValue::Hash(v) => encoder.write_slice(&v.to_vec()),
@@ -137,16 +137,21 @@ impl CustomValue<ScryptoCustomTypeId> for ScryptoCustomValue {
             ScryptoCustomValue::PreciseDecimal(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::NonFungibleId(v) => {
                 let buf = v.to_vec();
-                encoder.write_size(buf.len());
+                encoder.write_size(buf.len())?;
                 encoder.write_slice(&buf)
             }
         }
     }
+}
 
+impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for ScryptoCustomValue {
     fn decode_body_with_type_id(
-        decoder: &mut ScryptoDecoder,
-        type_id: ScryptoCustomTypeId,
+        decoder: &mut D,
+        type_id: SborTypeId<ScryptoCustomTypeId>,
     ) -> Result<Self, DecodeError> {
+        let SborTypeId::Custom(type_id) = type_id else {
+            return Err(DecodeError::UnexpectedCustomTypeId { actual: type_id.as_u8() });
+        };
         match type_id {
             ScryptoCustomTypeId::PackageAddress => {
                 let n = 27;
