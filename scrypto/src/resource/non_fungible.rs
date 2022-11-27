@@ -11,8 +11,7 @@ pub trait ScryptoNonFungibleId {
 
 impl ScryptoNonFungibleId for NonFungibleId {
     fn random() -> Self {
-        let bytes = crate::runtime::Runtime::generate_uuid()
-            .to_be_bytes();
+        let bytes = crate::runtime::Runtime::generate_uuid().to_be_bytes();
         Self::from_bytes(&bytes)
     }
 }

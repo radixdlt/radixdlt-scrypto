@@ -1,6 +1,6 @@
+use super::NonFungibleIdType;
 use crate::Describe;
 use sbor::*;
-use super::NonFungibleIdType;
 
 /// Represents the type of a resource.
 #[derive(Debug, Clone, Copy, TypeId, Encode, Decode, Describe, Eq, PartialEq)]

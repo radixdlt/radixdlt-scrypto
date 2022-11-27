@@ -571,7 +571,9 @@ mod tests {
                     function_name: ResourceManagerFunction::Create.to_string(),
                 },
                 args: scrypto_encode(&BadResourceManagerCreateInput {
-                    resource_type: ResourceType::NonFungible { id_type: NonFungibleIdType::default() },
+                    resource_type: ResourceType::NonFungible {
+                        id_type: NonFungibleIdType::default(),
+                    },
                     metadata: HashMap::new(),
                     access_rules: HashMap::new(),
                 })

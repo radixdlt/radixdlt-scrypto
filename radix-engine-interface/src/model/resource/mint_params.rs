@@ -40,10 +40,8 @@ impl MintParams {
 
     pub fn matches_type(&self, resource_type: &ResourceType) -> bool {
         match self {
-            Self::Fungible { .. } =>
-                matches!(resource_type, ResourceType::Fungible { .. }),
-            Self::NonFungible { .. } =>
-                matches!(resource_type, ResourceType::NonFungible { .. })
+            Self::Fungible { .. } => matches!(resource_type, ResourceType::Fungible { .. }),
+            Self::NonFungible { .. } => matches!(resource_type, ResourceType::NonFungible { .. }),
         }
     }
 

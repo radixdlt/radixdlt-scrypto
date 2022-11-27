@@ -49,7 +49,7 @@ impl VaultRuntimeSubstate {
             } => Resource::NonFungible {
                 resource_address: resource_address.clone(),
                 ids: liquid_ids.clone(),
-                id_type: *id_type
+                id_type: *id_type,
             },
         };
 

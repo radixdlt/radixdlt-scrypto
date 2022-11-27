@@ -118,7 +118,7 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
                                 ApplicationError::ResourceManagerError(
                                     ResourceManagerError::NonFungibleIdTypeDoesNotMatch,
                                 ),
-                            ))
+                            ));
                         }
                         let offset = SubstateOffset::NonFungibleStore(
                             NonFungibleStoreOffset::Entry(non_fungible_id.clone()),
@@ -204,9 +204,10 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
                 MintParams::NonFungible { entries } => {
                     let ids = entries.into_keys().collect();
                     Resource::new_non_fungible(
-                        resource_address, 
-                        ids, 
-                        invocation.resource_type.id_type())
+                        resource_address,
+                        ids,
+                        invocation.resource_type.id_type(),
+                    )
                 }
                 MintParams::Fungible { amount } => Resource::new_fungible(
                     resource_address,

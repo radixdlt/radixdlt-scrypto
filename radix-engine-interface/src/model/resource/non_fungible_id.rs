@@ -8,15 +8,15 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::data::*;
-use crate::scrypto_type;
 use crate::math::Decimal;
+use crate::scrypto_type;
 use crate::Describe;
 
 /// Represents a key for a non-fungible resource
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct NonFungibleId{ 
+pub struct NonFungibleId {
     id_type: NonFungibleIdType,
-    value: Vec<u8>
+    value: Vec<u8>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Encode, Decode, Describe)]
@@ -24,55 +24,55 @@ pub enum NonFungibleIdType {
     String,
     Number,
     Bytes,
-    UUID
+    UUID,
 }
 
 impl NonFungibleId {
     /// Creates a non-fungible ID from an arbitrary byte array.
     pub fn from_bytes(v: &[u8]) -> Self {
-        Self { 
+        Self {
             value: scrypto_encode(&v).expect("Error encoding byte array"),
-            id_type: NonFungibleIdType::Bytes
+            id_type: NonFungibleIdType::Bytes,
         }
     }
 
     /// Creates a non-fungible ID from a `u32` number.
     pub fn from_u32(u: u32) -> Self {
-        Self { 
+        Self {
             value: scrypto_encode(&u).expect("Error encoding u32"),
-            id_type: NonFungibleIdType::Number
+            id_type: NonFungibleIdType::Number,
         }
     }
 
     /// Creates a non-fungible ID from a `u64` number.
     pub fn from_u64(u: u64) -> Self {
-        Self { 
+        Self {
             value: scrypto_encode(&u).expect("Error encoding u64"),
-            id_type: NonFungibleIdType::Number
+            id_type: NonFungibleIdType::Number,
         }
     }
 
     /// Creates a non-fungible ID from a Decimal number.
     pub fn from_decimal(u: Decimal) -> Self {
-        Self { 
+        Self {
             value: scrypto_encode(&u).expect("Error encoding Decimal"),
-            id_type: NonFungibleIdType::Number
+            id_type: NonFungibleIdType::Number,
         }
     }
 
     /// Creates a non-fungible ID from a String.
     pub fn from_string(s: &str) -> Self {
-        Self { 
+        Self {
             value: scrypto_encode(&s).expect("Error encoding String"),
-            id_type: NonFungibleIdType::String
+            id_type: NonFungibleIdType::String,
         }
     }
 
     /// Creates a non-fungible ID from a UUID.
     pub fn from_uuid(u: u128) -> Self {
-        Self { 
+        Self {
             value: scrypto_encode(&u).expect("Error encoding UUID"),
-            id_type: NonFungibleIdType::UUID
+            id_type: NonFungibleIdType::UUID,
         }
     }
 
@@ -89,7 +89,7 @@ impl NonFungibleId {
 
 impl Default for NonFungibleIdType {
     /// Default value of non-fungible ID type is UUID
-    fn default() -> Self { 
+    fn default() -> Self {
         NonFungibleIdType::UUID
     }
 }
@@ -167,7 +167,7 @@ fn validate_id(slice: &[u8]) -> Result<NonFungibleIdType, DecodeError> {
 
     match decoder.check_end() {
         Ok(()) => Ok(ret),
-        Err(e) => Err(e)
+        Err(e) => Err(e),
     }
 }
 
@@ -177,11 +177,11 @@ impl TryFrom<&[u8]> for NonFungibleId {
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         let id_type = match validate_id(slice) {
             Ok(v) => v,
-            Err(_) => return Err(ParseNonFungibleIdError::InvalidValue)
+            Err(_) => return Err(ParseNonFungibleIdError::InvalidValue),
         };
         Ok(Self {
             value: slice.to_vec(),
-            id_type 
+            id_type,
         })
     }
 }
@@ -197,7 +197,6 @@ scrypto_type!(
     ScryptoCustomTypeId::NonFungibleId,
     Type::NonFungibleId
 );
-
 
 //======
 // text
@@ -242,18 +241,32 @@ impl fmt::Debug for NonFungibleId {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_non_fungible_id_type() {
-        assert_eq!(NonFungibleId::from_u32(1u32).id_type(), NonFungibleIdType::Number);
-        assert_eq!(NonFungibleId::from_u64(1u64).id_type(), NonFungibleIdType::Number);
-        assert_eq!(NonFungibleId::from_string("test").id_type(), NonFungibleIdType::String);
-        assert_eq!(NonFungibleId::from_uuid(1u128).id_type(), NonFungibleIdType::UUID);
-        assert_eq!(NonFungibleId::from_bytes(&[1,2,3]).id_type(), NonFungibleIdType::Bytes);
+        assert_eq!(
+            NonFungibleId::from_u32(1u32).id_type(),
+            NonFungibleIdType::Number
+        );
+        assert_eq!(
+            NonFungibleId::from_u64(1u64).id_type(),
+            NonFungibleIdType::Number
+        );
+        assert_eq!(
+            NonFungibleId::from_string("test").id_type(),
+            NonFungibleIdType::String
+        );
+        assert_eq!(
+            NonFungibleId::from_uuid(1u128).id_type(),
+            NonFungibleIdType::UUID
+        );
+        assert_eq!(
+            NonFungibleId::from_bytes(&[1, 2, 3]).id_type(),
+            NonFungibleIdType::Bytes
+        );
     }
 
     #[test]

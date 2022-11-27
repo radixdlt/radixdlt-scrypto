@@ -24,7 +24,7 @@ pub struct FungibleResourceBuilder {
 pub struct NonFungibleResourceBuilder {
     metadata: HashMap<String, String>,
     authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
-    id_type: NonFungibleIdType
+    id_type: NonFungibleIdType,
 }
 
 impl ResourceBuilder {
@@ -145,7 +145,7 @@ impl NonFungibleResourceBuilder {
         Self {
             metadata: HashMap::new(),
             authorization: HashMap::new(),
-            id_type: NonFungibleIdType::default()
+            id_type: NonFungibleIdType::default(),
         }
     }
 
@@ -252,7 +252,7 @@ impl NonFungibleResourceBuilder {
 
         resource_system().new_resource(
             ResourceType::NonFungible {
-                id_type: self.id_type
+                id_type: self.id_type,
             },
             self.metadata.clone(),
             authorization,
