@@ -30,7 +30,7 @@ impl ResourceManagerSubstate {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        mut auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        mut access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         nf_store_id: Option<NonFungibleStoreId>,
         resource_address: ResourceAddress,
     ) -> Result<ResourceManagerSubstate, InvokeError<ResourceManagerError>> {
@@ -75,10 +75,11 @@ impl ResourceManagerSubstate {
             (Burn, (DenyAll, LOCKED)),
             (Withdraw, (AllowAll, LOCKED)),
             (Deposit, (AllowAll, LOCKED)),
+            (Recall, (DenyAll, LOCKED)),
             (UpdateMetadata, (DenyAll, LOCKED)),
             (UpdateNonFungibleData, (DenyAll, LOCKED)),
         ] {
-            let entry = auth.remove(&auth_entry_key).unwrap_or(default);
+            let entry = access_rules.remove(&auth_entry_key).unwrap_or(default);
             authorization.insert(auth_entry_key, MethodAccessRule::new(entry));
         }
 
@@ -153,6 +154,13 @@ impl ResourceManagerSubstate {
         } else {
             Ok(())
         }
+    }
+
+    pub fn get_recall_auth(&self) -> &MethodAuthorization {
+        self.authorization
+            .get(&Recall)
+            .unwrap_or_else(|| panic!("Recall Authorization not specified"))
+            .get_method_auth()
     }
 
     pub fn get_vault_auth(&self, vault_fn: VaultMethod) -> &MethodAuthorization {

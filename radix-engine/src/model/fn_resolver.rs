@@ -27,6 +27,7 @@ pub fn resolve_native_function(
     }
 }
 
+// TODO: receiver should be receiver type rather than node_id
 pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<NativeMethod> {
     let native_method = match receiver {
         RENodeId::Bucket(_) => BucketMethod::from_str(method_name)
