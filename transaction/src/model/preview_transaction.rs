@@ -22,11 +22,11 @@ pub struct PreviewIntent {
 }
 
 impl PreviewIntent {
-    pub fn hash(&self) -> Hash {
-        hash(self.to_bytes())
+    pub fn hash(&self) -> Result<Hash, EncodeError> {
+        Ok(hash(self.to_bytes()?))
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, EncodeError> {
         scrypto_encode(self)
     }
 }

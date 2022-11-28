@@ -22,6 +22,13 @@ pub enum SignatureValidationError {
     InvalidIntentSignature,
     InvalidNotarySignature,
     DuplicateSigner,
+    SerializationError(EncodeError),
+}
+
+impl From<EncodeError> for SignatureValidationError {
+    fn from(err: EncodeError) -> Self {
+        Self::SerializationError(err)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -48,12 +55,19 @@ pub enum CallDataValidationError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TransactionValidationError {
     TransactionTooLarge,
+    SerializationError(EncodeError),
     DeserializationError(DecodeError),
     IntentHashRejected,
     HeaderValidationError(HeaderValidationError),
     SignatureValidationError(SignatureValidationError),
     IdValidationError(IdValidationError),
     CallDataValidationError(CallDataValidationError),
+}
+
+impl From<EncodeError> for TransactionValidationError {
+    fn from(err: EncodeError) -> Self {
+        Self::SerializationError(err)
+    }
 }
 
 /// Represents an error when parsing arguments.

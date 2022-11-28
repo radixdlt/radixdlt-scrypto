@@ -31,7 +31,7 @@ impl WasmValidator {
         // we are using. To deal with this, we attempt to instrument the input module with
         // some mocked parameters and reject it if fails to do so.
         let mocked_wasm_metering_config =
-            WasmMeteringConfig::new(InstructionCostRules::constant(1, 100), 500);
+            WasmMeteringConfig::new(InstructionCostRules::constant(1, 100), 1024);
 
         WasmModule::init(code)?
             .enforce_no_floating_point()?

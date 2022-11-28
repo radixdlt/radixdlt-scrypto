@@ -218,7 +218,10 @@ impl ResourceManager {
     /// Mints non-fungible resources
     pub fn mint_non_fungible<T: NonFungibleData>(&mut self, id: &NonFungibleId, data: T) -> Bucket {
         let mut entries = HashMap::new();
-        entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
+        entries.insert(
+            id.clone(),
+            (data.immutable_data().unwrap(), data.mutable_data().unwrap()),
+        );
         self.mint_internal(MintParams::NonFungible { entries })
     }
 
@@ -240,6 +243,6 @@ impl ResourceManager {
         id: &NonFungibleId,
         new_data: T,
     ) {
-        self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data())
+        self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data().unwrap())
     }
 }

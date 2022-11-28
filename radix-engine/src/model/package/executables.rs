@@ -19,6 +19,7 @@ pub enum PackageError {
     InvalidWasm(PrepareError),
     BlueprintNotFound,
     MethodNotFound(String),
+    CouldNotEncodePackageAddress,
 }
 
 impl Package {
@@ -144,8 +145,13 @@ impl NativeProgram for PackagePublishWithOwnerInvocation {
 
         let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
         let package_address: PackageAddress = global_node_id.into();
+        let bytes = scrypto_encode(&package_address).map_err(|_| {
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::CouldNotEncodePackageAddress,
+            ))
+        })?;
 
-        let non_fungible_id = NonFungibleId::from_bytes(scrypto_encode(&package_address));
+        let non_fungible_id = NonFungibleId::from_bytes(bytes);
         let non_fungible_address =
             NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id.clone());
 
