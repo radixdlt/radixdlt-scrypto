@@ -1,19 +1,19 @@
-use core::fmt::Debug;
-use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId, RENodeId};
-
+use super::PackageRoyaltyConfigSubstate;
+use crate::engine::RENode;
 use crate::engine::*;
 use crate::engine::{
     CallFrameUpdate, LockFlags, NativeExecutable, NativeInvocation, NativeInvocationInfo,
     RuntimeError, SystemApi,
 };
+use crate::model::BucketSubstate;
 use crate::model::PackageRoyaltyAccumulatorSubstate;
 use crate::model::{GlobalAddressSubstate, PackageInfoSubstate, Resource};
 use crate::types::*;
 use crate::wasm::*;
+use core::fmt::Debug;
+use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId, RENodeId};
 use radix_engine_interface::api::types::{NativeMethod, SubstateOffset};
 use radix_engine_interface::model::*;
-
-use super::PackageRoyaltyConfigSubstate;
 
 pub struct Package;
 
@@ -118,6 +118,49 @@ impl NativeInvocation for PackageSetRoyaltyConfigInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::Package(PackageMethod::SetRoyaltyConfig),
+            RENodeId::Global(GlobalAddress::Package(self.receiver)),
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+impl NativeExecutable for PackageClaimRoyaltyInvocation {
+    type NativeOutput = Bucket;
+
+    fn execute<Y>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi,
+    {
+        // TODO: auth check
+        let node_id = RENodeId::Global(GlobalAddress::Package(input.receiver));
+        let offset = SubstateOffset::Package(PackageOffset::RoyaltyAccumulator);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let mut substate_mut = system_api.get_ref_mut(handle)?;
+        let resource = substate_mut
+            .package_royalty_accumulator()
+            .royalty
+            .take_all();
+        let bucket_node_id =
+            system_api.create_node(RENode::Bucket(BucketSubstate::new(resource)))?;
+        let bucket_id = bucket_node_id.into();
+
+        system_api.drop_lock(handle)?;
+
+        Ok((
+            Bucket(bucket_id),
+            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
+        ))
+    }
+}
+
+impl NativeInvocation for PackageClaimRoyaltyInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::Package(PackageMethod::ClaimRoyalty),
             RENodeId::Global(GlobalAddress::Package(self.receiver)),
             CallFrameUpdate::empty(),
         )

@@ -66,12 +66,14 @@ pub enum AccessRulesMethodInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ComponentMethodInvocation {
     SetRoyaltyConfig(ComponentSetRoyaltyConfigInvocation),
+    ClaimRoyalty(ComponentClaimRoyaltyInvocation),
 }
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum PackageMethodInvocation {
     SetRoyaltyConfig(PackageSetRoyaltyConfigInvocation),
+    ClaimRoyalty(PackageClaimRoyaltyInvocation),
 }
 
 #[derive(Debug)]

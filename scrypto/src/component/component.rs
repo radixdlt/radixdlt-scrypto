@@ -98,11 +98,6 @@ impl Component {
             .unwrap()
     }
 
-    pub fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self {
-        self.sys_set_royalty_config(royalty_config, &mut ScryptoEnv)
-            .unwrap()
-    }
-
     pub fn sys_add_access_check<Y, E: Debug + ScryptoDecode>(
         &mut self,
         access_rules: AccessRules,
@@ -117,6 +112,11 @@ impl Component {
         })?;
 
         Ok(self)
+    }
+
+    pub fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self {
+        self.sys_set_royalty_config(royalty_config, &mut ScryptoEnv)
+            .unwrap()
     }
 
     pub fn sys_set_royalty_config<Y, E: Debug + ScryptoDecode>(
@@ -189,6 +189,25 @@ impl BorrowedGlobalComponent {
         );
         let state: DataRef<ComponentInfoSubstate> = pointer.get();
         state.blueprint_name.clone()
+    }
+
+    pub fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
+        let mut env = ScryptoEnv;
+
+        env.sys_invoke(ComponentSetRoyaltyConfigInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+            royalty_config,
+        })
+        .unwrap();
+    }
+
+    pub fn claim_royalty(&self) -> Bucket {
+        let mut env = ScryptoEnv;
+
+        env.sys_invoke(ComponentClaimRoyaltyInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+        })
+        .unwrap()
     }
 }
 

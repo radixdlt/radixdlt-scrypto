@@ -50,3 +50,23 @@ impl Into<NativeFnInvocation> for PackageSetRoyaltyConfigInvocation {
         ))
     }
 }
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct PackageClaimRoyaltyInvocation {
+    pub receiver: PackageAddress,
+}
+
+impl SysInvocation for PackageClaimRoyaltyInvocation {
+    type Output = Bucket;
+}
+
+impl ScryptoNativeInvocation for PackageClaimRoyaltyInvocation {}
+
+impl Into<NativeFnInvocation> for PackageClaimRoyaltyInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Package(
+            PackageMethodInvocation::ClaimRoyalty(self),
+        ))
+    }
+}

@@ -236,9 +236,11 @@ impl FeeTable {
             },
             NativeMethod::Component(method_ident) => match method_ident {
                 ComponentMethod::SetRoyaltyConfig => self.fixed_medium,
+                ComponentMethod::ClaimRoyalty => self.fixed_medium,
             },
             NativeMethod::Package(method_ident) => match method_ident {
                 PackageMethod::SetRoyaltyConfig => self.fixed_medium,
+                PackageMethod::ClaimRoyalty => self.fixed_medium,
             },
             NativeMethod::Vault(vault_ident) => {
                 match vault_ident {

@@ -58,7 +58,9 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<AuthZoneDrainInvocation, E>
     + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
     + SysNativeInvokable<ComponentSetRoyaltyConfigInvocation, E>
+    + SysNativeInvokable<ComponentClaimRoyaltyInvocation, E>
     + SysNativeInvokable<PackageSetRoyaltyConfigInvocation, E>
+    + SysNativeInvokable<PackageClaimRoyaltyInvocation, E>
     + SysNativeInvokable<BucketTakeInvocation, E>
     + SysNativeInvokable<BucketPutInvocation, E>
     + SysNativeInvokable<BucketTakeNonFungiblesInvocation, E>

@@ -26,3 +26,24 @@ impl Into<NativeFnInvocation> for ComponentSetRoyaltyConfigInvocation {
         ))
     }
 }
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ComponentClaimRoyaltyInvocation {
+    /// Either global or local component
+    pub receiver: RENodeId,
+}
+
+impl SysInvocation for ComponentClaimRoyaltyInvocation {
+    type Output = Bucket;
+}
+
+impl ScryptoNativeInvocation for ComponentClaimRoyaltyInvocation {}
+
+impl Into<NativeFnInvocation> for ComponentClaimRoyaltyInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Component(
+            ComponentMethodInvocation::ClaimRoyalty(self),
+        ))
+    }
+}
