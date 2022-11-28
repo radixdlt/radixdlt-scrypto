@@ -8,7 +8,7 @@ use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
 use radix_engine::model::{
-    export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate,
+    export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate, MetadataSubstate,
 };
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
@@ -91,6 +91,34 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
             key_pair.1,
             NonFungibleAddress::from_public_key(&key_pair.0),
         )
+    }
+
+    pub fn get_metadata(&mut self, address: GlobalAddress) -> HashMap<String, String> {
+        let node_id = RENodeId::Global(address);
+        let global = self
+            .execution_stores
+            .get_root_store()
+            .get_substate(&SubstateId(
+                node_id,
+                SubstateOffset::Global(GlobalOffset::Global),
+            ))
+            .map(|s| s.substate.to_runtime())
+            .unwrap();
+
+        let underlying_node = global.global().node_deref();
+
+        let metadata = self
+            .execution_stores
+            .get_root_store()
+            .get_substate(&SubstateId(
+                underlying_node,
+                SubstateOffset::Metadata(MetadataOffset::Metadata),
+            ))
+            .map(|s| s.substate.to_runtime())
+            .unwrap();
+
+        let metadata: MetadataSubstate = metadata.into();
+        metadata.metadata
     }
 
     pub fn deref_component(&mut self, component_address: ComponentAddress) -> Option<RENodeId> {
@@ -230,7 +258,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .publish_package(code, abi)
+            .publish_package_no_owner(code, abi)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);

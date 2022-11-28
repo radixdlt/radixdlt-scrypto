@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::wasm_input::*;
+use radix_engine_interface::wasm::*;
 use sbor::rust::marker::PhantomData;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;

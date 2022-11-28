@@ -7,12 +7,12 @@ use sbor::*;
 use utils::copy_u8_array;
 
 use crate::abi::*;
-use crate::api::wasm_input::*;
 use crate::api::{api::*, types::*};
 use crate::data::ScryptoCustomTypeId;
 use crate::math::*;
 use crate::scrypto;
 use crate::scrypto_type;
+use crate::wasm::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -21,11 +21,13 @@ pub struct BucketTakeInvocation {
     pub amount: Decimal,
 }
 
-impl SysInvocation for BucketTakeInvocation {
+impl Invocation for BucketTakeInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for BucketTakeInvocation {}
+impl ScryptoNativeInvocation for BucketTakeInvocation {
+    type ScryptoOutput = Bucket;
+}
 
 impl Into<NativeFnInvocation> for BucketTakeInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -42,11 +44,13 @@ pub struct BucketPutInvocation {
     pub bucket: Bucket,
 }
 
-impl SysInvocation for BucketPutInvocation {
+impl Invocation for BucketPutInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for BucketPutInvocation {}
+impl ScryptoNativeInvocation for BucketPutInvocation {
+    type ScryptoOutput = ();
+}
 
 impl Into<NativeFnInvocation> for BucketPutInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -63,11 +67,13 @@ pub struct BucketTakeNonFungiblesInvocation {
     pub ids: BTreeSet<NonFungibleId>,
 }
 
-impl SysInvocation for BucketTakeNonFungiblesInvocation {
+impl Invocation for BucketTakeNonFungiblesInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for BucketTakeNonFungiblesInvocation {}
+impl ScryptoNativeInvocation for BucketTakeNonFungiblesInvocation {
+    type ScryptoOutput = Bucket;
+}
 
 impl Into<NativeFnInvocation> for BucketTakeNonFungiblesInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -83,11 +89,13 @@ pub struct BucketGetNonFungibleIdsInvocation {
     pub receiver: BucketId,
 }
 
-impl SysInvocation for BucketGetNonFungibleIdsInvocation {
+impl Invocation for BucketGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
 }
 
-impl ScryptoNativeInvocation for BucketGetNonFungibleIdsInvocation {}
+impl ScryptoNativeInvocation for BucketGetNonFungibleIdsInvocation {
+    type ScryptoOutput = BTreeSet<NonFungibleId>;
+}
 
 impl Into<NativeFnInvocation> for BucketGetNonFungibleIdsInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -103,11 +111,13 @@ pub struct BucketGetAmountInvocation {
     pub receiver: BucketId,
 }
 
-impl SysInvocation for BucketGetAmountInvocation {
+impl Invocation for BucketGetAmountInvocation {
     type Output = Decimal;
 }
 
-impl ScryptoNativeInvocation for BucketGetAmountInvocation {}
+impl ScryptoNativeInvocation for BucketGetAmountInvocation {
+    type ScryptoOutput = Decimal;
+}
 
 impl Into<NativeFnInvocation> for BucketGetAmountInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -123,11 +133,13 @@ pub struct BucketGetResourceAddressInvocation {
     pub receiver: BucketId,
 }
 
-impl SysInvocation for BucketGetResourceAddressInvocation {
+impl Invocation for BucketGetResourceAddressInvocation {
     type Output = ResourceAddress;
 }
 
-impl ScryptoNativeInvocation for BucketGetResourceAddressInvocation {}
+impl ScryptoNativeInvocation for BucketGetResourceAddressInvocation {
+    type ScryptoOutput = ResourceAddress;
+}
 
 impl Into<NativeFnInvocation> for BucketGetResourceAddressInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -143,11 +155,13 @@ pub struct BucketCreateProofInvocation {
     pub receiver: BucketId,
 }
 
-impl SysInvocation for BucketCreateProofInvocation {
+impl Invocation for BucketCreateProofInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for BucketCreateProofInvocation {}
+impl ScryptoNativeInvocation for BucketCreateProofInvocation {
+    type ScryptoOutput = Proof;
+}
 
 impl Into<NativeFnInvocation> for BucketCreateProofInvocation {
     fn into(self) -> NativeFnInvocation {

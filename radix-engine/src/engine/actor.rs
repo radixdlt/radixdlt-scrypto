@@ -122,6 +122,7 @@ pub enum ExecutionMode {
     ScryptoInterpreter,
     NodeMoveModule,
     AuthModule,
+    EntityModule,
     Application,
     DropNode,
 }

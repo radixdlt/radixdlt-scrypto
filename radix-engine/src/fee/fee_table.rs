@@ -1,7 +1,8 @@
 use radix_engine_interface::api::types::{
     AccessRulesMethod, AuthZoneMethod, BucketMethod, EpochManagerFunction, EpochManagerMethod,
-    NativeFunction, NativeMethod, PackageFunction, ProofMethod, ResourceManagerFunction,
-    ResourceManagerMethod, TransactionProcessorFunction, VaultMethod, WorktopMethod,
+    MetadataMethod, NativeFunction, NativeMethod, PackageFunction, ProofMethod,
+    ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
+    WorktopMethod,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
@@ -154,7 +155,8 @@ impl FeeTable {
                 }
             }
             NativeFunction::Package(package_fn) => match package_fn {
-                PackageFunction::Publish => self.fixed_low + input.raw.len() as u32 * 2,
+                PackageFunction::PublishNoOwner => self.fixed_low + input.raw.len() as u32 * 2,
+                PackageFunction::PublishWithOwner => self.fixed_low + input.raw.len() as u32 * 2,
             },
             NativeFunction::EpochManager(system_ident) => match system_ident {
                 EpochManagerFunction::Create => self.fixed_low,
@@ -231,7 +233,10 @@ impl FeeTable {
                 WorktopMethod::Drain => self.fixed_low,
             },
             NativeMethod::AccessRules(component_ident) => match component_ident {
-                AccessRulesMethod::AddAccessCheck => self.fixed_medium,
+                AccessRulesMethod::AddAccessCheck => self.fixed_low,
+            },
+            NativeMethod::Metadata(metadata_method) => match metadata_method {
+                MetadataMethod::Set => self.fixed_low,
             },
             NativeMethod::Vault(vault_ident) => {
                 match vault_ident {

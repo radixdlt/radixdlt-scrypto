@@ -1,4 +1,6 @@
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::api::api::{
+    EngineApi, Invocation, SysInvokableNative, SysNativeInvokable,
+};
 use radix_engine_interface::api::types::{
     AuthZoneOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle, PackageOffset,
     ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver, SubstateId,
@@ -119,6 +121,10 @@ where
 
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(ENTITY_OWNER_TOKEN)),
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
@@ -450,6 +456,9 @@ where
             self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
                 AuthModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
             })?;
+            self.execute_in_mode(ExecutionMode::EntityModule, |system_api| {
+                EntityModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
+            })?;
             self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
                 NodeMoveModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
             })?;
@@ -711,15 +720,6 @@ where
     }
 }
 
-pub trait Resolver<I: Invocation> {
-    type Exec: Executor<Output = <I as Invocation>::Output>;
-
-    fn resolve<D: MethodDeref>(
-        invocation: I,
-        deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
-}
-
 pub trait Executor {
     type Output: Debug;
 
@@ -735,14 +735,23 @@ pub trait Executor {
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>
-            + Invokable<ResourceManagerSetResourceAddressInvocation>;
+            + SysNativeInvokable<ResourceManagerSetResourceAddressInvocation, RuntimeError>;
+}
+
+pub trait ExecutableInvocation: Invocation {
+    type Exec: Executor<Output = Self::Output>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
 }
 
 impl<'g, 's, W, R, N> Invokable<N> for Kernel<'g, 's, W, R>
 where
     W: WasmEngine,
     R: FeeReserve,
-    N: NativeInvocation,
+    N: ExecutableInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         for m in &mut self.modules {
@@ -751,7 +760,7 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    info: InvocationInfo::Native(&invocation.info()),
+                    invocation: &invocation,
                     input_size: 0,  // TODO: Fix this
                     value_count: 0, // TODO: Fix this
                     depth: self.current_frame.depth,
@@ -764,7 +773,7 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (actor, call_frame_update, executor) = NativeResolver::resolve(invocation, self)?;
+        let (actor, call_frame_update, executor) = invocation.resolve(self)?;
 
         let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 
@@ -776,9 +785,7 @@ where
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::Invoke {
-                    rtn: &rtn, // TODO: Better abstraction here
-                },
+                SysCallOutput::Invoke { rtn: &rtn },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
@@ -803,7 +810,7 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    info: InvocationInfo::Scrypto(&invocation),
+                    invocation: &invocation,
                     input_size: invocation.args().raw.len() as u32,
                     value_count: invocation.args().value_count() as u32,
                     depth: self.current_frame.depth,

@@ -1,8 +1,10 @@
 use core::fmt::Debug;
+use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId};
+use radix_engine_interface::data::IndexedScryptoValue;
 
 use crate::engine::*;
-use crate::model::{GlobalAddressSubstate, PackageSubstate};
+use crate::model::{GlobalAddressSubstate, MetadataSubstate, PackageSubstate};
 use crate::types::*;
 use crate::wasm::*;
 
@@ -15,6 +17,7 @@ pub enum PackageError {
     InvalidWasm(PrepareError),
     BlueprintNotFound,
     MethodNotFound(String),
+    CouldNotEncodePackageAddress,
 }
 
 impl Package {
@@ -31,18 +34,32 @@ impl Package {
     }
 }
 
-impl NativeExecutable for PackagePublishInvocation {
-    type NativeOutput = PackageAddress;
+impl ExecutableInvocation for PackagePublishNoOwnerInvocation {
+    type Exec = NativeExecutor<Self>;
 
-    fn execute<Y>(
-        invocation: Self,
-        system_api: &mut Y,
-    ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let call_frame_update = CallFrameUpdate::empty();
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Package(
+            PackageFunction::PublishNoOwner,
+        )));
+        let executor = NativeExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProcedure for PackagePublishNoOwnerInvocation {
+    type Output = PackageAddress;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + Invokable<ScryptoInvocation>,
     {
-        let code = system_api.read_blob(&invocation.code.0)?.to_vec();
-        let blob = system_api.read_blob(&invocation.abi.0)?;
+        let code = system_api.read_blob(&self.code.0)?.to_vec();
+        let blob = system_api.read_blob(&self.abi.0)?;
         let abi = scrypto_decode::<HashMap<String, BlueprintAbi>>(blob).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidAbi(e),
@@ -54,22 +71,95 @@ impl NativeExecutable for PackagePublishInvocation {
             ))
         })?;
 
-        let node_id = system_api.create_node(RENode::Package(package))?;
+        let metadata_substate = MetadataSubstate {
+            metadata: self.metadata,
+        };
+
+        let node_id = system_api.create_node(RENode::Package(package, metadata_substate))?;
         let package_id: PackageId = node_id.into();
 
         let global_node_id =
             system_api.create_node(RENode::Global(GlobalAddressSubstate::Package(package_id)))?;
 
         let package_address: PackageAddress = global_node_id.into();
+
         Ok((package_address, CallFrameUpdate::empty()))
     }
 }
 
-impl NativeInvocation for PackagePublishInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Function(
-            NativeFunction::Package(PackageFunction::Publish),
-            CallFrameUpdate::empty(),
-        )
+impl ExecutableInvocation for PackagePublishWithOwnerInvocation {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let call_frame_update = CallFrameUpdate::empty();
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Package(
+            PackageFunction::PublishWithOwner,
+        )));
+        let executor = NativeExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProcedure for PackagePublishWithOwnerInvocation {
+    type Output = (PackageAddress, Bucket);
+
+    fn main<Y>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((PackageAddress, Bucket), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + SysInvokableNative<RuntimeError>,
+    {
+        let code = system_api.read_blob(&self.code.0)?.to_vec();
+        let blob = system_api.read_blob(&self.abi.0)?;
+        let abi = scrypto_decode::<HashMap<String, BlueprintAbi>>(blob).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidAbi(e),
+            ))
+        })?;
+        let package = Package::new(code, abi).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidWasm(e),
+            ))
+        })?;
+
+        let metadata_substate = MetadataSubstate {
+            metadata: self.metadata,
+        };
+
+        let node_id = system_api.create_node(RENode::Package(package, metadata_substate))?;
+        let package_id: PackageId = node_id.into();
+
+        let global_node_id =
+            system_api.create_node(RENode::Global(GlobalAddressSubstate::Package(package_id)))?;
+
+        let package_address: PackageAddress = global_node_id.into();
+        let bytes = scrypto_encode(&package_address).map_err(|_| {
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::CouldNotEncodePackageAddress,
+            ))
+        })?;
+
+        let non_fungible_id = NonFungibleId::from_bytes(bytes);
+
+        let mut entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)> = HashMap::new();
+        entries.insert(non_fungible_id, (vec![], vec![]));
+
+        let mint_invocation = ResourceManagerMintInvocation {
+            receiver: ENTITY_OWNER_TOKEN,
+            mint_params: MintParams::NonFungible { entries },
+        };
+
+        let bucket = system_api.sys_invoke(mint_invocation)?;
+        let bucket_node_id = RENodeId::Bucket(bucket.0);
+
+        Ok((
+            (package_address, bucket),
+            CallFrameUpdate::move_node(bucket_node_id),
+        ))
     }
 }

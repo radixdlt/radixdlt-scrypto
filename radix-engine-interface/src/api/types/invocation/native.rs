@@ -29,6 +29,7 @@ pub enum NativeFn {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NativeMethod {
     AccessRules(AccessRulesMethod),
+    Metadata(MetadataMethod),
     EpochManager(EpochManagerMethod),
     AuthZone(AuthZoneMethod),
     ResourceManager(ResourceManagerMethod),
@@ -67,6 +68,27 @@ pub enum NativeFunction {
 #[strum(serialize_all = "snake_case")]
 pub enum AccessRulesMethod {
     AddAccessCheck,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum MetadataMethod {
+    Set,
 }
 
 #[derive(
@@ -322,7 +344,8 @@ pub enum WorktopMethod {
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum PackageFunction {
-    Publish,
+    PublishNoOwner,
+    PublishWithOwner,
 }
 
 #[derive(

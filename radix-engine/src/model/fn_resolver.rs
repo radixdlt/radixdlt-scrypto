@@ -69,9 +69,11 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
                 .ok()
                 .map(NativeMethod::ResourceManager)
         }
-        RENodeId::Global(_)
-        | RENodeId::KeyValueStore(_)
-        | RENodeId::NonFungibleStore(_)
-        | RENodeId::Package(_) => None,
+        RENodeId::Package(_) | RENodeId::Global(GlobalAddress::Package(_)) => {
+            MetadataMethod::from_str(method_name)
+                .ok()
+                .map(NativeMethod::Metadata)
+        }
+        RENodeId::KeyValueStore(_) | RENodeId::NonFungibleStore(_) => None,
     }
 }

@@ -19,7 +19,7 @@ pub enum RENode {
         AccessRulesSubstate,
     ),
     Worktop(WorktopSubstate),
-    Package(PackageSubstate),
+    Package(PackageSubstate, MetadataSubstate),
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
     ResourceManager(ResourceManagerSubstate),
@@ -85,10 +85,14 @@ impl RENode {
                     RuntimeSubstate::Worktop(worktop),
                 );
             }
-            RENode::Package(package) => {
+            RENode::Package(package, metadata) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Package),
                     package.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    metadata.into(),
                 );
             }
             RENode::ResourceManager(resource_manager) => {
