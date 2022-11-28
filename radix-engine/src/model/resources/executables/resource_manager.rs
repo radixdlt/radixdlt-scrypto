@@ -113,7 +113,9 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
             if let Some(mint_params) = &invocation.mint_params {
                 if let MintParams::NonFungible { entries } = mint_params {
                     for (non_fungible_id, data) in entries {
-                        if non_fungible_id.id_type() != invocation.resource_type.id_type() {
+                        if non_fungible_id.id_type()
+                            != invocation.resource_type.non_fungible_id_type()
+                        {
                             return Err(RuntimeError::ApplicationError(
                                 ApplicationError::ResourceManagerError(
                                     ResourceManagerError::NonFungibleIdTypeDoesNotMatch,
@@ -206,7 +208,7 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
                     Resource::new_non_fungible(
                         resource_address,
                         ids,
-                        invocation.resource_type.id_type(),
+                        invocation.resource_type.non_fungible_id_type(),
                     )
                 }
                 MintParams::Fungible { amount } => Resource::new_fungible(

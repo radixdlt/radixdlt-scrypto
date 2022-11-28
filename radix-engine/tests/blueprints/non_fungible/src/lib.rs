@@ -22,7 +22,7 @@ blueprint! {
             // Create non-fungible resource with mutable supply
             let resource_address = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .set_id_type(NonFungibleIdType::Number)
+                .set_id_type(NonFungibleIdType::NumberU32)
                 .mintable(rule!(require(mint_badge.resource_address())), LOCKED)
                 .burnable(rule!(allow_all), LOCKED)
                 .updateable_non_fungible_data(rule!(require(mint_badge.resource_address())), LOCKED)
@@ -60,7 +60,7 @@ blueprint! {
         pub fn create_burnable_non_fungible() -> Bucket {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .set_id_type(NonFungibleIdType::Number)
+                .set_id_type(NonFungibleIdType::NumberU32)
                 .burnable(rule!(allow_all), LOCKED)
                 .initial_supply([
                     (
@@ -83,7 +83,7 @@ blueprint! {
         pub fn create_non_fungible_fixed() -> Bucket {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .set_id_type(NonFungibleIdType::Number)
+                .set_id_type(NonFungibleIdType::NumberU32)
                 .initial_supply([
                     (
                         NonFungibleId::from_u32(1),

@@ -20,7 +20,7 @@ impl ResourceType {
         }
     }
 
-    pub fn id_type(&self) -> NonFungibleIdType {
+    pub fn non_fungible_id_type(&self) -> NonFungibleIdType {
         match self {
             ResourceType::Fungible { .. } => panic!("Called id_type on Fungible resource."),
             ResourceType::NonFungible { id_type } => id_type.clone(),

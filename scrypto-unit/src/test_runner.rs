@@ -657,7 +657,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
                 ResourceType::NonFungible {
-                    id_type: NonFungibleIdType::Number,
+                    id_type: NonFungibleIdType::NumberU32,
                 },
                 HashMap::new(),
                 access_rules,
