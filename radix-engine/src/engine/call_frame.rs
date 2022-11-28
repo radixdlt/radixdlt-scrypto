@@ -45,6 +45,12 @@ pub enum RENodeLocation {
     Store,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RENodeVisibilityOrigin {
+    Normal,
+    DirectAccess,
+}
+
 /// A lock on a substate controlled by a call frame
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock {
@@ -54,13 +60,18 @@ pub struct SubstateLock {
     pub flags: LockFlags,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct RENodeRefData {
     location: RENodeLocation,
+    visibility: RENodeVisibilityOrigin,
 }
 
 impl RENodeRefData {
-    fn new(location: RENodeLocation) -> Self {
-        RENodeRefData { location }
+    fn new(location: RENodeLocation, visibility: RENodeVisibilityOrigin) -> Self {
+        RENodeRefData {
+            location,
+            visibility,
+        }
     }
 }
 
@@ -128,12 +139,16 @@ impl CallFrame {
         {
             for global_address in &global_references {
                 let node_id = RENodeId::Global(global_address.clone());
-                self.node_refs
-                    .insert(node_id, RENodeRefData::new(RENodeLocation::Store));
+                self.node_refs.insert(
+                    node_id,
+                    RENodeRefData::new(RENodeLocation::Store, RENodeVisibilityOrigin::Normal),
+                );
             }
             for child_id in &substate_owned_nodes {
-                self.node_refs
-                    .insert(*child_id, RENodeRefData::new(location));
+                self.node_refs.insert(
+                    *child_id,
+                    RENodeRefData::new(location, RENodeVisibilityOrigin::Normal),
+                );
             }
         }
 
@@ -288,7 +303,8 @@ impl CallFrame {
 
         for node_id in call_frame_update.node_refs_to_copy {
             let location = parent.get_node_location(node_id)?;
-            next_node_refs.insert(node_id, RENodeRefData::new(location));
+            let visibility = parent.get_node_visibility(node_id)?;
+            next_node_refs.insert(node_id, RENodeRefData::new(location, visibility));
         }
 
         let frame = Self {
@@ -321,8 +337,15 @@ impl CallFrame {
                 .node_refs
                 .get(&node_id)
                 .ok_or(CallFrameError::RENodeNotVisible(node_id))?;
+
             to.node_refs
-                .insert(node_id, RENodeRefData::new(ref_data.location.clone()));
+                .entry(node_id)
+                .and_modify(|e| {
+                    if e.visibility == RENodeVisibilityOrigin::DirectAccess {
+                        e.visibility = ref_data.visibility
+                    }
+                })
+                .or_insert(ref_data.clone());
         }
 
         Ok(())
@@ -393,7 +416,7 @@ impl CallFrame {
                 track.insert_substate(SubstateId(node_id, offset), substate);
             }
 
-            self.add_stored_ref(node_id);
+            self.add_stored_ref(node_id, RENodeVisibilityOrigin::Normal);
         } else {
             // Insert node into heap
             let heap_root_node = HeapRENode {
@@ -407,9 +430,11 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn add_stored_ref(&mut self, node_id: RENodeId) {
-        self.node_refs
-            .insert(node_id, RENodeRefData::new(RENodeLocation::Store));
+    pub fn add_stored_ref(&mut self, node_id: RENodeId, visibility: RENodeVisibilityOrigin) {
+        self.node_refs.insert(
+            node_id,
+            RENodeRefData::new(RENodeLocation::Store, visibility),
+        );
     }
 
     pub fn owned_nodes(&self) -> Vec<RENodeId> {
@@ -504,6 +529,21 @@ impl CallFrame {
         };
 
         Ok(ref_mut)
+    }
+
+    pub fn get_node_visibility(
+        &self,
+        node_id: RENodeId,
+    ) -> Result<RENodeVisibilityOrigin, CallFrameError> {
+        let visibility = if self.owned_root_nodes.contains_key(&node_id) {
+            RENodeVisibilityOrigin::Normal
+        } else if let Some(ref_data) = self.node_refs.get(&node_id) {
+            ref_data.visibility
+        } else {
+            return Err(CallFrameError::RENodeNotVisible(node_id));
+        };
+
+        Ok(visibility)
     }
 
     pub fn get_node_location(&self, node_id: RENodeId) -> Result<RENodeLocation, CallFrameError> {

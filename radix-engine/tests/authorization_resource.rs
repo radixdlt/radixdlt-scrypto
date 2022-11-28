@@ -2,17 +2,20 @@ extern crate core;
 
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::model::Instruction;
 
 enum Action {
     Mint,
     Burn,
     Withdraw,
     Deposit,
+    Recall,
 }
 
 fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, expect_err: bool) {
@@ -20,7 +23,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let (token_address, mint_auth, burn_auth, withdraw_auth, admin_auth) =
+    let (token_address, mint_auth, burn_auth, withdraw_auth, recall_auth, admin_auth) =
         test_runner.create_restricted_token(account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
@@ -30,6 +33,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             Action::Burn => "set_burnable",
             Action::Withdraw => "set_withdrawable",
             Action::Deposit => "set_depositable",
+            Action::Recall => "set_recallable",
         };
         test_runner.update_resource_auth(
             function,
@@ -49,6 +53,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             Action::Burn => burn_auth,
             Action::Withdraw => withdraw_auth,
             Action::Deposit => mint_auth, // Any bad auth
+            Action::Recall => recall_auth,
         }
     };
 
@@ -92,6 +97,29 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 "deposit_batch",
                 args!(Expression::entire_worktop()),
             ),
+        Action::Recall => {
+            let vaults = test_runner.get_component_vaults(account, token_address);
+            let vault_id = vaults[0];
+
+            builder
+                .add_instruction(Instruction::CallNativeMethod {
+                    method_ident: NativeMethodIdent {
+                        receiver: RENodeId::Vault(vault_id),
+                        method_name: "take".to_string(),
+                    },
+                    args: scrypto_encode(&VaultTakeInvocation {
+                        receiver: vault_id,
+                        amount: Decimal::from("1.0"),
+                    })
+                    .unwrap(),
+                })
+                .0
+                .call_method(
+                    account,
+                    "deposit_batch",
+                    args!(Expression::entire_worktop()),
+                )
+        }
     };
 
     let manifest = builder.build();
@@ -142,6 +170,18 @@ fn can_withdraw_with_auth() {
 fn cannot_withdraw_with_wrong_auth() {
     test_resource_auth(Action::Withdraw, false, true, true);
     test_resource_auth(Action::Withdraw, true, false, true);
+}
+
+#[test]
+fn can_recall_with_auth() {
+    test_resource_auth(Action::Recall, false, false, false);
+    test_resource_auth(Action::Recall, true, true, false);
+}
+
+#[test]
+fn cannot_recall_with_wrong_auth() {
+    test_resource_auth(Action::Recall, false, true, true);
+    test_resource_auth(Action::Recall, true, false, true);
 }
 
 #[test]
