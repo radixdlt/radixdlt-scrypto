@@ -8,7 +8,7 @@ use crate::scrypto;
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentSetRoyaltyConfigInvocation {
-    /// Either global or local component
+    /// TODO: change to component id, after `borrow_component` returns component id
     pub receiver: RENodeId,
     pub royalty_config: RoyaltyConfig,
 }
@@ -30,7 +30,7 @@ impl Into<NativeFnInvocation> for ComponentSetRoyaltyConfigInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentClaimRoyaltyInvocation {
-    /// Either global or local component
+    /// TODO: change to component id, after `borrow_component` returns component id
     pub receiver: RENodeId,
 }
 
