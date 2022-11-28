@@ -11,7 +11,6 @@ radix-engine = { path = "../radix-engine" }
 radix-engine-stores = { path = "../radix-engine-stores", features = ["rocksdb"] }
 radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
-scrypto = { path = "../scrypto", features = ["serde"] }
 sbor = { path = "../sbor" }
 transaction = { path = "../transaction" }
 utils = { path = "../utils", default-features = false }
