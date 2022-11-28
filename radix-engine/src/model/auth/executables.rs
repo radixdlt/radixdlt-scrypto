@@ -1,7 +1,7 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
-    NativeExecutor, NativeProgram, REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError,
-    SystemApi,
+    NativeExecutor, NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver,
+    RuntimeError, SystemApi,
 };
 use crate::model::{InvokeError, ProofError};
 use crate::types::*;
@@ -48,7 +48,7 @@ impl ExecutableInvocation for AuthZonePopInvocation {
     }
 }
 
-impl NativeProgram for AuthZonePopInvocation {
+impl NativeProcedure for AuthZonePopInvocation {
     type Output = Proof;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
@@ -106,7 +106,7 @@ impl ExecutableInvocation for AuthZonePushInvocation {
     }
 }
 
-impl NativeProgram for AuthZonePushInvocation {
+impl NativeProcedure for AuthZonePushInvocation {
     type Output = ();
 
     fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -165,7 +165,7 @@ impl ExecutableInvocation for AuthZoneCreateProofInvocation {
     }
 }
 
-impl NativeProgram for AuthZoneCreateProofInvocation {
+impl NativeProcedure for AuthZoneCreateProofInvocation {
     type Output = Proof;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
@@ -237,7 +237,7 @@ impl ExecutableInvocation for AuthZoneCreateProofByAmountInvocation {
     }
 }
 
-impl NativeProgram for AuthZoneCreateProofByAmountInvocation {
+impl NativeProcedure for AuthZoneCreateProofByAmountInvocation {
     type Output = Proof;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
@@ -310,7 +310,7 @@ impl ExecutableInvocation for AuthZoneCreateProofByIdsInvocation {
     }
 }
 
-impl NativeProgram for AuthZoneCreateProofByIdsInvocation {
+impl NativeProcedure for AuthZoneCreateProofByIdsInvocation {
     type Output = Proof;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
@@ -378,7 +378,7 @@ impl ExecutableInvocation for AuthZoneClearInvocation {
     }
 }
 
-impl NativeProgram for AuthZoneClearInvocation {
+impl NativeProcedure for AuthZoneClearInvocation {
     type Output = ();
 
     fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -419,7 +419,7 @@ impl ExecutableInvocation for AuthZoneDrainInvocation {
     }
 }
 
-impl NativeProgram for AuthZoneDrainInvocation {
+impl NativeProcedure for AuthZoneDrainInvocation {
     type Output = Vec<Proof>;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Vec<Proof>, CallFrameUpdate), RuntimeError>

@@ -1,7 +1,7 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
-    NativeExecutor, NativeProgram, REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError,
-    SystemApi,
+    NativeExecutor, NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver,
+    RuntimeError, SystemApi,
 };
 use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
@@ -47,7 +47,7 @@ impl ExecutableInvocation for ProofGetAmountInvocation {
     }
 }
 
-impl NativeProgram for ProofGetAmountInvocation {
+impl NativeProcedure for ProofGetAmountInvocation {
     type Output = Decimal;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
@@ -83,7 +83,7 @@ impl ExecutableInvocation for ProofGetNonFungibleIdsInvocation {
     }
 }
 
-impl NativeProgram for ProofGetNonFungibleIdsInvocation {
+impl NativeProcedure for ProofGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
 
     fn main<Y>(
@@ -128,7 +128,7 @@ impl ExecutableInvocation for ProofGetResourceAddressInvocation {
     }
 }
 
-impl NativeProgram for ProofGetResourceAddressInvocation {
+impl NativeProcedure for ProofGetResourceAddressInvocation {
     type Output = ResourceAddress;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
@@ -169,7 +169,7 @@ impl ExecutableInvocation for ProofCloneInvocation {
     }
 }
 
-impl NativeProgram for ProofCloneInvocation {
+impl NativeProcedure for ProofCloneInvocation {
     type Output = Proof;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>

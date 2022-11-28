@@ -1,7 +1,7 @@
 use crate::engine::{
     deref_and_update, AuthModule, CallFrameUpdate, ExecutableInvocation, Invokable, LockFlags,
-    MethodDeref, NativeExecutor, NativeProgram, REActor, RENode, ResolvedFunction, ResolvedMethod,
-    RuntimeError, SystemApi,
+    MethodDeref, NativeExecutor, NativeProcedure, REActor, RENode, ResolvedFunction,
+    ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{
     EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
@@ -47,7 +47,7 @@ impl ExecutableInvocation for EpochManagerCreateInvocation {
     }
 }
 
-impl NativeProgram for EpochManagerCreateInvocation {
+impl NativeProcedure for EpochManagerCreateInvocation {
     type Output = SystemAddress;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
@@ -106,7 +106,7 @@ impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
     }
 }
 
-impl NativeProgram for EpochManagerGetCurrentEpochExecutable {
+impl NativeProcedure for EpochManagerGetCurrentEpochExecutable {
     type Output = u64;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(u64, CallFrameUpdate), RuntimeError>
@@ -151,7 +151,7 @@ impl ExecutableInvocation for EpochManagerSetEpochInvocation {
     }
 }
 
-impl NativeProgram for EpochManagerSetEpochExecutable {
+impl NativeProcedure for EpochManagerSetEpochExecutable {
     type Output = ();
 
     fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>

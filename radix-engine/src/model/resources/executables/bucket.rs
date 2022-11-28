@@ -1,7 +1,7 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
-    NativeExecutor, NativeProgram, REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError,
-    SystemApi,
+    NativeExecutor, NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver,
+    RuntimeError, SystemApi,
 };
 use crate::model::{BucketSubstate, ProofError, ResourceOperationError};
 use crate::types::*;
@@ -43,7 +43,7 @@ impl ExecutableInvocation for BucketTakeInvocation {
     }
 }
 
-impl NativeProgram for BucketTakeInvocation {
+impl NativeProcedure for BucketTakeInvocation {
     type Output = Bucket;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
@@ -90,7 +90,7 @@ impl ExecutableInvocation for BucketCreateProofInvocation {
     }
 }
 
-impl NativeProgram for BucketCreateProofInvocation {
+impl NativeProcedure for BucketCreateProofInvocation {
     type Output = Proof;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
@@ -136,7 +136,7 @@ impl ExecutableInvocation for BucketTakeNonFungiblesInvocation {
     }
 }
 
-impl NativeProgram for BucketTakeNonFungiblesInvocation {
+impl NativeProcedure for BucketTakeNonFungiblesInvocation {
     type Output = Bucket;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
@@ -183,7 +183,7 @@ impl ExecutableInvocation for BucketGetNonFungibleIdsInvocation {
     }
 }
 
-impl NativeProgram for BucketGetNonFungibleIdsInvocation {
+impl NativeProcedure for BucketGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
 
     fn main<Y>(
@@ -227,7 +227,7 @@ impl ExecutableInvocation for BucketGetAmountInvocation {
     }
 }
 
-impl NativeProgram for BucketGetAmountInvocation {
+impl NativeProcedure for BucketGetAmountInvocation {
     type Output = Decimal;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
@@ -266,7 +266,7 @@ impl ExecutableInvocation for BucketPutInvocation {
     }
 }
 
-impl NativeProgram for BucketPutInvocation {
+impl NativeProcedure for BucketPutInvocation {
     type Output = ();
 
     fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -311,7 +311,7 @@ impl ExecutableInvocation for BucketGetResourceAddressInvocation {
     }
 }
 
-impl NativeProgram for BucketGetResourceAddressInvocation {
+impl NativeProcedure for BucketGetResourceAddressInvocation {
     type Output = ResourceAddress;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
