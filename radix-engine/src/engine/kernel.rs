@@ -9,7 +9,6 @@ use radix_engine_interface::data::*;
 
 use sbor::rust::fmt::Debug;
 use sbor::rust::mem;
-use scrypto::access_rule_node;
 use scrypto::rule;
 use transaction::errors::IdAllocationError;
 use transaction::model::AuthZoneParams;

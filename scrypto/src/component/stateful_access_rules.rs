@@ -2,7 +2,7 @@ use radix_engine_derive::scrypto;
 use radix_engine_interface::api::types::{ComponentId, GlobalAddress, RENodeId};
 use radix_engine_interface::model::{AccessRule, AccessRules, ComponentAddress};
 
-// TODO: Should `Decode` be removed so that `StatefulAccessRules` can not be passed between 
+// TODO: Should `Decode` be removed so that `StatefulAccessRules` can not be passed between
 // components?
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode, Describe)]

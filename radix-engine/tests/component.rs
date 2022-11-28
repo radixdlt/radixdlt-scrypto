@@ -2,13 +2,16 @@ use radix_engine::engine::{
     InterpreterError, KernelError, LockState, RuntimeError, ScryptoFnResolvingError, TrackError,
 };
 use radix_engine::ledger::TypedInMemorySubstateStore;
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::{RENodeId, ScryptoFunctionIdent};
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
+use scrypto::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::model::TransactionManifest;
 
 #[test]
 fn test_component() {
@@ -219,4 +222,91 @@ fn missing_component_address_in_manifest_should_cause_rejection() {
 
     // Assert
     receipt.expect_rejection();
+}
+
+#[test]
+fn component_access_rules_should_be_readable_from_scrypto_methods_and_functions() {
+    // Arrange
+    let access_rules = vec![
+        AccessRules::new()
+            .method("deposit_funds", rule!(require(RADIX_TOKEN)), LOCKED)
+            .default(rule!(allow_all), LOCKED),
+        AccessRules::new()
+            .method("deposit_funds", rule!(require(RADIX_TOKEN)), LOCKED)
+            .default(rule!(allow_all), LOCKED),
+    ];
+    for call in [Call::Method, Call::Function] {
+        let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+
+        // Act
+        let read_access_rules = test_runner.access_rules(call);
+
+        // Assert
+        assert_eq!(access_rules, read_access_rules)
+    }
+}
+
+struct MutableAccessRulesTestRunner {
+    substate_store: TypedInMemorySubstateStore,
+    package_address: PackageAddress,
+    component_address: ComponentAddress,
+}
+
+impl MutableAccessRulesTestRunner {
+    const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
+
+    pub fn new(access_rules: Vec<AccessRules>) -> Self {
+        let mut store = TypedInMemorySubstateStore::with_bootstrap();
+        let mut test_runner = TestRunner::new(true, &mut store);
+        let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
+
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .call_function(
+                package_address,
+                Self::BLUEPRINT_NAME,
+                "new",
+                args!(access_rules),
+            )
+            .build();
+        let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+        let component_address = receipt.new_component_addresses()[0];
+
+        Self {
+            substate_store: store,
+            package_address,
+            component_address,
+        }
+    }
+
+    pub fn access_rules(&mut self, call: Call) -> Vec<AccessRules> {
+        let manifest = match call {
+            Call::Method => Self::manifest_builder()
+                .call_method(self.component_address, "access_rules_method", args!())
+                .build(),
+            Call::Function => Self::manifest_builder()
+                .call_function(
+                    self.package_address,
+                    Self::BLUEPRINT_NAME,
+                    "access_rules_function",
+                    args!(self.component_address),
+                )
+                .build(),
+        };
+
+        self.execute_manifest(manifest).output(1)
+    }
+
+    fn manifest_builder() -> ManifestBuilder {
+        ManifestBuilder::new(&NetworkDefinition::simulator())
+    }
+
+    fn execute_manifest(&mut self, manifest: TransactionManifest) -> TransactionReceipt {
+        let mut test_runner = TestRunner::new(true, &mut self.substate_store);
+        test_runner.execute_manifest_ignoring_fee(manifest, vec![])
+    }
+}
+
+enum Call {
+    Method,
+    Function,
 }

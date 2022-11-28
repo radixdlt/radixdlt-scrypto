@@ -1,7 +1,7 @@
 use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
 use radix_engine_interface::api::types::{
-    ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoRENode,
-    ScryptoReceiver, SubstateOffset,
+    AccessRulesOffset, ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent,
+    ScryptoRENode, ScryptoReceiver, SubstateOffset,
 };
 use radix_engine_interface::data::{
     scrypto_decode, ScryptoCustomTypeId, ScryptoDecode, ScryptoEncode,
@@ -19,6 +19,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::copy_u8_array;
 
+use super::StatefulAccessRules;
 use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
@@ -56,6 +57,13 @@ pub struct ComponentStateSubstate {
     pub raw: Vec<u8>,
 }
 
+// TODO: de-duplication
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct AccessRulesSubstate {
+    pub access_rules: Vec<AccessRules>,
+}
+
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
@@ -90,6 +98,22 @@ impl Component {
         );
         let state: DataRef<ComponentInfoSubstate> = pointer.get();
         state.blueprint_name.clone()
+    }
+
+    /// Returns the layers of access rules on this component.
+    pub fn access_rules(&self) -> Vec<StatefulAccessRules> {
+        let pointer = DataPointer::new(
+            RENodeId::Component(self.0),
+            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+        );
+        let state: DataRef<AccessRulesSubstate> = pointer.get();
+        state
+            .access_rules
+            .clone()
+            .into_iter()
+            .enumerate()
+            .map(|(id, rule)| StatefulAccessRules::new(self.0, rule, id))
+            .collect()
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
@@ -167,6 +191,22 @@ impl BorrowedGlobalComponent {
         );
         let state: DataRef<ComponentInfoSubstate> = pointer.get();
         state.blueprint_name.clone()
+    }
+
+    /// Returns the layers of access rules on this component.
+    pub fn access_rules(&self) -> Vec<StatefulAccessRules> {
+        let pointer = DataPointer::new(
+            RENodeId::Global(GlobalAddress::Component(self.0)),
+            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+        );
+        let state: DataRef<AccessRulesSubstate> = pointer.get();
+        state
+            .access_rules
+            .clone()
+            .into_iter()
+            .enumerate()
+            .map(|(id, rule)| StatefulAccessRules::new(self.0, rule, id))
+            .collect()
     }
 }
 

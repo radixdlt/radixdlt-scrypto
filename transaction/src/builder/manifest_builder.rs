@@ -20,7 +20,6 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::abi::*;
-use scrypto::access_rule_node;
 use scrypto::rule;
 use scrypto::*;
 
