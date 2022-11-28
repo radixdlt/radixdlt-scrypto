@@ -144,12 +144,14 @@ pub enum ComponentOffset {
     Info,
     State,
     RoyaltyConfig,
+    RoyaltyAccumulator,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PackageOffset {
     Package,
     RoyaltyConfig,
+    RoyaltyAccumulator,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]

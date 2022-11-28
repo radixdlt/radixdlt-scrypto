@@ -6,7 +6,8 @@ use crate::engine::{
     CallFrameUpdate, LockFlags, NativeExecutable, NativeInvocation, NativeInvocationInfo,
     RuntimeError, SystemApi,
 };
-use crate::model::{GlobalAddressSubstate, PackageSubstate};
+use crate::model::PackageRoyaltyAccumulatorSubstate;
+use crate::model::{GlobalAddressSubstate, PackageSubstate, Resource};
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::types::{NativeMethod, SubstateOffset};
@@ -64,8 +65,15 @@ impl NativeExecutable for PackagePublishInvocation {
         let package_royalty_config = PackageRoyaltyConfigSubstate {
             royalty_config: HashMap::new(), // TODO: add user interface
         };
+        let package_royalty_accumulator = PackageRoyaltyAccumulatorSubstate {
+            royalty: Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }),
+        };
 
-        let node_id = system_api.create_node(RENode::Package(package, package_royalty_config))?;
+        let node_id = system_api.create_node(RENode::Package(
+            package,
+            package_royalty_config,
+            package_royalty_accumulator,
+        ))?;
         let package_id: PackageId = node_id.into();
 
         let global_node_id =

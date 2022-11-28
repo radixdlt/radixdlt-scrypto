@@ -19,9 +19,14 @@ pub enum RENode {
         ComponentStateSubstate,
         AccessRulesSubstate,
         ComponentRoyaltyConfigSubstate,
+        ComponentRoyaltyAccumulatorSubstate,
     ),
     Worktop(WorktopSubstate),
-    Package(PackageSubstate, PackageRoyaltyConfigSubstate),
+    Package(
+        PackageSubstate,
+        PackageRoyaltyConfigSubstate,
+        PackageRoyaltyAccumulatorSubstate,
+    ),
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
     ResourceManager(ResourceManagerSubstate),
@@ -67,7 +72,7 @@ impl RENode {
                     );
                 }
             }
-            RENode::Component(info, state, access_rules, royalty_config) => {
+            RENode::Component(info, state, access_rules, royalty_config, royalty_accumulator) => {
                 substates.insert(
                     SubstateOffset::Component(ComponentOffset::Info),
                     info.into(),
@@ -84,6 +89,10 @@ impl RENode {
                     SubstateOffset::Component(ComponentOffset::RoyaltyConfig),
                     royalty_config.into(),
                 );
+                substates.insert(
+                    SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+                    royalty_accumulator.into(),
+                );
             }
             RENode::Worktop(worktop) => {
                 substates.insert(
@@ -91,7 +100,7 @@ impl RENode {
                     RuntimeSubstate::Worktop(worktop),
                 );
             }
-            RENode::Package(package, package_royalty_config) => {
+            RENode::Package(package, package_royalty_config, package_royalty_accumulator) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Package),
                     package.into(),
@@ -99,6 +108,10 @@ impl RENode {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::RoyaltyConfig),
                     package_royalty_config.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+                    package_royalty_accumulator.into(),
                 );
             }
             RENode::ResourceManager(resource_manager) => {

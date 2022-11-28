@@ -3,9 +3,11 @@ use crate::engine::{
     ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
+use crate::model::Resource;
 use crate::model::{
-    AccessRulesSubstate, ComponentInfoSubstate, ComponentRoyaltyConfigSubstate,
-    ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore, RuntimeSubstate,
+    AccessRulesSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
+    ComponentRoyaltyConfigSubstate, ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore,
+    RuntimeSubstate,
 };
 use crate::types::ScryptoInvocation;
 use crate::wasm::WasmEngine;
@@ -16,9 +18,10 @@ use radix_engine_interface::api::types::{
     Level, LockHandle, RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoRENode, SubstateOffset,
 };
+use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
-use radix_engine_interface::model::RoyaltyConfig;
+use radix_engine_interface::model::{ResourceType, RoyaltyConfig};
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
@@ -84,6 +87,12 @@ where
                     },
                     ComponentRoyaltyConfigSubstate {
                         royalty_config: RoyaltyConfig::default(), // TODO: add user interface
+                    },
+                    ComponentRoyaltyAccumulatorSubstate {
+                        royalty: Resource::new_empty(
+                            RADIX_TOKEN,
+                            ResourceType::Fungible { divisibility: 18 },
+                        ),
                     },
                 )
             }
