@@ -15,13 +15,22 @@ pub enum AccessRuleKey {
     Native(NativeFn),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+pub enum AccessRuleEntry {
+    AccessRule(AccessRule),
+    Group(String),
+}
+
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 pub struct AccessRules {
-    method_auth: HashMap<AccessRuleKey, AccessRule>,
+    method_auth: HashMap<AccessRuleKey, AccessRuleEntry>,
+    grouped_auth: HashMap<String, AccessRule>,
     default_auth: AccessRule,
     method_auth_mutability: HashMap<AccessRuleKey, AccessRule>,
+    grouped_auth_mutability: HashMap<String, AccessRule>,
     default_auth_mutability: AccessRule,
 }
 
@@ -29,8 +38,10 @@ impl AccessRules {
     pub fn new() -> Self {
         Self {
             method_auth: HashMap::new(),
+            grouped_auth: HashMap::new(),
             default_auth: AccessRule::DenyAll,
             method_auth_mutability: HashMap::new(),
+            grouped_auth_mutability: HashMap::new(),
             default_auth_mutability: AccessRule::DenyAll,
         }
     }
@@ -46,7 +57,13 @@ impl AccessRules {
     }
 
     pub fn get(&self, key: &AccessRuleKey) -> &AccessRule {
-        self.method_auth.get(key).unwrap_or(&self.default_auth)
+        match self.method_auth.get(key) {
+            None => &self.default_auth,
+            Some(AccessRuleEntry::AccessRule(access_rule)) => access_rule,
+            Some(AccessRuleEntry::Group(group)) => {
+                self.grouped_auth.get(group).unwrap_or(&self.default_auth)
+            }
+        }
     }
 
     pub fn get_default(&self) -> &AccessRule {
@@ -57,13 +74,13 @@ impl AccessRules {
     pub fn method(mut self, method_name: &str, method_auth: AccessRule) -> Self {
         self.method_auth.insert(
             AccessRuleKey::ScryptoMethod(method_name.to_string()),
-            method_auth,
+            AccessRuleEntry::AccessRule(method_auth),
         );
         self
     }
 
-    pub fn set_access_rule(&mut self, key: AccessRuleKey, method_auth: AccessRule) {
-        self.method_auth.insert(key, method_auth);
+    pub fn set_access_rule(&mut self, key: AccessRuleKey, access_rule: AccessRule) {
+        self.method_auth.insert(key, AccessRuleEntry::AccessRule(access_rule));
     }
 
     pub fn default(mut self, method_auth: AccessRule) -> Self {
@@ -71,7 +88,7 @@ impl AccessRules {
         self
     }
 
-    pub fn iter(&self) -> Iter<'_, AccessRuleKey, AccessRule> {
+    pub fn iter(&self) -> Iter<'_, AccessRuleKey, AccessRuleEntry> {
         let l = self.method_auth.iter();
         l
     }
