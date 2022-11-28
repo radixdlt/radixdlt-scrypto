@@ -24,7 +24,7 @@ impl AccessRulesSubstate {
         let mut authorizations = Vec::new();
         for auth in &self.access_rules {
             let method_auth = auth.get(method_name);
-            let authorization = convert(schema, &data, method_auth);
+            let authorization = convert(schema, &data, &method_auth.0);
             authorizations.push(authorization);
         }
 

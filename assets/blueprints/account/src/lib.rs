@@ -13,10 +13,10 @@ blueprint! {
             .instantiate();
 
             let access_rules = AccessRules::new()
-                .method("balance", rule!(allow_all))
-                .method("deposit", rule!(allow_all))
-                .method("deposit_batch", rule!(allow_all))
-                .default(withdraw_rule);
+                .method("balance", rule!(allow_all), LOCKED)
+                .method("deposit", rule!(allow_all), LOCKED)
+                .method("deposit_batch", rule!(allow_all), LOCKED)
+                .default(withdraw_rule, LOCKED);
             account.add_access_check(access_rules);
 
             account
@@ -34,10 +34,10 @@ blueprint! {
             }
 
             let access_rules = AccessRules::new()
-                .method("balance", rule!(allow_all))
-                .method("deposit", rule!(allow_all))
-                .method("deposit_batch", rule!(allow_all))
-                .default(withdraw_rule);
+                .method("balance", rule!(allow_all), LOCKED)
+                .method("deposit", rule!(allow_all), LOCKED)
+                .method("deposit_batch", rule!(allow_all), LOCKED)
+                .default(withdraw_rule, LOCKED);
             account.add_access_check(access_rules);
 
             account.globalize()
