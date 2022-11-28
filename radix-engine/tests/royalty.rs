@@ -1,5 +1,6 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
@@ -64,7 +65,12 @@ fn set_up_package_and_component() -> (
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 10u32.into())
-            .call_function(package_address, "RoyaltyTest", "enable_royalty", args!())
+            .call_function(
+                package_address,
+                "RoyaltyTest",
+                "enable_package_royalty",
+                args!(),
+            )
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
@@ -156,6 +162,79 @@ fn test_royalty_accumulation_when_failure() {
     );
 
     receipt.expect_commit_failure();
+    assert_eq!(
+        test_runner.inspect_package_royalty(package_address),
+        Some(dec!("0"))
+    );
+    assert_eq!(
+        test_runner.inspect_component_royalty(component_address),
+        Some(dec!("0"))
+    );
+}
+
+#[test]
+fn test_claim_royalty() {
+    let (mut store, account, public_key, package_address, component_address) =
+        set_up_package_and_component();
+    let mut test_runner = TestRunner::new(true, &mut store);
+
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(account, 100.into())
+            .call_method(component_address, "paid_method", args!())
+            .build(),
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
+    receipt.expect_commit_success();
+    assert_eq!(
+        test_runner.inspect_package_royalty(package_address),
+        Some(dec!("0.2"))
+    );
+    assert_eq!(
+        test_runner.inspect_component_royalty(component_address),
+        Some(dec!("0.1"))
+    );
+
+    // Claim package royalty
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(account, 100.into())
+            .call_native_method(
+                RENodeId::Global(GlobalAddress::Package(package_address)),
+                "claim_royalty",
+                args!(),
+            )
+            .call_method(
+                account,
+                "deposit",
+                args!(Expression("ENTIRE_WORKTOP".to_owned())),
+            )
+            .build(),
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
+
+    // Claim component royalty
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(account, 100.into())
+            .call_native_method(
+                RENodeId::Global(GlobalAddress::Component(component_address)),
+                "claim_royalty",
+                args!(),
+            )
+            .call_method(
+                account,
+                "deposit",
+                args!(Expression("ENTIRE_WORKTOP".to_owned())),
+            )
+            .build(),
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
+
+    // assert nothing left
     assert_eq!(
         test_runner.inspect_package_royalty(package_address),
         Some(dec!("0"))

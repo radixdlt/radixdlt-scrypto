@@ -29,6 +29,34 @@ pub fn resolve_native_function(
 
 pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<NativeMethod> {
     match receiver {
+        RENodeId::Package(_) | RENodeId::Global(GlobalAddress::Package(_)) => {
+            PackageMethod::from_str(method_name)
+                .ok()
+                .map(NativeMethod::Package)
+        }
+        RENodeId::Component(_) | RENodeId::Global(GlobalAddress::Component(_)) => {
+            // TODO: ugly temp workaround
+            if method_name == "add_access_check" {
+                AccessRulesMethod::from_str(method_name)
+                    .ok()
+                    .map(NativeMethod::AccessRules)
+            } else {
+                ComponentMethod::from_str(method_name)
+                    .ok()
+                    .map(NativeMethod::Component)
+            }
+        }
+        RENodeId::ResourceManager(_) | RENodeId::Global(GlobalAddress::Resource(_)) => {
+            ResourceManagerMethod::from_str(method_name)
+                .ok()
+                .map(NativeMethod::ResourceManager)
+        }
+        RENodeId::EpochManager(_) | RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)) => {
+            EpochManagerMethod::from_str(method_name)
+                .ok()
+                .map(NativeMethod::EpochManager)
+        }
+
         RENodeId::Bucket(_) => BucketMethod::from_str(method_name)
             .ok()
             .map(NativeMethod::Bucket),
@@ -45,33 +73,13 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
             .ok()
             .map(NativeMethod::Worktop),
 
-        RENodeId::Component(_) | RENodeId::Global(GlobalAddress::Component(_)) => {
-            AccessRulesMethod::from_str(method_name)
-                .ok()
-                .map(NativeMethod::AccessRules)
-        }
-        RENodeId::EpochManager(_) => EpochManagerMethod::from_str(method_name)
-            .ok()
-            .map(NativeMethod::EpochManager),
-        RENodeId::Global(GlobalAddress::System(system_address)) => match system_address {
-            EPOCH_MANAGER => EpochManagerMethod::from_str(method_name)
-                .ok()
-                .map(NativeMethod::EpochManager),
-            _ => None,
-        },
         RENodeId::Vault(_) => VaultMethod::from_str(method_name)
             .ok()
             .map(NativeMethod::Vault),
 
-        RENodeId::ResourceManager(_) | RENodeId::Global(GlobalAddress::Resource(_)) => {
-            ResourceManagerMethod::from_str(method_name)
-                .ok()
-                .map(NativeMethod::ResourceManager)
-        }
         RENodeId::Global(_)
         | RENodeId::KeyValueStore(_)
         | RENodeId::NonFungibleStore(_)
-        | RENodeId::Package(_)
         | RENodeId::FeeReserve(_) => None,
     }
 }
