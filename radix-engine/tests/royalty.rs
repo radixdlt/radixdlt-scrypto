@@ -1,6 +1,5 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
@@ -200,15 +199,16 @@ fn test_claim_royalty() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
-            .call_native_method(
-                RENodeId::Global(GlobalAddress::Package(package_address)),
-                "claim_royalty",
+            .call_function(
+                package_address,
+                "RoyaltyTest",
+                "claim_package_royalty",
                 args!(),
             )
             .call_method(
                 account,
-                "deposit",
-                args!(Expression("ENTIRE_WORKTOP".to_owned())),
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
             )
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
@@ -219,15 +219,16 @@ fn test_claim_royalty() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
-            .call_native_method(
-                RENodeId::Global(GlobalAddress::Component(component_address)),
-                "claim_royalty",
-                args!(),
+            .call_function(
+                package_address,
+                "RoyaltyTest",
+                "claim_component_royalty",
+                args!(component_address),
             )
             .call_method(
                 account,
-                "deposit",
-                args!(Expression("ENTIRE_WORKTOP".to_owned())),
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
             )
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
