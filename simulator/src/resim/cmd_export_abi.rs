@@ -1,6 +1,6 @@
 use clap::Parser;
 use radix_engine::types::*;
-use scrypto::abi;
+use radix_engine_interface::abi;
 
 use crate::resim::*;
 
