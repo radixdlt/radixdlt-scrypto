@@ -37,6 +37,15 @@ pub enum Mutability {
     MUTABLE(AccessRule),
 }
 
+impl Into<AccessRule> for Mutability {
+    fn into(self) -> AccessRule {
+        match self {
+            LOCKED => AccessRule::DenyAll,
+            MUTABLE(rule) => rule,
+        }
+    }
+}
+
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateInvocation {

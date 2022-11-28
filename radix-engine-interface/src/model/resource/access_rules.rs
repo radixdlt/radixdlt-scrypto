@@ -83,6 +83,11 @@ impl AccessRules {
         self.method_auth.insert(key, AccessRuleEntry::AccessRule(access_rule));
     }
 
+    pub fn set_access_rule_and_mutability(&mut self, key: AccessRuleKey, access_rule: AccessRule, mutability: AccessRule) {
+        self.method_auth.insert(key.clone(), AccessRuleEntry::AccessRule(access_rule));
+        self.method_auth_mutability.insert(key, mutability);
+    }
+
     pub fn default(mut self, method_auth: AccessRule) -> Self {
         self.default_auth = method_auth;
         self

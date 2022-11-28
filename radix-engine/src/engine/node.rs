@@ -22,7 +22,7 @@ pub enum RENode {
     Package(PackageSubstate, MetadataSubstate, AccessRulesSubstate),
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
-    ResourceManager(ResourceManagerSubstate),
+    ResourceManager(ResourceManagerSubstate, AccessRulesSubstate),
     EpochManager(EpochManagerSubstate, AccessRulesSubstate),
 }
 
@@ -99,10 +99,14 @@ impl RENode {
                     access_rules.into(),
                 );
             }
-            RENode::ResourceManager(resource_manager) => {
+            RENode::ResourceManager(resource_manager, access_rules) => {
                 substates.insert(
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                     resource_manager.into(),
+                );
+                substates.insert(
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    access_rules.into(),
                 );
             }
             RENode::NonFungibleStore(non_fungible_store) => {

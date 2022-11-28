@@ -37,6 +37,7 @@ impl ResourceManagerSubstate {
         let mut vault_method_table: HashMap<VaultMethod, ResourceMethodRule> = HashMap::new();
         vault_method_table.insert(VaultMethod::LockFee, Protected(Withdraw));
         vault_method_table.insert(VaultMethod::Take, Protected(Withdraw));
+        vault_method_table.insert(VaultMethod::TakeNonFungibles, Protected(Withdraw));
         vault_method_table.insert(VaultMethod::Put, Protected(Deposit));
         vault_method_table.insert(VaultMethod::GetAmount, Public);
         vault_method_table.insert(VaultMethod::GetResourceAddress, Public);
@@ -44,7 +45,6 @@ impl ResourceManagerSubstate {
         vault_method_table.insert(VaultMethod::CreateProof, Public);
         vault_method_table.insert(VaultMethod::CreateProofByAmount, Public);
         vault_method_table.insert(VaultMethod::CreateProofByIds, Public);
-        vault_method_table.insert(VaultMethod::TakeNonFungibles, Protected(Withdraw));
 
         let bucket_method_table: HashMap<BucketMethod, ResourceMethodRule> = HashMap::new();
 
@@ -73,13 +73,17 @@ impl ResourceManagerSubstate {
 
         let mut authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule> = HashMap::new();
         for (auth_entry_key, default) in [
+            /*
             (Mint, (DenyAll, LOCKED)),
             (Burn, (DenyAll, LOCKED)),
+             */
             (Withdraw, (AllowAll, LOCKED)),
             (Deposit, (AllowAll, LOCKED)),
             (Recall, (DenyAll, LOCKED)),
+            /*
             (UpdateMetadata, (DenyAll, LOCKED)),
             (UpdateNonFungibleData, (DenyAll, LOCKED)),
+             */
         ] {
             let entry = access_rules.remove(&auth_entry_key).unwrap_or(default);
             authorization.insert(auth_entry_key, MethodAccessRule::new(entry));

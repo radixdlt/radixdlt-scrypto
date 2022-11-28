@@ -3,10 +3,8 @@ use crate::engine::{
     LockFlags, MethodDeref, NativeExecutor, NativeProcedure, REActor, RENode, ResolvedFunction,
     ResolvedMethod, RuntimeError, SystemApi,
 };
-use crate::model::{
-    BucketSubstate, GlobalAddressSubstate, InvokeError, MethodAccessRuleMethod, NonFungible,
-    NonFungibleStore, NonFungibleSubstate, Resource, ResourceManagerSubstate, VaultRuntimeSubstate,
-};
+use crate::model::{AccessRulesSubstate, BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource, VaultRuntimeSubstate};
+use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
 use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::{
@@ -18,6 +16,7 @@ use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::dec;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
+use radix_engine_interface::model::AccessRule::{AllowAll, DenyAll};
 use scrypto::resource::SysBucket;
 
 /// Represents an error when accessing a bucket.
@@ -93,7 +92,7 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
 
     fn main<Y>(
-        self,
+        mut self,
         api: &mut Y,
     ) -> Result<((ResourceAddress, Option<Bucket>), CallFrameUpdate), RuntimeError>
     where
@@ -101,7 +100,12 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
 
-        let underlying_node_id = if matches!(self.resource_type, ResourceType::NonFungible) {
+        let (mint_access_rule, mint_mutability) = self.access_rules.remove(&Mint).unwrap_or((DenyAll, LOCKED));
+        let (burn_access_rule, burn_mutability) = self.access_rules.remove(&Burn).unwrap_or((DenyAll, LOCKED));
+        let (update_metadata_access_rule, update_metadata_mutability) = self.access_rules.remove(&UpdateMetadata).unwrap_or((AllowAll, LOCKED));
+        let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) = self.access_rules.remove(&UpdateNonFungibleData).unwrap_or((AllowAll, LOCKED));
+
+        let resource_manager_substate = if matches!(self.resource_type, ResourceType::NonFungible) {
             let node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
             let nf_store_node_id =
                 api.create_node(node_id, RENode::NonFungibleStore(NonFungibleStore::new()))?;
@@ -146,8 +150,7 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
                 }
             }
 
-            let node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
-            api.create_node(node_id, RENode::ResourceManager(resource_manager))?
+            resource_manager
         } else {
             let mut resource_manager = ResourceManagerSubstate::new(
                 self.resource_type,
@@ -191,9 +194,74 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
                 }
             }
 
-            let node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
-            api.create_node(node_id, RENode::ResourceManager(resource_manager))?
+            resource_manager
         };
+
+
+
+        let mut access_rules = AccessRules::new();
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::Mint))),
+            mint_access_rule,
+            mint_mutability.into(),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::Burn))),
+            burn_access_rule,
+            burn_mutability.into(),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::UpdateMetadata))),
+            update_metadata_access_rule,
+            update_metadata_mutability.into(),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData))),
+            update_non_fungible_data_access_rule,
+            update_non_fungible_data_mutability.into(),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket))),
+            AccessRule::AllowAll,
+            AccessRule::DenyAll,
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::GetMetadata))),
+            AccessRule::AllowAll,
+            AccessRule::DenyAll,
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::GetResourceType))),
+            AccessRule::AllowAll,
+            AccessRule::DenyAll,
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::GetTotalSupply))),
+            AccessRule::AllowAll,
+            AccessRule::DenyAll,
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault))),
+            AccessRule::AllowAll,
+            AccessRule::DenyAll,
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::NonFungibleExists))),
+            AccessRule::AllowAll,
+            AccessRule::DenyAll,
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible))),
+            AllowAll,
+            DenyAll,
+        );
+
+        let access_rules_substate = AccessRulesSubstate {
+            access_rules: vec![access_rules]
+        };
+
+        let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
+        api.create_node(underlying_node_id, RENode::ResourceManager(resource_manager_substate, access_rules_substate))?;
 
         let global_node_id = api.create_node(
             global_node_id,
