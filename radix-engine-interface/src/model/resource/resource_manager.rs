@@ -25,6 +25,7 @@ pub enum ResourceMethodAuthKey {
     Burn,
     Withdraw,
     Deposit,
+    Recall,
     UpdateMetadata,
     UpdateNonFungibleData,
 }

@@ -73,14 +73,34 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
             match instruction {
                 Instruction::CallFunction { args, .. }
                 | Instruction::CallMethod { args, .. }
-                | Instruction::CallNativeFunction { args, .. }
-                | Instruction::CallNativeMethod { args, .. } => {
+                | Instruction::CallNativeFunction { args, .. } => {
                     let scrypto_value =
                         IndexedScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                     for global_address in scrypto_value.global_references() {
                         call_frame_update
                             .node_refs_to_copy
                             .insert(RENodeId::Global(global_address));
+                    }
+                }
+                Instruction::CallNativeMethod { args, method_ident } => {
+                    let scrypto_value =
+                        IndexedScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
+                    for global_address in scrypto_value.global_references() {
+                        call_frame_update
+                            .node_refs_to_copy
+                            .insert(RENodeId::Global(global_address));
+                    }
+
+                    // TODO: This needs to be cleaned up
+                    // TODO: How does this relate to newly created vaults in the transaction frame?
+                    // TODO: Will probably want different spacing for refed vs. owned nodes
+                    match method_ident.receiver {
+                        RENodeId::Vault(..) => {
+                            call_frame_update
+                                .node_refs_to_copy
+                                .insert(method_ident.receiver);
+                        }
+                        _ => {}
                     }
                 }
                 _ => {}
