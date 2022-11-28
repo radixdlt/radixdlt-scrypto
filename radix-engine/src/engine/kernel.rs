@@ -655,7 +655,7 @@ where
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
 
                             self.current_frame
-                                .add_stored_ref(*node_id, RENodeVisibilityOrigin::IgnoredOwner);
+                                .add_stored_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
                         }
                     }
                     _ => {}
@@ -1020,7 +1020,7 @@ where
                     RuntimeSubstate::Global(global_substate),
                 );
                 self.current_frame
-                    .add_stored_ref(global_node_id, RENodeVisibilityOrigin::IgnoredOwner);
+                    .add_stored_ref(global_node_id, RENodeVisibilityOrigin::DirectAccess);
                 self.current_frame.move_owned_node_to_store(
                     &mut self.heap,
                     &mut self.track,

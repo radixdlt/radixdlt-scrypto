@@ -48,7 +48,7 @@ pub enum RENodeLocation {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RENodeVisibilityOrigin {
     Normal,
-    IgnoredOwner,
+    DirectAccess,
 }
 
 /// A lock on a substate controlled by a call frame
@@ -337,7 +337,7 @@ impl CallFrame {
             to.node_refs
                 .entry(node_id)
                 .and_modify(|e| {
-                    if e.visibility == RENodeVisibilityOrigin::IgnoredOwner {
+                    if e.visibility == RENodeVisibilityOrigin::DirectAccess {
                         e.visibility = ref_data.visibility
                     }
                 })

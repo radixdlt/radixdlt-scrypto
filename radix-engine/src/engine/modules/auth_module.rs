@@ -198,13 +198,14 @@ impl AuthModule {
                         let substate_ref = system_api.get_ref(handle)?;
                         let resource_manager = substate_ref.resource_manager();
 
+                        // TODO: Revisit what the correct abstraction is for visibility in the auth module
                         let auth = match visibility {
                             RENodeVisibilityOrigin::Normal => {
                                 // TODO: Do we want to allow recaller to be able to withdraw from
                                 // TODO: any visible vault?
                                 vec![resource_manager.get_vault_auth(*vault_fn).clone()]
                             }
-                            RENodeVisibilityOrigin::IgnoredOwner => match vault_fn {
+                            RENodeVisibilityOrigin::DirectAccess => match vault_fn {
                                 VaultMethod::TakeNonFungibles | VaultMethod::Take => {
                                     vec![resource_manager.get_recall_auth().clone()]
                                 }
