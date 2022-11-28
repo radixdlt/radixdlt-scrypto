@@ -9,6 +9,7 @@ use radix_engine_interface::api::types::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum AuthError {
+    VisibilityError(RENodeId),
     Unauthorized {
         actor: REActor,
         authorization: MethodAuthorization,
@@ -175,6 +176,8 @@ impl AuthModule {
                         },
                     ) => {
                         let vault_node_id = RENodeId::Vault(vault_id);
+                        let visibility = system_api.get_visible_node_data(vault_node_id)?;
+
                         let resource_address = {
                             let offset = SubstateOffset::Vault(VaultOffset::Vault);
                             let handle = system_api.lock_substate(
@@ -194,7 +197,26 @@ impl AuthModule {
                             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
                         let substate_ref = system_api.get_ref(handle)?;
                         let resource_manager = substate_ref.resource_manager();
-                        let auth = vec![resource_manager.get_vault_auth(*vault_fn).clone()];
+
+                        // TODO: Revisit what the correct abstraction is for visibility in the auth module
+                        let auth = match visibility {
+                            RENodeVisibilityOrigin::Normal => {
+                                // TODO: Do we want to allow recaller to be able to withdraw from
+                                // TODO: any visible vault?
+                                vec![resource_manager.get_vault_auth(*vault_fn).clone()]
+                            }
+                            RENodeVisibilityOrigin::DirectAccess => match vault_fn {
+                                VaultMethod::TakeNonFungibles | VaultMethod::Take => {
+                                    vec![resource_manager.get_recall_auth().clone()]
+                                }
+                                _ => {
+                                    return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                                        AuthError::VisibilityError(vault_node_id),
+                                    )));
+                                }
+                            },
+                        };
+
                         system_api.drop_lock(handle)?;
 
                         auth

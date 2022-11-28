@@ -4,6 +4,10 @@ blueprint! {
     struct ResourceCreator {}
 
     impl ResourceCreator {
+        pub fn set_recallable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
+            borrow_resource_manager!(resource_address).set_recallable(rule!(require(auth_address)));
+        }
+
         pub fn set_mintable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
             borrow_resource_manager!(resource_address).set_mintable(rule!(require(auth_address)));
         }
