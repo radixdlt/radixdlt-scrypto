@@ -114,7 +114,7 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
     }
 }
 
-impl<'a> NativeProgram for TransactionProcessorRunInvocation<'a> {
+impl<'a> NativeProcedure for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<Vec<u8>>;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>

@@ -14,7 +14,6 @@ pub enum AuthError {
         authorization: MethodAuthorization,
         error: MethodAuthorizationError,
     },
-    CouldNotEncodePackageAddress,
 }
 
 pub struct AuthModule;
@@ -91,11 +90,8 @@ impl AuthModule {
                             ..,
                         )) = resolved_receiver.derefed_from
                         {
-                            let bytes = scrypto_encode(&package_address).map_err(|_| {
-                                RuntimeError::ModuleError(ModuleError::AuthError(
-                                    AuthError::CouldNotEncodePackageAddress,
-                                ))
-                            })?;
+                            // TODO: Cleanup package address + NonFungibleId integration
+                            let bytes = scrypto_encode(&package_address).unwrap();
 
                             let non_fungible_id = NonFungibleId::from_bytes(bytes);
                             let non_fungible_address =

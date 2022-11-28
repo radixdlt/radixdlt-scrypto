@@ -4,12 +4,6 @@ use crate::types::*;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::data::IndexedScryptoValue;
-/*
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
-use radix_engine_interface::api::types::{NativeFunction, NativeMethod, RENodeId};
-use radix_engine_interface::data::{IndexedScryptoValue, ScryptoEncode};
-use radix_engine_interface::model::*;
- */
 use sbor::rust::fmt::Debug;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
@@ -81,7 +75,7 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
-pub trait NativeProgram {
+pub trait NativeProcedure {
     type Output: Debug;
     fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
@@ -91,9 +85,9 @@ pub trait NativeProgram {
             + SysInvokableNative<RuntimeError>;
 }
 
-pub struct NativeExecutor<N: NativeProgram>(pub N, pub IndexedScryptoValue);
+pub struct NativeExecutor<N: NativeProcedure>(pub N, pub IndexedScryptoValue);
 
-impl<N: NativeProgram> Executor for NativeExecutor<N> {
+impl<N: NativeProcedure> Executor for NativeExecutor<N> {
     type Output = N::Output;
 
     fn args(&self) -> &IndexedScryptoValue {

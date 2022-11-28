@@ -51,7 +51,7 @@ impl ExecutableInvocation for PackagePublishNoOwnerInvocation {
     }
 }
 
-impl NativeProgram for PackagePublishNoOwnerInvocation {
+impl NativeProcedure for PackagePublishNoOwnerInvocation {
     type Output = PackageAddress;
 
     fn main<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
@@ -108,7 +108,7 @@ impl ExecutableInvocation for PackagePublishWithOwnerInvocation {
     }
 }
 
-impl NativeProgram for PackagePublishWithOwnerInvocation {
+impl NativeProcedure for PackagePublishWithOwnerInvocation {
     type Output = (PackageAddress, Bucket);
 
     fn main<Y>(
