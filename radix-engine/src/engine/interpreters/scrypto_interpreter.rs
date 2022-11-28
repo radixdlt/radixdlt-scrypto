@@ -106,9 +106,6 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::wasm::DefaultWasmEngine;
-
     const _: () = {
         fn assert_sync<T: Sync>() {}
 
@@ -119,7 +116,7 @@ mod tests {
             // This test ensures the requirement for this cache to be Sync isn't broken
             // (At least when we compile with std, as the node does)
             #[cfg(not(feature = "alloc"))]
-            assert_sync::<ScryptoInterpreter<DefaultWasmEngine>>();
+            assert_sync::<crate::engine::ScryptoInterpreter<crate::wasm::DefaultWasmEngine>>();
         }
     };
 }
