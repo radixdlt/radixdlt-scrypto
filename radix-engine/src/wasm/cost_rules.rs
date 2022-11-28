@@ -1,6 +1,5 @@
-use core::num::NonZeroU32;
-
 use parity_wasm::elements::Instruction::{self, *};
+use sbor::rust::num::NonZeroU32;
 use wasm_instrument::gas_metering::MemoryGrowCost;
 use wasm_instrument::gas_metering::Rules;
 

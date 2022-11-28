@@ -10,7 +10,6 @@ use crate::model::PackageRoyaltyAccumulatorSubstate;
 use crate::model::{GlobalAddressSubstate, PackageInfoSubstate, Resource};
 use crate::types::*;
 use crate::wasm::*;
-use core::fmt::Debug;
 use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId, RENodeId};
 use radix_engine_interface::api::types::{NativeMethod, SubstateOffset};
 use radix_engine_interface::model::*;
