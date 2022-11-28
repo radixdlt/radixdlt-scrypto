@@ -616,11 +616,9 @@ impl<'s> FinalizingTrack<'s> {
     ) -> TransactionResult {
         let is_success = invoke_result.is_ok();
 
-        let mut new_global_addresses = Vec::new();
-        let mut to_persist = HashMap::new();
-
         // Commit/rollback application state changes
-        if is_success {
+        let mut to_persist = HashMap::new();
+        let new_global_addresses = if is_success {
             for (id, loaded) in self.loaded_substates {
                 let old_version = match &loaded.metastate {
                     SubstateMetaState::New => Option::None,
@@ -630,7 +628,7 @@ impl<'s> FinalizingTrack<'s> {
                 to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
             }
 
-            new_global_addresses = self.new_global_addresses;
+            self.new_global_addresses
         } else {
             for (id, loaded) in self.loaded_substates {
                 match loaded.metastate {
@@ -643,8 +641,10 @@ impl<'s> FinalizingTrack<'s> {
                     _ => {}
                 }
             }
-        }
+            Vec::new()
+        };
 
+        // Finalize payments
         let mut actual_fee_payments: HashMap<VaultId, Decimal> = HashMap::new();
         let mut required_fee = fee_summary.burned
             + fee_summary.tipped
@@ -671,12 +671,8 @@ impl<'s> FinalizingTrack<'s> {
 
             // Collect fees into collector
             collector
-                .put(
-                    locked
-                        .take_by_amount(amount)
-                        .expect("Failed to extract locked fee"),
-                )
-                .expect("Failed to add fee to fee collector");
+                .put(locked.take_by_amount(amount).unwrap())
+                .unwrap();
 
             // Refund overpayment
             let substate_id = SubstateId(
@@ -684,25 +680,19 @@ impl<'s> FinalizingTrack<'s> {
                 SubstateOffset::Vault(VaultOffset::Vault),
             );
 
-            let (substate, old_version) = to_persist
-                .remove(&substate_id)
-                .expect("Failed to fetch a fee-locking vault");
+            // Update substate
+            let (substate, old_version) = to_persist.remove(&substate_id).unwrap();
             let mut runtime_substate = substate.to_runtime();
             runtime_substate
                 .vault_mut()
                 .borrow_resource_mut()
                 .put(locked)
-                .expect("Failed to put a fee-locking vault");
+                .unwrap();
             to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
 
+            // Record final payments
             *actual_fee_payments.entry(vault_id).or_default() += amount;
         }
-        let execution_trace_receipt = ExecutionTraceReceipt::new(
-            self.vault_ops,
-            actual_fee_payments,
-            &mut to_persist,
-            invoke_result.is_ok(),
-        );
 
         // TODO: update XRD supply or disable it
         // TODO: pay tips to the lead validator
@@ -716,16 +706,14 @@ impl<'s> FinalizingTrack<'s> {
                             SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
                         );
 
-                        let (substate, old_version) = to_persist
-                            .remove(&substate_id)
-                            .expect("Failed to fetch package royalty accumulator");
+                        let (substate, old_version) = to_persist.remove(&substate_id).unwrap();
                         let mut runtime_substate = substate.to_runtime();
                         runtime_substate
                             .to_ref_mut()
                             .package_royalty_accumulator()
                             .royalty
                             .put(collector.take_by_amount(*amount).unwrap())
-                            .expect("Failed to accumulate royalty");
+                            .unwrap();
                         to_persist
                             .insert(substate_id, (runtime_substate.to_persisted(), old_version));
                     }
@@ -735,16 +723,14 @@ impl<'s> FinalizingTrack<'s> {
                             SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
                         );
 
-                        let (substate, old_version) = to_persist
-                            .remove(&substate_id)
-                            .expect("Failed to fetch component royalty accumulator");
+                        let (substate, old_version) = to_persist.remove(&substate_id).unwrap();
                         let mut runtime_substate = substate.to_runtime();
                         runtime_substate
                             .to_ref_mut()
                             .component_royalty_accumulator()
                             .royalty
                             .put(collector.take_by_amount(*amount).unwrap())
-                            .expect("Failed to accumulate royalty");
+                            .unwrap();
                         to_persist
                             .insert(substate_id, (runtime_substate.to_persisted(), old_version));
                     }
@@ -752,6 +738,13 @@ impl<'s> FinalizingTrack<'s> {
             }
         }
 
+        // Generate commit result
+        let execution_trace_receipt = ExecutionTraceReceipt::new(
+            self.vault_ops,
+            actual_fee_payments,
+            &mut to_persist,
+            invoke_result.is_ok(),
+        );
         TransactionResult::Commit(CommitResult {
             outcome: match invoke_result {
                 Ok(output) => TransactionOutcome::Success(output),

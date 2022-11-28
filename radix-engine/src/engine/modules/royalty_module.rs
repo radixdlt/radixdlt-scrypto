@@ -83,7 +83,10 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
             },
         };
 
-        // Apply package royalty config
+        //========================
+        // Apply package royalty
+        //========================
+
         let package_id = {
             let node_id = RENodeId::Global(GlobalAddress::Package(*package_address));
             let offset = SubstateOffset::Global(GlobalOffset::Global);
@@ -100,6 +103,7 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
                 .map_err(RoyaltyError::from)?;
             package_id
         };
+
         let node_id = RENodeId::Package(package_id);
         let offset = SubstateOffset::Package(PackageOffset::RoyaltyConfig);
         track
@@ -120,7 +124,18 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
             .release_lock(SubstateId(node_id, offset.clone()), false)
             .map_err(RoyaltyError::from)?;
 
-        // Apply component royalty config
+        let offset = SubstateOffset::Package(PackageOffset::RoyaltyAccumulator);
+        track
+            .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::MUTABLE)
+            .map_err(RoyaltyError::from)?;
+        track
+            .release_lock(SubstateId(node_id, offset.clone()), false)
+            .map_err(RoyaltyError::from)?;
+
+        //========================
+        // Apply component royalty
+        //========================
+
         if let Some(component_address) = optional_component_address {
             let component_id = {
                 let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
@@ -157,6 +172,14 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
                     royalty,
                 )
                 .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
+            track
+                .release_lock(SubstateId(node_id, offset.clone()), false)
+                .map_err(RoyaltyError::from)?;
+
+            let offset = SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator);
+            track
+                .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::MUTABLE)
+                .map_err(RoyaltyError::from)?;
             track
                 .release_lock(SubstateId(node_id, offset.clone()), false)
                 .map_err(RoyaltyError::from)?;
