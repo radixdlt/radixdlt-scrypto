@@ -531,7 +531,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
     pub fn finalize(self, invoke_result: InvokeResult) -> TrackReceipt {
         // Close fee reserve
-        let fee_summary = self.fee_reserve.finalize();
+        let mut fee_summary = self.fee_reserve.finalize();
 
         let result = match check_for_rejection(invoke_result, &fee_summary) {
             Ok(invoke_result) => {
@@ -541,7 +541,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     loaded_substates: self.loaded_substates,
                     vault_ops: self.vault_ops,
                 };
-                finalizing_track.calculate_commit_result(invoke_result, &fee_summary)
+                finalizing_track.calculate_commit_result(invoke_result, &mut fee_summary)
             }
             Err(rejection_error) => TransactionResult::Reject(RejectResult {
                 error: rejection_error,
@@ -612,7 +612,7 @@ impl<'s> FinalizingTrack<'s> {
     fn calculate_commit_result(
         self,
         invoke_result: InvokeResult,
-        fee_summary: &FeeSummary,
+        fee_summary: &mut FeeSummary,
     ) -> TransactionResult {
         let is_success = invoke_result.is_ok();
 
@@ -644,35 +644,33 @@ impl<'s> FinalizingTrack<'s> {
             Vec::new()
         };
 
+        // Revert royalty in case of failure
+        if !is_success {
+            fee_summary.royalty = Decimal::ZERO;
+            fee_summary.royalty_breakdown = HashMap::new();
+        }
+
         // Finalize payments
         let mut actual_fee_payments: HashMap<VaultId, Decimal> = HashMap::new();
-        let mut required_fee = fee_summary.burned
-            + fee_summary.tipped
-            + if is_success {
-                fee_summary.royalty
-            } else {
-                Decimal::ZERO
-            };
-        let mut collector: Resource =
+        let mut required = fee_summary.burned + fee_summary.tipped + fee_summary.royalty;
+        let mut fees: Resource =
             Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 });
         for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
             let amount = if contingent {
                 if is_success {
-                    Decimal::min(locked.amount(), required_fee)
+                    Decimal::min(locked.amount(), required)
                 } else {
                     Decimal::zero()
                 }
             } else {
-                Decimal::min(locked.amount(), required_fee)
+                Decimal::min(locked.amount(), required)
             };
 
             // Deduct fee required
-            required_fee = required_fee - amount;
+            required = required - amount;
 
             // Collect fees into collector
-            collector
-                .put(locked.take_by_amount(amount).unwrap())
-                .unwrap();
+            fees.put(locked.take_by_amount(amount).unwrap()).unwrap();
 
             // Refund overpayment
             let substate_id = SubstateId(
@@ -697,43 +695,39 @@ impl<'s> FinalizingTrack<'s> {
         // TODO: update XRD supply or disable it
         // TODO: pay tips to the lead validator
 
-        if is_success {
-            for (receiver, amount) in &fee_summary.royalty_breakdown {
-                match receiver {
-                    RoyaltyReceiver::Package(_, node_id) => {
-                        let substate_id = SubstateId(
-                            node_id.clone(),
-                            SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
-                        );
+        for (receiver, amount) in &fee_summary.royalty_breakdown {
+            match receiver {
+                RoyaltyReceiver::Package(_, node_id) => {
+                    let substate_id = SubstateId(
+                        node_id.clone(),
+                        SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+                    );
 
-                        let (substate, old_version) = to_persist.remove(&substate_id).unwrap();
-                        let mut runtime_substate = substate.to_runtime();
-                        runtime_substate
-                            .to_ref_mut()
-                            .package_royalty_accumulator()
-                            .royalty
-                            .put(collector.take_by_amount(*amount).unwrap())
-                            .unwrap();
-                        to_persist
-                            .insert(substate_id, (runtime_substate.to_persisted(), old_version));
-                    }
-                    RoyaltyReceiver::Component(_, node_id) => {
-                        let substate_id = SubstateId(
-                            node_id.clone(),
-                            SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
-                        );
+                    let (substate, old_version) = to_persist.remove(&substate_id).unwrap();
+                    let mut runtime_substate = substate.to_runtime();
+                    runtime_substate
+                        .to_ref_mut()
+                        .package_royalty_accumulator()
+                        .royalty
+                        .put(fees.take_by_amount(*amount).unwrap())
+                        .unwrap();
+                    to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
+                }
+                RoyaltyReceiver::Component(_, node_id) => {
+                    let substate_id = SubstateId(
+                        node_id.clone(),
+                        SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+                    );
 
-                        let (substate, old_version) = to_persist.remove(&substate_id).unwrap();
-                        let mut runtime_substate = substate.to_runtime();
-                        runtime_substate
-                            .to_ref_mut()
-                            .component_royalty_accumulator()
-                            .royalty
-                            .put(collector.take_by_amount(*amount).unwrap())
-                            .unwrap();
-                        to_persist
-                            .insert(substate_id, (runtime_substate.to_persisted(), old_version));
-                    }
+                    let (substate, old_version) = to_persist.remove(&substate_id).unwrap();
+                    let mut runtime_substate = substate.to_runtime();
+                    runtime_substate
+                        .to_ref_mut()
+                        .component_royalty_accumulator()
+                        .royalty
+                        .put(fees.take_by_amount(*amount).unwrap())
+                        .unwrap();
+                    to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
                 }
             }
         }
