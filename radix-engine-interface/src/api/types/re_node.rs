@@ -27,6 +27,7 @@ pub enum RENodeId {
     ResourceManager(ResourceManagerId),
     Package(PackageId),
     EpochManager(EpochManagerId),
+    Clock(ClockId),
 }
 
 impl Into<[u8; 36]> for RENodeId {
@@ -36,10 +37,19 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::NonFungibleStore(id) => id,
             RENodeId::Vault(id) => id,
             RENodeId::Component(id) => id,
-            RENodeId::EpochManager(id) => id,
             RENodeId::ResourceManager(id) => id,
             RENodeId::Package(id) => id,
             _ => panic!("Not a stored id"),
+        }
+    }
+}
+
+impl Into<SystemId> for RENodeId {
+    fn into(self) -> SystemId {
+        match self {
+            RENodeId::EpochManager(id) => SystemId::EpochManager(id),
+            RENodeId::Clock(id) => SystemId::Clock(id),
+            _ => panic!("Not a system id"),
         }
     }
 }
@@ -194,6 +204,13 @@ pub enum WorktopOffset {
     Worktop,
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ClockOffset {
+    CurrentTimeInMillis,
+    CurrentTimeInSeconds,
+    CurrentTimeInMinutes,
+}
+
 /// Specifies a specific Substate into a given RENode
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -211,6 +228,7 @@ pub enum SubstateOffset {
     Bucket(BucketOffset),
     Proof(ProofOffset),
     Worktop(WorktopOffset),
+    Clock(ClockOffset),
 }
 
 /// TODO: separate space addresses?

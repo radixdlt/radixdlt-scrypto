@@ -77,8 +77,11 @@ impl AuthModule {
 
         let method_auths = match actor.clone() {
             REActor::Function(function_ident) => match function_ident {
-                ResolvedFunction::Native(NativeFunction::EpochManager(system_func)) => {
-                    EpochManager::function_auth(&system_func)
+                ResolvedFunction::Native(NativeFunction::EpochManager(epoch_manager_func)) => {
+                    EpochManager::function_auth(&epoch_manager_func)
+                }
+                ResolvedFunction::Native(NativeFunction::Clock(clock_func)) => {
+                    Clock::function_auth(&clock_func)
                 }
                 _ => vec![],
             },
@@ -111,6 +114,13 @@ impl AuthModule {
                             ..
                         },
                     ) => EpochManager::method_auth(method),
+                    (
+                        ResolvedMethod::Native(NativeMethod::Clock(ref method)),
+                        ResolvedReceiver {
+                            receiver: RENodeId::Clock(..),
+                            ..
+                        },
+                    ) => Clock::method_auth(method),
                     (
                         ResolvedMethod::Scrypto {
                             package_address,

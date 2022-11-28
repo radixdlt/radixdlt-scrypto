@@ -138,6 +138,9 @@ where
             .add_stored_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
         kernel
             .current_frame
+            .add_stored_ref(RENodeId::Global(GlobalAddress::System(CLOCK)));
+        kernel
+            .current_frame
             .add_stored_ref(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
         kernel
             .current_frame
@@ -187,12 +190,12 @@ where
 
                 let system_address = system_api
                     .id_allocator
-                    .new_system_address(transaction_hash)
+                    .new_epoch_manager_address(transaction_hash)
                     .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
                 Ok((
                     GlobalAddress::System(system_address),
-                    GlobalAddressSubstate::System(epoch_manager_id),
+                    GlobalAddressSubstate::System(SystemId::EpochManager(epoch_manager_id)),
                 ))
             }
             RENodeId::ResourceManager(resource_id) => {
@@ -217,6 +220,19 @@ where
                 Ok((
                     GlobalAddress::Package(package_address),
                     GlobalAddressSubstate::Package(package_id),
+                ))
+            }
+            RENodeId::Clock(clock_id) => {
+                let transaction_hash = system_api.transaction_hash;
+
+                let system_address = system_api
+                    .id_allocator
+                    .new_clock_address(transaction_hash)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+
+                Ok((
+                    GlobalAddress::System(system_address),
+                    GlobalAddressSubstate::System(SystemId::Clock(clock_id)),
                 ))
             }
             _ => Err(RuntimeError::KernelError(
@@ -273,6 +289,10 @@ where
             RENode::EpochManager(..) => {
                 let component_id = id_allocator.new_component_id(transaction_hash)?;
                 Ok(RENodeId::EpochManager(component_id))
+            }
+            RENode::Clock(..) => {
+                let component_id = id_allocator.new_component_id(transaction_hash)?;
+                Ok(RENodeId::Clock(component_id))
             }
         }
     }
@@ -1606,6 +1626,7 @@ where
 
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(CLOCK)));
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
             ECDSA_SECP256K1_TOKEN,
         )));

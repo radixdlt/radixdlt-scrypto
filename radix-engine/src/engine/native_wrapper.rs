@@ -28,6 +28,13 @@ where
                     .sys_invoke(invocation)
                     .map(|a| IndexedScryptoValue::from_typed(&a))
             }
+            NativeFunction::Clock(ClockFunction::Create) => {
+                let invocation: ClockCreateInvocation = scrypto_decode(&args)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                system_api
+                    .sys_invoke(invocation)
+                    .map(|a| IndexedScryptoValue::from_typed(&a))
+            }
             NativeFunction::ResourceManager(ResourceManagerFunction::BurnBucket) => {
                 let invocation: ResourceManagerBucketBurnInvocation = scrypto_decode(&args)
                     .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
@@ -387,6 +394,22 @@ where
                 }
                 EpochManagerMethod::SetEpoch => {
                     let invocation: EpochManagerSetEpochInvocation = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
+            },
+            NativeMethod::Clock(clock_method) => match clock_method {
+                ClockMethod::GetCurrentTimeToMinutePrecision => {
+                    let invocation: ClockGetCurrentTimeInMinutesInvocation = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
+                ClockMethod::SetCurrentTime => {
+                    let invocation: ClockSetCurrentTimeInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)

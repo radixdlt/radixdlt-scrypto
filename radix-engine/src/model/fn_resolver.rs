@@ -14,6 +14,9 @@ pub fn resolve_native_function(
         EPOCH_MANAGER_BLUEPRINT => EpochManagerFunction::from_str(function_name)
             .ok()
             .map(NativeFunction::EpochManager),
+        CLOCK_BLUEPRINT => ClockFunction::from_str(function_name)
+            .ok()
+            .map(NativeFunction::Clock),
         RESOURCE_MANAGER_BLUEPRINT => ResourceManagerFunction::from_str(function_name)
             .ok()
             .map(NativeFunction::ResourceManager),
@@ -53,6 +56,9 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
         RENodeId::EpochManager(_) => EpochManagerMethod::from_str(method_name)
             .ok()
             .map(NativeMethod::EpochManager),
+        RENodeId::Clock(_) => ClockMethod::from_str(method_name)
+            .ok()
+            .map(NativeMethod::Clock),
         RENodeId::Global(GlobalAddress::System(system_address)) => match system_address {
             EPOCH_MANAGER => EpochManagerMethod::from_str(method_name)
                 .ok()

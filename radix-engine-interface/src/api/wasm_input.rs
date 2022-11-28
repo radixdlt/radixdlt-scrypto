@@ -44,6 +44,7 @@ pub enum NativeMethodInvocation {
     Vault(VaultMethodInvocation),
     Proof(ProofMethodInvocation),
     Worktop(WorktopMethodInvocation),
+    Clock(ClockMethodInvocation),
 }
 
 #[derive(Debug)]
@@ -52,6 +53,7 @@ pub enum NativeFunctionInvocation {
     EpochManager(EpochManagerFunctionInvocation),
     ResourceManager(ResourceManagerFunctionInvocation),
     Package(PackageFunctionInvocation),
+    Clock(ClockFunctionInvocation),
 }
 
 #[derive(Debug)]
@@ -163,4 +165,17 @@ pub enum WorktopMethodInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum PackageFunctionInvocation {
     Publish(PackagePublishInvocation),
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum ClockFunctionInvocation {
+    Create(ClockCreateInvocation),
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum ClockMethodInvocation {
+    GetCurrentTimeInMinutes(ClockGetCurrentTimeInMinutesInvocation),
+    SetCurrentTime(ClockSetCurrentTimeInvocation),
 }

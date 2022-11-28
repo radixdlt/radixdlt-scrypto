@@ -85,16 +85,22 @@ impl IdAllocator {
         }
     }
 
-    pub fn new_system_address(
+    pub fn new_epoch_manager_address(
         &mut self,
         transaction_hash: Hash,
     ) -> Result<SystemAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-
-        // println!("Genesis system {:?}", hash(&data).lower_26_bytes());
-
         Ok(SystemAddress::EpochManager(hash(data).lower_26_bytes()))
+    }
+
+    pub fn new_clock_address(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<SystemAddress, IdAllocationError> {
+        let mut data = transaction_hash.to_vec();
+        data.extend(self.next()?.to_le_bytes());
+        Ok(SystemAddress::Clock(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new resource address.

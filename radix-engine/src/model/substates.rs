@@ -20,6 +20,9 @@ pub enum PersistedSubstate {
     Vault(VaultSubstate),
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
+    CurrentTimeInMillis(CurrentTimeInMillisSubstate),
+    CurrentTimeInSeconds(CurrentTimeInSecondsSubstate),
+    CurrentTimeInMinutes(CurrentTimeInMinutesSubstate),
 }
 
 impl PersistedSubstate {
@@ -47,6 +50,15 @@ impl PersistedSubstate {
         match self {
             PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
             PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
+            PersistedSubstate::CurrentTimeInMillis(value) => {
+                RuntimeSubstate::CurrentTimeInMillis(value)
+            }
+            PersistedSubstate::CurrentTimeInSeconds(value) => {
+                RuntimeSubstate::CurrentTimeInSeconds(value)
+            }
+            PersistedSubstate::CurrentTimeInMinutes(value) => {
+                RuntimeSubstate::CurrentTimeInMinutes(value)
+            }
             PersistedSubstate::AccessRules(value) => RuntimeSubstate::AccessRules(value),
             PersistedSubstate::ResourceManager(value) => RuntimeSubstate::ResourceManager(value),
             PersistedSubstate::ComponentInfo(value) => RuntimeSubstate::ComponentInfo(value),
@@ -83,6 +95,9 @@ pub enum RuntimeSubstate {
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     Worktop(WorktopSubstate),
+    CurrentTimeInMillis(CurrentTimeInMillisSubstate),
+    CurrentTimeInSeconds(CurrentTimeInSecondsSubstate),
+    CurrentTimeInMinutes(CurrentTimeInMinutesSubstate),
 }
 
 impl RuntimeSubstate {
@@ -90,6 +105,15 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
+            RuntimeSubstate::CurrentTimeInMillis(value) => {
+                PersistedSubstate::CurrentTimeInMillis(value.clone())
+            }
+            RuntimeSubstate::CurrentTimeInSeconds(value) => {
+                PersistedSubstate::CurrentTimeInSeconds(value.clone())
+            }
+            RuntimeSubstate::CurrentTimeInMinutes(value) => {
+                PersistedSubstate::CurrentTimeInMinutes(value.clone())
+            }
             RuntimeSubstate::AccessRules(value) => PersistedSubstate::AccessRules(value.clone()),
             RuntimeSubstate::ResourceManager(value) => {
                 PersistedSubstate::ResourceManager(value.clone())
@@ -122,6 +146,15 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
+            RuntimeSubstate::CurrentTimeInMillis(value) => {
+                PersistedSubstate::CurrentTimeInMillis(value)
+            }
+            RuntimeSubstate::CurrentTimeInSeconds(value) => {
+                PersistedSubstate::CurrentTimeInSeconds(value)
+            }
+            RuntimeSubstate::CurrentTimeInMinutes(value) => {
+                PersistedSubstate::CurrentTimeInMinutes(value)
+            }
             RuntimeSubstate::AccessRules(value) => PersistedSubstate::AccessRules(value),
             RuntimeSubstate::ResourceManager(value) => PersistedSubstate::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => PersistedSubstate::ComponentInfo(value),
@@ -180,6 +213,15 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => SubstateRefMut::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRefMut::EpochManager(value),
+            RuntimeSubstate::CurrentTimeInMillis(value) => {
+                SubstateRefMut::CurrentTimeInMillis(value)
+            }
+            RuntimeSubstate::CurrentTimeInSeconds(value) => {
+                SubstateRefMut::CurrentTimeInSeconds(value)
+            }
+            RuntimeSubstate::CurrentTimeInMinutes(value) => {
+                SubstateRefMut::CurrentTimeInMinutes(value)
+            }
             RuntimeSubstate::AccessRules(value) => SubstateRefMut::AccessRules(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => SubstateRefMut::ComponentInfo(value),
@@ -199,6 +241,13 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => SubstateRef::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
+            RuntimeSubstate::CurrentTimeInMillis(value) => SubstateRef::CurrentTimeInMillis(value),
+            RuntimeSubstate::CurrentTimeInSeconds(value) => {
+                SubstateRef::CurrentTimeInSeconds(value)
+            }
+            RuntimeSubstate::CurrentTimeInMinutes(value) => {
+                SubstateRef::CurrentTimeInMinutes(value)
+            }
             RuntimeSubstate::AccessRules(value) => SubstateRef::AccessRules(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => SubstateRef::ComponentInfo(value),
@@ -272,6 +321,24 @@ impl Into<RuntimeSubstate> for AccessRulesSubstate {
 impl Into<RuntimeSubstate> for EpochManagerSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::EpochManager(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for CurrentTimeInMillisSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::CurrentTimeInMillis(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for CurrentTimeInSecondsSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::CurrentTimeInSeconds(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for CurrentTimeInMinutesSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::CurrentTimeInMinutes(self)
     }
 }
 
@@ -452,6 +519,9 @@ pub enum SubstateRef<'a> {
     EpochManager(&'a EpochManagerSubstate),
     AccessRules(&'a AccessRulesSubstate),
     Global(&'a GlobalAddressSubstate),
+    CurrentTimeInMillis(&'a CurrentTimeInMillisSubstate),
+    CurrentTimeInSeconds(&'a CurrentTimeInSecondsSubstate),
+    CurrentTimeInMinutes(&'a CurrentTimeInMinutesSubstate),
 }
 
 impl<'a> SubstateRef<'a> {
@@ -459,6 +529,9 @@ impl<'a> SubstateRef<'a> {
         match self {
             SubstateRef::Global(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::EpochManager(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::CurrentTimeInMillis(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::CurrentTimeInSeconds(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::CurrentTimeInMinutes(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::ResourceManager(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::ComponentInfo(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::ComponentState(value) => IndexedScryptoValue::from_typed(*value),
@@ -478,8 +551,8 @@ impl<'a> SubstateRef<'a> {
 
     pub fn epoch_manager(&self) -> &EpochManagerSubstate {
         match self {
-            SubstateRef::EpochManager(system) => *system,
-            _ => panic!("Not a system substate"),
+            SubstateRef::EpochManager(epoch_manager_substate) => *epoch_manager_substate,
+            _ => panic!("Not an epoch manager substate"),
         }
     }
 
@@ -560,6 +633,13 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn current_time_in_minutes(&self) -> &CurrentTimeInMinutesSubstate {
+        match self {
+            SubstateRef::CurrentTimeInMinutes(substate) => *substate,
+            _ => panic!("Not a current time in minutes substate"),
+        }
+    }
+
     pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
         match self {
             SubstateRef::Global(global) => {
@@ -571,9 +651,12 @@ impl<'a> SubstateRef<'a> {
                     GlobalAddressSubstate::Component(component) => {
                         owned_nodes.insert(RENodeId::Component(component.0))
                     }
-                    GlobalAddressSubstate::System(epoch_manager_id) => {
-                        owned_nodes.insert(RENodeId::EpochManager(*epoch_manager_id))
-                    }
+                    GlobalAddressSubstate::System(system_id) => match system_id {
+                        SystemId::EpochManager(epoch_manager_id) => {
+                            owned_nodes.insert(RENodeId::EpochManager(*epoch_manager_id))
+                        }
+                        SystemId::Clock(clock_id) => owned_nodes.insert(RENodeId::Clock(*clock_id)),
+                    },
                     GlobalAddressSubstate::Package(package_address) => {
                         owned_nodes.insert(RENodeId::Package(*package_address))
                     }
@@ -654,6 +737,9 @@ pub enum SubstateRefMut<'a> {
     Proof(&'a mut ProofSubstate),
     Worktop(&'a mut WorktopSubstate),
     AuthZone(&'a mut AuthZoneStackSubstate),
+    CurrentTimeInMillis(&'a mut CurrentTimeInMillisSubstate),
+    CurrentTimeInSeconds(&'a mut CurrentTimeInSecondsSubstate),
+    CurrentTimeInMinutes(&'a mut CurrentTimeInMinutesSubstate),
 }
 
 impl<'a> SubstateRefMut<'a> {
@@ -730,7 +816,7 @@ impl<'a> SubstateRefMut<'a> {
     pub fn epoch_manager(&mut self) -> &mut EpochManagerSubstate {
         match self {
             SubstateRefMut::EpochManager(value) => *value,
-            _ => panic!("Not system"),
+            _ => panic!("Not an epoch manager"),
         }
     }
 
@@ -738,6 +824,27 @@ impl<'a> SubstateRefMut<'a> {
         match self {
             SubstateRefMut::AccessRules(value) => *value,
             _ => panic!("Not access rules"),
+        }
+    }
+
+    pub fn current_time_in_millis(&mut self) -> &mut CurrentTimeInMillisSubstate {
+        match self {
+            SubstateRefMut::CurrentTimeInMillis(value) => *value,
+            _ => panic!("Not current time in millis"),
+        }
+    }
+
+    pub fn current_time_in_seconds(&mut self) -> &mut CurrentTimeInSecondsSubstate {
+        match self {
+            SubstateRefMut::CurrentTimeInSeconds(value) => *value,
+            _ => panic!("Not current time in seconds"),
+        }
+    }
+
+    pub fn current_time_in_minutes(&mut self) -> &mut CurrentTimeInMinutesSubstate {
+        match self {
+            SubstateRefMut::CurrentTimeInMinutes(value) => *value,
+            _ => panic!("Not current time in minutes"),
         }
     }
 }

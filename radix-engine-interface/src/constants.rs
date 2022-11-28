@@ -226,38 +226,69 @@ pub const EPOCH_MANAGER: SystemAddress = construct_address!(
     190
 );
 
+pub const CLOCK: SystemAddress = construct_address!(
+    EntityType::Clock,
+    198,
+    192,
+    61,
+    210,
+    4,
+    230,
+    44,
+    57,
+    219,
+    60,
+    174,
+    35,
+    57,
+    88,
+    91,
+    98,
+    186,
+    244,
+    0,
+    251,
+    251,
+    77,
+    116,
+    187,
+    229,
+    39
+);
+
 /// The ED25519 virtual resource address.
 pub const EDDSA_ED25519_TOKEN: ResourceAddress = construct_address!(
     EntityType::Resource,
-    15,
-    142,
-    146,
-    10,
-    167,
-    159,
-    83,
-    52,
-    157,
-    10,
-    153,
-    116,
-    110,
-    23,
-    181,
-    146,
-    65,
-    189,
-    81,
-    225,
-    154,
-    187,
-    80,
-    173,
-    107,
-    106
+    24,
+    67,
+    46,
+    131,
+    28,
+    174,
+    236,
+    45,
+    222,
+    176,
+    209,
+    180,
+    88,
+    119,
+    97,
+    212,
+    46,
+    119,
+    120,
+    5,
+    129,
+    234,
+    46,
+    214,
+    27,
+    145
 );
 
 pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
+pub const CLOCK_BLUEPRINT: &str = "Clock";
 pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";

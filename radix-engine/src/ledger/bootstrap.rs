@@ -34,6 +34,7 @@ pub struct GenesisReceipt {
     pub xrd_token: ResourceAddress,
     pub faucet_component: ComponentAddress,
     pub epoch_manager: SystemAddress,
+    pub clock: SystemAddress,
     pub eddsa_ed25519_token: ResourceAddress,
 }
 
@@ -164,6 +165,16 @@ pub fn create_genesis() -> SystemTransaction {
         }
     };
 
+    let create_clock = {
+        Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: CLOCK_BLUEPRINT.to_string(),
+                function_name: ClockFunction::Create.to_string(),
+            },
+            args: args!(),
+        }
+    };
+
     let create_eddsa_ed25519_token = {
         let metadata: HashMap<String, String> = HashMap::new();
         let mut access_rules = HashMap::new();
@@ -195,6 +206,7 @@ pub fn create_genesis() -> SystemTransaction {
             take_xrd,
             create_xrd_faucet,
             create_epoch_manager,
+            create_clock,
             create_eddsa_ed25519_token,
         ],
         blobs,
@@ -214,8 +226,9 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
         scrypto_decode(&invoke_result[4]).unwrap();
     let faucet_component: ComponentAddress = scrypto_decode(&invoke_result[6]).unwrap();
     let epoch_manager: SystemAddress = scrypto_decode(&invoke_result[7]).unwrap();
+    let clock: SystemAddress = scrypto_decode(&invoke_result[8]).unwrap();
     let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) =
-        scrypto_decode(&invoke_result[8]).unwrap();
+        scrypto_decode(&invoke_result[9]).unwrap();
 
     GenesisReceipt {
         faucet_package,
@@ -225,6 +238,7 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
         xrd_token,
         faucet_component,
         epoch_manager,
+        clock,
         eddsa_ed25519_token,
     }
 }
@@ -312,6 +326,7 @@ mod tests {
         assert_eq!(genesis_receipt.xrd_token, RADIX_TOKEN);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
         assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
+        assert_eq!(genesis_receipt.clock, CLOCK);
         assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
     }
 }

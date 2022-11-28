@@ -6,10 +6,11 @@ use crate::wasm::*;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
 use radix_engine_interface::api::wasm_input::{
     AccessRulesMethodInvocation, AuthZoneMethodInvocation, BucketMethodInvocation,
-    EpochManagerFunctionInvocation, EpochManagerMethodInvocation, NativeFnInvocation,
-    NativeFunctionInvocation, NativeMethodInvocation, PackageFunctionInvocation,
-    ProofMethodInvocation, RadixEngineInput, ResourceManagerFunctionInvocation,
-    ResourceManagerMethodInvocation, VaultMethodInvocation, WorktopMethodInvocation,
+    ClockFunctionInvocation, ClockMethodInvocation, EpochManagerFunctionInvocation,
+    EpochManagerMethodInvocation, NativeFnInvocation, NativeFunctionInvocation,
+    NativeMethodInvocation, PackageFunctionInvocation, ProofMethodInvocation, RadixEngineInput,
+    ResourceManagerFunctionInvocation, ResourceManagerMethodInvocation, VaultMethodInvocation,
+    WorktopMethodInvocation,
 };
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId};
 use sbor::rust::vec::Vec;
@@ -47,6 +48,12 @@ where
             NativeFnInvocation::Function(native_function) => match native_function {
                 NativeFunctionInvocation::EpochManager(invocation) => match invocation {
                     EpochManagerFunctionInvocation::Create(invocation) => self
+                        .system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                },
+                NativeFunctionInvocation::Clock(invocation) => match invocation {
+                    ClockFunctionInvocation::Create(invocation) => self
                         .system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
@@ -261,6 +268,16 @@ where
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                     }
                 }
+                NativeMethodInvocation::Clock(clock_method) => match clock_method {
+                    ClockMethodInvocation::GetCurrentTimeInMinutes(invocation) => self
+                        .system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    ClockMethodInvocation::SetCurrentTime(invocation) => self
+                        .system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                },
                 NativeMethodInvocation::Worktop(worktop_method) => match worktop_method {
                     WorktopMethodInvocation::TakeNonFungibles(invocation) => self
                         .system_api

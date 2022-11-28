@@ -3,9 +3,9 @@ use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
 blueprint! {
-    struct SystemTest;
+    struct EpochManagerTest;
 
-    impl SystemTest {
+    impl EpochManagerTest {
         pub fn get_epoch() -> u64 {
             Runtime::current_epoch()
         }

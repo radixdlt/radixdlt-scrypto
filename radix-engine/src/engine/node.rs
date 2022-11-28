@@ -24,6 +24,11 @@ pub enum RENode {
     NonFungibleStore(NonFungibleStore),
     ResourceManager(ResourceManagerSubstate),
     EpochManager(EpochManagerSubstate),
+    Clock(
+        CurrentTimeInMillisSubstate,
+        CurrentTimeInSecondsSubstate,
+        CurrentTimeInMinutesSubstate,
+    ),
 }
 
 impl RENode {
@@ -105,10 +110,28 @@ impl RENode {
                     );
                 }
             }
-            RENode::EpochManager(system) => {
+            RENode::EpochManager(epoch_manager_substate) => {
                 substates.insert(
                     SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
-                    system.into(),
+                    epoch_manager_substate.into(),
+                );
+            }
+            RENode::Clock(
+                current_time_in_millis_substate,
+                current_time_in_seconds_substate,
+                current_time_in_minutes_substate,
+            ) => {
+                substates.insert(
+                    SubstateOffset::Clock(ClockOffset::CurrentTimeInMillis),
+                    current_time_in_millis_substate.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Clock(ClockOffset::CurrentTimeInSeconds),
+                    current_time_in_seconds_substate.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Clock(ClockOffset::CurrentTimeInMinutes),
+                    current_time_in_minutes_substate.into(),
                 );
             }
         }

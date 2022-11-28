@@ -5,6 +5,8 @@ members = [
     "bucket",
     "component",
     "core",
+    "clock",
+    "epoch_manager",
     "data_access",
     "deref",
     "execution_trace",
@@ -25,7 +27,7 @@ members = [
     "stored_external_component",
     "stored_resource",
     "stored_values",
-    "system",
+    "epoch_manager",
     "vault"
 ]
 

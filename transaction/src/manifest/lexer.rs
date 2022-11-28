@@ -62,6 +62,7 @@ pub enum TokenKind {
     Vault,
     ResourceManager,
     Package,
+    Clock,
 
     /* Other interpreted */
     Expression,
@@ -404,6 +405,7 @@ impl Lexer {
             "Vault" => Ok(TokenKind::Vault),
             "ResourceManager" => Ok(TokenKind::ResourceManager),
             "Package" => Ok(TokenKind::Package),
+            "Clock" => Ok(TokenKind::Clock),
 
             "Expression" => Ok(TokenKind::Expression),
             "Blob" => Ok(TokenKind::Blob),
