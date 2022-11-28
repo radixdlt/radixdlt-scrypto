@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, CallFrameUpdate, ExecutableInvocation, InterpreterError, LockFlags,
-    MethodDeref, NativeExecutor, NativeProgram, REActor, ResolvedMethod, RuntimeError, SystemApi,
+    MethodDeref, NativeExecutor, NativeProcedure, REActor, ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::types::*;
 use radix_engine_interface::api::api::EngineApi;
@@ -38,7 +38,7 @@ impl ExecutableInvocation for MetadataSetInvocation {
     }
 }
 
-impl NativeProgram for MetadataSetInvocation {
+impl NativeProcedure for MetadataSetInvocation {
     type Output = ();
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>

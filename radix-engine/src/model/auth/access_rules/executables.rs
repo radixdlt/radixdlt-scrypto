@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, InterpreterError,
-    Invokable, LockFlags, MethodDeref, NativeExecutor, NativeProgram, REActor, ResolvedMethod,
+    Invokable, LockFlags, MethodDeref, NativeExecutor, NativeProcedure, REActor, ResolvedMethod,
     RuntimeError, SystemApi,
 };
 use crate::model::{MethodAuthorization, MethodAuthorizationError};
@@ -50,7 +50,7 @@ impl ExecutableInvocation for AccessRulesAddAccessCheckInvocation {
     }
 }
 
-impl NativeProgram for AccessRulesAddAccessCheckInvocation {
+impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
     type Output = ();
 
     fn main<Y>(
@@ -142,7 +142,7 @@ impl ExecutableInvocation for AccessRulesSetAccessRuleInvocation {
     }
 }
 
-impl NativeProgram for AccessRulesSetAccessRuleInvocation {
+impl NativeProcedure for AccessRulesSetAccessRuleInvocation {
     type Output = ();
 
     fn main<Y>(

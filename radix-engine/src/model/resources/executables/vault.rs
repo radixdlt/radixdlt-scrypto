@@ -1,7 +1,7 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
-    NativeExecutor, NativeProgram, REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError,
-    SystemApi,
+    NativeExecutor, NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver,
+    RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserveError;
 use crate::model::{
@@ -47,7 +47,7 @@ impl ExecutableInvocation for VaultTakeInvocation {
     }
 }
 
-impl NativeProgram for VaultTakeInvocation {
+impl NativeProcedure for VaultTakeInvocation {
     type Output = Bucket;
 
     fn main<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
@@ -103,7 +103,7 @@ impl ExecutableInvocation for VaultPutInvocation {
     }
 }
 
-impl NativeProgram for VaultPutInvocation {
+impl NativeProcedure for VaultPutInvocation {
     type Output = ();
 
     fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -149,7 +149,7 @@ impl ExecutableInvocation for VaultLockFeeInvocation {
     }
 }
 
-impl NativeProgram for VaultLockFeeInvocation {
+impl NativeProcedure for VaultLockFeeInvocation {
     type Output = ();
 
     fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -219,7 +219,7 @@ impl ExecutableInvocation for VaultTakeNonFungiblesInvocation {
     }
 }
 
-impl NativeProgram for VaultTakeNonFungiblesInvocation {
+impl NativeProcedure for VaultTakeNonFungiblesInvocation {
     type Output = Bucket;
 
     fn main<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
@@ -274,7 +274,7 @@ impl ExecutableInvocation for VaultGetAmountInvocation {
     }
 }
 
-impl NativeProgram for VaultGetAmountInvocation {
+impl NativeProcedure for VaultGetAmountInvocation {
     type Output = Decimal;
 
     fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
@@ -312,7 +312,7 @@ impl ExecutableInvocation for VaultGetResourceAddressInvocation {
     }
 }
 
-impl NativeProgram for VaultGetResourceAddressInvocation {
+impl NativeProcedure for VaultGetResourceAddressInvocation {
     type Output = ResourceAddress;
 
     fn main<'a, Y>(
@@ -356,7 +356,7 @@ impl ExecutableInvocation for VaultGetNonFungibleIdsInvocation {
     }
 }
 
-impl NativeProgram for VaultGetNonFungibleIdsInvocation {
+impl NativeProcedure for VaultGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
 
     fn main<'a, Y>(
@@ -401,7 +401,7 @@ impl ExecutableInvocation for VaultCreateProofInvocation {
     }
 }
 
-impl NativeProgram for VaultCreateProofInvocation {
+impl NativeProcedure for VaultCreateProofInvocation {
     type Output = Proof;
 
     fn main<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
@@ -453,7 +453,7 @@ impl ExecutableInvocation for VaultCreateProofByAmountInvocation {
     }
 }
 
-impl NativeProgram for VaultCreateProofByAmountInvocation {
+impl NativeProcedure for VaultCreateProofByAmountInvocation {
     type Output = Proof;
 
     fn main<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
@@ -505,7 +505,7 @@ impl ExecutableInvocation for VaultCreateProofByIdsInvocation {
     }
 }
 
-impl NativeProgram for VaultCreateProofByIdsInvocation {
+impl NativeProcedure for VaultCreateProofByIdsInvocation {
     type Output = Proof;
 
     fn main<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>

@@ -1,7 +1,7 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
-    NativeExecutor, NativeProgram, REActor, RENode, ResolvedMethod, ResolvedReceiver, RuntimeError,
-    SystemApi,
+    NativeExecutor, NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver,
+    RuntimeError, SystemApi,
 };
 use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
@@ -47,7 +47,7 @@ impl ExecutableInvocation for WorktopPutInvocation {
     }
 }
 
-impl NativeProgram for WorktopPutInvocation {
+impl NativeProcedure for WorktopPutInvocation {
     type Output = ();
 
     fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -97,7 +97,7 @@ impl ExecutableInvocation for WorktopTakeAmountInvocation {
     }
 }
 
-impl NativeProgram for WorktopTakeAmountInvocation {
+impl NativeProcedure for WorktopTakeAmountInvocation {
     type Output = Bucket;
 
     fn main<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
@@ -174,7 +174,7 @@ impl ExecutableInvocation for WorktopTakeAllInvocation {
     }
 }
 
-impl NativeProgram for WorktopTakeAllInvocation {
+impl NativeProcedure for WorktopTakeAllInvocation {
     type Output = Bucket;
 
     fn main<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
@@ -251,7 +251,7 @@ impl ExecutableInvocation for WorktopTakeNonFungiblesInvocation {
     }
 }
 
-impl NativeProgram for WorktopTakeNonFungiblesInvocation {
+impl NativeProcedure for WorktopTakeNonFungiblesInvocation {
     type Output = Bucket;
 
     fn main<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
@@ -330,7 +330,7 @@ impl ExecutableInvocation for WorktopAssertContainsInvocation {
     }
 }
 
-impl NativeProgram for WorktopAssertContainsInvocation {
+impl NativeProcedure for WorktopAssertContainsInvocation {
     type Output = ();
 
     fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -377,7 +377,7 @@ impl ExecutableInvocation for WorktopAssertContainsAmountInvocation {
     }
 }
 
-impl NativeProgram for WorktopAssertContainsAmountInvocation {
+impl NativeProcedure for WorktopAssertContainsAmountInvocation {
     type Output = ();
 
     fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -426,7 +426,7 @@ impl ExecutableInvocation for WorktopAssertContainsNonFungiblesInvocation {
     }
 }
 
-impl NativeProgram for WorktopAssertContainsNonFungiblesInvocation {
+impl NativeProcedure for WorktopAssertContainsNonFungiblesInvocation {
     type Output = ();
 
     fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -476,7 +476,7 @@ impl ExecutableInvocation for WorktopDrainInvocation {
     }
 }
 
-impl NativeProgram for WorktopDrainInvocation {
+impl NativeProcedure for WorktopDrainInvocation {
     type Output = Vec<Bucket>;
 
     fn main<Y>(self, api: &mut Y) -> Result<(Vec<Bucket>, CallFrameUpdate), RuntimeError>

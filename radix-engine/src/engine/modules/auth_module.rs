@@ -14,7 +14,6 @@ pub enum AuthError {
         authorization: MethodAuthorization,
         error: MethodAuthorizationError,
     },
-    CouldNotEncodePackageAddress,
 }
 
 pub struct AuthModule;

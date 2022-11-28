@@ -53,7 +53,7 @@ impl ExecutableInvocation for PackagePublishNoOwnerInvocation {
     }
 }
 
-impl NativeProgram for PackagePublishNoOwnerInvocation {
+impl NativeProcedure for PackagePublishNoOwnerInvocation {
     type Output = PackageAddress;
 
     fn main<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
@@ -116,7 +116,7 @@ impl ExecutableInvocation for PackagePublishWithOwnerInvocation {
     }
 }
 
-impl NativeProgram for PackagePublishWithOwnerInvocation {
+impl NativeProcedure for PackagePublishWithOwnerInvocation {
     type Output = (PackageAddress, Bucket);
 
     fn main<Y>(
@@ -145,12 +145,9 @@ impl NativeProgram for PackagePublishWithOwnerInvocation {
 
         let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
         let package_address: PackageAddress = global_node_id.into();
-        let bytes = scrypto_encode(&package_address).map_err(|_| {
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::CouldNotEncodePackageAddress,
-            ))
-        })?;
 
+        // TODO: Cleanup package address + NonFungibleId integration
+        let bytes = scrypto_encode(&package_address).unwrap();
         let non_fungible_id = NonFungibleId::from_bytes(bytes);
         let non_fungible_address =
             NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id.clone());

@@ -1,13 +1,12 @@
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Invokable,
-    LockFlags, MethodDeref, NativeExecutor, NativeProgram, REActor, RENode, ResolvedFunction,
+    LockFlags, MethodDeref, NativeExecutor, NativeProcedure, REActor, RENode, ResolvedFunction,
     ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{
-    BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
-    VaultRuntimeSubstate,
+    BucketSubstate, GlobalAddressSubstate, InvokeError, MethodAccessRuleMethod, NonFungible,
+    NonFungibleStore, NonFungibleSubstate, Resource, ResourceManagerSubstate, VaultRuntimeSubstate,
 };
-use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
 use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::{
@@ -59,7 +58,7 @@ impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
     }
 }
 
-impl NativeProgram for ResourceManagerBucketBurnInvocation {
+impl NativeProcedure for ResourceManagerBucketBurnInvocation {
     type Output = ();
 
     fn main<Y>(self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -90,7 +89,7 @@ impl ExecutableInvocation for ResourceManagerCreateInvocation {
     }
 }
 
-impl NativeProgram for ResourceManagerCreateInvocation {
+impl NativeProcedure for ResourceManagerCreateInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
 
     fn main<Y>(
@@ -271,7 +270,7 @@ impl ExecutableInvocation for ResourceManagerBurnInvocation {
     }
 }
 
-impl NativeProgram for ResourceManagerBurnExecutable {
+impl NativeProcedure for ResourceManagerBurnExecutable {
     type Output = ();
 
     fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -366,7 +365,7 @@ impl ExecutableInvocation for ResourceManagerUpdateAuthInvocation {
     }
 }
 
-impl NativeProgram for ResourceManagerUpdateAuthExecutable {
+impl NativeProcedure for ResourceManagerUpdateAuthExecutable {
     type Output = ();
 
     fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -425,7 +424,7 @@ impl ExecutableInvocation for ResourceManagerLockAuthInvocation {
 
 pub struct ResourceManagerLockAuthExecutable(RENodeId, ResourceMethodAuthKey);
 
-impl NativeProgram for ResourceManagerLockAuthExecutable {
+impl NativeProcedure for ResourceManagerLockAuthExecutable {
     type Output = ();
 
     fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -484,7 +483,7 @@ impl ExecutableInvocation for ResourceManagerCreateVaultInvocation {
 
 pub struct ResourceManagerCreateVaultExecutable(RENodeId);
 
-impl NativeProgram for ResourceManagerCreateVaultExecutable {
+impl NativeProcedure for ResourceManagerCreateVaultExecutable {
     type Output = Vault;
 
     fn main<'a, Y>(self, api: &mut Y) -> Result<(Vault, CallFrameUpdate), RuntimeError>
@@ -543,7 +542,7 @@ impl ExecutableInvocation for ResourceManagerCreateBucketInvocation {
 
 pub struct ResourceManagerCreateBucketExecutable(RENodeId);
 
-impl NativeProgram for ResourceManagerCreateBucketExecutable {
+impl NativeProcedure for ResourceManagerCreateBucketExecutable {
     type Output = Bucket;
 
     fn main<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
@@ -600,7 +599,7 @@ impl ExecutableInvocation for ResourceManagerMintInvocation {
 
 pub struct ResourceManagerMintExecutable(RENodeId, MintParams);
 
-impl NativeProgram for ResourceManagerMintExecutable {
+impl NativeProcedure for ResourceManagerMintExecutable {
     type Output = Bucket;
 
     fn main<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
@@ -701,7 +700,7 @@ impl ExecutableInvocation for ResourceManagerGetMetadataInvocation {
 
 pub struct ResourceManagerGetMetadataExecutable(RENodeId);
 
-impl NativeProgram for ResourceManagerGetMetadataExecutable {
+impl NativeProcedure for ResourceManagerGetMetadataExecutable {
     type Output = HashMap<String, String>;
 
     fn main<'a, Y>(
@@ -751,7 +750,7 @@ impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
 
 pub struct ResourceManagerGetResourceTypeExecutable(RENodeId);
 
-impl NativeProgram for ResourceManagerGetResourceTypeExecutable {
+impl NativeProcedure for ResourceManagerGetResourceTypeExecutable {
     type Output = ResourceType;
 
     fn main<'a, Y>(
@@ -801,7 +800,7 @@ impl ExecutableInvocation for ResourceManagerGetTotalSupplyInvocation {
 
 pub struct ResourceManagerGetTotalSupplyExecutable(RENodeId);
 
-impl NativeProgram for ResourceManagerGetTotalSupplyExecutable {
+impl NativeProcedure for ResourceManagerGetTotalSupplyExecutable {
     type Output = Decimal;
 
     fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
@@ -847,7 +846,7 @@ impl ExecutableInvocation for ResourceManagerUpdateMetadataInvocation {
 
 pub struct ResourceManagerUpdateMetadataExecutable(RENodeId, HashMap<String, String>);
 
-impl NativeProgram for ResourceManagerUpdateMetadataExecutable {
+impl NativeProcedure for ResourceManagerUpdateMetadataExecutable {
     type Output = ();
 
     fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -906,7 +905,7 @@ impl ExecutableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
 
 pub struct ResourceManagerUpdateNonFungibleDataExecutable(RENodeId, NonFungibleId, Vec<u8>);
 
-impl NativeProgram for ResourceManagerUpdateNonFungibleDataExecutable {
+impl NativeProcedure for ResourceManagerUpdateNonFungibleDataExecutable {
     type Output = ();
 
     fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
@@ -983,7 +982,7 @@ impl ExecutableInvocation for ResourceManagerNonFungibleExistsInvocation {
 
 pub struct ResourceManagerNonFungibleExistsExecutable(RENodeId, NonFungibleId);
 
-impl NativeProgram for ResourceManagerNonFungibleExistsExecutable {
+impl NativeProcedure for ResourceManagerNonFungibleExistsExecutable {
     type Output = bool;
 
     fn main<'a, Y>(self, system_api: &mut Y) -> Result<(bool, CallFrameUpdate), RuntimeError>
@@ -1046,7 +1045,7 @@ impl ExecutableInvocation for ResourceManagerGetNonFungibleInvocation {
 
 pub struct ResourceManagerGetNonFungibleExecutable(RENodeId, NonFungibleId);
 
-impl NativeProgram for ResourceManagerGetNonFungibleExecutable {
+impl NativeProcedure for ResourceManagerGetNonFungibleExecutable {
     type Output = [Vec<u8>; 2];
 
     fn main<Y>(self, system_api: &mut Y) -> Result<([Vec<u8>; 2], CallFrameUpdate), RuntimeError>
