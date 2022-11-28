@@ -1,6 +1,6 @@
-use sbor::rust::fmt::{Debug, Formatter};
-
+use crate::model::Resource;
 use crate::types::*;
+use sbor::rust::fmt::{Debug, Formatter};
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -31,4 +31,10 @@ impl PackageSubstate {
     pub fn code(&self) -> &[u8] {
         &self.code
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct PackageRoyaltyAccumulatorSubstate {
+    pub royalty: Resource,
 }
