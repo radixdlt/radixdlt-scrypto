@@ -57,6 +57,8 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<AuthZoneClearInvocation, E>
     + SysNativeInvokable<AuthZoneDrainInvocation, E>
     + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
+    + SysNativeInvokable<AccessRulesUpdateAuthInvocation, E>
+    + SysNativeInvokable<AccessRulesLockAuthInvocation, E>
     + SysNativeInvokable<BucketTakeInvocation, E>
     + SysNativeInvokable<BucketPutInvocation, E>
     + SysNativeInvokable<BucketTakeNonFungiblesInvocation, E>

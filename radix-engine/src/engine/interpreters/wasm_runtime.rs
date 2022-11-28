@@ -194,6 +194,14 @@ where
                         .system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    AccessRulesMethodInvocation::UpdateAuth(invocation) => self
+                        .system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    AccessRulesMethodInvocation::LockAuth(invocation) => self
+                        .system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::ResourceManager(resman_method) => match resman_method {
                     ResourceManagerMethodInvocation::Burn(invocation) => self

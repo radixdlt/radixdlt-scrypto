@@ -11,6 +11,8 @@ use radix_engine_interface::model::*;
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum AccessRulesError {
     BlueprintFunctionNotFound(String),
+    InvalidIndex(usize),
+    MethodUsesDefaultAuth(String),
 }
 
 impl NativeExecutable for AccessRulesAddAccessCheckInvocation {
@@ -82,6 +84,135 @@ impl NativeInvocation for AccessRulesAddAccessCheckInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
             NativeMethod::AccessRules(AccessRulesMethod::AddAccessCheck),
+            self.receiver,
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+impl NativeExecutable for AccessRulesUpdateAuthInvocation {
+    type NativeOutput = ();
+
+    fn execute<'a, Y>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(Self::NativeOutput, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi,
+    {
+        let node_id = input.receiver;
+        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+        let access_rules_substate = substate_ref_mut.access_rules();
+        let access_rules = access_rules_substate
+            .access_rules
+            .get_mut(input.access_rules_index)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::AccessRulesError(AccessRulesError::InvalidIndex(
+                    input.access_rules_index,
+                )),
+            ))?;
+
+        match input.method {
+            AccessRulesMethodIdent::Default => {
+                let (_, current_default_mutability) = access_rules.get_default().clone();
+                *access_rules = access_rules
+                    .clone()
+                    .default(input.access_rule, current_default_mutability.clone());
+            }
+            AccessRulesMethodIdent::Method(method_name) => {
+                let current_access_rule_mutability = access_rules
+                    .iter()
+                    .filter(|(x, _)| **x == method_name)
+                    .nth(0)
+                    .ok_or(RuntimeError::ApplicationError(
+                        ApplicationError::AccessRulesError(
+                            AccessRulesError::MethodUsesDefaultAuth(method_name.clone()),
+                        ),
+                    ))?
+                    .1
+                     .1
+                    .clone();
+                *access_rules = access_rules.clone().method(
+                    &method_name,
+                    input.access_rule,
+                    current_access_rule_mutability.clone(),
+                );
+            }
+        }
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for AccessRulesUpdateAuthInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::AccessRules(AccessRulesMethod::UpdateAuth),
+            self.receiver,
+            CallFrameUpdate::empty(),
+        )
+    }
+}
+
+impl NativeExecutable for AccessRulesLockAuthInvocation {
+    type NativeOutput = ();
+
+    fn execute<'a, Y>(
+        input: Self,
+        system_api: &mut Y,
+    ) -> Result<(Self::NativeOutput, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi,
+    {
+        let node_id = input.receiver;
+        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+        let access_rules_substate = substate_ref_mut.access_rules();
+        let access_rules = access_rules_substate
+            .access_rules
+            .get_mut(input.access_rules_index)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::AccessRulesError(AccessRulesError::InvalidIndex(
+                    input.access_rules_index,
+                )),
+            ))?;
+
+        match input.method {
+            AccessRulesMethodIdent::Default => {
+                let (current_access_rule, _) = access_rules.get_default().clone();
+                *access_rules = access_rules.clone().default(current_access_rule, LOCKED);
+            }
+            AccessRulesMethodIdent::Method(method_name) => {
+                let current_access_rule = access_rules
+                    .iter()
+                    .filter(|(x, _)| **x == method_name)
+                    .nth(0)
+                    .ok_or(RuntimeError::ApplicationError(
+                        ApplicationError::AccessRulesError(
+                            AccessRulesError::MethodUsesDefaultAuth(method_name.clone()),
+                        ),
+                    ))?
+                    .1
+                     .0
+                    .clone();
+                *access_rules =
+                    access_rules
+                        .clone()
+                        .method(&method_name, current_access_rule, LOCKED);
+            }
+        }
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl NativeInvocation for AccessRulesLockAuthInvocation {
+    fn info(&self) -> NativeInvocationInfo {
+        NativeInvocationInfo::Method(
+            NativeMethod::AccessRules(AccessRulesMethod::LockAuth),
             self.receiver,
             CallFrameUpdate::empty(),
         )

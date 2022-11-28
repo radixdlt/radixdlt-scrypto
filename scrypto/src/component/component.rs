@@ -112,7 +112,7 @@ impl Component {
             .clone()
             .into_iter()
             .enumerate()
-            .map(|(id, rule)| StatefulAccessRules::new(self.0, rule, id))
+            .map(|(id, _)| StatefulAccessRules::new(self.0, id))
             .collect()
     }
 
@@ -205,7 +205,7 @@ impl BorrowedGlobalComponent {
             .clone()
             .into_iter()
             .enumerate()
-            .map(|(id, rule)| StatefulAccessRules::new(self.0, rule, id))
+            .map(|(id, _)| StatefulAccessRules::new(self.0, id))
             .collect()
     }
 }

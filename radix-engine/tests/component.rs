@@ -232,7 +232,11 @@ fn component_access_rules_should_be_readable_from_scrypto_methods_and_functions(
             .method("deposit_funds", rule!(require(RADIX_TOKEN)), LOCKED)
             .default(rule!(allow_all), LOCKED),
         AccessRules::new()
-            .method("deposit_funds", rule!(require(RADIX_TOKEN)), LOCKED)
+            .method(
+                "deposit_funds",
+                rule!(require(ECDSA_SECP256K1_TOKEN)),
+                LOCKED,
+            )
             .default(rule!(allow_all), LOCKED),
     ];
     for call in [Call::Method, Call::Function] {
@@ -244,6 +248,37 @@ fn component_access_rules_should_be_readable_from_scrypto_methods_and_functions(
         // Assert
         assert_eq!(access_rules, read_access_rules)
     }
+}
+
+#[test]
+fn component_access_rules_may_be_changed_within_a_method() {
+    // Arrange
+    let access_rules = vec![AccessRules::new()
+        .method(
+            "deposit_funds",
+            rule!(require(RADIX_TOKEN)),
+            MUTABLE(rule!(allow_all)),
+        )
+        .default(rule!(allow_all), LOCKED)];
+    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+
+    // Act
+    let receipt = test_runner.deposit_funds();
+
+    // Assert
+    receipt.expect_commit_failure();
+
+    // Act
+    let receipt = test_runner.mutate_method_auth(0, "deposit_funds", rule!(allow_all));
+
+    // Assert
+    receipt.expect_commit_success();
+
+    // Act
+    let receipt = test_runner.deposit_funds();
+
+    // Assert
+    receipt.expect_commit_success();
 }
 
 struct MutableAccessRulesTestRunner {
@@ -294,6 +329,33 @@ impl MutableAccessRulesTestRunner {
         };
 
         self.execute_manifest(manifest).output(1)
+    }
+
+    pub fn mutate_method_auth(
+        &mut self,
+        index: usize,
+        method_name: &str,
+        access_rule: AccessRule,
+    ) -> TransactionReceipt {
+        let args = args!(index, method_name.to_string(), access_rule);
+        let manifest = Self::manifest_builder()
+            .call_method(self.component_address, "mutate_method_auth", args)
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn deposit_funds(&mut self) -> TransactionReceipt {
+        let manifest = Self::manifest_builder()
+            .call_method(self.component_address, "deposit_funds", args!())
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn withdraw_funds(&mut self) -> TransactionReceipt {
+        let manifest = Self::manifest_builder()
+            .call_method(self.component_address, "withdraw_funds", args!())
+            .build();
+        self.execute_manifest(manifest)
     }
 
     fn manifest_builder() -> ManifestBuilder {

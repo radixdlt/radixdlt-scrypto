@@ -67,6 +67,8 @@ pub enum NativeFunction {
 #[strum(serialize_all = "snake_case")]
 pub enum AccessRulesMethod {
     AddAccessCheck,
+    UpdateAuth,
+    LockAuth,
 }
 
 #[derive(

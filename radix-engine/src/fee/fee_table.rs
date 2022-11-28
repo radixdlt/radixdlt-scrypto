@@ -232,6 +232,8 @@ impl FeeTable {
             },
             NativeMethod::AccessRules(component_ident) => match component_ident {
                 AccessRulesMethod::AddAccessCheck => self.fixed_medium,
+                AccessRulesMethod::UpdateAuth => self.fixed_medium,
+                AccessRulesMethod::LockAuth => self.fixed_medium,
             },
             NativeMethod::Vault(vault_ident) => {
                 match vault_ident {

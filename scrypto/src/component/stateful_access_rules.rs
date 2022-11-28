@@ -1,6 +1,18 @@
 use radix_engine_derive::scrypto;
-use radix_engine_interface::api::types::{ComponentId, GlobalAddress, RENodeId};
-use radix_engine_interface::model::{AccessRule, AccessRules, ComponentAddress};
+use radix_engine_interface::api::api::SysNativeInvokable;
+use radix_engine_interface::api::types::ToString;
+use radix_engine_interface::api::types::{
+    AccessRulesOffset, ComponentId, GlobalAddress, RENodeId, SubstateOffset,
+};
+use radix_engine_interface::model::{
+    AccessRule, AccessRules, AccessRulesLockAuthInvocation, AccessRulesMethodIdent,
+    AccessRulesUpdateAuthInvocation, ComponentAddress,
+};
+
+use crate::engine::scrypto_env::ScryptoEnv;
+use crate::runtime::{DataPointer, DataRef};
+
+use super::AccessRulesSubstate;
 
 // TODO: Should `Decode` be removed so that `StatefulAccessRules` can not be passed between
 // components?
@@ -8,19 +20,13 @@ use radix_engine_interface::model::{AccessRule, AccessRules, ComponentAddress};
 #[scrypto(TypeId, Encode, Decode, Describe)]
 pub struct StatefulAccessRules {
     component: ComponentIdentifier,
-    access_rules: AccessRules,
     index: usize,
 }
 
 impl StatefulAccessRules {
-    pub fn new<T: Into<ComponentIdentifier>>(
-        component: T,
-        access_rules: AccessRules,
-        index: usize,
-    ) -> Self {
+    pub fn new<T: Into<ComponentIdentifier>>(component: T, index: usize) -> Self {
         Self {
             component: component.into(),
-            access_rules,
             index,
         }
     }
@@ -30,30 +36,65 @@ impl StatefulAccessRules {
     }
 
     pub fn access_rules(&self) -> AccessRules {
-        self.access_rules.clone()
+        let pointer = DataPointer::new(
+            self.component_re_node(),
+            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+        );
+        let state: DataRef<AccessRulesSubstate> = pointer.get();
+        state.access_rules.get(self.index).unwrap().clone()
     }
 
     pub fn index(&self) -> usize {
         self.index
     }
 
-    pub fn set_method_auth(&mut self, _method_name: &str, _access_rule: AccessRule) {
-        todo!();
+    pub fn set_method_auth(&mut self, method_name: &str, access_rule: AccessRule) {
+        let mut syscalls = ScryptoEnv;
+        syscalls
+            .sys_invoke(AccessRulesUpdateAuthInvocation {
+                receiver: self.component_re_node(),
+                access_rule: access_rule.clone(),
+                method: AccessRulesMethodIdent::Method(method_name.to_string()),
+                access_rules_index: self.index,
+            })
+            .unwrap();
     }
 
-    pub fn set_default(&mut self, _access_rule: AccessRule) {
-        todo!();
+    pub fn set_default(&mut self, access_rule: AccessRule) {
+        let mut syscalls = ScryptoEnv;
+        syscalls
+            .sys_invoke(AccessRulesUpdateAuthInvocation {
+                receiver: self.component_re_node(),
+                access_rule: access_rule.clone(),
+                method: AccessRulesMethodIdent::Default,
+                access_rules_index: self.index,
+            })
+            .unwrap();
     }
 
-    pub fn lock_method_auth(&mut self, _method_name: &str) {
-        todo!();
+    pub fn lock_method_auth(&mut self, method_name: &str) {
+        let mut syscalls = ScryptoEnv;
+        syscalls
+            .sys_invoke(AccessRulesLockAuthInvocation {
+                receiver: self.component_re_node(),
+                method: AccessRulesMethodIdent::Method(method_name.to_string()),
+                access_rules_index: self.index,
+            })
+            .unwrap();
     }
 
     pub fn lock_default(&mut self) {
-        todo!();
+        let mut syscalls = ScryptoEnv;
+        syscalls
+            .sys_invoke(AccessRulesLockAuthInvocation {
+                receiver: self.component_re_node(),
+                method: AccessRulesMethodIdent::Default,
+                access_rules_index: self.index,
+            })
+            .unwrap();
     }
 
-    fn _component_re_node(&self) -> RENodeId {
+    fn component_re_node(&self) -> RENodeId {
         match self.component {
             ComponentIdentifier::NodeId(node_id) => RENodeId::Component(node_id),
             ComponentIdentifier::ComponentAddress(component_address) => {

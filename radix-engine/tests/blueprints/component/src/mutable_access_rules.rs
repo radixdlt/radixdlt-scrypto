@@ -30,8 +30,17 @@ blueprint! {
                 .collect()
         }
 
+        pub fn mutate_method_auth(&self, index: usize, method_name: String, rule: AccessRule) {
+            let component = Component(Runtime::actor().as_component().0);
+            component
+                .access_rules()
+                .get_mut(index)
+                .unwrap()
+                .set_method_auth(&method_name, rule);
+        }
+
         // The methods that the access rules will be added to
-        pub fn borrow_funds() {}
-        pub fn deposit_funds() {}
+        pub fn borrow_funds(&self) {}
+        pub fn deposit_funds(&self) {}
     }
 }

@@ -58,6 +58,8 @@ pub enum NativeFunctionInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum AccessRulesMethodInvocation {
     AddAccessCheck(AccessRulesAddAccessCheckInvocation),
+    UpdateAuth(AccessRulesUpdateAuthInvocation),
+    LockAuth(AccessRulesLockAuthInvocation),
 }
 
 #[derive(Debug)]
