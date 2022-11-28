@@ -42,7 +42,7 @@ fn test_component_royalty() {
     );
 
     receipt.expect_commit_success();
-    assert_eq!(dec!("0.1"), receipt.execution.fee_summary.royalty)
+    assert_eq!(receipt.execution.fee_summary.royalty, dec!("0.1"));
 }
 
 fn set_up_package_and_component() -> (
@@ -111,14 +111,14 @@ fn test_package_royalty() {
 
     receipt.expect_commit_success();
     assert_eq!(
+        receipt.execution.fee_summary.royalty,
         dec!("0.1") + dec!("0.2"),
-        receipt.execution.fee_summary.royalty
-    )
+    );
 }
 
 #[test]
 fn test_royalty_accumulation_when_success() {
-    let (mut store, account, public_key, _package_address, component_address) =
+    let (mut store, account, public_key, package_address, component_address) =
         set_up_package_and_component();
     let mut test_runner = TestRunner::new(true, &mut store);
 
@@ -132,14 +132,18 @@ fn test_royalty_accumulation_when_success() {
 
     receipt.expect_commit_success();
     assert_eq!(
-        dec!("0.1") + dec!("0.2"),
-        receipt.execution.fee_summary.royalty
-    )
+        test_runner.inspect_package_royalty(package_address),
+        Some(dec!("0.2"))
+    );
+    assert_eq!(
+        test_runner.inspect_component_royalty(component_address),
+        Some(dec!("0.1"))
+    );
 }
 
 #[test]
 fn test_royalty_accumulation_when_failure() {
-    let (mut store, account, public_key, _package_address, component_address) =
+    let (mut store, account, public_key, package_address, component_address) =
         set_up_package_and_component();
     let mut test_runner = TestRunner::new(true, &mut store);
 
@@ -152,5 +156,12 @@ fn test_royalty_accumulation_when_failure() {
     );
 
     receipt.expect_commit_failure();
-    assert_eq!(dec!("0"), receipt.execution.fee_summary.royalty)
+    assert_eq!(
+        test_runner.inspect_package_royalty(package_address),
+        Some(dec!("0"))
+    );
+    assert_eq!(
+        test_runner.inspect_component_royalty(component_address),
+        Some(dec!("0"))
+    );
 }

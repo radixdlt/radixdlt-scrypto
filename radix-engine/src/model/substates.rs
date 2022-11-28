@@ -34,6 +34,22 @@ impl PersistedSubstate {
             panic!("Not a vault");
         }
     }
+
+    pub fn component_royalty_accumulator(&self) -> &ComponentRoyaltyAccumulatorSubstate {
+        if let PersistedSubstate::ComponentRoyaltyAccumulator(state) = self {
+            state
+        } else {
+            panic!("Not a component royalty accumulator");
+        }
+    }
+
+    pub fn package_royalty_accumulator(&self) -> &PackageRoyaltyAccumulatorSubstate {
+        if let PersistedSubstate::PackageRoyaltyAccumulator(state) = self {
+            state
+        } else {
+            panic!("Not a package royalty accumulator");
+        }
+    }
 }
 
 impl Into<VaultSubstate> for PersistedSubstate {
