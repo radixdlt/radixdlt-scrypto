@@ -1,17 +1,16 @@
 use radix_engine_derive::scrypto;
-use radix_engine_interface::api::types::ComponentId;
-use radix_engine_interface::model::{AccessRules, AccessRule};
+use radix_engine_interface::model::{AccessRules, AccessRule, ComponentAddress};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 pub struct StatefulAccessRules {
-    component: ComponentId,
+    component: ComponentAddress,
     access_rules: AccessRules,
     index: usize,
 }
 
 impl StatefulAccessRules {
-    pub fn new(component: ComponentId, access_rules: AccessRules, index: usize) -> Self {
+    pub fn new(component: ComponentAddress, access_rules: AccessRules, index: usize) -> Self {
         Self {
             component,
             access_rules,
@@ -19,7 +18,7 @@ impl StatefulAccessRules {
         }
     }
 
-    pub fn component(&self) -> ComponentId {
+    pub fn component_address(&self) -> ComponentAddress {
         self.component
     }
 
