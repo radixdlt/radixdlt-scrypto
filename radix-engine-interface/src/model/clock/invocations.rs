@@ -24,20 +24,20 @@ impl Into<NativeFnInvocation> for ClockCreateInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ClockGetCurrentTimeInMinutesInvocation {
+pub struct ClockGetCurrentTimeRoundedToMinutesInvocation {
     pub receiver: SystemAddress,
 }
 
-impl SysInvocation for ClockGetCurrentTimeInMinutesInvocation {
+impl SysInvocation for ClockGetCurrentTimeRoundedToMinutesInvocation {
     type Output = u64;
 }
 
-impl ScryptoNativeInvocation for ClockGetCurrentTimeInMinutesInvocation {}
+impl ScryptoNativeInvocation for ClockGetCurrentTimeRoundedToMinutesInvocation {}
 
-impl Into<NativeFnInvocation> for ClockGetCurrentTimeInMinutesInvocation {
+impl Into<NativeFnInvocation> for ClockGetCurrentTimeRoundedToMinutesInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Clock(
-            ClockMethodInvocation::GetCurrentTimeInMinutes(self),
+            ClockMethodInvocation::GetCurrentTimeRoundedToMinutes(self),
         ))
     }
 }
@@ -46,7 +46,7 @@ impl Into<NativeFnInvocation> for ClockGetCurrentTimeInMinutesInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ClockSetCurrentTimeInvocation {
     pub receiver: SystemAddress,
-    pub current_time_millis: u64,
+    pub current_time_ms: u64,
 }
 
 impl SysInvocation for ClockSetCurrentTimeInvocation {

@@ -206,9 +206,9 @@ pub enum WorktopOffset {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ClockOffset {
-    CurrentTimeInMillis,
-    CurrentTimeInSeconds,
-    CurrentTimeInMinutes,
+    CurrentTime,
+    CurrentTimeRoundedToSeconds,
+    CurrentTimeRoundedToMinutes,
 }
 
 /// Specifies a specific Substate into a given RENode

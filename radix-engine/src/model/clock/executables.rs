@@ -3,9 +3,9 @@ use crate::engine::{
     NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::model::{
-    CurrentTimeInMillisSubstate, CurrentTimeInMinutesSubstate, CurrentTimeInSecondsSubstate,
+    CurrentTimeRoundedToMinutesSubstate, CurrentTimeRoundedToSecondsSubstate, CurrentTimeSubstate,
     GlobalAddressSubstate, HardAuthRule, HardProofRule, HardResourceOrNonFungible,
-    MethodAuthorization,
+    MethodAuthorization, SubstateRefMut,
 };
 use crate::types::*;
 use radix_engine_interface::api::types::{
@@ -14,18 +14,11 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::model::*;
 
-const SECONDS_TO_MILLIS_FACTOR: u64 = 1000;
-const MINUTES_TO_MILLIS_FACTOR: u64 = SECONDS_TO_MILLIS_FACTOR * 60;
-
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub enum ClockError {
-    InvalidRequestData(DecodeError),
-}
+const SECONDS_TO_MS_FACTOR: u64 = 1000;
+const MINUTES_TO_MS_FACTOR: u64 = SECONDS_TO_MS_FACTOR * 60;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct Clock {
-    pub current_time_in_minutes_substate: CurrentTimeInMinutesSubstate,
-}
+pub struct Clock {}
 
 impl NativeExecutable for ClockCreateInvocation {
     type NativeOutput = SystemAddress;
@@ -38,14 +31,12 @@ impl NativeExecutable for ClockCreateInvocation {
         Y: SystemApi + Invokable<ScryptoInvocation>,
     {
         let node_id = system_api.create_node(RENode::Clock(
-            CurrentTimeInMillisSubstate {
-                current_time_in_millis: 0,
+            CurrentTimeSubstate { current_time_ms: 0 },
+            CurrentTimeRoundedToSecondsSubstate {
+                current_time_rounded_to_seconds_ms: 0,
             },
-            CurrentTimeInSecondsSubstate {
-                current_time_in_seconds: 0,
-            },
-            CurrentTimeInMinutesSubstate {
-                current_time_in_minutes: 0,
+            CurrentTimeRoundedToMinutesSubstate {
+                current_time_rounded_to_minutes_ms: 0,
             },
         ))?;
 
@@ -75,7 +66,7 @@ impl NativeInvocation for ClockCreateInvocation {
     }
 }
 
-impl NativeExecutable for ClockGetCurrentTimeInMinutesInvocation {
+impl NativeExecutable for ClockGetCurrentTimeRoundedToMinutesInvocation {
     type NativeOutput = u64;
 
     fn execute<Y>(_input: Self, system_api: &mut Y) -> Result<(u64, CallFrameUpdate), RuntimeError>
@@ -87,19 +78,22 @@ impl NativeExecutable for ClockGetCurrentTimeInMinutesInvocation {
             REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
             _ => panic!("Unexpected"),
         };
-        let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeInMinutes);
+        let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
         let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
-        let substate = substate_ref.current_time_in_minutes();
+        let substate = substate_ref.current_time_rounded_to_minutes();
 
-        Ok((substate.current_time_in_minutes, CallFrameUpdate::empty()))
+        Ok((
+            substate.current_time_rounded_to_minutes_ms,
+            CallFrameUpdate::empty(),
+        ))
     }
 }
 
-impl NativeInvocation for ClockGetCurrentTimeInMinutesInvocation {
+impl NativeInvocation for ClockGetCurrentTimeRoundedToMinutesInvocation {
     fn info(&self) -> NativeInvocationInfo {
         NativeInvocationInfo::Method(
-            NativeMethod::Clock(ClockMethod::GetCurrentTimeToMinutePrecision),
+            NativeMethod::Clock(ClockMethod::GetCurrentTimeRoundedToMinutes),
             RENodeId::Global(GlobalAddress::System(self.receiver)),
             CallFrameUpdate::empty(),
         )
@@ -113,8 +107,10 @@ impl NativeExecutable for ClockSetCurrentTimeInvocation {
     where
         Y: SystemApi,
     {
-        let current_time_in_seconds = input.current_time_millis / SECONDS_TO_MILLIS_FACTOR;
-        let current_time_in_minutes = input.current_time_millis / MINUTES_TO_MILLIS_FACTOR;
+        let current_time_rounded_to_seconds =
+            (input.current_time_ms / SECONDS_TO_MS_FACTOR) * SECONDS_TO_MS_FACTOR;
+        let current_time_rounded_to_minutes =
+            (input.current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
         // TODO: Remove this hack and get resolved receiver in a better way
         let node_id = match system_api.get_actor() {
@@ -122,31 +118,53 @@ impl NativeExecutable for ClockSetCurrentTimeInvocation {
             _ => panic!("Unexpected"),
         };
 
-        let millis_offset = SubstateOffset::Clock(ClockOffset::CurrentTimeInMillis);
-        let millis_handle = system_api.lock_substate(node_id, millis_offset, LockFlags::MUTABLE)?;
-        let mut millis_substate_mut = system_api.get_ref_mut(millis_handle)?;
-        millis_substate_mut
-            .current_time_in_millis()
-            .current_time_in_millis = input.current_time_millis;
+        update_clock_substate(
+            system_api,
+            node_id,
+            ClockOffset::CurrentTime,
+            |substate_ref| substate_ref.current_time().current_time_ms = input.current_time_ms,
+        )?;
 
-        let seconds_offset = SubstateOffset::Clock(ClockOffset::CurrentTimeInSeconds);
-        let seconds_handle =
-            system_api.lock_substate(node_id, seconds_offset, LockFlags::MUTABLE)?;
-        let mut seconds_substate_mut = system_api.get_ref_mut(seconds_handle)?;
-        seconds_substate_mut
-            .current_time_in_seconds()
-            .current_time_in_seconds = current_time_in_seconds;
+        update_clock_substate(
+            system_api,
+            node_id,
+            ClockOffset::CurrentTimeRoundedToSeconds,
+            |substate_ref| {
+                substate_ref
+                    .current_time_rounded_to_seconds()
+                    .current_time_rounded_to_seconds_ms = current_time_rounded_to_seconds
+            },
+        )?;
 
-        let minutes_offset = SubstateOffset::Clock(ClockOffset::CurrentTimeInMinutes);
-        let minutes_handle =
-            system_api.lock_substate(node_id, minutes_offset, LockFlags::MUTABLE)?;
-        let mut minutes_substate_mut = system_api.get_ref_mut(minutes_handle)?;
-        minutes_substate_mut
-            .current_time_in_minutes()
-            .current_time_in_minutes = current_time_in_minutes;
+        update_clock_substate(
+            system_api,
+            node_id,
+            ClockOffset::CurrentTimeRoundedToMinutes,
+            |substate_ref| {
+                substate_ref
+                    .current_time_rounded_to_minutes()
+                    .current_time_rounded_to_minutes_ms = current_time_rounded_to_minutes
+            },
+        )?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
+}
+
+fn update_clock_substate<'a, Y, F>(
+    system_api: &'a mut Y,
+    node_id: RENodeId,
+    clock_offset: ClockOffset,
+    fun: F,
+) -> Result<(), RuntimeError>
+where
+    Y: SystemApi,
+    F: FnOnce(&mut SubstateRefMut<'a>) -> (),
+{
+    let offset = SubstateOffset::Clock(clock_offset);
+    let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+    let mut substate_ref = system_api.get_ref_mut(handle)?;
+    Ok(fun(&mut substate_ref))
 }
 
 impl NativeInvocation for ClockSetCurrentTimeInvocation {

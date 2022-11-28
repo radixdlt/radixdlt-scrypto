@@ -346,7 +346,7 @@ pub enum ClockFunction {
 #[strum(serialize_all = "snake_case")]
 pub enum ClockMethod {
     SetCurrentTime,
-    GetCurrentTimeToMinutePrecision,
+    GetCurrentTimeRoundedToMinutes,
 }
 
 #[derive(

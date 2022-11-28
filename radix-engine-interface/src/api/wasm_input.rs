@@ -176,6 +176,6 @@ pub enum ClockFunctionInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ClockMethodInvocation {
-    GetCurrentTimeInMinutes(ClockGetCurrentTimeInMinutesInvocation),
+    GetCurrentTimeRoundedToMinutes(ClockGetCurrentTimeRoundedToMinutesInvocation),
     SetCurrentTime(ClockSetCurrentTimeInvocation),
 }

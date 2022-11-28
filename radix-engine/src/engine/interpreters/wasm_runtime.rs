@@ -269,7 +269,7 @@ where
                     }
                 }
                 NativeMethodInvocation::Clock(clock_method) => match clock_method {
-                    ClockMethodInvocation::GetCurrentTimeInMinutes(invocation) => self
+                    ClockMethodInvocation::GetCurrentTimeRoundedToMinutes(invocation) => self
                         .system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),

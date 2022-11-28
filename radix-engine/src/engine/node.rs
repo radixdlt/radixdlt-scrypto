@@ -25,9 +25,9 @@ pub enum RENode {
     ResourceManager(ResourceManagerSubstate),
     EpochManager(EpochManagerSubstate),
     Clock(
-        CurrentTimeInMillisSubstate,
-        CurrentTimeInSecondsSubstate,
-        CurrentTimeInMinutesSubstate,
+        CurrentTimeSubstate,
+        CurrentTimeRoundedToSecondsSubstate,
+        CurrentTimeRoundedToMinutesSubstate,
     ),
 }
 
@@ -117,21 +117,21 @@ impl RENode {
                 );
             }
             RENode::Clock(
-                current_time_in_millis_substate,
-                current_time_in_seconds_substate,
-                current_time_in_minutes_substate,
+                current_time_substate,
+                current_time_rounded_to_seconds_substate,
+                current_time_rounded_to_minutes_substate,
             ) => {
                 substates.insert(
-                    SubstateOffset::Clock(ClockOffset::CurrentTimeInMillis),
-                    current_time_in_millis_substate.into(),
+                    SubstateOffset::Clock(ClockOffset::CurrentTime),
+                    current_time_substate.into(),
                 );
                 substates.insert(
-                    SubstateOffset::Clock(ClockOffset::CurrentTimeInSeconds),
-                    current_time_in_seconds_substate.into(),
+                    SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToSeconds),
+                    current_time_rounded_to_seconds_substate.into(),
                 );
                 substates.insert(
-                    SubstateOffset::Clock(ClockOffset::CurrentTimeInMinutes),
-                    current_time_in_minutes_substate.into(),
+                    SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
+                    current_time_rounded_to_minutes_substate.into(),
                 );
             }
         }

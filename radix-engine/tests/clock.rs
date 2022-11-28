@@ -81,8 +81,8 @@ fn validator_can_set_current_time() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
-    let time_to_set_in_millis: u64 = 1669663688996;
-    let expected_time_in_minutes: u64 = 27827728;
+    let time_to_set_ms: u64 = 1669663688996;
+    let expected_time_rounded_to_minutes: u64 = 1669663680000;
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -91,12 +91,12 @@ fn validator_can_set_current_time() {
             package_address,
             "ClockTest",
             "set_current_time",
-            args!(CLOCK, time_to_set_in_millis),
+            args!(CLOCK, time_to_set_ms),
         )
         .call_function(
             package_address,
             "ClockTest",
-            "get_current_time_in_minutes",
+            "get_current_time_rounded_to_minutes",
             args![],
         )
         .build();
@@ -107,12 +107,15 @@ fn validator_can_set_current_time() {
 
     // Assert
     let outputs = receipt.expect_commit_success();
-    let current_time_in_minutes: u64 = scrypto_decode(&outputs[2]).unwrap();
-    assert_eq!(current_time_in_minutes, expected_time_in_minutes);
+    let current_time_rounded_to_minutes: u64 = scrypto_decode(&outputs[2]).unwrap();
+    assert_eq!(
+        current_time_rounded_to_minutes,
+        expected_time_rounded_to_minutes
+    );
 }
 
 #[test]
-fn no_auth_required_to_get_current_time_in_minutes() {
+fn no_auth_required_to_get_current_time_rounded_to_minutes() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -124,7 +127,7 @@ fn no_auth_required_to_get_current_time_in_minutes() {
         .call_function(
             package_address,
             "ClockTest",
-            "get_current_time_in_minutes",
+            "get_current_time_rounded_to_minutes",
             args![],
         )
         .build();
@@ -132,6 +135,6 @@ fn no_auth_required_to_get_current_time_in_minutes() {
 
     // Assert
     let outputs = receipt.expect_commit_success();
-    let current_time_in_minutes: u64 = scrypto_decode(&outputs[1]).unwrap();
-    assert_eq!(current_time_in_minutes, 0);
+    let current_time_rounded_to_minutes: u64 = scrypto_decode(&outputs[1]).unwrap();
+    assert_eq!(current_time_rounded_to_minutes, 0);
 }

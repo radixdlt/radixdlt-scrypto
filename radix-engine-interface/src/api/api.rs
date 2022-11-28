@@ -100,7 +100,7 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<EpochManagerGetCurrentEpochInvocation, E>
     + SysNativeInvokable<ClockCreateInvocation, E>
     + SysNativeInvokable<ClockSetCurrentTimeInvocation, E>
-    + SysNativeInvokable<ClockGetCurrentTimeInMinutesInvocation, E>
+    + SysNativeInvokable<ClockGetCurrentTimeRoundedToMinutesInvocation, E>
     + SysNativeInvokable<WorktopPutInvocation, E>
     + SysNativeInvokable<WorktopTakeAmountInvocation, E>
     + SysNativeInvokable<WorktopTakeAllInvocation, E>

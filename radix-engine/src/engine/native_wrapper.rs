@@ -401,9 +401,11 @@ where
                 }
             },
             NativeMethod::Clock(clock_method) => match clock_method {
-                ClockMethod::GetCurrentTimeToMinutePrecision => {
-                    let invocation: ClockGetCurrentTimeInMinutesInvocation = scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                ClockMethod::GetCurrentTimeRoundedToMinutes => {
+                    let invocation: ClockGetCurrentTimeRoundedToMinutesInvocation =
+                        scrypto_decode(&args).map_err(|e| {
+                            RuntimeError::KernelError(KernelError::InvalidSborValue(e))
+                        })?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
