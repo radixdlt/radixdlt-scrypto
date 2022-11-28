@@ -1,17 +1,18 @@
+use radix_engine_interface::abi;
+use radix_engine_interface::abi::*;
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
     ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoPackage, ScryptoReceiver,
 };
-use radix_engine_interface::args;
+use radix_engine_interface::constants::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::{hash, Blob, Hash};
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
-
-use radix_engine_interface::constants::*;
+use radix_engine_interface::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
@@ -19,10 +20,6 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use scrypto::abi::*;
-use scrypto::access_rule_node;
-use scrypto::rule;
-use scrypto::*;
 
 use crate::errors::*;
 use crate::model::*;
@@ -33,10 +30,10 @@ macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
         let mut fields = Vec::new();
         for arg in $args {
-            fields.push(::scrypto::data::scrypto_decode(&arg).unwrap());
+            fields.push(::radix_engine_interface::data::scrypto_decode(&arg).unwrap());
         }
-        let input_struct = ::scrypto::data::ScryptoValue::Struct { fields };
-        ::scrypto::data::scrypto_encode(&input_struct).unwrap()
+        let input_struct = ::radix_engine_interface::data::ScryptoValue::Struct { fields };
+        ::radix_engine_interface::data::scrypto_encode(&input_struct).unwrap()
     }};
 }
 

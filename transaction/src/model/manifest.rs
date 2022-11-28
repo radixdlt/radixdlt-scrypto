@@ -1,5 +1,5 @@
 use crate::model::Instruction;
-use scrypto::scrypto;
+use radix_engine_interface::scrypto;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
