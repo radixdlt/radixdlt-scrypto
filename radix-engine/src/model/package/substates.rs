@@ -4,7 +4,7 @@ use sbor::rust::fmt::{Debug, Formatter};
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct PackageSubstate {
+pub struct PackageInfoSubstate {
     pub code: Vec<u8>,
     pub blueprint_abis: HashMap<String, BlueprintAbi>,
 }
@@ -15,15 +15,15 @@ pub struct PackageRoyaltyConfigSubstate {
     pub royalty_config: HashMap<String, RoyaltyConfig>,
 }
 
-impl Debug for PackageSubstate {
+impl Debug for PackageInfoSubstate {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PackageSubstate")
+        f.debug_struct("PackageInfoSubstate")
             .field("blueprint_abis", &self.blueprint_abis)
             .finish()
     }
 }
 
-impl PackageSubstate {
+impl PackageInfoSubstate {
     pub fn blueprint_abi(&self, blueprint_name: &str) -> Option<&BlueprintAbi> {
         self.blueprint_abis.get(blueprint_name)
     }

@@ -45,7 +45,7 @@ impl NativeExecutable for AccessRulesAddAccessCheckInvocation {
                 )
             };
 
-            let package_offset = SubstateOffset::Package(PackageOffset::Package);
+            let package_offset = SubstateOffset::Package(PackageOffset::Info);
             let handle =
                 system_api.lock_substate(package_id, package_offset, LockFlags::read_only())?;
             let substate_ref = system_api.get_ref(handle)?;

@@ -65,14 +65,14 @@ impl Publish {
                 .ok_or(Error::PackageAddressNotFound)?;
             let substate_id = SubstateId(
                 global.node_deref(),
-                SubstateOffset::Package(PackageOffset::Package),
+                SubstateOffset::Package(PackageOffset::Info),
             );
 
             let previous_version = substate_store
                 .get_substate(&substate_id)
                 .map(|output| output.version);
 
-            let validated_package = PackageSubstate {
+            let validated_package = PackageInfoSubstate {
                 code,
                 blueprint_abis: abi,
             };
@@ -86,7 +86,7 @@ impl Publish {
             substate_store.put_substate(
                 SubstateId(
                     global.node_deref(),
-                    SubstateOffset::Package(PackageOffset::Package),
+                    SubstateOffset::Package(PackageOffset::Info),
                 ),
                 output_value,
             );

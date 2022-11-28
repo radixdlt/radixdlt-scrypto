@@ -124,7 +124,7 @@ impl AuthModule {
                         },
                     ) => {
                         let node_id = RENodeId::Global(GlobalAddress::Package(package_address));
-                        let offset = SubstateOffset::Package(PackageOffset::Package);
+                        let offset = SubstateOffset::Package(PackageOffset::Info);
                         let handle =
                             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
 

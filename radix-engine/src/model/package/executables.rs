@@ -7,7 +7,7 @@ use crate::engine::{
     RuntimeError, SystemApi,
 };
 use crate::model::PackageRoyaltyAccumulatorSubstate;
-use crate::model::{GlobalAddressSubstate, PackageSubstate, Resource};
+use crate::model::{GlobalAddressSubstate, PackageInfoSubstate, Resource};
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::types::{NativeMethod, SubstateOffset};
@@ -30,10 +30,10 @@ impl Package {
     fn new(
         code: Vec<u8>,
         abi: HashMap<String, BlueprintAbi>,
-    ) -> Result<PackageSubstate, PrepareError> {
+    ) -> Result<PackageInfoSubstate, PrepareError> {
         WasmValidator::default().validate(&code, &abi)?;
 
-        Ok(PackageSubstate {
+        Ok(PackageInfoSubstate {
             code: code,
             blueprint_abis: abi,
         })

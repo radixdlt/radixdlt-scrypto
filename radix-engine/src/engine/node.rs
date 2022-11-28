@@ -23,7 +23,7 @@ pub enum RENode {
     ),
     Worktop(WorktopSubstate),
     Package(
-        PackageSubstate,
+        PackageInfoSubstate,
         PackageRoyaltyConfigSubstate,
         PackageRoyaltyAccumulatorSubstate,
     ),
@@ -101,10 +101,7 @@ impl RENode {
                 );
             }
             RENode::Package(package, package_royalty_config, package_royalty_accumulator) => {
-                substates.insert(
-                    SubstateOffset::Package(PackageOffset::Package),
-                    package.into(),
-                );
+                substates.insert(SubstateOffset::Package(PackageOffset::Info), package.into());
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::RoyaltyConfig),
                     package_royalty_config.into(),
