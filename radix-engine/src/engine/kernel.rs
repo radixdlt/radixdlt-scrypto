@@ -179,7 +179,7 @@ where
 
                 Ok((
                     GlobalAddress::Component(component_address),
-                    GlobalAddressSubstate::Component(scrypto::component::Component(component_id)),
+                    GlobalAddressSubstate::Component(component_id),
                 ))
             }
             RENodeId::EpochManager(epoch_manager_id) => {
@@ -317,8 +317,7 @@ where
 
                 // TODO: Use system_api to globalize component when create_node is refactored
                 // TODO: to allow for address selection
-                let global_substate =
-                    GlobalAddressSubstate::Component(scrypto::component::Component(component_id));
+                let global_substate = GlobalAddressSubstate::Component(component_id);
                 self.track.insert_substate(
                     SubstateId(node_id, offset.clone()),
                     RuntimeSubstate::Global(global_substate),

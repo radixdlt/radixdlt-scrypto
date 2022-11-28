@@ -17,7 +17,6 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::dec;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
-use scrypto::resource::SysBucket;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq)]

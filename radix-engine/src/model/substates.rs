@@ -568,8 +568,8 @@ impl<'a> SubstateRef<'a> {
                     GlobalAddressSubstate::Resource(resource_address) => {
                         owned_nodes.insert(RENodeId::ResourceManager(*resource_address))
                     }
-                    GlobalAddressSubstate::Component(component) => {
-                        owned_nodes.insert(RENodeId::Component(component.0))
+                    GlobalAddressSubstate::Component(component_id) => {
+                        owned_nodes.insert(RENodeId::Component(*component_id))
                     }
                     GlobalAddressSubstate::System(epoch_manager_id) => {
                         owned_nodes.insert(RENodeId::EpochManager(*epoch_manager_id))

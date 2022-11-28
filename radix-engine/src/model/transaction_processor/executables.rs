@@ -6,9 +6,6 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::data::{IndexedScryptoValue, ValueReplacingError};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::Cow;
-use scrypto::resource::Worktop;
-use scrypto::resource::{ComponentAuthZone, SysBucket, SysProof};
-use scrypto::runtime::Runtime;
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
