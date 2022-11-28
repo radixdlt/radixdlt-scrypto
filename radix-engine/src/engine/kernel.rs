@@ -1408,7 +1408,7 @@ where
                             LockFlags::read_only(),
                         )?;
                         let substate_ref = system_api.get_ref(handle)?;
-                        let package = substate_ref.package().clone(); // TODO: Remove clone()
+                        let package = substate_ref.package_info().clone(); // TODO: Remove clone()
                         system_api.drop_lock(handle)?;
 
                         Ok(package)
@@ -1525,7 +1525,7 @@ where
                             LockFlags::read_only(),
                         )?;
                         let substate_ref = system_api.get_ref(handle)?;
-                        let package = substate_ref.package().clone(); // TODO: Remove clone()
+                        let package = substate_ref.package_info().clone(); // TODO: Remove clone()
                         system_api.drop_lock(handle)?;
 
                         Ok(package)

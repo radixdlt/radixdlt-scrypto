@@ -7,16 +7,16 @@ use radix_engine_interface::model::*;
 use transaction::model::Executable;
 
 use crate::engine::*;
-use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
+use crate::fee::{FeeReserve, RoyaltyReceiver};
 use crate::ledger::*;
 use crate::model::Resource;
 use crate::model::RuntimeSubstate;
+use crate::model::SubstateRef;
 use crate::model::TransactionProcessorError;
 use crate::model::{KeyValueStoreEntrySubstate, PersistedSubstate};
-use crate::model::{LockableResource, SubstateRef};
 use crate::model::{NonFungibleSubstate, SubstateRefMut};
 use crate::state_manager::StateDiff;
 use crate::transaction::CommitResult;
@@ -653,8 +653,8 @@ impl<'s> FinalizingTrack<'s> {
             } else {
                 Decimal::ZERO
             };
-        let mut collector: LockableResource =
-            Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }).into();
+        let mut collector: Resource =
+            Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 });
         for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
             let amount = if contingent {
                 if is_success {
@@ -706,7 +706,51 @@ impl<'s> FinalizingTrack<'s> {
 
         // TODO: update XRD supply or disable it
         // TODO: pay tips to the lead validator
-        // TODO: pay royalty to royalty collectors
+
+        if is_success {
+            for (receiver, amount) in &fee_summary.royalty_breakdown {
+                match receiver {
+                    RoyaltyReceiver::Package(_, node_id) => {
+                        let substate_id = SubstateId(
+                            node_id.clone(),
+                            SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+                        );
+
+                        let (substate, old_version) = to_persist
+                            .remove(&substate_id)
+                            .expect("Failed to fetch package royalty accumulator");
+                        let mut runtime_substate = substate.to_runtime();
+                        runtime_substate
+                            .to_ref_mut()
+                            .package_royalty_accumulator()
+                            .royalty
+                            .put(collector.take_by_amount(*amount).unwrap())
+                            .expect("Failed to accumulate royalty");
+                        to_persist
+                            .insert(substate_id, (runtime_substate.to_persisted(), old_version));
+                    }
+                    RoyaltyReceiver::Component(_, node_id) => {
+                        let substate_id = SubstateId(
+                            node_id.clone(),
+                            SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+                        );
+
+                        let (substate, old_version) = to_persist
+                            .remove(&substate_id)
+                            .expect("Failed to fetch component royalty accumulator");
+                        let mut runtime_substate = substate.to_runtime();
+                        runtime_substate
+                            .to_ref_mut()
+                            .component_royalty_accumulator()
+                            .royalty
+                            .put(collector.take_by_amount(*amount).unwrap())
+                            .expect("Failed to accumulate royalty");
+                        to_persist
+                            .insert(substate_id, (runtime_substate.to_persisted(), old_version));
+                    }
+                }
+            }
+        }
 
         TransactionResult::Commit(CommitResult {
             outcome: match invoke_result {

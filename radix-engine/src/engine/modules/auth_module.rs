@@ -131,7 +131,7 @@ impl AuthModule {
                         // Assume that package_address/blueprint is the original impl of Component for now
                         // TODO: Remove this assumption
                         let substate_ref = system_api.get_ref(handle)?;
-                        let package = substate_ref.package();
+                        let package = substate_ref.package_info();
                         let schema = package
                             .blueprint_abi(&blueprint_name)
                             .expect("Blueprint not found for existing component")

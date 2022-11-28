@@ -38,7 +38,7 @@ pub fn export_abi<S: ReadableSubstateStore>(
         .ok_or(ExportError::PackageNotFound(package_address))?;
 
     let abi = package_value
-        .package()
+        .package_info()
         .blueprint_abis
         .get(blueprint_name)
         .ok_or(ExportError::BlueprintNotFound(

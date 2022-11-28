@@ -1,5 +1,5 @@
 use crate::engine::*;
-use crate::fee::{FeeReserve, RoyaltyCollector};
+use crate::fee::{FeeReserve, RoyaltyReceiver};
 use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, GlobalOffset, PackageOffset, RENodeId, SubstateId,
@@ -114,7 +114,7 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
             .unwrap_or(Decimal::ZERO);
         track
             .fee_reserve
-            .consume_royalty(RoyaltyCollector::Package(*package_address), royalty)
+            .consume_royalty(RoyaltyReceiver::Package(*package_address, node_id), royalty)
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
         track
             .release_lock(SubstateId(node_id, offset.clone()), false)
@@ -152,7 +152,10 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
                 .clone();
             track
                 .fee_reserve
-                .consume_royalty(RoyaltyCollector::Component(component_address), royalty)
+                .consume_royalty(
+                    RoyaltyReceiver::Component(component_address, node_id),
+                    royalty,
+                )
                 .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             track
                 .release_lock(SubstateId(node_id, offset.clone()), false)

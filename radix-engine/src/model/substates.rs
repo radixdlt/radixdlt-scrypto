@@ -18,7 +18,7 @@ pub enum PersistedSubstate {
     ComponentState(ComponentStateSubstate),
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
-    Package(PackageInfoSubstate),
+    PackageInfo(PackageInfoSubstate),
     PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
     Vault(VaultSubstate),
@@ -61,7 +61,7 @@ impl PersistedSubstate {
             PersistedSubstate::ComponentRoyaltyAccumulator(value) => {
                 RuntimeSubstate::ComponentRoyaltyAccumulator(value)
             }
-            PersistedSubstate::Package(value) => RuntimeSubstate::Package(value),
+            PersistedSubstate::PackageInfo(value) => RuntimeSubstate::PackageInfo(value),
             PersistedSubstate::PackageRoyaltyConfig(value) => {
                 RuntimeSubstate::PackageRoyaltyConfig(value)
             }
@@ -93,7 +93,7 @@ pub enum RuntimeSubstate {
     ComponentState(ComponentStateSubstate),
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
-    Package(PackageInfoSubstate),
+    PackageInfo(PackageInfoSubstate),
     PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
     Vault(VaultRuntimeSubstate),
@@ -127,7 +127,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::ComponentRoyaltyAccumulator(value) => {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value.clone())
             }
-            RuntimeSubstate::Package(value) => PersistedSubstate::Package(value.clone()),
+            RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value.clone()),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 PersistedSubstate::PackageRoyaltyConfig(value.clone())
             }
@@ -166,7 +166,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::ComponentRoyaltyAccumulator(value) => {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value)
             }
-            RuntimeSubstate::Package(value) => PersistedSubstate::Package(value),
+            RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 PersistedSubstate::PackageRoyaltyConfig(value)
             }
@@ -237,7 +237,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::ComponentRoyaltyAccumulator(value) => {
                 SubstateRefMut::ComponentRoyaltyAccumulator(value)
             }
-            RuntimeSubstate::Package(value) => SubstateRefMut::Package(value),
+            RuntimeSubstate::PackageInfo(value) => SubstateRefMut::PackageInfo(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 SubstateRefMut::PackageRoyaltyConfig(value)
             }
@@ -269,7 +269,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::ComponentRoyaltyAccumulator(value) => {
                 SubstateRef::ComponentRoyaltyAccumulator(value)
             }
-            RuntimeSubstate::Package(value) => SubstateRef::Package(value),
+            RuntimeSubstate::PackageInfo(value) => SubstateRef::PackageInfo(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 SubstateRef::PackageRoyaltyConfig(value)
             }
@@ -311,11 +311,19 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn package(&self) -> &PackageInfoSubstate {
-        if let RuntimeSubstate::Package(package) = self {
+    pub fn package_info(&self) -> &PackageInfoSubstate {
+        if let RuntimeSubstate::PackageInfo(package) = self {
             package
         } else {
-            panic!("Not a package");
+            panic!("Not a package info");
+        }
+    }
+
+    pub fn package_royalty_accumulator(&self) -> &PackageRoyaltyAccumulatorSubstate {
+        if let RuntimeSubstate::PackageRoyaltyAccumulator(acc) = self {
+            acc
+        } else {
+            panic!("Not a package accumulator");
         }
     }
 
@@ -350,7 +358,7 @@ impl Into<RuntimeSubstate> for EpochManagerSubstate {
 
 impl Into<RuntimeSubstate> for PackageInfoSubstate {
     fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::Package(self)
+        RuntimeSubstate::PackageInfo(self)
     }
 }
 
@@ -455,7 +463,7 @@ impl Into<ComponentRoyaltyAccumulatorSubstate> for RuntimeSubstate {
         if let RuntimeSubstate::ComponentRoyaltyAccumulator(vault) = self {
             vault
         } else {
-            panic!("Not a component royalty vault");
+            panic!("Not a component royalty accumulator");
         }
     }
 }
@@ -475,7 +483,7 @@ impl Into<PackageRoyaltyAccumulatorSubstate> for RuntimeSubstate {
         if let RuntimeSubstate::PackageRoyaltyAccumulator(vault) = self {
             vault
         } else {
-            panic!("Not a package royalty vault");
+            panic!("Not a package royalty accumulator");
         }
     }
 }
@@ -492,7 +500,7 @@ impl Into<ResourceManagerSubstate> for RuntimeSubstate {
 
 impl Into<PackageInfoSubstate> for RuntimeSubstate {
     fn into(self) -> PackageInfoSubstate {
-        if let RuntimeSubstate::Package(package) = self {
+        if let RuntimeSubstate::PackageInfo(package) = self {
             package
         } else {
             panic!("Not a resource manager");
@@ -592,7 +600,7 @@ pub enum SubstateRef<'a> {
     ComponentRoyaltyAccumulator(&'a ComponentRoyaltyAccumulatorSubstate),
     NonFungible(&'a NonFungibleSubstate),
     KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
-    Package(&'a PackageInfoSubstate),
+    PackageInfo(&'a PackageInfoSubstate),
     PackageRoyaltyConfig(&'a PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a PackageRoyaltyAccumulatorSubstate),
     Vault(&'a VaultRuntimeSubstate),
@@ -614,7 +622,7 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::ComponentRoyaltyAccumulator(value) => {
                 IndexedScryptoValue::from_typed(*value)
             }
-            SubstateRef::Package(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::PackageInfo(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::PackageRoyaltyConfig(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::PackageRoyaltyAccumulator(value) => {
                 IndexedScryptoValue::from_typed(*value)
@@ -660,10 +668,10 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn component_royalty_vault(&self) -> &ComponentRoyaltyAccumulatorSubstate {
+    pub fn component_royalty_accumulator(&self) -> &ComponentRoyaltyAccumulatorSubstate {
         match self {
             SubstateRef::ComponentRoyaltyAccumulator(info) => *info,
-            _ => panic!("Not a component royalty vault"),
+            _ => panic!("Not a component royalty accumulator"),
         }
     }
 
@@ -674,10 +682,10 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn package_royalty_vault(&self) -> &PackageRoyaltyAccumulatorSubstate {
+    pub fn package_royalty_accumulator(&self) -> &PackageRoyaltyAccumulatorSubstate {
         match self {
             SubstateRef::PackageRoyaltyAccumulator(info) => *info,
-            _ => panic!("Not a package royalty vault"),
+            _ => panic!("Not a package royalty accumulator"),
         }
     }
 
@@ -730,9 +738,9 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn package(&self) -> &PackageInfoSubstate {
+    pub fn package_info(&self) -> &PackageInfoSubstate {
         match self {
-            SubstateRef::Package(value) => *value,
+            SubstateRef::PackageInfo(value) => *value,
             _ => panic!("Not a package"),
         }
     }
@@ -835,7 +843,7 @@ pub enum SubstateRefMut<'a> {
     ComponentState(&'a mut ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a mut ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(&'a mut ComponentRoyaltyAccumulatorSubstate),
-    Package(&'a mut PackageInfoSubstate),
+    PackageInfo(&'a mut PackageInfoSubstate),
     PackageRoyaltyConfig(&'a mut PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a mut PackageRoyaltyAccumulatorSubstate),
     NonFungible(&'a mut NonFungibleSubstate),
@@ -937,10 +945,10 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn component_royalty_vault(&mut self) -> &mut ComponentRoyaltyAccumulatorSubstate {
+    pub fn component_royalty_accumulator(&mut self) -> &mut ComponentRoyaltyAccumulatorSubstate {
         match self {
             SubstateRefMut::ComponentRoyaltyAccumulator(value) => *value,
-            _ => panic!("Not component royalty vault"),
+            _ => panic!("Not component royalty accumulator"),
         }
     }
 
@@ -951,10 +959,10 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn package_royalty_vault(&mut self) -> &mut PackageRoyaltyAccumulatorSubstate {
+    pub fn package_royalty_accumulator(&mut self) -> &mut PackageRoyaltyAccumulatorSubstate {
         match self {
             SubstateRefMut::PackageRoyaltyAccumulator(value) => *value,
-            _ => panic!("Not package royalty vault"),
+            _ => panic!("Not package royalty accumulator"),
         }
     }
 

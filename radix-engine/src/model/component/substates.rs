@@ -37,5 +37,5 @@ pub struct ComponentRoyaltyConfigSubstate {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentRoyaltyAccumulatorSubstate {
-    pub royalty: Resource,
+    pub royalty: Resource, // TODO: wrap with a vault?
 }

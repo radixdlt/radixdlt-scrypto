@@ -77,7 +77,7 @@ impl Publish {
                 blueprint_abis: abi,
             };
             let output_value = OutputValue {
-                substate: PersistedSubstate::Package(validated_package),
+                substate: PersistedSubstate::PackageInfo(validated_package),
                 version: previous_version.unwrap_or(0),
             };
 

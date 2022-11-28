@@ -49,7 +49,7 @@ impl NativeExecutable for AccessRulesAddAccessCheckInvocation {
             let handle =
                 system_api.lock_substate(package_id, package_offset, LockFlags::read_only())?;
             let substate_ref = system_api.get_ref(handle)?;
-            let package = substate_ref.package();
+            let package = substate_ref.package_info();
             let blueprint_abi = package.blueprint_abi(&blueprint_name).unwrap_or_else(|| {
                 panic!(
                     "Blueprint {} is not found in package node {:?}",
