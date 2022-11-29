@@ -239,9 +239,7 @@ impl ExecutableInvocation for PackageSetRoyaltyConfigInvocation {
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::EpochManager(
-                EpochManagerMethod::GetCurrentEpoch,
-            )),
+            ResolvedMethod::Native(NativeMethod::Package(PackageMethod::SetRoyaltyConfig)),
             resolved_receiver,
         );
         let executor = NativeExecutor(PackageSetRoyaltyConfigExecutable {
