@@ -1,6 +1,6 @@
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
+use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
@@ -77,7 +77,8 @@ impl FungibleResourceBuilder {
     }
 
     pub fn recallable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
-        self.authorization.insert(VaultMethodKey(Recall), (method_auth, mutability));
+        self.authorization
+            .insert(VaultMethodKey(Recall), (method_auth, mutability));
         self
     }
 
@@ -173,7 +174,8 @@ impl NonFungibleResourceBuilder {
     }
 
     pub fn recallable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
-        self.authorization.insert(VaultMethodKey(Recall), (method_auth, mutability));
+        self.authorization
+            .insert(VaultMethodKey(Recall), (method_auth, mutability));
         self
     }
 

@@ -43,9 +43,7 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Option<T>
                 decoder.read_and_check_size(0)?;
                 Ok(None)
             }
-            _ => {
-                Err(DecodeError::UnknownDiscriminator(discriminator))
-            },
+            _ => Err(DecodeError::UnknownDiscriminator(discriminator)),
         }
     }
 }

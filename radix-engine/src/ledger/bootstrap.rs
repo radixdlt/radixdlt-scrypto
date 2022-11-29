@@ -13,8 +13,8 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
-use radix_engine_interface::model::*;
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Withdraw};
+use radix_engine_interface::model::*;
 use scrypto::rule;
 
 use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
@@ -84,7 +84,8 @@ pub fn create_genesis() -> SystemTransaction {
                 metadata,
                 access_rules,
                 mint_params: initial_supply,
-            }).unwrap(),
+            })
+            .unwrap(),
         }
     };
 
@@ -107,7 +108,8 @@ pub fn create_genesis() -> SystemTransaction {
                 metadata,
                 access_rules,
                 mint_params: initial_supply,
-            }).unwrap(),
+            })
+            .unwrap(),
         }
     };
 
@@ -135,7 +137,8 @@ pub fn create_genesis() -> SystemTransaction {
                 metadata,
                 access_rules,
                 mint_params: initial_supply,
-            }).unwrap(),
+            })
+            .unwrap(),
         }
     };
 
@@ -182,7 +185,8 @@ pub fn create_genesis() -> SystemTransaction {
                 metadata,
                 access_rules,
                 mint_params: initial_supply,
-            }).unwrap(),
+            })
+            .unwrap(),
         }
     };
 
@@ -204,7 +208,8 @@ pub fn create_genesis() -> SystemTransaction {
                 metadata,
                 access_rules,
                 mint_params: initial_supply,
-            }).unwrap(),
+            })
+            .unwrap(),
         }
     };
 

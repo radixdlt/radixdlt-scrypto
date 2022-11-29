@@ -16,9 +16,7 @@ use crate::wasm::*;
 
 use radix_engine_derive::scrypto;
 
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum VaultMethodAuthKey {
     Withdraw,
@@ -26,9 +24,7 @@ pub enum VaultMethodAuthKey {
     Recall,
 }
 
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum ResourceMethodAuthKey {
     Mint,

@@ -603,7 +603,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let mut access_rules = HashMap::new();
-        access_rules.insert(VaultMethodKey(Withdraw), (rule!(require(auth_resource_address)), LOCKED));
+        access_rules.insert(
+            VaultMethodKey(Withdraw),
+            (rule!(require(auth_resource_address)), LOCKED),
+        );
         access_rules.insert(VaultMethodKey(Deposit), (rule!(allow_all), LOCKED));
         let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
 

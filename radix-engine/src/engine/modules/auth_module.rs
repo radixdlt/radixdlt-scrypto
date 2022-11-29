@@ -75,11 +75,9 @@ impl AuthModule {
         )
     }
 
-    pub fn on_before_frame_start<Y>(
-        actor: &REActor,
-        system_api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where Y: SystemApi,
+    pub fn on_before_frame_start<Y>(actor: &REActor, system_api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: SystemApi,
     {
         if matches!(
             actor,
@@ -107,18 +105,21 @@ impl AuthModule {
                         vec![]
                     }
                     (
-                        ResolvedMethod::Native(NativeMethod::ResourceManager(ResourceManagerMethod::Mint)),
+                        ResolvedMethod::Native(NativeMethod::ResourceManager(
+                            ResourceManagerMethod::Mint,
+                        )),
                         ResolvedReceiver {
                             receiver: _,
-                            derefed_from: Some((RENodeId::Global(GlobalAddress::Resource(resource_address)), _)),
-                        } ,
+                            derefed_from:
+                                Some((RENodeId::Global(GlobalAddress::Resource(resource_address)), _)),
+                        },
                     ) if resource_address.eq(&ENTITY_OWNER_TOKEN) => {
                         let actor = system_api.get_actor();
                         match actor {
                             // TODO: Use associated function badge instead
                             REActor::Function(ResolvedFunction::Native(
-                                                  NativeFunction::Package(PackageFunction::PublishWithOwner),
-                                              )) => {
+                                NativeFunction::Package(PackageFunction::PublishWithOwner),
+                            )) => {
                                 vec![MethodAuthorization::AllowAll]
                             }
                             _ => {
@@ -128,7 +129,8 @@ impl AuthModule {
                     }
                     (ResolvedMethod::Native(method), ..)
                         if matches!(method, NativeMethod::Metadata(..))
-                            || matches!(method, NativeMethod::EpochManager(..)) || matches!(method, NativeMethod::ResourceManager(..)) =>
+                            || matches!(method, NativeMethod::EpochManager(..))
+                            || matches!(method, NativeMethod::ResourceManager(..)) =>
                     {
                         let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
                         let handle = system_api.lock_substate(
@@ -231,15 +233,21 @@ impl AuthModule {
 
                         // TODO: Revisit what the correct abstraction is for visibility in the auth module
                         let auth = match visibility {
-                            RENodeVisibilityOrigin::Normal => {
-                                access_rules_substate.native_fn_authorization(NativeFn::Method(NativeMethod::Vault(vault_fn.clone())))
-                            }
+                            RENodeVisibilityOrigin::Normal => access_rules_substate
+                                .native_fn_authorization(NativeFn::Method(NativeMethod::Vault(
+                                    vault_fn.clone(),
+                                ))),
                             RENodeVisibilityOrigin::DirectAccess => match vault_fn {
                                 // TODO: Do we want to allow recaller to be able to withdraw from
                                 // TODO: any visible vault?
                                 VaultMethod::TakeNonFungibles | VaultMethod::Take => {
-                                    let access_rule = access_rules_substate.access_rules[0].get_group("recall");
-                                    let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), access_rule);
+                                    let access_rule =
+                                        access_rules_substate.access_rules[0].get_group("recall");
+                                    let authorization = convert(
+                                        &Type::Any,
+                                        &IndexedScryptoValue::unit(),
+                                        access_rule,
+                                    );
                                     vec![authorization]
                                 }
                                 _ => {

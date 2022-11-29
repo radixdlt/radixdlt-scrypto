@@ -212,7 +212,9 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
         heap: &mut Heap,
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
-        if let REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) = &call_frame.actor {
+        if let REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) =
+            &call_frame.actor
+        {
             match (native_method, resolved_receiver.receiver) {
                 (NativeMethod::Vault(VaultMethod::Take), RENodeId::Vault(vault_id)) => {
                     Self::handle_vault_take(update, heap, track, caller, &vault_id)

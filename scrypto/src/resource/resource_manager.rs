@@ -1,8 +1,10 @@
 use radix_engine_interface::api::api::SysNativeInvokable;
-use radix_engine_interface::api::types::{GlobalAddress, NativeFn, NativeMethod, RENodeId, ResourceManagerMethod};
+use radix_engine_interface::api::types::{
+    GlobalAddress, NativeFn, NativeMethod, RENodeId, ResourceManagerMethod,
+};
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
+use radix_engine_interface::model::*;
 
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
@@ -23,8 +25,10 @@ impl ResourceManager {
             .sys_invoke(AccessRulesSetAccessRuleInvocation {
                 receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
                 index: 0,
-                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::Mint))),
-                rule: access_rule
+                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                    ResourceManagerMethod::Mint,
+                ))),
+                rule: access_rule,
             })
             .unwrap();
     }
@@ -35,8 +39,10 @@ impl ResourceManager {
             .sys_invoke(AccessRulesSetAccessRuleInvocation {
                 receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
                 index: 0,
-                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::Burn))),
-                rule: access_rule
+                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                    ResourceManagerMethod::Burn,
+                ))),
+                rule: access_rule,
             })
             .unwrap();
     }
@@ -80,8 +86,10 @@ impl ResourceManager {
             .sys_invoke(AccessRulesSetAccessRuleInvocation {
                 receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
                 index: 0,
-                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::UpdateMetadata))),
-                rule: access_rule
+                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                    ResourceManagerMethod::UpdateMetadata,
+                ))),
+                rule: access_rule,
             })
             .unwrap();
     }
@@ -92,8 +100,10 @@ impl ResourceManager {
             .sys_invoke(AccessRulesSetAccessRuleInvocation {
                 receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
                 index: 0,
-                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData))),
-                rule: access_rule
+                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                    ResourceManagerMethod::UpdateNonFungibleData,
+                ))),
+                rule: access_rule,
             })
             .unwrap();
     }

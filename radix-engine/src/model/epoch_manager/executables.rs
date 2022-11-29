@@ -123,9 +123,9 @@ impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            EpochManagerGetCurrentEpochExecutable(resolved_receiver.receiver),
-        );
+        let executor = NativeExecutor(EpochManagerGetCurrentEpochExecutable(
+            resolved_receiver.receiver,
+        ));
 
         Ok((actor, call_frame_update, executor))
     }
@@ -166,9 +166,10 @@ impl ExecutableInvocation for EpochManagerSetEpochInvocation {
             ResolvedMethod::Native(NativeMethod::EpochManager(EpochManagerMethod::SetEpoch)),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            EpochManagerSetEpochExecutable(resolved_receiver.receiver, self.epoch),
-        );
+        let executor = NativeExecutor(EpochManagerSetEpochExecutable(
+            resolved_receiver.receiver,
+            self.epoch,
+        ));
 
         Ok((actor, call_frame_update, executor))
     }

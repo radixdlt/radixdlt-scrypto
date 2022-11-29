@@ -122,9 +122,12 @@ fn can_lock_package_metadata_with_owner() {
             scrypto_encode(&AccessRulesSetAccessRuleInvocation {
                 receiver: RENodeId::Global(GlobalAddress::Package(package_address)),
                 index: 0,
-                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(MetadataMethod::Set))),
+                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                    MetadataMethod::Set,
+                ))),
                 rule: AccessRule::DenyAll,
-            }).unwrap(),
+            })
+            .unwrap(),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -144,7 +147,8 @@ fn can_lock_package_metadata_with_owner() {
                 receiver: RENodeId::Global(GlobalAddress::Package(package_address)),
                 key: "name".to_string(),
                 value: "best package ever!".to_string(),
-            }).unwrap(),
+            })
+            .unwrap(),
         )
         .build();
     let receipt = test_runner.execute_manifest(

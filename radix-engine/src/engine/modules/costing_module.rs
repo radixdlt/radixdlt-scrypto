@@ -376,9 +376,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
             REActor::Function(ResolvedFunction::Native(native_function)) => track
                 .fee_reserve
                 .consume_flat(
-                    track
-                        .fee_table
-                        .run_native_function_cost(&native_function),
+                    track.fee_table.run_native_function_cost(&native_function),
                     "run_native_function",
                     false,
                 )
@@ -386,9 +384,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
             REActor::Method(ResolvedMethod::Native(native_method), _) => track
                 .fee_reserve
                 .consume_flat(
-                    track
-                        .fee_table
-                        .run_native_method_cost(&native_method),
+                    track.fee_table.run_native_method_cost(&native_method),
                     "run_native_method",
                     false,
                 )

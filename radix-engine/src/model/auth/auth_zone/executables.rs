@@ -89,7 +89,6 @@ impl ExecutableInvocation for AuthZonePushInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
