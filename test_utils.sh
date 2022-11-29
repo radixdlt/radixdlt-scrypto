@@ -1,5 +1,18 @@
 #!/bin/bash
 
+test_runner="test"
+doc_test_separately=0
+
+setup_test_runner() {
+    if cargo help nextest 2>/dev/null >&2 ; then
+        test_runner="nextest run"
+
+        # workaround for lack of doctests support for nextest
+        # need to keep it until issue resolved https://github.com/nextest-rs/nextest/issues/16
+        doc_test_separately=1
+    fi
+}
+
 # Add '-p' refix to each create in list.
 # This is for cargo command.
 to_cargo_crates() {
@@ -17,7 +30,11 @@ test_crates_features() {
     local crates=$(to_cargo_crates "$1")
     local args="${2:-}"
 
-    cargo test $crates $args
+    cargo $test_runner $crates $args
+
+    if [ $doc_test_separately -eq 1 ] ; then
+        cargo test $crates --doc $args
+    fi
 }
 
 test_packages() {

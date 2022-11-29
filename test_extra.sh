@@ -6,6 +6,8 @@ set -e
 cd "$(dirname "$0")"
 source test_utils.sh
 
+setup_test_runner
+
 echo "Testing scrypto with release profile..."
 test_crates_features \
     "sbor" \
