@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::wasm_input::*;
+use radix_engine_interface::wasm::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
@@ -24,7 +24,10 @@ blueprint! {
                 SubstateOffset::Component(ComponentOffset::State),
                 true,
             ));
-            call_engine(RadixEngineInput::Write(lock_handle, scrypto_encode(&())))
+            call_engine(RadixEngineInput::Write(
+                lock_handle,
+                scrypto_encode(&()).unwrap(),
+            ))
         }
 
         pub fn create_component_and_read_info() -> ComponentInfoSubstate {
@@ -45,7 +48,7 @@ blueprint! {
                 SubstateOffset::Component(ComponentOffset::Info),
                 true,
             ));
-            let input = RadixEngineInput::Write(lock_handle, scrypto_encode(&()));
+            let input = RadixEngineInput::Write(lock_handle, scrypto_encode(&()).unwrap());
             call_engine(input)
         }
     }

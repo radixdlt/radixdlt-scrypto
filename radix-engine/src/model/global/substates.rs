@@ -5,7 +5,7 @@ use radix_engine_interface::api::types::{PackageId, RENodeId, ResourceManagerId,
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum GlobalAddressSubstate {
-    Component(scrypto::component::Component),
+    Component(ComponentId),
     Resource(ResourceManagerId),
     Package(PackageId),
     System(SystemId),
@@ -14,7 +14,7 @@ pub enum GlobalAddressSubstate {
 impl GlobalAddressSubstate {
     pub fn node_deref(&self) -> RENodeId {
         match self {
-            GlobalAddressSubstate::Component(component) => RENodeId::Component(component.0),
+            GlobalAddressSubstate::Component(id) => RENodeId::Component(*id),
             GlobalAddressSubstate::Resource(id) => RENodeId::ResourceManager(*id),
             GlobalAddressSubstate::Package(id) => RENodeId::Package(*id),
             GlobalAddressSubstate::System(SystemId::EpochManager(id)) => {

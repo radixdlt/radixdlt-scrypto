@@ -20,7 +20,7 @@ impl ResourceManager {
         syscalls
             .sys_invoke(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
-                method: ResourceMethodAuthKey::Mint,
+                method: Mint,
                 access_rule,
             })
             .unwrap();
@@ -31,7 +31,7 @@ impl ResourceManager {
         syscalls
             .sys_invoke(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
-                method: ResourceMethodAuthKey::Burn,
+                method: Burn,
                 access_rule,
             })
             .unwrap()
@@ -42,7 +42,7 @@ impl ResourceManager {
         syscalls
             .sys_invoke(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
-                method: ResourceMethodAuthKey::Withdraw,
+                method: Withdraw,
                 access_rule,
             })
             .unwrap()
@@ -53,7 +53,18 @@ impl ResourceManager {
         syscalls
             .sys_invoke(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
-                method: ResourceMethodAuthKey::Deposit,
+                method: Deposit,
+                access_rule,
+            })
+            .unwrap()
+    }
+
+    pub fn set_recallable(&mut self, access_rule: AccessRule) {
+        let mut syscalls = ScryptoEnv;
+        syscalls
+            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+                receiver: self.0,
+                method: Recall,
                 access_rule,
             })
             .unwrap()
@@ -64,7 +75,7 @@ impl ResourceManager {
         syscalls
             .sys_invoke(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
-                method: ResourceMethodAuthKey::UpdateMetadata,
+                method: UpdateMetadata,
                 access_rule,
             })
             .unwrap()
@@ -75,7 +86,7 @@ impl ResourceManager {
         syscalls
             .sys_invoke(ResourceManagerUpdateAuthInvocation {
                 receiver: self.0,
-                method: ResourceMethodAuthKey::UpdateNonFungibleData,
+                method: UpdateNonFungibleData,
                 access_rule,
             })
             .unwrap()
@@ -86,7 +97,7 @@ impl ResourceManager {
         syscalls
             .sys_invoke(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
-                method: ResourceMethodAuthKey::Mint,
+                method: Mint,
             })
             .unwrap()
     }
@@ -96,7 +107,7 @@ impl ResourceManager {
         syscalls
             .sys_invoke(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
-                method: ResourceMethodAuthKey::Burn,
+                method: Burn,
             })
             .unwrap()
     }
@@ -106,7 +117,7 @@ impl ResourceManager {
         syscalls
             .sys_invoke(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
-                method: ResourceMethodAuthKey::Withdraw,
+                method: Withdraw,
             })
             .unwrap()
     }
@@ -116,7 +127,17 @@ impl ResourceManager {
         syscalls
             .sys_invoke(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
-                method: ResourceMethodAuthKey::Deposit,
+                method: Deposit,
+            })
+            .unwrap()
+    }
+
+    pub fn lock_recallable(&mut self) {
+        let mut syscalls = ScryptoEnv;
+        syscalls
+            .sys_invoke(ResourceManagerLockAuthInvocation {
+                receiver: self.0,
+                method: Recall,
             })
             .unwrap()
     }
@@ -126,7 +147,7 @@ impl ResourceManager {
         syscalls
             .sys_invoke(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
-                method: ResourceMethodAuthKey::UpdateMetadata,
+                method: UpdateMetadata,
             })
             .unwrap()
     }
@@ -136,7 +157,7 @@ impl ResourceManager {
         syscalls
             .sys_invoke(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
-                method: ResourceMethodAuthKey::UpdateNonFungibleData,
+                method: UpdateNonFungibleData,
             })
             .unwrap()
     }
@@ -218,7 +239,10 @@ impl ResourceManager {
     /// Mints non-fungible resources
     pub fn mint_non_fungible<T: NonFungibleData>(&mut self, id: &NonFungibleId, data: T) -> Bucket {
         let mut entries = HashMap::new();
-        entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
+        entries.insert(
+            id.clone(),
+            (data.immutable_data().unwrap(), data.mutable_data().unwrap()),
+        );
         self.mint_internal(MintParams::NonFungible { entries })
     }
 
@@ -240,6 +264,6 @@ impl ResourceManager {
         id: &NonFungibleId,
         new_data: T,
     ) {
-        self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data())
+        self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data().unwrap())
     }
 }

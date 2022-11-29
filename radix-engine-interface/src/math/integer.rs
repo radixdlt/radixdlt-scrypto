@@ -291,20 +291,21 @@ macro_rules! sbor_codec {
             }
         }
 
-        impl<X: CustomTypeId> Encode<X> for $t {
+        impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for $t {
             #[inline]
-            fn encode_type_id(&self, encoder: &mut Encoder<X>) {
-                encoder.write_type_id(Self::type_id());
+            fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+                encoder.write_type_id(Self::type_id())
             }
+
             #[inline]
-            fn encode_body(&self, encoder: &mut Encoder<X>) {
-                encoder.write_slice(&self.to_le_bytes());
+            fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+                encoder.write_slice(&self.to_le_bytes())
             }
         }
 
-        impl<X: CustomTypeId> Decode<X> for $t {
+        impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for $t {
             fn decode_body_with_type_id(
-                decoder: &mut Decoder<X>,
+                decoder: &mut D,
                 type_id: SborTypeId<X>,
             ) -> Result<Self, DecodeError> {
                 decoder.check_preloaded_type_id(type_id, Self::type_id())?;
@@ -887,24 +888,25 @@ mod tests {
     use super::*;
     use crate::data::*;
 
-    fn encode_integers<X: CustomTypeId>(enc: &mut Encoder<X>) {
-        I8::by(1i8).encode(enc);
-        I16::by(1i8).encode(enc);
-        I32::by(1i8).encode(enc);
-        I64::by(1i8).encode(enc);
-        I128::by(1i8).encode(enc);
-        U8::by(1u8).encode(enc);
-        U16::by(1u8).encode(enc);
-        U32::by(1u8).encode(enc);
-        U64::by(1u8).encode(enc);
-        U128::by(1u8).encode(enc);
+    fn encode_integers(encoder: &mut ScryptoEncoder) -> Result<(), EncodeError> {
+        encoder.encode(&I8::by(1i8))?;
+        encoder.encode(&I16::by(1i8))?;
+        encoder.encode(&I32::by(1i8))?;
+        encoder.encode(&I64::by(1i8))?;
+        encoder.encode(&I128::by(1i8))?;
+        encoder.encode(&U8::by(1u8))?;
+        encoder.encode(&U16::by(1u8))?;
+        encoder.encode(&U32::by(1u8))?;
+        encoder.encode(&U64::by(1u8))?;
+        encoder.encode(&U128::by(1u8))?;
+        Ok(())
     }
 
     #[test]
     fn test_integer_encoding() {
         let mut bytes = Vec::with_capacity(512);
         let mut enc = ScryptoEncoder::new(&mut bytes);
-        encode_integers(&mut enc);
+        encode_integers(&mut enc).unwrap();
 
         assert_eq!(
             vec![
@@ -927,18 +929,18 @@ mod tests {
     fn test_integer_decoding() {
         let mut bytes = Vec::with_capacity(512);
         let mut enc = ScryptoEncoder::new(&mut bytes);
-        encode_integers(&mut enc);
+        encode_integers(&mut enc).unwrap();
 
-        let mut dec = ScryptoDecoder::new(&bytes);
-        assert_eq!(I8::by(1i8), <I8>::decode(&mut dec).unwrap());
-        assert_eq!(I16::by(1i8), <I16>::decode(&mut dec).unwrap());
-        assert_eq!(I32::by(1i8), <I32>::decode(&mut dec).unwrap());
-        assert_eq!(I64::by(1i8), <I64>::decode(&mut dec).unwrap());
-        assert_eq!(I128::by(1i8), <I128>::decode(&mut dec).unwrap());
-        assert_eq!(U8::by(1u8), <U8>::decode(&mut dec).unwrap());
-        assert_eq!(U16::by(1u8), <U16>::decode(&mut dec).unwrap());
-        assert_eq!(U32::by(1u8), <U32>::decode(&mut dec).unwrap());
-        assert_eq!(U64::by(1u8), <U64>::decode(&mut dec).unwrap());
-        assert_eq!(U128::by(1u8), <U128>::decode(&mut dec).unwrap());
+        let mut decoder = ScryptoDecoder::new(&bytes);
+        assert_eq!(I8::by(1i8), decoder.decode::<I8>().unwrap());
+        assert_eq!(I16::by(1i8), decoder.decode::<I16>().unwrap());
+        assert_eq!(I32::by(1i8), decoder.decode::<I32>().unwrap());
+        assert_eq!(I64::by(1i8), decoder.decode::<I64>().unwrap());
+        assert_eq!(I128::by(1i8), decoder.decode::<I128>().unwrap());
+        assert_eq!(U8::by(1u8), decoder.decode::<U8>().unwrap());
+        assert_eq!(U16::by(1u8), decoder.decode::<U16>().unwrap());
+        assert_eq!(U32::by(1u8), decoder.decode::<U32>().unwrap());
+        assert_eq!(U64::by(1u8), decoder.decode::<U64>().unwrap());
+        assert_eq!(U128::by(1u8), decoder.decode::<U128>().unwrap());
     }
 }

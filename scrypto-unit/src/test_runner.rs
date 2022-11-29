@@ -8,7 +8,7 @@ use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
 use radix_engine::model::{
-    export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate,
+    export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate, MetadataSubstate,
 };
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
@@ -26,6 +26,7 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
 use radix_engine_interface::dec;
 
+use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto::{access_rule_node, rule};
 
@@ -44,12 +45,14 @@ pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
     trace: bool,
 }
 
-impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
+impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateStore>
+    TestRunner<'s, S>
+{
     pub fn new(trace: bool, substate_store: &'s mut S) -> Self {
         let scrypto_interpreter = ScryptoInterpreter {
             wasm_metering_config: WasmMeteringConfig::new(
                 InstructionCostRules::tiered(1, 5, 10, 5000),
-                512,
+                1024,
             ),
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
@@ -91,6 +94,34 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         )
     }
 
+    pub fn get_metadata(&mut self, address: GlobalAddress) -> HashMap<String, String> {
+        let node_id = RENodeId::Global(address);
+        let global = self
+            .execution_stores
+            .get_root_store()
+            .get_substate(&SubstateId(
+                node_id,
+                SubstateOffset::Global(GlobalOffset::Global),
+            ))
+            .map(|s| s.substate.to_runtime())
+            .unwrap();
+
+        let underlying_node = global.global().node_deref();
+
+        let metadata = self
+            .execution_stores
+            .get_root_store()
+            .get_substate(&SubstateId(
+                underlying_node,
+                SubstateOffset::Metadata(MetadataOffset::Metadata),
+            ))
+            .map(|s| s.substate.to_runtime())
+            .unwrap();
+
+        let metadata: MetadataSubstate = metadata.into();
+        metadata.metadata
+    }
+
     pub fn deref_component(&mut self, component_address: ComponentAddress) -> Option<RENodeId> {
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
         let global = self
@@ -104,60 +135,85 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         Some(global.global().node_deref())
     }
 
-    pub fn inspect_component(
+    pub fn deref_package(&mut self, package_address: PackageAddress) -> Option<RENodeId> {
+        let node_id = RENodeId::Global(GlobalAddress::Package(package_address));
+        let global = self
+            .execution_stores
+            .get_root_store()
+            .get_substate(&SubstateId(
+                node_id,
+                SubstateOffset::Global(GlobalOffset::Global),
+            ))
+            .map(|s| s.substate.to_runtime())?;
+        Some(global.global().node_deref())
+    }
+
+    pub fn inspect_component_royalty(
         &mut self,
         component_address: ComponentAddress,
-    ) -> Option<radix_engine::model::ComponentInfoSubstate> {
+    ) -> Option<Decimal> {
         let node_id = self.deref_component(component_address)?;
+
         self.execution_stores
             .get_root_store()
             .get_substate(&SubstateId(
                 node_id,
-                SubstateOffset::Component(ComponentOffset::Info),
+                SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
             ))
-            .map(|output| output.substate.to_runtime().into())
+            .map(|output| {
+                output
+                    .substate
+                    .component_royalty_accumulator()
+                    .royalty
+                    .amount()
+            })
     }
 
-    pub fn inspect_component_state(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Option<radix_engine::model::ComponentStateSubstate> {
-        let node_id = self.deref_component(component_address)?;
+    pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
+        let node_id = self.deref_package(package_address)?;
 
         self.execution_stores
             .get_root_store()
             .get_substate(&SubstateId(
                 node_id,
-                SubstateOffset::Component(ComponentOffset::State),
+                SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
             ))
-            .map(|output| output.substate.to_runtime().into())
+            .map(|output| {
+                output
+                    .substate
+                    .package_royalty_accumulator()
+                    .royalty
+                    .amount()
+            })
     }
 
-    pub fn inspect_key_value_entry(
+    pub fn get_component_vaults(
         &mut self,
-        kv_store_id: KeyValueStoreId,
-        key: Vec<u8>,
-    ) -> Option<radix_engine::model::KeyValueStoreEntrySubstate> {
-        self.execution_stores
-            .get_root_store()
-            .get_substate(&SubstateId(
-                RENodeId::KeyValueStore(kv_store_id),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-            ))
-            .map(|output| output.substate.to_runtime().into())
+        component_address: ComponentAddress,
+        resource_address: ResourceAddress,
+    ) -> Vec<VaultId> {
+        let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+        let mut vault_finder = VaultFinder::new(resource_address);
+
+        let mut state_tree_visitor = StateTreeTraverser::new(
+            self.execution_stores.get_root_store(),
+            &mut vault_finder,
+            100,
+        );
+        state_tree_visitor
+            .traverse_all_descendents(None, node_id)
+            .unwrap();
+        vault_finder.to_vaults()
     }
 
-    pub fn inspect_vault(
+    pub fn get_component_resources(
         &mut self,
-        vault_id: VaultId,
-    ) -> Option<radix_engine::model::VaultSubstate> {
-        self.execution_stores
-            .get_root_store()
-            .get_substate(&SubstateId(
-                RENodeId::Vault(vault_id),
-                SubstateOffset::Vault(VaultOffset::Vault),
-            ))
-            .map(|output| output.substate.into())
+        component_address: ComponentAddress,
+    ) -> HashMap<ResourceAddress, Decimal> {
+        let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+        let mut accounter = ResourceAccounter::new(self.execution_stores.get_root_store());
+        accounter.add_resources(node_id).unwrap();
+        accounter.into_map()
     }
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
@@ -220,6 +276,20 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         substate.node_deref()
     }
 
+    pub fn deref_package_address(&mut self, package_address: PackageAddress) -> RENodeId {
+        let substate: GlobalAddressSubstate = self
+            .execution_stores
+            .get_root_store()
+            .get_substate(&SubstateId(
+                RENodeId::Global(GlobalAddress::Package(package_address)),
+                SubstateOffset::Global(GlobalOffset::Global),
+            ))
+            .map(|output| output.substate.to_runtime().into())
+            .unwrap();
+
+        substate.node_deref()
+    }
+
     pub fn new_allocated_account(
         &mut self,
     ) -> (
@@ -255,7 +325,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .publish_package(code, abi)
+            .publish_package_no_owner(code, abi)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -312,7 +382,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         path.set_extension("wasm");
 
         // Extract ABI
-        let code = fs::read(path).unwrap();
+        let code = fs::read(&path).unwrap_or_else(|err| {
+            panic!(
+                "Failed to read built WASM from path {:?} - {:?}",
+                &path, err
+            )
+        });
         let abi = extract_abi(&code).unwrap();
 
         self.publish_package(code, abi)
@@ -475,6 +550,31 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         .expect_commit_success();
     }
 
+    fn create_fungible_resource_and_deposit(
+        &mut self,
+        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        to: ComponentAddress,
+    ) -> ResourceAddress {
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .create_resource(
+                ResourceType::Fungible { divisibility: 0 },
+                HashMap::new(),
+                access_rules,
+                Some(MintParams::Fungible {
+                    amount: 5u32.into(),
+                }),
+            )
+            .call_method(to, "deposit_batch", args!(Expression::entire_worktop()))
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit_success();
+        receipt
+            .expect_commit()
+            .entity_changes
+            .new_resource_addresses[0]
+    }
+
     pub fn create_restricted_token(
         &mut self,
         account: ComponentAddress,
@@ -484,68 +584,67 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         ResourceAddress,
         ResourceAddress,
         ResourceAddress,
+        ResourceAddress,
     ) {
         let mint_auth = self.create_non_fungible_resource(account);
         let burn_auth = self.create_non_fungible_resource(account);
         let withdraw_auth = self.create_non_fungible_resource(account);
+        let recall_auth = self.create_non_fungible_resource(account);
         let admin_auth = self.create_non_fungible_resource(account);
 
         let mut access_rules = HashMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Mint,
+            Mint,
             (
                 rule!(require(mint_auth)),
                 MUTABLE(rule!(require(admin_auth))),
             ),
         );
         access_rules.insert(
-            ResourceMethodAuthKey::Burn,
+            Burn,
             (
                 rule!(require(burn_auth)),
                 MUTABLE(rule!(require(admin_auth))),
             ),
         );
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            Withdraw,
             (
                 rule!(require(withdraw_auth)),
                 MUTABLE(rule!(require(admin_auth))),
             ),
         );
         access_rules.insert(
-            ResourceMethodAuthKey::Deposit,
+            Recall,
+            (
+                rule!(require(recall_auth)),
+                MUTABLE(rule!(require(admin_auth))),
+            ),
+        );
+        access_rules.insert(
+            Deposit,
             (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
         );
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::Fungible { divisibility: 0 },
-                HashMap::new(),
-                access_rules,
-                Some(MintParams::Fungible {
-                    amount: 5u32.into(),
-                }),
-            )
-            .call_method(
-                account,
-                "deposit_batch",
-                args!(Expression::entire_worktop()),
-            )
-            .build();
-        let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
+        let token_address = self.create_fungible_resource_and_deposit(access_rules, account);
 
         (
-            receipt
-                .expect_commit()
-                .entity_changes
-                .new_resource_addresses[0],
+            token_address,
             mint_auth,
             burn_auth,
             withdraw_auth,
+            recall_auth,
             admin_auth,
         )
+    }
+
+    pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
+        let mut access_rules = HashMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Recall, (rule!(allow_all), LOCKED));
+
+        self.create_fungible_resource_and_deposit(access_rules, account)
     }
 
     pub fn create_restricted_burn_token(
@@ -555,38 +654,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let mut access_rules = HashMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(
-            ResourceMethodAuthKey::Burn,
-            (rule!(require(auth_resource_address)), LOCKED),
-        );
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Burn, (rule!(require(auth_resource_address)), LOCKED));
+        let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::Fungible { divisibility: 0 },
-                HashMap::new(),
-                access_rules,
-                Some(MintParams::Fungible {
-                    amount: 5u32.into(),
-                }),
-            )
-            .call_method(
-                account,
-                "deposit_batch",
-                args!(Expression::entire_worktop()),
-            )
-            .build();
-        let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        (
-            auth_resource_address,
-            receipt
-                .expect_commit()
-                .entity_changes
-                .new_resource_addresses[0],
-        )
+        (auth_resource_address, resource_address)
     }
 
     pub fn create_restricted_transfer_token(
@@ -596,37 +669,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let mut access_rules = HashMap::new();
-        access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
-            (rule!(require(auth_resource_address)), LOCKED),
-        );
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Withdraw, (rule!(require(auth_resource_address)), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::Fungible { divisibility: 0 },
-                HashMap::new(),
-                access_rules,
-                Some(MintParams::Fungible {
-                    amount: 5u32.into(),
-                }),
-            )
-            .call_method(
-                account,
-                "deposit_batch",
-                args!(Expression::entire_worktop()),
-            )
-            .build();
-        let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        (
-            auth_resource_address,
-            receipt
-                .expect_commit()
-                .entity_changes
-                .new_resource_addresses[0],
-        )
+        (auth_resource_address, resource_address)
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
@@ -637,15 +684,15 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let mut entries = HashMap::new();
         entries.insert(
             NonFungibleId::from_u32(1),
-            (scrypto_encode(&()), scrypto_encode(&())),
+            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
         entries.insert(
             NonFungibleId::from_u32(2),
-            (scrypto_encode(&()), scrypto_encode(&())),
+            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
         entries.insert(
             NonFungibleId::from_u32(3),
-            (scrypto_encode(&()), scrypto_encode(&())),
+            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -677,8 +724,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         account: ComponentAddress,
     ) -> ResourceAddress {
         let mut access_rules = HashMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
@@ -862,6 +909,7 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
 pub fn generate_single_function_abi(
     blueprint_name: &str,
     function_name: &str,
+    output_type: Type,
 ) -> HashMap<String, BlueprintAbi> {
     let mut blueprint_abis = HashMap::new();
     blueprint_abis.insert(
@@ -875,7 +923,7 @@ pub fn generate_single_function_abi(
                     name: "Any".to_string(),
                     fields: Fields::Named { named: vec![] },
                 },
-                output: Type::Unit,
+                output: output_type,
                 export_name: format!("{}_{}", blueprint_name, function_name),
             }],
         },

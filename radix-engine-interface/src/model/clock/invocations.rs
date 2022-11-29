@@ -1,18 +1,21 @@
 use sbor::rust::fmt::Debug;
 
-use crate::api::{api::*, wasm_input::*};
+use crate::api::api::*;
 use crate::model::*;
 use crate::scrypto;
+use crate::wasm::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ClockCreateInvocation {}
 
-impl SysInvocation for ClockCreateInvocation {
+impl Invocation for ClockCreateInvocation {
     type Output = SystemAddress;
 }
 
-impl ScryptoNativeInvocation for ClockCreateInvocation {}
+impl ScryptoNativeInvocation for ClockCreateInvocation {
+    type ScryptoOutput = SystemAddress;
+}
 
 impl Into<NativeFnInvocation> for ClockCreateInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -28,11 +31,13 @@ pub struct ClockGetCurrentTimeRoundedToMinutesInvocation {
     pub receiver: SystemAddress,
 }
 
-impl SysInvocation for ClockGetCurrentTimeRoundedToMinutesInvocation {
+impl Invocation for ClockGetCurrentTimeRoundedToMinutesInvocation {
     type Output = u64;
 }
 
-impl ScryptoNativeInvocation for ClockGetCurrentTimeRoundedToMinutesInvocation {}
+impl ScryptoNativeInvocation for ClockGetCurrentTimeRoundedToMinutesInvocation {
+    type ScryptoOutput = u64;
+}
 
 impl Into<NativeFnInvocation> for ClockGetCurrentTimeRoundedToMinutesInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -49,11 +54,13 @@ pub struct ClockSetCurrentTimeInvocation {
     pub current_time_ms: u64,
 }
 
-impl SysInvocation for ClockSetCurrentTimeInvocation {
+impl Invocation for ClockSetCurrentTimeInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ClockSetCurrentTimeInvocation {}
+impl ScryptoNativeInvocation for ClockSetCurrentTimeInvocation {
+    type ScryptoOutput = ();
+}
 
 impl Into<NativeFnInvocation> for ClockSetCurrentTimeInvocation {
     fn into(self) -> NativeFnInvocation {

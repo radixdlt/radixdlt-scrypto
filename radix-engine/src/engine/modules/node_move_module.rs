@@ -66,6 +66,7 @@ impl NodeMoveModule {
             }
             RENodeId::Component(..) => Ok(()),
             RENodeId::AuthZoneStack(..)
+            | RENodeId::FeeReserve(..)
             | RENodeId::ResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
@@ -106,6 +107,7 @@ impl NodeMoveModule {
             RENodeId::Proof(..) | RENodeId::Component(..) | RENodeId::Vault(..) => Ok(()),
 
             RENodeId::AuthZoneStack(..)
+            | RENodeId::FeeReserve(..)
             | RENodeId::ResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)

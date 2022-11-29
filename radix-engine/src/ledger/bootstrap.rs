@@ -36,6 +36,7 @@ pub struct GenesisReceipt {
     pub epoch_manager: SystemAddress,
     pub clock: SystemAddress,
     pub eddsa_ed25519_token: ResourceAddress,
+    pub entity_owner_token: ResourceAddress,
 }
 
 pub fn create_genesis() -> SystemTransaction {
@@ -196,6 +197,28 @@ pub fn create_genesis() -> SystemTransaction {
         }
     };
 
+    let create_entity_owner_token = {
+        let metadata: HashMap<String, String> = HashMap::new();
+        let mut access_rules = HashMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        let initial_supply: Option<MintParams> = None;
+
+        // TODO: Create token at a specific address
+        Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
+            args: args!(
+                ResourceType::NonFungible,
+                metadata,
+                access_rules,
+                initial_supply
+            ),
+        }
+    };
+
     let manifest = TransactionManifest {
         instructions: vec![
             create_faucet_package,
@@ -208,6 +231,7 @@ pub fn create_genesis() -> SystemTransaction {
             create_epoch_manager,
             create_clock,
             create_eddsa_ed25519_token,
+            create_entity_owner_token,
         ],
         blobs,
     };
@@ -229,6 +253,8 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
     let clock: SystemAddress = scrypto_decode(&invoke_result[8]).unwrap();
     let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) =
         scrypto_decode(&invoke_result[9]).unwrap();
+    let (entity_owner_token, _bucket): (ResourceAddress, Option<Bucket>) =
+        scrypto_decode(&invoke_result[10]).unwrap();
 
     GenesisReceipt {
         faucet_package,
@@ -240,6 +266,7 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
         epoch_manager,
         clock,
         eddsa_ed25519_token,
+        entity_owner_token,
     }
 }
 
@@ -259,13 +286,15 @@ where
             wasm_instrumenter: WasmInstrumenter::default(),
             wasm_metering_config: WasmMeteringConfig::new(
                 InstructionCostRules::tiered(1, 5, 10, 5000),
-                512,
+                1024,
             ),
         };
 
         let genesis_transaction = create_genesis();
         let mut fee_reserve = SystemLoanFeeReserve::default();
-        fee_reserve.credit(GENESIS_CREATION_CREDIT);
+        fee_reserve
+            .credit_cost_units(GENESIS_CREATION_CREDIT)
+            .unwrap();
 
         let transaction_receipt = execute_transaction_with_fee_reserve(
             substate_store,
@@ -296,7 +325,7 @@ mod tests {
         let wasm_engine = DefaultWasmEngine::default();
         let wasm_instrumenter = WasmInstrumenter::default();
         let wasm_metering_config =
-            WasmMeteringConfig::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512);
+            WasmMeteringConfig::new(InstructionCostRules::tiered(1, 5, 10, 5000), 1024);
         let scrypto_interpreter = ScryptoInterpreter {
             wasm_engine,
             wasm_instrumenter,
@@ -305,7 +334,9 @@ mod tests {
         let substate_store = TypedInMemorySubstateStore::new();
         let genesis_transaction = create_genesis();
         let mut fee_reserve = SystemLoanFeeReserve::default();
-        fee_reserve.credit(GENESIS_CREATION_CREDIT);
+        fee_reserve
+            .credit_cost_units(GENESIS_CREATION_CREDIT)
+            .unwrap();
 
         let transaction_receipt = execute_transaction_with_fee_reserve(
             &substate_store,
@@ -328,5 +359,6 @@ mod tests {
         assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
         assert_eq!(genesis_receipt.clock, CLOCK);
         assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
+        assert_eq!(genesis_receipt.entity_owner_token, ENTITY_OWNER_TOKEN);
     }
 }

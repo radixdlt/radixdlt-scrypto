@@ -1,22 +1,17 @@
 use crate::api::types::ScryptoActor;
-use crate::api::wasm_input::NativeFnInvocation;
 use crate::crypto::Hash;
-use crate::data::ScryptoCustomTypeId;
 use crate::model::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::Decode;
 
 use super::types::*;
 
-pub trait ScryptoNativeInvocation: Into<NativeFnInvocation> + SysInvocation {}
-
-pub trait SysInvocation {
-    type Output: Debug + Decode<ScryptoCustomTypeId>;
+pub trait Invocation: Debug {
+    type Output: Debug;
 }
 
-pub trait SysNativeInvokable<I: SysInvocation, E> {
+pub trait SysNativeInvokable<I: Invocation, E> {
     fn sys_invoke(&mut self, invocation: I) -> Result<I::Output, E>;
 }
 
@@ -50,7 +45,15 @@ pub trait EngineApi<E: Debug> {
 }
 
 pub trait SysInvokableNative<E>:
-    SysNativeInvokable<AuthZonePopInvocation, E>
+    SysNativeInvokable<EpochManagerCreateInvocation, E>
+    + SysNativeInvokable<EpochManagerSetEpochInvocation, E>
+    + SysNativeInvokable<EpochManagerGetCurrentEpochInvocation, E>
+    + SysNativeInvokable<ClockCreateInvocation, E>
+    + SysNativeInvokable<ClockSetCurrentTimeInvocation, E>
+    + SysNativeInvokable<ClockGetCurrentTimeRoundedToMinutesInvocation, E>
+    + SysNativeInvokable<MetadataSetInvocation, E>
+    + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
+    + SysNativeInvokable<AuthZonePopInvocation, E>
     + SysNativeInvokable<AuthZonePushInvocation, E>
     + SysNativeInvokable<AuthZoneCreateProofInvocation, E>
     + SysNativeInvokable<AuthZoneCreateProofByAmountInvocation, E>
@@ -58,6 +61,10 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<AuthZoneClearInvocation, E>
     + SysNativeInvokable<AuthZoneDrainInvocation, E>
     + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
+    + SysNativeInvokable<ComponentSetRoyaltyConfigInvocation, E>
+    + SysNativeInvokable<PackageSetRoyaltyConfigInvocation, E>
+    + SysNativeInvokable<PackagePublishNoOwnerInvocation, E>
+    + SysNativeInvokable<PackagePublishWithOwnerInvocation, E>
     + SysNativeInvokable<BucketTakeInvocation, E>
     + SysNativeInvokable<BucketPutInvocation, E>
     + SysNativeInvokable<BucketTakeNonFungiblesInvocation, E>
@@ -70,18 +77,8 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ProofGetAmountInvocation, E>
     + SysNativeInvokable<ProofGetNonFungibleIdsInvocation, E>
     + SysNativeInvokable<ProofGetResourceAddressInvocation, E>
-    + SysNativeInvokable<VaultTakeInvocation, E>
-    + SysNativeInvokable<VaultPutInvocation, E>
-    + SysNativeInvokable<VaultLockFeeInvocation, E>
-    + SysNativeInvokable<VaultTakeNonFungiblesInvocation, E>
-    + SysNativeInvokable<VaultGetAmountInvocation, E>
-    + SysNativeInvokable<VaultGetResourceAddressInvocation, E>
-    + SysNativeInvokable<VaultGetNonFungibleIdsInvocation, E>
-    + SysNativeInvokable<VaultCreateProofInvocation, E>
-    + SysNativeInvokable<VaultCreateProofByAmountInvocation, E>
-    + SysNativeInvokable<VaultCreateProofByIdsInvocation, E>
-    + SysNativeInvokable<ResourceManagerCreateInvocation, E>
     + SysNativeInvokable<ResourceManagerBucketBurnInvocation, E>
+    + SysNativeInvokable<ResourceManagerCreateInvocation, E>
     + SysNativeInvokable<ResourceManagerBurnInvocation, E>
     + SysNativeInvokable<ResourceManagerUpdateAuthInvocation, E>
     + SysNativeInvokable<ResourceManagerLockAuthInvocation, E>
@@ -95,12 +92,16 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ResourceManagerUpdateNonFungibleDataInvocation, E>
     + SysNativeInvokable<ResourceManagerNonFungibleExistsInvocation, E>
     + SysNativeInvokable<ResourceManagerGetNonFungibleInvocation, E>
-    + SysNativeInvokable<EpochManagerCreateInvocation, E>
-    + SysNativeInvokable<EpochManagerSetEpochInvocation, E>
-    + SysNativeInvokable<EpochManagerGetCurrentEpochInvocation, E>
-    + SysNativeInvokable<ClockCreateInvocation, E>
-    + SysNativeInvokable<ClockSetCurrentTimeInvocation, E>
-    + SysNativeInvokable<ClockGetCurrentTimeRoundedToMinutesInvocation, E>
+    + SysNativeInvokable<VaultTakeInvocation, E>
+    + SysNativeInvokable<VaultPutInvocation, E>
+    + SysNativeInvokable<VaultLockFeeInvocation, E>
+    + SysNativeInvokable<VaultTakeNonFungiblesInvocation, E>
+    + SysNativeInvokable<VaultGetAmountInvocation, E>
+    + SysNativeInvokable<VaultGetResourceAddressInvocation, E>
+    + SysNativeInvokable<VaultGetNonFungibleIdsInvocation, E>
+    + SysNativeInvokable<VaultCreateProofInvocation, E>
+    + SysNativeInvokable<VaultCreateProofByAmountInvocation, E>
+    + SysNativeInvokable<VaultCreateProofByIdsInvocation, E>
     + SysNativeInvokable<WorktopPutInvocation, E>
     + SysNativeInvokable<WorktopTakeAmountInvocation, E>
     + SysNativeInvokable<WorktopTakeAllInvocation, E>
@@ -109,6 +110,5 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<WorktopAssertContainsAmountInvocation, E>
     + SysNativeInvokable<WorktopAssertContainsNonFungiblesInvocation, E>
     + SysNativeInvokable<WorktopDrainInvocation, E>
-    + SysNativeInvokable<PackagePublishInvocation, E>
 {
 }

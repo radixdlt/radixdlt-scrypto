@@ -79,7 +79,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
         )
         .notarize(&signer)
         .build();
-    let transaction_bytes = transaction.to_bytes();
+    let transaction_bytes = transaction.to_bytes().unwrap();
     println!("Transaction size: {} bytes", transaction_bytes.len());
 
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());

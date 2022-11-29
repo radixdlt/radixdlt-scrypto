@@ -1,3 +1,4 @@
+use crate::model::Resource;
 use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -25,4 +26,16 @@ impl ComponentInfoSubstate {
             blueprint_name,
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ComponentRoyaltyConfigSubstate {
+    pub royalty_config: RoyaltyConfig,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ComponentRoyaltyAccumulatorSubstate {
+    pub royalty: Resource, // TODO: wrap with a vault?
 }

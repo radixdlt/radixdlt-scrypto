@@ -1,6 +1,7 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, Invokable, LockFlags, NativeExecutable, NativeInvocation,
-    NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError, SystemApi,
+    deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Invokable,
+    LockFlags, MethodDeref, NativeExecutor, NativeProcedure, REActor, RENode, ResolvedFunction,
+    ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{
     BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
@@ -8,12 +9,13 @@ use crate::model::{
 };
 use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
-use radix_engine_interface::api::api::SysInvokableNative;
+use radix_engine_interface::api::api::{Invocation, SysInvokableNative, SysNativeInvokable};
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFunction, NativeMethod, NonFungibleStoreId, NonFungibleStoreOffset,
     RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset,
     SubstateOffset,
 };
+use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::dec;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
@@ -40,67 +42,75 @@ pub enum ResourceManagerError {
     ResourceAddressAlreadySet,
 }
 
-impl NativeExecutable for ResourceManagerBucketBurnInvocation {
-    type NativeOutput = ();
+impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
+    type Exec = NativeExecutor<Self>;
 
-    fn execute<Y>(invocation: Self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0));
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
+            ResourceManagerFunction::BurnBucket,
+        )));
+        let executor = NativeExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProcedure for ResourceManagerBucketBurnInvocation {
+    type Output = ();
+
+    fn main<Y>(self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + Invokable<ScryptoInvocation> + SysInvokableNative<RuntimeError>,
     {
-        let bucket = Bucket(invocation.bucket.0);
+        let bucket = Bucket(self.bucket.0);
         bucket.sys_burn(env)?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
 }
 
-impl NativeInvocation for ResourceManagerBucketBurnInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        let bucket = RENodeId::Bucket(self.bucket.0);
-        let mut node_refs_to_copy = HashSet::new();
+impl ExecutableInvocation for ResourceManagerCreateInvocation {
+    type Exec = NativeExecutor<Self>;
 
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(CLOCK)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            ECDSA_SECP256K1_TOKEN,
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let call_frame_update = CallFrameUpdate::empty();
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
+            ResourceManagerFunction::Create,
         )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            EDDSA_ED25519_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
-
-        NativeInvocationInfo::Function(
-            NativeFunction::ResourceManager(ResourceManagerFunction::BurnBucket),
-            CallFrameUpdate {
-                nodes_to_move: vec![bucket],
-                node_refs_to_copy,
-            },
-        )
+        let executor = NativeExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ResourceManagerCreateInvocation {
-    type NativeOutput = (ResourceAddress, Option<Bucket>);
+impl NativeProcedure for ResourceManagerCreateInvocation {
+    type Output = (ResourceAddress, Option<Bucket>);
 
-    fn execute<Y>(
-        invocation: Self,
+    fn main<Y>(
+        self,
         system_api: &mut Y,
     ) -> Result<((ResourceAddress, Option<Bucket>), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
-            + Invokable<ResourceManagerSetResourceAddressInvocation>,
+            + SysNativeInvokable<ResourceManagerSetResourceAddressInvocation, RuntimeError>,
     {
-        let node_id = if matches!(invocation.resource_type, ResourceType::NonFungible) {
+        let node_id = if matches!(self.resource_type, ResourceType::NonFungible) {
             let nf_store_node_id =
                 system_api.create_node(RENode::NonFungibleStore(NonFungibleStore::new()))?;
             let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
 
             let mut resource_manager = ResourceManagerSubstate::new(
-                invocation.resource_type,
-                invocation.metadata,
-                invocation.access_rules,
+                self.resource_type,
+                self.metadata,
+                self.access_rules,
                 Some(nf_store_id),
             )
             .map_err(|e| match e {
@@ -110,7 +120,7 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
                 InvokeError::Downstream(e) => e,
             })?;
 
-            if let Some(mint_params) = &invocation.mint_params {
+            if let Some(mint_params) = &self.mint_params {
                 if let MintParams::NonFungible { entries } = mint_params {
                     for (non_fungible_id, data) in entries {
                         let offset = SubstateOffset::NonFungibleStore(
@@ -140,9 +150,9 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
             system_api.create_node(RENode::ResourceManager(resource_manager))?
         } else {
             let mut resource_manager = ResourceManagerSubstate::new(
-                invocation.resource_type,
-                invocation.metadata,
-                invocation.access_rules,
+                self.resource_type,
+                self.metadata,
+                self.access_rules,
                 None,
             )
             .map_err(|e| match e {
@@ -152,7 +162,7 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
                 InvokeError::Downstream(e) => e,
             })?;
 
-            if let Some(mint_params) = &invocation.mint_params {
+            if let Some(mint_params) = &self.mint_params {
                 if let MintParams::Fungible { amount } = mint_params {
                     resource_manager
                         .check_amount(*amount)
@@ -187,12 +197,12 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
         let resource_address: ResourceAddress = global_node_id.into();
 
         // FIXME this is temporary workaround for the resource address resolution problem
-        system_api.invoke(ResourceManagerSetResourceAddressInvocation {
+        system_api.sys_invoke(ResourceManagerSetResourceAddressInvocation {
             receiver: resource_address,
         })?;
 
         // Mint
-        let bucket = if let Some(mint_params) = invocation.mint_params {
+        let bucket = if let Some(mint_params) = self.mint_params {
             let container = match mint_params {
                 MintParams::NonFungible { entries } => {
                     let ids = entries.into_keys().collect();
@@ -200,7 +210,7 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
                 }
                 MintParams::Fungible { amount } => Resource::new_fungible(
                     resource_address,
-                    invocation.resource_type.divisibility(),
+                    self.resource_type.divisibility(),
                     amount,
                 ),
             };
@@ -230,52 +240,45 @@ impl NativeExecutable for ResourceManagerCreateInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerCreateInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        let mut node_refs_to_copy = HashSet::new();
+pub struct ResourceManagerBurnExecutable(RENodeId, Bucket);
 
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(CLOCK)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            ECDSA_SECP256K1_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            EDDSA_ED25519_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+impl ExecutableInvocation for ResourceManagerBurnInvocation {
+    type Exec = NativeExecutor<ResourceManagerBurnExecutable>;
 
-        NativeInvocationInfo::Function(
-            NativeFunction::ResourceManager(ResourceManagerFunction::Create),
-            CallFrameUpdate {
-                nodes_to_move: vec![],
-                node_refs_to_copy,
-            },
-        )
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0));
+        let resolved_receiver = deref_and_update(
+            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
+            &mut call_frame_update,
+            deref,
+        )?;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::ResourceManager(ResourceManagerMethod::Burn)),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ResourceManagerBurnExecutable(resolved_receiver.receiver, self.bucket),
+            input,
+        );
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ResourceManagerBurnInvocation {
-    type NativeOutput = ();
+impl NativeProcedure for ResourceManagerBurnExecutable {
+    type Output = ();
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
-        let bucket: BucketSubstate = system_api
-            .drop_node(RENodeId::Bucket(input.bucket.0))?
-            .into();
+        let bucket: BucketSubstate = system_api.drop_node(RENodeId::Bucket(self.1 .0))?.into();
 
         // Check if resource matches
         // TODO: Move this check into actor check
@@ -326,45 +329,58 @@ impl NativeExecutable for ResourceManagerBurnInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerBurnInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
+pub struct ResourceManagerUpdateAuthExecutable(RENodeId, ResourceMethodAuthKey, AccessRule);
+
+impl ExecutableInvocation for ResourceManagerUpdateAuthInvocation {
+    type Exec = NativeExecutor<ResourceManagerUpdateAuthExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0)),
-        )
+            &mut call_frame_update,
+            deref,
+        )?;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateAuth,
+            )),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ResourceManagerUpdateAuthExecutable(
+                resolved_receiver.receiver,
+                self.method,
+                self.access_rule,
+            ),
+            input,
+        );
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ResourceManagerUpdateAuthInvocation {
-    type NativeOutput = ();
+impl NativeProcedure for ResourceManagerUpdateAuthExecutable {
+    type Output = ();
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
         let method_entry = substate_mut
             .resource_manager()
             .authorization
-            .get_mut(&input.method)
-            .expect(&format!(
-                "Authorization for {:?} not specified",
-                input.method
-            ));
+            .get_mut(&self.1)
+            .expect(&format!("Authorization for {:?} not specified", self.1));
         method_entry
-            .main(MethodAccessRuleMethod::Update(input.access_rule))
+            .main(MethodAccessRuleMethod::Update(self.2))
             .map_err(|e| match e {
                 InvokeError::Error(e) => {
                     RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
@@ -376,43 +392,52 @@ impl NativeExecutable for ResourceManagerUpdateAuthInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerUpdateAuthInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateAuth),
+impl ExecutableInvocation for ResourceManagerLockAuthInvocation {
+    type Exec = NativeExecutor<ResourceManagerLockAuthExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
+            &mut call_frame_update,
+            deref,
+        )?;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::ResourceManager(
+                ResourceManagerMethod::LockAuth,
+            )),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ResourceManagerLockAuthExecutable(resolved_receiver.receiver, self.method),
+            input,
+        );
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ResourceManagerLockAuthInvocation {
-    type NativeOutput = ();
+pub struct ResourceManagerLockAuthExecutable(RENodeId, ResourceMethodAuthKey);
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+impl NativeProcedure for ResourceManagerLockAuthExecutable {
+    type Output = ();
+
+    fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
         let method_entry = substate_mut
             .resource_manager()
             .authorization
-            .get_mut(&input.method)
-            .expect(&format!(
-                "Authorization for {:?} not specified",
-                input.method
-            ));
+            .get_mut(&self.1)
+            .expect(&format!("Authorization for {:?} not specified", self.1));
         method_entry
             .main(MethodAccessRuleMethod::Lock())
             .map_err(|e| match e {
@@ -426,33 +451,45 @@ impl NativeExecutable for ResourceManagerLockAuthInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerLockAuthInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
+impl ExecutableInvocation for ResourceManagerCreateVaultInvocation {
+    type Exec = NativeExecutor<ResourceManagerCreateVaultExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
+            &mut call_frame_update,
+            deref,
+        )?;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::ResourceManager(
+                ResourceManagerMethod::CreateVault,
+            )),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ResourceManagerCreateVaultExecutable(resolved_receiver.receiver),
+            input,
+        );
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ResourceManagerCreateVaultInvocation {
-    type NativeOutput = Vault;
+pub struct ResourceManagerCreateVaultExecutable(RENodeId);
 
-    fn execute<'a, Y>(
-        _input: Self,
-        system_api: &mut Y,
-    ) -> Result<(Vault, CallFrameUpdate), RuntimeError>
+impl NativeProcedure for ResourceManagerCreateVaultExecutable {
+    type Output = Vault;
+
+    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Vault, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
         let substate_ref = system_api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
@@ -471,33 +508,45 @@ impl NativeExecutable for ResourceManagerCreateVaultInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerCreateVaultInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault),
+impl ExecutableInvocation for ResourceManagerCreateBucketInvocation {
+    type Exec = NativeExecutor<ResourceManagerCreateBucketExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
+            &mut call_frame_update,
+            deref,
+        )?;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::ResourceManager(
+                ResourceManagerMethod::CreateBucket,
+            )),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ResourceManagerCreateBucketExecutable(resolved_receiver.receiver),
+            input,
+        );
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ResourceManagerCreateBucketInvocation {
-    type NativeOutput = Bucket;
+pub struct ResourceManagerCreateBucketExecutable(RENodeId);
 
-    fn execute<'a, Y>(
-        _input: Self,
-        system_api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+impl NativeProcedure for ResourceManagerCreateBucketExecutable {
+    type Output = Bucket;
+
+    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
         let substate_ref = system_api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
@@ -516,42 +565,49 @@ impl NativeExecutable for ResourceManagerCreateBucketInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerCreateBucketInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
+impl ExecutableInvocation for ResourceManagerMintInvocation {
+    type Exec = NativeExecutor<ResourceManagerMintExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
+            &mut call_frame_update,
+            deref,
+        )?;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::ResourceManager(ResourceManagerMethod::Mint)),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ResourceManagerMintExecutable(resolved_receiver.receiver, self.mint_params),
+            input,
+        );
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ResourceManagerMintInvocation {
-    type NativeOutput = Bucket;
+pub struct ResourceManagerMintExecutable(RENodeId, MintParams);
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+impl NativeProcedure for ResourceManagerMintExecutable {
+    type Output = Bucket;
+
+    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
         let (resource, non_fungibles) = {
             let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
             let result = resource_manager
-                .mint(
-                    input.mint_params,
-                    resource_manager.resource_address.unwrap(),
-                )
+                .mint(self.1, resource_manager.resource_address.unwrap())
                 .map_err(|e| match e {
                     InvokeError::Error(e) => {
                         RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
@@ -608,33 +664,48 @@ impl NativeExecutable for ResourceManagerMintInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerMintInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
+impl ExecutableInvocation for ResourceManagerGetMetadataInvocation {
+    type Exec = NativeExecutor<ResourceManagerGetMetadataExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
+            &mut call_frame_update,
+            deref,
+        )?;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::ResourceManager(
+                ResourceManagerMethod::GetMetadata,
+            )),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ResourceManagerGetMetadataExecutable(resolved_receiver.receiver),
+            input,
+        );
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ResourceManagerGetMetadataInvocation {
-    type NativeOutput = HashMap<String, String>;
+pub struct ResourceManagerGetMetadataExecutable(RENodeId);
 
-    fn execute<'a, Y>(
-        _input: Self,
+impl NativeProcedure for ResourceManagerGetMetadataExecutable {
+    type Output = HashMap<String, String>;
+
+    fn main<'a, Y>(
+        self,
         system_api: &mut Y,
     ) -> Result<(HashMap<String, String>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
 
         let substate_ref = system_api.get_ref(resman_handle)?;
         let metadata = &substate_ref.resource_manager().metadata;
@@ -643,33 +714,48 @@ impl NativeExecutable for ResourceManagerGetMetadataInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerGetMetadataInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
+impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
+    type Exec = NativeExecutor<ResourceManagerGetResourceTypeExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
+            &mut call_frame_update,
+            deref,
+        )?;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::ResourceManager(
+                ResourceManagerMethod::GetResourceType,
+            )),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ResourceManagerGetResourceTypeExecutable(resolved_receiver.receiver),
+            input,
+        );
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ResourceManagerGetResourceTypeInvocation {
-    type NativeOutput = ResourceType;
+pub struct ResourceManagerGetResourceTypeExecutable(RENodeId);
 
-    fn execute<'a, Y>(
-        _input: Self,
+impl NativeProcedure for ResourceManagerGetResourceTypeExecutable {
+    type Output = ResourceType;
+
+    fn main<'a, Y>(
+        self,
         system_api: &mut Y,
     ) -> Result<(ResourceType, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
 
         let substate_ref = system_api.get_ref(resman_handle)?;
         let resource_type = substate_ref.resource_manager().resource_type;
@@ -678,33 +764,45 @@ impl NativeExecutable for ResourceManagerGetResourceTypeInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerGetResourceTypeInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::GetResourceType),
+impl ExecutableInvocation for ResourceManagerGetTotalSupplyInvocation {
+    type Exec = NativeExecutor<ResourceManagerGetTotalSupplyExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
+            &mut call_frame_update,
+            deref,
+        )?;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::ResourceManager(
+                ResourceManagerMethod::GetTotalSupply,
+            )),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ResourceManagerGetTotalSupplyExecutable(resolved_receiver.receiver),
+            input,
+        );
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ResourceManagerGetTotalSupplyInvocation {
-    type NativeOutput = Decimal;
+pub struct ResourceManagerGetTotalSupplyExecutable(RENodeId);
 
-    fn execute<'a, Y>(
-        _input: Self,
-        system_api: &mut Y,
-    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+impl NativeProcedure for ResourceManagerGetTotalSupplyExecutable {
+    type Output = Decimal;
+
+    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(resman_handle)?;
         let total_supply = substate_ref.resource_manager().total_supply;
 
@@ -712,38 +810,50 @@ impl NativeExecutable for ResourceManagerGetTotalSupplyInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerGetTotalSupplyInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::GetTotalSupply),
+impl ExecutableInvocation for ResourceManagerUpdateMetadataInvocation {
+    type Exec = NativeExecutor<ResourceManagerUpdateMetadataExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
+            &mut call_frame_update,
+            deref,
+        )?;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::ResourceManager(
+                ResourceManagerMethod::GetTotalSupply,
+            )),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ResourceManagerUpdateMetadataExecutable(resolved_receiver.receiver, self.metadata),
+            input,
+        );
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ResourceManagerUpdateMetadataInvocation {
-    type NativeOutput = ();
+pub struct ResourceManagerUpdateMetadataExecutable(RENodeId, HashMap<String, String>);
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+impl NativeProcedure for ResourceManagerUpdateMetadataExecutable {
+    type Output = ();
+
+    fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
         substate_mut
             .resource_manager()
-            .update_metadata(input.metadata)
+            .update_metadata(self.1)
             .map_err(|e| match e {
                 InvokeError::Error(e) => {
                     RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
@@ -755,33 +865,49 @@ impl NativeExecutable for ResourceManagerUpdateMetadataInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerUpdateMetadataInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateMetadata),
+impl ExecutableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
+    type Exec = NativeExecutor<ResourceManagerUpdateNonFungibleDataExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
+            &mut call_frame_update,
+            deref,
+        )?;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateNonFungibleData,
+            )),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ResourceManagerUpdateNonFungibleDataExecutable(
+                resolved_receiver.receiver,
+                self.id,
+                self.data,
+            ),
+            input,
+        );
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ResourceManagerUpdateNonFungibleDataInvocation {
-    type NativeOutput = ();
+pub struct ResourceManagerUpdateNonFungibleDataExecutable(RENodeId, NonFungibleId, Vec<u8>);
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<((), CallFrameUpdate), RuntimeError>
+impl NativeProcedure for ResourceManagerUpdateNonFungibleDataExecutable {
+    type Output = ();
+
+    fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
         let substate_ref = system_api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
@@ -798,15 +924,15 @@ impl NativeExecutable for ResourceManagerUpdateNonFungibleDataInvocation {
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
         let offset =
-            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id.clone()));
+            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(self.1.clone()));
 
         let non_fungible_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
         let non_fungible_mut = substate_mut.non_fungible();
         if let Some(ref mut non_fungible) = non_fungible_mut.0 {
-            non_fungible.set_mutable_data(input.data);
+            non_fungible.set_mutable_data(self.2);
         } else {
-            let non_fungible_address = NonFungibleAddress::new(resource_address, input.id);
+            let non_fungible_address = NonFungibleAddress::new(resource_address, self.1);
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ResourceManagerError(ResourceManagerError::NonFungibleNotFound(
                     non_fungible_address,
@@ -820,33 +946,45 @@ impl NativeExecutable for ResourceManagerUpdateNonFungibleDataInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData),
+impl ExecutableInvocation for ResourceManagerNonFungibleExistsInvocation {
+    type Exec = NativeExecutor<ResourceManagerNonFungibleExistsExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
+            &mut call_frame_update,
+            deref,
+        )?;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::ResourceManager(
+                ResourceManagerMethod::NonFungibleExists,
+            )),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ResourceManagerNonFungibleExistsExecutable(resolved_receiver.receiver, self.id),
+            input,
+        );
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ResourceManagerNonFungibleExistsInvocation {
-    type NativeOutput = bool;
+pub struct ResourceManagerNonFungibleExistsExecutable(RENodeId, NonFungibleId);
 
-    fn execute<'a, Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<(bool, CallFrameUpdate), RuntimeError>
+impl NativeProcedure for ResourceManagerNonFungibleExistsExecutable {
+    type Output = bool;
+
+    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(bool, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
 
         let substate_ref = system_api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
@@ -861,7 +999,7 @@ impl NativeExecutable for ResourceManagerNonFungibleExistsInvocation {
             })?;
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
-        let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
+        let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(self.1));
         let non_fungible_handle =
             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate = system_api.get_ref(non_fungible_handle)?;
@@ -871,33 +1009,45 @@ impl NativeExecutable for ResourceManagerNonFungibleExistsInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerNonFungibleExistsInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::NonFungibleExists),
+impl ExecutableInvocation for ResourceManagerGetNonFungibleInvocation {
+    type Exec = NativeExecutor<ResourceManagerGetNonFungibleExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
+            &mut call_frame_update,
+            deref,
+        )?;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::ResourceManager(
+                ResourceManagerMethod::GetNonFungible,
+            )),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ResourceManagerGetNonFungibleExecutable(resolved_receiver.receiver, self.id),
+            input,
+        );
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ResourceManagerGetNonFungibleInvocation {
-    type NativeOutput = [Vec<u8>; 2];
+pub struct ResourceManagerGetNonFungibleExecutable(RENodeId, NonFungibleId);
 
-    fn execute<Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<([Vec<u8>; 2], CallFrameUpdate), RuntimeError>
+impl NativeProcedure for ResourceManagerGetNonFungibleExecutable {
+    type Output = [Vec<u8>; 2];
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<([Vec<u8>; 2], CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
 
         let substate_ref = system_api.get_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
@@ -912,10 +1062,10 @@ impl NativeExecutable for ResourceManagerGetNonFungibleInvocation {
             })?;
 
         let non_fungible_address =
-            NonFungibleAddress::new(resource_manager.resource_address.unwrap(), input.id.clone());
+            NonFungibleAddress::new(resource_manager.resource_address.unwrap(), self.1.clone());
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
-        let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
+        let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(self.1));
         let non_fungible_handle =
             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let non_fungible_ref = system_api.get_ref(non_fungible_handle)?;
@@ -935,35 +1085,60 @@ impl NativeExecutable for ResourceManagerGetNonFungibleInvocation {
     }
 }
 
-impl NativeInvocation for ResourceManagerGetNonFungibleInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible),
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ResourceManagerSetResourceAddressInvocation {
+    pub receiver: ResourceAddress,
+}
+
+impl Invocation for ResourceManagerSetResourceAddressInvocation {
+    type Output = ();
+}
+
+impl ExecutableInvocation for ResourceManagerSetResourceAddressInvocation {
+    type Exec = NativeExecutor<ResourceManagerSetResourceAddressExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
+            &mut call_frame_update,
+            deref,
+        )?;
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::ResourceManager(
+                ResourceManagerMethod::GetNonFungible,
+            )),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ResourceManagerSetResourceAddressExecutable(resolved_receiver.receiver, self.receiver),
+            input,
+        );
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ResourceManagerSetResourceAddressInvocation {
-    type NativeOutput = ();
+pub struct ResourceManagerSetResourceAddressExecutable(RENodeId, ResourceAddress);
 
-    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+impl NativeProcedure for ResourceManagerSetResourceAddressExecutable {
+    type Output = ();
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
         substate_mut
             .resource_manager()
-            .set_resource_address(input.receiver)
+            .set_resource_address(self.1)
             .map_err(|e| match e {
                 InvokeError::Error(e) => {
                     RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
@@ -972,15 +1147,5 @@ impl NativeExecutable for ResourceManagerSetResourceAddressInvocation {
             })?;
 
         Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
-impl NativeInvocation for ResourceManagerSetResourceAddressInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::SetResourceAddress),
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
     }
 }

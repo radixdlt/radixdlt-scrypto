@@ -1,6 +1,7 @@
 use crate::engine::{
-    AuthModule, CallFrameUpdate, Invokable, LockFlags, NativeExecutable, NativeInvocation,
-    NativeInvocationInfo, REActor, RENode, ResolvedReceiver, RuntimeError, SystemApi,
+    deref_and_update, AuthModule, CallFrameUpdate, ExecutableInvocation, Invokable, LockFlags,
+    MethodDeref, NativeExecutor, NativeProcedure, REActor, RENode, ResolvedFunction,
+    ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{
     CurrentTimeRoundedToMinutesSubstate, CurrentTimeRoundedToSecondsSubstate, CurrentTimeSubstate,
@@ -8,10 +9,12 @@ use crate::model::{
     MethodAuthorization, SubstateRefMut,
 };
 use crate::types::*;
+use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
     ClockFunction, ClockMethod, ClockOffset, GlobalAddress, NativeFunction, NativeMethod, RENodeId,
     SubstateOffset,
 };
+use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
 const SECONDS_TO_MS_FACTOR: u64 = 1000;
@@ -20,15 +23,33 @@ const MINUTES_TO_MS_FACTOR: u64 = SECONDS_TO_MS_FACTOR * 60;
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Clock {}
 
-impl NativeExecutable for ClockCreateInvocation {
-    type NativeOutput = SystemAddress;
+impl ExecutableInvocation for ClockCreateInvocation {
+    type Exec = NativeExecutor<Self>;
 
-    fn execute<Y>(
-        _invocation: Self,
-        system_api: &mut Y,
-    ) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation>,
+        Self: Sized,
+    {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Clock(
+            ClockFunction::Create,
+        )));
+        let call_frame_update = CallFrameUpdate::empty();
+        let executor = NativeExecutor(self, input);
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProcedure for ClockCreateInvocation {
+    type Output = SystemAddress;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
     {
         let node_id = system_api.create_node(RENode::Clock(
             CurrentTimeSubstate { current_time_ms: 0 },
@@ -57,32 +78,49 @@ impl NativeExecutable for ClockCreateInvocation {
     }
 }
 
-impl NativeInvocation for ClockCreateInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Function(
-            NativeFunction::Clock(ClockFunction::Create),
-            CallFrameUpdate::empty(),
-        )
+pub struct ClockGetCurrentTimeRoundedToMinutesExecutable(RENodeId);
+
+impl ExecutableInvocation for ClockGetCurrentTimeRoundedToMinutesInvocation {
+    type Exec = NativeExecutor<ClockGetCurrentTimeRoundedToMinutesExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Clock(
+                ClockMethod::GetCurrentTimeRoundedToMinutes,
+            )),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ClockGetCurrentTimeRoundedToMinutesExecutable(resolved_receiver.receiver),
+            input,
+        );
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ClockGetCurrentTimeRoundedToMinutesInvocation {
-    type NativeOutput = u64;
+impl NativeProcedure for ClockGetCurrentTimeRoundedToMinutesExecutable {
+    type Output = u64;
 
-    fn execute<Y>(_input: Self, system_api: &mut Y) -> Result<(u64, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, system_api: &mut Y) -> Result<(u64, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
         let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+        let handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
         let substate = substate_ref.current_time_rounded_to_minutes();
-
         Ok((
             substate.current_time_rounded_to_minutes_ms,
             CallFrameUpdate::empty(),
@@ -90,39 +128,56 @@ impl NativeExecutable for ClockGetCurrentTimeRoundedToMinutesInvocation {
     }
 }
 
-impl NativeInvocation for ClockGetCurrentTimeRoundedToMinutesInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Clock(ClockMethod::GetCurrentTimeRoundedToMinutes),
-            RENodeId::Global(GlobalAddress::System(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
+pub struct ClockSetCurrentTimeExecutable(RENodeId, u64);
+
+impl ExecutableInvocation for ClockSetCurrentTimeInvocation {
+    type Exec = NativeExecutor<ClockSetCurrentTimeExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Clock(ClockMethod::SetCurrentTime)),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(
+            ClockSetCurrentTimeExecutable(resolved_receiver.receiver, self.current_time_ms),
+            input,
+        );
+
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for ClockSetCurrentTimeInvocation {
-    type NativeOutput = ();
+impl NativeProcedure for ClockSetCurrentTimeExecutable {
+    type Output = ();
 
-    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let current_time_rounded_to_seconds =
-            (input.current_time_ms / SECONDS_TO_MS_FACTOR) * SECONDS_TO_MS_FACTOR;
-        let current_time_rounded_to_minutes =
-            (input.current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
+        let node_id = self.0;
 
-        // TODO: Remove this hack and get resolved receiver in a better way
-        let node_id = match system_api.get_actor() {
-            REActor::Method(_, ResolvedReceiver { receiver, .. }) => *receiver,
-            _ => panic!("Unexpected"),
-        };
+        let current_time_ms = self.1;
+        let current_time_rounded_to_seconds =
+            (current_time_ms / SECONDS_TO_MS_FACTOR) * SECONDS_TO_MS_FACTOR;
+        let current_time_rounded_to_minutes =
+            (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
         update_clock_substate(
             system_api,
             node_id,
             ClockOffset::CurrentTime,
-            |substate_ref| substate_ref.current_time().current_time_ms = input.current_time_ms,
+            |substate_ref| substate_ref.current_time().current_time_ms = current_time_ms,
         )?;
 
         update_clock_substate(
@@ -165,16 +220,6 @@ where
     let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
     let mut substate_ref = system_api.get_ref_mut(handle)?;
     Ok(fun(&mut substate_ref))
-}
-
-impl NativeInvocation for ClockSetCurrentTimeInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Clock(ClockMethod::SetCurrentTime),
-            RENodeId::Global(GlobalAddress::System(self.receiver)),
-            CallFrameUpdate::empty(),
-        )
-    }
 }
 
 impl Clock {

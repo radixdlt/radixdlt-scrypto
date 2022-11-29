@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![recursion_limit = "256"] // Enables certain tests of deep typed SBOR to function
 
 #[cfg(not(any(feature = "std", feature = "alloc")))]
 compile_error!("Either feature `std` or `alloc` must be enabled for this crate.");
@@ -25,6 +26,7 @@ pub mod data;
 pub mod math;
 /// RE node models.
 pub mod model;
+pub mod wasm;
 
 mod macros;
 pub use macros::*;

@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::wasm_input::*;
+use radix_engine_interface::wasm::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
@@ -38,7 +38,7 @@ blueprint! {
             let input = RadixEngineInput::CreateNode(ScryptoRENode::Component(
                 Runtime::package_address(),
                 "invalid_blueprint".to_owned(),
-                scrypto_encode(&NodeCreate {}),
+                scrypto_encode(&NodeCreate {}).unwrap(),
             ));
             let _: ComponentId = call_engine(input);
         }
@@ -48,7 +48,7 @@ blueprint! {
             let input = RadixEngineInput::CreateNode(ScryptoRENode::Component(
                 package_address,
                 "NodeCreate".to_owned(),
-                scrypto_encode(&NodeCreate {}),
+                scrypto_encode(&NodeCreate {}).unwrap(),
             ));
             let _: ComponentId = call_engine(input);
         }

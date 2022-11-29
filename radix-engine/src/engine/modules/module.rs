@@ -9,15 +9,9 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::fmt::Debug;
 
-#[derive(Debug)]
-pub enum InvocationInfo<'a> {
-    Native(&'a NativeInvocationInfo),
-    Scrypto(&'a ScryptoInvocation),
-}
-
 pub enum SysCallInput<'a> {
     Invoke {
-        info: InvocationInfo<'a>,
+        invocation: &'a dyn Debug,
         input_size: u32,
         value_count: u32,
         depth: usize,
@@ -115,11 +109,13 @@ pub trait Module<R: FeeReserve> {
 
     fn post_execute_invocation(
         &mut self,
-        update: &CallFrameUpdate,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-    ) -> Result<(), ModuleError>;
+        _update: &CallFrameUpdate,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
 
     fn on_wasm_instantiation(
         &mut self,

@@ -75,6 +75,11 @@ impl FungibleResourceBuilder {
         self
     }
 
+    pub fn recallable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
+        self.authorization.insert(Recall, (method_auth, mutability));
+        self
+    }
+
     pub fn restrict_withdraw(
         &mut self,
         method_auth: AccessRule,
@@ -166,6 +171,11 @@ impl NonFungibleResourceBuilder {
         self
     }
 
+    pub fn recallable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
+        self.authorization.insert(Recall, (method_auth, mutability));
+        self
+    }
+
     pub fn restrict_withdraw(
         &mut self,
         method_auth: AccessRule,
@@ -224,7 +234,7 @@ impl NonFungibleResourceBuilder {
     {
         let mut encoded = HashMap::new();
         for (id, e) in entries {
-            encoded.insert(id, (e.immutable_data(), e.mutable_data()));
+            encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }
 
         self.build(Some(MintParams::NonFungible { entries: encoded }))

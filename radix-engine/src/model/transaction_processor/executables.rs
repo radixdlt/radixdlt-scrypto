@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent,
     ProofId, RENodeId, TransactionProcessorFunction,
@@ -47,32 +47,25 @@ pub enum TransactionProcessorError {
     IdAllocationError(IdAllocationError),
 }
 
-impl<'b> NativeExecutable for TransactionProcessorRunInvocation<'b> {
-    type NativeOutput = Vec<Vec<u8>>;
-
-    fn execute<Y>(
-        invocation: Self,
-        system_api: &mut Y,
-    ) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation>
-            + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>,
-    {
-        TransactionProcessor::run(invocation, system_api)
-            .map(|rtn| (rtn, CallFrameUpdate::empty()))
-            .map_err(|e| e.into())
-    }
+impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
+    type Output = Vec<Vec<u8>>;
 }
 
-impl<'a> NativeInvocation for TransactionProcessorRunInvocation<'a> {
-    fn info(&self) -> NativeInvocationInfo {
-        let mut node_refs_to_copy = HashSet::new();
+impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let mut call_frame_update = CallFrameUpdate::empty();
+
         // TODO: Remove serialization
-        let value = IndexedScryptoValue::from_typed(self);
-        for global_address in value.global_references() {
-            node_refs_to_copy.insert(RENodeId::Global(global_address));
+        for global_address in input.global_references() {
+            call_frame_update
+                .node_refs_to_copy
+                .insert(RENodeId::Global(global_address));
         }
 
         // TODO: This can be refactored out once any type in sbor is implemented
@@ -80,35 +73,83 @@ impl<'a> NativeInvocation for TransactionProcessorRunInvocation<'a> {
             match instruction {
                 Instruction::CallFunction { args, .. }
                 | Instruction::CallMethod { args, .. }
-                | Instruction::CallNativeFunction { args, .. }
-                | Instruction::CallNativeMethod { args, .. } => {
+                | Instruction::CallNativeFunction { args, .. } => {
                     let scrypto_value =
                         IndexedScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                     for global_address in scrypto_value.global_references() {
-                        node_refs_to_copy.insert(RENodeId::Global(global_address));
+                        call_frame_update
+                            .node_refs_to_copy
+                            .insert(RENodeId::Global(global_address));
+                    }
+                }
+                Instruction::CallNativeMethod { args, method_ident } => {
+                    let scrypto_value =
+                        IndexedScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
+                    for global_address in scrypto_value.global_references() {
+                        call_frame_update
+                            .node_refs_to_copy
+                            .insert(RENodeId::Global(global_address));
+                    }
+
+                    // TODO: This needs to be cleaned up
+                    // TODO: How does this relate to newly created vaults in the transaction frame?
+                    // TODO: Will probably want different spacing for refed vs. owned nodes
+                    match method_ident.receiver {
+                        RENodeId::Vault(..) => {
+                            call_frame_update
+                                .node_refs_to_copy
+                                .insert(method_ident.receiver);
+                        }
+                        _ => {}
                     }
                 }
                 _ => {}
             }
         }
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(CLOCK)));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            ECDSA_SECP256K1_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
-            EDDSA_ED25519_TOKEN,
-        )));
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::System(CLOCK)));
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::Resource(
+                ECDSA_SECP256K1_TOKEN,
+            )));
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::Resource(
+                EDDSA_ED25519_TOKEN,
+            )));
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
-        NativeInvocationInfo::Function(
+        let actor = REActor::Function(ResolvedFunction::Native(
             NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
-            CallFrameUpdate {
-                nodes_to_move: vec![],
-                node_refs_to_copy,
-            },
-        )
+        ));
+        let executor = NativeExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl<'a> NativeProcedure for TransactionProcessorRunInvocation<'a> {
+    type Output = Vec<Vec<u8>>;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi
+            + Invokable<ScryptoInvocation>
+            + EngineApi<RuntimeError>
+            + SysInvokableNative<RuntimeError>,
+    {
+        TransactionProcessor::run(self, system_api)
+            .map(|rtn| (rtn, CallFrameUpdate::empty()))
+            .map_err(|e| e.into())
     }
 }
 
@@ -149,8 +190,10 @@ impl TransactionProcessor {
                     let val = path
                         .get_from_value_mut(&mut value)
                         .expect("Failed to locate an expression value using SBOR path");
-                    *val =
-                        decode_any(&scrypto_encode(&buckets)).expect("Failed to decode Vec<Bucket>")
+                    *val = scrypto_decode(
+                        &scrypto_encode(&buckets).expect("Failed to encode Vec<Bucket>"),
+                    )
+                    .expect("Failed to decode Vec<Bucket>")
                 }
                 "ENTIRE_AUTH_ZONE" => {
                     let proofs =
@@ -159,8 +202,10 @@ impl TransactionProcessor {
                     let val = path
                         .get_from_value_mut(&mut value)
                         .expect("Failed to locate an expression value using SBOR path");
-                    *val =
-                        decode_any(&scrypto_encode(&proofs)).expect("Failed to decode Vec<Proof>")
+                    *val = scrypto_decode(
+                        &scrypto_encode(&proofs).expect("Failed to encode Vec<Proof>"),
+                    )
+                    .expect("Failed to decode Vec<Proof>")
                 }
                 _ => {} // no-op
             }
@@ -530,9 +575,10 @@ impl TransactionProcessor {
                     })
                 }
                 Instruction::PublishPackage { code, abi } => env
-                    .sys_invoke(PackagePublishInvocation {
+                    .sys_invoke(PackagePublishNoOwnerInvocation {
                         code: code.clone(),
                         abi: abi.clone(),
+                        metadata: HashMap::new(),
                     })
                     .map(|address| IndexedScryptoValue::from_typed(&address))
                     .map_err(InvokeError::Downstream),

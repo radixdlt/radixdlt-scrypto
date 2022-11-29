@@ -35,7 +35,7 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::new(
             InstructionCostRules::tiered(1, 5, 10, 5000),
-            512,
+            1024,
         ),
     };
     let execution_config = ExecutionConfig::standard();

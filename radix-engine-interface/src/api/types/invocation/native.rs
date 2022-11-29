@@ -29,8 +29,11 @@ pub enum NativeFn {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NativeMethod {
     AccessRules(AccessRulesMethod),
+    Component(ComponentMethod), // TODO: investigate whether to make royalty universal and take any "receiver".
+    Package(PackageMethod),
+    Metadata(MetadataMethod),
     EpochManager(EpochManagerMethod),
-    AuthZone(AuthZoneMethod),
+    AuthZoneStack(AuthZoneStackMethod),
     ResourceManager(ResourceManagerMethod),
     Bucket(BucketMethod),
     Vault(VaultMethod),
@@ -88,8 +91,71 @@ pub enum AccessRulesMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
+pub enum MetadataMethod {
+    Set,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
 pub enum EpochManagerFunction {
     Create,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum ComponentMethod {
+    SetRoyaltyConfig,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum PackageMethod {
+    SetRoyaltyConfig,
 }
 
 #[derive(
@@ -131,7 +197,7 @@ pub enum EpochManagerMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum AuthZoneMethod {
+pub enum AuthZoneStackMethod {
     Pop,
     Push,
     CreateProof,
@@ -367,7 +433,8 @@ pub enum ClockMethod {
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum PackageFunction {
-    Publish,
+    PublishNoOwner,
+    PublishWithOwner,
 }
 
 #[derive(

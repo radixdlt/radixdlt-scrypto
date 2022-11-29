@@ -65,19 +65,19 @@ impl Publish {
                 .ok_or(Error::PackageAddressNotFound)?;
             let substate_id = SubstateId(
                 global.node_deref(),
-                SubstateOffset::Package(PackageOffset::Package),
+                SubstateOffset::Package(PackageOffset::Info),
             );
 
             let previous_version = substate_store
                 .get_substate(&substate_id)
                 .map(|output| output.version);
 
-            let validated_package = PackageSubstate {
+            let validated_package = PackageInfoSubstate {
                 code,
                 blueprint_abis: abi,
             };
             let output_value = OutputValue {
-                substate: PersistedSubstate::Package(validated_package),
+                substate: PersistedSubstate::PackageInfo(validated_package),
                 version: previous_version.unwrap_or(0),
             };
 
@@ -86,7 +86,7 @@ impl Publish {
             substate_store.put_substate(
                 SubstateId(
                     global.node_deref(),
-                    SubstateOffset::Package(PackageOffset::Package),
+                    SubstateOffset::Package(PackageOffset::Info),
                 ),
                 output_value,
             );
@@ -94,7 +94,7 @@ impl Publish {
         } else {
             let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
                 .lock_fee(FAUCET_COMPONENT, 100u32.into())
-                .publish_package(code, abi)
+                .publish_package_no_owner(code, abi)
                 .build();
 
             let receipt = handle_manifest(

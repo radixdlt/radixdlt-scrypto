@@ -42,7 +42,7 @@ pub fn execute_preview<S: ReadableSubstateStore, W: WasmEngine, IHM: IntentHashM
 
         let mut fee_reserve = SystemLoanFeeReserve::default();
         if preview_intent.flags.unlimited_loan {
-            fee_reserve.credit(PREVIEW_CREDIT);
+            fee_reserve.credit_cost_units(PREVIEW_CREDIT).unwrap();
         }
 
         execute_transaction_with_fee_reserve(

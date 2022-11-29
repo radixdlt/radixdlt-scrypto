@@ -127,7 +127,7 @@ pub fn format_scrypto_value<F: fmt::Write>(
     Ok(())
 }
 
-pub fn format_type_id<F: fmt::Write>(f: &mut F, type_id: &ScryptoTypeId) -> fmt::Result {
+pub fn format_type_id<F: fmt::Write>(f: &mut F, type_id: &ScryptoSborTypeId) -> fmt::Result {
     match type_id {
         SborTypeId::Unit => f.write_str("Unit"),
         SborTypeId::Bool => f.write_str("Bool"),

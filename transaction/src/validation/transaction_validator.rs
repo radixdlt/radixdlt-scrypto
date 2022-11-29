@@ -1,9 +1,8 @@
 use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::crypto::PublicKey;
+use radix_engine_interface::crypto::{Hash, PublicKey};
 use radix_engine_interface::data::*;
 
 use sbor::rust::collections::{BTreeSet, HashSet};
-use sbor::Decode;
 
 use radix_engine_interface::constants::*;
 
@@ -13,7 +12,7 @@ use crate::validation::*;
 
 pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
 
-pub trait TransactionValidator<T: Decode<ScryptoCustomTypeId>> {
+pub trait TransactionValidator<T: ScryptoDecode> {
     fn check_length_and_decode_from_slice(
         &self,
         transaction: &[u8],
@@ -69,16 +68,16 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
         transaction: &'t NotarizedTransaction,
         intent_hash_manager: &'a I,
     ) -> Result<Executable<'t>, TransactionValidationError> {
-        self.validate_intent(&transaction.signed_intent.intent, intent_hash_manager)?;
+        let intent = &transaction.signed_intent.intent;
+        let intent_hash = intent.hash()?;
+
+        self.validate_intent(&intent_hash, intent, intent_hash_manager)?;
 
         let signer_keys = self
             .validate_signatures(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
 
-        let transaction_hash = transaction.hash();
-
-        let intent = &transaction.signed_intent.intent;
-        let intent_hash = intent.hash();
+        let transaction_hash = transaction.hash()?;
 
         let header = &intent.header;
 
@@ -118,12 +117,12 @@ impl NotarizedTransactionValidator {
         preview_intent: &'t PreviewIntent,
         intent_hash_manager: &'a I,
     ) -> Result<Executable<'t>, TransactionValidationError> {
-        let transaction_hash = preview_intent.hash();
+        let transaction_hash = preview_intent.hash()?;
         let intent = &preview_intent.intent;
 
         let flags = &preview_intent.flags;
-        let intent_hash = intent.hash();
-        self.validate_intent(intent, intent_hash_manager)?;
+        let intent_hash = intent.hash()?;
+        self.validate_intent(&intent_hash, intent, intent_hash_manager)?;
         let initial_proofs = AuthModule::pk_non_fungibles(&preview_intent.signer_public_keys);
 
         let mut virtualizable_proofs_resource_addresses = BTreeSet::new();
@@ -163,11 +162,12 @@ impl NotarizedTransactionValidator {
 
     pub fn validate_intent<I: IntentHashManager>(
         &self,
+        intent_hash: &Hash,
         intent: &TransactionIntent,
         intent_hash_manager: &I,
     ) -> Result<(), TransactionValidationError> {
         // verify intent hash
-        if !intent_hash_manager.allows(&intent.hash()) {
+        if !intent_hash_manager.allows(intent_hash) {
             return Err(TransactionValidationError::IntentHashRejected);
         }
 
@@ -314,7 +314,7 @@ impl NotarizedTransactionValidator {
 
         // verify intent signature
         let mut signers = HashSet::new();
-        let intent_payload = transaction.signed_intent.intent.to_bytes();
+        let intent_payload = transaction.signed_intent.intent.to_bytes()?;
         for sig in &transaction.signed_intent.intent_signatures {
             let public_key = recover(&intent_payload, sig)
                 .ok_or(SignatureValidationError::InvalidIntentSignature)?;
@@ -333,7 +333,7 @@ impl NotarizedTransactionValidator {
         }
 
         // verify notary signature
-        let signed_intent_payload = transaction.signed_intent.to_bytes();
+        let signed_intent_payload = transaction.signed_intent.to_bytes()?;
         if !verify(
             &signed_intent_payload,
             &transaction.signed_intent.intent.header.notary_public_key,

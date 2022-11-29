@@ -6,9 +6,10 @@ members = [
     "component",
     "core",
     "clock",
-    "epoch_manager",
     "data_access",
     "deref",
+    "deep_sbor",
+    "epoch_manager",
     "execution_trace",
     "external_blueprint_caller",
     "fee",
@@ -27,8 +28,8 @@ members = [
     "stored_external_component",
     "stored_resource",
     "stored_values",
-    "epoch_manager",
-    "vault"
+    "vault",
+    "royalty"
 ]
 
 [profile.release]
