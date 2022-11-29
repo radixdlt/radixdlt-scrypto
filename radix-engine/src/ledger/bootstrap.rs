@@ -206,7 +206,9 @@ pub fn create_genesis() -> SystemTransaction {
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
-                ResourceType::NonFungible,
+                ResourceType::NonFungible {
+                    id_type: NonFungibleIdType::Bytes
+                },
                 metadata,
                 access_rules,
                 initial_supply

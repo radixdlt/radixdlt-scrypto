@@ -94,7 +94,7 @@ impl AuthModule {
                             // TODO: Cleanup package address + NonFungibleId integration
                             let bytes = scrypto_encode(&package_address).unwrap();
 
-                            let non_fungible_id = NonFungibleId::from_bytes(bytes);
+                            let non_fungible_id = NonFungibleId::Bytes(bytes);
                             let non_fungible_address =
                                 NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id);
                             vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(

@@ -40,7 +40,7 @@ pub enum ResourceManagerError {
     NotNonFungible,
     MismatchingBucketResource,
     ResourceAddressAlreadySet,
-    NonFungibleIdTypeDoesNotMatch,
+    NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
 }
 
 impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
@@ -124,12 +124,13 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             if let Some(mint_params) = &self.mint_params {
                 if let MintParams::NonFungible { entries } = mint_params {
                     for (non_fungible_id, data) in entries {
-                        if non_fungible_id.id_type()
-                            != invocation.resource_type.non_fungible_id_type()
-                        {
+                        if non_fungible_id.id_type() != self.resource_type.non_fungible_id_type() {
                             return Err(RuntimeError::ApplicationError(
                                 ApplicationError::ResourceManagerError(
-                                    ResourceManagerError::NonFungibleIdTypeDoesNotMatch,
+                                    ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                                        non_fungible_id.id_type(),
+                                        self.resource_type.non_fungible_id_type(),
+                                    ),
                                 ),
                             ));
                         }
@@ -219,7 +220,7 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
                     Resource::new_non_fungible(
                         resource_address,
                         ids,
-                        invocation.resource_type.non_fungible_id_type(),
+                        self.resource_type.non_fungible_id_type(),
                     )
                 }
                 MintParams::Fungible { amount } => Resource::new_fungible(

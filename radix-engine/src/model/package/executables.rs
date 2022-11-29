@@ -167,7 +167,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
             ))
         })?;
 
-        let non_fungible_id = NonFungibleId::from_bytes(bytes);
+        let non_fungible_id = NonFungibleId::Bytes(bytes);
 
         let mut entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)> = HashMap::new();
         entries.insert(non_fungible_id, (vec![], vec![]));

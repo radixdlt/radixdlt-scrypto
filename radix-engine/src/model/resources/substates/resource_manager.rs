@@ -285,7 +285,10 @@ impl ResourceManagerSubstate {
         for (id, data) in entries {
             if id.id_type() != this_non_fungible_id_type {
                 return Err(InvokeError::Error(
-                    ResourceManagerError::NonFungibleIdTypeDoesNotMatch,
+                    ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                        id.id_type(),
+                        this_non_fungible_id_type,
+                    ),
                 ));
             }
 
