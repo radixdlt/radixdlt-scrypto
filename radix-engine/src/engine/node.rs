@@ -14,14 +14,17 @@ pub enum RENode {
     AuthZoneStack(AuthZoneStackSubstate),
     FeeReserve(FeeReserveSubstate),
     Vault(VaultRuntimeSubstate),
+    Worktop(WorktopSubstate),
+    KeyValueStore(KeyValueStore),
+    NonFungibleStore(NonFungibleStore),
     Component(
         ComponentInfoSubstate,
         ComponentStateSubstate,
-        AccessRulesSubstate,
         ComponentRoyaltyConfigSubstate,
         ComponentRoyaltyAccumulatorSubstate,
+        MetadataSubstate,
+        AccessRulesSubstate,
     ),
-    Worktop(WorktopSubstate),
     Package(
         PackageInfoSubstate,
         PackageRoyaltyConfigSubstate,
@@ -29,8 +32,6 @@ pub enum RENode {
         MetadataSubstate,
         AccessRulesSubstate,
     ),
-    KeyValueStore(KeyValueStore),
-    NonFungibleStore(NonFungibleStore),
     ResourceManager(
         ResourceManagerSubstate,
         MetadataSubstate,
@@ -79,7 +80,14 @@ impl RENode {
                     );
                 }
             }
-            RENode::Component(info, state, access_rules, royalty_config, royalty_accumulator) => {
+            RENode::Component(
+                info,
+                state,
+                royalty_config,
+                royalty_accumulator,
+                metadata,
+                access_rules,
+            ) => {
                 substates.insert(
                     SubstateOffset::Component(ComponentOffset::Info),
                     info.into(),
@@ -89,16 +97,20 @@ impl RENode {
                     state.into(),
                 );
                 substates.insert(
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
-                    access_rules.into(),
-                );
-                substates.insert(
                     SubstateOffset::Component(ComponentOffset::RoyaltyConfig),
                     royalty_config.into(),
                 );
                 substates.insert(
                     SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
                     royalty_accumulator.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    metadata.into(),
+                );
+                substates.insert(
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    access_rules.into(),
                 );
             }
             RENode::Worktop(worktop) => {

@@ -3,13 +3,13 @@ use crate::engine::{
     ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
-use crate::model::Resource;
+use crate::model::{MetadataSubstate, Resource};
 use crate::model::{
     AccessRulesSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
     ComponentRoyaltyConfigSubstate, ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore,
     RuntimeSubstate,
 };
-use crate::types::ScryptoInvocation;
+use crate::types::{HashMap, ScryptoInvocation};
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
@@ -86,9 +86,6 @@ where
                 let node = RENode::Component(
                     ComponentInfoSubstate::new(package_address, blueprint_name),
                     ComponentStateSubstate::new(state),
-                    AccessRulesSubstate {
-                        access_rules: Vec::new(),
-                    },
                     ComponentRoyaltyConfigSubstate {
                         royalty_config: RoyaltyConfig::default(), // TODO: add user interface
                     },
@@ -97,6 +94,12 @@ where
                             RADIX_TOKEN,
                             ResourceType::Fungible { divisibility: 18 },
                         ),
+                    },
+                    MetadataSubstate {
+                        metadata: HashMap::new()
+                    },
+                    AccessRulesSubstate {
+                        access_rules: Vec::new(),
                     },
                 );
 
