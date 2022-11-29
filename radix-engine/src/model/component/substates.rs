@@ -26,3 +26,9 @@ impl ComponentInfoSubstate {
         }
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ComponentRoyaltyConfigSubstate {
+    pub royalty_config: RoyaltyConfig,
+}

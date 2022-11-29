@@ -2,9 +2,9 @@ use radix_engine_interface::api::api::{
     EngineApi, Invocation, SysInvokableNative, SysNativeInvokable,
 };
 use radix_engine_interface::api::types::{
-    AuthZoneOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle, PackageOffset,
-    ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver, SubstateId,
-    SubstateOffset, VaultId, WorktopOffset,
+    AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
+    PackageOffset, ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver,
+    SubstateId, SubstateOffset, VaultId, WorktopOffset,
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::*;
@@ -113,7 +113,7 @@ where
                     auth_zone_params.initial_proofs.into_iter().collect(),
                 );
 
-                system_api.create_node(RENode::AuthZone(auth_zone))?;
+                system_api.create_node(RENode::AuthZoneStack(auth_zone))?;
 
                 Ok(())
             })
@@ -188,7 +188,7 @@ where
 
                 Ok((
                     GlobalAddress::Component(component_address),
-                    GlobalAddressSubstate::Component(scrypto::component::Component(component_id)),
+                    GlobalAddressSubstate::Component(component_id),
                 ))
             }
             RENodeId::EpochManager(epoch_manager_id) => {
@@ -241,9 +241,13 @@ where
     ) -> Result<RENodeId, IdAllocationError> {
         match re_node {
             RENode::Global(..) => panic!("Should not get here"),
-            RENode::AuthZone(..) => {
+            RENode::AuthZoneStack(..) => {
                 let auth_zone_id = id_allocator.new_auth_zone_id()?;
                 Ok(RENodeId::AuthZoneStack(auth_zone_id))
+            }
+            RENode::FeeReserve(..) => {
+                let auth_zone_id = id_allocator.new_fee_reserve_id()?;
+                Ok(RENodeId::FeeReserve(auth_zone_id))
             }
             RENode::Bucket(..) => {
                 let bucket_id = id_allocator.new_bucket_id()?;
@@ -326,8 +330,7 @@ where
 
                 // TODO: Use system_api to globalize component when create_node is refactored
                 // TODO: to allow for address selection
-                let global_substate =
-                    GlobalAddressSubstate::Component(scrypto::component::Component(component_id));
+                let global_substate = GlobalAddressSubstate::Component(component_id);
                 self.track.insert_substate(
                     SubstateId(node_id, offset.clone()),
                     RuntimeSubstate::Global(global_substate),
@@ -351,7 +354,7 @@ where
                 RENodeId::AuthZoneStack(..) => {
                     let handle = system_api.lock_substate(
                         node_id,
-                        SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+                        SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                         LockFlags::MUTABLE,
                     )?;
                     let mut substate_ref_mut = system_api.get_ref_mut(handle)?;

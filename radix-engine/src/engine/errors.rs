@@ -12,10 +12,10 @@ use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
 
-use super::AuthError;
 use super::CostingError;
 use super::ExecutionTraceError;
 use super::TrackError;
+use super::{AuthError, RoyaltyError};
 
 /// Represents an error which causes a tranasction to be rejected.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -162,6 +162,7 @@ pub enum ModuleError {
     NodeMoveError(NodeMoveError),
     AuthError(AuthError),
     CostingError(CostingError),
+    RoyaltyError(RoyaltyError),
     ExecutionTraceError(ExecutionTraceError),
 }
 

@@ -375,8 +375,7 @@ fn test_contingent_fee_accounting_success() {
     let summary = &receipt.execution.fee_summary;
     let effective_price =
         summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
-    let contingent_fee =
-        (dec!("0.001") / effective_price).round(0, RoundingMode::TowardsZero) * effective_price;
+    let contingent_fee = dec!("0.001");
     assert_eq!(
         account1_new_balance,
         account1_balance - effective_price * summary.cost_unit_consumed + contingent_fee

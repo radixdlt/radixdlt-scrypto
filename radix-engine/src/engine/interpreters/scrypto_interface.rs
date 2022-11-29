@@ -4,8 +4,8 @@ use crate::engine::{
 };
 use crate::fee::FeeReserve;
 use crate::model::{
-    AccessRulesSubstate, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate,
-    KeyValueStore, RuntimeSubstate,
+    AccessRulesSubstate, ComponentInfoSubstate, ComponentRoyaltyConfigSubstate,
+    ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore, RuntimeSubstate,
 };
 use crate::types::ScryptoInvocation;
 use crate::wasm::WasmEngine;
@@ -16,6 +16,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::model::RoyaltyConfig;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
@@ -50,9 +51,9 @@ where
 
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
         let node = match node {
-            ScryptoRENode::GlobalComponent(component_id) => RENode::Global(
-                GlobalAddressSubstate::Component(scrypto::component::Component(component_id)),
-            ),
+            ScryptoRENode::GlobalComponent(component_id) => {
+                RENode::Global(GlobalAddressSubstate::Component(component_id))
+            }
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
                 // Create component
                 RENode::Component(
@@ -60,6 +61,9 @@ where
                     ComponentStateSubstate::new(state),
                     AccessRulesSubstate {
                         access_rules: Vec::new(),
+                    },
+                    ComponentRoyaltyConfigSubstate {
+                        royalty_config: RoyaltyConfig::default(), // TODO: add user interface
                     },
                 )
             }

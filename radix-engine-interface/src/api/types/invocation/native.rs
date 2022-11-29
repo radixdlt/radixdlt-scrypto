@@ -29,9 +29,11 @@ pub enum NativeFn {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NativeMethod {
     AccessRules(AccessRulesMethod),
+    Component(ComponentMethod), // TODO: investigate whether to make royalty universal and take any "receiver".
+    Package(PackageMethod),
     Metadata(MetadataMethod),
     EpochManager(EpochManagerMethod),
-    AuthZone(AuthZoneMethod),
+    AuthZoneStack(AuthZoneStackMethod),
     ResourceManager(ResourceManagerMethod),
     Bucket(BucketMethod),
     Vault(VaultMethod),
@@ -129,6 +131,48 @@ pub enum EpochManagerFunction {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
+pub enum ComponentMethod {
+    SetRoyaltyConfig,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum PackageMethod {
+    SetRoyaltyConfig,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
 pub enum EpochManagerMethod {
     GetCurrentEpoch,
     SetEpoch,
@@ -151,7 +195,7 @@ pub enum EpochManagerMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum AuthZoneMethod {
+pub enum AuthZoneStackMethod {
     Pop,
     Push,
     CreateProof,

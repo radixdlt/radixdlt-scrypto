@@ -1,7 +1,7 @@
 use crate::model::*;
 use crate::types::*;
 use radix_engine_interface::api::types::{
-    AuthZoneOffset, BucketOffset, ComponentOffset, EpochManagerOffset, GlobalOffset,
+    AuthZoneStackOffset, BucketOffset, ComponentOffset, EpochManagerOffset, GlobalOffset,
     KeyValueStoreOffset, NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset,
     SubstateOffset, VaultOffset, WorktopOffset,
 };
@@ -11,15 +11,21 @@ pub enum RENode {
     Global(GlobalAddressSubstate),
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
-    AuthZone(AuthZoneStackSubstate),
+    AuthZoneStack(AuthZoneStackSubstate),
+    FeeReserve(FeeReserveSubstate),
     Vault(VaultRuntimeSubstate),
     Component(
         ComponentInfoSubstate,
         ComponentStateSubstate,
         AccessRulesSubstate,
+        ComponentRoyaltyConfigSubstate,
     ),
     Worktop(WorktopSubstate),
-    Package(PackageSubstate, MetadataSubstate),
+    Package(
+        PackageSubstate,
+        MetadataSubstate,
+        PackageRoyaltyConfigSubstate,
+    ),
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
     ResourceManager(ResourceManagerSubstate),
@@ -42,10 +48,10 @@ impl RENode {
                     RuntimeSubstate::Proof(proof),
                 );
             }
-            RENode::AuthZone(auth_zone) => {
+            RENode::AuthZoneStack(auth_zone) => {
                 substates.insert(
-                    SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
-                    RuntimeSubstate::AuthZone(auth_zone),
+                    SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+                    RuntimeSubstate::AuthZoneStack(auth_zone),
                 );
             }
             RENode::Global(global_node) => {
@@ -65,7 +71,7 @@ impl RENode {
                     );
                 }
             }
-            RENode::Component(info, state, access_rules) => {
+            RENode::Component(info, state, access_rules, royalty_config) => {
                 substates.insert(
                     SubstateOffset::Component(ComponentOffset::Info),
                     info.into(),
@@ -78,6 +84,10 @@ impl RENode {
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                     access_rules.into(),
                 );
+                substates.insert(
+                    SubstateOffset::Component(ComponentOffset::RoyaltyConfig),
+                    royalty_config.into(),
+                );
             }
             RENode::Worktop(worktop) => {
                 substates.insert(
@@ -85,10 +95,14 @@ impl RENode {
                     RuntimeSubstate::Worktop(worktop),
                 );
             }
-            RENode::Package(package, metadata) => {
+            RENode::Package(package, metadata, package_royalty_config) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Package),
                     package.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Package(PackageOffset::RoyaltyConfig),
+                    package_royalty_config.into(),
                 );
                 substates.insert(
                     SubstateOffset::Metadata(MetadataOffset::Metadata),
@@ -109,10 +123,16 @@ impl RENode {
                     );
                 }
             }
-            RENode::EpochManager(system) => {
+            RENode::EpochManager(epoch_manager) => {
                 substates.insert(
                     SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
-                    system.into(),
+                    epoch_manager.into(),
+                );
+            }
+            RENode::FeeReserve(fee_reserve) => {
+                substates.insert(
+                    SubstateOffset::FeeReserve(FeeReserveOffset::FeeReserve),
+                    fee_reserve.into(),
                 );
             }
         }

@@ -646,7 +646,13 @@ impl<'s> FinalizingTrack<'s> {
         }
 
         let mut actual_fee_payments: HashMap<VaultId, Decimal> = HashMap::new();
-        let mut required_fee = fee_summary.burned + fee_summary.tipped;
+        let mut required_fee = fee_summary.burned
+            + fee_summary.tipped
+            + if is_success {
+                fee_summary.royalty
+            } else {
+                Decimal::ZERO
+            };
         let mut collector: LockableResource =
             Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }).into();
         for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
@@ -700,6 +706,7 @@ impl<'s> FinalizingTrack<'s> {
 
         // TODO: update XRD supply or disable it
         // TODO: pay tips to the lead validator
+        // TODO: pay royalty to royalty collectors
 
         TransactionResult::Commit(CommitResult {
             outcome: match invoke_result {

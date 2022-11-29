@@ -2,8 +2,8 @@ use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
 use radix_engine_interface::api::types::{
-    AuthZoneOffset, ComponentOffset, GlobalAddress, NativeFunction, NativeMethod, PackageOffset,
-    RENodeId, ResourceManagerOffset, SubstateOffset, VaultOffset,
+    AuthZoneStackOffset, ComponentOffset, GlobalAddress, NativeFunction, NativeMethod,
+    PackageOffset, RENodeId, ResourceManagerOffset, SubstateOffset, VaultOffset,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -42,11 +42,11 @@ impl AuthModule {
 
         if !matches!(
             actor,
-            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..)
+            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..)
         ) {
             let handle = system_api.lock_substate(
                 auth_zone_id,
-                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                 LockFlags::MUTABLE,
             )?;
             let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
@@ -71,7 +71,7 @@ impl AuthModule {
     {
         if matches!(
             actor,
-            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..)
+            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..)
         ) {
             return Ok(());
         }
@@ -282,7 +282,7 @@ impl AuthModule {
 
         let handle = system_api.lock_substate(
             auth_zone_id,
-            SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),
         )?;
         let substate_ref = system_api.get_ref(handle)?;
@@ -310,7 +310,7 @@ impl AuthModule {
     {
         if matches!(
             system_api.get_actor(),
-            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZone(..)), ..)
+            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..)
         ) {
             return Ok(());
         }
@@ -322,7 +322,7 @@ impl AuthModule {
             .unwrap();
         let handle = system_api.lock_substate(
             auth_zone_id,
-            SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
         {
