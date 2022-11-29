@@ -12,5 +12,5 @@ utils = { path = "../utils", default-features = false }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "utils/std", "radix-engine-interface/std", "radix-engine-derive/std", "utils/std"]
-alloc = ["sbor/alloc", "utils/alloc", "radix-engine-interface/alloc", "radix-engine-derive/alloc", "utils/alloc"]
+std = ["sbor/std", "radix-engine-interface/std", "radix-engine-derive/std", "utils/std"]
+alloc = ["sbor/alloc", "radix-engine-interface/alloc", "radix-engine-derive/alloc", "utils/alloc"]
