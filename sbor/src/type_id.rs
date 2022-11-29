@@ -86,25 +86,25 @@ impl<X: CustomTypeId> SborTypeId<X> {
 }
 
 // primitive types
-const TYPE_UNIT: u8 = 0x00;
-const TYPE_BOOL: u8 = 0x01;
-const TYPE_I8: u8 = 0x02;
-const TYPE_I16: u8 = 0x03;
-const TYPE_I32: u8 = 0x04;
-const TYPE_I64: u8 = 0x05;
-const TYPE_I128: u8 = 0x06;
-const TYPE_U8: u8 = 0x07;
-const TYPE_U16: u8 = 0x08;
-const TYPE_U32: u8 = 0x09;
-const TYPE_U64: u8 = 0x0a;
-const TYPE_U128: u8 = 0x0b;
-const TYPE_STRING: u8 = 0x0c;
+pub const TYPE_UNIT: u8 = 0x00;
+pub const TYPE_BOOL: u8 = 0x01;
+pub const TYPE_I8: u8 = 0x02;
+pub const TYPE_I16: u8 = 0x03;
+pub const TYPE_I32: u8 = 0x04;
+pub const TYPE_I64: u8 = 0x05;
+pub const TYPE_I128: u8 = 0x06;
+pub const TYPE_U8: u8 = 0x07;
+pub const TYPE_U16: u8 = 0x08;
+pub const TYPE_U32: u8 = 0x09;
+pub const TYPE_U64: u8 = 0x0a;
+pub const TYPE_U128: u8 = 0x0b;
+pub const TYPE_STRING: u8 = 0x0c;
 // struct & enum
-const TYPE_STRUCT: u8 = 0x10;
-const TYPE_ENUM: u8 = 0x11;
+pub const TYPE_STRUCT: u8 = 0x10;
+pub const TYPE_ENUM: u8 = 0x11;
 // composite types
-const TYPE_ARRAY: u8 = 0x20; // [T; N]
-const TYPE_TUPLE: u8 = 0x21; // (T1, T2, T3)
+pub const TYPE_ARRAY: u8 = 0x20; // [T; N]
+pub const TYPE_TUPLE: u8 = 0x21; // (T1, T2, T3)
 
 /// A SBOR type ID.
 pub trait TypeId<X: CustomTypeId> {
