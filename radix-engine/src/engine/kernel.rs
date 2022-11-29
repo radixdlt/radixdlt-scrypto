@@ -198,13 +198,13 @@ where
             RENodeId::EpochManager(epoch_manager_id) => {
                 let transaction_hash = system_api.transaction_hash;
 
-                let system_address = system_api
+                let epoch_manager_address = system_api
                     .id_allocator
                     .new_epoch_manager_address(transaction_hash)
                     .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
                 Ok((
-                    GlobalAddress::System(system_address),
+                    GlobalAddress::System(epoch_manager_address),
                     GlobalAddressSubstate::System(SystemId::EpochManager(epoch_manager_id)),
                 ))
             }
@@ -235,13 +235,13 @@ where
             RENodeId::Clock(clock_id) => {
                 let transaction_hash = system_api.transaction_hash;
 
-                let system_address = system_api
+                let clock_address = system_api
                     .id_allocator
                     .new_clock_address(transaction_hash)
                     .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
                 Ok((
-                    GlobalAddress::System(system_address),
+                    GlobalAddress::System(clock_address),
                     GlobalAddressSubstate::System(SystemId::Clock(clock_id)),
                 ))
             }

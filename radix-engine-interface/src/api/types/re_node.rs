@@ -50,7 +50,7 @@ impl Into<SystemId> for RENodeId {
         match self {
             RENodeId::EpochManager(id) => SystemId::EpochManager(id),
             RENodeId::Clock(id) => SystemId::Clock(id),
-            _ => panic!("Not a system id"),
+            _ => panic!("Not a clock id"),
         }
     }
 }
