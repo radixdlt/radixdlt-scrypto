@@ -26,8 +26,24 @@ blueprint! {
                 .set_depositable(rule!(require(auth_address)));
         }
 
+        pub fn lock_recallable(resource_address: ResourceAddress) {
+            borrow_resource_manager!(resource_address).lock_recallable();
+        }
+
         pub fn lock_mintable(resource_address: ResourceAddress) {
             borrow_resource_manager!(resource_address).lock_mintable();
+        }
+
+        pub fn lock_burnable(resource_address: ResourceAddress) {
+            borrow_resource_manager!(resource_address).lock_burnable();
+        }
+
+        pub fn lock_withdrawable(resource_address: ResourceAddress) {
+            borrow_resource_manager!(resource_address).lock_withdrawable();
+        }
+
+        pub fn lock_depositable(resource_address: ResourceAddress) {
+            borrow_resource_manager!(resource_address).lock_depositable();
         }
     }
 }

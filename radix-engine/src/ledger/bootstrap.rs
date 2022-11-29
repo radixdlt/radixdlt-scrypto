@@ -4,7 +4,6 @@ use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::transaction::{
     execute_transaction_with_fee_reserve, ExecutionConfig, TransactionReceipt,
 };
-use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::GENESIS_CREATION_CREDIT;
@@ -71,7 +70,7 @@ pub fn create_genesis() -> SystemTransaction {
     let create_ecdsa_secp256k1_token = {
         let metadata: HashMap<String, String> = HashMap::new();
         let mut access_rules = HashMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
@@ -80,12 +79,13 @@ pub fn create_genesis() -> SystemTransaction {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
-            args: args!(
-                ResourceType::NonFungible,
+            args: scrypto_encode(&ResourceManagerCreateInvocation {
+                resource_type: ResourceType::NonFungible,
                 metadata,
                 access_rules,
-                initial_supply
-            ),
+                mint_params: initial_supply,
+            })
+            .unwrap(),
         }
     };
 
@@ -94,7 +94,7 @@ pub fn create_genesis() -> SystemTransaction {
         let metadata: HashMap<String, String> = HashMap::new();
         let mut access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> =
             HashMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
@@ -103,12 +103,13 @@ pub fn create_genesis() -> SystemTransaction {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
-            args: args!(
-                ResourceType::NonFungible,
+            args: scrypto_encode(&ResourceManagerCreateInvocation {
+                resource_type: ResourceType::NonFungible,
                 metadata,
                 access_rules,
-                initial_supply
-            ),
+                mint_params: initial_supply,
+            })
+            .unwrap(),
         }
     };
 
@@ -120,7 +121,7 @@ pub fn create_genesis() -> SystemTransaction {
         metadata.insert("url".to_owned(), XRD_URL.to_owned());
 
         let mut access_rules = HashMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
 
         let initial_supply: Option<MintParams> = Option::Some(MintParams::Fungible {
             amount: XRD_MAX_SUPPLY.into(),
@@ -131,12 +132,13 @@ pub fn create_genesis() -> SystemTransaction {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
-            args: args!(
-                ResourceType::Fungible { divisibility: 18 },
+            args: scrypto_encode(&ResourceManagerCreateInvocation {
+                resource_type: ResourceType::Fungible { divisibility: 18 },
                 metadata,
                 access_rules,
-                initial_supply
-            ),
+                mint_params: initial_supply,
+            })
+            .unwrap(),
         }
     };
 
@@ -179,7 +181,7 @@ pub fn create_genesis() -> SystemTransaction {
     let create_eddsa_ed25519_token = {
         let metadata: HashMap<String, String> = HashMap::new();
         let mut access_rules = HashMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
@@ -188,20 +190,21 @@ pub fn create_genesis() -> SystemTransaction {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
-            args: args!(
-                ResourceType::NonFungible,
+            args: scrypto_encode(&ResourceManagerCreateInvocation {
+                resource_type: ResourceType::NonFungible,
                 metadata,
                 access_rules,
-                initial_supply
-            ),
+                mint_params: initial_supply,
+            })
+            .unwrap(),
         }
     };
 
     let create_entity_owner_token = {
         let metadata: HashMap<String, String> = HashMap::new();
         let mut access_rules = HashMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
@@ -210,12 +213,13 @@ pub fn create_genesis() -> SystemTransaction {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
-            args: args!(
-                ResourceType::NonFungible,
+            args: scrypto_encode(&ResourceManagerCreateInvocation {
+                resource_type: ResourceType::NonFungible,
                 metadata,
                 access_rules,
-                initial_supply
-            ),
+                mint_params: initial_supply,
+            })
+            .unwrap(),
         }
     };
 

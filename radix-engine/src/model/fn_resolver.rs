@@ -32,7 +32,7 @@ pub fn resolve_native_function(
 
 // TODO: receiver should be receiver type rather than node_id
 pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<NativeMethod> {
-    match receiver {
+    let native_method = match receiver {
         RENodeId::Bucket(_) => BucketMethod::from_str(method_name)
             .ok()
             .map(NativeMethod::Bucket),
@@ -49,11 +49,6 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
             .ok()
             .map(NativeMethod::Worktop),
 
-        RENodeId::Component(_) | RENodeId::Global(GlobalAddress::Component(_)) => {
-            AccessRulesMethod::from_str(method_name)
-                .ok()
-                .map(NativeMethod::AccessRules)
-        }
         RENodeId::EpochManager(_) => EpochManagerMethod::from_str(method_name)
             .ok()
             .map(NativeMethod::EpochManager),
@@ -75,13 +70,22 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
                 .ok()
                 .map(NativeMethod::ResourceManager)
         }
-        RENodeId::Package(_) | RENodeId::Global(GlobalAddress::Package(_)) => {
-            MetadataMethod::from_str(method_name)
-                .ok()
-                .map(NativeMethod::Metadata)
-        }
-        RENodeId::KeyValueStore(_) | RENodeId::NonFungibleStore(_) | RENodeId::FeeReserve(_) => {
-            None
-        }
+        _ => None,
+    };
+
+    if native_method.is_some() {
+        return native_method;
     }
+
+    let native_method = AccessRulesMethod::from_str(method_name)
+        .ok()
+        .map(NativeMethod::AccessRules);
+
+    if native_method.is_some() {
+        return native_method;
+    }
+
+    MetadataMethod::from_str(method_name)
+        .ok()
+        .map(NativeMethod::Metadata)
 }

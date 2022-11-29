@@ -11,6 +11,30 @@ pub enum ScryptoRENode {
     KeyValueStore,
 }
 
+// TODO: Remove when better type system implemented
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum RENodeType {
+    Bucket,
+    Proof,
+    AuthZoneStack,
+    Worktop,
+    GlobalAccount,
+    GlobalComponent,
+    GlobalResourceManager,
+    GlobalPackage,
+    GlobalEpochManager,
+    GlobalClock,
+    KeyValueStore,
+    NonFungibleStore,
+    Component,
+    Vault,
+    ResourceManager,
+    Package,
+    EpochManager,
+    Clock,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum RENodeId {
@@ -19,7 +43,6 @@ pub enum RENodeId {
     AuthZoneStack(AuthZoneStackId),
     FeeReserve(FeeReserveId),
     Worktop,
-
     Global(GlobalAddress),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
@@ -50,7 +73,7 @@ impl Into<SystemId> for RENodeId {
         match self {
             RENodeId::EpochManager(id) => SystemId::EpochManager(id),
             RENodeId::Clock(id) => SystemId::Clock(id),
-            _ => panic!("Not a clock id"),
+            _ => panic!("Not a system id"),
         }
     }
 }
@@ -236,6 +259,7 @@ pub enum SubstateOffset {
     FeeReserve(FeeReserveOffset),
     Component(ComponentOffset),
     AccessRules(AccessRulesOffset),
+    VaultAccessRules(AccessRulesOffset),
     Metadata(MetadataOffset),
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),

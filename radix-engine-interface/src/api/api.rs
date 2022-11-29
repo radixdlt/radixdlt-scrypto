@@ -53,6 +53,8 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ClockGetCurrentTimeRoundedToMinutesInvocation, E>
     + SysNativeInvokable<MetadataSetInvocation, E>
     + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
+    + SysNativeInvokable<AccessRulesSetAccessRuleInvocation, E>
+    + SysNativeInvokable<AccessRulesSetMutabilityInvocation, E>
     + SysNativeInvokable<AuthZonePopInvocation, E>
     + SysNativeInvokable<AuthZonePushInvocation, E>
     + SysNativeInvokable<AuthZoneCreateProofInvocation, E>
@@ -60,6 +62,7 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<AuthZoneCreateProofByIdsInvocation, E>
     + SysNativeInvokable<AuthZoneClearInvocation, E>
     + SysNativeInvokable<AuthZoneDrainInvocation, E>
+    + SysNativeInvokable<AuthZoneAssertAccessRuleInvocation, E>
     + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
     + SysNativeInvokable<ComponentSetRoyaltyConfigInvocation, E>
     + SysNativeInvokable<PackageSetRoyaltyConfigInvocation, E>
@@ -80,8 +83,8 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ResourceManagerBucketBurnInvocation, E>
     + SysNativeInvokable<ResourceManagerCreateInvocation, E>
     + SysNativeInvokable<ResourceManagerBurnInvocation, E>
-    + SysNativeInvokable<ResourceManagerUpdateAuthInvocation, E>
-    + SysNativeInvokable<ResourceManagerLockAuthInvocation, E>
+    + SysNativeInvokable<ResourceManagerUpdateVaultAuthInvocation, E>
+    + SysNativeInvokable<ResourceManagerSetVaultAuthMutabilityInvocation, E>
     + SysNativeInvokable<ResourceManagerCreateVaultInvocation, E>
     + SysNativeInvokable<ResourceManagerCreateBucketInvocation, E>
     + SysNativeInvokable<ResourceManagerMintInvocation, E>

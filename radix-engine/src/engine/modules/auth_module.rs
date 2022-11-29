@@ -3,8 +3,9 @@ use crate::model::*;
 use crate::types::*;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, NativeFunction, NativeMethod,
-    PackageOffset, RENodeId, ResourceManagerOffset, SubstateOffset, VaultOffset,
+    PackageOffset, RENodeId, SubstateOffset, VaultOffset,
 };
+use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -53,21 +54,30 @@ impl AuthModule {
             let auth_zone_ref_mut = substate_ref_mut.auth_zone();
 
             // New auth zone frame managed by the AuthModule
-            auth_zone_ref_mut.new_frame(actor);
+            let is_barrier = Self::is_barrier(actor);
+            auth_zone_ref_mut.new_frame(is_barrier);
             system_api.drop_lock(handle)?;
         }
 
         Ok(())
     }
 
-    pub fn on_before_frame_start<Y, X>(
-        actor: &REActor,
-        executor: &X,
-        system_api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn is_barrier(actor: &REActor) -> bool {
+        matches!(
+            actor,
+            REActor::Method(
+                _,
+                ResolvedReceiver {
+                    derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
+                    ..
+                }
+            )
+        )
+    }
+
+    pub fn on_before_frame_start<Y>(actor: &REActor, system_api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: SystemApi,
-        X: Executor,
     {
         if matches!(
             actor,
@@ -88,88 +98,56 @@ impl AuthModule {
             },
             REActor::Method(method, resolved_receiver) => {
                 match (method, resolved_receiver) {
-                    (ResolvedMethod::Native(NativeMethod::Metadata(MetadataMethod::Set)), ..) => {
-                        if let Some((
-                            RENodeId::Global(GlobalAddress::Package(package_address)),
-                            ..,
-                        )) = resolved_receiver.derefed_from
-                        {
-                            // TODO: Cleanup package address + NonFungibleId integration
-                            let bytes = scrypto_encode(&package_address).unwrap();
-
-                            let non_fungible_id = NonFungibleId::from_bytes(bytes);
-                            let non_fungible_address =
-                                NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id);
-                            vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                                HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                                    non_fungible_address,
-                                )),
-                            ))]
-                        } else {
-                            vec![MethodAuthorization::DenyAll]
-                        }
+                    // SetAccessRule auth is done manually within the method
+                    (
+                        ResolvedMethod::Native(NativeMethod::AccessRules(
+                            AccessRulesMethod::SetAccessRule,
+                        )),
+                        ..,
+                    ) => {
+                        vec![]
                     }
                     (
-                        ResolvedMethod::Native(NativeMethod::ResourceManager(ref method)),
+                        ResolvedMethod::Native(NativeMethod::ResourceManager(
+                            ResourceManagerMethod::Mint,
+                        )),
                         ResolvedReceiver {
-                            receiver: RENodeId::ResourceManager(resource_id),
-                            derefed_from,
+                            receiver: _,
+                            derefed_from:
+                                Some((RENodeId::Global(GlobalAddress::Resource(resource_address)), _)),
                         },
-                    ) => {
-                        match (method, derefed_from) {
-                            (
-                                ResourceManagerMethod::Mint,
-                                Some((
-                                    RENodeId::Global(GlobalAddress::Resource(resource_address)),
-                                    ..,
-                                )),
-                            ) if resource_address.eq(&ENTITY_OWNER_TOKEN) => {
-                                let actor = system_api.get_actor();
-                                match actor {
-                                    // TODO: Use associated function badge instead
-                                    REActor::Function(ResolvedFunction::Native(
-                                        NativeFunction::Package(PackageFunction::PublishWithOwner),
-                                    )) => {
-                                        vec![MethodAuthorization::AllowAll]
-                                    }
-                                    _ => {
-                                        vec![MethodAuthorization::DenyAll]
-                                    }
-                                }
+                    ) if resource_address.eq(&ENTITY_OWNER_TOKEN) => {
+                        let actor = system_api.get_actor();
+                        match actor {
+                            // TODO: Use associated function badge instead
+                            REActor::Function(ResolvedFunction::Native(
+                                NativeFunction::Package(PackageFunction::PublishWithOwner),
+                            )) => {
+                                vec![MethodAuthorization::AllowAll]
                             }
                             _ => {
-                                let node_id = RENodeId::ResourceManager(resource_id);
-                                let offset = SubstateOffset::ResourceManager(
-                                    ResourceManagerOffset::ResourceManager,
-                                );
-                                let handle = system_api.lock_substate(
-                                    node_id,
-                                    offset,
-                                    LockFlags::read_only(),
-                                )?;
-                                let substate_ref = system_api.get_ref(handle)?;
-                                let resource_manager = substate_ref.resource_manager();
-                                let method_auth =
-                                    resource_manager.get_auth(*method, executor.args()).clone();
-                                system_api.drop_lock(handle)?;
-                                vec![method_auth]
+                                vec![MethodAuthorization::DenyAll]
                             }
                         }
                     }
-                    (
-                        ResolvedMethod::Native(NativeMethod::EpochManager(ref method)),
-                        ResolvedReceiver {
-                            receiver: RENodeId::EpochManager(..),
-                            ..
-                        },
-                    ) => EpochManager::method_auth(method),
-                    (
-                        ResolvedMethod::Native(NativeMethod::Clock(ref method)),
-                        ResolvedReceiver {
-                            receiver: RENodeId::Clock(..),
-                            ..
-                        },
-                    ) => Clock::method_auth(method),
+                    (ResolvedMethod::Native(method), ..)
+                        if matches!(method, NativeMethod::Metadata(..))
+                            || matches!(method, NativeMethod::EpochManager(..))
+                            || matches!(method, NativeMethod::Clock(..))
+                            || matches!(method, NativeMethod::ResourceManager(..)) =>
+                    {
+                        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+                        let handle = system_api.lock_substate(
+                            resolved_receiver.receiver,
+                            offset,
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = system_api.get_ref(handle)?;
+                        let access_rules = substate_ref.access_rules();
+                        let auth = access_rules.native_fn_authorization(NativeFn::Method(method));
+                        system_api.drop_lock(handle)?;
+                        auth
+                    }
                     (
                         ResolvedMethod::Scrypto {
                             package_address,
@@ -221,7 +199,7 @@ impl AuthModule {
                             )?;
                             let substate_ref = system_api.get_ref(handle)?;
                             let access_rules = substate_ref.access_rules();
-                            let auth = access_rules.method_authorization(&state, &schema, &ident);
+                            let auth = access_rules.method_authorization(&state, &schema, ident);
                             system_api.drop_lock(handle)?;
                             auth
                         }
@@ -250,22 +228,31 @@ impl AuthModule {
                         };
                         let node_id = RENodeId::Global(GlobalAddress::Resource(resource_address));
                         let offset =
-                            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+                            SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules);
                         let handle =
                             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+
                         let substate_ref = system_api.get_ref(handle)?;
-                        let resource_manager = substate_ref.resource_manager();
+                        let access_rules_substate = substate_ref.access_rules();
 
                         // TODO: Revisit what the correct abstraction is for visibility in the auth module
                         let auth = match visibility {
-                            RENodeVisibilityOrigin::Normal => {
+                            RENodeVisibilityOrigin::Normal => access_rules_substate
+                                .native_fn_authorization(NativeFn::Method(NativeMethod::Vault(
+                                    vault_fn.clone(),
+                                ))),
+                            RENodeVisibilityOrigin::DirectAccess => match vault_fn {
                                 // TODO: Do we want to allow recaller to be able to withdraw from
                                 // TODO: any visible vault?
-                                vec![resource_manager.get_vault_auth(*vault_fn).clone()]
-                            }
-                            RENodeVisibilityOrigin::DirectAccess => match vault_fn {
                                 VaultMethod::TakeNonFungibles | VaultMethod::Take => {
-                                    vec![resource_manager.get_recall_auth().clone()]
+                                    let access_rule =
+                                        access_rules_substate.access_rules[0].get_group("recall");
+                                    let authorization = convert(
+                                        &Type::Any,
+                                        &IndexedScryptoValue::unit(),
+                                        access_rule,
+                                    );
+                                    vec![authorization]
                                 }
                                 _ => {
                                     return Err(RuntimeError::ModuleError(ModuleError::AuthError(
@@ -276,7 +263,6 @@ impl AuthModule {
                         };
 
                         system_api.drop_lock(handle)?;
-
                         auth
                     }
                     _ => vec![],
@@ -297,10 +283,11 @@ impl AuthModule {
         )?;
         let substate_ref = system_api.get_ref(handle)?;
         let auth_zone_ref = substate_ref.auth_zone();
+        let is_barrier = Self::is_barrier(actor);
 
         // Authorization check
         auth_zone_ref
-            .check_auth(actor, method_auths)
+            .check_auth(is_barrier, method_auths)
             .map_err(|(authorization, error)| {
                 RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
                     actor: actor.clone(),

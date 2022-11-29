@@ -27,15 +27,21 @@ pub enum RENode {
         PackageRoyaltyConfigSubstate,
         PackageRoyaltyAccumulatorSubstate,
         MetadataSubstate,
+        AccessRulesSubstate,
     ),
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
-    ResourceManager(ResourceManagerSubstate),
-    EpochManager(EpochManagerSubstate),
+    ResourceManager(
+        ResourceManagerSubstate,
+        AccessRulesSubstate,
+        AccessRulesSubstate,
+    ),
+    EpochManager(EpochManagerSubstate, AccessRulesSubstate),
     Clock(
         CurrentTimeSubstate,
         CurrentTimeRoundedToSecondsSubstate,
         CurrentTimeRoundedToMinutesSubstate,
+        AccessRulesSubstate,
     ),
 }
 
@@ -111,6 +117,7 @@ impl RENode {
                 package_royalty_config,
                 package_royalty_accumulator,
                 metadata,
+                access_rules,
             ) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Info),
@@ -128,11 +135,24 @@ impl RENode {
                     SubstateOffset::Metadata(MetadataOffset::Metadata),
                     metadata.into(),
                 );
+                substates.insert(
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    access_rules.into(),
+                );
             }
-            RENode::ResourceManager(resource_manager) => {
+            RENode::ResourceManager(resource_manager, access_rules, vault_access_rules) => {
                 substates.insert(
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                     resource_manager.into(),
+                );
+                substates.insert(
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    access_rules.into(),
+                );
+                // TODO: Figure out what the right abstraction is for vault access rules
+                substates.insert(
+                    SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules),
+                    vault_access_rules.into(),
                 );
             }
             RENode::NonFungibleStore(non_fungible_store) => {
@@ -143,16 +163,21 @@ impl RENode {
                     );
                 }
             }
-            RENode::EpochManager(epoch_manager_substate) => {
+            RENode::EpochManager(epoch_manager, access_rules) => {
                 substates.insert(
                     SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
-                    epoch_manager_substate.into(),
+                    epoch_manager.into(),
+                );
+                substates.insert(
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    access_rules.into(),
                 );
             }
             RENode::Clock(
                 current_time_substate,
                 current_time_rounded_to_seconds_substate,
                 current_time_rounded_to_minutes_substate,
+                access_rules_substate,
             ) => {
                 substates.insert(
                     SubstateOffset::Clock(ClockOffset::CurrentTime),
@@ -165,6 +190,10 @@ impl RENode {
                 substates.insert(
                     SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
                     current_time_rounded_to_minutes_substate.into(),
+                );
+                substates.insert(
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    access_rules_substate.into(),
                 );
             }
             RENode::FeeReserve(fee_reserve) => {

@@ -4,9 +4,9 @@ use crate::engine::{
     ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{
-    CurrentTimeRoundedToMinutesSubstate, CurrentTimeRoundedToSecondsSubstate, CurrentTimeSubstate,
-    GlobalAddressSubstate, HardAuthRule, HardProofRule, HardResourceOrNonFungible,
-    MethodAuthorization, SubstateRefMut,
+    AccessRulesSubstate, CurrentTimeRoundedToMinutesSubstate, CurrentTimeRoundedToSecondsSubstate,
+    CurrentTimeSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
+    HardResourceOrNonFungible, MethodAuthorization, SubstateRefMut,
 };
 use crate::types::*;
 use radix_engine_interface::api::api::EngineApi;
@@ -14,8 +14,9 @@ use radix_engine_interface::api::types::{
     ClockFunction, ClockMethod, ClockOffset, GlobalAddress, NativeFunction, NativeMethod, RENodeId,
     SubstateOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
+use scrypto::access_rule_node;
+use scrypto::rule;
 
 const SECONDS_TO_MS_FACTOR: u64 = 1000;
 const MINUTES_TO_MS_FACTOR: u64 = SECONDS_TO_MS_FACTOR * 60;
@@ -33,12 +34,11 @@ impl ExecutableInvocation for ClockCreateInvocation {
     where
         Self: Sized,
     {
-        let input = IndexedScryptoValue::from_typed(&self);
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Clock(
             ClockFunction::Create,
         )));
         let call_frame_update = CallFrameUpdate::empty();
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
 
         Ok((actor, call_frame_update, executor))
     }
@@ -51,19 +51,46 @@ impl NativeProcedure for ClockCreateInvocation {
     where
         Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
     {
-        let node_id = system_api.create_node(RENode::Clock(
-            CurrentTimeSubstate { current_time_ms: 0 },
-            CurrentTimeRoundedToSecondsSubstate {
-                current_time_rounded_to_seconds_ms: 0,
-            },
-            CurrentTimeRoundedToMinutesSubstate {
-                current_time_rounded_to_minutes_ms: 0,
-            },
-        ))?;
+        let underlying_node_id = system_api.allocate_node_id(RENodeType::Clock)?;
 
-        let global_node_id = system_api.create_node(RENode::Global(
-            GlobalAddressSubstate::System(node_id.into()),
-        ))?;
+        let auth_non_fungible = NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::supervisor_id());
+        let mut access_rules = AccessRules::new();
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
+                ClockMethod::SetCurrentTime,
+            ))),
+            rule!(require(auth_non_fungible)),
+        );
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
+                ClockMethod::GetCurrentTimeRoundedToMinutes,
+            ))),
+            rule!(allow_all),
+        );
+
+        let access_rules_substate = AccessRulesSubstate {
+            access_rules: vec![access_rules],
+        };
+
+        system_api.create_node(
+            underlying_node_id,
+            RENode::Clock(
+                CurrentTimeSubstate { current_time_ms: 0 },
+                CurrentTimeRoundedToSecondsSubstate {
+                    current_time_rounded_to_seconds_ms: 0,
+                },
+                CurrentTimeRoundedToMinutesSubstate {
+                    current_time_rounded_to_minutes_ms: 0,
+                },
+                access_rules_substate,
+            ),
+        )?;
+
+        let global_node_id = system_api.allocate_node_id(RENodeType::GlobalClock)?;
+        system_api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::System(underlying_node_id.into())),
+        )?;
 
         let system_address: SystemAddress = global_node_id.into();
         let mut node_refs_to_copy = HashSet::new();
@@ -90,7 +117,6 @@ impl ExecutableInvocation for ClockGetCurrentTimeRoundedToMinutesInvocation {
     where
         Self: Sized,
     {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
@@ -101,10 +127,9 @@ impl ExecutableInvocation for ClockGetCurrentTimeRoundedToMinutesInvocation {
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            ClockGetCurrentTimeRoundedToMinutesExecutable(resolved_receiver.receiver),
-            input,
-        );
+        let executor = NativeExecutor(ClockGetCurrentTimeRoundedToMinutesExecutable(
+            resolved_receiver.receiver,
+        ));
 
         Ok((actor, call_frame_update, executor))
     }
@@ -140,7 +165,6 @@ impl ExecutableInvocation for ClockSetCurrentTimeInvocation {
     where
         Self: Sized,
     {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
@@ -149,10 +173,10 @@ impl ExecutableInvocation for ClockSetCurrentTimeInvocation {
             ResolvedMethod::Native(NativeMethod::Clock(ClockMethod::SetCurrentTime)),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            ClockSetCurrentTimeExecutable(resolved_receiver.receiver, self.current_time_ms),
-            input,
-        );
+        let executor = NativeExecutor(ClockSetCurrentTimeExecutable(
+            resolved_receiver.receiver,
+            self.current_time_ms,
+        ));
 
         Ok((actor, call_frame_update, executor))
     }
@@ -232,19 +256,6 @@ impl Clock {
                     )),
                 ))]
             }
-        }
-    }
-
-    pub fn method_auth(method: &ClockMethod) -> Vec<MethodAuthorization> {
-        match method {
-            ClockMethod::SetCurrentTime => {
-                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                    HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                        NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::supervisor_id()),
-                    )),
-                ))]
-            }
-            _ => vec![],
         }
     }
 }

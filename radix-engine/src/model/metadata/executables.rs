@@ -5,7 +5,6 @@ use crate::engine::{
 use crate::types::*;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{NativeMethod, RENodeId, SubstateOffset};
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
 impl ExecutableInvocation for MetadataSetInvocation {
@@ -15,7 +14,6 @@ impl ExecutableInvocation for MetadataSetInvocation {
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
@@ -33,7 +31,7 @@ impl ExecutableInvocation for MetadataSetInvocation {
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }

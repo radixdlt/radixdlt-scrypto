@@ -65,6 +65,8 @@ pub enum NativeFunctionInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum AccessRulesMethodInvocation {
     AddAccessCheck(AccessRulesAddAccessCheckInvocation),
+    SetAccessRule(AccessRulesSetAccessRuleInvocation),
+    SetMutability(AccessRulesSetMutabilityInvocation),
 }
 
 #[derive(Debug)]
@@ -120,6 +122,7 @@ pub enum AuthZoneStackMethodInvocation {
     CreateProofByIds(AuthZoneCreateProofByIdsInvocation),
     Clear(AuthZoneClearInvocation),
     Drain(AuthZoneDrainInvocation),
+    AssertAuthRule(AuthZoneAssertAccessRuleInvocation),
 }
 
 #[derive(Debug)]
@@ -133,8 +136,6 @@ pub enum ResourceManagerFunctionInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerMethodInvocation {
     Burn(ResourceManagerBurnInvocation),
-    UpdateAuth(ResourceManagerUpdateAuthInvocation),
-    LockAuth(ResourceManagerLockAuthInvocation),
     Mint(ResourceManagerMintInvocation),
     UpdateNonFungibleData(ResourceManagerUpdateNonFungibleDataInvocation),
     GetNonFungible(ResourceManagerGetNonFungibleInvocation),
@@ -145,6 +146,8 @@ pub enum ResourceManagerMethodInvocation {
     NonFungibleExists(ResourceManagerNonFungibleExistsInvocation),
     CreateBucket(ResourceManagerCreateBucketInvocation),
     CreateVault(ResourceManagerCreateVaultInvocation),
+    UpdateVaultAuth(ResourceManagerUpdateVaultAuthInvocation),
+    LockVaultAuth(ResourceManagerSetVaultAuthMutabilityInvocation),
 }
 
 #[derive(Debug)]
@@ -293,6 +296,9 @@ impl NativeFnInvocation {
                     AuthZoneStackMethodInvocation::Drain(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    AuthZoneStackMethodInvocation::AssertAuthRule(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::Proof(proof_method) => match proof_method {
                     ProofMethodInvocation::GetAmount(invocation) => system_api
@@ -345,6 +351,12 @@ impl NativeFnInvocation {
                         AccessRulesMethodInvocation::AddAccessCheck(invocation) => system_api
                             .sys_invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
+                        AccessRulesMethodInvocation::SetAccessRule(invocation) => system_api
+                            .sys_invoke(invocation)
+                            .map(|a| IndexedScryptoValue::from_typed(&a)),
+                        AccessRulesMethodInvocation::SetMutability(invocation) => system_api
+                            .sys_invoke(invocation)
+                            .map(|a| IndexedScryptoValue::from_typed(&a)),
                     }
                 }
                 NativeMethodInvocation::Metadata(metadata_method) => match metadata_method {
@@ -356,10 +368,10 @@ impl NativeFnInvocation {
                     ResourceManagerMethodInvocation::Burn(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::UpdateAuth(invocation) => system_api
+                    ResourceManagerMethodInvocation::UpdateVaultAuth(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::LockAuth(invocation) => system_api
+                    ResourceManagerMethodInvocation::LockVaultAuth(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::CreateVault(invocation) => system_api

@@ -2,7 +2,6 @@ use radix_engine_interface::api::types::{
     AuthZoneStackId, BucketId, ComponentId, FeeReserveId, KeyValueStoreId, NonFungibleStoreId,
     PackageId, ProofId, ResourceManagerId, VaultId,
 };
-use radix_engine_interface::constants::*;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::model::*;
 
@@ -59,30 +58,27 @@ impl IdAllocator {
     ) -> Result<PackageAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-
-        // println!("Genesis package {:?}", hash(&data).lower_26_bytes());
-
         Ok(PackageAddress::Normal(hash(data).lower_26_bytes()))
+    }
+
+    pub fn new_account_address(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<ComponentAddress, IdAllocationError> {
+        let mut data = transaction_hash.to_vec();
+        data.extend(self.next()?.to_le_bytes());
+        Ok(ComponentAddress::Account(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new component address.
     pub fn new_component_address(
         &mut self,
         transaction_hash: Hash,
-        package_address: PackageAddress,
-        blueprint_name: &str,
     ) -> Result<ComponentAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        // println!("Genesis component {:?}", hash(&data).lower_26_bytes());
-
-        match (package_address, blueprint_name) {
-            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => {
-                Ok(ComponentAddress::Account(hash(data).lower_26_bytes()))
-            }
-            _ => Ok(ComponentAddress::Normal(hash(data).lower_26_bytes())),
-        }
+        Ok(ComponentAddress::Normal(hash(data).lower_26_bytes()))
     }
 
     pub fn new_epoch_manager_address(

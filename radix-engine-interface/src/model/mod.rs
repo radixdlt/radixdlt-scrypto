@@ -1,4 +1,4 @@
-mod auth_zone;
+mod auth;
 mod clock;
 mod component;
 mod epoch_manager;
@@ -8,7 +8,7 @@ mod package;
 mod resource;
 mod system;
 
-pub use auth_zone::*;
+pub use auth::*;
 pub use clock::*;
 pub use component::*;
 pub use epoch_manager::*;
