@@ -641,15 +641,15 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
         let mut entries = HashMap::new();
         entries.insert(
-            NonFungibleId::from_u32(1),
+            NonFungibleId::NumberU32(1),
             (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
         entries.insert(
-            NonFungibleId::from_u32(2),
+            NonFungibleId::NumberU32(2),
             (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
         entries.insert(
-            NonFungibleId::from_u32(3),
+            NonFungibleId::NumberU32(3),
             (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
 
@@ -749,7 +749,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         self.kernel_call(
             vec![NonFungibleAddress::new(
                 SYSTEM_TOKEN,
-                NonFungibleId::from_u32(0),
+                NonFungibleId::NumberU32(0),
             )],
             |kernel| {
                 kernel

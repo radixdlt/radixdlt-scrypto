@@ -36,36 +36,6 @@ pub enum NonFungibleIdType {
 }
 
 impl NonFungibleId {
-    /// Creates a non-fungible ID from an arbitrary byte array.
-    pub fn from_bytes(v: &[u8]) -> Self {
-        NonFungibleId::Bytes(v.to_vec())
-    }
-
-    /// Creates a non-fungible ID from a `u32` number.
-    pub fn from_u32(u: u32) -> Self {
-        NonFungibleId::NumberU32(u)
-    }
-
-    /// Creates a non-fungible ID from a `u64` number.
-    pub fn from_u64(u: u64) -> Self {
-        NonFungibleId::NumberU64(u)
-    }
-
-    /// Creates a non-fungible ID from a Decimal number.
-    pub fn from_decimal(d: Decimal) -> Self {
-        NonFungibleId::Decimal(d)
-    }
-
-    /// Creates a non-fungible ID from a String.
-    pub fn from_string(s: &str) -> Self {
-        NonFungibleId::String(s.to_string())
-    }
-
-    /// Creates a non-fungible ID from a UUID.
-    pub fn from_uuid(u: u128) -> Self {
-        NonFungibleId::UUID(u)
-    }
-
     /// Returns non-fungible ID type.
     pub fn id_type(&self) -> NonFungibleIdType {
         match self {
@@ -118,28 +88,28 @@ impl TryFrom<&[u8]> for NonFungibleId {
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match validate_id(slice) {
             Ok(type_id) => match type_id {
-                ScryptoSborTypeId::Array => Ok(NonFungibleId::from_bytes(
-                    &scrypto_decode::<Vec<u8>>(slice)
+                ScryptoSborTypeId::Array => Ok(NonFungibleId::Bytes(
+                    scrypto_decode::<Vec<u8>>(slice)
                         .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
                 )),
-                ScryptoSborTypeId::String => Ok(NonFungibleId::from_string(
-                    &scrypto_decode::<String>(slice)
+                ScryptoSborTypeId::String => Ok(NonFungibleId::String(
+                    scrypto_decode::<String>(slice)
                         .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
                 )),
-                ScryptoSborTypeId::U32 => Ok(NonFungibleId::from_u32(
+                ScryptoSborTypeId::U32 => Ok(NonFungibleId::NumberU32(
                     scrypto_decode::<u32>(slice)
                         .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
                 )),
-                ScryptoSborTypeId::U64 => Ok(NonFungibleId::from_u64(
+                ScryptoSborTypeId::U64 => Ok(NonFungibleId::NumberU64(
                     scrypto_decode::<u64>(slice)
                         .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
                 )),
-                ScryptoSborTypeId::U128 => Ok(NonFungibleId::from_uuid(
+                ScryptoSborTypeId::U128 => Ok(NonFungibleId::UUID(
                     scrypto_decode::<u128>(slice)
                         .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
                 )),
                 ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Decimal) => {
-                    Ok(NonFungibleId::from_decimal(
+                    Ok(NonFungibleId::Decimal(
                         scrypto_decode::<Decimal>(slice)
                             .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
                     ))
@@ -226,27 +196,27 @@ mod tests {
     #[test]
     fn test_non_fungible_id_type() {
         assert_eq!(
-            NonFungibleId::from_u32(1u32).id_type(),
+            NonFungibleId::NumberU32(1u32).id_type(),
             NonFungibleIdType::NumberU32
         );
         assert_eq!(
-            NonFungibleId::from_u64(1u64).id_type(),
+            NonFungibleId::NumberU64(1u64).id_type(),
             NonFungibleIdType::NumberU64
         );
         assert_eq!(
-            NonFungibleId::from_decimal(Decimal::from(1234_u128)).id_type(),
+            NonFungibleId::Decimal(Decimal::from(1234_u128)).id_type(),
             NonFungibleIdType::Decimal
         );
         assert_eq!(
-            NonFungibleId::from_string("test").id_type(),
+            NonFungibleId::String(String::from("test")).id_type(),
             NonFungibleIdType::String
         );
         assert_eq!(
-            NonFungibleId::from_uuid(1u128).id_type(),
+            NonFungibleId::UUID(1u128).id_type(),
             NonFungibleIdType::UUID
         );
         assert_eq!(
-            NonFungibleId::from_bytes(&[1, 2, 3]).id_type(),
+            NonFungibleId::Bytes(vec![1, 2, 3]).id_type(),
             NonFungibleIdType::Bytes
         );
     }
@@ -258,39 +228,39 @@ mod tests {
 
     #[test]
     fn test_non_fungible_id_enocde_decode() {
-        let n = NonFungibleId::from_u32(1);
+        let n = NonFungibleId::NumberU32(1);
         let buf = n.to_vec();
         let val = NonFungibleId::try_from(buf.as_slice()).unwrap();
         assert_eq!(n.id_type(), val.id_type());
         assert!(matches!(val, NonFungibleId::NumberU32(v) if v == 1));
 
-        let n = NonFungibleId::from_u64(u64::MAX);
+        let n = NonFungibleId::NumberU64(u64::MAX);
         let buf = n.to_vec();
         let val = NonFungibleId::try_from(buf.as_slice()).unwrap();
         assert_eq!(n.id_type(), val.id_type());
         assert!(matches!(val, NonFungibleId::NumberU64(v) if v == u64::MAX));
 
-        let n = NonFungibleId::from_uuid(u128::MAX);
+        let n = NonFungibleId::UUID(u128::MAX);
         let buf = n.to_vec();
         let val = NonFungibleId::try_from(buf.as_slice()).unwrap();
         assert_eq!(n.id_type(), val.id_type());
         assert!(matches!(val, NonFungibleId::UUID(v) if v == u128::MAX));
 
         const TEST_STR: &str = "test string 0123";
-        let n = NonFungibleId::from_string(TEST_STR);
+        let n = NonFungibleId::String(TEST_STR.to_string());
         let buf = n.to_vec();
         let val = NonFungibleId::try_from(buf.as_slice()).unwrap();
         assert_eq!(n.id_type(), val.id_type());
         assert!(matches!(val, NonFungibleId::String(s) if s == TEST_STR));
 
-        let n = NonFungibleId::from_decimal(Decimal::from(1234_u128));
+        let n = NonFungibleId::Decimal(Decimal::from(1234_u128));
         let buf = n.to_vec();
         let val = NonFungibleId::try_from(buf.as_slice()).unwrap();
         assert_eq!(n.id_type(), val.id_type());
         assert!(matches!(val, NonFungibleId::Decimal(d) if d == Decimal::from(1234_u128)));
 
         let array: [u8; 5] = [1, 2, 3, 4, 5];
-        let n = NonFungibleId::from_bytes(&array);
+        let n = NonFungibleId::Bytes(array.to_vec());
         let buf = n.to_vec();
         let val = NonFungibleId::try_from(buf.as_slice()).unwrap();
         assert_eq!(n.id_type(), val.id_type());
@@ -303,19 +273,19 @@ mod tests {
         //   <sbor-v1 prefix: 5c><sbor type id><optional element id><optional size><bytes>
         assert_eq!(
             NonFungibleId::from_str("5c2007023575").unwrap(),
-            NonFungibleId::from_bytes(&[53u8, 117u8]),
+            NonFungibleId::Bytes(vec![53u8, 117u8]),
         );
         assert_eq!(
             NonFungibleId::from_str("5c0905000000").unwrap(),
-            NonFungibleId::from_u32(5)
+            NonFungibleId::NumberU32(5)
         );
         assert_eq!(
             NonFungibleId::from_str("5c0a0500000000000000").unwrap(),
-            NonFungibleId::from_u64(5)
+            NonFungibleId::NumberU64(5)
         );
         assert_eq!(
             NonFungibleId::from_str("5c0b05000000000000000000000000000000").unwrap(),
-            NonFungibleId::from_uuid(5)
+            NonFungibleId::UUID(5)
         );
 
         let mut v = Decimal::from(5).to_vec();
@@ -326,12 +296,12 @@ mod tests {
         v.insert(0, SCRYPTO_SBOR_V1_PAYLOAD_PREFIX);
         assert_eq!(
             NonFungibleId::from_str(&hex::encode(&v)).unwrap(),
-            NonFungibleId::from_decimal(Decimal::from(5))
+            NonFungibleId::Decimal(Decimal::from(5))
         );
 
         assert_eq!(
             NonFungibleId::from_str("5c0c0474657374").unwrap(),
-            NonFungibleId::from_string("test")
+            NonFungibleId::String(String::from("test"))
         );
     }
 }

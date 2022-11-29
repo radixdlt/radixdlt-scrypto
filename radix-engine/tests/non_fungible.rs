@@ -67,9 +67,9 @@ fn can_burn_non_fungible() {
         .entity_changes
         .new_resource_addresses[0];
     let non_fungible_address =
-        NonFungibleAddress::new(resource_address, NonFungibleId::from_u32(0));
+        NonFungibleAddress::new(resource_address, NonFungibleId::NumberU32(0));
     let mut ids = BTreeSet::new();
-    ids.insert(NonFungibleId::from_u32(0));
+    ids.insert(NonFungibleId::NumberU32(0));
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -306,6 +306,38 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
 }
 
 #[test]
+fn create_non_fungible_with_default_id_type() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_with_default_non_fungible_id_type",
+            args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
 fn cant_burn_non_fungible_with_wrong_non_fungible_id_type() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
@@ -332,8 +364,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_id_type() {
         .expect_commit()
         .entity_changes
         .new_resource_addresses[0];
-    let non_fungible_address =
-        NonFungibleAddress::new(resource_address, NonFungibleId::from_uuid(0));
+    let non_fungible_address = NonFungibleAddress::new(resource_address, NonFungibleId::UUID(0));
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

@@ -75,7 +75,7 @@ mod tests {
         let public_key = private_key.public_key();
         let auth_address = NonFungibleAddress::new(
             ECDSA_SECP256K1_TOKEN,
-            NonFungibleId::from_bytes(&public_key.to_vec()),
+            NonFungibleId::Bytes(public_key.to_vec()),
         );
         let s1 = auth_address.to_string();
         let auth_address2 = NonFungibleAddress::from_str(&s1).unwrap();

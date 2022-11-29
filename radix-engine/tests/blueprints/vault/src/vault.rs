@@ -125,13 +125,13 @@ blueprint! {
             let bucket = ResourceBuilder::new_non_fungible()
                 .metadata("name", "TestToken")
                 .set_id_type(NonFungibleIdType::NumberU32)
-                .initial_supply([(NonFungibleId::from_u32(1), Data {})]);
+                .initial_supply([(NonFungibleId::NumberU32(1), Data {})]);
             Vault::with_bucket(bucket)
         }
 
         pub fn new_vault_with_take_non_fungible() -> ComponentAddress {
             let mut vault = Self::create_non_fungible_vault();
-            let bucket = vault.take_non_fungible(&NonFungibleId::from_u32(1));
+            let bucket = vault.take_non_fungible(&NonFungibleId::NumberU32(1));
             vault.put(bucket);
             let vaults = KeyValueStore::new();
             let vault_vector = Vec::new();
