@@ -1,3 +1,5 @@
+use scrypto::access_rule_node;
+use scrypto::rule;
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Invokable,
     LockFlags, MethodDeref, NativeExecutor, NativeProcedure, REActor, RENode, ResolvedFunction,
@@ -83,6 +85,22 @@ impl ExecutableInvocation for ResourceManagerCreateInvocation {
         let call_frame_update = CallFrameUpdate::empty();
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
             ResourceManagerFunction::Create,
+        )));
+        let executor = NativeExecutor(self);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl ExecutableInvocation for ResourceManagerCreateWithOwnerInvocation {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let call_frame_update = CallFrameUpdate::empty();
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
+            ResourceManagerFunction::CreateWithOwner,
         )));
         let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
@@ -202,6 +220,8 @@ where
 
 fn build_access_rules_substates(
     mut access_rules_map: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    metadata_access_rule: AccessRule,
+    metadata_mutability: AccessRule,
 ) -> (AccessRulesSubstate, AccessRulesSubstate) {
     let (mint_access_rule, mint_mutability) =
         access_rules_map.remove(&Mint).unwrap_or((DenyAll, LOCKED));
@@ -231,8 +251,8 @@ fn build_access_rules_substates(
         AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
             MetadataMethod::Set,
         ))),
-        AllowAll,
-        DenyAll,
+        metadata_access_rule,
+        metadata_mutability,
     );
     access_rules.set_access_rule_and_mutability(
         AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
@@ -410,8 +430,7 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
         self,
         api: &mut Y,
     ) -> Result<((ResourceAddress, Option<Bucket>), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + Invokable<ScryptoInvocation>,
+    where Y: SystemApi
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
@@ -423,7 +442,7 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             api,
         )?;
         let (access_rules_substate, vault_access_rules_substate) =
-            build_access_rules_substates(self.access_rules);
+            build_access_rules_substates(self.access_rules, AllowAll, DenyAll);
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
@@ -454,6 +473,87 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
 
         Ok((
             (resource_address, bucket),
+            CallFrameUpdate {
+                nodes_to_move,
+                node_refs_to_copy,
+            },
+        ))
+    }
+}
+
+impl NativeProcedure for ResourceManagerCreateWithOwnerInvocation {
+    type Output = (ResourceAddress, Option<Bucket>, Bucket);
+
+    fn main<Y>(
+        self,
+        api: &mut Y,
+    ) -> Result<((ResourceAddress, Option<Bucket>, Bucket), CallFrameUpdate), RuntimeError>
+        where Y: SystemApi + SysInvokableNative<RuntimeError>
+    {
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let resource_address: ResourceAddress = global_node_id.into();
+
+        // TODO: Cleanup resource_address + NonFungibleId integration
+        let (owner_badge_bucket, non_fungible_address) = {
+            let bytes = scrypto_encode(&resource_address).unwrap();
+            let non_fungible_id = NonFungibleId::from_bytes(bytes);
+            let non_fungible_address =
+                NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id.clone());
+
+            let mut entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)> = HashMap::new();
+            entries.insert(non_fungible_id, (vec![], vec![]));
+
+            let mint_invocation = ResourceManagerMintInvocation {
+                receiver: ENTITY_OWNER_TOKEN,
+                mint_params: MintParams::NonFungible { entries },
+            };
+            let owner_badge_bucket = api.sys_invoke(mint_invocation)?;
+            (owner_badge_bucket, non_fungible_address)
+        };
+
+
+        let (resource_manager_substate, bucket) = build_resource_manager_substate(
+            resource_address,
+            self.resource_type,
+            self.mint_params,
+            api,
+        )?;
+        let (access_rules_substate, vault_access_rules_substate) =
+            build_access_rules_substates(
+                self.access_rules,
+                rule!(require(non_fungible_address.clone())),
+                rule!(require(non_fungible_address)),
+            );
+        let metadata_substate = MetadataSubstate {
+            metadata: self.metadata,
+        };
+
+        let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
+        api.create_node(
+            underlying_node_id,
+            RENode::ResourceManager(
+                resource_manager_substate,
+                metadata_substate,
+                access_rules_substate,
+                vault_access_rules_substate,
+            ),
+        )?;
+
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+        )?;
+
+        let mut nodes_to_move = vec![];
+        if let Some(bucket) = &bucket {
+            nodes_to_move.push(RENodeId::Bucket(bucket.0));
+        }
+
+        let mut node_refs_to_copy = HashSet::new();
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(resource_address)));
+
+        Ok((
+            (resource_address, bucket, owner_badge_bucket),
             CallFrameUpdate {
                 nodes_to_move,
                 node_refs_to_copy,

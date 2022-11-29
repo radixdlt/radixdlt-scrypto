@@ -1,7 +1,5 @@
 use radix_engine_interface::model::*;
 use sbor::rust::collections::HashMap;
-use sbor::rust::string::String;
-use scrypto::scrypto_env_native_fn;
 
 use crate::resource::*;
 
@@ -34,23 +32,6 @@ impl ResourceSystem {
         self.resource_managers
             .entry(resource_address)
             .or_insert(ResourceManager(resource_address))
-    }
-
-    scrypto_env_native_fn! {
-        pub fn new_resource(
-            &mut self,
-            resource_type: ResourceType,
-            metadata: HashMap<String, String>,
-            access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
-            mint_params: Option<MintParams>,
-        ) -> (ResourceAddress, Option<Bucket>) {
-            ResourceManagerCreateInvocation {
-                resource_type,
-                metadata,
-                access_rules,
-                mint_params,
-            }
-        }
     }
 }
 

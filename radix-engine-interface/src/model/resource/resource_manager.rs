@@ -78,6 +78,31 @@ impl Into<NativeFnInvocation> for ResourceManagerCreateInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
+pub struct ResourceManagerCreateWithOwnerInvocation {
+    pub resource_type: ResourceType,
+    pub metadata: HashMap<String, String>,
+    pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    pub mint_params: Option<MintParams>,
+}
+
+impl Invocation for ResourceManagerCreateWithOwnerInvocation {
+    type Output = (ResourceAddress, Option<Bucket>, Bucket);
+}
+
+impl ScryptoNativeInvocation for ResourceManagerCreateWithOwnerInvocation {
+    type ScryptoOutput = (ResourceAddress, Option<Bucket>, Bucket);
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerCreateWithOwnerInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
+            ResourceManagerFunctionInvocation::CreateWithOwner(self),
+        ))
+    }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerBucketBurnInvocation {
     pub bucket: Bucket,
 }

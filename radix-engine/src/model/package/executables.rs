@@ -181,16 +181,11 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
 
         let bucket = api.sys_invoke(mint_invocation)?;
         let mut access_rules = AccessRules::new();
-        access_rules.set_method_access_rule(
+        access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,
             ))),
             rule!(require(non_fungible_address.clone())),
-        );
-        access_rules.set_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Set,
-            ))),
             rule!(require(non_fungible_address)),
         );
 
