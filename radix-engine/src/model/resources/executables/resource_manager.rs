@@ -3,10 +3,7 @@ use crate::engine::{
     LockFlags, MethodDeref, NativeExecutor, NativeProcedure, REActor, RENode, ResolvedFunction,
     ResolvedMethod, RuntimeError, SystemApi,
 };
-use crate::model::{
-    AccessRulesSubstate, BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible,
-    NonFungibleSubstate, Resource, VaultRuntimeSubstate,
-};
+use crate::model::{AccessRulesSubstate, BucketSubstate, GlobalAddressSubstate, InvokeError, MetadataSubstate, NonFungible, NonFungibleSubstate, Resource, VaultRuntimeSubstate};
 use crate::model::{NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
 use radix_engine_interface::api::api::SysInvokableNative;
@@ -110,7 +107,6 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
 
             let mut resource_manager = ResourceManagerSubstate::new(
                 self.resource_type,
-                self.metadata,
                 Some(nf_store_id),
                 global_node_id.into(),
             )
@@ -150,7 +146,6 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
         } else {
             let mut resource_manager = ResourceManagerSubstate::new(
                 self.resource_type,
-                self.metadata,
                 None,
                 global_node_id.into(),
             )
@@ -196,10 +191,6 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             self.access_rules.remove(&Mint).unwrap_or((DenyAll, LOCKED));
         let (burn_access_rule, burn_mutability) =
             self.access_rules.remove(&Burn).unwrap_or((DenyAll, LOCKED));
-        let (update_metadata_access_rule, update_metadata_mutability) = self
-            .access_rules
-            .remove(&UpdateMetadata)
-            .unwrap_or((AllowAll, LOCKED));
         let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) = self
             .access_rules
             .remove(&UpdateNonFungibleData)
@@ -221,11 +212,11 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             burn_mutability.into(),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateMetadata,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
             ))),
-            update_metadata_access_rule,
-            update_metadata_mutability.into(),
+            AllowAll,
+            DenyAll,
         );
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
@@ -235,15 +226,15 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             update_non_fungible_data_mutability.into(),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::CreateBucket,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Get,
             ))),
             AllowAll,
             DenyAll,
         );
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetMetadata,
+                ResourceManagerMethod::CreateBucket,
             ))),
             AllowAll,
             DenyAll,
@@ -396,11 +387,16 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             access_rules: vec![vault_access_rules],
         };
 
+        let metadata_substate = MetadataSubstate {
+            metadata: self.metadata
+        };
+
         let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
         api.create_node(
             underlying_node_id,
             RENode::ResourceManager(
                 resource_manager_substate,
+                metadata_substate,
                 access_rules_substate,
                 vault_access_rules_substate,
             ),
@@ -934,54 +930,6 @@ impl NativeProcedure for ResourceManagerMintExecutable {
     }
 }
 
-impl ExecutableInvocation for ResourceManagerGetMetadataInvocation {
-    type Exec = NativeExecutor<ResourceManagerGetMetadataExecutable>;
-
-    fn resolve<D: MethodDeref>(
-        self,
-        deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            deref,
-        )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetMetadata,
-            )),
-            resolved_receiver,
-        );
-        let executor = NativeExecutor(ResourceManagerGetMetadataExecutable(
-            resolved_receiver.receiver,
-        ));
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-pub struct ResourceManagerGetMetadataExecutable(RENodeId);
-
-impl NativeProcedure for ResourceManagerGetMetadataExecutable {
-    type Output = HashMap<String, String>;
-
-    fn main<'a, Y>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(HashMap<String, String>, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
-    {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
-
-        let substate_ref = system_api.get_ref(resman_handle)?;
-        let metadata = &substate_ref.resource_manager().metadata;
-
-        Ok((metadata.clone(), CallFrameUpdate::empty()))
-    }
-}
-
 impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
     type Exec = NativeExecutor<ResourceManagerGetResourceTypeExecutable>;
 
@@ -1071,60 +1019,6 @@ impl NativeProcedure for ResourceManagerGetTotalSupplyExecutable {
         let total_supply = substate_ref.resource_manager().total_supply;
 
         Ok((total_supply, CallFrameUpdate::empty()))
-    }
-}
-
-impl ExecutableInvocation for ResourceManagerUpdateMetadataInvocation {
-    type Exec = NativeExecutor<ResourceManagerUpdateMetadataExecutable>;
-
-    fn resolve<D: MethodDeref>(
-        self,
-        deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            deref,
-        )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetTotalSupply,
-            )),
-            resolved_receiver,
-        );
-        let executor = NativeExecutor(ResourceManagerUpdateMetadataExecutable(
-            resolved_receiver.receiver,
-            self.metadata,
-        ));
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-pub struct ResourceManagerUpdateMetadataExecutable(RENodeId, HashMap<String, String>);
-
-impl NativeProcedure for ResourceManagerUpdateMetadataExecutable {
-    type Output = ();
-
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
-    {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
-
-        let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-        substate_mut
-            .resource_manager()
-            .update_metadata(self.1)
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                }
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            })?;
-
-        Ok(((), CallFrameUpdate::empty()))
     }
 }
 

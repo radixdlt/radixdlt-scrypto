@@ -222,7 +222,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             ))
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
-        let resource_manager: Option<ResourceManagerSubstate> = global.and_then(|global| {
+        let resource_manager: Option<ResourceManagerSubstate> = global.as_ref().and_then(|global| {
             substate_store
                 .get_substate(&SubstateId(
                     global.node_deref(),
@@ -232,19 +232,28 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .map(|s| s.to_runtime().into())
         });
         let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
+        let metadata: Option<MetadataSubstate> = global.and_then(|global| {
+            substate_store
+                .get_substate(&SubstateId(
+                    global.node_deref(),
+                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().into())
+        });
+        let metadata = metadata.ok_or(DisplayError::ResourceManagerNotFound)?;
         writeln!(
             output,
             "{} {{ amount: {}, resource address: {}{}{} }}",
             list_item_prefix(last),
             amount,
             resource_address.display(&bech32_encoder),
-            resource_manager
+            metadata
                 .metadata
                 .get("name")
                 .map(|name| format!(", name: \"{}\"", name))
                 .unwrap_or(String::new()),
-            resource_manager
-                .metadata
+            metadata.metadata
                 .get("symbol")
                 .map(|symbol| format!(", symbol: \"{}\"", symbol))
                 .unwrap_or(String::new()),
@@ -297,7 +306,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
         ))
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
-    let resource_manager: Option<ResourceManagerSubstate> = global.and_then(|global| {
+    let resource_manager: Option<ResourceManagerSubstate> = global.as_ref().and_then(|global| {
         substate_store
             .get_substate(&SubstateId(
                 global.node_deref(),
@@ -307,6 +316,16 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
             .map(|s| s.to_runtime().into())
     });
     let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
+    let metadata: Option<MetadataSubstate> = global.and_then(|global| {
+        substate_store
+            .get_substate(&SubstateId(
+                global.node_deref(),
+                SubstateOffset::Metadata(MetadataOffset::Metadata),
+            ))
+            .map(|s| s.substate)
+            .map(|s| s.to_runtime().into())
+    });
+    let metadata = metadata.ok_or(DisplayError::ResourceManagerNotFound)?;
 
     writeln!(
         output,
@@ -318,9 +337,9 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
         output,
         "{}: {}",
         "Metadata".green().bold(),
-        resource_manager.metadata.len()
+        metadata.metadata.len()
     );
-    for (last, e) in resource_manager.metadata.iter().identify_last() {
+    for (last, e) in metadata.metadata.iter().identify_last() {
         writeln!(
             output,
             "{} {}: {}",

@@ -122,19 +122,17 @@ pub enum ResourceManagerFunctionInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerMethodInvocation {
+    GetResourceType(ResourceManagerGetResourceTypeInvocation),
     Burn(ResourceManagerBurnInvocation),
     Mint(ResourceManagerMintInvocation),
-    UpdateNonFungibleData(ResourceManagerUpdateNonFungibleDataInvocation),
-    GetNonFungible(ResourceManagerGetNonFungibleInvocation),
-    GetMetadata(ResourceManagerGetMetadataInvocation),
-    GetResourceType(ResourceManagerGetResourceTypeInvocation),
-    GetTotalSupply(ResourceManagerGetTotalSupplyInvocation),
-    UpdateMetadata(ResourceManagerUpdateMetadataInvocation),
-    NonFungibleExists(ResourceManagerNonFungibleExistsInvocation),
     CreateBucket(ResourceManagerCreateBucketInvocation),
     CreateVault(ResourceManagerCreateVaultInvocation),
     UpdateVaultAuth(ResourceManagerUpdateVaultAuthInvocation),
     LockVaultAuth(ResourceManagerSetVaultAuthMutabilityInvocation),
+    GetTotalSupply(ResourceManagerGetTotalSupplyInvocation),
+    UpdateNonFungibleData(ResourceManagerUpdateNonFungibleDataInvocation),
+    GetNonFungible(ResourceManagerGetNonFungibleInvocation),
+    NonFungibleExists(ResourceManagerNonFungibleExistsInvocation),
 }
 
 #[derive(Debug)]
@@ -368,16 +366,10 @@ impl NativeFnInvocation {
                     ResourceManagerMethodInvocation::Mint(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::GetMetadata(invocation) => system_api
-                        .sys_invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::GetResourceType(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::GetTotalSupply(invocation) => system_api
-                        .sys_invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::UpdateMetadata(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::UpdateNonFungibleData(invocation) => {

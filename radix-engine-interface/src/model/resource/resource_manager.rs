@@ -29,7 +29,6 @@ pub enum VaultMethodAuthKey {
 pub enum ResourceMethodAuthKey {
     Mint,
     Burn,
-    UpdateMetadata,
     UpdateNonFungibleData,
     Withdraw,
     Deposit,
@@ -239,28 +238,6 @@ impl Into<NativeFnInvocation> for ResourceManagerMintInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerGetMetadataInvocation {
-    pub receiver: ResourceAddress,
-}
-
-impl Invocation for ResourceManagerGetMetadataInvocation {
-    type Output = HashMap<String, String>;
-}
-
-impl ScryptoNativeInvocation for ResourceManagerGetMetadataInvocation {
-    type ScryptoOutput = HashMap<String, String>;
-}
-
-impl Into<NativeFnInvocation> for ResourceManagerGetMetadataInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::GetMetadata(self),
-        ))
-    }
-}
-
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerGetResourceTypeInvocation {
     pub receiver: ResourceAddress,
 }
@@ -299,29 +276,6 @@ impl Into<NativeFnInvocation> for ResourceManagerGetTotalSupplyInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
             ResourceManagerMethodInvocation::GetTotalSupply(self),
-        ))
-    }
-}
-
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerUpdateMetadataInvocation {
-    pub receiver: ResourceAddress,
-    pub metadata: HashMap<String, String>,
-}
-
-impl Invocation for ResourceManagerUpdateMetadataInvocation {
-    type Output = ();
-}
-
-impl ScryptoNativeInvocation for ResourceManagerUpdateMetadataInvocation {
-    type ScryptoOutput = ();
-}
-
-impl Into<NativeFnInvocation> for ResourceManagerUpdateMetadataInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::UpdateMetadata(self),
         ))
     }
 }

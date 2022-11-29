@@ -75,12 +75,11 @@ blueprint! {
             (badge, token_address)
         }
 
-        pub fn query() -> (Bucket, HashMap<String, String>, Decimal, ResourceType) {
+        pub fn query() -> (Bucket, Decimal, ResourceType) {
             let (badge, resource_address) = Self::create_fungible();
             let resource_manager = borrow_resource_manager!(resource_address);
             (
                 badge,
-                resource_manager.metadata(),
                 resource_manager.total_supply(),
                 resource_manager.resource_type(),
             )
@@ -106,11 +105,9 @@ blueprint! {
                 .metadata("name", "TestToken")
                 .no_initial_supply());
 
-            let mut new_metadata = HashMap::new();
-            new_metadata.insert("a".to_owned(), "b".to_owned());
             badge.authorize(|| {
-                token_resource_manager.update_metadata(new_metadata.clone());
-                assert_eq!(token_resource_manager.metadata(), new_metadata);
+                token_resource_manager.set_metadata("a".to_owned(), "b".to_owned());
+                assert_eq!(token_resource_manager.get_metadata("a".to_owned()).unwrap(), "b".to_owned());
             });
 
             badge

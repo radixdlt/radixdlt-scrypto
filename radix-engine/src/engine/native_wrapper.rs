@@ -366,13 +366,6 @@ where
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                ResourceManagerMethod::GetMetadata => {
-                    let invocation: ResourceManagerGetMetadataInvocation = scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
-                    system_api
-                        .sys_invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a))
-                }
                 ResourceManagerMethod::GetResourceType => {
                     let invocation: ResourceManagerGetResourceTypeInvocation =
                         scrypto_decode(&args).map_err(|e| {
@@ -384,13 +377,6 @@ where
                 }
                 ResourceManagerMethod::GetTotalSupply => {
                     let invocation: ResourceManagerGetTotalSupplyInvocation = scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
-                    system_api
-                        .sys_invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a))
-                }
-                ResourceManagerMethod::UpdateMetadata => {
-                    let invocation: ResourceManagerUpdateMetadataInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)

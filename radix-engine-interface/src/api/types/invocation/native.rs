@@ -249,16 +249,14 @@ pub enum ResourceManagerFunction {
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerMethod {
+    Mint,
     Burn,
     UpdateVaultAuth,
     LockAuth,
-    Mint,
     UpdateNonFungibleData,
     GetNonFungible,
-    GetMetadata,
     GetResourceType,
     GetTotalSupply,
-    UpdateMetadata,
     NonFungibleExists,
     CreateBucket,
     CreateVault,

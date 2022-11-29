@@ -101,16 +101,6 @@ impl FungibleResourceBuilder {
         self
     }
 
-    pub fn updateable_metadata(
-        &mut self,
-        method_auth: AccessRule,
-        mutability: Mutability,
-    ) -> &mut Self {
-        self.authorization
-            .insert(UpdateMetadata, (method_auth, mutability));
-        self
-    }
-
     /// Creates resource with the given initial supply.
     ///
     /// # Example
@@ -174,7 +164,7 @@ impl NonFungibleResourceBuilder {
 
     pub fn recallable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
         self.authorization
-            .insert(ResourceMethodAuthKey::Recall, (method_auth, mutability));
+            .insert(Recall, (method_auth, mutability));
         self
     }
 
@@ -184,7 +174,7 @@ impl NonFungibleResourceBuilder {
         mutability: Mutability,
     ) -> &mut Self {
         self.authorization
-            .insert(ResourceMethodAuthKey::Withdraw, (method_auth, mutability));
+            .insert(Withdraw, (method_auth, mutability));
         self
     }
 
@@ -194,17 +184,7 @@ impl NonFungibleResourceBuilder {
         mutability: Mutability,
     ) -> &mut Self {
         self.authorization
-            .insert(ResourceMethodAuthKey::Deposit, (method_auth, mutability));
-        self
-    }
-
-    pub fn updateable_metadata(
-        &mut self,
-        method_auth: AccessRule,
-        mutability: Mutability,
-    ) -> &mut Self {
-        self.authorization
-            .insert(UpdateMetadata, (method_auth, mutability));
+            .insert(Deposit, (method_auth, mutability));
         self
     }
 

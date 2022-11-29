@@ -86,10 +86,8 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ResourceManagerCreateVaultInvocation, E>
     + SysNativeInvokable<ResourceManagerCreateBucketInvocation, E>
     + SysNativeInvokable<ResourceManagerMintInvocation, E>
-    + SysNativeInvokable<ResourceManagerGetMetadataInvocation, E>
     + SysNativeInvokable<ResourceManagerGetResourceTypeInvocation, E>
     + SysNativeInvokable<ResourceManagerGetTotalSupplyInvocation, E>
-    + SysNativeInvokable<ResourceManagerUpdateMetadataInvocation, E>
     + SysNativeInvokable<ResourceManagerUpdateNonFungibleDataInvocation, E>
     + SysNativeInvokable<ResourceManagerNonFungibleExistsInvocation, E>
     + SysNativeInvokable<ResourceManagerGetNonFungibleInvocation, E>

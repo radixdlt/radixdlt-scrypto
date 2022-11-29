@@ -33,6 +33,7 @@ pub enum RENode {
     NonFungibleStore(NonFungibleStore),
     ResourceManager(
         ResourceManagerSubstate,
+        MetadataSubstate,
         AccessRulesSubstate,
         AccessRulesSubstate,
     ),
@@ -134,10 +135,14 @@ impl RENode {
                     access_rules.into(),
                 );
             }
-            RENode::ResourceManager(resource_manager, access_rules, vault_access_rules) => {
+            RENode::ResourceManager(resource_manager, metadata, access_rules, vault_access_rules) => {
                 substates.insert(
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                     resource_manager.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    metadata.into(),
                 );
                 substates.insert(
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
