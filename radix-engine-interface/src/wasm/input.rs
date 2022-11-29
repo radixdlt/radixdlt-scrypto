@@ -93,7 +93,7 @@ pub enum AuthZoneMethodInvocation {
     CreateProofByIds(AuthZoneCreateProofByIdsInvocation),
     Clear(AuthZoneClearInvocation),
     Drain(AuthZoneDrainInvocation),
-    AssertAuthRule(AuthZoneAssertAccessRule),
+    AssertAuthRule(AuthZoneAssertAccessRuleInvocation),
 }
 
 #[derive(Debug)]
@@ -107,7 +107,7 @@ pub enum ResourceManagerFunctionInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerMethodInvocation {
     Burn(ResourceManagerBurnInvocation),
-    UpdateAuth(ResourceManagerUpdateAuthInvocation),
+    UpdateAuth(ResourceManagerUpdateVaultAuthInvocation),
     LockAuth(ResourceManagerLockAuthInvocation),
     Mint(ResourceManagerMintInvocation),
     UpdateNonFungibleData(ResourceManagerUpdateNonFungibleDataInvocation),

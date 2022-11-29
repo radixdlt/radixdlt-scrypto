@@ -1,4 +1,3 @@
-use crate::model::ResourceMethodRule::{Protected, Public};
 use crate::model::{
     convert, InvokeError, MethodAuthorization, NonFungible, Resource, ResourceManagerError,
 };
@@ -18,9 +17,8 @@ pub struct ResourceManagerSubstate {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
     //pub method_table: HashMap<ResourceManagerMethod, ResourceMethodRule>,
-    pub vault_method_table: HashMap<VaultMethod, ResourceMethodRule>,
-    pub bucket_method_table: HashMap<BucketMethod, ResourceMethodRule>,
-    pub authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule>,
+    //pub vault_method_table: HashMap<VaultMethod, ResourceMethodRule>,
+    //pub authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule>,
     pub total_supply: Decimal,
     pub nf_store_id: Option<NonFungibleStoreId>,
     pub resource_address: ResourceAddress, // always set after instantiation
@@ -30,14 +28,16 @@ impl ResourceManagerSubstate {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        mut access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        //mut auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         nf_store_id: Option<NonFungibleStoreId>,
         resource_address: ResourceAddress,
     ) -> Result<ResourceManagerSubstate, InvokeError<ResourceManagerError>> {
+        /*
         let mut vault_method_table: HashMap<VaultMethod, ResourceMethodRule> = HashMap::new();
         vault_method_table.insert(VaultMethod::LockFee, Protected(Withdraw));
         vault_method_table.insert(VaultMethod::Take, Protected(Withdraw));
         vault_method_table.insert(VaultMethod::TakeNonFungibles, Protected(Withdraw));
+
         vault_method_table.insert(VaultMethod::Put, Protected(Deposit));
         vault_method_table.insert(VaultMethod::GetAmount, Public);
         vault_method_table.insert(VaultMethod::GetResourceAddress, Public);
@@ -45,8 +45,7 @@ impl ResourceManagerSubstate {
         vault_method_table.insert(VaultMethod::CreateProof, Public);
         vault_method_table.insert(VaultMethod::CreateProofByAmount, Public);
         vault_method_table.insert(VaultMethod::CreateProofByIds, Public);
-
-        let bucket_method_table: HashMap<BucketMethod, ResourceMethodRule> = HashMap::new();
+         */
 
         /*
         let mut method_table: HashMap<ResourceManagerMethod, ResourceMethodRule> = HashMap::new();
@@ -71,30 +70,27 @@ impl ResourceManagerSubstate {
         method_table.insert(ResourceManagerMethod::GetNonFungible, Public);
          */
 
+            /*
         let mut authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule> = HashMap::new();
         for (auth_entry_key, default) in [
-            /*
             (Mint, (DenyAll, LOCKED)),
             (Burn, (DenyAll, LOCKED)),
-             */
             (Withdraw, (AllowAll, LOCKED)),
             (Deposit, (AllowAll, LOCKED)),
             (Recall, (DenyAll, LOCKED)),
-            /*
             (UpdateMetadata, (DenyAll, LOCKED)),
             (UpdateNonFungibleData, (DenyAll, LOCKED)),
-             */
         ] {
             let entry = access_rules.remove(&auth_entry_key).unwrap_or(default);
             authorization.insert(auth_entry_key, MethodAccessRule::new(entry));
         }
+         */
 
         let resource_manager = ResourceManagerSubstate {
             resource_type,
             metadata,
-            vault_method_table,
-            bucket_method_table,
-            authorization,
+            //vault_method_table,
+            //authorization,
             total_supply: 0.into(),
             nf_store_id,
             resource_address,
@@ -160,37 +156,6 @@ impl ResourceManagerSubstate {
             )))
         } else {
             Ok(())
-        }
-    }
-
-    pub fn get_recall_auth(&self) -> &MethodAuthorization {
-        self.authorization
-            .get(&Recall)
-            .unwrap_or_else(|| panic!("Recall Authorization not specified"))
-            .get_method_auth()
-    }
-
-    pub fn get_vault_auth(&self, vault_fn: VaultMethod) -> &MethodAuthorization {
-        match self.vault_method_table.get(&vault_fn) {
-            None => &MethodAuthorization::Unsupported,
-            Some(Public) => &MethodAuthorization::AllowAll,
-            Some(Protected(auth_key)) => self
-                .authorization
-                .get(auth_key)
-                .unwrap_or_else(|| panic!("Authorization for {:?} not specified", vault_fn))
-                .get_method_auth(),
-        }
-    }
-
-    pub fn get_bucket_auth(&self, bucket_method: BucketMethod) -> &MethodAuthorization {
-        match self.bucket_method_table.get(&bucket_method) {
-            None => &MethodAuthorization::Unsupported,
-            Some(Public) => &MethodAuthorization::AllowAll,
-            Some(Protected(method)) => self
-                .authorization
-                .get(method)
-                .unwrap_or_else(|| panic!("Authorization for {:?} not specified", bucket_method))
-                .get_method_auth(),
         }
     }
 
@@ -279,12 +244,6 @@ impl ResourceManagerSubstate {
 
         Ok((Resource::new_non_fungible(self_address, ids), non_fungibles))
     }
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub enum ResourceMethodRule {
-    Public,
-    Protected(ResourceMethodAuthKey),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

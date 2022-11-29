@@ -52,6 +52,12 @@ impl AccessRules {
             .unwrap_or(&self.default_auth_mutability)
     }
 
+    pub fn get_group_mutability(&self, key: &str) -> &AccessRule {
+        self.grouped_auth_mutability
+            .get(key)
+            .unwrap_or(&self.default_auth_mutability)
+    }
+
     pub fn set_mutability(&mut self, key: AccessRuleKey, method_auth: AccessRule) {
         self.method_auth_mutability.insert(key, method_auth);
     }
@@ -60,10 +66,14 @@ impl AccessRules {
         match self.method_auth.get(key) {
             None => &self.default_auth,
             Some(AccessRuleEntry::AccessRule(access_rule)) => access_rule,
-            Some(AccessRuleEntry::Group(group)) => {
-                self.grouped_auth.get(group).unwrap_or(&self.default_auth)
+            Some(AccessRuleEntry::Group(group_key)) => {
+                self.get_group(group_key)
             }
         }
+    }
+
+    pub fn get_group(&self, key: &str) -> &AccessRule {
+        self.grouped_auth.get(key).unwrap_or(&self.default_auth)
     }
 
     pub fn get_default(&self) -> &AccessRule {
@@ -79,12 +89,26 @@ impl AccessRules {
         self
     }
 
-    pub fn set_access_rule(&mut self, key: AccessRuleKey, access_rule: AccessRule) {
+    pub fn set_method_access_rule(&mut self, key: AccessRuleKey, access_rule: AccessRule) {
         self.method_auth.insert(key, AccessRuleEntry::AccessRule(access_rule));
+    }
+
+    pub fn set_group_access_rule(&mut self, group_key: String, access_rule: AccessRule) {
+        self.grouped_auth.insert(group_key, access_rule);
+    }
+
+    pub fn set_group_access_rule_and_mutability(&mut self, group_key: String, access_rule: AccessRule, mutability: AccessRule) {
+        self.grouped_auth.insert(group_key.clone(), access_rule);
+        self.grouped_auth_mutability.insert(group_key, mutability);
     }
 
     pub fn set_access_rule_and_mutability(&mut self, key: AccessRuleKey, access_rule: AccessRule, mutability: AccessRule) {
         self.method_auth.insert(key.clone(), AccessRuleEntry::AccessRule(access_rule));
+        self.method_auth_mutability.insert(key, mutability);
+    }
+
+    pub fn set_group_and_mutability(&mut self, key: AccessRuleKey, group: String, mutability: AccessRule) {
+        self.method_auth.insert(key.clone(), AccessRuleEntry::Group(group));
         self.method_auth_mutability.insert(key, mutability);
     }
 

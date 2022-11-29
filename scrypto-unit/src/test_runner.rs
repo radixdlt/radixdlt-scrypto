@@ -27,6 +27,7 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::dec;
 
 use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use scrypto::{access_rule_node, rule};
 
 use transaction::builder::ManifestBuilder;
@@ -541,21 +542,21 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
             ),
         );
         access_rules.insert(
-            Withdraw,
+            VaultMethodKey(Withdraw),
             (
                 rule!(require(withdraw_auth)),
                 MUTABLE(rule!(require(admin_auth))),
             ),
         );
         access_rules.insert(
-            Recall,
+            VaultMethodKey(Recall),
             (
                 rule!(require(recall_auth)),
                 MUTABLE(rule!(require(admin_auth))),
             ),
         );
         access_rules.insert(
-            Deposit,
+            VaultMethodKey(Deposit),
             (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
         );
 
@@ -573,9 +574,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
 
     pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
         let mut access_rules = HashMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(Recall, (rule!(allow_all), LOCKED));
+        access_rules.insert(VaultMethodKey(Withdraw), (rule!(allow_all), LOCKED));
+        access_rules.insert(VaultMethodKey(Deposit), (rule!(allow_all), LOCKED));
+        access_rules.insert(VaultMethodKey(Recall), (rule!(allow_all), LOCKED));
 
         self.create_fungible_resource_and_deposit(access_rules, account)
     }
@@ -587,8 +588,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let mut access_rules = HashMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(VaultMethodKey(Withdraw), (rule!(allow_all), LOCKED));
+        access_rules.insert(VaultMethodKey(Deposit), (rule!(allow_all), LOCKED));
         access_rules.insert(Burn, (rule!(require(auth_resource_address)), LOCKED));
         let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
 
@@ -602,8 +603,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let mut access_rules = HashMap::new();
-        access_rules.insert(Withdraw, (rule!(require(auth_resource_address)), LOCKED));
-        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(VaultMethodKey(Withdraw), (rule!(require(auth_resource_address)), LOCKED));
+        access_rules.insert(VaultMethodKey(Deposit), (rule!(allow_all), LOCKED));
         let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
 
         (auth_resource_address, resource_address)
@@ -611,8 +612,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
         let mut access_rules = HashMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(VaultMethodKey(Withdraw), (rule!(allow_all), LOCKED));
+        access_rules.insert(VaultMethodKey(Deposit), (rule!(allow_all), LOCKED));
 
         let mut entries = HashMap::new();
         entries.insert(
@@ -657,8 +658,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         account: ComponentAddress,
     ) -> ResourceAddress {
         let mut access_rules = HashMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(VaultMethodKey(Withdraw), (rule!(allow_all), LOCKED));
+        access_rules.insert(VaultMethodKey(Deposit), (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(

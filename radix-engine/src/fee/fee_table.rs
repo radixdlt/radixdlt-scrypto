@@ -185,6 +185,7 @@ impl FeeTable {
                     AuthZoneMethod::CreateProofByIds => self.fixed_high,
                     AuthZoneMethod::Clear => self.fixed_high,
                     AuthZoneMethod::Drain => self.fixed_high,
+                    AuthZoneMethod::AssertAccessRule => self.fixed_high,
                 }
             }
             NativeMethod::EpochManager(system_ident) => match system_ident {
@@ -207,7 +208,7 @@ impl FeeTable {
                 ProofMethod::Clone => self.fixed_low,
             },
             NativeMethod::ResourceManager(resource_manager_ident) => match resource_manager_ident {
-                ResourceManagerMethod::UpdateAuth => self.fixed_medium,
+                ResourceManagerMethod::UpdateVaultAuth => self.fixed_medium,
                 ResourceManagerMethod::LockAuth => self.fixed_medium,
                 ResourceManagerMethod::CreateVault => self.fixed_medium,
                 ResourceManagerMethod::CreateBucket => self.fixed_medium,

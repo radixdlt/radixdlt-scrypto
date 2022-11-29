@@ -5,6 +5,7 @@ use radix_engine_interface::api::types::{
     AuthZoneOffset, ComponentOffset, GlobalAddress, NativeFunction, NativeMethod, PackageOffset,
     RENodeId, ResourceManagerOffset, SubstateOffset, VaultOffset,
 };
+use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -107,6 +108,26 @@ impl AuthModule {
                         ..,
                     ) => {
                         vec![]
+                    }
+                    (
+                        ResolvedMethod::Native(NativeMethod::ResourceManager(ResourceManagerMethod::Mint)),
+                        ResolvedReceiver {
+                            receiver: _,
+                            derefed_from: Some((RENodeId::Global(GlobalAddress::Resource(resource_address)), _)),
+                        } ,
+                    ) if resource_address.eq(&ENTITY_OWNER_TOKEN) => {
+                        let actor = system_api.get_actor();
+                        match actor {
+                            // TODO: Use associated function badge instead
+                            REActor::Function(ResolvedFunction::Native(
+                                                  NativeFunction::Package(PackageFunction::PublishWithOwner),
+                                              )) => {
+                                vec![MethodAuthorization::AllowAll]
+                            }
+                            _ => {
+                                vec![MethodAuthorization::DenyAll]
+                            }
+                        }
                     }
                     (ResolvedMethod::Native(method), ..)
                         if matches!(method, NativeMethod::Metadata(..))
@@ -253,22 +274,25 @@ impl AuthModule {
                         };
                         let node_id = RENodeId::Global(GlobalAddress::Resource(resource_address));
                         let offset =
-                            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+                            SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules);
                         let handle =
                             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+
                         let substate_ref = system_api.get_ref(handle)?;
-                        let resource_manager = substate_ref.resource_manager();
+                        let access_rules_substate = substate_ref.access_rules();
 
                         // TODO: Revisit what the correct abstraction is for visibility in the auth module
                         let auth = match visibility {
                             RENodeVisibilityOrigin::Normal => {
-                                // TODO: Do we want to allow recaller to be able to withdraw from
-                                // TODO: any visible vault?
-                                vec![resource_manager.get_vault_auth(*vault_fn).clone()]
+                                access_rules_substate.native_fn_authorization(NativeFn::Method(NativeMethod::Vault(vault_fn.clone())))
                             }
                             RENodeVisibilityOrigin::DirectAccess => match vault_fn {
+                                // TODO: Do we want to allow recaller to be able to withdraw from
+                                // TODO: any visible vault?
                                 VaultMethod::TakeNonFungibles | VaultMethod::Take => {
-                                    vec![resource_manager.get_recall_auth().clone()]
+                                    let access_rule = access_rules_substate.access_rules[0].get_group("recall");
+                                    let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), access_rule);
+                                    vec![authorization]
                                 }
                                 _ => {
                                     return Err(RuntimeError::ModuleError(ModuleError::AuthError(
@@ -279,7 +303,6 @@ impl AuthModule {
                         };
 
                         system_api.drop_lock(handle)?;
-
                         auth
                     }
                     _ => vec![],

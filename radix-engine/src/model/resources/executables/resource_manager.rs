@@ -17,6 +17,7 @@ use radix_engine_interface::dec;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use radix_engine_interface::model::AccessRule::{AllowAll, DenyAll};
+use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use scrypto::resource::SysBucket;
 
 /// Represents an error when accessing a bucket.
@@ -99,12 +100,6 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
         Y: SystemApi + Invokable<ScryptoInvocation>,
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
-
-        let (mint_access_rule, mint_mutability) = self.access_rules.remove(&Mint).unwrap_or((DenyAll, LOCKED));
-        let (burn_access_rule, burn_mutability) = self.access_rules.remove(&Burn).unwrap_or((DenyAll, LOCKED));
-        let (update_metadata_access_rule, update_metadata_mutability) = self.access_rules.remove(&UpdateMetadata).unwrap_or((AllowAll, LOCKED));
-        let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) = self.access_rules.remove(&UpdateNonFungibleData).unwrap_or((AllowAll, LOCKED));
-
         let resource_manager_substate = if matches!(self.resource_type, ResourceType::NonFungible) {
             let node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
             let nf_store_node_id =
@@ -114,7 +109,6 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             let mut resource_manager = ResourceManagerSubstate::new(
                 self.resource_type,
                 self.metadata,
-                self.access_rules,
                 Some(nf_store_id),
                 global_node_id.into(),
             )
@@ -155,7 +149,6 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             let mut resource_manager = ResourceManagerSubstate::new(
                 self.resource_type,
                 self.metadata,
-                self.access_rules,
                 None,
                 global_node_id.into(),
             )
@@ -198,6 +191,11 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
         };
 
 
+        let (mint_access_rule, mint_mutability) = self.access_rules.remove(&Mint).unwrap_or((DenyAll, LOCKED));
+        let (burn_access_rule, burn_mutability) = self.access_rules.remove(&Burn).unwrap_or((DenyAll, LOCKED));
+        let (update_metadata_access_rule, update_metadata_mutability) = self.access_rules.remove(&UpdateMetadata).unwrap_or((AllowAll, LOCKED));
+        let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) = self.access_rules.remove(&UpdateNonFungibleData).unwrap_or((AllowAll, LOCKED));
+
 
         let mut access_rules = AccessRules::new();
         access_rules.set_access_rule_and_mutability(
@@ -222,37 +220,42 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
         );
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket))),
-            AccessRule::AllowAll,
-            AccessRule::DenyAll,
+            AllowAll,
+            DenyAll,
         );
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::GetMetadata))),
-            AccessRule::AllowAll,
-            AccessRule::DenyAll,
+            AllowAll,
+            DenyAll,
         );
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::GetResourceType))),
-            AccessRule::AllowAll,
-            AccessRule::DenyAll,
+            AllowAll,
+            DenyAll,
         );
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::GetTotalSupply))),
-            AccessRule::AllowAll,
-            AccessRule::DenyAll,
+            AllowAll,
+            DenyAll,
         );
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault))),
-            AccessRule::AllowAll,
-            AccessRule::DenyAll,
+            AllowAll,
+            DenyAll,
         );
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::NonFungibleExists))),
-            AccessRule::AllowAll,
-            AccessRule::DenyAll,
+            AllowAll,
+            DenyAll,
         );
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible))),
             AllowAll,
+            DenyAll,
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(ResourceManagerMethod::UpdateVaultAuth))),
+            AllowAll, // Access verification occurs within method
             DenyAll,
         );
 
@@ -260,8 +263,87 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             access_rules: vec![access_rules]
         };
 
+
+        let (deposit_access_rule, deposit_mutability) = self.access_rules.remove(&VaultMethodKey(Deposit)).unwrap_or((AllowAll, LOCKED));
+        let (withdraw_access_rule, withdraw_mutability) = self.access_rules.remove(&VaultMethodKey(Withdraw)).unwrap_or((AllowAll, LOCKED));
+        let (recall_access_rule, recall_mutability) = self.access_rules.remove(&VaultMethodKey(Recall)).unwrap_or((DenyAll, LOCKED));
+
+        let mut vault_access_rules = AccessRules::new();
+        vault_access_rules.set_group_access_rule_and_mutability(
+            "withdraw".to_string(),
+            withdraw_access_rule,
+            withdraw_mutability.into(),
+        );
+        vault_access_rules.set_group_access_rule_and_mutability(
+            "recall".to_string(),
+            recall_access_rule,
+            recall_mutability.into(),
+        );
+        vault_access_rules.set_group_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Take))),
+            "withdraw".to_string(),
+            DenyAll,
+        );
+        vault_access_rules.set_group_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::TakeNonFungibles))),
+            "withdraw".to_string(),
+            DenyAll,
+        );
+        vault_access_rules.set_group_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::LockFee))),
+            "withdraw".to_string(),
+            DenyAll,
+        );
+
+        vault_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put))),
+            deposit_access_rule,
+            deposit_mutability.into(),
+        );
+        vault_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::GetAmount))),
+            AllowAll,
+            DenyAll,
+        );
+        vault_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::GetResourceAddress))),
+            AllowAll,
+            DenyAll,
+        );
+        vault_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::GetNonFungibleIds))),
+            AllowAll,
+            DenyAll,
+        );
+        vault_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::CreateProof))),
+            AllowAll,
+            DenyAll,
+        );
+        vault_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::CreateProofByAmount))),
+            AllowAll,
+            DenyAll,
+        );
+        vault_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::CreateProofByIds))),
+            AllowAll,
+            DenyAll,
+        );
+
+        let vault_access_rules_substate = AccessRulesSubstate {
+            access_rules: vec![vault_access_rules]
+        };
+
         let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
-        api.create_node(underlying_node_id, RENode::ResourceManager(resource_manager_substate, access_rules_substate))?;
+        api.create_node(
+            underlying_node_id,
+            RENode::ResourceManager(
+                resource_manager_substate,
+                access_rules_substate,
+                vault_access_rules_substate,
+            )
+        )?;
 
         let global_node_id = api.create_node(
             global_node_id,
@@ -399,10 +481,10 @@ impl NativeProcedure for ResourceManagerBurnExecutable {
     }
 }
 
-pub struct ResourceManagerUpdateAuthExecutable(RENodeId, ResourceMethodAuthKey, AccessRule);
+pub struct ResourceManagerUpdateVaultAuthExecutable(RENodeId, VaultMethodAuthKey, AccessRule);
 
-impl ExecutableInvocation for ResourceManagerUpdateAuthInvocation {
-    type Exec = NativeExecutor<ResourceManagerUpdateAuthExecutable>;
+impl ExecutableInvocation for ResourceManagerUpdateVaultAuthInvocation {
+    type Exec = NativeExecutor<ResourceManagerUpdateVaultAuthExecutable>;
 
     fn resolve<D: MethodDeref>(
         self,
@@ -417,12 +499,12 @@ impl ExecutableInvocation for ResourceManagerUpdateAuthInvocation {
         )?;
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateAuth,
+                ResourceManagerMethod::UpdateVaultAuth,
             )),
             resolved_receiver,
         );
         let executor = NativeExecutor(
-            ResourceManagerUpdateAuthExecutable(
+            ResourceManagerUpdateVaultAuthExecutable(
                 resolved_receiver.receiver,
                 self.method,
                 self.access_rule,
@@ -433,30 +515,65 @@ impl ExecutableInvocation for ResourceManagerUpdateAuthInvocation {
     }
 }
 
-impl NativeProcedure for ResourceManagerUpdateAuthExecutable {
+// TODO: Figure out better place to do vault auth (or child node authorization)
+impl NativeProcedure for ResourceManagerUpdateVaultAuthExecutable {
     type Output = ();
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SystemApi + SysInvokableNative<RuntimeError>,
     {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let offset = SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules);
+        let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-        let method_entry = substate_mut
-            .resource_manager()
-            .authorization
-            .get_mut(&self.1)
-            .expect(&format!("Authorization for {:?} not specified", self.1));
-        method_entry
-            .main(MethodAccessRuleMethod::Update(self.2))
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+        // TODO: Figure out how to move this access check into more appropriate place
+        {
+            let node_ids = api.get_visible_node_ids()?;
+            let auth_zone_id = node_ids
+                .into_iter()
+                .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+                .expect("AuthZone does not exist");
+
+            let substate_ref = api.get_ref(handle)?;
+            let access_rules_substate = substate_ref.access_rules();
+
+            let access_rule = match self.1 {
+                Deposit => {
+                    let key = AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put)));
+                    access_rules_substate.access_rules[0].get_mutability(&key)
                 }
-                InvokeError::Downstream(runtime_error) => runtime_error,
+                Withdraw => {
+                    access_rules_substate.access_rules[0].get_group_mutability("withdraw")
+                }
+                Recall => {
+                    access_rules_substate.access_rules[0].get_group_mutability("recall")
+                }
+            }.clone();
+
+            api.sys_invoke(AuthZoneAssertAccessRuleInvocation {
+                receiver: auth_zone_id.into(),
+                access_rule,
             })?;
+        }
+
+
+        let mut substate_mut = api.get_ref_mut(handle)?;
+        let access_rules_substate = substate_mut.access_rules();
+
+        match self.1 {
+            VaultMethodAuthKey::Deposit => {
+                let key = AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put)));
+                access_rules_substate.access_rules[0].set_method_access_rule(key, self.2);
+            }
+            VaultMethodAuthKey::Withdraw => {
+                let group_key = "withdraw".to_string();
+                access_rules_substate.access_rules[0].set_group_access_rule(group_key, self.2);
+            }
+            VaultMethodAuthKey::Recall => {
+                let group_key = "recall".to_string();
+                access_rules_substate.access_rules[0].set_group_access_rule(group_key, self.2);
+            }
+        }
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -499,6 +616,8 @@ impl NativeProcedure for ResourceManagerLockAuthExecutable {
     where
         Y: SystemApi,
     {
+        todo!();
+        /*
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
@@ -518,6 +637,7 @@ impl NativeProcedure for ResourceManagerLockAuthExecutable {
             })?;
 
         Ok(((), CallFrameUpdate::empty()))
+         */
     }
 }
 

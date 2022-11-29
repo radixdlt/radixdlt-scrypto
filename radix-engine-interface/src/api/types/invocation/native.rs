@@ -160,6 +160,7 @@ pub enum AuthZoneMethod {
     CreateProofByIds,
     Clear,
     Drain,
+    AssertAccessRule,
 }
 
 #[derive(
@@ -203,7 +204,7 @@ pub enum ResourceManagerFunction {
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerMethod {
     Burn,
-    UpdateAuth,
+    UpdateVaultAuth,
     LockAuth,
     Mint,
     UpdateNonFungibleData,

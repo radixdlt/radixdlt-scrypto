@@ -2,6 +2,7 @@ use radix_engine_interface::api::api::SysNativeInvokable;
 use radix_engine_interface::api::types::{GlobalAddress, NativeFn, NativeMethod, RENodeId, ResourceManagerMethod};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
+use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
@@ -43,7 +44,7 @@ impl ResourceManager {
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) -> () {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+            .sys_invoke(ResourceManagerUpdateVaultAuthInvocation {
                 receiver: self.0,
                 method: Withdraw,
                 access_rule,
@@ -54,7 +55,7 @@ impl ResourceManager {
     pub fn set_depositable(&mut self, access_rule: AccessRule) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+            .sys_invoke(ResourceManagerUpdateVaultAuthInvocation {
                 receiver: self.0,
                 method: Deposit,
                 access_rule,
@@ -65,7 +66,7 @@ impl ResourceManager {
     pub fn set_recallable(&mut self, access_rule: AccessRule) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
+            .sys_invoke(ResourceManagerUpdateVaultAuthInvocation {
                 receiver: self.0,
                 method: Recall,
                 access_rule,
@@ -122,27 +123,7 @@ impl ResourceManager {
         syscalls
             .sys_invoke(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
-                method: Withdraw,
-            })
-            .unwrap()
-    }
-
-    pub fn lock_depositable(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: Deposit,
-            })
-            .unwrap()
-    }
-
-    pub fn lock_recallable(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: Recall,
+                method: VaultMethodKey(Withdraw),
             })
             .unwrap()
     }
@@ -163,6 +144,26 @@ impl ResourceManager {
             .sys_invoke(ResourceManagerLockAuthInvocation {
                 receiver: self.0,
                 method: UpdateNonFungibleData,
+            })
+            .unwrap()
+    }
+
+    pub fn lock_depositable(&mut self) {
+        let mut syscalls = ScryptoEnv;
+        syscalls
+            .sys_invoke(ResourceManagerLockAuthInvocation {
+                receiver: self.0,
+                method: VaultMethodKey(Deposit),
+            })
+            .unwrap()
+    }
+
+    pub fn lock_recallable(&mut self) {
+        let mut syscalls = ScryptoEnv;
+        syscalls
+            .sys_invoke(ResourceManagerLockAuthInvocation {
+                receiver: self.0,
+                method: VaultMethodKey(Recall),
             })
             .unwrap()
     }

@@ -168,6 +168,13 @@ where
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
+                AuthZoneMethod::AssertAccessRule => {
+                    let invocation: AuthZoneAssertAccessRuleInvocation = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
             },
             NativeMethod::Proof(proof_method) => match proof_method {
                 ProofMethod::GetAmount => {
@@ -304,8 +311,8 @@ where
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                ResourceManagerMethod::UpdateAuth => {
-                    let invocation: ResourceManagerUpdateAuthInvocation = scrypto_decode(&args)
+                ResourceManagerMethod::UpdateVaultAuth => {
+                    let invocation: ResourceManagerUpdateVaultAuthInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)

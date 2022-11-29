@@ -58,7 +58,7 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<AuthZoneCreateProofByIdsInvocation, E>
     + SysNativeInvokable<AuthZoneClearInvocation, E>
     + SysNativeInvokable<AuthZoneDrainInvocation, E>
-    + SysNativeInvokable<AuthZoneAssertAccessRule, E>
+    + SysNativeInvokable<AuthZoneAssertAccessRuleInvocation, E>
     + SysNativeInvokable<PackagePublishNoOwnerInvocation, E>
     + SysNativeInvokable<PackagePublishWithOwnerInvocation, E>
     + SysNativeInvokable<BucketTakeInvocation, E>
@@ -76,7 +76,7 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ResourceManagerBucketBurnInvocation, E>
     + SysNativeInvokable<ResourceManagerCreateInvocation, E>
     + SysNativeInvokable<ResourceManagerBurnInvocation, E>
-    + SysNativeInvokable<ResourceManagerUpdateAuthInvocation, E>
+    + SysNativeInvokable<ResourceManagerUpdateVaultAuthInvocation, E>
     + SysNativeInvokable<ResourceManagerLockAuthInvocation, E>
     + SysNativeInvokable<ResourceManagerCreateVaultInvocation, E>
     + SysNativeInvokable<ResourceManagerCreateBucketInvocation, E>

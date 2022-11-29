@@ -22,7 +22,11 @@ pub enum RENode {
     Package(PackageSubstate, MetadataSubstate, AccessRulesSubstate),
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
-    ResourceManager(ResourceManagerSubstate, AccessRulesSubstate),
+    ResourceManager(
+        ResourceManagerSubstate,
+        AccessRulesSubstate,
+        AccessRulesSubstate,
+    ),
     EpochManager(EpochManagerSubstate, AccessRulesSubstate),
 }
 
@@ -99,7 +103,7 @@ impl RENode {
                     access_rules.into(),
                 );
             }
-            RENode::ResourceManager(resource_manager, access_rules) => {
+            RENode::ResourceManager(resource_manager, access_rules, vault_access_rules) => {
                 substates.insert(
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                     resource_manager.into(),
@@ -107,6 +111,11 @@ impl RENode {
                 substates.insert(
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                     access_rules.into(),
+                );
+                // TODO: Figure out what the right abstraction is for vault access rules
+                substates.insert(
+                    SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules),
+                    vault_access_rules.into(),
                 );
             }
             RENode::NonFungibleStore(non_fungible_store) => {

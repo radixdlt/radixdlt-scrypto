@@ -460,7 +460,7 @@ impl NativeProcedure for AuthZoneDrainInvocation {
     }
 }
 
-impl ExecutableInvocation for AuthZoneAssertAccessRule {
+impl ExecutableInvocation for AuthZoneAssertAccessRuleInvocation {
     type Exec = NativeExecutor<Self>;
 
     fn resolve<D: MethodDeref>(
@@ -474,7 +474,7 @@ impl ExecutableInvocation for AuthZoneAssertAccessRule {
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::Drain)),
+            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::AssertAccessRule)),
             resolved_receiver,
         );
 
@@ -483,7 +483,7 @@ impl ExecutableInvocation for AuthZoneAssertAccessRule {
     }
 }
 
-impl NativeProcedure for AuthZoneAssertAccessRule {
+impl NativeProcedure for AuthZoneAssertAccessRuleInvocation {
     type Output = ();
 
     fn main<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>

@@ -208,7 +208,7 @@ impl NativeProcedure for AccessRulesSetAccessRuleInvocation {
                     ApplicationError::AccessRulesError(AccessRulesError::InvalidIndex(self.index)),
                 ))?;
 
-        access_rules.set_access_rule(self.key, self.rule);
+        access_rules.set_method_access_rule(self.key, self.rule);
 
         Ok(((), CallFrameUpdate::empty()))
     }
