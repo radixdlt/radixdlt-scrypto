@@ -1,8 +1,8 @@
 use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
 use radix_engine_interface::api::types::{
-    AuthZoneOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle, PackageOffset,
-    ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver, SubstateId,
-    SubstateOffset, VaultId, WorktopOffset,
+    AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
+    PackageOffset, ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver,
+    SubstateId, SubstateOffset, VaultId, WorktopOffset,
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::*;
@@ -112,7 +112,7 @@ where
                 );
 
                 let node_id = system_api.allocate_node_id(RENodeType::AuthZoneStack)?;
-                system_api.create_node(node_id, RENode::AuthZone(auth_zone))?;
+                system_api.create_node(node_id, RENode::AuthZoneStack(auth_zone))?;
 
                 Ok(())
             })
@@ -201,8 +201,7 @@ where
 
                 // TODO: Use system_api to globalize component when create_node is refactored
                 // TODO: to allow for address selection
-                let global_substate =
-                    GlobalAddressSubstate::Component(scrypto::component::Component(component_id));
+                let global_substate = GlobalAddressSubstate::Component(component_id);
 
                 self.current_frame.create_node(
                     node_id,
@@ -225,7 +224,7 @@ where
                 RENodeId::AuthZoneStack(..) => {
                     let handle = system_api.lock_substate(
                         node_id,
-                        SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+                        SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                         LockFlags::MUTABLE,
                     )?;
                     let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
@@ -994,7 +993,7 @@ where
                         ExecutionMode::Globalize,
                         |system_api| {
                             let handle = system_api.lock_substate(
-                                RENodeId::Component(component.0),
+                                RENodeId::Component(*component),
                                 SubstateOffset::Component(ComponentOffset::Info),
                                 LockFlags::read_only(),
                             )?;
@@ -1029,7 +1028,7 @@ where
             }
             (RENodeId::Bucket(..), RENode::Bucket(..)) => {}
             (RENodeId::Proof(..), RENode::Proof(..)) => {}
-            (RENodeId::AuthZoneStack(..), RENode::AuthZone(..)) => {}
+            (RENodeId::AuthZoneStack(..), RENode::AuthZoneStack(..)) => {}
             (RENodeId::Vault(..), RENode::Vault(..)) => {}
             (RENodeId::Component(..), RENode::Component(..)) => {}
             (RENodeId::Worktop, RENode::Worktop(..)) => {}
@@ -1448,11 +1447,11 @@ where
                     |system_api| {
                         let handle = system_api.lock_substate(
                             global_node_id,
-                            SubstateOffset::Package(PackageOffset::Package),
+                            SubstateOffset::Package(PackageOffset::Info),
                             LockFlags::read_only(),
                         )?;
                         let substate_ref = system_api.get_ref(handle)?;
-                        let package = substate_ref.package().clone(); // TODO: Remove clone()
+                        let package = substate_ref.package_info().clone(); // TODO: Remove clone()
                         system_api.drop_lock(handle)?;
 
                         Ok(package)
@@ -1565,11 +1564,11 @@ where
                         ));
                         let handle = system_api.lock_substate(
                             package_global,
-                            SubstateOffset::Package(PackageOffset::Package),
+                            SubstateOffset::Package(PackageOffset::Info),
                             LockFlags::read_only(),
                         )?;
                         let substate_ref = system_api.get_ref(handle)?;
-                        let package = substate_ref.package().clone(); // TODO: Remove clone()
+                        let package = substate_ref.package_info().clone(); // TODO: Remove clone()
                         system_api.drop_lock(handle)?;
 
                         Ok(package)

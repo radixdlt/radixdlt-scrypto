@@ -40,8 +40,10 @@ pub enum NativeFnInvocation {
 pub enum NativeMethodInvocation {
     AccessRules(AccessRulesMethodInvocation),
     Metadata(MetadataMethodInvocation),
+    Package(PackageMethodInvocation),
+    Component(ComponentMethodInvocation),
     EpochManager(EpochManagerMethodInvocation),
-    AuthZone(AuthZoneMethodInvocation),
+    AuthZoneStack(AuthZoneStackMethodInvocation),
     ResourceManager(ResourceManagerMethodInvocation),
     Bucket(BucketMethodInvocation),
     Vault(VaultMethodInvocation),
@@ -77,6 +79,18 @@ pub enum EpochManagerFunctionInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
+pub enum ComponentMethodInvocation {
+    SetRoyaltyConfig(ComponentSetRoyaltyConfigInvocation),
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum PackageMethodInvocation {
+    SetRoyaltyConfig(PackageSetRoyaltyConfigInvocation),
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum EpochManagerMethodInvocation {
     GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
     SetEpoch(EpochManagerSetEpochInvocation),
@@ -84,7 +98,7 @@ pub enum EpochManagerMethodInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum AuthZoneMethodInvocation {
+pub enum AuthZoneStackMethodInvocation {
     Pop(AuthZonePopInvocation),
     Push(AuthZonePushInvocation),
     CreateProof(AuthZoneCreateProofInvocation),
@@ -205,6 +219,16 @@ impl NativeFnInvocation {
                 },
             },
             NativeFnInvocation::Method(native_method) => match native_method {
+                NativeMethodInvocation::Component(component_method) => match component_method {
+                    ComponentMethodInvocation::SetRoyaltyConfig(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                },
+                NativeMethodInvocation::Package(package_method) => match package_method {
+                    PackageMethodInvocation::SetRoyaltyConfig(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                },
                 NativeMethodInvocation::Bucket(bucket_method) => match bucket_method {
                     BucketMethodInvocation::Take(invocation) => system_api
                         .sys_invoke(invocation)
@@ -228,26 +252,26 @@ impl NativeFnInvocation {
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
-                NativeMethodInvocation::AuthZone(auth_zone_method) => match auth_zone_method {
-                    AuthZoneMethodInvocation::Pop(invocation) => system_api
+                NativeMethodInvocation::AuthZoneStack(auth_zone_method) => match auth_zone_method {
+                    AuthZoneStackMethodInvocation::Pop(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneMethodInvocation::Push(invocation) => system_api
+                    AuthZoneStackMethodInvocation::Push(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneMethodInvocation::CreateProof(invocation) => system_api
+                    AuthZoneStackMethodInvocation::CreateProof(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneMethodInvocation::CreateProofByAmount(invocation) => system_api
+                    AuthZoneStackMethodInvocation::CreateProofByAmount(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneMethodInvocation::CreateProofByIds(invocation) => system_api
+                    AuthZoneStackMethodInvocation::CreateProofByIds(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneMethodInvocation::Clear(invocation) => system_api
+                    AuthZoneStackMethodInvocation::Clear(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneMethodInvocation::Drain(invocation) => system_api
+                    AuthZoneStackMethodInvocation::Drain(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },

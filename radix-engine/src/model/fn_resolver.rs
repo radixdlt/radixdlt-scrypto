@@ -1,6 +1,6 @@
 use crate::types::*;
 use radix_engine_interface::api::types::{
-    AccessRulesMethod, AuthZoneMethod, BucketMethod, EpochManagerFunction, EpochManagerMethod,
+    AccessRulesMethod, AuthZoneStackMethod, BucketMethod, EpochManagerFunction, EpochManagerMethod,
     GlobalAddress, NativeFunction, NativeMethod, PackageFunction, ProofMethod, RENodeId,
     ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
     WorktopMethod,
@@ -38,9 +38,9 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
             .ok()
             .map(NativeMethod::Proof),
 
-        RENodeId::AuthZoneStack(_) => AuthZoneMethod::from_str(method_name)
+        RENodeId::AuthZoneStack(_) => AuthZoneStackMethod::from_str(method_name)
             .ok()
-            .map(NativeMethod::AuthZone),
+            .map(NativeMethod::AuthZoneStack),
 
         RENodeId::Worktop => WorktopMethod::from_str(method_name)
             .ok()
@@ -74,6 +74,8 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
                 .ok()
                 .map(NativeMethod::Metadata)
         }
-        RENodeId::KeyValueStore(_) | RENodeId::NonFungibleStore(_) => None,
+        RENodeId::KeyValueStore(_) | RENodeId::NonFungibleStore(_) | RENodeId::FeeReserve(_) => {
+            None
+        }
     }
 }

@@ -1,4 +1,5 @@
 use crate::api::api::Invocation;
+use crate::api::types::RENodeId;
 use crate::crypto::Blob;
 use crate::model::*;
 use crate::scrypto;
@@ -52,4 +53,34 @@ impl Into<NativeFnInvocation> for PackagePublishWithOwnerInvocation {
             PackageFunctionInvocation::PublishWithOwner(self),
         ))
     }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct PackageSetRoyaltyConfigInvocation {
+    pub receiver: PackageAddress,
+    pub royalty_config: HashMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
+}
+
+impl Invocation for PackageSetRoyaltyConfigInvocation {
+    type Output = ();
+}
+
+impl ScryptoNativeInvocation for PackageSetRoyaltyConfigInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<NativeFnInvocation> for PackageSetRoyaltyConfigInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Package(
+            PackageMethodInvocation::SetRoyaltyConfig(self),
+        ))
+    }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct PackageSetRoyaltyConfigExecutable {
+    pub receiver: RENodeId,
+    pub royalty_config: HashMap<String, RoyaltyConfig>,
 }

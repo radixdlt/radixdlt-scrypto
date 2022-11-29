@@ -3,7 +3,7 @@ use crate::engine::*;
 use crate::types::*;
 use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::{
-    AccessRulesMethod, AuthZoneMethod, BucketMethod, EpochManagerFunction, EpochManagerMethod,
+    AccessRulesMethod, AuthZoneStackMethod, BucketMethod, EpochManagerFunction, EpochManagerMethod,
     NativeFn, NativeFunction, NativeMethod, PackageFunction, ProofMethod, ResourceManagerFunction,
     ResourceManagerMethod, TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
@@ -116,29 +116,29 @@ where
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
             },
-            NativeMethod::AuthZone(auth_zone_method) => match auth_zone_method {
-                AuthZoneMethod::Pop => {
+            NativeMethod::AuthZoneStack(auth_zone_method) => match auth_zone_method {
+                AuthZoneStackMethod::Pop => {
                     let invocation: AuthZonePopInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                AuthZoneMethod::Push => {
+                AuthZoneStackMethod::Push => {
                     let invocation: AuthZonePushInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                AuthZoneMethod::CreateProof => {
+                AuthZoneStackMethod::CreateProof => {
                     let invocation: AuthZoneCreateProofInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                AuthZoneMethod::CreateProofByAmount => {
+                AuthZoneStackMethod::CreateProofByAmount => {
                     let invocation: AuthZoneCreateProofByAmountInvocation = scrypto_decode(&args)
                         .map_err(|e| {
                         RuntimeError::KernelError(KernelError::InvalidSborValue(e))
@@ -147,21 +147,21 @@ where
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                AuthZoneMethod::CreateProofByIds => {
+                AuthZoneStackMethod::CreateProofByIds => {
                     let invocation: AuthZoneCreateProofByIdsInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                AuthZoneMethod::Clear => {
+                AuthZoneStackMethod::Clear => {
                     let invocation: AuthZoneClearInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                AuthZoneMethod::Drain => {
+                AuthZoneStackMethod::Drain => {
                     let invocation: AuthZoneDrainInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
@@ -464,6 +464,24 @@ where
                 }
                 WorktopMethod::TakeAmount => {
                     let invocation: WorktopTakeAmountInvocation = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
+            },
+            NativeMethod::Component(component_method) => match component_method {
+                ComponentMethod::SetRoyaltyConfig => {
+                    let invocation: ComponentSetRoyaltyConfigInvocation = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
+            },
+            NativeMethod::Package(package_method) => match package_method {
+                PackageMethod::SetRoyaltyConfig => {
+                    let invocation: PackageSetRoyaltyConfigInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)

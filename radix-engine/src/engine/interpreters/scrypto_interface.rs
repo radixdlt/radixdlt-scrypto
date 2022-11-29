@@ -3,9 +3,11 @@ use crate::engine::{
     ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
+use crate::model::Resource;
 use crate::model::{
-    AccessRulesSubstate, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate,
-    KeyValueStore, RuntimeSubstate,
+    AccessRulesSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
+    ComponentRoyaltyConfigSubstate, ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore,
+    RuntimeSubstate,
 };
 use crate::types::ScryptoInvocation;
 use crate::wasm::WasmEngine;
@@ -15,8 +17,10 @@ use radix_engine_interface::api::types::{
     ScryptoMethodIdent, ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::constants::ACCOUNT_PACKAGE;
+use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::model::{ResourceType, RoyaltyConfig};
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
@@ -73,9 +77,7 @@ where
                     node_id
                 };
 
-                let node = RENode::Global(GlobalAddressSubstate::Component(
-                    scrypto::component::Component(component_id),
-                ));
+                let node = RENode::Global(GlobalAddressSubstate::Component(component_id));
                 (node_id, node)
             }
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
@@ -86,6 +88,15 @@ where
                     ComponentStateSubstate::new(state),
                     AccessRulesSubstate {
                         access_rules: Vec::new(),
+                    },
+                    ComponentRoyaltyConfigSubstate {
+                        royalty_config: RoyaltyConfig::default(), // TODO: add user interface
+                    },
+                    ComponentRoyaltyAccumulatorSubstate {
+                        royalty: Resource::new_empty(
+                            RADIX_TOKEN,
+                            ResourceType::Fungible { divisibility: 18 },
+                        ),
                     },
                 );
 
