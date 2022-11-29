@@ -9,6 +9,7 @@ use crate::model::{
 };
 use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
+use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::api::{Invocation, SysInvokableNative, SysNativeInvokable};
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFunction, NativeMethod, NonFungibleStoreId, NonFungibleStoreOffset,

@@ -1,3 +1,5 @@
+use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent,
