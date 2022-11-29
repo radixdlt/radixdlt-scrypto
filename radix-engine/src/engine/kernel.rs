@@ -1,4 +1,6 @@
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::api::api::{
+    EngineApi, Invocation, SysInvokableNative, SysNativeInvokable,
+};
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
     PackageOffset, ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver,
@@ -117,31 +119,38 @@ where
             })
             .expect("AuthModule failed to initialize");
 
-        kernel
-            .current_frame
-            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        kernel
-            .current_frame
-            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)));
-        kernel
-            .current_frame
-            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(
-                ECDSA_SECP256K1_TOKEN,
-            )));
-        kernel
-            .current_frame
-            .add_stored_ref(RENodeId::Global(GlobalAddress::Resource(
-                EDDSA_ED25519_TOKEN,
-            )));
-        kernel
-            .current_frame
-            .add_stored_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
-        kernel
-            .current_frame
-            .add_stored_ref(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
-        kernel
-            .current_frame
-            .add_stored_ref(RENodeId::Global(GlobalAddress::Package(SYS_FAUCET_PACKAGE)));
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(ENTITY_OWNER_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Package(SYS_FAUCET_PACKAGE)),
+            RENodeVisibilityOrigin::Normal,
+        );
 
         kernel
     }
@@ -326,7 +335,8 @@ where
                     SubstateId(node_id, offset.clone()),
                     RuntimeSubstate::Global(global_substate),
                 );
-                self.current_frame.add_stored_ref(node_id);
+                self.current_frame
+                    .add_stored_ref(node_id, RENodeVisibilityOrigin::Normal);
                 self.current_frame.move_owned_node_to_store(
                     &mut self.heap,
                     &mut self.track,
@@ -448,6 +458,9 @@ where
             // TODO: Abstract these away
             self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
                 AuthModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
+            })?;
+            self.execute_in_mode(ExecutionMode::EntityModule, |system_api| {
+                EntityModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
             })?;
             self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
                 NodeMoveModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
@@ -607,36 +620,57 @@ where
         // TODO: Move to higher layer
         if depth == 0 {
             for node_id in &call_frame_update.node_refs_to_copy {
-                if let RENodeId::Global(global_address) = node_id {
-                    if self.current_frame.get_node_location(*node_id).is_err() {
-                        if matches!(
-                            global_address,
-                            GlobalAddress::Component(
-                                ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
-                            )
-                        ) || matches!(
-                            global_address,
-                            GlobalAddress::Component(ComponentAddress::EddsaEd25519VirtualAccount(
-                                ..
-                            ))
-                        ) {
-                            self.current_frame.add_stored_ref(*node_id);
-                            continue;
-                        }
+                match node_id {
+                    RENodeId::Global(global_address) => {
+                        if self.current_frame.get_node_location(*node_id).is_err() {
+                            if matches!(
+                                global_address,
+                                GlobalAddress::Component(
+                                    ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+                                )
+                            ) || matches!(
+                                global_address,
+                                GlobalAddress::Component(
+                                    ComponentAddress::EddsaEd25519VirtualAccount(..)
+                                )
+                            ) {
+                                self.current_frame
+                                    .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                continue;
+                            }
 
-                        let offset = SubstateOffset::Global(GlobalOffset::Global);
-                        self.track
-                            .acquire_lock(
-                                SubstateId(*node_id, offset.clone()),
-                                LockFlags::read_only(),
-                            )
-                            .map_err(|_| KernelError::GlobalAddressNotFound(*global_address))?;
-                        self.track
-                            .release_lock(SubstateId(*node_id, offset), false)
-                            .map_err(|_| KernelError::GlobalAddressNotFound(*global_address))?;
-                        self.current_frame.add_stored_ref(*node_id);
-                        continue;
+                            let offset = SubstateOffset::Global(GlobalOffset::Global);
+                            self.track
+                                .acquire_lock(
+                                    SubstateId(*node_id, offset.clone()),
+                                    LockFlags::read_only(),
+                                )
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                            self.track
+                                .release_lock(SubstateId(*node_id, offset), false)
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                            self.current_frame
+                                .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                        }
                     }
+                    RENodeId::Vault(..) => {
+                        if self.current_frame.get_node_location(*node_id).is_err() {
+                            let offset = SubstateOffset::Vault(VaultOffset::Vault);
+                            self.track
+                                .acquire_lock(
+                                    SubstateId(*node_id, offset.clone()),
+                                    LockFlags::read_only(),
+                                )
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                            self.track
+                                .release_lock(SubstateId(*node_id, offset), false)
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+
+                            self.current_frame
+                                .add_stored_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
@@ -689,15 +723,6 @@ where
     }
 }
 
-pub trait Resolver<I: Invocation> {
-    type Exec: Executor<Output = <I as Invocation>::Output>;
-
-    fn resolve<D: MethodDeref>(
-        invocation: I,
-        deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
-}
-
 pub trait Executor {
     type Output: Debug;
 
@@ -713,14 +738,23 @@ pub trait Executor {
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>
-            + Invokable<ResourceManagerSetResourceAddressInvocation>;
+            + SysNativeInvokable<ResourceManagerSetResourceAddressInvocation, RuntimeError>;
+}
+
+pub trait ExecutableInvocation: Invocation {
+    type Exec: Executor<Output = Self::Output>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
 }
 
 impl<'g, 's, W, R, N> Invokable<N> for Kernel<'g, 's, W, R>
 where
     W: WasmEngine,
     R: FeeReserve,
-    N: NativeInvocation,
+    N: ExecutableInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         for m in &mut self.modules {
@@ -729,7 +763,7 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    info: InvocationInfo::Native(&invocation.info()),
+                    invocation: &invocation,
                     input_size: 0,  // TODO: Fix this
                     value_count: 0, // TODO: Fix this
                     depth: self.current_frame.depth,
@@ -742,7 +776,7 @@ where
         let saved_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        let (actor, call_frame_update, executor) = NativeResolver::resolve(invocation, self)?;
+        let (actor, call_frame_update, executor) = invocation.resolve(self)?;
 
         let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 
@@ -754,9 +788,7 @@ where
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
-                SysCallOutput::Invoke {
-                    rtn: &rtn, // TODO: Better abstraction here
-                },
+                SysCallOutput::Invoke { rtn: &rtn },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
@@ -781,7 +813,7 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    info: InvocationInfo::Scrypto(&invocation),
+                    invocation: &invocation,
                     input_size: invocation.args().raw.len() as u32,
                     value_count: invocation.args().value_count() as u32,
                     depth: self.current_frame.depth,
@@ -903,6 +935,14 @@ where
         Ok(node_ids)
     }
 
+    fn get_visible_node_data(
+        &mut self,
+        node_id: RENodeId,
+    ) -> Result<RENodeVisibilityOrigin, RuntimeError> {
+        let visibility = self.current_frame.get_node_visibility(node_id)?;
+        Ok(visibility)
+    }
+
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
@@ -989,7 +1029,8 @@ where
                     SubstateId(global_node_id, SubstateOffset::Global(GlobalOffset::Global)),
                     RuntimeSubstate::Global(global_substate),
                 );
-                self.current_frame.add_stored_ref(global_node_id);
+                self.current_frame
+                    .add_stored_ref(global_node_id, RENodeVisibilityOrigin::DirectAccess);
                 self.current_frame.move_owned_node_to_store(
                     &mut self.heap,
                     &mut self.track,

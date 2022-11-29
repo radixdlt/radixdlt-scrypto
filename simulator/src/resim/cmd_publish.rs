@@ -94,7 +94,7 @@ impl Publish {
         } else {
             let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
                 .lock_fee(FAUCET_COMPONENT, 100u32.into())
-                .publish_package(code, abi)
+                .publish_package_no_owner(code, abi)
                 .build();
 
             let receipt = handle_manifest(

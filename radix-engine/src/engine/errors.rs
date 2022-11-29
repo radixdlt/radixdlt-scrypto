@@ -77,7 +77,8 @@ pub enum KernelError {
     WasmError(WasmError),
 
     InvalidReferenceWrite(GlobalAddress),
-    GlobalAddressNotFound(GlobalAddress),
+
+    RENodeNotFound(RENodeId),
 
     MaxCallDepthLimitReached,
     InvalidScryptoFnOutput,
