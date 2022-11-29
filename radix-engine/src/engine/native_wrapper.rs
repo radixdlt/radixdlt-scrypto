@@ -389,9 +389,6 @@ where
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                ResourceManagerMethod::SetResourceAddress => Err(RuntimeError::InterpreterError(
-                    InterpreterError::InvalidInvocation,
-                )),
             },
             NativeMethod::EpochManager(epoch_manager_method) => match epoch_manager_method {
                 EpochManagerMethod::GetCurrentEpoch => {

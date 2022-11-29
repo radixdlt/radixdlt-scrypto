@@ -57,12 +57,12 @@ impl ExecutableInvocation for PackagePublishNoOwnerInvocation {
 impl NativeProcedure for PackagePublishNoOwnerInvocation {
     type Output = PackageAddress;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + Invokable<ScryptoInvocation>,
     {
-        let code = system_api.read_blob(&self.code.0)?.to_vec();
-        let blob = system_api.read_blob(&self.abi.0)?;
+        let code = api.read_blob(&self.code.0)?.to_vec();
+        let blob = api.read_blob(&self.abi.0)?;
         let abi = scrypto_decode::<HashMap<String, BlueprintAbi>>(blob).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidAbi(e),
@@ -83,16 +83,23 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
             metadata: self.metadata,
         };
 
-        let node_id = system_api.create_node(RENode::Package(
-            package,
-            package_royalty_config,
-            package_royalty_accumulator,
-            metadata_substate,
-        ))?;
+        let node_id = api.allocate_node_id(RENodeType::Package)?;
+        api.create_node(
+            node_id,
+            RENode::Package(
+                package,
+                package_royalty_config,
+                package_royalty_accumulator,
+                metadata_substate,
+            ),
+        )?;
         let package_id: PackageId = node_id.into();
 
-        let global_node_id =
-            system_api.create_node(RENode::Global(GlobalAddressSubstate::Package(package_id)))?;
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::Package(package_id)),
+        )?;
 
         let package_address: PackageAddress = global_node_id.into();
 
@@ -122,13 +129,13 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
 
     fn main<Y>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<((PackageAddress, Bucket), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + SysInvokableNative<RuntimeError>,
     {
-        let code = system_api.read_blob(&self.code.0)?.to_vec();
-        let blob = system_api.read_blob(&self.abi.0)?;
+        let code = api.read_blob(&self.code.0)?.to_vec();
+        let blob = api.read_blob(&self.abi.0)?;
         let abi = scrypto_decode::<HashMap<String, BlueprintAbi>>(blob).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidAbi(e),
@@ -149,16 +156,23 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
             metadata: self.metadata,
         };
 
-        let node_id = system_api.create_node(RENode::Package(
-            package,
-            package_royalty_config,
-            package_royalty_accumulator,
-            metadata_substate,
-        ))?;
+        let node_id = api.allocate_node_id(RENodeType::Package)?;
+        api.create_node(
+            node_id,
+            RENode::Package(
+                package,
+                package_royalty_config,
+                package_royalty_accumulator,
+                metadata_substate,
+            ),
+        )?;
         let package_id: PackageId = node_id.into();
 
-        let global_node_id =
-            system_api.create_node(RENode::Global(GlobalAddressSubstate::Package(package_id)))?;
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::Package(package_id)),
+        )?;
 
         let package_address: PackageAddress = global_node_id.into();
         let bytes = scrypto_encode(&package_address).map_err(|_| {
@@ -177,7 +191,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
             mint_params: MintParams::NonFungible { entries },
         };
 
-        let bucket = system_api.sys_invoke(mint_invocation)?;
+        let bucket = api.sys_invoke(mint_invocation)?;
         let bucket_node_id = RENodeId::Bucket(bucket.0);
 
         Ok((

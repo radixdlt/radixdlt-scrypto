@@ -258,7 +258,7 @@ impl TransactionProcessor {
 
     pub fn run<Y>(
         input: TransactionProcessorRunInvocation,
-        env: &mut Y,
+        api: &mut Y,
     ) -> Result<Vec<Vec<u8>>, InvokeError<TransactionProcessorError>>
     where
         Y: SystemApi
@@ -267,22 +267,23 @@ impl TransactionProcessor {
             + SysInvokableNative<RuntimeError>,
     {
         for request in input.runtime_validations.as_ref() {
-            Self::perform_validation(request, env)?;
+            Self::perform_validation(request, api)?;
         }
         let mut proof_id_mapping = HashMap::new();
         let mut bucket_id_mapping = HashMap::new();
         let mut outputs = Vec::new();
         let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
 
-        let _worktop_id = env
-            .create_node(RENode::Worktop(WorktopSubstate::new()))
+        let node_id = api.allocate_node_id(RENodeType::Worktop)?;
+        let _worktop_id = api
+            .create_node(node_id, RENode::Worktop(WorktopSubstate::new()))
             .map_err(InvokeError::Downstream)?;
 
-        env.emit_event(Event::Runtime(RuntimeEvent::PreExecuteManifest))
+        api.emit_event(Event::Runtime(RuntimeEvent::PreExecuteManifest))
             .map_err(InvokeError::Downstream)?;
 
         for (idx, inst) in input.instructions.as_ref().iter().enumerate() {
-            env.emit_event(Event::Runtime(RuntimeEvent::PreExecuteInstruction {
+            api.emit_event(Event::Runtime(RuntimeEvent::PreExecuteInstruction {
                 instruction_index: idx,
                 instruction: &inst,
             }))
@@ -295,7 +296,7 @@ impl TransactionProcessor {
                         InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                     })
                     .and_then(|new_id| {
-                        Worktop::sys_take_all(*resource_address, env)
+                        Worktop::sys_take_all(*resource_address, api)
                             .map_err(InvokeError::Downstream)
                             .map(|bucket| {
                                 bucket_id_mapping.insert(new_id, bucket.0);
@@ -311,7 +312,7 @@ impl TransactionProcessor {
                         InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                     })
                     .and_then(|new_id| {
-                        Worktop::sys_take_amount(*resource_address, *amount, env)
+                        Worktop::sys_take_amount(*resource_address, *amount, api)
                             .map_err(InvokeError::Downstream)
                             .map(|bucket| {
                                 bucket_id_mapping.insert(new_id, bucket.0);
@@ -327,7 +328,7 @@ impl TransactionProcessor {
                         InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                     })
                     .and_then(|new_id| {
-                        Worktop::sys_take_non_fungibles(*resource_address, ids.clone(), env)
+                        Worktop::sys_take_non_fungibles(*resource_address, ids.clone(), api)
                             .map_err(InvokeError::Downstream)
                             .map(|bucket| {
                                 bucket_id_mapping.insert(new_id, bucket.0);
@@ -337,7 +338,7 @@ impl TransactionProcessor {
                 Instruction::ReturnToWorktop { bucket_id } => bucket_id_mapping
                     .remove(bucket_id)
                     .map(|real_id| {
-                        Worktop::sys_put(Bucket(real_id), env)
+                        Worktop::sys_put(Bucket(real_id), api)
                             .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                             .map_err(InvokeError::Downstream)
                     })
@@ -345,21 +346,21 @@ impl TransactionProcessor {
                         TransactionProcessorError::BucketNotFound(*bucket_id),
                     ))),
                 Instruction::AssertWorktopContains { resource_address } => {
-                    Worktop::sys_assert_contains(*resource_address, env)
+                    Worktop::sys_assert_contains(*resource_address, api)
                         .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                         .map_err(InvokeError::Downstream)
                 }
                 Instruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_address,
-                } => Worktop::sys_assert_contains_amount(*resource_address, *amount, env)
+                } => Worktop::sys_assert_contains_amount(*resource_address, *amount, api)
                     .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream),
                 Instruction::AssertWorktopContainsByIds {
                     ids,
                     resource_address,
                 } => {
-                    Worktop::sys_assert_contains_non_fungibles(*resource_address, ids.clone(), env)
+                    Worktop::sys_assert_contains_non_fungibles(*resource_address, ids.clone(), api)
                         .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                         .map_err(InvokeError::Downstream)
                 }
@@ -370,7 +371,7 @@ impl TransactionProcessor {
                         InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                     })
                     .and_then(|new_id| {
-                        ComponentAuthZone::sys_pop(env)
+                        ComponentAuthZone::sys_pop(api)
                             .map_err(InvokeError::Downstream)
                             .map(|proof| {
                                 proof_id_mapping.insert(new_id, proof.0);
@@ -379,7 +380,7 @@ impl TransactionProcessor {
                     }),
                 Instruction::ClearAuthZone => {
                     proof_id_mapping.clear();
-                    ComponentAuthZone::sys_clear(env)
+                    ComponentAuthZone::sys_clear(api)
                         .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                         .map_err(InvokeError::Downstream)
                 }
@@ -390,7 +391,7 @@ impl TransactionProcessor {
                     ))
                     .and_then(|real_id| {
                         let proof = Proof(real_id);
-                        ComponentAuthZone::sys_push(proof, env)
+                        ComponentAuthZone::sys_push(proof, api)
                             .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                             .map_err(InvokeError::Downstream)
                     }),
@@ -400,7 +401,7 @@ impl TransactionProcessor {
                         InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                     })
                     .and_then(|new_id| {
-                        ComponentAuthZone::sys_create_proof(*resource_address, env)
+                        ComponentAuthZone::sys_create_proof(*resource_address, api)
                             .map_err(InvokeError::Downstream)
                             .map(|proof| {
                                 proof_id_mapping.insert(new_id, proof.0);
@@ -419,7 +420,7 @@ impl TransactionProcessor {
                         ComponentAuthZone::sys_create_proof_by_amount(
                             *amount,
                             *resource_address,
-                            env,
+                            api,
                         )
                         .map_err(InvokeError::Downstream)
                         .map(|proof| {
@@ -436,7 +437,7 @@ impl TransactionProcessor {
                         InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                     })
                     .and_then(|new_id| {
-                        ComponentAuthZone::sys_create_proof_by_ids(ids, *resource_address, env)
+                        ComponentAuthZone::sys_create_proof_by_ids(ids, *resource_address, api)
                             .map_err(InvokeError::Downstream)
                             .map(|proof| {
                                 proof_id_mapping.insert(new_id, proof.0);
@@ -460,7 +461,7 @@ impl TransactionProcessor {
                     .and_then(|(new_id, real_bucket_id)| {
                         let bucket = Bucket(real_bucket_id);
                         bucket
-                            .sys_create_proof(env)
+                            .sys_create_proof(api)
                             .map_err(InvokeError::Downstream)
                             .map(|proof| {
                                 proof_id_mapping.insert(new_id, proof.0);
@@ -479,7 +480,7 @@ impl TransactionProcessor {
                             .map(|real_id| {
                                 let proof = Proof(real_id);
                                 proof
-                                    .sys_clone(env)
+                                    .sys_clone(api)
                                     .map_err(InvokeError::Downstream)
                                     .map(|proof| {
                                         proof_id_mapping.insert(new_id, proof.0);
@@ -495,7 +496,7 @@ impl TransactionProcessor {
                     .map(|real_id| {
                         let proof = Proof(real_id);
                         proof
-                            .sys_drop(env)
+                            .sys_drop(api)
                             .map(|_| IndexedScryptoValue::unit())
                             .map_err(InvokeError::Downstream)
                     })
@@ -506,11 +507,11 @@ impl TransactionProcessor {
                     for (_, real_id) in proof_id_mapping.drain() {
                         let proof = Proof(real_id);
                         proof
-                            .sys_drop(env)
+                            .sys_drop(api)
                             .map(|_| IndexedScryptoValue::unit())
                             .map_err(InvokeError::Downstream)?;
                     }
-                    ComponentAuthZone::sys_clear(env)
+                    ComponentAuthZone::sys_clear(api)
                         .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                         .map_err(InvokeError::Downstream)
                 }
@@ -524,21 +525,21 @@ impl TransactionProcessor {
                         IndexedScryptoValue::from_slice(args)
                             .expect("Invalid CALL_FUNCTION arguments"),
                     )
-                    .and_then(|args| Self::process_expressions(args, env))
+                    .and_then(|args| Self::process_expressions(args, api))
                     .and_then(|args| {
-                        env.invoke(ScryptoInvocation::Function(function_ident.clone(), args))
+                        api.invoke(ScryptoInvocation::Function(function_ident.clone(), args))
                             .map_err(InvokeError::Downstream)
                     })
                     .and_then(|result| {
                         // Auto move into auth_zone
                         for (proof_id, _) in &result.proof_ids {
                             let proof = Proof(*proof_id);
-                            ComponentAuthZone::sys_push(proof, env)
+                            ComponentAuthZone::sys_push(proof, api)
                                 .map_err(InvokeError::Downstream)?;
                         }
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(Bucket(*bucket_id), env)
+                            Worktop::sys_put(Bucket(*bucket_id), api)
                                 .map_err(InvokeError::Downstream)?;
                         }
                         Ok(result)
@@ -551,27 +552,27 @@ impl TransactionProcessor {
                         IndexedScryptoValue::from_slice(args)
                             .expect("Invalid CALL_METHOD arguments"),
                     )
-                    .and_then(|args| Self::process_expressions(args, env))
+                    .and_then(|args| Self::process_expressions(args, api))
                     .and_then(|args| {
-                        env.invoke(ScryptoInvocation::Method(method_ident.clone(), args))
+                        api.invoke(ScryptoInvocation::Method(method_ident.clone(), args))
                             .map_err(InvokeError::Downstream)
                     })
                     .and_then(|result| {
                         // Auto move into auth_zone
                         for (proof_id, _) in &result.proof_ids {
                             let proof = Proof(*proof_id);
-                            ComponentAuthZone::sys_push(proof, env)
+                            ComponentAuthZone::sys_push(proof, api)
                                 .map_err(InvokeError::Downstream)?;
                         }
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(Bucket(*bucket_id), env)
+                            Worktop::sys_put(Bucket(*bucket_id), api)
                                 .map_err(InvokeError::downstream)?;
                         }
                         Ok(result)
                     })
                 }
-                Instruction::PublishPackage { code, abi } => env
+                Instruction::PublishPackage { code, abi } => api
                     .sys_invoke(PackagePublishNoOwnerInvocation {
                         code: code.clone(),
                         abi: abi.clone(),
@@ -589,7 +590,7 @@ impl TransactionProcessor {
                         IndexedScryptoValue::from_slice(args)
                             .expect("Invalid CALL_NATIVE_FUNCTION arguments"),
                     )
-                    .and_then(|args| Self::process_expressions(args, env))
+                    .and_then(|args| Self::process_expressions(args, api))
                     .and_then(|args| {
                         let native_function = resolve_native_function(
                             &function_ident.blueprint_name,
@@ -603,7 +604,7 @@ impl TransactionProcessor {
                         parse_and_invoke_native_fn(
                             NativeFn::Function(native_function),
                             args.raw,
-                            env,
+                            api,
                         )
                         .map_err(InvokeError::Downstream)
                     })
@@ -611,12 +612,12 @@ impl TransactionProcessor {
                         // Auto move into auth_zone
                         for (proof_id, _) in &result.proof_ids {
                             let proof = Proof(*proof_id);
-                            ComponentAuthZone::sys_push(proof, env)
+                            ComponentAuthZone::sys_push(proof, api)
                                 .map_err(InvokeError::Downstream)?;
                         }
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(Bucket(*bucket_id), env)
+                            Worktop::sys_put(Bucket(*bucket_id), api)
                                 .map_err(InvokeError::Downstream)?;
                         }
                         Ok(result)
@@ -629,7 +630,7 @@ impl TransactionProcessor {
                         IndexedScryptoValue::from_slice(args)
                             .expect("Invalid CALL_NATIVE_METHOD arguments"),
                     )
-                    .and_then(|args| Self::process_expressions(args, env))
+                    .and_then(|args| Self::process_expressions(args, api))
                     .and_then(|args| {
                         let native_method =
                             resolve_native_method(method_ident.receiver, &method_ident.method_name)
@@ -639,19 +640,19 @@ impl TransactionProcessor {
                                     ),
                                 ))?;
 
-                        parse_and_invoke_native_fn(NativeFn::Method(native_method), args.raw, env)
+                        parse_and_invoke_native_fn(NativeFn::Method(native_method), args.raw, api)
                             .map_err(InvokeError::Downstream)
                     })
                     .and_then(|result| {
                         // Auto move into auth_zone
                         for (proof_id, _) in &result.proof_ids {
                             let proof = Proof(*proof_id);
-                            ComponentAuthZone::sys_push(proof, env)
+                            ComponentAuthZone::sys_push(proof, api)
                                 .map_err(InvokeError::Downstream)?;
                         }
                         // Auto move into worktop
                         for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(Bucket(*bucket_id), env)
+                            Worktop::sys_put(Bucket(*bucket_id), api)
                                 .map_err(InvokeError::downstream)?;
                         }
                         Ok(result)
@@ -660,14 +661,14 @@ impl TransactionProcessor {
             }?;
             outputs.push(result);
 
-            env.emit_event(Event::Runtime(RuntimeEvent::PostExecuteInstruction {
+            api.emit_event(Event::Runtime(RuntimeEvent::PostExecuteInstruction {
                 instruction_index: idx,
                 instruction: &inst,
             }))
             .map_err(InvokeError::Downstream)?;
         }
 
-        env.emit_event(Event::Runtime(RuntimeEvent::PostExecuteManifest))
+        api.emit_event(Event::Runtime(RuntimeEvent::PostExecuteManifest))
             .map_err(InvokeError::Downstream)?;
 
         Ok(outputs

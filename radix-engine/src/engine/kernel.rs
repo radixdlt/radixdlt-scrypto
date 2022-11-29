@@ -1,6 +1,4 @@
-use radix_engine_interface::api::api::{
-    EngineApi, Invocation, SysInvokableNative, SysNativeInvokable,
-};
+use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
     PackageOffset, ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver,
@@ -113,7 +111,8 @@ where
                     auth_zone_params.initial_proofs.into_iter().collect(),
                 );
 
-                system_api.create_node(RENode::AuthZoneStack(auth_zone))?;
+                let node_id = system_api.allocate_node_id(RENodeType::AuthZoneStack)?;
+                system_api.create_node(node_id, RENode::AuthZoneStack(auth_zone))?;
 
                 Ok(())
             })
@@ -162,134 +161,6 @@ where
         id_allocator.new_uuid(transaction_hash)
     }
 
-    // TODO: Move this into a native function
-    fn create_global_node(
-        &mut self,
-        node_id: RENodeId,
-    ) -> Result<(GlobalAddress, GlobalAddressSubstate), RuntimeError> {
-        self.execute_in_mode(ExecutionMode::Globalize, |system_api| match node_id {
-            RENodeId::Component(component_id) => {
-                let transaction_hash = system_api.transaction_hash;
-                let handle = system_api.lock_substate(
-                    node_id,
-                    SubstateOffset::Component(ComponentOffset::Info),
-                    LockFlags::read_only(),
-                )?;
-                let substate_ref = system_api.get_ref(handle)?;
-                let info = substate_ref.component_info();
-                let (package_address, blueprint_name) =
-                    (info.package_address, info.blueprint_name.clone());
-                system_api.drop_lock(handle)?;
-
-                let component_address = system_api
-                    .id_allocator
-                    .new_component_address(transaction_hash, package_address, &blueprint_name)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-
-                Ok((
-                    GlobalAddress::Component(component_address),
-                    GlobalAddressSubstate::Component(component_id),
-                ))
-            }
-            RENodeId::EpochManager(epoch_manager_id) => {
-                let transaction_hash = system_api.transaction_hash;
-
-                let system_address = system_api
-                    .id_allocator
-                    .new_system_address(transaction_hash)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-
-                Ok((
-                    GlobalAddress::System(system_address),
-                    GlobalAddressSubstate::System(epoch_manager_id),
-                ))
-            }
-            RENodeId::ResourceManager(resource_id) => {
-                let transaction_hash = system_api.transaction_hash;
-                let resource_address = system_api
-                    .id_allocator
-                    .new_resource_address(transaction_hash)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-
-                Ok((
-                    GlobalAddress::Resource(resource_address),
-                    GlobalAddressSubstate::Resource(resource_id),
-                ))
-            }
-            RENodeId::Package(package_id) => {
-                let transaction_hash = system_api.transaction_hash;
-                let package_address = system_api
-                    .id_allocator
-                    .new_package_address(transaction_hash)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-
-                Ok((
-                    GlobalAddress::Package(package_address),
-                    GlobalAddressSubstate::Package(package_id),
-                ))
-            }
-            _ => Err(RuntimeError::KernelError(
-                KernelError::RENodeGlobalizeTypeNotAllowed(node_id),
-            )),
-        })
-    }
-
-    fn new_node_id(
-        id_allocator: &mut IdAllocator,
-        transaction_hash: Hash,
-        re_node: &RENode,
-    ) -> Result<RENodeId, IdAllocationError> {
-        match re_node {
-            RENode::Global(..) => panic!("Should not get here"),
-            RENode::AuthZoneStack(..) => {
-                let auth_zone_id = id_allocator.new_auth_zone_id()?;
-                Ok(RENodeId::AuthZoneStack(auth_zone_id))
-            }
-            RENode::FeeReserve(..) => {
-                let auth_zone_id = id_allocator.new_fee_reserve_id()?;
-                Ok(RENodeId::FeeReserve(auth_zone_id))
-            }
-            RENode::Bucket(..) => {
-                let bucket_id = id_allocator.new_bucket_id()?;
-                Ok(RENodeId::Bucket(bucket_id))
-            }
-            RENode::Proof(..) => {
-                let proof_id = id_allocator.new_proof_id()?;
-                Ok(RENodeId::Proof(proof_id))
-            }
-            RENode::Worktop(..) => Ok(RENodeId::Worktop),
-            RENode::Vault(..) => {
-                let vault_id = id_allocator.new_vault_id(transaction_hash)?;
-                Ok(RENodeId::Vault(vault_id))
-            }
-            RENode::KeyValueStore(..) => {
-                let kv_store_id = id_allocator.new_kv_store_id(transaction_hash)?;
-                Ok(RENodeId::KeyValueStore(kv_store_id))
-            }
-            RENode::NonFungibleStore(..) => {
-                let nf_store_id = id_allocator.new_nf_store_id(transaction_hash)?;
-                Ok(RENodeId::NonFungibleStore(nf_store_id))
-            }
-            RENode::Package(..) => {
-                // Security Alert: ensure ID allocating will practically never fail
-                let package_id = id_allocator.new_package_id(transaction_hash)?;
-                Ok(RENodeId::Package(package_id))
-            }
-            RENode::ResourceManager(..) => {
-                let resource_manager_id = id_allocator.new_resource_manager_id(transaction_hash)?;
-                Ok(RENodeId::ResourceManager(resource_manager_id))
-            }
-            RENode::Component(..) => {
-                let component_id = id_allocator.new_component_id(transaction_hash)?;
-                Ok(RENodeId::Component(component_id))
-            }
-            RENode::EpochManager(..) => {
-                let component_id = id_allocator.new_component_id(transaction_hash)?;
-                Ok(RENodeId::EpochManager(component_id))
-            }
-        }
-    }
-
     fn try_virtualize(
         &mut self,
         node_id: RENodeId,
@@ -331,17 +202,16 @@ where
                 // TODO: Use system_api to globalize component when create_node is refactored
                 // TODO: to allow for address selection
                 let global_substate = GlobalAddressSubstate::Component(component_id);
-                self.track.insert_substate(
-                    SubstateId(node_id, offset.clone()),
-                    RuntimeSubstate::Global(global_substate),
-                );
-                self.current_frame
-                    .add_stored_ref(node_id, RENodeVisibilityOrigin::Normal);
-                self.current_frame.move_owned_node_to_store(
+
+                self.current_frame.create_node(
+                    node_id,
+                    RENode::Global(global_substate),
                     &mut self.heap,
                     &mut self.track,
-                    RENodeId::Component(component_id),
+                    true,
+                    true,
                 )?;
+
                 Ok(true)
             }
             _ => Ok(false),
@@ -426,7 +296,11 @@ where
             }
 
             Ok(())
-        })
+        })?;
+
+        self.current_frame.verify_allocated_ids_empty()?;
+
+        Ok(())
     }
 
     fn run<X: Executor>(
@@ -737,8 +611,7 @@ pub trait Executor {
         Y: SystemApi
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>
-            + SysNativeInvokable<ResourceManagerSetResourceAddressInvocation, RuntimeError>;
+            + SysInvokableNative<RuntimeError>;
 }
 
 pub trait ExecutableInvocation: Invocation {
@@ -990,7 +863,82 @@ where
         Ok(node)
     }
 
-    fn create_node(&mut self, re_node: RENode) -> Result<RENodeId, RuntimeError> {
+    fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
+        // TODO: Add costing
+
+        let node_id = match node_type {
+            RENodeType::AuthZoneStack => self
+                .id_allocator
+                .new_auth_zone_id()
+                .map(|id| RENodeId::AuthZoneStack(id)),
+            RENodeType::Bucket => self
+                .id_allocator
+                .new_bucket_id()
+                .map(|id| RENodeId::Bucket(id)),
+            RENodeType::Proof => self
+                .id_allocator
+                .new_proof_id()
+                .map(|id| RENodeId::Proof(id)),
+            RENodeType::Worktop => Ok(RENodeId::Worktop),
+            RENodeType::Vault => self
+                .id_allocator
+                .new_vault_id(self.transaction_hash)
+                .map(|id| RENodeId::Vault(id)),
+            RENodeType::KeyValueStore => self
+                .id_allocator
+                .new_kv_store_id(self.transaction_hash)
+                .map(|id| RENodeId::KeyValueStore(id)),
+            RENodeType::NonFungibleStore => self
+                .id_allocator
+                .new_nf_store_id(self.transaction_hash)
+                .map(|id| RENodeId::NonFungibleStore(id)),
+            RENodeType::Package => {
+                // Security Alert: ensure ID allocating will practically never fail
+                self.id_allocator
+                    .new_package_id(self.transaction_hash)
+                    .map(|id| RENodeId::Package(id))
+            }
+            RENodeType::ResourceManager => self
+                .id_allocator
+                .new_resource_manager_id(self.transaction_hash)
+                .map(|id| RENodeId::ResourceManager(id)),
+            RENodeType::Component => self
+                .id_allocator
+                .new_component_id(self.transaction_hash)
+                .map(|id| RENodeId::Component(id)),
+            RENodeType::EpochManager => self
+                .id_allocator
+                .new_component_id(self.transaction_hash)
+                .map(|id| RENodeId::EpochManager(id)),
+            RENodeType::GlobalPackage => self
+                .id_allocator
+                .new_package_address(self.transaction_hash)
+                .map(|address| RENodeId::Global(GlobalAddress::Package(address))),
+            RENodeType::GlobalEpochManager => self
+                .id_allocator
+                .new_system_address(self.transaction_hash)
+                .map(|address| RENodeId::Global(GlobalAddress::System(address))),
+            RENodeType::GlobalResourceManager => self
+                .id_allocator
+                .new_resource_address(self.transaction_hash)
+                .map(|address| RENodeId::Global(GlobalAddress::Resource(address))),
+            RENodeType::GlobalAccount => self
+                .id_allocator
+                .new_account_address(self.transaction_hash)
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+            RENodeType::GlobalComponent => self
+                .id_allocator
+                .new_component_address(self.transaction_hash)
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+        }
+        .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+
+        self.current_frame.add_allocated_id(node_id);
+
+        Ok(node_id)
+    }
+
+    fn create_node(&mut self, node_id: RENodeId, re_node: RENode) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,
@@ -1018,37 +966,87 @@ where
             ));
         }
 
+        match (node_id, &re_node) {
+            (
+                RENodeId::Global(GlobalAddress::Package(..)),
+                RENode::Global(GlobalAddressSubstate::Package(..)),
+            ) => {}
+            (
+                RENodeId::Global(GlobalAddress::Resource(..)),
+                RENode::Global(GlobalAddressSubstate::Resource(..)),
+            ) => {}
+            (
+                RENodeId::Global(GlobalAddress::System(..)),
+                RENode::Global(GlobalAddressSubstate::System(..)),
+            ) => {}
+            (
+                RENodeId::Global(address),
+                RENode::Global(GlobalAddressSubstate::Component(component)),
+            ) => {
+                // TODO: Get rid of this logic
+                let (package_address, blueprint_name) = self
+                    .execute_in_mode::<_, _, RuntimeError>(
+                        ExecutionMode::Globalize,
+                        |system_api| {
+                            let handle = system_api.lock_substate(
+                                RENodeId::Component(*component),
+                                SubstateOffset::Component(ComponentOffset::Info),
+                                LockFlags::read_only(),
+                            )?;
+                            let substate_ref = system_api.get_ref(handle)?;
+                            let info = substate_ref.component_info();
+                            let package_blueprint =
+                                (info.package_address, info.blueprint_name.clone());
+                            system_api.drop_lock(handle)?;
+                            Ok(package_blueprint)
+                        },
+                    )?;
+
+                match address {
+                    GlobalAddress::Component(ComponentAddress::Account(..)) => {
+                        if !(package_address.eq(&ACCOUNT_PACKAGE)
+                            && blueprint_name.eq(&ACCOUNT_BLUEPRINT))
+                        {
+                            return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id)));
+                        }
+                    }
+                    GlobalAddress::Component(ComponentAddress::Normal(..)) => {
+                        if package_address.eq(&ACCOUNT_PACKAGE)
+                            && blueprint_name.eq(&ACCOUNT_BLUEPRINT)
+                        {
+                            return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id)));
+                        }
+                    }
+                    _ => {
+                        return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id)));
+                    }
+                }
+            }
+            (RENodeId::Bucket(..), RENode::Bucket(..)) => {}
+            (RENodeId::Proof(..), RENode::Proof(..)) => {}
+            (RENodeId::AuthZoneStack(..), RENode::AuthZoneStack(..)) => {}
+            (RENodeId::Vault(..), RENode::Vault(..)) => {}
+            (RENodeId::Component(..), RENode::Component(..)) => {}
+            (RENodeId::Worktop, RENode::Worktop(..)) => {}
+            (RENodeId::Package(..), RENode::Package(..)) => {}
+            (RENodeId::KeyValueStore(..), RENode::KeyValueStore(..)) => {}
+            (RENodeId::NonFungibleStore(..), RENode::NonFungibleStore(..)) => {}
+            (RENodeId::ResourceManager(..), RENode::ResourceManager(..)) => {}
+            (RENodeId::EpochManager(..), RENode::EpochManager(..)) => {}
+            _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
+        }
+
         // TODO: For Scrypto components, check state against blueprint schema
 
-        let node_id = match &re_node {
-            RENode::Global(global_re_node) => {
-                let derefed = global_re_node.node_deref();
-                let (global_address, global_substate) = self.create_global_node(derefed)?;
-                let global_node_id = RENodeId::Global(global_address);
-                self.track.insert_substate(
-                    SubstateId(global_node_id, SubstateOffset::Global(GlobalOffset::Global)),
-                    RuntimeSubstate::Global(global_substate),
-                );
-                self.current_frame
-                    .add_stored_ref(global_node_id, RENodeVisibilityOrigin::DirectAccess);
-                self.current_frame.move_owned_node_to_store(
-                    &mut self.heap,
-                    &mut self.track,
-                    derefed,
-                )?;
-                global_node_id
-            }
-            _ => {
-                let node_id =
-                    Self::new_node_id(&mut self.id_allocator, self.transaction_hash, &re_node)
-                        .map_err(|e| {
-                            RuntimeError::KernelError(KernelError::IdAllocationError(e))
-                        })?;
-                self.current_frame
-                    .create_node(&mut self.heap, node_id, re_node)?;
-                node_id
-            }
-        };
+        let push_to_store = matches!(re_node, RENode::Global(..));
+        self.current_frame.create_node(
+            node_id,
+            re_node,
+            &mut self.heap,
+            &mut self.track,
+            push_to_store,
+            false,
+        )?;
 
         // Restore current mode
         self.execution_mode = current_mode;
@@ -1063,7 +1061,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        Ok(node_id)
+        Ok(())
     }
 
     fn lock_substate(
