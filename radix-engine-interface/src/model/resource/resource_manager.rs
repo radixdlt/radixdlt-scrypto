@@ -31,7 +31,9 @@ pub enum ResourceMethodAuthKey {
     Burn,
     UpdateMetadata,
     UpdateNonFungibleData,
-    VaultMethodKey(VaultMethodAuthKey),
+    Withdraw,
+    Deposit,
+    Recall,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

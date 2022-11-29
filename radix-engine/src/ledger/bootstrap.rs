@@ -13,7 +13,6 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
-use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Withdraw};
 use radix_engine_interface::model::*;
 use scrypto::rule;
 
@@ -70,7 +69,7 @@ pub fn create_genesis() -> SystemTransaction {
     let create_ecdsa_secp256k1_token = {
         let metadata: HashMap<String, String> = HashMap::new();
         let mut access_rules = HashMap::new();
-        access_rules.insert(VaultMethodKey(Withdraw), (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
@@ -94,7 +93,7 @@ pub fn create_genesis() -> SystemTransaction {
         let metadata: HashMap<String, String> = HashMap::new();
         let mut access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> =
             HashMap::new();
-        access_rules.insert(VaultMethodKey(Withdraw), (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
@@ -121,7 +120,7 @@ pub fn create_genesis() -> SystemTransaction {
         metadata.insert("url".to_owned(), XRD_URL.to_owned());
 
         let mut access_rules = HashMap::new();
-        access_rules.insert(VaultMethodKey(Withdraw), (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
 
         let initial_supply: Option<MintParams> = Option::Some(MintParams::Fungible {
             amount: XRD_MAX_SUPPLY.into(),
@@ -171,7 +170,7 @@ pub fn create_genesis() -> SystemTransaction {
     let create_eddsa_ed25519_token = {
         let metadata: HashMap<String, String> = HashMap::new();
         let mut access_rules = HashMap::new();
-        access_rules.insert(VaultMethodKey(Withdraw), (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
@@ -193,8 +192,8 @@ pub fn create_genesis() -> SystemTransaction {
     let create_entity_owner_token = {
         let metadata: HashMap<String, String> = HashMap::new();
         let mut access_rules = HashMap::new();
-        access_rules.insert(VaultMethodKey(Withdraw), (rule!(allow_all), LOCKED));
-        access_rules.insert(VaultMethodKey(Deposit), (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address

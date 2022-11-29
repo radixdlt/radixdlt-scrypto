@@ -12,7 +12,6 @@ use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
 
 use radix_engine_interface::constants::*;
-use radix_engine_interface::model::VaultMethodAuthKey::Withdraw;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
@@ -556,7 +555,7 @@ impl ManifestBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(VaultMethodKey(Withdraw), (rule!(allow_all), LOCKED));
+        resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         resource_auth.insert(
             Mint,
             (rule!(require(minter_resource_address.clone())), LOCKED),
@@ -589,7 +588,7 @@ impl ManifestBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(VaultMethodKey(Withdraw), (rule!(allow_all), LOCKED));
+        resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
@@ -615,7 +614,7 @@ impl ManifestBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(VaultMethodKey(Withdraw), (rule!(allow_all), LOCKED));
+        resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         resource_auth.insert(
             Mint,
             (rule!(require(minter_resource_address.clone())), LOCKED),
@@ -649,7 +648,7 @@ impl ManifestBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(VaultMethodKey(Withdraw), (rule!(allow_all), LOCKED));
+        resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {

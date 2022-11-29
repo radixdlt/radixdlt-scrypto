@@ -1,5 +1,4 @@
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::HashMap;
@@ -78,7 +77,7 @@ impl FungibleResourceBuilder {
 
     pub fn recallable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
         self.authorization
-            .insert(VaultMethodKey(Recall), (method_auth, mutability));
+            .insert(ResourceMethodAuthKey::Recall, (method_auth, mutability));
         self
     }
 
@@ -88,7 +87,7 @@ impl FungibleResourceBuilder {
         mutability: Mutability,
     ) -> &mut Self {
         self.authorization
-            .insert(VaultMethodKey(Withdraw), (method_auth, mutability));
+            .insert(ResourceMethodAuthKey::Withdraw, (method_auth, mutability));
         self
     }
 
@@ -98,7 +97,7 @@ impl FungibleResourceBuilder {
         mutability: Mutability,
     ) -> &mut Self {
         self.authorization
-            .insert(VaultMethodKey(Deposit), (method_auth, mutability));
+            .insert(ResourceMethodAuthKey::Deposit, (method_auth, mutability));
         self
     }
 
@@ -131,8 +130,8 @@ impl FungibleResourceBuilder {
 
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
-        if !authorization.contains_key(&VaultMethodKey(Withdraw)) {
-            authorization.insert(VaultMethodKey(Withdraw), (rule!(allow_all), LOCKED));
+        if !authorization.contains_key(&ResourceMethodAuthKey::Withdraw) {
+            authorization.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         }
 
         resource_system().new_resource(
@@ -175,7 +174,7 @@ impl NonFungibleResourceBuilder {
 
     pub fn recallable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
         self.authorization
-            .insert(VaultMethodKey(Recall), (method_auth, mutability));
+            .insert(ResourceMethodAuthKey::Recall, (method_auth, mutability));
         self
     }
 
@@ -185,7 +184,7 @@ impl NonFungibleResourceBuilder {
         mutability: Mutability,
     ) -> &mut Self {
         self.authorization
-            .insert(VaultMethodKey(Withdraw), (method_auth, mutability));
+            .insert(ResourceMethodAuthKey::Withdraw, (method_auth, mutability));
         self
     }
 
@@ -195,7 +194,7 @@ impl NonFungibleResourceBuilder {
         mutability: Mutability,
     ) -> &mut Self {
         self.authorization
-            .insert(VaultMethodKey(Deposit), (method_auth, mutability));
+            .insert(ResourceMethodAuthKey::Deposit, (method_auth, mutability));
         self
     }
 
@@ -252,8 +251,8 @@ impl NonFungibleResourceBuilder {
 
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
-        if !authorization.contains_key(&VaultMethodKey(Withdraw)) {
-            authorization.insert(VaultMethodKey(Withdraw), (rule!(allow_all), LOCKED));
+        if !authorization.contains_key(&ResourceMethodAuthKey::Withdraw) {
+            authorization.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         }
 
         resource_system().new_resource(

@@ -295,15 +295,15 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
 
         let (deposit_access_rule, deposit_mutability) = self
             .access_rules
-            .remove(&VaultMethodKey(Deposit))
+            .remove(&ResourceMethodAuthKey::Deposit)
             .unwrap_or((AllowAll, LOCKED));
         let (withdraw_access_rule, withdraw_mutability) = self
             .access_rules
-            .remove(&VaultMethodKey(Withdraw))
+            .remove(&ResourceMethodAuthKey::Withdraw)
             .unwrap_or((AllowAll, LOCKED));
         let (recall_access_rule, recall_mutability) = self
             .access_rules
-            .remove(&VaultMethodKey(Recall))
+            .remove(&ResourceMethodAuthKey::Recall)
             .unwrap_or((DenyAll, LOCKED));
 
         let mut vault_access_rules = AccessRules::new();
