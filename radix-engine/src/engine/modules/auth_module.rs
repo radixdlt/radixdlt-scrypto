@@ -199,6 +199,105 @@ impl AuthModule {
 
                         auth
                     }
+                    (
+                        resolved_method @ ResolvedMethod::Native(NativeMethod::AccessRules(
+                            AccessRulesMethod::UpdateAuth,
+                        ))
+                        | resolved_method @ ResolvedMethod::Native(NativeMethod::AccessRules(
+                            AccessRulesMethod::LockAuth,
+                        )),
+                        ResolvedReceiver {
+                            receiver: RENodeId::Component(component_id),
+                            ..
+                        },
+                    ) => {
+                        let component_node_id = RENodeId::Component(component_id);
+
+                        let component_info = {
+                            let offset = SubstateOffset::Component(ComponentOffset::Info);
+                            let handle = system_api.lock_substate(
+                                component_node_id,
+                                offset,
+                                LockFlags::read_only(),
+                            )?;
+                            let substate_ref = system_api.get_ref(handle)?;
+                            let component_info = substate_ref.component_info().clone();
+                            system_api.drop_lock(handle)?;
+                            component_info
+                        };
+
+                        let schema = {
+                            let node_id = RENodeId::Global(GlobalAddress::Package(
+                                component_info.package_address,
+                            ));
+                            let offset = SubstateOffset::Package(PackageOffset::Package);
+                            let handle = system_api.lock_substate(
+                                node_id,
+                                offset,
+                                LockFlags::read_only(),
+                            )?;
+                            let substate_ref = system_api.get_ref(handle)?;
+                            let package = substate_ref.package();
+                            let schema = package
+                                .blueprint_abi(&component_info.blueprint_name)
+                                .expect("Blueprint not found for existing component")
+                                .structure
+                                .clone();
+                            system_api.drop_lock(handle)?;
+                            schema
+                        };
+
+                        let state = {
+                            let offset = SubstateOffset::Component(ComponentOffset::State);
+                            let handle = system_api.lock_substate(
+                                component_node_id,
+                                offset,
+                                LockFlags::read_only(),
+                            )?;
+                            let substate_ref = system_api.get_ref(handle)?;
+                            let state = substate_ref.component_state().clone(); // TODO: Remove clone
+                            system_api.drop_lock(handle)?;
+                            state
+                        };
+                        {
+                            let method_ident = match resolved_method {
+                                ResolvedMethod::Native(NativeMethod::AccessRules(
+                                    AccessRulesMethod::UpdateAuth,
+                                )) => {
+                                    let input: AccessRulesUpdateAuthInvocation =
+                                        scrypto_decode(&executor.args().raw)
+                                            .expect("Could not decode trusted payload");
+                                    input.method
+                                }
+                                ResolvedMethod::Native(NativeMethod::AccessRules(
+                                    AccessRulesMethod::LockAuth,
+                                )) => {
+                                    let input: AccessRulesLockAuthInvocation =
+                                        scrypto_decode(&executor.args().raw)
+                                            .expect("Could not decode trusted payload");
+                                    input.method
+                                }
+                                _ => panic!("impossible case"),
+                            };
+
+                            let offset =
+                                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+                            let handle = system_api.lock_substate(
+                                component_node_id,
+                                offset,
+                                LockFlags::read_only(),
+                            )?;
+                            let substate_ref = system_api.get_ref(handle)?;
+                            let access_rules = substate_ref.access_rules();
+                            let auth = access_rules.mutability_method_authorization(
+                                &state,
+                                &schema,
+                                &method_ident,
+                            );
+                            system_api.drop_lock(handle)?;
+                            auth
+                        }
+                    }
                     _ => vec![],
                 }
             }

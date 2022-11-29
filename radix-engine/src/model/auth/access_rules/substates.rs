@@ -23,8 +23,33 @@ impl AccessRulesSubstate {
 
         let mut authorizations = Vec::new();
         for auth in &self.access_rules {
-            let method_auth = auth.get(method_name);
-            let authorization = convert(schema, &data, &method_auth.0);
+            let (access_rules, _) = auth.get(method_name);
+            let authorization = convert(schema, &data, &access_rules);
+            authorizations.push(authorization);
+        }
+
+        authorizations
+    }
+
+    pub fn mutability_method_authorization(
+        &self,
+        component_state: &ComponentStateSubstate,
+        schema: &Type,
+        method_name: &AccessRulesMethodIdent,
+    ) -> Vec<MethodAuthorization> {
+        let data = IndexedScryptoValue::from_slice(&component_state.raw)
+            .expect("Failed to decode component state");
+
+        let mut authorizations = Vec::new();
+        for auth in &self.access_rules {
+            let (_, mutability) = match method_name {
+                AccessRulesMethodIdent::Default => auth.get_default(),
+                AccessRulesMethodIdent::Method(method_name) => auth.get(method_name),
+            };
+            let authorization = match mutability {
+                LOCKED => MethodAuthorization::DenyAll,
+                MUTABLE(access_rules) => convert(schema, &data, access_rules),
+            };
             authorizations.push(authorization);
         }
 

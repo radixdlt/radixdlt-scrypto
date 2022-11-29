@@ -1,5 +1,6 @@
 use radix_engine::engine::{
-    InterpreterError, KernelError, LockState, RuntimeError, ScryptoFnResolvingError, TrackError,
+    InterpreterError, KernelError, LockState, ModuleError, RuntimeError, ScryptoFnResolvingError,
+    TrackError,
 };
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::TransactionReceipt;
@@ -12,6 +13,7 @@ use scrypto::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TransactionManifest;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 #[test]
 fn test_component() {
@@ -251,7 +253,7 @@ fn component_access_rules_should_be_readable_from_scrypto_methods_and_functions(
 }
 
 #[test]
-fn component_access_rules_may_be_changed_within_a_method() {
+fn component_access_rules_may_be_changed_within_a_scrypto_method() {
     // Arrange
     let access_rules = vec![AccessRules::new()
         .method(
@@ -266,10 +268,12 @@ fn component_access_rules_may_be_changed_within_a_method() {
     let receipt = test_runner.deposit_funds();
 
     // Assert
-    receipt.expect_commit_failure();
+    receipt.expect_specific_failure(|e| {
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+    });
 
     // Act
-    let receipt = test_runner.mutate_method_auth(0, "deposit_funds", rule!(allow_all));
+    let receipt = test_runner.set_method_auth(0, "deposit_funds", rule!(allow_all));
 
     // Assert
     receipt.expect_commit_success();
@@ -281,10 +285,134 @@ fn component_access_rules_may_be_changed_within_a_method() {
     receipt.expect_commit_success();
 }
 
+#[test]
+fn access_rules_method_auth_can_not_be_mutated_when_locked() {
+    // Arrange
+    let access_rules = vec![AccessRules::new()
+        .method("deposit_funds", rule!(require(RADIX_TOKEN)), LOCKED)
+        .default(rule!(allow_all), LOCKED)];
+    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+
+    // Act
+    let receipt = test_runner.set_method_auth(0, "deposit_funds", rule!(allow_all));
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+    });
+}
+
+#[test]
+fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present() {
+    // Arrange
+    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
+    let public_key = private_key.public_key();
+    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+
+    let access_rules = vec![AccessRules::new()
+        .method(
+            "deposit_funds",
+            rule!(require(RADIX_TOKEN)),
+            MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
+        )
+        .default(rule!(allow_all), LOCKED)];
+    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+
+    // Act
+    let receipt = test_runner.set_method_auth(0, "deposit_funds", rule!(allow_all));
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+    });
+}
+
+#[test]
+fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present() {
+    // Arrange
+    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
+    let public_key = private_key.public_key();
+    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+
+    let access_rules = vec![AccessRules::new()
+        .method(
+            "deposit_funds",
+            rule!(require(RADIX_TOKEN)),
+            MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
+        )
+        .default(rule!(allow_all), LOCKED)];
+    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+
+    // Act
+    let receipt = test_runner.lock_method_auth(0, "deposit_funds");
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+    });
+}
+
+#[test]
+fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
+    // Arrange
+    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
+    let public_key = private_key.public_key();
+    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+
+    let access_rules = vec![AccessRules::new()
+        .method(
+            "deposit_funds",
+            rule!(require(RADIX_TOKEN)),
+            MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
+        )
+        .default(rule!(allow_all), LOCKED)];
+    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+    test_runner.add_initial_proof(virtual_badge_non_fungible_address);
+
+    // Act
+    let receipt = test_runner.set_method_auth(0, "deposit_funds", rule!(allow_all));
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
+    // Arrange
+    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
+    let public_key = private_key.public_key();
+    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+
+    let access_rules = vec![AccessRules::new()
+        .method(
+            "deposit_funds",
+            rule!(require(RADIX_TOKEN)),
+            MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
+        )
+        .default(rule!(allow_all), LOCKED)];
+    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+    test_runner.add_initial_proof(virtual_badge_non_fungible_address);
+
+    // Act
+    let receipt = test_runner.lock_method_auth(0, "deposit_funds");
+
+    // Assert
+    receipt.expect_commit_success();
+
+    // Act
+    let receipt = test_runner.set_method_auth(0, "deposit_funds", rule!(allow_all));
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+    });
+}
+
 struct MutableAccessRulesTestRunner {
     substate_store: TypedInMemorySubstateStore,
     package_address: PackageAddress,
     component_address: ComponentAddress,
+    initial_proofs: Vec<NonFungibleAddress>,
 }
 
 impl MutableAccessRulesTestRunner {
@@ -310,7 +438,12 @@ impl MutableAccessRulesTestRunner {
             substate_store: store,
             package_address,
             component_address,
+            initial_proofs: Vec::new(),
         }
+    }
+
+    pub fn add_initial_proof(&mut self, initial_proof: NonFungibleAddress) {
+        self.initial_proofs.push(initial_proof);
     }
 
     pub fn access_rules(&mut self, call: Call) -> Vec<AccessRules> {
@@ -331,7 +464,7 @@ impl MutableAccessRulesTestRunner {
         self.execute_manifest(manifest).output(1)
     }
 
-    pub fn mutate_method_auth(
+    pub fn set_method_auth(
         &mut self,
         index: usize,
         method_name: &str,
@@ -339,7 +472,35 @@ impl MutableAccessRulesTestRunner {
     ) -> TransactionReceipt {
         let args = args!(index, method_name.to_string(), access_rule);
         let manifest = Self::manifest_builder()
-            .call_method(self.component_address, "mutate_method_auth", args)
+            .call_method(self.component_address, "set_method_auth", args)
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn set_default_auth(
+        &mut self,
+        index: usize,
+        access_rule: AccessRule,
+    ) -> TransactionReceipt {
+        let args = args!(index, access_rule);
+        let manifest = Self::manifest_builder()
+            .call_method(self.component_address, "set_default", args)
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn lock_method_auth(&mut self, index: usize, method_name: &str) -> TransactionReceipt {
+        let args = args!(index, method_name.to_string());
+        let manifest = Self::manifest_builder()
+            .call_method(self.component_address, "lock_method_auth", args)
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn lock_default_auth(&mut self, index: usize) -> TransactionReceipt {
+        let args = args!(index);
+        let manifest = Self::manifest_builder()
+            .call_method(self.component_address, "lock_default_auth", args)
             .build();
         self.execute_manifest(manifest)
     }
@@ -351,20 +512,13 @@ impl MutableAccessRulesTestRunner {
         self.execute_manifest(manifest)
     }
 
-    pub fn withdraw_funds(&mut self) -> TransactionReceipt {
-        let manifest = Self::manifest_builder()
-            .call_method(self.component_address, "withdraw_funds", args!())
-            .build();
-        self.execute_manifest(manifest)
-    }
-
-    fn manifest_builder() -> ManifestBuilder {
+    pub fn manifest_builder() -> ManifestBuilder {
         ManifestBuilder::new(&NetworkDefinition::simulator())
     }
 
-    fn execute_manifest(&mut self, manifest: TransactionManifest) -> TransactionReceipt {
-        let mut test_runner = TestRunner::new(true, &mut self.substate_store);
-        test_runner.execute_manifest_ignoring_fee(manifest, vec![])
+    pub fn execute_manifest(&mut self, manifest: TransactionManifest) -> TransactionReceipt {
+        TestRunner::new(true, &mut self.substate_store)
+            .execute_manifest_ignoring_fee(manifest, self.initial_proofs.clone())
     }
 }
 
