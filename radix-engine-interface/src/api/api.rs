@@ -49,6 +49,7 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<EpochManagerSetEpochInvocation, E>
     + SysNativeInvokable<EpochManagerGetCurrentEpochInvocation, E>
     + SysNativeInvokable<MetadataSetInvocation, E>
+    + SysNativeInvokable<MetadataGetInvocation, E>
     + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
     + SysNativeInvokable<AccessRulesSetAccessRuleInvocation, E>
     + SysNativeInvokable<AccessRulesSetMutabilityInvocation, E>

@@ -71,6 +71,7 @@ pub enum AccessRulesMethodInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum MetadataMethodInvocation {
     Set(MetadataSetInvocation),
+    Get(MetadataGetInvocation),
 }
 
 #[derive(Debug)]
@@ -342,6 +343,9 @@ impl NativeFnInvocation {
                 }
                 NativeMethodInvocation::Metadata(metadata_method) => match metadata_method {
                     MetadataMethodInvocation::Set(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    MetadataMethodInvocation::Get(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },

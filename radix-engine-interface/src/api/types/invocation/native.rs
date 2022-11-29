@@ -93,6 +93,7 @@ pub enum AccessRulesMethod {
 #[strum(serialize_all = "snake_case")]
 pub enum MetadataMethod {
     Set,
+    Get,
 }
 
 #[derive(

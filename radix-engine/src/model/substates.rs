@@ -807,6 +807,13 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn metadata(&self) -> &MetadataSubstate {
+        match self {
+            SubstateRef::Metadata(value) => *value,
+            _ => panic!("Not metadata"),
+        }
+    }
+
     pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
         match self {
             SubstateRef::Global(global) => {

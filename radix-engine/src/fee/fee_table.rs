@@ -230,6 +230,7 @@ impl FeeTable {
             },
             NativeMethod::Metadata(metadata_method) => match metadata_method {
                 MetadataMethod::Set => self.fixed_low,
+                MetadataMethod::Get => self.fixed_low,
             },
             NativeMethod::Component(method_ident) => match method_ident {
                 ComponentMethod::SetRoyaltyConfig => self.fixed_medium,
