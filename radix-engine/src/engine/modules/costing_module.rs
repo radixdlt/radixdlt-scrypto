@@ -3,7 +3,6 @@ use crate::fee::{FeeReserve, FeeReserveError, SystemApiCostingEntry};
 use crate::model::Resource;
 use crate::types::*;
 use radix_engine_interface::api::types::{RENodeId, VaultId};
-use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum CostingError {
@@ -373,7 +372,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
     fn pre_execute_invocation(
         &mut self,
         actor: &REActor,
-        input: &IndexedScryptoValue,
+        _call_frame_update: &CallFrameUpdate,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
         track: &mut Track<R>,
@@ -382,9 +381,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
             REActor::Function(ResolvedFunction::Native(native_function)) => track
                 .fee_reserve
                 .consume_flat(
-                    track
-                        .fee_table
-                        .run_native_function_cost(&native_function, &input),
+                    track.fee_table.run_native_function_cost(&native_function),
                     "run_native_function",
                     false,
                 )
@@ -392,32 +389,12 @@ impl<R: FeeReserve> Module<R> for CostingModule {
             REActor::Method(ResolvedMethod::Native(native_method), _) => track
                 .fee_reserve
                 .consume_flat(
-                    track
-                        .fee_table
-                        .run_native_method_cost(&native_method, &input),
+                    track.fee_table.run_native_method_cost(&native_method),
                     "run_native_method",
                     false,
                 )
                 .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
             _ => Ok(()),
         }
-    }
-
-    fn post_execute_invocation(
-        &mut self,
-        _update: &CallFrameUpdate,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
-        Ok(())
-    }
-
-    fn on_finished_processing(
-        &mut self,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
-        Ok(())
     }
 }

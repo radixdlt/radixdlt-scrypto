@@ -31,7 +31,7 @@ alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "scrypto-derive/alloc",
 trace = ["scrypto-derive/trace"]
 
 # Enable serde derives
-serde = ["sbor/serde", "scrypto-abi/serde", "serde/derive"]
+serde = ["sbor/serde", "scrypto-abi/serde", "serde/derive", "radix-engine-interface/serde"]
 
 # Enable prelude.
 # Note that prelude introduces duplicated symbols which may confuse rustc suggestions.

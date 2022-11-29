@@ -4,7 +4,7 @@ use crate::engine::{
     ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{
-    EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
+    AccessRulesSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
     HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
@@ -13,8 +13,9 @@ use radix_engine_interface::api::types::{
     EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction,
     NativeMethod, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
+use scrypto::access_rule_node;
+use scrypto::rule;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum EpochManagerError {
@@ -36,12 +37,11 @@ impl ExecutableInvocation for EpochManagerCreateInvocation {
     where
         Self: Sized,
     {
-        let input = IndexedScryptoValue::from_typed(&self);
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
             EpochManagerFunction::Create,
         )));
         let call_frame_update = CallFrameUpdate::empty();
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
 
         Ok((actor, call_frame_update, executor))
     }
@@ -50,16 +50,43 @@ impl ExecutableInvocation for EpochManagerCreateInvocation {
 impl NativeProcedure for EpochManagerCreateInvocation {
     type Output = SystemAddress;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
     {
-        let node_id =
-            system_api.create_node(RENode::EpochManager(EpochManagerSubstate { epoch: 0 }))?;
+        let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
 
-        let global_node_id = system_api.create_node(RENode::Global(
-            GlobalAddressSubstate::System(node_id.into()),
-        ))?;
+        let epoch_manager = EpochManagerSubstate { epoch: 0 };
+
+        let auth_non_fungible = NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::supervisor_id());
+        let mut access_rules = AccessRules::new();
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
+                EpochManagerMethod::SetEpoch,
+            ))),
+            rule!(require(auth_non_fungible)),
+        );
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
+                EpochManagerMethod::GetCurrentEpoch,
+            ))),
+            rule!(allow_all),
+        );
+
+        let access_rules_substate = AccessRulesSubstate {
+            access_rules: vec![access_rules],
+        };
+
+        api.create_node(
+            underlying_node_id,
+            RENode::EpochManager(epoch_manager, access_rules_substate),
+        )?;
+
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalEpochManager)?;
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::System(underlying_node_id.into())),
+        )?;
 
         let system_address: SystemAddress = global_node_id.into();
         let mut node_refs_to_copy = HashSet::new();
@@ -86,7 +113,6 @@ impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
     where
         Self: Sized,
     {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
@@ -97,10 +123,9 @@ impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            EpochManagerGetCurrentEpochExecutable(resolved_receiver.receiver),
-            input,
-        );
+        let executor = NativeExecutor(EpochManagerGetCurrentEpochExecutable(
+            resolved_receiver.receiver,
+        ));
 
         Ok((actor, call_frame_update, executor))
     }
@@ -133,7 +158,6 @@ impl ExecutableInvocation for EpochManagerSetEpochInvocation {
     where
         Self: Sized,
     {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
@@ -142,10 +166,10 @@ impl ExecutableInvocation for EpochManagerSetEpochInvocation {
             ResolvedMethod::Native(NativeMethod::EpochManager(EpochManagerMethod::SetEpoch)),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            EpochManagerSetEpochExecutable(resolved_receiver.receiver, self.epoch),
-            input,
-        );
+        let executor = NativeExecutor(EpochManagerSetEpochExecutable(
+            resolved_receiver.receiver,
+            self.epoch,
+        ));
 
         Ok((actor, call_frame_update, executor))
     }
@@ -176,19 +200,6 @@ impl EpochManager {
                     )),
                 ))]
             }
-        }
-    }
-
-    pub fn method_auth(method: &EpochManagerMethod) -> Vec<MethodAuthorization> {
-        match method {
-            EpochManagerMethod::SetEpoch => {
-                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                    HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                        NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::supervisor_id()),
-                    )),
-                ))]
-            }
-            _ => vec![],
         }
     }
 }

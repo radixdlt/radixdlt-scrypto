@@ -5,7 +5,6 @@ use crate::engine::{
 };
 use crate::types::*;
 use radix_engine_interface::api::types::{ComponentOffset, SubstateOffset};
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
@@ -23,7 +22,6 @@ impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {
     where
         Self: Sized,
     {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = self.receiver;
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
@@ -34,13 +32,10 @@ impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            Self {
-                receiver: resolved_receiver.receiver,
-                royalty_config: self.royalty_config,
-            },
-            input,
-        );
+        let executor = NativeExecutor(Self {
+            receiver: resolved_receiver.receiver,
+            royalty_config: self.royalty_config,
+        });
 
         Ok((actor, call_frame_update, executor))
     }

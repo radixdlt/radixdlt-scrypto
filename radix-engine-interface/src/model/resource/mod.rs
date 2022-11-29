@@ -11,7 +11,7 @@ mod resource_type;
 mod vault;
 mod worktop;
 
-pub use access_rules::AccessRules;
+pub use access_rules::*;
 pub use bucket::*;
 pub use mint_params::MintParams;
 pub use non_fungible_address::*;

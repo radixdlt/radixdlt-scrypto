@@ -523,6 +523,27 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         export_abi_by_component(output_store, component_address).expect("Failed to export ABI")
     }
 
+    pub fn lock_resource_auth(
+        &mut self,
+        function: &str,
+        auth: ResourceAddress,
+        token: ResourceAddress,
+        account: ComponentAddress,
+        signer_public_key: EcdsaSecp256k1PublicKey,
+    ) {
+        let package = self.compile_and_publish("./tests/blueprints/resource_creator");
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .create_proof_from_account(account, auth)
+            .call_function(package, "ResourceCreator", function, args!(token))
+            .build();
+        self.execute_manifest(
+            manifest,
+            vec![NonFungibleAddress::from_public_key(&signer_public_key)],
+        )
+        .expect_commit_success();
+    }
+
     pub fn update_resource_auth(
         &mut self,
         function: &str,
@@ -640,9 +661,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
 
     pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
         let mut access_rules = HashMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(Recall, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Recall, (rule!(allow_all), LOCKED));
 
         self.create_fungible_resource_and_deposit(access_rules, account)
     }
@@ -654,8 +675,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let mut access_rules = HashMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(Burn, (rule!(require(auth_resource_address)), LOCKED));
         let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
 
@@ -669,8 +690,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let mut access_rules = HashMap::new();
-        access_rules.insert(Withdraw, (rule!(require(auth_resource_address)), LOCKED));
-        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(require(auth_resource_address)), LOCKED),
+        );
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
 
         (auth_resource_address, resource_address)
@@ -726,8 +750,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         account: ComponentAddress,
     ) -> ResourceAddress {
         let mut access_rules = HashMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(

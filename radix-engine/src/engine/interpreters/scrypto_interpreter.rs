@@ -13,10 +13,6 @@ pub struct ScryptoExecutor<I: WasmInstance> {
 impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
     type Output = IndexedScryptoValue;
 
-    fn args(&self) -> &IndexedScryptoValue {
-        &self.args
-    }
-
     fn execute<Y>(
         mut self,
         system_api: &mut Y,

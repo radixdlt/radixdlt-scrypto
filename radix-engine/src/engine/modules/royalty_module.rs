@@ -5,7 +5,6 @@ use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, GlobalOffset, PackageOffset, RENodeId, SubstateId,
     SubstateOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::scrypto;
 
@@ -39,7 +38,7 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
     fn pre_execute_invocation(
         &mut self,
         actor: &REActor,
-        _input: &IndexedScryptoValue,
+        _update: &CallFrameUpdate,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
         track: &mut Track<R>,

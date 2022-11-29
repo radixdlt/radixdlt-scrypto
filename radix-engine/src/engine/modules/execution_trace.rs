@@ -6,7 +6,6 @@ use radix_engine_interface::api::types::{
     BucketOffset, ComponentId, NativeMethod, RENodeId, SubstateId, SubstateOffset, VaultId,
     VaultMethod, VaultOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
@@ -140,7 +139,7 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     fn pre_execute_invocation(
         &mut self,
         actor: &REActor,
-        input: &IndexedScryptoValue,
+        update: &CallFrameUpdate,
         call_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track<R>,
@@ -178,7 +177,7 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
                 }
             };
 
-            let trace_data = Self::extract_trace_data(heap, input)?;
+            let trace_data = Self::extract_trace_data(update, heap)?;
             self.traced_sys_call_inputs_stack.push((
                 trace_data,
                 origin,
@@ -193,10 +192,7 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
             match (native_method, resolved_receiver.receiver) {
                 (NativeMethod::Vault(VaultMethod::Put), RENodeId::Vault(vault_id)) => {
-                    Self::handle_vault_put(heap, track, caller, &vault_id, input)
-                }
-                (NativeMethod::Vault(VaultMethod::Take), RENodeId::Vault(vault_id)) => {
-                    Self::handle_vault_take(track, caller, &vault_id, input)
+                    Self::handle_vault_put(update, heap, track, caller, &vault_id)
                 }
                 (NativeMethod::Vault(VaultMethod::LockFee), RENodeId::Vault(vault_id)) => {
                     Self::handle_vault_lock_fee(track, caller, &vault_id)
@@ -210,11 +206,23 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
     fn post_execute_invocation(
         &mut self,
+        caller: &REActor,
         update: &CallFrameUpdate,
         call_frame: &CallFrame,
         heap: &mut Heap,
-        _track: &mut Track<R>,
+        track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
+        if let REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) =
+            &call_frame.actor
+        {
+            match (native_method, resolved_receiver.receiver) {
+                (NativeMethod::Vault(VaultMethod::Take), RENodeId::Vault(vault_id)) => {
+                    Self::handle_vault_take(update, heap, track, caller, &vault_id)
+                }
+                _ => {}
+            }
+        }
+
         // Important to always update the counter (even if we're over the depth limit).
         self.current_sys_call_depth -= 1;
 
@@ -223,7 +231,7 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
             return Ok(());
         }
 
-        let traced_output = Self::extract_trace_data_from_update(update, heap)?;
+        let traced_output = Self::extract_trace_data(update, heap)?;
         self.finalize_sys_call_trace(call_frame, traced_output)
     }
 
@@ -459,14 +467,14 @@ impl ExecutionTraceModule {
         Ok(())
     }
 
-    fn extract_trace_data_from_update(
-        update: &CallFrameUpdate,
+    fn extract_trace_data(
+        call_frame_update: &CallFrameUpdate,
         heap: &mut Heap,
     ) -> Result<TracedSysCallData, ModuleError> {
         let mut buckets: HashMap<BucketId, Resource> = HashMap::new();
         let mut proofs: HashMap<ProofId, ProofSnapshot> = HashMap::new();
 
-        for node_id in &update.nodes_to_move {
+        for node_id in &call_frame_update.nodes_to_move {
             match node_id {
                 RENodeId::Bucket(bucket_id) => {
                     let bucket_resource = Self::read_bucket_resource(heap, &bucket_id)?;
@@ -475,30 +483,6 @@ impl ExecutionTraceModule {
                 RENodeId::Proof(proof_id) => {
                     let proof = Self::read_proof(heap, &proof_id)?;
                     proofs.insert(*proof_id, proof);
-                }
-                _ => {}
-            }
-        }
-
-        Ok(TracedSysCallData { buckets, proofs })
-    }
-
-    fn extract_trace_data(
-        heap: &mut Heap,
-        value: &IndexedScryptoValue,
-    ) -> Result<TracedSysCallData, ModuleError> {
-        let mut buckets: HashMap<BucketId, Resource> = HashMap::new();
-        let mut proofs: HashMap<ProofId, ProofSnapshot> = HashMap::new();
-
-        for node_id in value.node_ids() {
-            match node_id {
-                RENodeId::Bucket(bucket_id) => {
-                    let bucket_resource = Self::read_bucket_resource(heap, &bucket_id)?;
-                    buckets.insert(bucket_id, bucket_resource);
-                }
-                RENodeId::Proof(proof_id) => {
-                    let proof = Self::read_proof(heap, &proof_id)?;
-                    proofs.insert(proof_id, proof);
                 }
                 _ => {}
             }
@@ -531,39 +515,54 @@ impl ExecutionTraceModule {
     }
 
     fn handle_vault_put<'s, R: FeeReserve>(
+        call_frame_update: &CallFrameUpdate,
         heap: &mut Heap,
         track: &mut Track<'s, R>,
         actor: &REActor,
         vault_id: &VaultId,
-        input: &IndexedScryptoValue,
     ) {
-        if let Ok(call_data) = scrypto_decode::<VaultPutInvocation>(&input.raw) {
-            let bucket_id = call_data.bucket.0;
-            if let Ok(bucket_substate) = heap.get_substate(
-                RENodeId::Bucket(bucket_id),
-                &SubstateOffset::Bucket(BucketOffset::Bucket),
-            ) {
-                track.vault_ops.push((
-                    actor.clone(),
-                    vault_id.clone(),
-                    VaultOp::Put(bucket_substate.bucket().total_amount()),
-                ));
+        for node_id in &call_frame_update.nodes_to_move {
+            match node_id {
+                RENodeId::Bucket(bucket_id) => {
+                    if let Ok(bucket_substate) = heap.get_substate(
+                        RENodeId::Bucket(*bucket_id),
+                        &SubstateOffset::Bucket(BucketOffset::Bucket),
+                    ) {
+                        track.vault_ops.push((
+                            actor.clone(),
+                            vault_id.clone(),
+                            VaultOp::Put(bucket_substate.bucket().total_amount()),
+                        ));
+                    }
+                }
+                _ => {}
             }
         }
     }
 
     fn handle_vault_take<'s, R: FeeReserve>(
+        update: &CallFrameUpdate,
+        heap: &mut Heap,
         track: &mut Track<'s, R>,
         actor: &REActor,
         vault_id: &VaultId,
-        input: &IndexedScryptoValue,
     ) {
-        if let Ok(call_data) = scrypto_decode::<VaultTakeInvocation>(&input.raw) {
-            track.vault_ops.push((
-                actor.clone(),
-                vault_id.clone(),
-                VaultOp::Take(call_data.amount),
-            ));
+        for node_id in &update.nodes_to_move {
+            match node_id {
+                RENodeId::Bucket(bucket_id) => {
+                    if let Ok(bucket_substate) = heap.get_substate(
+                        RENodeId::Bucket(*bucket_id),
+                        &SubstateOffset::Bucket(BucketOffset::Bucket),
+                    ) {
+                        track.vault_ops.push((
+                            actor.clone(),
+                            vault_id.clone(),
+                            VaultOp::Take(bucket_substate.bucket().total_amount()),
+                        ));
+                    }
+                }
+                _ => {}
+            }
         }
     }
 
