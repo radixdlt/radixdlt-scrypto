@@ -1403,7 +1403,6 @@ dependencies = [
  "hex",
  "radix-engine-interface",
  "sbor",
- "scrypto-abi",
  "secp256k1",
  "serde_with",
  "utils",

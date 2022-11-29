@@ -150,6 +150,9 @@ impl VisibilityProperties {
                 SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => {
                     flags == LockFlags::read_only()
                 }
+                SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules) => {
+                    flags == LockFlags::read_only()
+                }
                 _ => false,
             },
             (ExecutionMode::ScryptoInterpreter, offset) => match offset {
@@ -267,6 +270,16 @@ impl SubstateProperties {
                     ))),
                 }
             }
+            SubstateOffset::Global(GlobalOffset::Global) => match node_id {
+                RENodeId::Component(..)
+                | RENodeId::Package(..)
+                | RENodeId::ResourceManager(..)
+                | RENodeId::EpochManager(..) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
+            },
             _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                 offset.clone(),
                 node_id,

@@ -18,7 +18,7 @@ pub struct NativeMethodIdent {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum NativeFn {
     Method(NativeMethod),
     Function(NativeFunction),
@@ -26,7 +26,7 @@ pub enum NativeFn {
 
 // Native function enum used by Kernel SystemAPI and WASM
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum NativeMethod {
     AccessRules(AccessRulesMethod),
     Component(ComponentMethod), // TODO: investigate whether to make royalty universal and take any "receiver".
@@ -43,7 +43,7 @@ pub enum NativeMethod {
 
 // Native method enum used by Kernel SystemAPI and WASM
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum NativeFunction {
     EpochManager(EpochManagerFunction),
     ResourceManager(ResourceManagerFunction),
@@ -70,6 +70,8 @@ pub enum NativeFunction {
 #[strum(serialize_all = "snake_case")]
 pub enum AccessRulesMethod {
     AddAccessCheck,
+    SetAccessRule,
+    SetMutability,
 }
 
 #[derive(
@@ -203,6 +205,7 @@ pub enum AuthZoneStackMethod {
     CreateProofByIds,
     Clear,
     Drain,
+    AssertAccessRule,
 }
 
 #[derive(
@@ -246,7 +249,7 @@ pub enum ResourceManagerFunction {
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerMethod {
     Burn,
-    UpdateAuth,
+    UpdateVaultAuth,
     LockAuth,
     Mint,
     UpdateNonFungibleData,
@@ -258,7 +261,6 @@ pub enum ResourceManagerMethod {
     NonFungibleExists,
     CreateBucket,
     CreateVault,
-    SetResourceAddress,
 }
 
 #[derive(

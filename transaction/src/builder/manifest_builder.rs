@@ -552,7 +552,7 @@ impl ManifestBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
+        resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         resource_auth.insert(
             Mint,
             (rule!(require(minter_resource_address.clone())), LOCKED),
@@ -585,7 +585,7 @@ impl ManifestBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
+        resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
@@ -611,7 +611,7 @@ impl ManifestBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
+        resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         resource_auth.insert(
             Mint,
             (rule!(require(minter_resource_address.clone())), LOCKED),
@@ -645,7 +645,7 @@ impl ManifestBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
+        resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {

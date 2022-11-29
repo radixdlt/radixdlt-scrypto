@@ -11,7 +11,6 @@ use crate::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeMethod, RENodeId, SubstateOffset, VaultMethod, VaultOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -35,14 +34,13 @@ impl ExecutableInvocation for VaultTakeInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::Take)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -50,16 +48,16 @@ impl ExecutableInvocation for VaultTakeInvocation {
 impl NativeProcedure for VaultTakeInvocation {
     type Output = Bucket;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
         let vault_handle =
-            system_api.lock_substate(RENodeId::Vault(self.receiver), offset, LockFlags::MUTABLE)?;
+            api.lock_substate(RENodeId::Vault(self.receiver), offset, LockFlags::MUTABLE)?;
 
         let container = {
-            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault.take(self.amount).map_err(|e| match e {
                 InvokeError::Error(e) => {
@@ -69,9 +67,9 @@ impl NativeProcedure for VaultTakeInvocation {
             })?
         };
 
-        let bucket_id = system_api
-            .create_node(RENode::Bucket(BucketSubstate::new(container)))?
-            .into();
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+        let bucket_id = node_id.into();
 
         Ok((
             Bucket(bucket_id),
@@ -87,7 +85,6 @@ impl ExecutableInvocation for VaultPutInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
@@ -97,7 +94,7 @@ impl ExecutableInvocation for VaultPutInvocation {
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::Put)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -136,14 +133,13 @@ impl ExecutableInvocation for VaultLockFeeInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::LockFee)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -206,14 +202,13 @@ impl ExecutableInvocation for VaultTakeNonFungiblesInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::TakeNonFungibles)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -221,16 +216,16 @@ impl ExecutableInvocation for VaultTakeNonFungiblesInvocation {
 impl NativeProcedure for VaultTakeNonFungiblesInvocation {
     type Output = Bucket;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let vault_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let container = {
-            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
                 .take_non_fungibles(&self.non_fungible_ids)
@@ -242,9 +237,9 @@ impl NativeProcedure for VaultTakeNonFungiblesInvocation {
                 })?
         };
 
-        let bucket_id = system_api
-            .create_node(RENode::Bucket(BucketSubstate::new(container)))?
-            .into();
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+        let bucket_id = node_id.into();
 
         Ok((
             Bucket(bucket_id),
@@ -260,14 +255,13 @@ impl ExecutableInvocation for VaultGetAmountInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::GetAmount)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -298,14 +292,13 @@ impl ExecutableInvocation for VaultGetResourceAddressInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::GetResourceAddress)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -342,14 +335,13 @@ impl ExecutableInvocation for VaultGetNonFungibleIdsInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::GetNonFungibleIds)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -387,14 +379,13 @@ impl ExecutableInvocation for VaultCreateProofInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::CreateProof)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -402,16 +393,16 @@ impl ExecutableInvocation for VaultCreateProofInvocation {
 impl NativeProcedure for VaultCreateProofInvocation {
     type Output = Proof;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let vault_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let proof = {
-            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
                 .create_proof(ResourceContainerId::Vault(self.receiver))
@@ -421,7 +412,10 @@ impl NativeProcedure for VaultCreateProofInvocation {
                     ))
                 })?
         };
-        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+
+        let node_id = api.allocate_node_id(RENodeType::Proof)?;
+        api.create_node(node_id, RENode::Proof(proof))?;
+        let proof_id = node_id.into();
 
         Ok((
             Proof(proof_id),
@@ -437,14 +431,13 @@ impl ExecutableInvocation for VaultCreateProofByAmountInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::CreateProofByAmount)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -452,16 +445,16 @@ impl ExecutableInvocation for VaultCreateProofByAmountInvocation {
 impl NativeProcedure for VaultCreateProofByAmountInvocation {
     type Output = Proof;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let vault_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let proof = {
-            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
                 .create_proof_by_amount(self.amount, ResourceContainerId::Vault(self.receiver))
@@ -472,7 +465,9 @@ impl NativeProcedure for VaultCreateProofByAmountInvocation {
                 })?
         };
 
-        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+        let node_id = api.allocate_node_id(RENodeType::Proof)?;
+        api.create_node(node_id, RENode::Proof(proof))?;
+        let proof_id = node_id.into();
 
         Ok((
             Proof(proof_id),
@@ -488,14 +483,13 @@ impl ExecutableInvocation for VaultCreateProofByIdsInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::CreateProofByIds)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -503,16 +497,16 @@ impl ExecutableInvocation for VaultCreateProofByIdsInvocation {
 impl NativeProcedure for VaultCreateProofByIdsInvocation {
     type Output = Proof;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         let node_id = RENodeId::Vault(self.receiver);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let vault_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let vault_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let proof = {
-            let mut substate_mut = system_api.get_ref_mut(vault_handle)?;
+            let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
                 .create_proof_by_ids(&self.ids, ResourceContainerId::Vault(self.receiver))
@@ -523,7 +517,9 @@ impl NativeProcedure for VaultCreateProofByIdsInvocation {
                 })?
         };
 
-        let proof_id = system_api.create_node(RENode::Proof(proof))?.into();
+        let node_id = api.allocate_node_id(RENodeType::Proof)?;
+        api.create_node(node_id, RENode::Proof(proof))?;
+        let proof_id = node_id.into();
 
         Ok((
             Proof(proof_id),

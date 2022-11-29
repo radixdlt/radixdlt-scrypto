@@ -75,7 +75,8 @@ impl FungibleResourceBuilder {
     }
 
     pub fn recallable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
-        self.authorization.insert(Recall, (method_auth, mutability));
+        self.authorization
+            .insert(ResourceMethodAuthKey::Recall, (method_auth, mutability));
         self
     }
 
@@ -85,7 +86,7 @@ impl FungibleResourceBuilder {
         mutability: Mutability,
     ) -> &mut Self {
         self.authorization
-            .insert(Withdraw, (method_auth, mutability));
+            .insert(ResourceMethodAuthKey::Withdraw, (method_auth, mutability));
         self
     }
 
@@ -95,7 +96,7 @@ impl FungibleResourceBuilder {
         mutability: Mutability,
     ) -> &mut Self {
         self.authorization
-            .insert(Deposit, (method_auth, mutability));
+            .insert(ResourceMethodAuthKey::Deposit, (method_auth, mutability));
         self
     }
 
@@ -128,8 +129,8 @@ impl FungibleResourceBuilder {
 
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
-        if !authorization.contains_key(&Withdraw) {
-            authorization.insert(Withdraw, (rule!(allow_all), LOCKED));
+        if !authorization.contains_key(&ResourceMethodAuthKey::Withdraw) {
+            authorization.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         }
 
         resource_system().new_resource(
@@ -171,7 +172,8 @@ impl NonFungibleResourceBuilder {
     }
 
     pub fn recallable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
-        self.authorization.insert(Recall, (method_auth, mutability));
+        self.authorization
+            .insert(ResourceMethodAuthKey::Recall, (method_auth, mutability));
         self
     }
 
@@ -181,7 +183,7 @@ impl NonFungibleResourceBuilder {
         mutability: Mutability,
     ) -> &mut Self {
         self.authorization
-            .insert(Withdraw, (method_auth, mutability));
+            .insert(ResourceMethodAuthKey::Withdraw, (method_auth, mutability));
         self
     }
 
@@ -191,7 +193,7 @@ impl NonFungibleResourceBuilder {
         mutability: Mutability,
     ) -> &mut Self {
         self.authorization
-            .insert(Deposit, (method_auth, mutability));
+            .insert(ResourceMethodAuthKey::Deposit, (method_auth, mutability));
         self
     }
 
@@ -248,8 +250,8 @@ impl NonFungibleResourceBuilder {
 
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
-        if !authorization.contains_key(&Withdraw) {
-            authorization.insert(Withdraw, (rule!(allow_all), LOCKED));
+        if !authorization.contains_key(&ResourceMethodAuthKey::Withdraw) {
+            authorization.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         }
 
         resource_system().new_resource(
