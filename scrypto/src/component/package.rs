@@ -1,6 +1,5 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
-use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::api::SysNativeInvokable;
 use radix_engine_interface::data::ScryptoDecode;
 use radix_engine_interface::model::*;
@@ -19,24 +18,12 @@ impl BorrowedPackage {
         Runtime::call_function(self.0, blueprint_name, function, args)
     }
 
-    pub fn set_royalty_config(&self, royalty_config: HashMap<String, RoyaltyConfig>) -> &Self {
-        self.sys_set_royalty_config(royalty_config, &mut ScryptoEnv)
-            .unwrap()
-    }
-
-    pub fn sys_set_royalty_config<Y, E: Debug + ScryptoDecode>(
-        &self,
-        royalty_config: HashMap<String, RoyaltyConfig>,
-        sys_calls: &mut Y,
-    ) -> Result<&Self, E>
-    where
-        Y: EngineApi<E> + SysNativeInvokable<PackageSetRoyaltyConfigInvocation, E>,
-    {
-        sys_calls.sys_invoke(PackageSetRoyaltyConfigInvocation {
+    pub fn set_royalty_config(&self, royalty_config: HashMap<String, RoyaltyConfig>) {
+        let mut env = ScryptoEnv;
+        env.sys_invoke(PackageSetRoyaltyConfigInvocation {
             receiver: self.0,
             royalty_config,
-        })?;
-
-        Ok(self)
+        })
+        .unwrap();
     }
 }

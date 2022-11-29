@@ -16,181 +16,164 @@ pub struct ResourceManager(pub(crate) ResourceAddress);
 
 impl ResourceManager {
     pub fn set_mintable(&mut self, access_rule: AccessRule) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
-                receiver: self.0,
-                method: Mint,
-                access_rule,
-            })
-            .unwrap();
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerUpdateAuthInvocation {
+            receiver: self.0,
+            method: Mint,
+            access_rule,
+        })
+        .unwrap();
     }
 
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
-                receiver: self.0,
-                method: Burn,
-                access_rule,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerUpdateAuthInvocation {
+            receiver: self.0,
+            method: Burn,
+            access_rule,
+        })
+        .unwrap()
     }
 
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) -> () {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
-                receiver: self.0,
-                method: Withdraw,
-                access_rule,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerUpdateAuthInvocation {
+            receiver: self.0,
+            method: Withdraw,
+            access_rule,
+        })
+        .unwrap()
     }
 
     pub fn set_depositable(&mut self, access_rule: AccessRule) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
-                receiver: self.0,
-                method: Deposit,
-                access_rule,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerUpdateAuthInvocation {
+            receiver: self.0,
+            method: Deposit,
+            access_rule,
+        })
+        .unwrap()
     }
 
     pub fn set_recallable(&mut self, access_rule: AccessRule) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
-                receiver: self.0,
-                method: Recall,
-                access_rule,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerUpdateAuthInvocation {
+            receiver: self.0,
+            method: Recall,
+            access_rule,
+        })
+        .unwrap()
     }
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
-                receiver: self.0,
-                method: UpdateMetadata,
-                access_rule,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerUpdateAuthInvocation {
+            receiver: self.0,
+            method: UpdateMetadata,
+            access_rule,
+        })
+        .unwrap()
     }
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerUpdateAuthInvocation {
-                receiver: self.0,
-                method: UpdateNonFungibleData,
-                access_rule,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerUpdateAuthInvocation {
+            receiver: self.0,
+            method: UpdateNonFungibleData,
+            access_rule,
+        })
+        .unwrap()
     }
 
     pub fn lock_mintable(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: Mint,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerLockAuthInvocation {
+            receiver: self.0,
+            method: Mint,
+        })
+        .unwrap()
     }
 
     pub fn lock_burnable(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: Burn,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerLockAuthInvocation {
+            receiver: self.0,
+            method: Burn,
+        })
+        .unwrap()
     }
 
     pub fn lock_withdrawable(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: Withdraw,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerLockAuthInvocation {
+            receiver: self.0,
+            method: Withdraw,
+        })
+        .unwrap()
     }
 
     pub fn lock_depositable(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: Deposit,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerLockAuthInvocation {
+            receiver: self.0,
+            method: Deposit,
+        })
+        .unwrap()
     }
 
     pub fn lock_recallable(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: Recall,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerLockAuthInvocation {
+            receiver: self.0,
+            method: Recall,
+        })
+        .unwrap()
     }
 
     pub fn lock_updateable_metadata(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: UpdateMetadata,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerLockAuthInvocation {
+            receiver: self.0,
+            method: UpdateMetadata,
+        })
+        .unwrap()
     }
 
     pub fn lock_updateable_non_fungible_data(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: UpdateNonFungibleData,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerLockAuthInvocation {
+            receiver: self.0,
+            method: UpdateNonFungibleData,
+        })
+        .unwrap()
     }
 
     fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerMintInvocation {
-                mint_params,
-                receiver: self.0,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerMintInvocation {
+            mint_params,
+            receiver: self.0,
+        })
+        .unwrap()
     }
 
     fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerUpdateNonFungibleDataInvocation {
-                id,
-                data,
-                receiver: self.0,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerUpdateNonFungibleDataInvocation {
+            id,
+            data,
+            receiver: self.0,
+        })
+        .unwrap()
     }
 
     fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerGetNonFungibleInvocation {
-                id,
-                receiver: self.0,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerGetNonFungibleInvocation {
+            id,
+            receiver: self.0,
+        })
+        .unwrap()
     }
 
     scrypto_env_native_fn! {

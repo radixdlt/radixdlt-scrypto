@@ -10,8 +10,8 @@ pub struct Logger {}
 impl Logger {
     /// Emits a log to console.
     pub fn log(level: Level, message: String) {
-        let mut sys_calls = ScryptoEnv;
-        sys_calls.sys_emit_log(level, message).unwrap();
+        let mut env = ScryptoEnv;
+        env.sys_emit_log(level, message).unwrap();
     }
 
     /// Emits a trace message.

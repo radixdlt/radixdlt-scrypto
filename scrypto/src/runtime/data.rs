@@ -37,8 +37,8 @@ impl<V: ScryptoEncode> Deref for DataRef<V> {
 
 impl<V: ScryptoEncode> Drop for DataRef<V> {
     fn drop(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls.sys_drop_lock(self.lock_handle).unwrap();
+        let mut env = ScryptoEnv;
+        env.sys_drop_lock(self.lock_handle).unwrap();
     }
 }
 
@@ -66,7 +66,7 @@ impl<V: ScryptoEncode> DataRefMut<V> {
 
 impl<V: ScryptoEncode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
-        let mut syscalls = ScryptoEnv;
+        let mut env = ScryptoEnv;
         let bytes = scrypto_encode(&self.value).unwrap();
         let substate = match &self.offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
@@ -78,8 +78,8 @@ impl<V: ScryptoEncode> Drop for DataRefMut<V> {
             s @ _ => panic!("Unsupported substate: {:?}", s),
         };
 
-        syscalls.sys_write(self.lock_handle, substate).unwrap();
-        syscalls.sys_drop_lock(self.lock_handle).unwrap();
+        env.sys_write(self.lock_handle, substate).unwrap();
+        env.sys_drop_lock(self.lock_handle).unwrap();
     }
 }
 
@@ -113,12 +113,12 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> DataPointer<V> {
     }
 
     pub fn get(&self) -> DataRef<V> {
-        let mut syscalls = ScryptoEnv;
+        let mut env = ScryptoEnv;
 
-        let lock_handle = syscalls
+        let lock_handle = env
             .sys_lock_substate(self.node_id, self.offset.clone(), false)
             .unwrap();
-        let raw_substate = syscalls.sys_read(lock_handle).unwrap();
+        let raw_substate = env.sys_read(lock_handle).unwrap();
         match &self.offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
                 let substate: KeyValueStoreEntrySubstate = scrypto_decode(&raw_substate).unwrap();
@@ -145,12 +145,12 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> DataPointer<V> {
     }
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
-        let mut syscalls = ScryptoEnv;
+        let mut env = ScryptoEnv;
 
-        let lock_handle = syscalls
+        let lock_handle = env
             .sys_lock_substate(self.node_id, self.offset.clone(), true)
             .unwrap();
-        let raw_substate = syscalls.sys_read(lock_handle).unwrap();
+        let raw_substate = env.sys_read(lock_handle).unwrap();
 
         match &self.offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
