@@ -133,6 +133,7 @@ impl VisibilityProperties {
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
                 _ => false,
             },
+            (ExecutionMode::EntityModule, _offset) => false,
             (ExecutionMode::AuthModule, offset) => match offset {
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
                 // TODO: Remove these and use AuthRulesSubstate

@@ -30,8 +30,8 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
-            SysCallInput::Invoke { info, .. } => {
-                log!(call_frame, "Invoking: {:?}", info);
+            SysCallInput::Invoke { invocation, .. } => {
+                log!(call_frame, "Invoking: {:?}", invocation);
             }
             SysCallInput::ReadOwnedNodes => {
                 log!(call_frame, "Reading owned nodes");

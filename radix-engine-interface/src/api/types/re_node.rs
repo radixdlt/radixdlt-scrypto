@@ -140,6 +140,11 @@ pub enum AccessRulesOffset {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum MetadataOffset {
+    Metadata,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ComponentOffset {
     Info,
     State,
@@ -212,6 +217,7 @@ pub enum SubstateOffset {
     FeeReserve(FeeReserveOffset),
     Component(ComponentOffset),
     AccessRules(AccessRulesOffset),
+    Metadata(MetadataOffset),
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),
     KeyValueStore(KeyValueStoreOffset),

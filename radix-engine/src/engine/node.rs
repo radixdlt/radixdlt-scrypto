@@ -21,7 +21,11 @@ pub enum RENode {
         ComponentRoyaltyConfigSubstate,
     ),
     Worktop(WorktopSubstate),
-    Package(PackageSubstate, PackageRoyaltyConfigSubstate),
+    Package(
+        PackageSubstate,
+        MetadataSubstate,
+        PackageRoyaltyConfigSubstate,
+    ),
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
     ResourceManager(ResourceManagerSubstate),
@@ -47,7 +51,7 @@ impl RENode {
             RENode::AuthZoneStack(auth_zone) => {
                 substates.insert(
                     SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-                    RuntimeSubstate::AuthZone(auth_zone),
+                    RuntimeSubstate::AuthZoneStack(auth_zone),
                 );
             }
             RENode::Global(global_node) => {
@@ -91,7 +95,7 @@ impl RENode {
                     RuntimeSubstate::Worktop(worktop),
                 );
             }
-            RENode::Package(package, package_royalty_config) => {
+            RENode::Package(package, metadata, package_royalty_config) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Package),
                     package.into(),
@@ -99,6 +103,10 @@ impl RENode {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::RoyaltyConfig),
                     package_royalty_config.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    metadata.into(),
                 );
             }
             RENode::ResourceManager(resource_manager) => {

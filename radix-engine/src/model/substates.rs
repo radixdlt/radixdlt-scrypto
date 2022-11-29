@@ -14,6 +14,7 @@ pub enum PersistedSubstate {
     EpochManager(EpochManagerSubstate),
     ResourceManager(ResourceManagerSubstate),
     AccessRules(AccessRulesSubstate),
+    Metadata(MetadataSubstate),
     ComponentInfo(ComponentInfoSubstate),
     ComponentState(ComponentStateSubstate),
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
@@ -50,6 +51,7 @@ impl PersistedSubstate {
             PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
             PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
             PersistedSubstate::AccessRules(value) => RuntimeSubstate::AccessRules(value),
+            PersistedSubstate::Metadata(value) => RuntimeSubstate::Metadata(value),
             PersistedSubstate::ResourceManager(value) => RuntimeSubstate::ResourceManager(value),
             PersistedSubstate::ComponentInfo(value) => RuntimeSubstate::ComponentInfo(value),
             PersistedSubstate::ComponentState(value) => RuntimeSubstate::ComponentState(value),
@@ -81,6 +83,7 @@ pub enum RuntimeSubstate {
     EpochManager(EpochManagerSubstate),
     ResourceManager(ResourceManagerSubstate),
     AccessRules(AccessRulesSubstate),
+    Metadata(MetadataSubstate),
     ComponentInfo(ComponentInfoSubstate),
     ComponentState(ComponentStateSubstate),
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
@@ -89,7 +92,7 @@ pub enum RuntimeSubstate {
     Vault(VaultRuntimeSubstate),
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
-    AuthZone(AuthZoneStackSubstate),
+    AuthZoneStack(AuthZoneStackSubstate),
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     Worktop(WorktopSubstate),
@@ -102,6 +105,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
             RuntimeSubstate::AccessRules(value) => PersistedSubstate::AccessRules(value.clone()),
+            RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value.clone()),
             RuntimeSubstate::ResourceManager(value) => {
                 PersistedSubstate::ResourceManager(value.clone())
             }
@@ -126,7 +130,7 @@ impl RuntimeSubstate {
                 let persisted_vault = value.clone_to_persisted();
                 PersistedSubstate::Vault(persisted_vault)
             }
-            RuntimeSubstate::AuthZone(..)
+            RuntimeSubstate::AuthZoneStack(..)
             | RuntimeSubstate::Bucket(..)
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
@@ -141,6 +145,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
             RuntimeSubstate::AccessRules(value) => PersistedSubstate::AccessRules(value),
+            RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => PersistedSubstate::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => PersistedSubstate::ComponentInfo(value),
             RuntimeSubstate::ComponentState(value) => PersistedSubstate::ComponentState(value),
@@ -161,7 +166,7 @@ impl RuntimeSubstate {
                     .expect("Vault should be liquid at end of successful transaction");
                 PersistedSubstate::Vault(persisted_vault)
             }
-            RuntimeSubstate::AuthZone(..)
+            RuntimeSubstate::AuthZoneStack(..)
             | RuntimeSubstate::Bucket(..)
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
@@ -206,6 +211,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Global(value) => SubstateRefMut::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRefMut::EpochManager(value),
             RuntimeSubstate::AccessRules(value) => SubstateRefMut::AccessRules(value),
+            RuntimeSubstate::Metadata(value) => SubstateRefMut::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => SubstateRefMut::ComponentInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRefMut::ComponentState(value),
@@ -219,7 +225,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Vault(value) => SubstateRefMut::Vault(value),
             RuntimeSubstate::NonFungible(value) => SubstateRefMut::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
-            RuntimeSubstate::AuthZone(value) => SubstateRefMut::AuthZone(value),
+            RuntimeSubstate::AuthZoneStack(value) => SubstateRefMut::AuthZoneStack(value),
             RuntimeSubstate::Bucket(value) => SubstateRefMut::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRefMut::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
@@ -232,6 +238,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Global(value) => SubstateRef::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
             RuntimeSubstate::AccessRules(value) => SubstateRef::AccessRules(value),
+            RuntimeSubstate::Metadata(value) => SubstateRef::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => SubstateRef::ComponentInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRef::ComponentState(value),
@@ -245,7 +252,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Vault(value) => SubstateRef::Vault(value),
             RuntimeSubstate::NonFungible(value) => SubstateRef::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
-            RuntimeSubstate::AuthZone(value) => SubstateRef::AuthZone(value),
+            RuntimeSubstate::AuthZoneStack(value) => SubstateRef::AuthZoneStack(value),
             RuntimeSubstate::Bucket(value) => SubstateRef::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRef::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
@@ -300,11 +307,25 @@ impl RuntimeSubstate {
             panic!("Not a KVEntry");
         }
     }
+
+    pub fn metadata(&self) -> &MetadataSubstate {
+        if let RuntimeSubstate::Metadata(metadata) = self {
+            metadata
+        } else {
+            panic!("Not metadata");
+        }
+    }
 }
 
 impl Into<RuntimeSubstate> for AccessRulesSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::AccessRules(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for MetadataSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::Metadata(self)
     }
 }
 
@@ -514,8 +535,18 @@ impl Into<AccessRulesSubstate> for RuntimeSubstate {
     }
 }
 
+impl Into<MetadataSubstate> for RuntimeSubstate {
+    fn into(self) -> MetadataSubstate {
+        if let RuntimeSubstate::Metadata(substate) = self {
+            substate
+        } else {
+            panic!("Not metadata");
+        }
+    }
+}
+
 pub enum SubstateRef<'a> {
-    AuthZone(&'a AuthZoneStackSubstate),
+    AuthZoneStack(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
     FeeReserve(&'a FeeReserveSubstate),
     Proof(&'a ProofSubstate),
@@ -531,6 +562,7 @@ pub enum SubstateRef<'a> {
     ResourceManager(&'a ResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
     AccessRules(&'a AccessRulesSubstate),
+    Metadata(&'a MetadataSubstate),
     Global(&'a GlobalAddressSubstate),
 }
 
@@ -602,7 +634,7 @@ impl<'a> SubstateRef<'a> {
 
     pub fn auth_zone(&self) -> &AuthZoneStackSubstate {
         match self {
-            SubstateRef::AuthZone(value) => *value,
+            SubstateRef::AuthZoneStack(value) => *value,
             _ => panic!("Not an authzone"),
         }
     }
@@ -754,18 +786,19 @@ pub enum SubstateRefMut<'a> {
     ResourceManager(&'a mut ResourceManagerSubstate),
     EpochManager(&'a mut EpochManagerSubstate),
     AccessRules(&'a mut AccessRulesSubstate),
+    Metadata(&'a mut MetadataSubstate),
     Global(&'a mut GlobalAddressSubstate),
     Bucket(&'a mut BucketSubstate),
     Proof(&'a mut ProofSubstate),
     Worktop(&'a mut WorktopSubstate),
     FeeReserve(&'a mut FeeReserveSubstate),
-    AuthZone(&'a mut AuthZoneStackSubstate),
+    AuthZoneStack(&'a mut AuthZoneStackSubstate),
 }
 
 impl<'a> SubstateRefMut<'a> {
     pub fn auth_zone(&mut self) -> &mut AuthZoneStackSubstate {
         match self {
-            SubstateRefMut::AuthZone(value) => *value,
+            SubstateRefMut::AuthZoneStack(value) => *value,
             _ => panic!("Not an authzone"),
         }
     }
@@ -865,6 +898,13 @@ impl<'a> SubstateRefMut<'a> {
         match self {
             SubstateRefMut::AccessRules(value) => *value,
             _ => panic!("Not access rules"),
+        }
+    }
+
+    pub fn metadata(&mut self) -> &mut MetadataSubstate {
+        match self {
+            SubstateRefMut::Metadata(value) => *value,
+            _ => panic!("Not metadata"),
         }
     }
 }

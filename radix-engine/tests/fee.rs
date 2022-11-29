@@ -1,8 +1,6 @@
 use radix_engine::engine::{ApplicationError, KernelError, TrackError};
 use radix_engine::engine::{RejectionError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::ledger::WriteableSubstateStore;
-use radix_engine::model::KeyValueStoreEntrySubstate;
 use radix_engine::model::WorktopError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
@@ -181,33 +179,6 @@ fn should_succeed_when_lock_fee_and_query_vault() {
     receipt.expect_commit_success();
 }
 
-fn query_account_balance<S>(
-    test_runner: &mut TestRunner<S>,
-    account_address: ComponentAddress,
-    resource_address: ResourceAddress,
-) -> Decimal
-where
-    S: radix_engine::ledger::ReadableSubstateStore + WriteableSubstateStore,
-{
-    if let Some(account_comp) = test_runner.inspect_component_state(account_address) {
-        let account_comp_state = IndexedScryptoValue::from_slice(&account_comp.raw).unwrap();
-        if let Some(kv_store_id) = account_comp_state.kv_store_ids.iter().next() {
-            if let Some(KeyValueStoreEntrySubstate(Some(value))) = test_runner
-                .inspect_key_value_entry(
-                    kv_store_id.clone(),
-                    scrypto_encode(&resource_address).unwrap(),
-                )
-            {
-                let kv_store_entry_value = IndexedScryptoValue::from_slice(&value).unwrap();
-                let vault_id = kv_store_entry_value.vault_ids.iter().next().unwrap();
-                let vault = test_runner.inspect_vault(vault_id.clone()).unwrap();
-                return vault.0.amount();
-            }
-        }
-    }
-    return 0.into();
-}
-
 #[test]
 fn test_fee_accounting_success() {
     // Arrange
@@ -215,8 +186,16 @@ fn test_fee_accounting_success() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
-    let account1_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
-    let account2_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
+    let account1_balance = test_runner
+        .get_component_resources(account1)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
+    let account2_balance = test_runner
+        .get_component_resources(account2)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -235,8 +214,16 @@ fn test_fee_accounting_success() {
 
     // Assert
     receipt.expect_commit_success();
-    let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
-    let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
+    let account1_new_balance = test_runner
+        .get_component_resources(account1)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
+    let account2_new_balance = test_runner
+        .get_component_resources(account2)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
     let summary = &receipt.execution.fee_summary;
     assert_eq!(
         account1_new_balance,
@@ -255,8 +242,16 @@ fn test_fee_accounting_failure() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
-    let account1_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
-    let account2_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
+    let account1_balance = test_runner
+        .get_component_resources(account1)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
+    let account2_balance = test_runner
+        .get_component_resources(account2)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -283,8 +278,16 @@ fn test_fee_accounting_failure() {
             ))
         )
     });
-    let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
-    let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
+    let account1_new_balance = test_runner
+        .get_component_resources(account1)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
+    let account2_new_balance = test_runner
+        .get_component_resources(account2)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
     let summary = &receipt.execution.fee_summary;
     assert_eq!(
         account1_new_balance,
@@ -301,7 +304,11 @@ fn test_fee_accounting_rejection() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account1) = test_runner.new_allocated_account();
-    let account1_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
+    let account1_balance = test_runner
+        .get_component_resources(account1)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -314,7 +321,11 @@ fn test_fee_accounting_rejection() {
 
     // Assert
     receipt.expect_rejection();
-    let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
+    let account1_new_balance = test_runner
+        .get_component_resources(account1)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
     assert_eq!(account1_new_balance, account1_balance);
 }
 
@@ -325,8 +336,16 @@ fn test_contingent_fee_accounting_success() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (public_key2, _, account2) = test_runner.new_allocated_account();
-    let account1_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
-    let account2_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
+    let account1_balance = test_runner
+        .get_component_resources(account1)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
+    let account2_balance = test_runner
+        .get_component_resources(account2)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -343,8 +362,16 @@ fn test_contingent_fee_accounting_success() {
 
     // Assert
     receipt.expect_commit_success();
-    let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
-    let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
+    let account1_new_balance = test_runner
+        .get_component_resources(account1)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
+    let account2_new_balance = test_runner
+        .get_component_resources(account2)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
     let summary = &receipt.execution.fee_summary;
     let effective_price =
         summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
@@ -363,8 +390,16 @@ fn test_contingent_fee_accounting_failure() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (public_key2, _, account2) = test_runner.new_allocated_account();
-    let account1_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
-    let account2_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
+    let account1_balance = test_runner
+        .get_component_resources(account1)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
+    let account2_balance = test_runner
+        .get_component_resources(account2)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -389,8 +424,16 @@ fn test_contingent_fee_accounting_failure() {
             ))
         )
     });
-    let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
-    let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
+    let account1_new_balance = test_runner
+        .get_component_resources(account1)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
+    let account2_new_balance = test_runner
+        .get_component_resources(account2)
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap();
     let summary = &receipt.execution.fee_summary;
     let effective_price =
         summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;

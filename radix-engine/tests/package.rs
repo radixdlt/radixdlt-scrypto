@@ -41,7 +41,7 @@ fn missing_memory_should_cause_error() {
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package(code, HashMap::new())
+        .publish_package_no_owner(code, HashMap::new())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -137,7 +137,7 @@ fn test_basic_package() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package(code, HashMap::new())
+        .publish_package_no_owner(code, HashMap::new())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -169,7 +169,7 @@ fn test_basic_package_missing_export() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package(code, blueprints)
+        .publish_package_no_owner(code, blueprints)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
