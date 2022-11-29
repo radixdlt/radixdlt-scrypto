@@ -241,6 +241,7 @@ pub enum SubstateOffset {
     FeeReserve(FeeReserveOffset),
     Component(ComponentOffset),
     AccessRules(AccessRulesOffset),
+    VaultAccessRules(AccessRulesOffset),
     Metadata(MetadataOffset),
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),

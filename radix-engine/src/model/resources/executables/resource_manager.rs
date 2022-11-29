@@ -4,9 +4,10 @@ use crate::engine::{
     ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{
-    BucketSubstate, GlobalAddressSubstate, InvokeError, MethodAccessRuleMethod, NonFungible,
-    NonFungibleStore, NonFungibleSubstate, Resource, ResourceManagerSubstate, VaultRuntimeSubstate,
+    AccessRulesSubstate, BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible,
+    NonFungibleSubstate, Resource, VaultRuntimeSubstate,
 };
+use crate::model::{NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
 use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::{
@@ -14,9 +15,10 @@ use radix_engine_interface::api::types::{
     RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset,
     SubstateOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::dec;
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::AccessRule::{AllowAll, DenyAll};
+use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::model::*;
 use scrypto::resource::SysBucket;
 
@@ -48,12 +50,11 @@ impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0));
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
             ResourceManagerFunction::BurnBucket,
         )));
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -79,12 +80,11 @@ impl ExecutableInvocation for ResourceManagerCreateInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let call_frame_update = CallFrameUpdate::empty();
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
             ResourceManagerFunction::Create,
         )));
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -93,15 +93,14 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
 
     fn main<Y>(
-        self,
+        mut self,
         api: &mut Y,
     ) -> Result<((ResourceAddress, Option<Bucket>), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + Invokable<ScryptoInvocation>,
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
-
-        let underlying_node_id = if matches!(self.resource_type, ResourceType::NonFungible) {
+        let resource_manager_substate = if matches!(self.resource_type, ResourceType::NonFungible) {
             let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
             api.create_node(
                 nf_store_node_id,
@@ -112,7 +111,6 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             let mut resource_manager = ResourceManagerSubstate::new(
                 self.resource_type,
                 self.metadata,
-                self.access_rules,
                 Some(nf_store_id),
                 global_node_id.into(),
             )
@@ -148,14 +146,11 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
                 }
             }
 
-            let node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
-            api.create_node(node_id, RENode::ResourceManager(resource_manager))?;
-            node_id
+            resource_manager
         } else {
             let mut resource_manager = ResourceManagerSubstate::new(
                 self.resource_type,
                 self.metadata,
-                self.access_rules,
                 None,
                 global_node_id.into(),
             )
@@ -194,10 +189,222 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
                 }
             }
 
-            let node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
-            api.create_node(node_id, RENode::ResourceManager(resource_manager))?;
-            node_id
+            resource_manager
         };
+
+        let (mint_access_rule, mint_mutability) =
+            self.access_rules.remove(&Mint).unwrap_or((DenyAll, LOCKED));
+        let (burn_access_rule, burn_mutability) =
+            self.access_rules.remove(&Burn).unwrap_or((DenyAll, LOCKED));
+        let (update_metadata_access_rule, update_metadata_mutability) = self
+            .access_rules
+            .remove(&UpdateMetadata)
+            .unwrap_or((AllowAll, LOCKED));
+        let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) = self
+            .access_rules
+            .remove(&UpdateNonFungibleData)
+            .unwrap_or((AllowAll, LOCKED));
+
+        let mut access_rules = AccessRules::new();
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::Mint,
+            ))),
+            mint_access_rule,
+            mint_mutability.into(),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::Burn,
+            ))),
+            burn_access_rule,
+            burn_mutability.into(),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateMetadata,
+            ))),
+            update_metadata_access_rule,
+            update_metadata_mutability.into(),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateNonFungibleData,
+            ))),
+            update_non_fungible_data_access_rule,
+            update_non_fungible_data_mutability.into(),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::CreateBucket,
+            ))),
+            AllowAll,
+            DenyAll,
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::GetMetadata,
+            ))),
+            AllowAll,
+            DenyAll,
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::GetResourceType,
+            ))),
+            AllowAll,
+            DenyAll,
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::GetTotalSupply,
+            ))),
+            AllowAll,
+            DenyAll,
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::CreateVault,
+            ))),
+            AllowAll,
+            DenyAll,
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::NonFungibleExists,
+            ))),
+            AllowAll,
+            DenyAll,
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::GetNonFungible,
+            ))),
+            AllowAll,
+            DenyAll,
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateVaultAuth,
+            ))),
+            AllowAll, // Access verification occurs within method
+            DenyAll,
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::LockAuth,
+            ))),
+            AllowAll, // Access verification occurs within method
+            DenyAll,
+        );
+
+        let access_rules_substate = AccessRulesSubstate {
+            access_rules: vec![access_rules],
+        };
+
+        let (deposit_access_rule, deposit_mutability) = self
+            .access_rules
+            .remove(&ResourceMethodAuthKey::Deposit)
+            .unwrap_or((AllowAll, LOCKED));
+        let (withdraw_access_rule, withdraw_mutability) = self
+            .access_rules
+            .remove(&ResourceMethodAuthKey::Withdraw)
+            .unwrap_or((AllowAll, LOCKED));
+        let (recall_access_rule, recall_mutability) = self
+            .access_rules
+            .remove(&ResourceMethodAuthKey::Recall)
+            .unwrap_or((DenyAll, LOCKED));
+
+        let mut vault_access_rules = AccessRules::new();
+        vault_access_rules.set_group_access_rule_and_mutability(
+            "withdraw".to_string(),
+            withdraw_access_rule,
+            withdraw_mutability.into(),
+        );
+        vault_access_rules.set_group_access_rule_and_mutability(
+            "recall".to_string(),
+            recall_access_rule,
+            recall_mutability.into(),
+        );
+        vault_access_rules.set_group_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Take))),
+            "withdraw".to_string(),
+            DenyAll,
+        );
+        vault_access_rules.set_group_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+                VaultMethod::TakeNonFungibles,
+            ))),
+            "withdraw".to_string(),
+            DenyAll,
+        );
+        vault_access_rules.set_group_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::LockFee))),
+            "withdraw".to_string(),
+            DenyAll,
+        );
+
+        vault_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put))),
+            deposit_access_rule,
+            deposit_mutability.into(),
+        );
+        vault_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+                VaultMethod::GetAmount,
+            ))),
+            AllowAll,
+            DenyAll,
+        );
+        vault_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+                VaultMethod::GetResourceAddress,
+            ))),
+            AllowAll,
+            DenyAll,
+        );
+        vault_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+                VaultMethod::GetNonFungibleIds,
+            ))),
+            AllowAll,
+            DenyAll,
+        );
+        vault_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+                VaultMethod::CreateProof,
+            ))),
+            AllowAll,
+            DenyAll,
+        );
+        vault_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+                VaultMethod::CreateProofByAmount,
+            ))),
+            AllowAll,
+            DenyAll,
+        );
+        vault_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+                VaultMethod::CreateProofByIds,
+            ))),
+            AllowAll,
+            DenyAll,
+        );
+
+        let vault_access_rules_substate = AccessRulesSubstate {
+            access_rules: vec![vault_access_rules],
+        };
+
+        let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
+        api.create_node(
+            underlying_node_id,
+            RENode::ResourceManager(
+                resource_manager_substate,
+                access_rules_substate,
+                vault_access_rules_substate,
+            ),
+        )?;
 
         api.create_node(
             global_node_id,
@@ -254,7 +461,6 @@ impl ExecutableInvocation for ResourceManagerBurnInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0));
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -265,10 +471,10 @@ impl ExecutableInvocation for ResourceManagerBurnInvocation {
             ResolvedMethod::Native(NativeMethod::ResourceManager(ResourceManagerMethod::Burn)),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            ResourceManagerBurnExecutable(resolved_receiver.receiver, self.bucket),
-            input,
-        );
+        let executor = NativeExecutor(ResourceManagerBurnExecutable(
+            resolved_receiver.receiver,
+            self.bucket,
+        ));
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -334,16 +540,15 @@ impl NativeProcedure for ResourceManagerBurnExecutable {
     }
 }
 
-pub struct ResourceManagerUpdateAuthExecutable(RENodeId, ResourceMethodAuthKey, AccessRule);
+pub struct ResourceManagerUpdateVaultAuthExecutable(RENodeId, VaultMethodAuthKey, AccessRule);
 
-impl ExecutableInvocation for ResourceManagerUpdateAuthInvocation {
-    type Exec = NativeExecutor<ResourceManagerUpdateAuthExecutable>;
+impl ExecutableInvocation for ResourceManagerUpdateVaultAuthInvocation {
+    type Exec = NativeExecutor<ResourceManagerUpdateVaultAuthExecutable>;
 
     fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -352,59 +557,89 @@ impl ExecutableInvocation for ResourceManagerUpdateAuthInvocation {
         )?;
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateAuth,
+                ResourceManagerMethod::UpdateVaultAuth,
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            ResourceManagerUpdateAuthExecutable(
-                resolved_receiver.receiver,
-                self.method,
-                self.access_rule,
-            ),
-            input,
-        );
+        let executor = NativeExecutor(ResourceManagerUpdateVaultAuthExecutable(
+            resolved_receiver.receiver,
+            self.method,
+            self.access_rule,
+        ));
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for ResourceManagerUpdateAuthExecutable {
+// TODO: Figure out better place to do vault auth (or child node authorization)
+impl NativeProcedure for ResourceManagerUpdateVaultAuthExecutable {
     type Output = ();
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SystemApi + SysInvokableNative<RuntimeError>,
     {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let offset = SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules);
+        let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-        let method_entry = substate_mut
-            .resource_manager()
-            .authorization
-            .get_mut(&self.1)
-            .expect(&format!("Authorization for {:?} not specified", self.1));
-        method_entry
-            .main(MethodAccessRuleMethod::Update(self.2))
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+        // TODO: Figure out how to move this access check into more appropriate place
+        {
+            let node_ids = api.get_visible_node_ids()?;
+            let auth_zone_id = node_ids
+                .into_iter()
+                .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+                .expect("AuthZone does not exist");
+
+            let substate_ref = api.get_ref(handle)?;
+            let access_rules_substate = substate_ref.access_rules();
+
+            let access_rule = match self.1 {
+                Deposit => {
+                    let key = AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+                        VaultMethod::Put,
+                    )));
+                    access_rules_substate.access_rules[0].get_mutability(&key)
                 }
-                InvokeError::Downstream(runtime_error) => runtime_error,
+                Withdraw => access_rules_substate.access_rules[0].get_group_mutability("withdraw"),
+                Recall => access_rules_substate.access_rules[0].get_group_mutability("recall"),
+            }
+            .clone();
+
+            api.sys_invoke(AuthZoneAssertAccessRuleInvocation {
+                receiver: auth_zone_id.into(),
+                access_rule,
             })?;
+        }
+
+        let mut substate_mut = api.get_ref_mut(handle)?;
+        let access_rules_substate = substate_mut.access_rules();
+
+        match self.1 {
+            VaultMethodAuthKey::Deposit => {
+                let key =
+                    AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put)));
+                access_rules_substate.access_rules[0].set_method_access_rule(key, self.2);
+            }
+            VaultMethodAuthKey::Withdraw => {
+                let group_key = "withdraw".to_string();
+                access_rules_substate.access_rules[0].set_group_access_rule(group_key, self.2);
+            }
+            VaultMethodAuthKey::Recall => {
+                let group_key = "recall".to_string();
+                access_rules_substate.access_rules[0].set_group_access_rule(group_key, self.2);
+            }
+        }
 
         Ok(((), CallFrameUpdate::empty()))
     }
 }
 
-impl ExecutableInvocation for ResourceManagerLockAuthInvocation {
-    type Exec = NativeExecutor<ResourceManagerLockAuthExecutable>;
+impl ExecutableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
+    type Exec = NativeExecutor<ResourceManagerLockVaultAuthExecutable>;
 
     fn resolve<D: MethodDeref>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -417,40 +652,74 @@ impl ExecutableInvocation for ResourceManagerLockAuthInvocation {
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            ResourceManagerLockAuthExecutable(resolved_receiver.receiver, self.method),
-            input,
-        );
+        let executor = NativeExecutor(ResourceManagerLockVaultAuthExecutable(
+            resolved_receiver.receiver,
+            self.method,
+            self.mutability,
+        ));
         Ok((actor, call_frame_update, executor))
     }
 }
 
-pub struct ResourceManagerLockAuthExecutable(RENodeId, ResourceMethodAuthKey);
+pub struct ResourceManagerLockVaultAuthExecutable(RENodeId, VaultMethodAuthKey, AccessRule);
 
-impl NativeProcedure for ResourceManagerLockAuthExecutable {
+impl NativeProcedure for ResourceManagerLockVaultAuthExecutable {
     type Output = ();
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SystemApi + SysInvokableNative<RuntimeError>,
     {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let offset = SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules);
+        let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-        let method_entry = substate_mut
-            .resource_manager()
-            .authorization
-            .get_mut(&self.1)
-            .expect(&format!("Authorization for {:?} not specified", self.1));
-        method_entry
-            .main(MethodAccessRuleMethod::Lock())
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+        // TODO: Figure out how to move this access check into more appropriate place
+        {
+            let node_ids = api.get_visible_node_ids()?;
+            let auth_zone_id = node_ids
+                .into_iter()
+                .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+                .expect("AuthZone does not exist");
+
+            let substate_ref = api.get_ref(handle)?;
+            let access_rules_substate = substate_ref.access_rules();
+
+            let access_rule = match self.1 {
+                Deposit => {
+                    let key = AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+                        VaultMethod::Put,
+                    )));
+                    access_rules_substate.access_rules[0].get_mutability(&key)
                 }
-                InvokeError::Downstream(runtime_error) => runtime_error,
+                Withdraw => access_rules_substate.access_rules[0].get_group_mutability("withdraw"),
+                Recall => access_rules_substate.access_rules[0].get_group_mutability("recall"),
+            }
+            .clone();
+
+            api.sys_invoke(AuthZoneAssertAccessRuleInvocation {
+                receiver: auth_zone_id.into(),
+                access_rule,
             })?;
+        }
+
+        let mut substate_mut = api.get_ref_mut(handle)?;
+        let access_rules_substate = substate_mut.access_rules();
+
+        match self.1 {
+            Deposit => {
+                let key =
+                    AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put)));
+                access_rules_substate.access_rules[0].set_mutability(key, self.2);
+            }
+            Withdraw => {
+                let group_key = "withdraw".to_string();
+                access_rules_substate.access_rules[0].set_group_mutability(group_key, self.2);
+            }
+            Recall => {
+                let group_key = "recall".to_string();
+                access_rules_substate.access_rules[0].set_group_mutability(group_key, self.2);
+            }
+        }
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -463,7 +732,6 @@ impl ExecutableInvocation for ResourceManagerCreateVaultInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -476,10 +744,9 @@ impl ExecutableInvocation for ResourceManagerCreateVaultInvocation {
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            ResourceManagerCreateVaultExecutable(resolved_receiver.receiver),
-            input,
-        );
+        let executor = NativeExecutor(ResourceManagerCreateVaultExecutable(
+            resolved_receiver.receiver,
+        ));
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -521,7 +788,6 @@ impl ExecutableInvocation for ResourceManagerCreateBucketInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -534,10 +800,9 @@ impl ExecutableInvocation for ResourceManagerCreateBucketInvocation {
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            ResourceManagerCreateBucketExecutable(resolved_receiver.receiver),
-            input,
-        );
+        let executor = NativeExecutor(ResourceManagerCreateBucketExecutable(
+            resolved_receiver.receiver,
+        ));
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -579,7 +844,6 @@ impl ExecutableInvocation for ResourceManagerMintInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -590,10 +854,10 @@ impl ExecutableInvocation for ResourceManagerMintInvocation {
             ResolvedMethod::Native(NativeMethod::ResourceManager(ResourceManagerMethod::Mint)),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            ResourceManagerMintExecutable(resolved_receiver.receiver, self.mint_params),
-            input,
-        );
+        let executor = NativeExecutor(ResourceManagerMintExecutable(
+            resolved_receiver.receiver,
+            self.mint_params,
+        ));
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -677,7 +941,6 @@ impl ExecutableInvocation for ResourceManagerGetMetadataInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -690,10 +953,9 @@ impl ExecutableInvocation for ResourceManagerGetMetadataInvocation {
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            ResourceManagerGetMetadataExecutable(resolved_receiver.receiver),
-            input,
-        );
+        let executor = NativeExecutor(ResourceManagerGetMetadataExecutable(
+            resolved_receiver.receiver,
+        ));
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -727,7 +989,6 @@ impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -740,10 +1001,9 @@ impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            ResourceManagerGetResourceTypeExecutable(resolved_receiver.receiver),
-            input,
-        );
+        let executor = NativeExecutor(ResourceManagerGetResourceTypeExecutable(
+            resolved_receiver.receiver,
+        ));
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -777,7 +1037,6 @@ impl ExecutableInvocation for ResourceManagerGetTotalSupplyInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -790,10 +1049,9 @@ impl ExecutableInvocation for ResourceManagerGetTotalSupplyInvocation {
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            ResourceManagerGetTotalSupplyExecutable(resolved_receiver.receiver),
-            input,
-        );
+        let executor = NativeExecutor(ResourceManagerGetTotalSupplyExecutable(
+            resolved_receiver.receiver,
+        ));
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -823,7 +1081,6 @@ impl ExecutableInvocation for ResourceManagerUpdateMetadataInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -836,10 +1093,10 @@ impl ExecutableInvocation for ResourceManagerUpdateMetadataInvocation {
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            ResourceManagerUpdateMetadataExecutable(resolved_receiver.receiver, self.metadata),
-            input,
-        );
+        let executor = NativeExecutor(ResourceManagerUpdateMetadataExecutable(
+            resolved_receiver.receiver,
+            self.metadata,
+        ));
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -878,7 +1135,6 @@ impl ExecutableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -891,14 +1147,11 @@ impl ExecutableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            ResourceManagerUpdateNonFungibleDataExecutable(
-                resolved_receiver.receiver,
-                self.id,
-                self.data,
-            ),
-            input,
-        );
+        let executor = NativeExecutor(ResourceManagerUpdateNonFungibleDataExecutable(
+            resolved_receiver.receiver,
+            self.id,
+            self.data,
+        ));
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -959,7 +1212,6 @@ impl ExecutableInvocation for ResourceManagerNonFungibleExistsInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -972,10 +1224,10 @@ impl ExecutableInvocation for ResourceManagerNonFungibleExistsInvocation {
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            ResourceManagerNonFungibleExistsExecutable(resolved_receiver.receiver, self.id),
-            input,
-        );
+        let executor = NativeExecutor(ResourceManagerNonFungibleExistsExecutable(
+            resolved_receiver.receiver,
+            self.id,
+        ));
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -1022,7 +1274,6 @@ impl ExecutableInvocation for ResourceManagerGetNonFungibleInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -1035,10 +1286,10 @@ impl ExecutableInvocation for ResourceManagerGetNonFungibleInvocation {
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            ResourceManagerGetNonFungibleExecutable(resolved_receiver.receiver, self.id),
-            input,
-        );
+        let executor = NativeExecutor(ResourceManagerGetNonFungibleExecutable(
+            resolved_receiver.receiver,
+            self.id,
+        ));
         Ok((actor, call_frame_update, executor))
     }
 }

@@ -324,7 +324,7 @@ where
 
         // Filter
         self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
-            AuthModule::on_before_frame_start(&actor, &executor, system_api)
+            AuthModule::on_before_frame_start(&actor, system_api)
         })?;
 
         // New Call Frame pre-processing
@@ -342,7 +342,7 @@ where
             for m in &mut self.modules {
                 m.pre_execute_invocation(
                     &actor,
-                    executor.args(),
+                    &call_frame_update,
                     &mut self.current_frame,
                     &mut self.heap,
                     &mut self.track,
@@ -375,6 +375,7 @@ where
 
             for m in &mut self.modules {
                 m.post_execute_invocation(
+                    &self.prev_frame_stack.last().unwrap().actor,
                     &update,
                     &mut self.current_frame,
                     &mut self.heap,
@@ -599,9 +600,6 @@ where
 
 pub trait Executor {
     type Output: Debug;
-
-    // TODO: Remove
-    fn args(&self) -> &IndexedScryptoValue;
 
     fn execute<Y>(
         self,

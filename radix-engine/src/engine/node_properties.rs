@@ -150,6 +150,9 @@ impl VisibilityProperties {
                 SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => {
                     flags == LockFlags::read_only()
                 }
+                SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules) => {
+                    flags == LockFlags::read_only()
+                }
                 _ => false,
             },
             (ExecutionMode::ScryptoInterpreter, offset) => match offset {

@@ -129,7 +129,7 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
         let actor = REActor::Function(ResolvedFunction::Native(
             NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
         ));
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
