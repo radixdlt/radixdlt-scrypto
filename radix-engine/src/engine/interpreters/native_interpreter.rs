@@ -102,6 +102,15 @@ impl<N: NativeInvocation> Resolver<N> for NativeResolver {
                 // TODO: Move this logic into kernel
                 let resolved_receiver =
                     if let Some((derefed, derefed_lock)) = deref.deref(receiver)? {
+                        // TODO: refactor after explicit borrow global
+                        //
+                        // Note that we're passing both the global ref and the resolved ref to the callee as required
+                        // by `Package::set_royalty_config()`. The invocation passes package address, rather than package ID
+                        // to the callee, and the callee is loading substates using global.
+                        //
+                        // We will be able to revert this after implementing explicit "borrow_global" semantics. After which,
+                        // Scrypto can know the `PackageId` behind a `PackageAddress` and we can change the invocation to use
+                        // PackageId.
                         call_frame_update.node_refs_to_copy.insert(receiver);
                         call_frame_update.node_refs_to_copy.insert(derefed);
                         ResolvedReceiver::derefed(derefed, receiver, derefed_lock)
