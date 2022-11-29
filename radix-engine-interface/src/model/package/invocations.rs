@@ -12,6 +12,7 @@ use sbor::rust::string::String;
 pub struct PackagePublishNoOwnerInvocation {
     pub code: Blob,
     pub abi: Blob,
+    pub royalty_config: HashMap<String, RoyaltyConfig>,
     pub metadata: HashMap<String, String>,
 }
 
@@ -36,6 +37,7 @@ impl Into<NativeFnInvocation> for PackagePublishNoOwnerInvocation {
 pub struct PackagePublishWithOwnerInvocation {
     pub code: Blob,
     pub abi: Blob,
+    pub royalty_config: HashMap<String, RoyaltyConfig>,
     pub metadata: HashMap<String, String>,
 }
 

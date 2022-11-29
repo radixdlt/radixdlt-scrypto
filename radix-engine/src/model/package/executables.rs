@@ -77,7 +77,7 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
             ))
         })?;
         let package_royalty_config = PackageRoyaltyConfigSubstate {
-            royalty_config: HashMap::new(), // TODO: add user interface
+            royalty_config: self.royalty_config,
         };
         let package_royalty_accumulator = PackageRoyaltyAccumulatorSubstate {
             royalty: Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }),
@@ -153,7 +153,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
             ))
         })?;
         let package_royalty_config = PackageRoyaltyConfigSubstate {
-            royalty_config: HashMap::new(), // TODO: add user interface
+            royalty_config: self.royalty_config,
         };
         let package_royalty_accumulator = PackageRoyaltyAccumulatorSubstate {
             royalty: Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }),

@@ -20,7 +20,7 @@ use radix_engine_interface::constants::ACCOUNT_PACKAGE;
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
-use radix_engine_interface::model::{ResourceType, RoyaltyConfig};
+use radix_engine_interface::model::ResourceType;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
@@ -80,18 +80,16 @@ where
                 let node = RENode::Global(GlobalAddressSubstate::Component(component_id));
                 (node_id, node)
             }
-            ScryptoRENode::Component(package_address, blueprint_name, state) => {
-                let node_id = self.allocate_node_id(RENodeType::Component)?;
+            ScryptoRENode::Component(package_address, blueprint_name, royalty_config, state) => {
                 // Create component
+                let node_id = self.allocate_node_id(RENodeType::Component)?;
                 let node = RENode::Component(
                     ComponentInfoSubstate::new(package_address, blueprint_name),
                     ComponentStateSubstate::new(state),
                     AccessRulesSubstate {
                         access_rules: Vec::new(),
                     },
-                    ComponentRoyaltyConfigSubstate {
-                        royalty_config: RoyaltyConfig::default(), // TODO: add user interface
-                    },
+                    ComponentRoyaltyConfigSubstate { royalty_config },
                     ComponentRoyaltyAccumulatorSubstate {
                         royalty: Resource::new_empty(
                             RADIX_TOKEN,
