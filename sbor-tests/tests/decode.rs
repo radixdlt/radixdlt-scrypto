@@ -28,15 +28,15 @@ pub enum EmptyEnum {}
 fn test_decode_struct() {
     #[rustfmt::skip]
     let bytes = vec![
-        16, // struct type
+        33, // tuple type
         1,  // number of fields
         9, 3, 0, 0, 0, // field value
         
-        16, // struct type
+        33, // tuple type
         1,  // number of fields
         9, 3, 0, 0, 0, // field value
         
-        16, // struct type
+        33, // tuple type
         0,  // number of fields
     ];
 

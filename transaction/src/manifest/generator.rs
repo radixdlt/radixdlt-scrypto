@@ -31,7 +31,7 @@ use crate::validation::*;
 #[macro_export]
 macro_rules! args_from_value_vec {
     ($args: expr) => {{
-        let input_struct = ::sbor::SborValue::Struct { fields: $args };
+        let input_struct = ::sbor::SborValue::Tuple { fields: $args };
         ::radix_engine_interface::data::scrypto_encode(&input_struct).unwrap()
     }};
 }
@@ -1008,7 +1008,7 @@ fn generate_value(
         ast::Value::String(value) => Ok(SborValue::String {
             value: value.clone(),
         }),
-        ast::Value::Struct(fields) => Ok(SborValue::Struct {
+        ast::Value::Tuple(fields) => Ok(SborValue::Tuple {
             fields: generate_singletons(fields, None, resolver, bech32_decoder, blobs)?,
         }),
         ast::Value::Enum(discriminator, fields) => Ok(SborValue::Enum {
@@ -1024,9 +1024,6 @@ fn generate_value(
                 bech32_decoder,
                 blobs,
             )?,
-        }),
-        ast::Value::Tuple(elements) => Ok(SborValue::Tuple {
-            elements: generate_singletons(elements, None, resolver, bech32_decoder, blobs)?,
         }),
         ast::Value::PackageAddress(_) => {
             generate_package_address(value, bech32_decoder).map(|v| SborValue::Custom {
@@ -1153,7 +1150,6 @@ fn generate_type_id(ty: &ast::Type) -> ScryptoSborTypeId {
         ast::Type::U64 => SborTypeId::U64,
         ast::Type::U128 => SborTypeId::U128,
         ast::Type::String => SborTypeId::String,
-        ast::Type::Struct => SborTypeId::Struct,
         ast::Type::Enum => SborTypeId::Enum,
         ast::Type::Array => SborTypeId::Array,
         ast::Type::Tuple => SborTypeId::Tuple,
@@ -1278,8 +1274,8 @@ mod tests {
         generate_value_ok!(r#"1u8"#, SborValue::U8 { value: 1 });
         generate_value_ok!(r#"1u128"#, SborValue::U128 { value: 1 });
         generate_value_ok!(
-            r#"Struct(Bucket(1u32), Proof(2u32), "bar")"#,
-            SborValue::Struct {
+            r#"Tuple(Bucket(1u32), Proof(2u32), "bar")"#,
+            SborValue::Tuple {
                 fields: vec![
                     SborValue::Custom {
                         value: ScryptoCustomValue::Bucket(1)
@@ -1294,8 +1290,8 @@ mod tests {
             }
         );
         generate_value_ok!(
-            r#"Struct(Decimal("1.0"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"))"#,
-            SborValue::Struct {
+            r#"Tuple(Decimal("1.0"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"))"#,
+            SborValue::Tuple {
                 fields: vec![
                     SborValue::Custom {
                         value: ScryptoCustomValue::Decimal(Decimal::from_str("1.0").unwrap())
@@ -1311,7 +1307,7 @@ mod tests {
                 ]
             }
         );
-        generate_value_ok!(r#"Struct()"#, SborValue::Struct { fields: vec![] });
+        generate_value_ok!(r#"Tuple()"#, SborValue::Tuple { fields: vec![] });
         generate_value_ok!(
             r#"Enum("Variant", "abc")"#,
             SborValue::Enum {

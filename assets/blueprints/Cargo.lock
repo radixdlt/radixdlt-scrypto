@@ -914,6 +914,7 @@ dependencies = [
  "radix-engine-derive",
  "sbor",
  "scrypto-abi",
+ "serde",
  "sha2 0.10.6",
  "sha3",
  "strum",

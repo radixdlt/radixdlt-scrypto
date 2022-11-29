@@ -170,7 +170,6 @@ pub enum Type {
     String,
 
     /* Struct and enum */
-    Struct,
     Enum,
 
     /* [T; N] and (A, B, C) */
@@ -226,7 +225,6 @@ pub enum Value {
     U128(u128),
     String(String),
 
-    Struct(Vec<Value>),
     Enum(String, Vec<Value>),
     Array(Type, Vec<Value>),
     Tuple(Vec<Value>),
@@ -280,7 +278,6 @@ impl Value {
             Value::U64(_) => Type::U64,
             Value::U128(_) => Type::U128,
             Value::String(_) => Type::String,
-            Value::Struct(_) => Type::Struct,
             Value::Enum(_, _) => Type::Enum,
             Value::Array(_, _) => Type::Array,
             Value::Tuple(_) => Type::Tuple,

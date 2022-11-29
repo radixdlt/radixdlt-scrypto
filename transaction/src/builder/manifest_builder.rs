@@ -35,7 +35,7 @@ macro_rules! args_from_bytes_vec {
         for arg in $args {
             fields.push(::scrypto::data::scrypto_decode(&arg).unwrap());
         }
-        let input_struct = ::scrypto::data::ScryptoValue::Struct { fields };
+        let input_struct = ::scrypto::data::ScryptoValue::Tuple { fields };
         ::scrypto::data::scrypto_encode(&input_struct).unwrap()
     }};
 }
@@ -406,7 +406,7 @@ impl ManifestBuilder {
         for arg in arguments {
             fields.push(scrypto_decode(&arg).unwrap());
         }
-        let input_struct = ScryptoValue::Struct { fields };
+        let input_struct = ScryptoValue::Tuple { fields };
         let bytes = scrypto_encode(&input_struct).unwrap();
 
         Ok(self
