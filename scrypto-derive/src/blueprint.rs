@@ -483,6 +483,10 @@ fn generate_stubs(
                 self.component.add_access_check(access_rules);
                 self
             }
+            fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) -> &mut Self {
+                self.component.set_royalty_config(royalty_config);
+                self
+            }
             fn globalize(self) -> ComponentAddress {
                 self.component.globalize()
             }
@@ -673,6 +677,10 @@ mod tests {
                         self.component.add_access_check(access_rules);
                         self
                     }
+                    fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) -> &mut Self {
+                        self.component.set_royalty_config(royalty_config);
+                        self
+                    }
                     fn globalize(self) -> ComponentAddress {
                         self.component.globalize()
                     }
@@ -754,6 +762,10 @@ mod tests {
                     }
                     fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
                         self.component.add_access_check(access_rules);
+                        self
+                    }
+                    fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) -> &mut Self {
+                        self.component.set_royalty_config(royalty_config);
                         self
                     }
                     fn globalize(self) -> ComponentAddress {

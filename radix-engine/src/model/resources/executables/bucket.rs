@@ -1,12 +1,14 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, LockFlags, NativeExecutable, NativeInvocation,
-    NativeInvocationInfo, RENode, RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
+    NativeExecutor, NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver,
+    RuntimeError, SystemApi,
 };
 use crate::model::{BucketSubstate, ProofError, ResourceOperationError};
 use crate::types::*;
 use radix_engine_interface::api::types::{
     BucketMethod, BucketOffset, GlobalAddress, NativeMethod, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,23 +24,39 @@ pub enum BucketError {
     MethodNotFound(BucketMethod),
 }
 
-impl NativeExecutable for BucketTakeInvocation {
-    type NativeOutput = Bucket;
+impl ExecutableInvocation for BucketTakeInvocation {
+    type Exec = NativeExecutor<Self>;
 
-    fn execute<Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let receiver = RENodeId::Bucket(self.receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Bucket(BucketMethod::Take)),
+            ResolvedReceiver::new(receiver),
+        );
+        let executor = NativeExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProcedure for BucketTakeInvocation {
+    type Output = Bucket;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::Bucket(input.receiver);
+        let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
-        let container = bucket.take(input.amount).map_err(|e| {
+        let container = bucket.take(self.amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceOperationError(e),
             ))
@@ -53,30 +71,39 @@ impl NativeExecutable for BucketTakeInvocation {
     }
 }
 
-impl NativeInvocation for BucketTakeInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Bucket(BucketMethod::Take),
-            RENodeId::Bucket(self.receiver),
-            CallFrameUpdate::empty(),
-        )
+impl ExecutableInvocation for BucketCreateProofInvocation {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let receiver = RENodeId::Bucket(self.receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Bucket(BucketMethod::CreateProof)),
+            ResolvedReceiver::new(receiver),
+        );
+        let executor = NativeExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for BucketCreateProofInvocation {
-    type NativeOutput = Proof;
+impl NativeProcedure for BucketCreateProofInvocation {
+    type Output = Proof;
 
-    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::Bucket(input.receiver);
+        let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
-        let proof = bucket.create_proof(input.receiver).map_err(|e| {
+        let proof = bucket.create_proof(self.receiver).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
                 e,
             )))
@@ -90,33 +117,39 @@ impl NativeExecutable for BucketCreateProofInvocation {
     }
 }
 
-impl NativeInvocation for BucketCreateProofInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Bucket(BucketMethod::CreateProof),
-            RENodeId::Bucket(self.receiver),
-            CallFrameUpdate::empty(),
-        )
+impl ExecutableInvocation for BucketTakeNonFungiblesInvocation {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let receiver = RENodeId::Bucket(self.receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Bucket(BucketMethod::TakeNonFungibles)),
+            ResolvedReceiver::new(receiver),
+        );
+        let executor = NativeExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for BucketTakeNonFungiblesInvocation {
-    type NativeOutput = Bucket;
+impl NativeProcedure for BucketTakeNonFungiblesInvocation {
+    type Output = Bucket;
 
-    fn execute<Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::Bucket(input.receiver);
+        let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
-        let container = bucket.take_non_fungibles(&input.ids).map_err(|e| {
+        let container = bucket.take_non_fungibles(&self.ids).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceOperationError(e),
             ))
@@ -131,30 +164,38 @@ impl NativeExecutable for BucketTakeNonFungiblesInvocation {
     }
 }
 
-impl NativeInvocation for BucketTakeNonFungiblesInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Bucket(BucketMethod::TakeNonFungibles),
-            RENodeId::Bucket(self.receiver),
-            CallFrameUpdate::empty(),
-        )
+impl ExecutableInvocation for BucketGetNonFungibleIdsInvocation {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let receiver = RENodeId::Bucket(self.receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Bucket(BucketMethod::GetNonFungibleIds)),
+            ResolvedReceiver::new(receiver),
+        );
+        let executor = NativeExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for BucketGetNonFungibleIdsInvocation {
-    type NativeOutput = BTreeSet<NonFungibleId>;
+impl NativeProcedure for BucketGetNonFungibleIdsInvocation {
+    type Output = BTreeSet<NonFungibleId>;
 
-    fn execute<Y>(
-        input: Self,
+    fn main<Y>(
+        self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::Bucket(input.receiver);
+        let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
-
         let substate_ref = system_api.get_ref(bucket_handle)?;
         let bucket = substate_ref.bucket();
         let ids = bucket.total_ids().map_err(|e| {
@@ -167,27 +208,33 @@ impl NativeExecutable for BucketGetNonFungibleIdsInvocation {
     }
 }
 
-impl NativeInvocation for BucketGetNonFungibleIdsInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Bucket(BucketMethod::GetNonFungibleIds),
-            RENodeId::Bucket(self.receiver),
-            CallFrameUpdate::empty(),
-        )
+impl ExecutableInvocation for BucketGetAmountInvocation {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let receiver = RENodeId::Bucket(self.receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Bucket(BucketMethod::GetAmount)),
+            ResolvedReceiver::new(receiver),
+        );
+        let executor = NativeExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for BucketGetAmountInvocation {
-    type NativeOutput = Decimal;
+impl NativeProcedure for BucketGetAmountInvocation {
+    type Output = Decimal;
 
-    fn execute<Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::Bucket(input.receiver);
+        let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
 
@@ -197,29 +244,41 @@ impl NativeExecutable for BucketGetAmountInvocation {
     }
 }
 
-impl NativeInvocation for BucketGetAmountInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Bucket(BucketMethod::GetAmount),
-            RENodeId::Bucket(self.receiver),
-            CallFrameUpdate::empty(),
-        )
+impl ExecutableInvocation for BucketPutInvocation {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let receiver = RENodeId::Bucket(self.receiver);
+        let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        call_frame_update
+            .nodes_to_move
+            .push(RENodeId::Bucket(self.bucket.0));
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Bucket(BucketMethod::Put)),
+            ResolvedReceiver::new(receiver),
+        );
+        let executor = NativeExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for BucketPutInvocation {
-    type NativeOutput = ();
+impl NativeProcedure for BucketPutInvocation {
+    type Output = ();
 
-    fn execute<Y>(input: Self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::Bucket(input.receiver);
+        let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let other_bucket = system_api
-            .drop_node(RENodeId::Bucket(input.bucket.0))?
+            .drop_node(RENodeId::Bucket(self.bucket.0))?
             .into();
         let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
@@ -233,27 +292,33 @@ impl NativeExecutable for BucketPutInvocation {
     }
 }
 
-impl NativeInvocation for BucketPutInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Bucket(BucketMethod::Put),
-            RENodeId::Bucket(self.receiver),
-            CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0)),
-        )
+impl ExecutableInvocation for BucketGetResourceAddressInvocation {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let input = IndexedScryptoValue::from_typed(&self);
+        let receiver = RENodeId::Bucket(self.receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Bucket(BucketMethod::GetResourceAddress)),
+            ResolvedReceiver::new(receiver),
+        );
+        let executor = NativeExecutor(self, input);
+        Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeExecutable for BucketGetResourceAddressInvocation {
-    type NativeOutput = ResourceAddress;
+impl NativeProcedure for BucketGetResourceAddressInvocation {
+    type Output = ResourceAddress;
 
-    fn execute<Y>(
-        input: Self,
-        system_api: &mut Y,
-    ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, system_api: &mut Y) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let node_id = RENodeId::Bucket(input.receiver);
+        let node_id = RENodeId::Bucket(self.receiver);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
         let bucket_handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
 
@@ -265,15 +330,5 @@ impl NativeExecutable for BucketGetResourceAddressInvocation {
                 bucket.resource_address(),
             ))),
         ))
-    }
-}
-
-impl NativeInvocation for BucketGetResourceAddressInvocation {
-    fn info(&self) -> NativeInvocationInfo {
-        NativeInvocationInfo::Method(
-            NativeMethod::Bucket(BucketMethod::GetResourceAddress),
-            RENodeId::Bucket(self.receiver),
-            CallFrameUpdate::empty(),
-        )
     }
 }

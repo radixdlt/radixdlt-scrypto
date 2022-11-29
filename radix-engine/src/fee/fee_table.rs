@@ -1,7 +1,8 @@
 use radix_engine_interface::api::types::{
-    AccessRulesMethod, AuthZoneMethod, BucketMethod, EpochManagerFunction, EpochManagerMethod,
-    NativeFunction, NativeMethod, PackageFunction, ProofMethod, ResourceManagerFunction,
-    ResourceManagerMethod, TransactionProcessorFunction, VaultMethod, WorktopMethod,
+    AccessRulesMethod, AuthZoneStackMethod, BucketMethod, ComponentMethod, EpochManagerFunction,
+    EpochManagerMethod, MetadataMethod, NativeFunction, NativeMethod, PackageFunction,
+    PackageMethod, ProofMethod, ResourceManagerFunction, ResourceManagerMethod,
+    TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
@@ -154,7 +155,8 @@ impl FeeTable {
                 }
             }
             NativeFunction::Package(package_fn) => match package_fn {
-                PackageFunction::Publish => self.fixed_low + input.raw.len() as u32 * 2,
+                PackageFunction::PublishNoOwner => self.fixed_low + input.raw.len() as u32 * 2,
+                PackageFunction::PublishWithOwner => self.fixed_low + input.raw.len() as u32 * 2,
             },
             NativeFunction::EpochManager(system_ident) => match system_ident {
                 EpochManagerFunction::Create => self.fixed_low,
@@ -174,15 +176,15 @@ impl FeeTable {
         _input: &IndexedScryptoValue,
     ) -> u32 {
         match native_method {
-            NativeMethod::AuthZone(auth_zone_ident) => {
+            NativeMethod::AuthZoneStack(auth_zone_ident) => {
                 match auth_zone_ident {
-                    AuthZoneMethod::Pop => self.fixed_low,
-                    AuthZoneMethod::Push => self.fixed_low,
-                    AuthZoneMethod::CreateProof => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
-                    AuthZoneMethod::CreateProofByAmount => self.fixed_high,
-                    AuthZoneMethod::CreateProofByIds => self.fixed_high,
-                    AuthZoneMethod::Clear => self.fixed_high,
-                    AuthZoneMethod::Drain => self.fixed_high,
+                    AuthZoneStackMethod::Pop => self.fixed_low,
+                    AuthZoneStackMethod::Push => self.fixed_low,
+                    AuthZoneStackMethod::CreateProof => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
+                    AuthZoneStackMethod::CreateProofByAmount => self.fixed_high,
+                    AuthZoneStackMethod::CreateProofByIds => self.fixed_high,
+                    AuthZoneStackMethod::Clear => self.fixed_high,
+                    AuthZoneStackMethod::Drain => self.fixed_high,
                 }
             }
             NativeMethod::EpochManager(system_ident) => match system_ident {
@@ -231,7 +233,16 @@ impl FeeTable {
                 WorktopMethod::Drain => self.fixed_low,
             },
             NativeMethod::AccessRules(component_ident) => match component_ident {
-                AccessRulesMethod::AddAccessCheck => self.fixed_medium,
+                AccessRulesMethod::AddAccessCheck => self.fixed_low,
+            },
+            NativeMethod::Metadata(metadata_method) => match metadata_method {
+                MetadataMethod::Set => self.fixed_low,
+            },
+            NativeMethod::Component(method_ident) => match method_ident {
+                ComponentMethod::SetRoyaltyConfig => self.fixed_medium,
+            },
+            NativeMethod::Package(method_ident) => match method_ident {
+                PackageMethod::SetRoyaltyConfig => self.fixed_medium,
             },
             NativeMethod::Vault(vault_ident) => {
                 match vault_ident {

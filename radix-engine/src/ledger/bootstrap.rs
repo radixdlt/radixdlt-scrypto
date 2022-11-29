@@ -35,6 +35,7 @@ pub struct GenesisReceipt {
     pub faucet_component: ComponentAddress,
     pub epoch_manager: SystemAddress,
     pub eddsa_ed25519_token: ResourceAddress,
+    pub entity_owner_token: ResourceAddress,
 }
 
 pub fn create_genesis() -> SystemTransaction {
@@ -185,6 +186,28 @@ pub fn create_genesis() -> SystemTransaction {
         }
     };
 
+    let create_entity_owner_token = {
+        let metadata: HashMap<String, String> = HashMap::new();
+        let mut access_rules = HashMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        let initial_supply: Option<MintParams> = None;
+
+        // TODO: Create token at a specific address
+        Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
+            args: args!(
+                ResourceType::NonFungible,
+                metadata,
+                access_rules,
+                initial_supply
+            ),
+        }
+    };
+
     let manifest = TransactionManifest {
         instructions: vec![
             create_faucet_package,
@@ -196,6 +219,7 @@ pub fn create_genesis() -> SystemTransaction {
             create_xrd_faucet,
             create_epoch_manager,
             create_eddsa_ed25519_token,
+            create_entity_owner_token,
         ],
         blobs,
     };
@@ -216,6 +240,8 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
     let epoch_manager: SystemAddress = scrypto_decode(&invoke_result[7]).unwrap();
     let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) =
         scrypto_decode(&invoke_result[8]).unwrap();
+    let (entity_owner_token, _bucket): (ResourceAddress, Option<Bucket>) =
+        scrypto_decode(&invoke_result[9]).unwrap();
 
     GenesisReceipt {
         faucet_package,
@@ -226,6 +252,7 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
         faucet_component,
         epoch_manager,
         eddsa_ed25519_token,
+        entity_owner_token,
     }
 }
 
@@ -251,7 +278,9 @@ where
 
         let genesis_transaction = create_genesis();
         let mut fee_reserve = SystemLoanFeeReserve::default();
-        fee_reserve.credit(GENESIS_CREATION_CREDIT);
+        fee_reserve
+            .credit_cost_units(GENESIS_CREATION_CREDIT)
+            .unwrap();
 
         let transaction_receipt = execute_transaction_with_fee_reserve(
             substate_store,
@@ -291,7 +320,9 @@ mod tests {
         let substate_store = TypedInMemorySubstateStore::new();
         let genesis_transaction = create_genesis();
         let mut fee_reserve = SystemLoanFeeReserve::default();
-        fee_reserve.credit(GENESIS_CREATION_CREDIT);
+        fee_reserve
+            .credit_cost_units(GENESIS_CREATION_CREDIT)
+            .unwrap();
 
         let transaction_receipt = execute_transaction_with_fee_reserve(
             &substate_store,
@@ -313,5 +344,6 @@ mod tests {
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
         assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
         assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
+        assert_eq!(genesis_receipt.entity_owner_token, ENTITY_OWNER_TOKEN);
     }
 }

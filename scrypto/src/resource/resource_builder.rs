@@ -74,6 +74,11 @@ impl FungibleResourceBuilder {
         self
     }
 
+    pub fn recallable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
+        self.authorization.insert(Recall, (method_auth, mutability));
+        self
+    }
+
     pub fn restrict_withdraw(
         &mut self,
         method_auth: AccessRule,
@@ -162,6 +167,11 @@ impl NonFungibleResourceBuilder {
 
     pub fn burnable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
         self.authorization.insert(Burn, (method_auth, mutability));
+        self
+    }
+
+    pub fn recallable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
+        self.authorization.insert(Recall, (method_auth, mutability));
         self
     }
 

@@ -153,6 +153,7 @@ where
                 modules.push(Box::new(LoggerModule::new()));
             }
             modules.push(Box::new(CostingModule::default()));
+            modules.push(Box::new(RoyaltyModule::default()));
             modules.push(Box::new(ExecutionTraceModule::new(
                 execution_config.max_sys_call_trace_depth,
             )));

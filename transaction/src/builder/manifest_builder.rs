@@ -2,9 +2,9 @@ use radix_engine_interface::abi;
 use radix_engine_interface::abi::*;
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
-    ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
-    ScryptoPackage, ScryptoReceiver,
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, PackageFunction, ProofId,
+    RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent,
+    ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
 };
 use radix_engine_interface::constants::*;
 use radix_engine_interface::core::NetworkDefinition;
@@ -490,7 +490,7 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package.
-    pub fn publish_package(
+    pub fn publish_package_no_owner(
         &mut self,
         code: Vec<u8>,
         abi: HashMap<String, BlueprintAbi>,
@@ -505,6 +505,33 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::PublishPackage {
             code: Blob(code_hash),
             abi: Blob(abi_hash),
+        })
+        .0
+    }
+
+    pub fn publish_package_with_owner(
+        &mut self,
+        code: Vec<u8>,
+        abi: HashMap<String, BlueprintAbi>,
+    ) -> &mut Self {
+        let code_hash = hash(&code);
+        self.blobs.insert(code_hash, code);
+
+        let abi = scrypto_encode(&abi).unwrap();
+        let abi_hash = hash(&abi);
+        self.blobs.insert(abi_hash, abi);
+
+        self.add_instruction(Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+                function_name: PackageFunction::PublishWithOwner.to_string(),
+            },
+            args: scrypto_encode(&PackagePublishWithOwnerInvocation {
+                code: Blob(code_hash),
+                abi: Blob(abi_hash),
+                metadata: HashMap::new(),
+            })
+            .unwrap(),
         })
         .0
     }

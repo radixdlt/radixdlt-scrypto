@@ -95,6 +95,7 @@ impl ScryptoVault for Vault {
             }
         }
 
+
         fn put(&mut self, bucket: Bucket) -> () {
             VaultPutInvocation {
                 receiver: self.0,

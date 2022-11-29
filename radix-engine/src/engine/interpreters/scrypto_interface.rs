@@ -1,43 +1,27 @@
 use crate::engine::{
-    Invokable, Kernel, KernelError, LockFlags, NativeInvocation, REActor, RENode, ResolvedFunction,
-    ResolvedMethod, ResolvedReceiver, RuntimeError, SystemApi,
+    Invokable, Kernel, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
+    ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
+use crate::model::Resource;
 use crate::model::{
-    AccessRulesSubstate, ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate,
-    KeyValueStore, RuntimeSubstate,
+    AccessRulesSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
+    ComponentRoyaltyConfigSubstate, ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore,
+    RuntimeSubstate,
 };
 use crate::types::ScryptoInvocation;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::{
-    EngineApi, ScryptoNativeInvocation, SysInvokableNative, SysNativeInvokable,
-};
+use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
     Level, LockHandle, RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent,
     ScryptoRENode, SubstateOffset,
 };
+use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::model::{ResourceType, RoyaltyConfig};
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-
-impl<'g, 's, W, R, N, T> SysNativeInvokable<N, RuntimeError> for Kernel<'g, 's, W, R>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-    N: ScryptoNativeInvocation<Output = T> + NativeInvocation<Output = T>,
-{
-    fn sys_invoke(&mut self, input: N) -> Result<T, RuntimeError> {
-        self.invoke(input)
-    }
-}
-
-impl<'g, 's, W, R> SysInvokableNative<RuntimeError> for Kernel<'g, 's, W, R>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-{
-}
 
 impl<'g, 's, W, R> EngineApi<RuntimeError> for Kernel<'g, 's, W, R>
 where
@@ -80,6 +64,15 @@ where
                     ComponentStateSubstate::new(state),
                     AccessRulesSubstate {
                         access_rules: Vec::new(),
+                    },
+                    ComponentRoyaltyConfigSubstate {
+                        royalty_config: RoyaltyConfig::default(), // TODO: add user interface
+                    },
+                    ComponentRoyaltyAccumulatorSubstate {
+                        royalty: Resource::new_empty(
+                            RADIX_TOKEN,
+                            ResourceType::Fungible { divisibility: 18 },
+                        ),
                     },
                 )
             }
