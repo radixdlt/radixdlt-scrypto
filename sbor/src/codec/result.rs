@@ -28,7 +28,7 @@ impl<X: CustomTypeId, Enc: Encoder<X>, T: Encode<X, Enc>, E: Encode<X, Enc>> Enc
     }
 }
 
-impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>, E: Decode<X, D> + TypeId<X>>
+impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>, E: Decode<X, D>>
     Decode<X, D> for Result<T, E>
 {
     #[inline]
