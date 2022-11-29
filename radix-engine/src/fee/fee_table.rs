@@ -4,7 +4,6 @@ use radix_engine_interface::api::types::{
     ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
     WorktopMethod,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 
 pub enum SystemApiCostingEntry {
     /*
@@ -146,7 +145,6 @@ impl FeeTable {
     pub fn run_native_function_cost(
         &self,
         native_function: &NativeFunction,
-        input: &IndexedScryptoValue,
     ) -> u32 {
         match native_function {
             NativeFunction::TransactionProcessor(transaction_processor_fn) => {
@@ -155,8 +153,8 @@ impl FeeTable {
                 }
             }
             NativeFunction::Package(package_fn) => match package_fn {
-                PackageFunction::PublishNoOwner => self.fixed_low + input.raw.len() as u32 * 2,
-                PackageFunction::PublishWithOwner => self.fixed_low + input.raw.len() as u32 * 2,
+                PackageFunction::PublishNoOwner => self.fixed_low,
+                PackageFunction::PublishWithOwner => self.fixed_low,
             },
             NativeFunction::EpochManager(system_ident) => match system_ident {
                 EpochManagerFunction::Create => self.fixed_low,
@@ -173,7 +171,6 @@ impl FeeTable {
     pub fn run_native_method_cost(
         &self,
         native_method: &NativeMethod,
-        _input: &IndexedScryptoValue,
     ) -> u32 {
         match native_method {
             NativeMethod::AuthZone(auth_zone_ident) => {

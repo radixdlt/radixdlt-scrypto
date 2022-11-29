@@ -1,7 +1,6 @@
 use core::fmt::Debug;
 use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId};
-use radix_engine_interface::data::IndexedScryptoValue;
 use scrypto::access_rule_node;
 use scrypto::rule;
 
@@ -43,12 +42,11 @@ impl ExecutableInvocation for PackagePublishNoOwnerInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let call_frame_update = CallFrameUpdate::empty();
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Package(
             PackageFunction::PublishNoOwner,
         )));
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -106,12 +104,11 @@ impl ExecutableInvocation for PackagePublishWithOwnerInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let call_frame_update = CallFrameUpdate::empty();
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Package(
             PackageFunction::PublishWithOwner,
         )));
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }

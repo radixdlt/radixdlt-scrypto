@@ -2,13 +2,9 @@ use crate::model::{
     convert, InvokeError, MethodAuthorization, NonFungible, Resource, ResourceManagerError,
 };
 use crate::types::*;
-use radix_engine_interface::api::types::{
-    BucketMethod, NonFungibleStoreId, VaultMethod,
-};
+use radix_engine_interface::api::types::NonFungibleStoreId;
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::AccessRule::*;
-use radix_engine_interface::model::ResourceMethodAuthKey::*;
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,9 +12,6 @@ use radix_engine_interface::model::*;
 pub struct ResourceManagerSubstate {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    //pub method_table: HashMap<ResourceManagerMethod, ResourceMethodRule>,
-    //pub vault_method_table: HashMap<VaultMethod, ResourceMethodRule>,
-    //pub authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule>,
     pub total_supply: Decimal,
     pub nf_store_id: Option<NonFungibleStoreId>,
     pub resource_address: ResourceAddress, // always set after instantiation
@@ -28,69 +21,12 @@ impl ResourceManagerSubstate {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        //mut auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         nf_store_id: Option<NonFungibleStoreId>,
         resource_address: ResourceAddress,
     ) -> Result<ResourceManagerSubstate, InvokeError<ResourceManagerError>> {
-        /*
-        let mut vault_method_table: HashMap<VaultMethod, ResourceMethodRule> = HashMap::new();
-        vault_method_table.insert(VaultMethod::LockFee, Protected(Withdraw));
-        vault_method_table.insert(VaultMethod::Take, Protected(Withdraw));
-        vault_method_table.insert(VaultMethod::TakeNonFungibles, Protected(Withdraw));
-
-        vault_method_table.insert(VaultMethod::Put, Protected(Deposit));
-        vault_method_table.insert(VaultMethod::GetAmount, Public);
-        vault_method_table.insert(VaultMethod::GetResourceAddress, Public);
-        vault_method_table.insert(VaultMethod::GetNonFungibleIds, Public);
-        vault_method_table.insert(VaultMethod::CreateProof, Public);
-        vault_method_table.insert(VaultMethod::CreateProofByAmount, Public);
-        vault_method_table.insert(VaultMethod::CreateProofByIds, Public);
-         */
-
-        /*
-        let mut method_table: HashMap<ResourceManagerMethod, ResourceMethodRule> = HashMap::new();
-        method_table.insert(ResourceManagerMethod::Mint, Protected(Mint));
-        method_table.insert(
-            ResourceManagerMethod::UpdateMetadata,
-            Protected(UpdateMetadata),
-        );
-        method_table.insert(ResourceManagerMethod::CreateBucket, Public);
-        method_table.insert(ResourceManagerMethod::GetMetadata, Public);
-        method_table.insert(ResourceManagerMethod::GetResourceType, Public);
-        method_table.insert(ResourceManagerMethod::GetTotalSupply, Public);
-        method_table.insert(ResourceManagerMethod::CreateVault, Public);
-        method_table.insert(ResourceManagerMethod::Burn, Protected(Burn));
-
-        // Non Fungible methods
-        method_table.insert(
-            ResourceManagerMethod::UpdateNonFungibleData,
-            Protected(UpdateNonFungibleData),
-        );
-        method_table.insert(ResourceManagerMethod::NonFungibleExists, Public);
-        method_table.insert(ResourceManagerMethod::GetNonFungible, Public);
-         */
-
-            /*
-        let mut authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule> = HashMap::new();
-        for (auth_entry_key, default) in [
-            (Mint, (DenyAll, LOCKED)),
-            (Burn, (DenyAll, LOCKED)),
-            (Withdraw, (AllowAll, LOCKED)),
-            (Deposit, (AllowAll, LOCKED)),
-            (Recall, (DenyAll, LOCKED)),
-            (UpdateMetadata, (DenyAll, LOCKED)),
-            (UpdateNonFungibleData, (DenyAll, LOCKED)),
-        ] {
-            let entry = access_rules.remove(&auth_entry_key).unwrap_or(default);
-            authorization.insert(auth_entry_key, MethodAccessRule::new(entry));
-        }
-         */
-
         let resource_manager = ResourceManagerSubstate {
             resource_type,
             metadata,
-            //vault_method_table,
-            //authorization,
             total_supply: 0.into(),
             nf_store_id,
             resource_address,
@@ -98,51 +34,6 @@ impl ResourceManagerSubstate {
 
         Ok(resource_manager)
     }
-
-    /*
-    pub fn get_auth(
-        &self,
-        method: ResourceManagerMethod,
-        args: &IndexedScryptoValue,
-    ) -> &MethodAuthorization {
-        match &method {
-            ResourceManagerMethod::UpdateAuth => {
-                // FIXME we can't assume the input always match the function identifier
-                // especially for the auth module code path
-                let input: ResourceManagerUpdateAuthInvocation = scrypto_decode(&args.raw).unwrap();
-                match self.authorization.get(&input.method) {
-                    None => &MethodAuthorization::Unsupported,
-                    Some(entry) => {
-                        entry.get_update_auth(MethodAccessRuleMethod::Update(input.access_rule))
-                    }
-                }
-            }
-            ResourceManagerMethod::LockAuth => {
-                // FIXME we can't assume the input always match the function identifier
-                // especially for the auth module code path
-                let input: ResourceManagerLockAuthInvocation = scrypto_decode(&args.raw).unwrap();
-                match self.authorization.get(&input.method) {
-                    None => &MethodAuthorization::Unsupported,
-                    Some(entry) => entry.get_update_auth(MethodAccessRuleMethod::Lock()),
-                }
-            }
-            ResourceManagerMethod::Burn => self
-                .authorization
-                .get(&ResourceMethodAuthKey::Burn)
-                .unwrap_or_else(|| panic!("Authorization for {:?} not specified", method))
-                .get_method_auth(),
-            _ => match self.method_table.get(&method) {
-                None => &MethodAuthorization::Unsupported,
-                Some(Public) => &MethodAuthorization::AllowAll,
-                Some(Protected(method)) => self
-                    .authorization
-                    .get(method)
-                    .unwrap_or_else(|| panic!("Authorization for {:?} not specified", method))
-                    .get_method_auth(),
-            },
-        }
-    }
-     */
 
     pub fn check_amount(&self, amount: Decimal) -> Result<(), InvokeError<ResourceManagerError>> {
         let divisibility = self.resource_type.divisibility();

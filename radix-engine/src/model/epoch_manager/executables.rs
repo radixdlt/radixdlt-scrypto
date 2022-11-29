@@ -13,7 +13,6 @@ use radix_engine_interface::api::types::{
     EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction,
     NativeMethod, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 use scrypto::access_rule_node;
 use scrypto::rule;
@@ -38,12 +37,11 @@ impl ExecutableInvocation for EpochManagerCreateInvocation {
     where
         Self: Sized,
     {
-        let input = IndexedScryptoValue::from_typed(&self);
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
             EpochManagerFunction::Create,
         )));
         let call_frame_update = CallFrameUpdate::empty();
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
 
         Ok((actor, call_frame_update, executor))
     }
@@ -115,7 +113,6 @@ impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
     where
         Self: Sized,
     {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
@@ -128,7 +125,6 @@ impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
         );
         let executor = NativeExecutor(
             EpochManagerGetCurrentEpochExecutable(resolved_receiver.receiver),
-            input,
         );
 
         Ok((actor, call_frame_update, executor))
@@ -162,7 +158,6 @@ impl ExecutableInvocation for EpochManagerSetEpochInvocation {
     where
         Self: Sized,
     {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
@@ -173,7 +168,6 @@ impl ExecutableInvocation for EpochManagerSetEpochInvocation {
         );
         let executor = NativeExecutor(
             EpochManagerSetEpochExecutable(resolved_receiver.receiver, self.epoch),
-            input,
         );
 
         Ok((actor, call_frame_update, executor))

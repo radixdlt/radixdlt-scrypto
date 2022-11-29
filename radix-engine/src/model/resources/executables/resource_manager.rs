@@ -4,7 +4,7 @@ use crate::engine::{
     ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{AccessRulesSubstate, BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource, VaultRuntimeSubstate};
-use crate::model::{MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate};
+use crate::model::{NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
 use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::{
@@ -12,7 +12,6 @@ use radix_engine_interface::api::types::{
     RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset,
     SubstateOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::dec;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
@@ -48,12 +47,11 @@ impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0));
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
             ResourceManagerFunction::BurnBucket,
         )));
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -79,12 +77,11 @@ impl ExecutableInvocation for ResourceManagerCreateInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let call_frame_update = CallFrameUpdate::empty();
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
             ResourceManagerFunction::Create,
         )));
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -401,7 +398,6 @@ impl ExecutableInvocation for ResourceManagerBurnInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0));
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -413,8 +409,7 @@ impl ExecutableInvocation for ResourceManagerBurnInvocation {
             resolved_receiver,
         );
         let executor = NativeExecutor(
-            ResourceManagerBurnExecutable(resolved_receiver.receiver, self.bucket),
-            input,
+            ResourceManagerBurnExecutable(resolved_receiver.receiver, self.bucket)
         );
         Ok((actor, call_frame_update, executor))
     }
@@ -490,7 +485,6 @@ impl ExecutableInvocation for ResourceManagerUpdateVaultAuthInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -508,8 +502,7 @@ impl ExecutableInvocation for ResourceManagerUpdateVaultAuthInvocation {
                 resolved_receiver.receiver,
                 self.method,
                 self.access_rule,
-            ),
-            input,
+            )
         );
         Ok((actor, call_frame_update, executor))
     }
@@ -586,7 +579,6 @@ impl ExecutableInvocation for ResourceManagerLockAuthInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -601,7 +593,6 @@ impl ExecutableInvocation for ResourceManagerLockAuthInvocation {
         );
         let executor = NativeExecutor(
             ResourceManagerLockAuthExecutable(resolved_receiver.receiver, self.method),
-            input,
         );
         Ok((actor, call_frame_update, executor))
     }
@@ -612,7 +603,7 @@ pub struct ResourceManagerLockAuthExecutable(RENodeId, ResourceMethodAuthKey);
 impl NativeProcedure for ResourceManagerLockAuthExecutable {
     type Output = ();
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, _system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -648,7 +639,6 @@ impl ExecutableInvocation for ResourceManagerCreateVaultInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -663,7 +653,6 @@ impl ExecutableInvocation for ResourceManagerCreateVaultInvocation {
         );
         let executor = NativeExecutor(
             ResourceManagerCreateVaultExecutable(resolved_receiver.receiver),
-            input,
         );
         Ok((actor, call_frame_update, executor))
     }
@@ -707,7 +696,6 @@ impl ExecutableInvocation for ResourceManagerCreateBucketInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -722,7 +710,6 @@ impl ExecutableInvocation for ResourceManagerCreateBucketInvocation {
         );
         let executor = NativeExecutor(
             ResourceManagerCreateBucketExecutable(resolved_receiver.receiver),
-            input,
         );
         Ok((actor, call_frame_update, executor))
     }
@@ -766,7 +753,6 @@ impl ExecutableInvocation for ResourceManagerMintInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -779,7 +765,6 @@ impl ExecutableInvocation for ResourceManagerMintInvocation {
         );
         let executor = NativeExecutor(
             ResourceManagerMintExecutable(resolved_receiver.receiver, self.mint_params),
-            input,
         );
         Ok((actor, call_frame_update, executor))
     }
@@ -865,7 +850,6 @@ impl ExecutableInvocation for ResourceManagerGetMetadataInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -880,7 +864,6 @@ impl ExecutableInvocation for ResourceManagerGetMetadataInvocation {
         );
         let executor = NativeExecutor(
             ResourceManagerGetMetadataExecutable(resolved_receiver.receiver),
-            input,
         );
         Ok((actor, call_frame_update, executor))
     }
@@ -915,7 +898,6 @@ impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -930,7 +912,6 @@ impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
         );
         let executor = NativeExecutor(
             ResourceManagerGetResourceTypeExecutable(resolved_receiver.receiver),
-            input,
         );
         Ok((actor, call_frame_update, executor))
     }
@@ -965,7 +946,6 @@ impl ExecutableInvocation for ResourceManagerGetTotalSupplyInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -980,7 +960,6 @@ impl ExecutableInvocation for ResourceManagerGetTotalSupplyInvocation {
         );
         let executor = NativeExecutor(
             ResourceManagerGetTotalSupplyExecutable(resolved_receiver.receiver),
-            input,
         );
         Ok((actor, call_frame_update, executor))
     }
@@ -1011,7 +990,6 @@ impl ExecutableInvocation for ResourceManagerUpdateMetadataInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -1026,7 +1004,6 @@ impl ExecutableInvocation for ResourceManagerUpdateMetadataInvocation {
         );
         let executor = NativeExecutor(
             ResourceManagerUpdateMetadataExecutable(resolved_receiver.receiver, self.metadata),
-            input,
         );
         Ok((actor, call_frame_update, executor))
     }
@@ -1066,7 +1043,6 @@ impl ExecutableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -1085,7 +1061,6 @@ impl ExecutableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
                 self.id,
                 self.data,
             ),
-            input,
         );
         Ok((actor, call_frame_update, executor))
     }
@@ -1147,7 +1122,6 @@ impl ExecutableInvocation for ResourceManagerNonFungibleExistsInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -1162,7 +1136,6 @@ impl ExecutableInvocation for ResourceManagerNonFungibleExistsInvocation {
         );
         let executor = NativeExecutor(
             ResourceManagerNonFungibleExistsExecutable(resolved_receiver.receiver, self.id),
-            input,
         );
         Ok((actor, call_frame_update, executor))
     }
@@ -1210,7 +1183,6 @@ impl ExecutableInvocation for ResourceManagerGetNonFungibleInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
@@ -1225,7 +1197,6 @@ impl ExecutableInvocation for ResourceManagerGetNonFungibleInvocation {
         );
         let executor = NativeExecutor(
             ResourceManagerGetNonFungibleExecutable(resolved_receiver.receiver, self.id),
-            input,
         );
         Ok((actor, call_frame_update, executor))
     }

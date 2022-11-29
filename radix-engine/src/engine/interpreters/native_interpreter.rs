@@ -3,7 +3,6 @@ use crate::model::*;
 use crate::types::*;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::fmt::Debug;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
@@ -85,14 +84,10 @@ pub trait NativeProcedure {
             + SysInvokableNative<RuntimeError>;
 }
 
-pub struct NativeExecutor<N: NativeProcedure>(pub N, pub IndexedScryptoValue);
+pub struct NativeExecutor<N: NativeProcedure>(pub N);
 
 impl<N: NativeProcedure> Executor for NativeExecutor<N> {
     type Output = N::Output;
-
-    fn args(&self) -> &IndexedScryptoValue {
-        &self.1
-    }
 
     fn execute<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where

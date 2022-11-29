@@ -35,8 +35,6 @@ impl ExecutableInvocation for AuthZonePopInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
-
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -46,7 +44,7 @@ impl ExecutableInvocation for AuthZonePopInvocation {
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -91,7 +89,6 @@ impl ExecutableInvocation for AuthZonePushInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
 
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
@@ -105,7 +102,7 @@ impl ExecutableInvocation for AuthZonePushInvocation {
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -148,8 +145,6 @@ impl ExecutableInvocation for AuthZoneCreateProofInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
-
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -164,7 +159,7 @@ impl ExecutableInvocation for AuthZoneCreateProofInvocation {
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -220,8 +215,6 @@ impl ExecutableInvocation for AuthZoneCreateProofByAmountInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
-
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -236,7 +229,7 @@ impl ExecutableInvocation for AuthZoneCreateProofByAmountInvocation {
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -293,8 +286,6 @@ impl ExecutableInvocation for AuthZoneCreateProofByIdsInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
-
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -309,7 +300,7 @@ impl ExecutableInvocation for AuthZoneCreateProofByIdsInvocation {
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -366,8 +357,6 @@ impl ExecutableInvocation for AuthZoneClearInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
-
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -377,7 +366,7 @@ impl ExecutableInvocation for AuthZoneClearInvocation {
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -407,8 +396,6 @@ impl ExecutableInvocation for AuthZoneDrainInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
-
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -418,7 +405,7 @@ impl ExecutableInvocation for AuthZoneDrainInvocation {
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -467,8 +454,6 @@ impl ExecutableInvocation for AuthZoneAssertAccessRuleInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
-
         let receiver = RENodeId::AuthZoneStack(self.receiver);
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -478,7 +463,7 @@ impl ExecutableInvocation for AuthZoneAssertAccessRuleInvocation {
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }

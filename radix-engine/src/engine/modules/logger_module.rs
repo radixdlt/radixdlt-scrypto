@@ -1,8 +1,5 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::Resource;
-use radix_engine_interface::api::types::VaultId;
-use radix_engine_interface::data::IndexedScryptoValue;
 
 pub struct LoggerModule {}
 
@@ -130,67 +127,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallOutput::EmitEvent { .. } => {}
         }
 
-        Ok(())
-    }
-
-    fn pre_execute_invocation(
-        &mut self,
-        _actor: &REActor,
-        _input: &IndexedScryptoValue,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
-        Ok(())
-    }
-
-    fn post_execute_invocation(
-        &mut self,
-        _update: &CallFrameUpdate,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
-        Ok(())
-    }
-
-    fn on_wasm_instantiation(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-        _code: &[u8],
-    ) -> Result<(), ModuleError> {
-        Ok(())
-    }
-
-    fn on_wasm_costing(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-        _units: u32,
-    ) -> Result<(), ModuleError> {
-        Ok(())
-    }
-
-    fn on_lock_fee(
-        &mut self,
-        _call_frame: &CallFrame,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-        _vault_id: VaultId,
-        fee: Resource,
-        _contingent: bool,
-    ) -> Result<Resource, ModuleError> {
-        Ok(fee)
-    }
-
-    fn on_finished_processing(
-        &mut self,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
         Ok(())
     }
 }

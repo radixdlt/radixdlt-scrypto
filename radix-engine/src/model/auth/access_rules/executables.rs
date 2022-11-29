@@ -9,7 +9,6 @@ use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative
 use radix_engine_interface::api::types::{
     AccessRulesMethod, GlobalAddress, NativeMethod, PackageOffset, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -28,7 +27,6 @@ impl ExecutableInvocation for AccessRulesAddAccessCheckInvocation {
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
@@ -45,7 +43,7 @@ impl ExecutableInvocation for AccessRulesAddAccessCheckInvocation {
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -118,7 +116,6 @@ impl ExecutableInvocation for AccessRulesSetAccessRuleInvocation {
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
@@ -137,7 +134,7 @@ impl ExecutableInvocation for AccessRulesSetAccessRuleInvocation {
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }

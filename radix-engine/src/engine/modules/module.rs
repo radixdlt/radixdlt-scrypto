@@ -6,7 +6,6 @@ use crate::types::*;
 use radix_engine_interface::api::types::{
     Level, LockHandle, RENodeId, SubstateId, SubstateOffset, VaultId,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::fmt::Debug;
 
 pub enum SysCallInput<'a> {
@@ -99,7 +98,7 @@ pub trait Module<R: FeeReserve> {
     fn pre_execute_invocation(
         &mut self,
         _actor: &REActor,
-        _input: &IndexedScryptoValue,
+        _call_frame_update: &CallFrameUpdate,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
         _track: &mut Track<R>,
@@ -109,11 +108,14 @@ pub trait Module<R: FeeReserve> {
 
     fn post_execute_invocation(
         &mut self,
-        update: &CallFrameUpdate,
-        call_frame: &CallFrame,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-    ) -> Result<(), ModuleError>;
+        _caller: &REActor,
+        _update: &CallFrameUpdate,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
 
     fn on_wasm_instantiation(
         &mut self,

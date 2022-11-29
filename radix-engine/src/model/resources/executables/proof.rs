@@ -8,7 +8,6 @@ use crate::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeMethod, ProofMethod, ProofOffset, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -35,14 +34,13 @@ impl ExecutableInvocation for ProofGetAmountInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::GetAmount)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -71,14 +69,13 @@ impl ExecutableInvocation for ProofGetNonFungibleIdsInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::GetNonFungibleIds)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -116,14 +113,13 @@ impl ExecutableInvocation for ProofGetResourceAddressInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::GetResourceAddress)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -157,14 +153,13 @@ impl ExecutableInvocation for ProofCloneInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::Clone)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }

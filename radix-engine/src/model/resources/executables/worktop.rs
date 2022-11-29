@@ -9,7 +9,6 @@ use radix_engine_interface::api::types::{
     GlobalAddress, NativeMethod, RENodeId, ResourceManagerOffset, SubstateOffset, WorktopMethod,
     WorktopOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,7 +31,6 @@ impl ExecutableInvocation for WorktopPutInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
@@ -42,7 +40,7 @@ impl ExecutableInvocation for WorktopPutInvocation {
             ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::Put)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -80,7 +78,6 @@ impl ExecutableInvocation for WorktopTakeAmountInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
@@ -92,7 +89,7 @@ impl ExecutableInvocation for WorktopTakeAmountInvocation {
             ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::TakeAmount)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -157,7 +154,6 @@ impl ExecutableInvocation for WorktopTakeAllInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
@@ -169,7 +165,7 @@ impl ExecutableInvocation for WorktopTakeAllInvocation {
             ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::TakeAll)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -234,7 +230,6 @@ impl ExecutableInvocation for WorktopTakeNonFungiblesInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
@@ -246,7 +241,7 @@ impl ExecutableInvocation for WorktopTakeNonFungiblesInvocation {
             ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::TakeNonFungibles)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -313,7 +308,6 @@ impl ExecutableInvocation for WorktopAssertContainsInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
@@ -325,7 +319,7 @@ impl ExecutableInvocation for WorktopAssertContainsInvocation {
             ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::AssertContains)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -360,7 +354,6 @@ impl ExecutableInvocation for WorktopAssertContainsAmountInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
@@ -372,7 +365,7 @@ impl ExecutableInvocation for WorktopAssertContainsAmountInvocation {
             ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::AssertContainsAmount)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -407,7 +400,6 @@ impl ExecutableInvocation for WorktopAssertContainsNonFungiblesInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
@@ -421,7 +413,7 @@ impl ExecutableInvocation for WorktopAssertContainsNonFungiblesInvocation {
             )),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -464,14 +456,13 @@ impl ExecutableInvocation for WorktopDrainInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Worktop;
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::Drain)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }

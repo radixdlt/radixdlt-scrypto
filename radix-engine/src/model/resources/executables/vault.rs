@@ -11,7 +11,6 @@ use crate::types::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeMethod, RENodeId, SubstateOffset, VaultMethod, VaultOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -35,14 +34,13 @@ impl ExecutableInvocation for VaultTakeInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::Take)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -88,7 +86,6 @@ impl ExecutableInvocation for VaultPutInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
@@ -98,7 +95,7 @@ impl ExecutableInvocation for VaultPutInvocation {
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::Put)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -137,14 +134,13 @@ impl ExecutableInvocation for VaultLockFeeInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::LockFee)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -207,14 +203,13 @@ impl ExecutableInvocation for VaultTakeNonFungiblesInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::TakeNonFungibles)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -262,14 +257,13 @@ impl ExecutableInvocation for VaultGetAmountInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::GetAmount)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -300,14 +294,13 @@ impl ExecutableInvocation for VaultGetResourceAddressInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::GetResourceAddress)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -344,14 +337,13 @@ impl ExecutableInvocation for VaultGetNonFungibleIdsInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::GetNonFungibleIds)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -389,14 +381,13 @@ impl ExecutableInvocation for VaultCreateProofInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::CreateProof)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -441,14 +432,13 @@ impl ExecutableInvocation for VaultCreateProofByAmountInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::CreateProofByAmount)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -493,14 +483,13 @@ impl ExecutableInvocation for VaultCreateProofByIdsInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::CreateProofByIds)),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
