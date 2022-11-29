@@ -248,8 +248,8 @@ impl NativeProcedure for AccessRulesSetMutabilityInvocation {
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi
+    where
+        Y: SystemApi
             + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,

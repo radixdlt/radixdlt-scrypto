@@ -139,30 +139,31 @@ impl ScryptoNativeInvocation for ResourceManagerUpdateVaultAuthInvocation {
 impl Into<NativeFnInvocation> for ResourceManagerUpdateVaultAuthInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::UpdateAuth(self),
+            ResourceManagerMethodInvocation::UpdateVaultAuth(self),
         ))
     }
 }
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerLockAuthInvocation {
+pub struct ResourceManagerSetVaultAuthMutabilityInvocation {
     pub receiver: ResourceAddress,
-    pub method: ResourceMethodAuthKey,
+    pub method: VaultMethodAuthKey,
+    pub mutability: AccessRule,
 }
 
-impl Invocation for ResourceManagerLockAuthInvocation {
+impl Invocation for ResourceManagerSetVaultAuthMutabilityInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ResourceManagerLockAuthInvocation {
+impl ScryptoNativeInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerLockAuthInvocation {
+impl Into<NativeFnInvocation> for ResourceManagerSetVaultAuthMutabilityInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::LockAuth(self),
+            ResourceManagerMethodInvocation::LockVaultAuth(self),
         ))
     }
 }

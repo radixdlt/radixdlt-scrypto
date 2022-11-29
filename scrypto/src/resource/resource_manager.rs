@@ -111,9 +111,13 @@ impl ResourceManager {
     pub fn lock_mintable(&mut self) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: Mint,
+            .sys_invoke(AccessRulesSetMutabilityInvocation {
+                receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+                index: 0,
+                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                    ResourceManagerMethod::Mint,
+                ))),
+                mutability: AccessRule::DenyAll,
             })
             .unwrap()
     }
@@ -121,19 +125,13 @@ impl ResourceManager {
     pub fn lock_burnable(&mut self) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: Burn,
-            })
-            .unwrap()
-    }
-
-    pub fn lock_withdrawable(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: VaultMethodKey(Withdraw),
+            .sys_invoke(AccessRulesSetMutabilityInvocation {
+                receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+                index: 0,
+                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                    ResourceManagerMethod::Burn,
+                ))),
+                mutability: AccessRule::DenyAll,
             })
             .unwrap()
     }
@@ -141,9 +139,13 @@ impl ResourceManager {
     pub fn lock_updateable_metadata(&mut self) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
-                receiver: self.0,
-                method: UpdateMetadata,
+            .sys_invoke(AccessRulesSetMutabilityInvocation {
+                receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+                index: 0,
+                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                    ResourceManagerMethod::UpdateMetadata,
+                ))),
+                mutability: AccessRule::DenyAll,
             })
             .unwrap()
     }
@@ -151,9 +153,24 @@ impl ResourceManager {
     pub fn lock_updateable_non_fungible_data(&mut self) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
+            .sys_invoke(AccessRulesSetMutabilityInvocation {
+                receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+                index: 0,
+                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                    ResourceManagerMethod::UpdateNonFungibleData,
+                ))),
+                mutability: AccessRule::DenyAll,
+            })
+            .unwrap()
+    }
+
+    pub fn lock_withdrawable(&mut self) {
+        let mut syscalls = ScryptoEnv;
+        syscalls
+            .sys_invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
                 receiver: self.0,
-                method: UpdateNonFungibleData,
+                method: Withdraw,
+                mutability: AccessRule::DenyAll,
             })
             .unwrap()
     }
@@ -161,9 +178,10 @@ impl ResourceManager {
     pub fn lock_depositable(&mut self) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
+            .sys_invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
                 receiver: self.0,
-                method: VaultMethodKey(Deposit),
+                method: Deposit,
+                mutability: AccessRule::DenyAll,
             })
             .unwrap()
     }
@@ -171,9 +189,10 @@ impl ResourceManager {
     pub fn lock_recallable(&mut self) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(ResourceManagerLockAuthInvocation {
+            .sys_invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
                 receiver: self.0,
-                method: VaultMethodKey(Recall),
+                method: Recall,
+                mutability: AccessRule::DenyAll,
             })
             .unwrap()
     }

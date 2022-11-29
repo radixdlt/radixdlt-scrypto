@@ -1,9 +1,6 @@
-use crate::model::{
-    convert, InvokeError, MethodAuthorization, NonFungible, Resource, ResourceManagerError,
-};
+use crate::model::{InvokeError, NonFungible, Resource, ResourceManagerError};
 use crate::types::*;
 use radix_engine_interface::api::types::NonFungibleStoreId;
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 
@@ -14,7 +11,7 @@ pub struct ResourceManagerSubstate {
     pub metadata: HashMap<String, String>,
     pub total_supply: Decimal,
     pub nf_store_id: Option<NonFungibleStoreId>,
-    pub resource_address: ResourceAddress, // always set after instantiation
+    pub resource_address: ResourceAddress, // TODO: Figure out a way to remove
 }
 
 impl ResourceManagerSubstate {
@@ -134,71 +131,5 @@ impl ResourceManagerSubstate {
         }
 
         Ok((Resource::new_non_fungible(self_address, ids), non_fungibles))
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct MethodAccessRule {
-    pub auth: MethodAuthorization,
-    pub update_auth: MethodAuthorization,
-}
-
-pub enum MethodAccessRuleMethod {
-    Lock(),
-    Update(AccessRule),
-}
-
-/// Converts soft authorization rule to a hard authorization rule.
-/// Currently required as all auth is defined by soft authorization rules.
-macro_rules! convert_auth {
-    ($auth:expr) => {
-        convert(&Type::Unit, &IndexedScryptoValue::unit(), &$auth)
-    };
-}
-
-impl MethodAccessRule {
-    // TODO: turn this into a proper node, i.e. id generation and invocation support
-
-    pub fn new(entry: (AccessRule, Mutability)) -> Self {
-        MethodAccessRule {
-            auth: convert_auth!(entry.0),
-            update_auth: match entry.1 {
-                Mutability::LOCKED => MethodAuthorization::DenyAll,
-                Mutability::MUTABLE(method_auth) => convert_auth!(method_auth),
-            },
-        }
-    }
-
-    pub fn get_method_auth(&self) -> &MethodAuthorization {
-        &self.auth
-    }
-
-    pub fn get_update_auth(&self, method: MethodAccessRuleMethod) -> &MethodAuthorization {
-        match method {
-            MethodAccessRuleMethod::Lock() | MethodAccessRuleMethod::Update(_) => &self.update_auth,
-        }
-    }
-
-    pub fn main(
-        &mut self,
-        method: MethodAccessRuleMethod,
-    ) -> Result<IndexedScryptoValue, InvokeError<ResourceManagerError>> {
-        match method {
-            MethodAccessRuleMethod::Lock() => self.lock(),
-            MethodAccessRuleMethod::Update(method_auth) => {
-                self.update(method_auth);
-            }
-        }
-
-        Ok(IndexedScryptoValue::from_typed(&()))
-    }
-
-    fn update(&mut self, method_auth: AccessRule) {
-        self.auth = convert_auth!(method_auth)
-    }
-
-    fn lock(&mut self) {
-        self.update_auth = MethodAuthorization::DenyAll;
     }
 }

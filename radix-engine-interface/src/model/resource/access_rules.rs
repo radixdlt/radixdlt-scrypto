@@ -62,6 +62,10 @@ impl AccessRules {
         self.method_auth_mutability.insert(key, method_auth);
     }
 
+    pub fn set_group_mutability(&mut self, key: String, method_auth: AccessRule) {
+        self.grouped_auth_mutability.insert(key, method_auth);
+    }
+
     pub fn get(&self, key: &AccessRuleKey) -> &AccessRule {
         match self.method_auth.get(key) {
             None => &self.default_auth,

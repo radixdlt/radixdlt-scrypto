@@ -78,7 +78,7 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ResourceManagerCreateInvocation, E>
     + SysNativeInvokable<ResourceManagerBurnInvocation, E>
     + SysNativeInvokable<ResourceManagerUpdateVaultAuthInvocation, E>
-    + SysNativeInvokable<ResourceManagerLockAuthInvocation, E>
+    + SysNativeInvokable<ResourceManagerSetVaultAuthMutabilityInvocation, E>
     + SysNativeInvokable<ResourceManagerCreateVaultInvocation, E>
     + SysNativeInvokable<ResourceManagerCreateBucketInvocation, E>
     + SysNativeInvokable<ResourceManagerMintInvocation, E>

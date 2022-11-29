@@ -108,8 +108,6 @@ pub enum ResourceManagerFunctionInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerMethodInvocation {
     Burn(ResourceManagerBurnInvocation),
-    UpdateAuth(ResourceManagerUpdateVaultAuthInvocation),
-    LockAuth(ResourceManagerLockAuthInvocation),
     Mint(ResourceManagerMintInvocation),
     UpdateNonFungibleData(ResourceManagerUpdateNonFungibleDataInvocation),
     GetNonFungible(ResourceManagerGetNonFungibleInvocation),
@@ -120,6 +118,8 @@ pub enum ResourceManagerMethodInvocation {
     NonFungibleExists(ResourceManagerNonFungibleExistsInvocation),
     CreateBucket(ResourceManagerCreateBucketInvocation),
     CreateVault(ResourceManagerCreateVaultInvocation),
+    UpdateVaultAuth(ResourceManagerUpdateVaultAuthInvocation),
+    LockVaultAuth(ResourceManagerSetVaultAuthMutabilityInvocation),
 }
 
 #[derive(Debug)]
@@ -325,10 +325,10 @@ impl NativeFnInvocation {
                     ResourceManagerMethodInvocation::Burn(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::UpdateAuth(invocation) => system_api
+                    ResourceManagerMethodInvocation::UpdateVaultAuth(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::LockAuth(invocation) => system_api
+                    ResourceManagerMethodInvocation::LockVaultAuth(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::CreateVault(invocation) => system_api

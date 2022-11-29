@@ -328,8 +328,10 @@ where
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerMethod::LockAuth => {
-                    let invocation: ResourceManagerLockAuthInvocation = scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    let invocation: ResourceManagerSetVaultAuthMutabilityInvocation =
+                        scrypto_decode(&args).map_err(|e| {
+                            RuntimeError::KernelError(KernelError::InvalidSborValue(e))
+                        })?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))

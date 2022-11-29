@@ -625,7 +625,7 @@ impl NativeProcedure for ResourceManagerUpdateVaultAuthExecutable {
     }
 }
 
-impl ExecutableInvocation for ResourceManagerLockAuthInvocation {
+impl ExecutableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
     type Exec = NativeExecutor<ResourceManagerLockAuthExecutable>;
 
     fn resolve<D: MethodDeref>(
@@ -647,42 +647,73 @@ impl ExecutableInvocation for ResourceManagerLockAuthInvocation {
         let executor = NativeExecutor(ResourceManagerLockAuthExecutable(
             resolved_receiver.receiver,
             self.method,
+            self.mutability,
         ));
         Ok((actor, call_frame_update, executor))
     }
 }
 
-pub struct ResourceManagerLockAuthExecutable(RENodeId, ResourceMethodAuthKey);
+pub struct ResourceManagerLockAuthExecutable(RENodeId, VaultMethodAuthKey, AccessRule);
 
 impl NativeProcedure for ResourceManagerLockAuthExecutable {
     type Output = ();
 
-    fn main<'a, Y>(self, _system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SystemApi + SysInvokableNative<RuntimeError>,
     {
-        todo!();
-        /*
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let offset = SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules);
+        let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-        let method_entry = substate_mut
-            .resource_manager()
-            .authorization
-            .get_mut(&self.1)
-            .expect(&format!("Authorization for {:?} not specified", self.1));
-        method_entry
-            .main(MethodAccessRuleMethod::Lock())
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+        // TODO: Figure out how to move this access check into more appropriate place
+        {
+            let node_ids = api.get_visible_node_ids()?;
+            let auth_zone_id = node_ids
+                .into_iter()
+                .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+                .expect("AuthZone does not exist");
+
+            let substate_ref = api.get_ref(handle)?;
+            let access_rules_substate = substate_ref.access_rules();
+
+            let access_rule = match self.1 {
+                Deposit => {
+                    let key = AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+                        VaultMethod::Put,
+                    )));
+                    access_rules_substate.access_rules[0].get_mutability(&key)
                 }
-                InvokeError::Downstream(runtime_error) => runtime_error,
+                Withdraw => access_rules_substate.access_rules[0].get_group_mutability("withdraw"),
+                Recall => access_rules_substate.access_rules[0].get_group_mutability("recall"),
+            }
+            .clone();
+
+            api.sys_invoke(AuthZoneAssertAccessRuleInvocation {
+                receiver: auth_zone_id.into(),
+                access_rule,
             })?;
+        }
+
+        let mut substate_mut = api.get_ref_mut(handle)?;
+        let access_rules_substate = substate_mut.access_rules();
+
+        match self.1 {
+            Deposit => {
+                let key =
+                    AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put)));
+                access_rules_substate.access_rules[0].set_mutability(key, self.2);
+            }
+            Withdraw => {
+                let group_key = "withdraw".to_string();
+                access_rules_substate.access_rules[0].set_group_mutability(group_key, self.2);
+            }
+            Recall => {
+                let group_key = "recall".to_string();
+                access_rules_substate.access_rules[0].set_group_mutability(group_key, self.2);
+            }
+        }
 
         Ok(((), CallFrameUpdate::empty()))
-         */
     }
 }
 
