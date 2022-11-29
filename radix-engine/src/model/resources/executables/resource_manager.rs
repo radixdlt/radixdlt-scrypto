@@ -288,6 +288,13 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             AllowAll, // Access verification occurs within method
             DenyAll,
         );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::LockAuth,
+            ))),
+            AllowAll, // Access verification occurs within method
+            DenyAll,
+        );
 
         let access_rules_substate = AccessRulesSubstate {
             access_rules: vec![access_rules],
@@ -626,7 +633,7 @@ impl NativeProcedure for ResourceManagerUpdateVaultAuthExecutable {
 }
 
 impl ExecutableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
-    type Exec = NativeExecutor<ResourceManagerLockAuthExecutable>;
+    type Exec = NativeExecutor<ResourceManagerLockVaultAuthExecutable>;
 
     fn resolve<D: MethodDeref>(
         self,
@@ -644,7 +651,7 @@ impl ExecutableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(ResourceManagerLockAuthExecutable(
+        let executor = NativeExecutor(ResourceManagerLockVaultAuthExecutable(
             resolved_receiver.receiver,
             self.method,
             self.mutability,
@@ -653,9 +660,9 @@ impl ExecutableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
     }
 }
 
-pub struct ResourceManagerLockAuthExecutable(RENodeId, VaultMethodAuthKey, AccessRule);
+pub struct ResourceManagerLockVaultAuthExecutable(RENodeId, VaultMethodAuthKey, AccessRule);
 
-impl NativeProcedure for ResourceManagerLockAuthExecutable {
+impl NativeProcedure for ResourceManagerLockVaultAuthExecutable {
     type Output = ();
 
     fn main<'a, Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>

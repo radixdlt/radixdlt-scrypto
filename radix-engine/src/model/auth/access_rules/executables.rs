@@ -16,7 +16,7 @@ use radix_engine_interface::model::*;
 pub enum AccessRulesError {
     BlueprintFunctionNotFound(String),
     InvalidIndex(u32),
-    InvalidAuth(MethodAuthorization, MethodAuthorizationError),
+    Unauthorized(MethodAuthorization, MethodAuthorizationError),
     CannotSetAccessRuleOnSetAccessRule,
 }
 
@@ -189,7 +189,7 @@ impl NativeProcedure for AccessRulesSetAccessRuleInvocation {
                 .check_auth(false, authorization)
                 .map_err(|(authorization, error)| {
                     RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                        AccessRulesError::InvalidAuth(authorization, error),
+                        AccessRulesError::Unauthorized(authorization, error),
                     ))
                 })?;
         }
@@ -291,7 +291,7 @@ impl NativeProcedure for AccessRulesSetMutabilityInvocation {
                 .check_auth(false, authorization)
                 .map_err(|(authorization, error)| {
                     RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                        AccessRulesError::InvalidAuth(authorization, error),
+                        AccessRulesError::Unauthorized(authorization, error),
                     ))
                 })?;
         }

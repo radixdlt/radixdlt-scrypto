@@ -456,6 +456,27 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         export_abi_by_component(output_store, component_address).expect("Failed to export ABI")
     }
 
+    pub fn lock_resource_auth(
+        &mut self,
+        function: &str,
+        auth: ResourceAddress,
+        token: ResourceAddress,
+        account: ComponentAddress,
+        signer_public_key: EcdsaSecp256k1PublicKey,
+    ) {
+        let package = self.compile_and_publish("./tests/blueprints/resource_creator");
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .create_proof_from_account(account, auth)
+            .call_function(package, "ResourceCreator", function, args!(token))
+            .build();
+        self.execute_manifest(
+            manifest,
+            vec![NonFungibleAddress::from_public_key(&signer_public_key)],
+        )
+        .expect_commit_success();
+    }
+
     pub fn update_resource_auth(
         &mut self,
         function: &str,
@@ -541,21 +562,21 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
             ),
         );
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            Withdraw,
             (
                 rule!(require(withdraw_auth)),
                 MUTABLE(rule!(require(admin_auth))),
             ),
         );
         access_rules.insert(
-            ResourceMethodAuthKey::Recall,
+            Recall,
             (
                 rule!(require(recall_auth)),
                 MUTABLE(rule!(require(admin_auth))),
             ),
         );
         access_rules.insert(
-            ResourceMethodAuthKey::Deposit,
+            Deposit,
             (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
         );
 
