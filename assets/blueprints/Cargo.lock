@@ -703,15 +703,9 @@ dependencies = [
 name = "native-sdk"
 version = "0.7.0"
 dependencies = [
- "bech32",
- "hex",
- "num-bigint",
- "num-traits",
  "radix-engine-derive",
  "radix-engine-interface",
  "sbor",
- "sha2 0.10.6",
- "sha3",
  "utils",
 ]
 
