@@ -69,6 +69,7 @@ pub enum NativeFunction {
 pub enum AccessRulesMethod {
     AddAccessCheck,
     SetAccessRule,
+    SetMutability,
 }
 
 #[derive(

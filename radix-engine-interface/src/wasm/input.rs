@@ -62,6 +62,7 @@ pub enum NativeFunctionInvocation {
 pub enum AccessRulesMethodInvocation {
     AddAccessCheck(AccessRulesAddAccessCheckInvocation),
     SetAccessRule(AccessRulesSetAccessRuleInvocation),
+    SetMutability(AccessRulesSetMutabilityInvocation),
 }
 
 #[derive(Debug)]
@@ -308,6 +309,9 @@ impl NativeFnInvocation {
                             .sys_invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                         AccessRulesMethodInvocation::SetAccessRule(invocation) => system_api
+                            .sys_invoke(invocation)
+                            .map(|a| IndexedScryptoValue::from_typed(&a)),
+                        AccessRulesMethodInvocation::SetMutability(invocation) => system_api
                             .sys_invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                     }
