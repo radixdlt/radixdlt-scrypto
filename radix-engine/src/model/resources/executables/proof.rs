@@ -179,9 +179,8 @@ impl NativeProcedure for ProofCloneInvocation {
         let cloned_proof = proof.clone();
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        let proof_id = api
-            .create_node(node_id, RENode::Proof(cloned_proof))?
-            .into();
+        api.create_node(node_id, RENode::Proof(cloned_proof))?;
+        let proof_id = node_id.into();
 
         Ok((
             Proof(proof_id),

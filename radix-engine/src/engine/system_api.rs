@@ -76,8 +76,7 @@ pub trait SystemApi {
 
     /// Creates a new RENode
     /// TODO: Remove, replace with lock_substate + get_ref_mut use
-    fn create_node(&mut self, node_id: RENodeId, re_node: RENode)
-        -> Result<RENodeId, RuntimeError>;
+    fn create_node(&mut self, node_id: RENodeId, re_node: RENode) -> Result<(), RuntimeError>;
 
     /// Locks a visible substate
     fn lock_substate(

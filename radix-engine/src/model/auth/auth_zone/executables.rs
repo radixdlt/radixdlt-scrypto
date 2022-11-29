@@ -8,7 +8,7 @@ use crate::model::{
 };
 use crate::types::*;
 use radix_engine_interface::api::types::{
-    AuthZoneMethod, AuthZoneOffset, GlobalAddress, NativeMethod, ProofId, ProofOffset, RENodeId,
+    AuthZoneStackMethod, AuthZoneStackOffset, GlobalAddress, NativeMethod, ProofOffset, RENodeId,
     ResourceManagerOffset, SubstateOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
@@ -40,7 +40,7 @@ impl ExecutableInvocation for AuthZonePopInvocation {
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::Pop)),
+            ResolvedMethod::Native(NativeMethod::AuthZoneStack(AuthZoneStackMethod::Pop)),
             resolved_receiver,
         );
 
@@ -57,7 +57,7 @@ impl NativeProcedure for AuthZonePopInvocation {
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
-        let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+        let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let auth_zone_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let proof = {
@@ -73,7 +73,8 @@ impl NativeProcedure for AuthZonePopInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
+        api.create_node(node_id, RENode::Proof(proof))?;
+        let proof_id = node_id.into();
 
         Ok((
             Proof(proof_id),
@@ -97,7 +98,7 @@ impl ExecutableInvocation for AuthZonePushInvocation {
             .push(RENodeId::Proof(self.proof.0));
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::Push)),
+            ResolvedMethod::Native(NativeMethod::AuthZoneStack(AuthZoneStackMethod::Push)),
             resolved_receiver,
         );
 
@@ -114,7 +115,7 @@ impl NativeProcedure for AuthZonePushInvocation {
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
-        let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+        let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let node_id = RENodeId::Proof(self.proof.0);
@@ -154,7 +155,9 @@ impl ExecutableInvocation for AuthZoneCreateProofInvocation {
             )));
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::CreateProof)),
+            ResolvedMethod::Native(NativeMethod::AuthZoneStack(
+                AuthZoneStackMethod::CreateProof,
+            )),
             resolved_receiver,
         );
 
@@ -171,7 +174,7 @@ impl NativeProcedure for AuthZoneCreateProofInvocation {
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
-        let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+        let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let auth_zone_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let resource_type = {
@@ -198,7 +201,8 @@ impl NativeProcedure for AuthZoneCreateProofInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
+        api.create_node(node_id, RENode::Proof(proof))?;
+        let proof_id = node_id.into();
 
         Ok((
             Proof(proof_id),
@@ -224,7 +228,9 @@ impl ExecutableInvocation for AuthZoneCreateProofByAmountInvocation {
             )));
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::CreateProofByAmount)),
+            ResolvedMethod::Native(NativeMethod::AuthZoneStack(
+                AuthZoneStackMethod::CreateProofByAmount,
+            )),
             resolved_receiver,
         );
 
@@ -241,7 +247,7 @@ impl NativeProcedure for AuthZoneCreateProofByAmountInvocation {
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
-        let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+        let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let auth_zone_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let resource_type = {
@@ -269,7 +275,8 @@ impl NativeProcedure for AuthZoneCreateProofByAmountInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
+        api.create_node(node_id, RENode::Proof(proof))?;
+        let proof_id = node_id.into();
 
         Ok((
             Proof(proof_id),
@@ -295,7 +302,9 @@ impl ExecutableInvocation for AuthZoneCreateProofByIdsInvocation {
             )));
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::CreateProofByIds)),
+            ResolvedMethod::Native(NativeMethod::AuthZoneStack(
+                AuthZoneStackMethod::CreateProofByIds,
+            )),
             resolved_receiver,
         );
 
@@ -312,7 +321,7 @@ impl NativeProcedure for AuthZoneCreateProofByIdsInvocation {
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
-        let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+        let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let auth_zone_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let resource_type = {
@@ -340,7 +349,8 @@ impl NativeProcedure for AuthZoneCreateProofByIdsInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
+        api.create_node(node_id, RENode::Proof(proof))?;
+        let proof_id = node_id.into();
 
         Ok((
             Proof(proof_id),
@@ -361,7 +371,7 @@ impl ExecutableInvocation for AuthZoneClearInvocation {
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::Clear)),
+            ResolvedMethod::Native(NativeMethod::AuthZoneStack(AuthZoneStackMethod::Clear)),
             resolved_receiver,
         );
 
@@ -378,7 +388,7 @@ impl NativeProcedure for AuthZoneClearInvocation {
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
-        let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+        let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
         let auth_zone = substate_mut.auth_zone();
@@ -400,7 +410,7 @@ impl ExecutableInvocation for AuthZoneDrainInvocation {
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::Drain)),
+            ResolvedMethod::Native(NativeMethod::AuthZoneStack(AuthZoneStackMethod::Drain)),
             resolved_receiver,
         );
 
@@ -417,7 +427,7 @@ impl NativeProcedure for AuthZoneDrainInvocation {
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
-        let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+        let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let auth_zone_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let proofs = {
@@ -431,7 +441,8 @@ impl NativeProcedure for AuthZoneDrainInvocation {
         let mut nodes_to_move = Vec::new();
         for proof in proofs {
             let node_id = api.allocate_node_id(RENodeType::Proof)?;
-            let proof_id: ProofId = api.create_node(node_id, RENode::Proof(proof))?.into();
+            api.create_node(node_id, RENode::Proof(proof))?;
+            let proof_id = node_id.into();
             proof_ids.push(Proof(proof_id));
             nodes_to_move.push(RENodeId::Proof(proof_id));
         }
@@ -458,7 +469,9 @@ impl ExecutableInvocation for AuthZoneAssertAccessRuleInvocation {
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZone(AuthZoneMethod::AssertAccessRule)),
+            ResolvedMethod::Native(NativeMethod::AuthZoneStack(
+                AuthZoneStackMethod::AssertAccessRule,
+            )),
             resolved_receiver,
         );
 
@@ -475,7 +488,7 @@ impl NativeProcedure for AuthZoneAssertAccessRuleInvocation {
         Y: SystemApi,
     {
         let node_id = RENodeId::AuthZoneStack(self.receiver);
-        let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+        let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = api.get_ref(handle)?;
         let auth_zone_ref = substate_ref.auth_zone();

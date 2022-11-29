@@ -282,7 +282,9 @@ where
 
         let genesis_transaction = create_genesis();
         let mut fee_reserve = SystemLoanFeeReserve::default();
-        fee_reserve.credit(GENESIS_CREATION_CREDIT);
+        fee_reserve
+            .credit_cost_units(GENESIS_CREATION_CREDIT)
+            .unwrap();
 
         let transaction_receipt = execute_transaction_with_fee_reserve(
             substate_store,
@@ -322,7 +324,9 @@ mod tests {
         let substate_store = TypedInMemorySubstateStore::new();
         let genesis_transaction = create_genesis();
         let mut fee_reserve = SystemLoanFeeReserve::default();
-        fee_reserve.credit(GENESIS_CREATION_CREDIT);
+        fee_reserve
+            .credit_cost_units(GENESIS_CREATION_CREDIT)
+            .unwrap();
 
         let transaction_receipt = execute_transaction_with_fee_reserve(
             &substate_store,

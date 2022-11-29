@@ -1,13 +1,19 @@
-use core::fmt::Debug;
-use radix_engine_interface::api::api::SysInvokableNative;
-use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId};
 use scrypto::access_rule_node;
 use scrypto::rule;
 
+use super::{PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate};
 use crate::engine::*;
-use crate::model::{AccessRulesSubstate, GlobalAddressSubstate, MetadataSubstate, PackageSubstate};
+use crate::engine::{CallFrameUpdate, LockFlags, RuntimeError, SystemApi};
+use crate::model::{
+    AccessRulesSubstate, GlobalAddressSubstate, MetadataSubstate, PackageInfoSubstate, Resource,
+};
 use crate::types::*;
 use crate::wasm::*;
+use core::fmt::Debug;
+use radix_engine_interface::api::api::SysInvokableNative;
+use radix_engine_interface::api::types::SubstateOffset;
+use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId, RENodeId};
+use radix_engine_interface::model::*;
 
 pub struct Package;
 
@@ -25,10 +31,10 @@ impl Package {
     fn new(
         code: Vec<u8>,
         abi: HashMap<String, BlueprintAbi>,
-    ) -> Result<PackageSubstate, PrepareError> {
+    ) -> Result<PackageInfoSubstate, PrepareError> {
         WasmValidator::default().validate(&code, &abi)?;
 
-        Ok(PackageSubstate {
+        Ok(PackageInfoSubstate {
             code: code,
             blueprint_abis: abi,
         })
@@ -70,7 +76,12 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
                 PackageError::InvalidWasm(e),
             ))
         })?;
-
+        let package_royalty_config = PackageRoyaltyConfigSubstate {
+            royalty_config: HashMap::new(), // TODO: add user interface
+        };
+        let package_royalty_accumulator = PackageRoyaltyAccumulatorSubstate {
+            royalty: Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }),
+        };
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
@@ -81,7 +92,13 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
         let node_id = api.allocate_node_id(RENodeType::Package)?;
         api.create_node(
             node_id,
-            RENode::Package(package, metadata_substate, access_rules),
+            RENode::Package(
+                package,
+                package_royalty_config,
+                package_royalty_accumulator,
+                metadata_substate,
+                access_rules,
+            ),
         )?;
         let package_id: PackageId = node_id.into();
 
@@ -135,7 +152,12 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
                 PackageError::InvalidWasm(e),
             ))
         })?;
-
+        let package_royalty_config = PackageRoyaltyConfigSubstate {
+            royalty_config: HashMap::new(), // TODO: add user interface
+        };
+        let package_royalty_accumulator = PackageRoyaltyAccumulatorSubstate {
+            royalty: Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }),
+        };
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
@@ -179,7 +201,13 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
         let node_id = api.allocate_node_id(RENodeType::Package)?;
         api.create_node(
             node_id,
-            RENode::Package(package, metadata_substate, access_rules_substate),
+            RENode::Package(
+                package,
+                package_royalty_config,
+                package_royalty_accumulator,
+                metadata_substate,
+                access_rules_substate,
+            ),
         )?;
         let package_id: PackageId = node_id.into();
 
@@ -194,5 +222,55 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
             (package_address, bucket),
             CallFrameUpdate::move_node(bucket_node_id),
         ))
+    }
+}
+
+impl ExecutableInvocation for PackageSetRoyaltyConfigInvocation {
+    type Exec = NativeExecutor<PackageSetRoyaltyConfigExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::EpochManager(
+                EpochManagerMethod::GetCurrentEpoch,
+            )),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(PackageSetRoyaltyConfigExecutable {
+            receiver: resolved_receiver.receiver,
+            royalty_config: self.royalty_config,
+        });
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProcedure for PackageSetRoyaltyConfigExecutable {
+    type Output = ();
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi,
+    {
+        // TODO: auth check
+        let node_id = self.receiver;
+        let offset = SubstateOffset::Package(PackageOffset::RoyaltyConfig);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let mut substate = system_api.get_ref_mut(handle)?;
+        substate.package_royalty_config().royalty_config = self.royalty_config;
+
+        system_api.drop_lock(handle)?;
+
+        Ok(((), CallFrameUpdate::empty()))
     }
 }

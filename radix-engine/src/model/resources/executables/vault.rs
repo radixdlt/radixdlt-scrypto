@@ -68,9 +68,8 @@ impl NativeProcedure for VaultTakeInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        let bucket_id = api
-            .create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?
-            .into();
+        api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+        let bucket_id = node_id.into();
 
         Ok((
             Bucket(bucket_id),
@@ -239,9 +238,8 @@ impl NativeProcedure for VaultTakeNonFungiblesInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        let bucket_id = api
-            .create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?
-            .into();
+        api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+        let bucket_id = node_id.into();
 
         Ok((
             Bucket(bucket_id),
@@ -416,7 +414,8 @@ impl NativeProcedure for VaultCreateProofInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
+        api.create_node(node_id, RENode::Proof(proof))?;
+        let proof_id = node_id.into();
 
         Ok((
             Proof(proof_id),
@@ -467,7 +466,8 @@ impl NativeProcedure for VaultCreateProofByAmountInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
+        api.create_node(node_id, RENode::Proof(proof))?;
+        let proof_id = node_id.into();
 
         Ok((
             Proof(proof_id),
@@ -518,7 +518,8 @@ impl NativeProcedure for VaultCreateProofByIdsInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
+        api.create_node(node_id, RENode::Proof(proof))?;
+        let proof_id = node_id.into();
 
         Ok((
             Proof(proof_id),

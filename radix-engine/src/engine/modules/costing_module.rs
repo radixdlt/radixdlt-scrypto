@@ -71,6 +71,11 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                     loaded: true,
                                     size: 0,
                                 },
+                                RENodeId::FeeReserve(_) => SystemApiCostingEntry::BorrowNode {
+                                    // TODO: figure out loaded state and size
+                                    loaded: true,
+                                    size: 0,
+                                },
                                 RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowNode {
                                     // TODO: figure out loaded state and size
                                     loaded: true,
@@ -360,7 +365,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
     ) -> Result<Resource, ModuleError> {
         track
             .fee_reserve
-            .repay(vault_id, fee, contingent)
+            .lock_fee(vault_id, fee, contingent)
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 

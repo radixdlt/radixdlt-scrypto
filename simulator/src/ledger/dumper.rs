@@ -35,11 +35,11 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
         ))
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
-    let package: Option<PackageSubstate> = global.and_then(|global| {
+    let package: Option<PackageInfoSubstate> = global.and_then(|global| {
         substate_store
             .get_substate(&SubstateId(
                 global.node_deref(),
-                SubstateOffset::Package(PackageOffset::Package),
+                SubstateOffset::Package(PackageOffset::Info),
             ))
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into())

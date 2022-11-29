@@ -134,12 +134,12 @@ impl NativeProcedure for WorktopTakeAmountInvocation {
             Resource::new_empty(self.resource_address, resource_type)
         };
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        let bucket_id = api
-            .create_node(
-                node_id,
-                RENode::Bucket(BucketSubstate::new(resource_resource)),
-            )?
-            .into();
+        api.create_node(
+            node_id,
+            RENode::Bucket(BucketSubstate::new(resource_resource)),
+        )?;
+        let bucket_id = node_id.into();
+
         Ok((
             Bucket(bucket_id),
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
@@ -209,12 +209,11 @@ impl NativeProcedure for WorktopTakeAllInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        let bucket_id = api
-            .create_node(
-                node_id,
-                RENode::Bucket(BucketSubstate::new(resource_resource)),
-            )?
-            .into();
+        api.create_node(
+            node_id,
+            RENode::Bucket(BucketSubstate::new(resource_resource)),
+        )?;
+        let bucket_id = node_id.into();
 
         Ok((
             Bucket(bucket_id),
@@ -287,12 +286,11 @@ impl NativeProcedure for WorktopTakeNonFungiblesInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        let bucket_id = api
-            .create_node(
-                node_id,
-                RENode::Bucket(BucketSubstate::new(resource_resource)),
-            )?
-            .into();
+        api.create_node(
+            node_id,
+            RENode::Bucket(BucketSubstate::new(resource_resource)),
+        )?;
+        let bucket_id = node_id.into();
 
         Ok((
             Bucket(bucket_id),
@@ -498,9 +496,8 @@ impl NativeProcedure for WorktopDrainInvocation {
         let mut nodes_to_move = Vec::new();
         for resource in resources {
             let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-            let bucket_id = api
-                .create_node(node_id, RENode::Bucket(BucketSubstate::new(resource)))?
-                .into();
+            api.create_node(node_id, RENode::Bucket(BucketSubstate::new(resource)))?;
+            let bucket_id = node_id.into();
             buckets.push(Bucket(bucket_id));
             nodes_to_move.push(RENodeId::Bucket(bucket_id));
         }

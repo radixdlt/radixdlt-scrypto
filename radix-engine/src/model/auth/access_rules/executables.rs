@@ -74,11 +74,11 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
                 )
             };
 
-            let package_offset = SubstateOffset::Package(PackageOffset::Package);
+            let package_offset = SubstateOffset::Package(PackageOffset::Info);
             let handle =
                 system_api.lock_substate(package_id, package_offset, LockFlags::read_only())?;
             let substate_ref = system_api.get_ref(handle)?;
-            let package = substate_ref.package();
+            let package = substate_ref.package_info();
             let blueprint_abi = package.blueprint_abi(&blueprint_name).unwrap_or_else(|| {
                 panic!(
                     "Blueprint {} is not found in package node {:?}",
@@ -180,7 +180,7 @@ impl NativeProcedure for AccessRulesSetAccessRuleInvocation {
                 .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
                 .expect("AuthZone does not exist");
 
-            let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+            let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
             let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
             let substate_ref = api.get_ref(handle)?;
             let auth_zone_substate = substate_ref.auth_zone();
@@ -282,7 +282,7 @@ impl NativeProcedure for AccessRulesSetMutabilityInvocation {
                 .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
                 .expect("AuthZone does not exist");
 
-            let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+            let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
             let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
             let substate_ref = api.get_ref(handle)?;
             let auth_zone_substate = substate_ref.auth_zone();

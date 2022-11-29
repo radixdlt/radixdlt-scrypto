@@ -26,6 +26,7 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
 use radix_engine_interface::dec;
 
+use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto::{access_rule_node, rule};
 
@@ -134,6 +135,58 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         Some(global.global().node_deref())
     }
 
+    pub fn deref_package(&mut self, package_address: PackageAddress) -> Option<RENodeId> {
+        let node_id = RENodeId::Global(GlobalAddress::Package(package_address));
+        let global = self
+            .execution_stores
+            .get_root_store()
+            .get_substate(&SubstateId(
+                node_id,
+                SubstateOffset::Global(GlobalOffset::Global),
+            ))
+            .map(|s| s.substate.to_runtime())?;
+        Some(global.global().node_deref())
+    }
+
+    pub fn inspect_component_royalty(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Option<Decimal> {
+        let node_id = self.deref_component(component_address)?;
+
+        self.execution_stores
+            .get_root_store()
+            .get_substate(&SubstateId(
+                node_id,
+                SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+            ))
+            .map(|output| {
+                output
+                    .substate
+                    .component_royalty_accumulator()
+                    .royalty
+                    .amount()
+            })
+    }
+
+    pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
+        let node_id = self.deref_package(package_address)?;
+
+        self.execution_stores
+            .get_root_store()
+            .get_substate(&SubstateId(
+                node_id,
+                SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+            ))
+            .map(|output| {
+                output
+                    .substate
+                    .package_royalty_accumulator()
+                    .royalty
+                    .amount()
+            })
+    }
+
     pub fn get_component_vaults(
         &mut self,
         component_address: ComponentAddress,
@@ -215,6 +268,20 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
             .get_root_store()
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
+                SubstateOffset::Global(GlobalOffset::Global),
+            ))
+            .map(|output| output.substate.to_runtime().into())
+            .unwrap();
+
+        substate.node_deref()
+    }
+
+    pub fn deref_package_address(&mut self, package_address: PackageAddress) -> RENodeId {
+        let substate: GlobalAddressSubstate = self
+            .execution_stores
+            .get_root_store()
+            .get_substate(&SubstateId(
+                RENodeId::Global(GlobalAddress::Package(package_address)),
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
             .map(|output| output.substate.to_runtime().into())

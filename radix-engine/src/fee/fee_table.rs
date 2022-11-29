@@ -1,8 +1,8 @@
 use radix_engine_interface::api::types::{
-    AccessRulesMethod, AuthZoneMethod, BucketMethod, EpochManagerFunction, EpochManagerMethod,
-    MetadataMethod, NativeFunction, NativeMethod, PackageFunction, ProofMethod,
-    ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
-    WorktopMethod,
+    AccessRulesMethod, AuthZoneStackMethod, BucketMethod, ComponentMethod, EpochManagerFunction,
+    EpochManagerMethod, MetadataMethod, NativeFunction, NativeMethod, PackageFunction,
+    PackageMethod, ProofMethod, ResourceManagerFunction, ResourceManagerMethod,
+    TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
 
 pub enum SystemApiCostingEntry {
@@ -167,16 +167,16 @@ impl FeeTable {
 
     pub fn run_native_method_cost(&self, native_method: &NativeMethod) -> u32 {
         match native_method {
-            NativeMethod::AuthZone(auth_zone_ident) => {
+            NativeMethod::AuthZoneStack(auth_zone_ident) => {
                 match auth_zone_ident {
-                    AuthZoneMethod::Pop => self.fixed_low,
-                    AuthZoneMethod::Push => self.fixed_low,
-                    AuthZoneMethod::CreateProof => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
-                    AuthZoneMethod::CreateProofByAmount => self.fixed_high,
-                    AuthZoneMethod::CreateProofByIds => self.fixed_high,
-                    AuthZoneMethod::Clear => self.fixed_high,
-                    AuthZoneMethod::Drain => self.fixed_high,
-                    AuthZoneMethod::AssertAccessRule => self.fixed_high,
+                    AuthZoneStackMethod::Pop => self.fixed_low,
+                    AuthZoneStackMethod::Push => self.fixed_low,
+                    AuthZoneStackMethod::CreateProof => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
+                    AuthZoneStackMethod::CreateProofByAmount => self.fixed_high,
+                    AuthZoneStackMethod::CreateProofByIds => self.fixed_high,
+                    AuthZoneStackMethod::Clear => self.fixed_high,
+                    AuthZoneStackMethod::Drain => self.fixed_high,
+                    AuthZoneStackMethod::AssertAccessRule => self.fixed_high,
                 }
             }
             NativeMethod::EpochManager(system_ident) => match system_ident {
@@ -230,6 +230,12 @@ impl FeeTable {
             },
             NativeMethod::Metadata(metadata_method) => match metadata_method {
                 MetadataMethod::Set => self.fixed_low,
+            },
+            NativeMethod::Component(method_ident) => match method_ident {
+                ComponentMethod::SetRoyaltyConfig => self.fixed_medium,
+            },
+            NativeMethod::Package(method_ident) => match method_ident {
+                PackageMethod::SetRoyaltyConfig => self.fixed_medium,
             },
             NativeMethod::Vault(vault_ident) => {
                 match vault_ident {
