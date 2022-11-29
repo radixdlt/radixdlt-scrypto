@@ -1,7 +1,7 @@
-use super::PackageRoyaltyConfigSubstate;
+use super::{PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate};
 use crate::engine::*;
 use crate::engine::{CallFrameUpdate, LockFlags, RuntimeError, SystemApi};
-use crate::model::{GlobalAddressSubstate, MetadataSubstate, PackageSubstate};
+use crate::model::{GlobalAddressSubstate, MetadataSubstate, PackageInfoSubstate, Resource};
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
@@ -27,10 +27,10 @@ impl Package {
     fn new(
         code: Vec<u8>,
         abi: HashMap<String, BlueprintAbi>,
-    ) -> Result<PackageSubstate, PrepareError> {
+    ) -> Result<PackageInfoSubstate, PrepareError> {
         WasmValidator::default().validate(&code, &abi)?;
 
-        Ok(PackageSubstate {
+        Ok(PackageInfoSubstate {
             code: code,
             blueprint_abis: abi,
         })
@@ -76,15 +76,18 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
         let package_royalty_config = PackageRoyaltyConfigSubstate {
             royalty_config: HashMap::new(), // TODO: add user interface
         };
-
+        let package_royalty_accumulator = PackageRoyaltyAccumulatorSubstate {
+            royalty: Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }),
+        };
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
 
         let node_id = system_api.create_node(RENode::Package(
             package,
-            metadata_substate,
             package_royalty_config,
+            package_royalty_accumulator,
+            metadata_substate,
         ))?;
         let package_id: PackageId = node_id.into();
 
@@ -139,14 +142,18 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
         let package_royalty_config = PackageRoyaltyConfigSubstate {
             royalty_config: HashMap::new(), // TODO: add user interface
         };
+        let package_royalty_accumulator = PackageRoyaltyAccumulatorSubstate {
+            royalty: Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }),
+        };
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
 
         let node_id = system_api.create_node(RENode::Package(
             package,
-            metadata_substate,
             package_royalty_config,
+            package_royalty_accumulator,
+            metadata_substate,
         ))?;
         let package_id: PackageId = node_id.into();
 

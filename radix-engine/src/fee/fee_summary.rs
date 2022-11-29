@@ -1,4 +1,4 @@
-use super::RoyaltyCollector;
+use super::RoyaltyReceiver;
 use crate::model::Resource;
 use crate::types::*;
 use radix_engine_interface::api::types::VaultId;
@@ -27,5 +27,5 @@ pub struct FeeSummary {
     /// The cost breakdown
     pub cost_breakdown: HashMap<String, u32>,
     /// The royalty breakdown.
-    pub royalty_breakdown: HashMap<RoyaltyCollector, Decimal>,
+    pub royalty_breakdown: HashMap<RoyaltyReceiver, Decimal>,
 }

@@ -8,6 +8,10 @@ blueprint! {
             0
         }
 
+        pub fn paid_method_panic(&self) -> u32 {
+            panic!("Boom!")
+        }
+
         pub fn free_method(&self) -> u32 {
             1
         }
@@ -18,6 +22,7 @@ blueprint! {
             local_component.set_royalty_config(
                 RoyaltyConfigBuilder::new()
                     .add_rule("paid_method", dec!("0.1"))
+                    .add_rule("paid_method_panic", dec!("0.1"))
                     .default(dec!("0")),
             );
 
@@ -31,6 +36,7 @@ blueprint! {
                 "RoyaltyTest".to_owned(),
                 RoyaltyConfigBuilder::new()
                     .add_rule("paid_method", dec!("0.2"))
+                    .add_rule("paid_method_panic", dec!("0.2"))
                     .default(dec!("0")),
             )]));
 

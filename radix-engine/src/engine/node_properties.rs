@@ -142,7 +142,7 @@ impl VisibilityProperties {
                 }
                 SubstateOffset::Bucket(BucketOffset::Bucket) => true, // TODO: Remove to read_only!
                 SubstateOffset::Vault(VaultOffset::Vault) => flags == LockFlags::read_only(),
-                SubstateOffset::Package(PackageOffset::Package) => flags == LockFlags::read_only(),
+                SubstateOffset::Package(PackageOffset::Info) => flags == LockFlags::read_only(),
                 SubstateOffset::Component(ComponentOffset::State) => {
                     flags == LockFlags::read_only()
                 }
@@ -155,7 +155,7 @@ impl VisibilityProperties {
             (ExecutionMode::ScryptoInterpreter, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => flags == LockFlags::read_only(),
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
-                SubstateOffset::Package(PackageOffset::Package) => flags == LockFlags::read_only(),
+                SubstateOffset::Package(PackageOffset::Info) => flags == LockFlags::read_only(),
                 _ => false,
             },
             (ExecutionMode::Application, offset) => {

@@ -4,7 +4,7 @@ use crate::types::*;
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine_interface::api::types::VaultId;
+use radix_engine_interface::api::types::{RENodeId, VaultId};
 use radix_engine_interface::math::Decimal;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -19,7 +19,7 @@ pub enum FeeReserveError {
 pub trait FeeReserve {
     fn consume_royalty(
         &mut self,
-        collector: RoyaltyCollector,
+        receiver: RoyaltyReceiver,
         amount: Decimal,
     ) -> Result<(), FeeReserveError>;
 
@@ -68,9 +68,9 @@ pub trait FeeReserve {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum RoyaltyCollector {
-    Package(PackageAddress),
-    Component(ComponentAddress),
+pub enum RoyaltyReceiver {
+    Package(PackageAddress, RENodeId),
+    Component(ComponentAddress, RENodeId),
 }
 
 #[derive(Debug)]
@@ -96,7 +96,7 @@ pub struct SystemLoanFeeReserve {
     /// Cost breakdown
     cost_breakdown: HashMap<String, u32>,
     /// Royalty
-    royalty: HashMap<RoyaltyCollector, Decimal>,
+    royalty: HashMap<RoyaltyReceiver, Decimal>,
 }
 
 impl SystemLoanFeeReserve {
@@ -184,15 +184,12 @@ impl SystemLoanFeeReserve {
 impl FeeReserve for SystemLoanFeeReserve {
     fn consume_royalty(
         &mut self,
-        collector: RoyaltyCollector,
+        receiver: RoyaltyReceiver,
         amount: Decimal,
     ) -> Result<(), FeeReserveError> {
         if self.balance.1 >= amount {
             self.balance.1 -= amount;
-            self.royalty
-                .entry(collector)
-                .or_default()
-                .add_assign(amount);
+            self.royalty.entry(receiver).or_default().add_assign(amount);
             Ok(())
         } else {
             Err(FeeReserveError::InsufficientBalance)

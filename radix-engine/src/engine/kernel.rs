@@ -1445,11 +1445,11 @@ where
                     |system_api| {
                         let handle = system_api.lock_substate(
                             global_node_id,
-                            SubstateOffset::Package(PackageOffset::Package),
+                            SubstateOffset::Package(PackageOffset::Info),
                             LockFlags::read_only(),
                         )?;
                         let substate_ref = system_api.get_ref(handle)?;
-                        let package = substate_ref.package().clone(); // TODO: Remove clone()
+                        let package = substate_ref.package_info().clone(); // TODO: Remove clone()
                         system_api.drop_lock(handle)?;
 
                         Ok(package)
@@ -1562,11 +1562,11 @@ where
                         ));
                         let handle = system_api.lock_substate(
                             package_global,
-                            SubstateOffset::Package(PackageOffset::Package),
+                            SubstateOffset::Package(PackageOffset::Info),
                             LockFlags::read_only(),
                         )?;
                         let substate_ref = system_api.get_ref(handle)?;
-                        let package = substate_ref.package().clone(); // TODO: Remove clone()
+                        let package = substate_ref.package_info().clone(); // TODO: Remove clone()
                         system_api.drop_lock(handle)?;
 
                         Ok(package)
