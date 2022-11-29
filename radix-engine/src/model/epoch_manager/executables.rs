@@ -54,15 +54,15 @@ impl NativeProcedure for EpochManagerCreateInvocation {
     where
         Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
     {
-        let node_id = api.allocate_node_id(RENodeType::EpochManager)?;
-        let underlying_node_id = api.create_node(
-            node_id,
+        let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
+        api.create_node(
+            underlying_node_id,
             RENode::EpochManager(EpochManagerSubstate { epoch: 0 }),
         )?;
 
-        let node_id = api.allocate_node_id(RENodeType::GlobalEpochManager)?;
-        let global_node_id = api.create_node(
-            node_id,
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalEpochManager)?;
+        api.create_node(
+            global_node_id,
             RENode::Global(GlobalAddressSubstate::System(underlying_node_id.into())),
         )?;
 

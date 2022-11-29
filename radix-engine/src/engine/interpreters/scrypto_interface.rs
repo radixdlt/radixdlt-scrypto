@@ -109,7 +109,9 @@ where
             }
         };
 
-        self.create_node(node_id, node)
+        self.create_node(node_id, node)?;
+
+        Ok(node_id)
     }
 
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {

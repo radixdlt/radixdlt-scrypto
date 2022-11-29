@@ -938,11 +938,7 @@ where
         Ok(node_id)
     }
 
-    fn create_node(
-        &mut self,
-        node_id: RENodeId,
-        re_node: RENode,
-    ) -> Result<RENodeId, RuntimeError> {
+    fn create_node(&mut self, node_id: RENodeId, re_node: RENode) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,
@@ -1065,7 +1061,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        Ok(node_id)
+        Ok(())
     }
 
     fn lock_substate(

@@ -84,7 +84,7 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Package)?;
-        let node_id = api.create_node(
+        api.create_node(
             node_id,
             RENode::Package(
                 package,
@@ -95,9 +95,9 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
         )?;
         let package_id: PackageId = node_id.into();
 
-        let node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
-        let global_node_id = api.create_node(
-            node_id,
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
+        api.create_node(
+            global_node_id,
             RENode::Global(GlobalAddressSubstate::Package(package_id)),
         )?;
 
@@ -157,7 +157,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Package)?;
-        let node_id = api.create_node(
+        api.create_node(
             node_id,
             RENode::Package(
                 package,
@@ -168,9 +168,9 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
         )?;
         let package_id: PackageId = node_id.into();
 
-        let node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
-        let global_node_id = api.create_node(
-            node_id,
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
+        api.create_node(
+            global_node_id,
             RENode::Global(GlobalAddressSubstate::Package(package_id)),
         )?;
 

@@ -6,8 +6,8 @@ use crate::engine::{
 use crate::model::{InvokeError, ProofError};
 use crate::types::*;
 use radix_engine_interface::api::types::{
-    AuthZoneStackMethod, AuthZoneStackOffset, GlobalAddress, NativeMethod, ProofId, ProofOffset,
-    RENodeId, ResourceManagerOffset, SubstateOffset,
+    AuthZoneStackMethod, AuthZoneStackOffset, GlobalAddress, NativeMethod, ProofOffset, RENodeId,
+    ResourceManagerOffset, SubstateOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
@@ -72,7 +72,8 @@ impl NativeProcedure for AuthZonePopInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
+        api.create_node(node_id, RENode::Proof(proof))?;
+        let proof_id = node_id.into();
 
         Ok((
             Proof(proof_id),
@@ -203,7 +204,8 @@ impl NativeProcedure for AuthZoneCreateProofInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
+        api.create_node(node_id, RENode::Proof(proof))?;
+        let proof_id = node_id.into();
 
         Ok((
             Proof(proof_id),
@@ -278,7 +280,8 @@ impl NativeProcedure for AuthZoneCreateProofByAmountInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
+        api.create_node(node_id, RENode::Proof(proof))?;
+        let proof_id = node_id.into();
 
         Ok((
             Proof(proof_id),
@@ -353,7 +356,8 @@ impl NativeProcedure for AuthZoneCreateProofByIdsInvocation {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Proof)?;
-        let proof_id = api.create_node(node_id, RENode::Proof(proof))?.into();
+        api.create_node(node_id, RENode::Proof(proof))?;
+        let proof_id = node_id.into();
 
         Ok((
             Proof(proof_id),
@@ -448,7 +452,8 @@ impl NativeProcedure for AuthZoneDrainInvocation {
         let mut nodes_to_move = Vec::new();
         for proof in proofs {
             let node_id = api.allocate_node_id(RENodeType::Proof)?;
-            let proof_id: ProofId = api.create_node(node_id, RENode::Proof(proof))?.into();
+            api.create_node(node_id, RENode::Proof(proof))?;
+            let proof_id = node_id.into();
             proof_ids.push(Proof(proof_id));
             nodes_to_move.push(RENodeId::Proof(proof_id));
         }

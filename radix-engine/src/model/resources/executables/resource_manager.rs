@@ -102,9 +102,11 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
 
         let underlying_node_id = if matches!(self.resource_type, ResourceType::NonFungible) {
-            let node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
-            let nf_store_node_id =
-                api.create_node(node_id, RENode::NonFungibleStore(NonFungibleStore::new()))?;
+            let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
+            api.create_node(
+                nf_store_node_id,
+                RENode::NonFungibleStore(NonFungibleStore::new()),
+            )?;
             let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
 
             let mut resource_manager = ResourceManagerSubstate::new(
@@ -147,7 +149,8 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             }
 
             let node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
-            api.create_node(node_id, RENode::ResourceManager(resource_manager))?
+            api.create_node(node_id, RENode::ResourceManager(resource_manager))?;
+            node_id
         } else {
             let mut resource_manager = ResourceManagerSubstate::new(
                 self.resource_type,
@@ -192,10 +195,11 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             }
 
             let node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
-            api.create_node(node_id, RENode::ResourceManager(resource_manager))?
+            api.create_node(node_id, RENode::ResourceManager(resource_manager))?;
+            node_id
         };
 
-        let global_node_id = api.create_node(
+        api.create_node(
             global_node_id,
             RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
         )?;
@@ -216,9 +220,8 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             };
 
             let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-            let bucket_id = api
-                .create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?
-                .into();
+            api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+            let bucket_id = node_id.into();
             Some(Bucket(bucket_id))
         } else {
             None
@@ -501,9 +504,8 @@ impl NativeProcedure for ResourceManagerCreateVaultExecutable {
         );
 
         let node_id = api.allocate_node_id(RENodeType::Vault)?;
-        let vault_id = api
-            .create_node(node_id, RENode::Vault(VaultRuntimeSubstate::new(resource)))?
-            .into();
+        api.create_node(node_id, RENode::Vault(VaultRuntimeSubstate::new(resource)))?;
+        let vault_id = node_id.into();
 
         Ok((
             Vault(vault_id),
@@ -560,9 +562,8 @@ impl NativeProcedure for ResourceManagerCreateBucketExecutable {
         );
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        let bucket_id = api
-            .create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?
-            .into();
+        api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+        let bucket_id = node_id.into();
 
         Ok((
             Bucket(bucket_id),
@@ -624,9 +625,8 @@ impl NativeProcedure for ResourceManagerMintExecutable {
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-        let bucket_id = api
-            .create_node(node_id, RENode::Bucket(BucketSubstate::new(resource)))?
-            .into();
+        api.create_node(node_id, RENode::Bucket(BucketSubstate::new(resource)))?;
+        let bucket_id = node_id.into();
 
         let (nf_store_id, resource_address) = {
             let substate_ref = api.get_ref(resman_handle)?;
