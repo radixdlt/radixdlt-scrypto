@@ -1,30 +1,13 @@
-use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
-use radix_engine_interface::data::ScryptoDecode;
+use radix_engine_interface::api::api::SysNativeInvokable;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
 
 use crate::resource::*;
 use crate::scrypto;
-
-pub trait SysVault {
-    fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
-    where
-        Y: EngineApi<E> + SysNativeInvokable<VaultGetAmountInvocation, E>;
-}
-
-impl SysVault for Vault {
-    fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
-    where
-        Y: EngineApi<E> + SysNativeInvokable<VaultGetAmountInvocation, E>,
-    {
-        sys_calls.sys_invoke(VaultGetAmountInvocation { receiver: self.0 })
-    }
-}
 
 pub trait ScryptoVault {
     fn with_bucket(bucket: Bucket) -> Self;
@@ -62,7 +45,9 @@ impl ScryptoVault for Vault {
     }
 
     fn amount(&self) -> Decimal {
-        self.sys_amount(&mut ScryptoEnv).unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(VaultGetAmountInvocation { receiver: self.0 })
+            .unwrap()
     }
 
     scrypto_env_native_fn! {

@@ -31,28 +31,14 @@ pub fn resolve_native_function(
 pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<NativeMethod> {
     match receiver {
         RENodeId::Package(_) | RENodeId::Global(GlobalAddress::Package(_)) => {
-            // TODO: remove this ugly temp workaround
-            if method_name == "set" {
-                MetadataMethod::from_str(method_name)
-                    .ok()
-                    .map(NativeMethod::Metadata)
-            } else {
-                PackageMethod::from_str(method_name)
-                    .ok()
-                    .map(NativeMethod::Package)
-            }
+            PackageMethod::from_str(method_name)
+                .ok()
+                .map(NativeMethod::Package)
         }
         RENodeId::Component(_) | RENodeId::Global(GlobalAddress::Component(_)) => {
-            // TODO: remove this ugly temp workaround
-            if method_name == "add_access_check" {
-                AccessRulesMethod::from_str(method_name)
-                    .ok()
-                    .map(NativeMethod::AccessRules)
-            } else {
-                ComponentMethod::from_str(method_name)
-                    .ok()
-                    .map(NativeMethod::Component)
-            }
+            ComponentMethod::from_str(method_name)
+                .ok()
+                .map(NativeMethod::Component)
         }
         RENodeId::ResourceManager(_) | RENodeId::Global(GlobalAddress::Resource(_)) => {
             ResourceManagerMethod::from_str(method_name)
@@ -64,7 +50,6 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
                 .ok()
                 .map(NativeMethod::EpochManager)
         }
-
         RENodeId::Bucket(_) => BucketMethod::from_str(method_name)
             .ok()
             .map(NativeMethod::Bucket),
@@ -90,4 +75,10 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
         | RENodeId::NonFungibleStore(_)
         | RENodeId::FeeReserve(_) => None,
     }
+    .or(AccessRulesMethod::from_str(method_name)
+        .ok()
+        .map(NativeMethod::AccessRules))
+    .or(MetadataMethod::from_str(method_name)
+        .ok()
+        .map(NativeMethod::Metadata))
 }

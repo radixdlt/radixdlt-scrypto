@@ -2,7 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use radix_engine::types::*;
-use scrypto::scrypto;
+use radix_engine_interface::scrypto;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 use crate::resim::*;

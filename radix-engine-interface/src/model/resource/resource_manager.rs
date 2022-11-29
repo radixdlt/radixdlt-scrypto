@@ -13,21 +13,27 @@ use crate::math::*;
 use crate::model::*;
 use crate::scrypto_type;
 use crate::wasm::*;
-use crate::Describe;
 
 use radix_engine_derive::scrypto;
 
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
-)]
-pub enum ResourceMethodAuthKey {
-    Mint,
-    Burn,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+pub enum VaultMethodAuthKey {
     Withdraw,
     Deposit,
     Recall,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+pub enum ResourceMethodAuthKey {
+    Mint,
+    Burn,
     UpdateMetadata,
     UpdateNonFungibleData,
+    Withdraw,
+    Deposit,
+    Recall,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -35,6 +41,15 @@ pub enum ResourceMethodAuthKey {
 pub enum Mutability {
     LOCKED,
     MUTABLE(AccessRule),
+}
+
+impl Into<AccessRule> for Mutability {
+    fn into(self) -> AccessRule {
+        match self {
+            LOCKED => AccessRule::DenyAll,
+            MUTABLE(rule) => rule,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -109,47 +124,48 @@ impl Into<NativeFnInvocation> for ResourceManagerBurnInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerUpdateAuthInvocation {
+pub struct ResourceManagerUpdateVaultAuthInvocation {
     pub receiver: ResourceAddress,
-    pub method: ResourceMethodAuthKey,
+    pub method: VaultMethodAuthKey,
     pub access_rule: AccessRule,
 }
 
-impl Invocation for ResourceManagerUpdateAuthInvocation {
+impl Invocation for ResourceManagerUpdateVaultAuthInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ResourceManagerUpdateAuthInvocation {
+impl ScryptoNativeInvocation for ResourceManagerUpdateVaultAuthInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerUpdateAuthInvocation {
+impl Into<NativeFnInvocation> for ResourceManagerUpdateVaultAuthInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::UpdateAuth(self),
+            ResourceManagerMethodInvocation::UpdateVaultAuth(self),
         ))
     }
 }
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerLockAuthInvocation {
+pub struct ResourceManagerSetVaultAuthMutabilityInvocation {
     pub receiver: ResourceAddress,
-    pub method: ResourceMethodAuthKey,
+    pub method: VaultMethodAuthKey,
+    pub mutability: AccessRule,
 }
 
-impl Invocation for ResourceManagerLockAuthInvocation {
+impl Invocation for ResourceManagerSetVaultAuthMutabilityInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ResourceManagerLockAuthInvocation {
+impl ScryptoNativeInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerLockAuthInvocation {
+impl Into<NativeFnInvocation> for ResourceManagerSetVaultAuthMutabilityInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::LockAuth(self),
+            ResourceManagerMethodInvocation::LockVaultAuth(self),
         ))
     }
 }

@@ -20,7 +20,6 @@ impl BorrowedPackage {
 
     pub fn set_royalty_config(&self, royalty_config: HashMap<String, RoyaltyConfig>) {
         let mut env = ScryptoEnv;
-
         env.sys_invoke(PackageSetRoyaltyConfigInvocation {
             receiver: self.0,
             royalty_config,
@@ -30,7 +29,6 @@ impl BorrowedPackage {
 
     pub fn claim_royalty(&self) -> Bucket {
         let mut env = ScryptoEnv;
-
         env.sys_invoke(PackageClaimRoyaltyInvocation { receiver: self.0 })
             .unwrap()
     }

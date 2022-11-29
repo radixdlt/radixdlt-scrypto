@@ -6,7 +6,6 @@ use crate::engine::{
 use crate::model::BucketSubstate;
 use crate::types::*;
 use radix_engine_interface::api::types::{ComponentOffset, SubstateOffset};
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
@@ -24,7 +23,6 @@ impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {
     where
         Self: Sized,
     {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = self.receiver;
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
@@ -33,13 +31,10 @@ impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {
             ResolvedMethod::Native(NativeMethod::Component(ComponentMethod::SetRoyaltyConfig)),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            Self {
-                receiver: resolved_receiver.receiver,
-                royalty_config: self.royalty_config,
-            },
-            input,
-        );
+        let executor = NativeExecutor(Self {
+            receiver: resolved_receiver.receiver,
+            royalty_config: self.royalty_config,
+        });
 
         Ok((actor, call_frame_update, executor))
     }
@@ -73,7 +68,6 @@ impl ExecutableInvocation for ComponentClaimRoyaltyInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = self.receiver;
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
@@ -82,12 +76,9 @@ impl ExecutableInvocation for ComponentClaimRoyaltyInvocation {
             ResolvedMethod::Native(NativeMethod::Component(ComponentMethod::ClaimRoyalty)),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            Self {
-                receiver: resolved_receiver.receiver,
-            },
-            input,
-        );
+        let executor = NativeExecutor(Self {
+            receiver: resolved_receiver.receiver,
+        });
 
         Ok((actor, call_frame_update, executor))
     }
@@ -110,8 +101,12 @@ impl NativeProcedure for ComponentClaimRoyaltyInvocation {
             .component_royalty_accumulator()
             .royalty
             .take_all();
-        let bucket_node_id =
-            system_api.create_node(RENode::Bucket(BucketSubstate::new(resource)))?;
+
+        let bucket_node_id = system_api.allocate_node_id(RENodeType::Bucket)?;
+        system_api.create_node(
+            bucket_node_id,
+            RENode::Bucket(BucketSubstate::new(resource)),
+        )?;
         let bucket_id = bucket_node_id.into();
 
         system_api.drop_lock(handle)?;

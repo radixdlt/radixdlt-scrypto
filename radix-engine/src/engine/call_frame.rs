@@ -95,6 +95,8 @@ pub struct CallFrame {
 
     next_lock_handle: LockHandle,
     locks: HashMap<LockHandle, SubstateLock>,
+
+    allocated_ids: HashSet<RENodeId>,
 }
 
 impl CallFrame {
@@ -282,6 +284,7 @@ impl CallFrame {
             owned_root_nodes: HashMap::new(),
             next_lock_handle: 0u32,
             locks: HashMap::new(),
+            allocated_ids: HashSet::new(),
         }
     }
 
@@ -311,6 +314,7 @@ impl CallFrame {
             owned_root_nodes: owned_heap_nodes,
             next_lock_handle: 0u32,
             locks: HashMap::new(),
+            allocated_ids: HashSet::new(),
         };
 
         Ok(frame)
@@ -374,12 +378,25 @@ impl CallFrame {
         }
     }
 
-    pub fn create_node(
+    pub fn add_allocated_id(&mut self, node_id: RENodeId) {
+        self.allocated_ids.insert(node_id);
+    }
+
+    pub fn create_node<'f, 's, R: FeeReserve>(
         &mut self,
-        heap: &mut Heap,
         node_id: RENodeId,
         re_node: RENode,
+        heap: &mut Heap,
+        track: &'f mut Track<'s, R>,
+        push_to_store: bool,
+        force_create: bool, // TODO: Figure out better abstraction to remove this
     ) -> Result<(), RuntimeError> {
+        if !force_create && !self.allocated_ids.remove(&node_id) {
+            return Err(RuntimeError::CallFrameError(
+                CallFrameError::RENodeIdWasNotAllocated(node_id),
+            ));
+        }
+
         let substates = re_node.to_substates();
 
         for (offset, substate) in &substates {
@@ -388,16 +405,27 @@ impl CallFrame {
             for child_id in owned {
                 SubstateProperties::verify_can_own(&offset, child_id)?;
                 self.take_node_internal(child_id)?;
+                if push_to_store {
+                    heap.move_node_to_store(track, child_id)?;
+                }
             }
         }
 
-        // Insert node into heap
-        let heap_root_node = HeapRENode {
-            substates,
-            //child_nodes,
-        };
-        heap.create_node(node_id, heap_root_node);
-        self.owned_root_nodes.insert(node_id, 0u32);
+        if push_to_store {
+            for (offset, substate) in substates {
+                track.insert_substate(SubstateId(node_id, offset), substate);
+            }
+
+            self.add_stored_ref(node_id, RENodeVisibilityOrigin::Normal);
+        } else {
+            // Insert node into heap
+            let heap_root_node = HeapRENode {
+                substates,
+                //child_nodes,
+            };
+            heap.create_node(node_id, heap_root_node);
+            self.owned_root_nodes.insert(node_id, 0u32);
+        }
 
         Ok(())
     }
@@ -409,20 +437,18 @@ impl CallFrame {
         );
     }
 
-    pub fn move_owned_node_to_store<'f, 's, R: FeeReserve>(
-        &mut self,
-        heap: &mut Heap,
-        track: &'f mut Track<'s, R>,
-        node_id: RENodeId,
-    ) -> Result<(), RuntimeError> {
-        self.take_node_internal(node_id)?;
-        heap.move_node_to_store(track, node_id)?;
-
-        Ok(())
-    }
-
     pub fn owned_nodes(&self) -> Vec<RENodeId> {
         self.owned_root_nodes.keys().cloned().collect()
+    }
+
+    pub fn verify_allocated_ids_empty(&self) -> Result<(), RuntimeError> {
+        if !self.allocated_ids.is_empty() {
+            return Err(RuntimeError::CallFrameError(
+                CallFrameError::CallFrameCleanupAllocatedIdsNotEmpty,
+            ));
+        }
+
+        Ok(())
     }
 
     /// Removes node from call frame and re-owns any children

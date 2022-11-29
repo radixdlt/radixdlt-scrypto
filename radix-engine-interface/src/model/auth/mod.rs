@@ -1,5 +1,5 @@
 mod access_rules;
-mod invocations;
+mod auth_zone;
 
 pub use access_rules::*;
-pub use invocations::*;
+pub use auth_zone::*;

@@ -2,16 +2,18 @@ use super::{PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate};
 use crate::engine::*;
 use crate::engine::{CallFrameUpdate, LockFlags, RuntimeError, SystemApi};
 use crate::model::{
-    BucketSubstate, GlobalAddressSubstate, MetadataSubstate, PackageInfoSubstate, Resource,
+    AccessRulesSubstate, BucketSubstate, GlobalAddressSubstate, MetadataSubstate,
+    PackageInfoSubstate, Resource,
 };
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
+use radix_engine_interface::access_rule_node;
 use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId, RENodeId};
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
+use radix_engine_interface::rule;
 
 pub struct Package;
 
@@ -46,12 +48,11 @@ impl ExecutableInvocation for PackagePublishNoOwnerInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let call_frame_update = CallFrameUpdate::empty();
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Package(
             PackageFunction::PublishNoOwner,
         )));
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -59,12 +60,12 @@ impl ExecutableInvocation for PackagePublishNoOwnerInvocation {
 impl NativeProcedure for PackagePublishNoOwnerInvocation {
     type Output = PackageAddress;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + Invokable<ScryptoInvocation>,
     {
-        let code = system_api.read_blob(&self.code.0)?.to_vec();
-        let blob = system_api.read_blob(&self.abi.0)?;
+        let code = api.read_blob(&self.code.0)?.to_vec();
+        let blob = api.read_blob(&self.abi.0)?;
         let abi = scrypto_decode::<HashMap<String, BlueprintAbi>>(blob).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidAbi(e),
@@ -85,16 +86,27 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
             metadata: self.metadata,
         };
 
-        let node_id = system_api.create_node(RENode::Package(
-            package,
-            package_royalty_config,
-            package_royalty_accumulator,
-            metadata_substate,
-        ))?;
+        let access_rules = AccessRulesSubstate {
+            access_rules: vec![AccessRules::new()],
+        };
+        let node_id = api.allocate_node_id(RENodeType::Package)?;
+        api.create_node(
+            node_id,
+            RENode::Package(
+                package,
+                package_royalty_config,
+                package_royalty_accumulator,
+                metadata_substate,
+                access_rules,
+            ),
+        )?;
         let package_id: PackageId = node_id.into();
 
-        let global_node_id =
-            system_api.create_node(RENode::Global(GlobalAddressSubstate::Package(package_id)))?;
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::Package(package_id)),
+        )?;
 
         let package_address: PackageAddress = global_node_id.into();
 
@@ -109,12 +121,11 @@ impl ExecutableInvocation for PackagePublishWithOwnerInvocation {
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let call_frame_update = CallFrameUpdate::empty();
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Package(
             PackageFunction::PublishWithOwner,
         )));
-        let executor = NativeExecutor(self, input);
+        let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -124,13 +135,13 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
 
     fn main<Y>(
         self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<((PackageAddress, Bucket), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + SysInvokableNative<RuntimeError>,
     {
-        let code = system_api.read_blob(&self.code.0)?.to_vec();
-        let blob = system_api.read_blob(&self.abi.0)?;
+        let code = api.read_blob(&self.code.0)?.to_vec();
+        let blob = api.read_blob(&self.abi.0)?;
         let abi = scrypto_decode::<HashMap<String, BlueprintAbi>>(blob).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidAbi(e),
@@ -151,25 +162,14 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
             metadata: self.metadata,
         };
 
-        let node_id = system_api.create_node(RENode::Package(
-            package,
-            package_royalty_config,
-            package_royalty_accumulator,
-            metadata_substate,
-        ))?;
-        let package_id: PackageId = node_id.into();
-
-        let global_node_id =
-            system_api.create_node(RENode::Global(GlobalAddressSubstate::Package(package_id)))?;
-
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
         let package_address: PackageAddress = global_node_id.into();
-        let bytes = scrypto_encode(&package_address).map_err(|_| {
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::CouldNotEncodePackageAddress,
-            ))
-        })?;
 
+        // TODO: Cleanup package address + NonFungibleId integration
+        let bytes = scrypto_encode(&package_address).unwrap();
         let non_fungible_id = NonFungibleId::from_bytes(bytes);
+        let non_fungible_address =
+            NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id.clone());
 
         let mut entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)> = HashMap::new();
         entries.insert(non_fungible_id, (vec![], vec![]));
@@ -179,7 +179,43 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
             mint_params: MintParams::NonFungible { entries },
         };
 
-        let bucket = system_api.sys_invoke(mint_invocation)?;
+        let bucket = api.sys_invoke(mint_invocation)?;
+        let mut access_rules = AccessRules::new();
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
+            rule!(require(non_fungible_address.clone())),
+        );
+        access_rules.set_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
+            rule!(require(non_fungible_address)),
+        );
+
+        let access_rules_substate = AccessRulesSubstate {
+            access_rules: vec![access_rules],
+        };
+
+        let node_id = api.allocate_node_id(RENodeType::Package)?;
+        api.create_node(
+            node_id,
+            RENode::Package(
+                package,
+                package_royalty_config,
+                package_royalty_accumulator,
+                metadata_substate,
+                access_rules_substate,
+            ),
+        )?;
+        let package_id: PackageId = node_id.into();
+
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::Package(package_id)),
+        )?;
+
         let bucket_node_id = RENodeId::Bucket(bucket.0);
 
         Ok((
@@ -199,7 +235,6 @@ impl ExecutableInvocation for PackageSetRoyaltyConfigInvocation {
     where
         Self: Sized,
     {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
@@ -208,13 +243,10 @@ impl ExecutableInvocation for PackageSetRoyaltyConfigInvocation {
             ResolvedMethod::Native(NativeMethod::Package(PackageMethod::SetRoyaltyConfig)),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            PackageSetRoyaltyConfigExecutable {
-                receiver: resolved_receiver.receiver,
-                royalty_config: self.royalty_config,
-            },
-            input,
-        );
+        let executor = NativeExecutor(PackageSetRoyaltyConfigExecutable {
+            receiver: resolved_receiver.receiver,
+            royalty_config: self.royalty_config,
+        });
 
         Ok((actor, call_frame_update, executor))
     }
@@ -248,7 +280,6 @@ impl ExecutableInvocation for PackageClaimRoyaltyInvocation {
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
@@ -257,12 +288,9 @@ impl ExecutableInvocation for PackageClaimRoyaltyInvocation {
             ResolvedMethod::Native(NativeMethod::Package(PackageMethod::ClaimRoyalty)),
             resolved_receiver,
         );
-        let executor = NativeExecutor(
-            PackageClaimRoyaltyExecutable {
-                receiver: resolved_receiver.receiver,
-            },
-            input,
-        );
+        let executor = NativeExecutor(PackageClaimRoyaltyExecutable {
+            receiver: resolved_receiver.receiver,
+        });
 
         Ok((actor, call_frame_update, executor))
     }
@@ -285,8 +313,11 @@ impl NativeProcedure for PackageClaimRoyaltyExecutable {
             .package_royalty_accumulator()
             .royalty
             .take_all();
-        let bucket_node_id =
-            system_api.create_node(RENode::Bucket(BucketSubstate::new(resource)))?;
+        let bucket_node_id = system_api.allocate_node_id(RENodeType::Bucket)?;
+        system_api.create_node(
+            bucket_node_id,
+            RENode::Bucket(BucketSubstate::new(resource)),
+        )?;
         let bucket_id = bucket_node_id.into();
 
         system_api.drop_lock(handle)?;
