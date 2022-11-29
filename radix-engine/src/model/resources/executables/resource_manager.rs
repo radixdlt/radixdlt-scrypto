@@ -3,7 +3,10 @@ use crate::engine::{
     LockFlags, MethodDeref, NativeExecutor, NativeProcedure, REActor, RENode, ResolvedFunction,
     ResolvedMethod, RuntimeError, SystemApi,
 };
-use crate::model::{AccessRulesSubstate, BucketSubstate, GlobalAddressSubstate, InvokeError, MetadataSubstate, NonFungible, NonFungibleSubstate, Resource, VaultRuntimeSubstate};
+use crate::model::{
+    AccessRulesSubstate, BucketSubstate, GlobalAddressSubstate, InvokeError, MetadataSubstate,
+    NonFungible, NonFungibleSubstate, Resource, VaultRuntimeSubstate,
+};
 use crate::model::{NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
 use radix_engine_interface::api::api::SysInvokableNative;
@@ -86,15 +89,128 @@ impl ExecutableInvocation for ResourceManagerCreateInvocation {
     }
 }
 
-fn build_access_rules(mut access_rules_map: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>) -> (AccessRulesSubstate, AccessRulesSubstate) {
+fn build_resource_manager_substate<Y>(
+    resource_address: ResourceAddress,
+    resource_type: ResourceType,
+    mint_params: Option<MintParams>,
+    api: &mut Y,
+) -> Result<(ResourceManagerSubstate, Option<Bucket>), RuntimeError>
+where
+    Y: SystemApi,
+{
+    let substate_and_bucket = if matches!(resource_type, ResourceType::NonFungible) {
+        let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
+        api.create_node(
+            nf_store_node_id,
+            RENode::NonFungibleStore(NonFungibleStore::new()),
+        )?;
+        let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
+
+        let mut resource_manager =
+            ResourceManagerSubstate::new(resource_type, Some(nf_store_id), resource_address)
+                .map_err(|e| match e {
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+                    }
+                    InvokeError::Downstream(e) => e,
+                })?;
+
+        let bucket = if let Some(mint_params) = mint_params {
+            if let MintParams::NonFungible { entries } = mint_params {
+                for (non_fungible_id, data) in &entries {
+                    let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
+                        non_fungible_id.clone(),
+                    ));
+                    let non_fungible_handle =
+                        api.lock_substate(nf_store_node_id, offset, LockFlags::MUTABLE)?;
+                    let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
+                    let non_fungible_mut = substate_mut.non_fungible();
+                    *non_fungible_mut = NonFungibleSubstate(Some(
+                        NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
+                    ));
+                    api.drop_lock(non_fungible_handle)?;
+                }
+                resource_manager.total_supply = entries.len().into();
+                let ids = entries.into_keys().collect();
+                let container = Resource::new_non_fungible(resource_address, ids);
+                let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+                api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+                let bucket_id = node_id.into();
+                Some(Bucket(bucket_id))
+            } else {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ResourceManagerError(
+                        ResourceManagerError::ResourceTypeDoesNotMatch,
+                    ),
+                ));
+            }
+        } else {
+            None
+        };
+
+        (resource_manager, bucket)
+    } else {
+        let mut resource_manager =
+            ResourceManagerSubstate::new(resource_type, None, resource_address).map_err(
+                |e| match e {
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+                    }
+                    InvokeError::Downstream(e) => e,
+                },
+            )?;
+
+        let bucket = if let Some(mint_params) = mint_params {
+            if let MintParams::Fungible { amount } = mint_params {
+                resource_manager.check_amount(amount).map_err(|e| match e {
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+                    }
+                    InvokeError::Downstream(e) => e,
+                })?;
+                // TODO: refactor this into mint function
+                if amount > dec!("1000000000000000000") {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::MaxMintAmountExceeded,
+                        ),
+                    ));
+                }
+                resource_manager.total_supply = amount;
+                let container =
+                    Resource::new_fungible(resource_address, resource_type.divisibility(), amount);
+                let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+                api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+                let bucket_id = node_id.into();
+                Some(Bucket(bucket_id))
+            } else {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ResourceManagerError(
+                        ResourceManagerError::ResourceTypeDoesNotMatch,
+                    ),
+                ));
+            }
+        } else {
+            None
+        };
+
+        (resource_manager, bucket)
+    };
+
+    Ok(substate_and_bucket)
+}
+
+fn build_access_rules_substates(
+    mut access_rules_map: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+) -> (AccessRulesSubstate, AccessRulesSubstate) {
     let (mint_access_rule, mint_mutability) =
         access_rules_map.remove(&Mint).unwrap_or((DenyAll, LOCKED));
     let (burn_access_rule, burn_mutability) =
         access_rules_map.remove(&Burn).unwrap_or((DenyAll, LOCKED));
     let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) =
         access_rules_map
-        .remove(&UpdateNonFungibleData)
-        .unwrap_or((AllowAll, LOCKED));
+            .remove(&UpdateNonFungibleData)
+            .unwrap_or((AllowAll, LOCKED));
 
     let mut access_rules = AccessRules::new();
     access_rules.set_access_rule_and_mutability(
@@ -193,16 +309,13 @@ fn build_access_rules(mut access_rules_map: HashMap<ResourceMethodAuthKey, (Acce
         access_rules: vec![access_rules],
     };
 
-    let (deposit_access_rule, deposit_mutability) =
-        access_rules_map
+    let (deposit_access_rule, deposit_mutability) = access_rules_map
         .remove(&ResourceMethodAuthKey::Deposit)
         .unwrap_or((AllowAll, LOCKED));
-    let (withdraw_access_rule, withdraw_mutability) =
-        access_rules_map
+    let (withdraw_access_rule, withdraw_mutability) = access_rules_map
         .remove(&ResourceMethodAuthKey::Withdraw)
         .unwrap_or((AllowAll, LOCKED));
-    let (recall_access_rule, recall_mutability) =
-        access_rules_map
+    let (recall_access_rule, recall_mutability) = access_rules_map
         .remove(&ResourceMethodAuthKey::Recall)
         .unwrap_or((DenyAll, LOCKED));
 
@@ -301,101 +414,18 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
         Y: SystemApi + Invokable<ScryptoInvocation>,
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
-        let resource_manager_substate = if matches!(self.resource_type, ResourceType::NonFungible) {
-            let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
-            api.create_node(
-                nf_store_node_id,
-                RENode::NonFungibleStore(NonFungibleStore::new()),
-            )?;
-            let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
+        let resource_address: ResourceAddress = global_node_id.into();
 
-            let mut resource_manager = ResourceManagerSubstate::new(
-                self.resource_type,
-                Some(nf_store_id),
-                global_node_id.into(),
-            )
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                }
-                InvokeError::Downstream(e) => e,
-            })?;
-
-            if let Some(mint_params) = &self.mint_params {
-                if let MintParams::NonFungible { entries } = mint_params {
-                    for (non_fungible_id, data) in entries {
-                        let offset = SubstateOffset::NonFungibleStore(
-                            NonFungibleStoreOffset::Entry(non_fungible_id.clone()),
-                        );
-                        let non_fungible_handle =
-                            api.lock_substate(nf_store_node_id, offset, LockFlags::MUTABLE)?;
-                        let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
-                        let non_fungible_mut = substate_mut.non_fungible();
-                        *non_fungible_mut = NonFungibleSubstate(Some(
-                            NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
-                        ));
-                        api.drop_lock(non_fungible_handle)?;
-                    }
-                    resource_manager.total_supply = entries.len().into();
-                } else {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::ResourceTypeDoesNotMatch,
-                        ),
-                    ));
-                }
-            }
-
-            resource_manager
-        } else {
-            let mut resource_manager = ResourceManagerSubstate::new(
-                self.resource_type,
-                None,
-                global_node_id.into(),
-            )
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                }
-                InvokeError::Downstream(e) => e,
-            })?;
-
-            if let Some(mint_params) = &self.mint_params {
-                if let MintParams::Fungible { amount } = mint_params {
-                    resource_manager
-                        .check_amount(*amount)
-                        .map_err(|e| match e {
-                            InvokeError::Error(e) => RuntimeError::ApplicationError(
-                                ApplicationError::ResourceManagerError(e),
-                            ),
-                            InvokeError::Downstream(e) => e,
-                        })?;
-                    // TODO: refactor this into mint function
-                    if *amount > dec!("1000000000000000000") {
-                        return Err(RuntimeError::ApplicationError(
-                            ApplicationError::ResourceManagerError(
-                                ResourceManagerError::MaxMintAmountExceeded,
-                            ),
-                        ));
-                    }
-                    resource_manager.total_supply = amount.clone();
-                } else {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::ResourceTypeDoesNotMatch,
-                        ),
-                    ));
-                }
-            }
-
-            resource_manager
-        };
-
-        let (access_rules_substate, vault_access_rules_substate) = build_access_rules(self.access_rules);
-
-
+        let (resource_manager_substate, bucket) = build_resource_manager_substate(
+            resource_address,
+            self.resource_type,
+            self.mint_params,
+            api,
+        )?;
+        let (access_rules_substate, vault_access_rules_substate) =
+            build_access_rules_substates(self.access_rules);
         let metadata_substate = MetadataSubstate {
-            metadata: self.metadata
+            metadata: self.metadata,
         };
 
         let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
@@ -413,29 +443,6 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             global_node_id,
             RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
         )?;
-        let resource_address: ResourceAddress = global_node_id.into();
-
-        // Mint
-        let bucket = if let Some(mint_params) = self.mint_params {
-            let container = match mint_params {
-                MintParams::NonFungible { entries } => {
-                    let ids = entries.into_keys().collect();
-                    Resource::new_non_fungible(resource_address, ids)
-                }
-                MintParams::Fungible { amount } => Resource::new_fungible(
-                    resource_address,
-                    self.resource_type.divisibility(),
-                    amount,
-                ),
-            };
-
-            let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-            api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
-            let bucket_id = node_id.into();
-            Some(Bucket(bucket_id))
-        } else {
-            None
-        };
 
         let mut nodes_to_move = vec![];
         if let Some(bucket) = &bucket {

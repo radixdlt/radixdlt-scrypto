@@ -1,5 +1,7 @@
 use radix_engine_interface::api::api::SysNativeInvokable;
-use radix_engine_interface::api::types::{GlobalAddress, MetadataMethod, NativeFn, NativeMethod, RENodeId, ResourceManagerMethod};
+use radix_engine_interface::api::types::{
+    GlobalAddress, MetadataMethod, NativeFn, NativeMethod, RENodeId, ResourceManagerMethod,
+};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::model::*;
@@ -106,7 +108,7 @@ impl ResourceManager {
                 receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
                 index: 0,
                 key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                    MetadataMethod::Set
+                    MetadataMethod::Set,
                 ))),
                 rule: access_rule,
             })
@@ -162,7 +164,7 @@ impl ResourceManager {
                 receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
                 index: 0,
                 key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                    MetadataMethod::Set
+                    MetadataMethod::Set,
                 ))),
                 mutability: AccessRule::DenyAll,
             })
@@ -271,7 +273,6 @@ impl ResourceManager {
             }
         }
     }
-
 
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&mut self, amount: T) -> Bucket {

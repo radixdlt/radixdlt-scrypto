@@ -222,15 +222,16 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             ))
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
-        let resource_manager: Option<ResourceManagerSubstate> = global.as_ref().and_then(|global| {
-            substate_store
-                .get_substate(&SubstateId(
-                    global.node_deref(),
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-                ))
-                .map(|s| s.substate)
-                .map(|s| s.to_runtime().into())
-        });
+        let resource_manager: Option<ResourceManagerSubstate> =
+            global.as_ref().and_then(|global| {
+                substate_store
+                    .get_substate(&SubstateId(
+                        global.node_deref(),
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                    ))
+                    .map(|s| s.substate)
+                    .map(|s| s.to_runtime().into())
+            });
         let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
         let metadata: Option<MetadataSubstate> = global.and_then(|global| {
             substate_store
@@ -253,7 +254,8 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .get("name")
                 .map(|name| format!(", name: \"{}\"", name))
                 .unwrap_or(String::new()),
-            metadata.metadata
+            metadata
+                .metadata
                 .get("symbol")
                 .map(|symbol| format!(", symbol: \"{}\"", symbol))
                 .unwrap_or(String::new()),

@@ -95,6 +95,7 @@ blueprint! {
             badge
         }
 
+        /*
         pub fn update_resource_metadata() -> Bucket {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
@@ -112,5 +113,6 @@ blueprint! {
 
             badge
         }
+         */
     }
 }

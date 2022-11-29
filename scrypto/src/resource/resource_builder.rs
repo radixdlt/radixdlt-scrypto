@@ -163,8 +163,7 @@ impl NonFungibleResourceBuilder {
     }
 
     pub fn recallable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
-        self.authorization
-            .insert(Recall, (method_auth, mutability));
+        self.authorization.insert(Recall, (method_auth, mutability));
         self
     }
 

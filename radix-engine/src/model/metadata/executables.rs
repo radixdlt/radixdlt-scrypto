@@ -20,11 +20,12 @@ impl ExecutableInvocation for MetadataSetInvocation {
 
         // TODO: Move this into a more static check once node types implemented
         match &resolved_receiver.receiver {
-            RENodeId::Package(..) | RENodeId::ResourceManager(..) => {
-            }
-            _ => return Err(RuntimeError::InterpreterError(
+            RENodeId::Package(..) | RENodeId::ResourceManager(..) => {}
+            _ => {
+                return Err(RuntimeError::InterpreterError(
                     InterpreterError::InvalidInvocation,
-            ))
+                ))
+            }
         }
 
         self.receiver = resolved_receiver.receiver;
@@ -69,11 +70,12 @@ impl ExecutableInvocation for MetadataGetInvocation {
 
         // TODO: Move this into a more static check once node types implemented
         match &resolved_receiver.receiver {
-            RENodeId::Package(..) | RENodeId::ResourceManager(..) => {
+            RENodeId::Package(..) | RENodeId::ResourceManager(..) => {}
+            _ => {
+                return Err(RuntimeError::InterpreterError(
+                    InterpreterError::InvalidInvocation,
+                ))
             }
-            _ => return Err(RuntimeError::InterpreterError(
-                InterpreterError::InvalidInvocation,
-            ))
         }
 
         self.receiver = resolved_receiver.receiver;

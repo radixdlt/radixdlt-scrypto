@@ -135,7 +135,12 @@ impl RENode {
                     access_rules.into(),
                 );
             }
-            RENode::ResourceManager(resource_manager, metadata, access_rules, vault_access_rules) => {
+            RENode::ResourceManager(
+                resource_manager,
+                metadata,
+                access_rules,
+                vault_access_rules,
+            ) => {
                 substates.insert(
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                     resource_manager.into(),
