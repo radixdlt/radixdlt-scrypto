@@ -86,11 +86,215 @@ impl ExecutableInvocation for ResourceManagerCreateInvocation {
     }
 }
 
+fn build_access_rules(mut access_rules_map: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>) -> (AccessRulesSubstate, AccessRulesSubstate) {
+    let (mint_access_rule, mint_mutability) =
+        access_rules_map.remove(&Mint).unwrap_or((DenyAll, LOCKED));
+    let (burn_access_rule, burn_mutability) =
+        access_rules_map.remove(&Burn).unwrap_or((DenyAll, LOCKED));
+    let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) =
+        access_rules_map
+        .remove(&UpdateNonFungibleData)
+        .unwrap_or((AllowAll, LOCKED));
+
+    let mut access_rules = AccessRules::new();
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::Mint,
+        ))),
+        mint_access_rule,
+        mint_mutability.into(),
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::Burn,
+        ))),
+        burn_access_rule,
+        burn_mutability.into(),
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+            MetadataMethod::Set,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::UpdateNonFungibleData,
+        ))),
+        update_non_fungible_data_access_rule,
+        update_non_fungible_data_mutability.into(),
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+            MetadataMethod::Get,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::CreateBucket,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::GetResourceType,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::GetTotalSupply,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::CreateVault,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::NonFungibleExists,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::GetNonFungible,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::UpdateVaultAuth,
+        ))),
+        AllowAll, // Access verification occurs within method
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::LockAuth,
+        ))),
+        AllowAll, // Access verification occurs within method
+        DenyAll,
+    );
+
+    let access_rules_substate = AccessRulesSubstate {
+        access_rules: vec![access_rules],
+    };
+
+    let (deposit_access_rule, deposit_mutability) =
+        access_rules_map
+        .remove(&ResourceMethodAuthKey::Deposit)
+        .unwrap_or((AllowAll, LOCKED));
+    let (withdraw_access_rule, withdraw_mutability) =
+        access_rules_map
+        .remove(&ResourceMethodAuthKey::Withdraw)
+        .unwrap_or((AllowAll, LOCKED));
+    let (recall_access_rule, recall_mutability) =
+        access_rules_map
+        .remove(&ResourceMethodAuthKey::Recall)
+        .unwrap_or((DenyAll, LOCKED));
+
+    let mut vault_access_rules = AccessRules::new();
+    vault_access_rules.set_group_access_rule_and_mutability(
+        "withdraw".to_string(),
+        withdraw_access_rule,
+        withdraw_mutability.into(),
+    );
+    vault_access_rules.set_group_access_rule_and_mutability(
+        "recall".to_string(),
+        recall_access_rule,
+        recall_mutability.into(),
+    );
+    vault_access_rules.set_group_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Take))),
+        "withdraw".to_string(),
+        DenyAll,
+    );
+    vault_access_rules.set_group_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+            VaultMethod::TakeNonFungibles,
+        ))),
+        "withdraw".to_string(),
+        DenyAll,
+    );
+    vault_access_rules.set_group_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::LockFee))),
+        "withdraw".to_string(),
+        DenyAll,
+    );
+
+    vault_access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put))),
+        deposit_access_rule,
+        deposit_mutability.into(),
+    );
+    vault_access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+            VaultMethod::GetAmount,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    vault_access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+            VaultMethod::GetResourceAddress,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    vault_access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+            VaultMethod::GetNonFungibleIds,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    vault_access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+            VaultMethod::CreateProof,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    vault_access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+            VaultMethod::CreateProofByAmount,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    vault_access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+            VaultMethod::CreateProofByIds,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+
+    let vault_access_rules_substate = AccessRulesSubstate {
+        access_rules: vec![vault_access_rules],
+    };
+
+    (access_rules_substate, vault_access_rules_substate)
+}
+
 impl NativeProcedure for ResourceManagerCreateInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
 
     fn main<Y>(
-        mut self,
+        self,
         api: &mut Y,
     ) -> Result<((ResourceAddress, Option<Bucket>), CallFrameUpdate), RuntimeError>
     where
@@ -187,205 +391,8 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             resource_manager
         };
 
-        let (mint_access_rule, mint_mutability) =
-            self.access_rules.remove(&Mint).unwrap_or((DenyAll, LOCKED));
-        let (burn_access_rule, burn_mutability) =
-            self.access_rules.remove(&Burn).unwrap_or((DenyAll, LOCKED));
-        let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) = self
-            .access_rules
-            .remove(&UpdateNonFungibleData)
-            .unwrap_or((AllowAll, LOCKED));
+        let (access_rules_substate, vault_access_rules_substate) = build_access_rules(self.access_rules);
 
-        let mut access_rules = AccessRules::new();
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::Mint,
-            ))),
-            mint_access_rule,
-            mint_mutability.into(),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::Burn,
-            ))),
-            burn_access_rule,
-            burn_mutability.into(),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Set,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateNonFungibleData,
-            ))),
-            update_non_fungible_data_access_rule,
-            update_non_fungible_data_mutability.into(),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Get,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::CreateBucket,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetResourceType,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetTotalSupply,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::CreateVault,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::NonFungibleExists,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetNonFungible,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateVaultAuth,
-            ))),
-            AllowAll, // Access verification occurs within method
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::LockAuth,
-            ))),
-            AllowAll, // Access verification occurs within method
-            DenyAll,
-        );
-
-        let access_rules_substate = AccessRulesSubstate {
-            access_rules: vec![access_rules],
-        };
-
-        let (deposit_access_rule, deposit_mutability) = self
-            .access_rules
-            .remove(&ResourceMethodAuthKey::Deposit)
-            .unwrap_or((AllowAll, LOCKED));
-        let (withdraw_access_rule, withdraw_mutability) = self
-            .access_rules
-            .remove(&ResourceMethodAuthKey::Withdraw)
-            .unwrap_or((AllowAll, LOCKED));
-        let (recall_access_rule, recall_mutability) = self
-            .access_rules
-            .remove(&ResourceMethodAuthKey::Recall)
-            .unwrap_or((DenyAll, LOCKED));
-
-        let mut vault_access_rules = AccessRules::new();
-        vault_access_rules.set_group_access_rule_and_mutability(
-            "withdraw".to_string(),
-            withdraw_access_rule,
-            withdraw_mutability.into(),
-        );
-        vault_access_rules.set_group_access_rule_and_mutability(
-            "recall".to_string(),
-            recall_access_rule,
-            recall_mutability.into(),
-        );
-        vault_access_rules.set_group_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Take))),
-            "withdraw".to_string(),
-            DenyAll,
-        );
-        vault_access_rules.set_group_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                VaultMethod::TakeNonFungibles,
-            ))),
-            "withdraw".to_string(),
-            DenyAll,
-        );
-        vault_access_rules.set_group_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::LockFee))),
-            "withdraw".to_string(),
-            DenyAll,
-        );
-
-        vault_access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put))),
-            deposit_access_rule,
-            deposit_mutability.into(),
-        );
-        vault_access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                VaultMethod::GetAmount,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        vault_access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                VaultMethod::GetResourceAddress,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        vault_access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                VaultMethod::GetNonFungibleIds,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        vault_access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                VaultMethod::CreateProof,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        vault_access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                VaultMethod::CreateProofByAmount,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        vault_access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                VaultMethod::CreateProofByIds,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-
-        let vault_access_rules_substate = AccessRulesSubstate {
-            access_rules: vec![vault_access_rules],
-        };
 
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata
