@@ -8,11 +8,11 @@ pub struct AuthModule;
 // TODO: Integrate with AuthModule in radix-engine
 impl AuthModule {
     pub fn system_role_non_fungible_address() -> NonFungibleAddress {
-        NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::NumberU32(1))
+        NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(1))
     }
 
     pub fn validator_role_non_fungible_address() -> NonFungibleAddress {
-        NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::NumberU32(0))
+        NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(0))
     }
 
     pub fn pk_non_fungibles(signer_public_keys: &[PublicKey]) -> Vec<NonFungibleAddress> {

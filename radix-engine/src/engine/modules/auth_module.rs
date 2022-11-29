@@ -21,11 +21,11 @@ pub struct AuthModule;
 
 impl AuthModule {
     pub fn supervisor_id() -> NonFungibleId {
-        NonFungibleId::NumberU32(0)
+        NonFungibleId::U32(0)
     }
 
     pub fn system_id() -> NonFungibleId {
-        NonFungibleId::NumberU32(1)
+        NonFungibleId::U32(1)
     }
 
     pub fn on_call_frame_enter<Y: SystemApi>(

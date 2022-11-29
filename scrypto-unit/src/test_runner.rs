@@ -683,15 +683,15 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
 
         let mut entries = HashMap::new();
         entries.insert(
-            NonFungibleId::NumberU32(1),
+            NonFungibleId::U32(1),
             (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
         entries.insert(
-            NonFungibleId::NumberU32(2),
+            NonFungibleId::U32(2),
             (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
         entries.insert(
-            NonFungibleId::NumberU32(3),
+            NonFungibleId::U32(3),
             (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
 
@@ -699,7 +699,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
                 ResourceType::NonFungible {
-                    id_type: NonFungibleIdType::NumberU32,
+                    id_type: NonFungibleIdType::U32,
                 },
                 HashMap::new(),
                 access_rules,
@@ -789,10 +789,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
         self.kernel_call(
-            vec![NonFungibleAddress::new(
-                SYSTEM_TOKEN,
-                NonFungibleId::NumberU32(0),
-            )],
+            vec![NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(0))],
             |kernel| {
                 kernel
                     .invoke(EpochManagerSetEpochInvocation {
