@@ -1,7 +1,8 @@
 extern crate core;
 
 use radix_engine::ledger::{
-    ReadableSubstateStore, TypedInMemorySubstateStore, WriteableSubstateStore,
+    QueryableSubstateStore, ReadableSubstateStore, TypedInMemorySubstateStore,
+    WriteableSubstateStore,
 };
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
@@ -11,7 +12,10 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::AuthModule;
 
-fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
+fn test_auth_rule<
+    's,
+    S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateStore,
+>(
     test_runner: &mut TestRunner<'s, S>,
     auth_rule: &AccessRule,
     signer_public_keys: &[PublicKey],

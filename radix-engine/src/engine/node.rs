@@ -26,6 +26,7 @@ pub enum RENode {
         PackageInfoSubstate,
         PackageRoyaltyConfigSubstate,
         PackageRoyaltyAccumulatorSubstate,
+        MetadataSubstate,
     ),
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
@@ -52,7 +53,7 @@ impl RENode {
             RENode::AuthZoneStack(auth_zone) => {
                 substates.insert(
                     SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-                    RuntimeSubstate::AuthZone(auth_zone),
+                    RuntimeSubstate::AuthZoneStack(auth_zone),
                 );
             }
             RENode::Global(global_node) => {
@@ -100,8 +101,16 @@ impl RENode {
                     RuntimeSubstate::Worktop(worktop),
                 );
             }
-            RENode::Package(package, package_royalty_config, package_royalty_accumulator) => {
-                substates.insert(SubstateOffset::Package(PackageOffset::Info), package.into());
+            RENode::Package(
+                package_info,
+                package_royalty_config,
+                package_royalty_accumulator,
+                metadata,
+            ) => {
+                substates.insert(
+                    SubstateOffset::Package(PackageOffset::Info),
+                    package_info.into(),
+                );
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::RoyaltyConfig),
                     package_royalty_config.into(),
@@ -109,6 +118,10 @@ impl RENode {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
                     package_royalty_accumulator.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    metadata.into(),
                 );
             }
             RENode::ResourceManager(resource_manager) => {

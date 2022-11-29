@@ -1,9 +1,10 @@
 use sbor::rust::fmt::Debug;
 
+use crate::api::api::*;
 use crate::api::types::RENodeId;
-use crate::api::{api::*, wasm_input::*};
 use crate::model::*;
 use crate::scrypto;
+use crate::wasm::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -13,11 +14,13 @@ pub struct ComponentSetRoyaltyConfigInvocation {
     pub royalty_config: RoyaltyConfig,
 }
 
-impl SysInvocation for ComponentSetRoyaltyConfigInvocation {
+impl Invocation for ComponentSetRoyaltyConfigInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ComponentSetRoyaltyConfigInvocation {}
+impl ScryptoNativeInvocation for ComponentSetRoyaltyConfigInvocation {
+    type ScryptoOutput = ();
+}
 
 impl Into<NativeFnInvocation> for ComponentSetRoyaltyConfigInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -34,11 +37,13 @@ pub struct ComponentClaimRoyaltyInvocation {
     pub receiver: RENodeId,
 }
 
-impl SysInvocation for ComponentClaimRoyaltyInvocation {
+impl Invocation for ComponentClaimRoyaltyInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for ComponentClaimRoyaltyInvocation {}
+impl ScryptoNativeInvocation for ComponentClaimRoyaltyInvocation {
+    type ScryptoOutput = Bucket;
+}
 
 impl Into<NativeFnInvocation> for ComponentClaimRoyaltyInvocation {
     fn into(self) -> NativeFnInvocation {

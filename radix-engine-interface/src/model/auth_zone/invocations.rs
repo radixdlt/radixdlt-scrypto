@@ -4,10 +4,10 @@ use sbor::rust::vec::Vec;
 
 use crate::api::api::*;
 use crate::api::types::AuthZoneStackId;
-use crate::api::wasm_input::*;
 use crate::math::Decimal;
 use crate::model::*;
 use crate::scrypto;
+use crate::wasm::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -15,11 +15,13 @@ pub struct AuthZonePopInvocation {
     pub receiver: AuthZoneStackId,
 }
 
-impl SysInvocation for AuthZonePopInvocation {
+impl Invocation for AuthZonePopInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for AuthZonePopInvocation {}
+impl ScryptoNativeInvocation for AuthZonePopInvocation {
+    type ScryptoOutput = Proof;
+}
 
 impl Into<NativeFnInvocation> for AuthZonePopInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -36,11 +38,13 @@ pub struct AuthZonePushInvocation {
     pub proof: Proof,
 }
 
-impl SysInvocation for AuthZonePushInvocation {
+impl Invocation for AuthZonePushInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for AuthZonePushInvocation {}
+impl ScryptoNativeInvocation for AuthZonePushInvocation {
+    type ScryptoOutput = ();
+}
 
 impl Into<NativeFnInvocation> for AuthZonePushInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -57,11 +61,13 @@ pub struct AuthZoneCreateProofInvocation {
     pub resource_address: ResourceAddress,
 }
 
-impl SysInvocation for AuthZoneCreateProofInvocation {
+impl Invocation for AuthZoneCreateProofInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for AuthZoneCreateProofInvocation {}
+impl ScryptoNativeInvocation for AuthZoneCreateProofInvocation {
+    type ScryptoOutput = Proof;
+}
 
 impl Into<NativeFnInvocation> for AuthZoneCreateProofInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -79,11 +85,13 @@ pub struct AuthZoneCreateProofByAmountInvocation {
     pub resource_address: ResourceAddress,
 }
 
-impl SysInvocation for AuthZoneCreateProofByAmountInvocation {
+impl Invocation for AuthZoneCreateProofByAmountInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for AuthZoneCreateProofByAmountInvocation {}
+impl ScryptoNativeInvocation for AuthZoneCreateProofByAmountInvocation {
+    type ScryptoOutput = Proof;
+}
 
 impl Into<NativeFnInvocation> for AuthZoneCreateProofByAmountInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -101,11 +109,13 @@ pub struct AuthZoneCreateProofByIdsInvocation {
     pub resource_address: ResourceAddress,
 }
 
-impl SysInvocation for AuthZoneCreateProofByIdsInvocation {
+impl Invocation for AuthZoneCreateProofByIdsInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for AuthZoneCreateProofByIdsInvocation {}
+impl ScryptoNativeInvocation for AuthZoneCreateProofByIdsInvocation {
+    type ScryptoOutput = Proof;
+}
 
 impl Into<NativeFnInvocation> for AuthZoneCreateProofByIdsInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -121,11 +131,13 @@ pub struct AuthZoneClearInvocation {
     pub receiver: AuthZoneStackId,
 }
 
-impl SysInvocation for AuthZoneClearInvocation {
+impl Invocation for AuthZoneClearInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for AuthZoneClearInvocation {}
+impl ScryptoNativeInvocation for AuthZoneClearInvocation {
+    type ScryptoOutput = ();
+}
 
 impl Into<NativeFnInvocation> for AuthZoneClearInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -141,11 +153,13 @@ pub struct AuthZoneDrainInvocation {
     pub receiver: AuthZoneStackId,
 }
 
-impl SysInvocation for AuthZoneDrainInvocation {
+impl Invocation for AuthZoneDrainInvocation {
     type Output = Vec<Proof>;
 }
 
-impl ScryptoNativeInvocation for AuthZoneDrainInvocation {}
+impl ScryptoNativeInvocation for AuthZoneDrainInvocation {
+    type ScryptoOutput = Vec<Proof>;
+}
 
 impl Into<NativeFnInvocation> for AuthZoneDrainInvocation {
     fn into(self) -> NativeFnInvocation {

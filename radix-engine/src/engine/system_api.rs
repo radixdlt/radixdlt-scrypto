@@ -3,8 +3,8 @@ use crate::engine::*;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use bitflags::bitflags;
+use radix_engine_interface::api::api::Invocation;
 use radix_engine_interface::api::types::{Level, LockHandle, RENodeId, SubstateOffset, VaultId};
-use sbor::rust::fmt::Debug;
 
 bitflags! {
     #[derive(Encode, Decode, TypeId)]
@@ -29,10 +29,6 @@ impl LockFlags {
 
 pub struct LockInfo {
     pub offset: SubstateOffset,
-}
-
-pub trait Invocation {
-    type Output: Debug;
 }
 
 pub trait Invokable<I>
@@ -66,6 +62,11 @@ pub trait SystemApi {
 
     /// Retrieves all nodes referenceable by the current frame
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
+
+    fn get_visible_node_data(
+        &mut self,
+        node_id: RENodeId,
+    ) -> Result<RENodeVisibilityOrigin, RuntimeError>;
 
     /// Removes an RENode and all of it's children from the Heap
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;

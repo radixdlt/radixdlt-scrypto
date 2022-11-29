@@ -27,15 +27,23 @@ pub fn resolve_native_function(
     }
 }
 
+// TODO: receiver should be receiver type rather than node_id
 pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<NativeMethod> {
     match receiver {
         RENodeId::Package(_) | RENodeId::Global(GlobalAddress::Package(_)) => {
-            PackageMethod::from_str(method_name)
-                .ok()
-                .map(NativeMethod::Package)
+            // TODO: remove this ugly temp workaround
+            if method_name == "set" {
+                MetadataMethod::from_str(method_name)
+                    .ok()
+                    .map(NativeMethod::Metadata)
+            } else {
+                PackageMethod::from_str(method_name)
+                    .ok()
+                    .map(NativeMethod::Package)
+            }
         }
         RENodeId::Component(_) | RENodeId::Global(GlobalAddress::Component(_)) => {
-            // TODO: ugly temp workaround
+            // TODO: remove this ugly temp workaround
             if method_name == "add_access_check" {
                 AccessRulesMethod::from_str(method_name)
                     .ok()

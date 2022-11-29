@@ -1,8 +1,5 @@
 pub use radix_engine_interface::address::{AddressError, Bech32Decoder, Bech32Encoder};
-use radix_engine_interface::api::types::{
-    NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,
-};
-pub use radix_engine_interface::api::{types::*, wasm_input::RadixEngineInput};
+pub use radix_engine_interface::api::types::*;
 pub use radix_engine_interface::constants::*;
 pub use radix_engine_interface::core::Expression;
 pub use radix_engine_interface::crypto::*;
@@ -36,8 +33,7 @@ pub use sbor::{Decode, DecodeError, Encode, SborPath, SborPathBuf, SborTypeId, S
 
 pub use scrypto::abi::{BlueprintAbi, Fields, Fn, Type, Variant};
 
-// methods and macros
-use crate::engine::Invocation;
+use radix_engine_interface::api::api::Invocation;
 
 /// Scrypto function/method invocation.
 #[derive(Debug)]
@@ -56,18 +52,5 @@ impl ScryptoInvocation {
             ScryptoInvocation::Function(_, args) => &args,
             ScryptoInvocation::Method(_, args) => &args,
         }
-    }
-}
-
-#[derive(Debug)]
-pub struct NativeMethodInvocation(pub NativeMethod, pub RENodeId, pub IndexedScryptoValue);
-
-impl Invocation for NativeMethodInvocation {
-    type Output = IndexedScryptoValue;
-}
-
-impl NativeMethodInvocation {
-    pub fn args(&self) -> &IndexedScryptoValue {
-        &self.2
     }
 }

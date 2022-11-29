@@ -1,31 +1,56 @@
-use crate::api::api::{ScryptoNativeInvocation, SysInvocation};
-use crate::api::wasm_input::{
-    NativeFnInvocation, NativeFunctionInvocation, NativeMethodInvocation,
-    PackageFunctionInvocation, PackageMethodInvocation,
-};
+use crate::api::api::Invocation;
+use crate::api::types::RENodeId;
 use crate::crypto::Blob;
 use crate::model::*;
 use crate::scrypto;
+use crate::wasm::*;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct PackagePublishInvocation {
+pub struct PackagePublishNoOwnerInvocation {
     pub code: Blob,
     pub abi: Blob,
+    pub metadata: HashMap<String, String>,
 }
 
-impl SysInvocation for PackagePublishInvocation {
+impl Invocation for PackagePublishNoOwnerInvocation {
     type Output = PackageAddress;
 }
 
-impl ScryptoNativeInvocation for PackagePublishInvocation {}
+impl ScryptoNativeInvocation for PackagePublishNoOwnerInvocation {
+    type ScryptoOutput = PackageAddress;
+}
 
-impl Into<NativeFnInvocation> for PackagePublishInvocation {
+impl Into<NativeFnInvocation> for PackagePublishNoOwnerInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::Package(
-            PackageFunctionInvocation::Publish(self),
+            PackageFunctionInvocation::PublishNoOwner(self),
+        ))
+    }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct PackagePublishWithOwnerInvocation {
+    pub code: Blob,
+    pub abi: Blob,
+    pub metadata: HashMap<String, String>,
+}
+
+impl Invocation for PackagePublishWithOwnerInvocation {
+    type Output = (PackageAddress, Bucket);
+}
+
+impl ScryptoNativeInvocation for PackagePublishWithOwnerInvocation {
+    type ScryptoOutput = (PackageAddress, Bucket);
+}
+
+impl Into<NativeFnInvocation> for PackagePublishWithOwnerInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Function(NativeFunctionInvocation::Package(
+            PackageFunctionInvocation::PublishWithOwner(self),
         ))
     }
 }
@@ -37,11 +62,13 @@ pub struct PackageSetRoyaltyConfigInvocation {
     pub royalty_config: HashMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
 }
 
-impl SysInvocation for PackageSetRoyaltyConfigInvocation {
+impl Invocation for PackageSetRoyaltyConfigInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for PackageSetRoyaltyConfigInvocation {}
+impl ScryptoNativeInvocation for PackageSetRoyaltyConfigInvocation {
+    type ScryptoOutput = ();
+}
 
 impl Into<NativeFnInvocation> for PackageSetRoyaltyConfigInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -53,15 +80,24 @@ impl Into<NativeFnInvocation> for PackageSetRoyaltyConfigInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
+pub struct PackageSetRoyaltyConfigExecutable {
+    pub receiver: RENodeId,
+    pub royalty_config: HashMap<String, RoyaltyConfig>,
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct PackageClaimRoyaltyInvocation {
     pub receiver: PackageAddress,
 }
 
-impl SysInvocation for PackageClaimRoyaltyInvocation {
+impl Invocation for PackageClaimRoyaltyInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for PackageClaimRoyaltyInvocation {}
+impl ScryptoNativeInvocation for PackageClaimRoyaltyInvocation {
+    type ScryptoOutput = Bucket;
+}
 
 impl Into<NativeFnInvocation> for PackageClaimRoyaltyInvocation {
     fn into(self) -> NativeFnInvocation {
@@ -69,4 +105,10 @@ impl Into<NativeFnInvocation> for PackageClaimRoyaltyInvocation {
             PackageMethodInvocation::ClaimRoyalty(self),
         ))
     }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct PackageClaimRoyaltyExecutable {
+    pub receiver: RENodeId,
 }

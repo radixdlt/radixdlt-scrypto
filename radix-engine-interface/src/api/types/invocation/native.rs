@@ -31,6 +31,7 @@ pub enum NativeMethod {
     AccessRules(AccessRulesMethod),
     Component(ComponentMethod), // TODO: investigate whether to make royalty universal and take any "receiver".
     Package(PackageMethod),
+    Metadata(MetadataMethod),
     EpochManager(EpochManagerMethod),
     AuthZoneStack(AuthZoneStackMethod),
     ResourceManager(ResourceManagerMethod),
@@ -69,6 +70,27 @@ pub enum NativeFunction {
 #[strum(serialize_all = "snake_case")]
 pub enum AccessRulesMethod {
     AddAccessCheck,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum MetadataMethod {
+    Set,
 }
 
 #[derive(
@@ -368,7 +390,8 @@ pub enum WorktopMethod {
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum PackageFunction {
-    Publish,
+    PublishNoOwner,
+    PublishWithOwner,
 }
 
 #[derive(

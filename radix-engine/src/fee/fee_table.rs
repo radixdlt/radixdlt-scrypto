@@ -1,8 +1,8 @@
 use radix_engine_interface::api::types::{
     AccessRulesMethod, AuthZoneStackMethod, BucketMethod, ComponentMethod, EpochManagerFunction,
-    EpochManagerMethod, NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
-    ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
-    WorktopMethod,
+    EpochManagerMethod, MetadataMethod, NativeFunction, NativeMethod, PackageFunction,
+    PackageMethod, ProofMethod, ResourceManagerFunction, ResourceManagerMethod,
+    TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
@@ -155,7 +155,8 @@ impl FeeTable {
                 }
             }
             NativeFunction::Package(package_fn) => match package_fn {
-                PackageFunction::Publish => self.fixed_low + input.raw.len() as u32 * 2,
+                PackageFunction::PublishNoOwner => self.fixed_low + input.raw.len() as u32 * 2,
+                PackageFunction::PublishWithOwner => self.fixed_low + input.raw.len() as u32 * 2,
             },
             NativeFunction::EpochManager(system_ident) => match system_ident {
                 EpochManagerFunction::Create => self.fixed_low,
@@ -231,8 +232,11 @@ impl FeeTable {
                 WorktopMethod::AssertContainsNonFungibles => self.fixed_low,
                 WorktopMethod::Drain => self.fixed_low,
             },
-            NativeMethod::AccessRules(method_ident) => match method_ident {
-                AccessRulesMethod::AddAccessCheck => self.fixed_medium,
+            NativeMethod::AccessRules(component_ident) => match component_ident {
+                AccessRulesMethod::AddAccessCheck => self.fixed_low,
+            },
+            NativeMethod::Metadata(metadata_method) => match metadata_method {
+                MetadataMethod::Set => self.fixed_low,
             },
             NativeMethod::Component(method_ident) => match method_ident {
                 ComponentMethod::SetRoyaltyConfig => self.fixed_medium,
