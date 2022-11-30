@@ -9,6 +9,7 @@ use crate::model::{
 };
 use crate::model::{NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
+use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFunction, NativeMethod, NonFungibleStoreId, NonFungibleStoreOffset,
@@ -20,7 +21,6 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::model::*;
-use scrypto::resource::SysBucket;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq)]

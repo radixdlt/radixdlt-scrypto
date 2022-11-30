@@ -5,7 +5,6 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-/// Transaction worktop for collecting resources returned by function/method calls.
 pub struct Worktop;
 
 impl Worktop {

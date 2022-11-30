@@ -1,11 +1,10 @@
+use crate::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
+use radix_engine_interface::rule;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
-
-use crate::resource::*;
-use crate::rule;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;

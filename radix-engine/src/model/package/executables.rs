@@ -1,6 +1,3 @@
-use scrypto::access_rule_node;
-use scrypto::rule;
-
 use super::{PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate};
 use crate::engine::*;
 use crate::engine::{CallFrameUpdate, LockFlags, RuntimeError, SystemApi};
@@ -10,10 +7,12 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
+use radix_engine_interface::access_rule_node;
 use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId, RENodeId};
 use radix_engine_interface::model::*;
+use radix_engine_interface::rule;
 
 pub struct Package;
 

@@ -24,12 +24,9 @@ use radix_engine_interface::api::types::{RENodeId, ScryptoMethodIdent};
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
-use radix_engine_interface::dec;
-
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{AccessRule, FromPublicKey, NonFungibleIdType};
-use scrypto::{access_rule_node, rule};
-
+use radix_engine_interface::{access_rule_node, dec, rule};
 use transaction::builder::ManifestBuilder;
 use transaction::model::{AuthZoneParams, Executable, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};

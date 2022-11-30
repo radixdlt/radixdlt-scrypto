@@ -60,8 +60,8 @@ pub struct ComponentStateSubstate {
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let mut sys_calls = ScryptoEnv;
-        let rtn = sys_calls
+        let mut env = ScryptoEnv;
+        let buffer = env
             .sys_invoke_scrypto_method(
                 ScryptoMethodIdent {
                     receiver: ScryptoReceiver::Component(self.0),
@@ -70,7 +70,7 @@ impl Component {
                 args,
             )
             .unwrap();
-        scrypto_decode(&rtn).unwrap()
+        scrypto_decode(&buffer).unwrap()
     }
 
     /// Returns the package ID of this component.
@@ -93,62 +93,34 @@ impl Component {
         state.blueprint_name.clone()
     }
 
+    /// Add access check on the component.
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        self.sys_add_access_check(access_rules, &mut ScryptoEnv)
-            .unwrap()
-    }
-
-    pub fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self {
-        self.sys_set_royalty_config(royalty_config, &mut ScryptoEnv)
-            .unwrap()
-    }
-
-    pub fn sys_add_access_check<Y, E: Debug + ScryptoDecode>(
-        &mut self,
-        access_rules: AccessRules,
-        sys_calls: &mut Y,
-    ) -> Result<&mut Self, E>
-    where
-        Y: EngineApi<E> + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>,
-    {
-        sys_calls.sys_invoke(AccessRulesAddAccessCheckInvocation {
+        let mut env = ScryptoEnv;
+        env.sys_invoke(AccessRulesAddAccessCheckInvocation {
             receiver: RENodeId::Component(self.0),
             access_rules,
-        })?;
-
-        Ok(self)
+        })
+        .unwrap();
+        self
     }
 
-    pub fn sys_set_royalty_config<Y, E: Debug + ScryptoDecode>(
-        &mut self,
-        royalty_config: RoyaltyConfig,
-        sys_calls: &mut Y,
-    ) -> Result<&mut Self, E>
-    where
-        Y: EngineApi<E> + SysNativeInvokable<ComponentSetRoyaltyConfigInvocation, E>,
-    {
-        sys_calls.sys_invoke(ComponentSetRoyaltyConfigInvocation {
+    /// Set the royalty configuration of the component.
+    pub fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self {
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ComponentSetRoyaltyConfigInvocation {
             receiver: RENodeId::Component(self.0),
             royalty_config,
-        })?;
-
-        Ok(self)
+        })
+        .unwrap();
+        self
     }
 
+    /// Makes this component global.
     pub fn globalize(self) -> ComponentAddress {
-        self.sys_globalize(&mut ScryptoEnv).unwrap()
-    }
-
-    pub fn sys_globalize<Y, E: Debug + ScryptoDecode>(
-        self,
-        sys_calls: &mut Y,
-    ) -> Result<ComponentAddress, E>
-    where
-        Y: EngineApi<E>,
-    {
-        let node_id: RENodeId =
-            sys_calls.sys_create_node(ScryptoRENode::GlobalComponent(self.0))?;
-        Ok(node_id.into())
+        let mut env = ScryptoEnv;
+        env.sys_create_node(ScryptoRENode::GlobalComponent(self.0))
+            .unwrap()
+            .into()
     }
 }
 
@@ -158,8 +130,8 @@ pub struct BorrowedGlobalComponent(pub ComponentAddress);
 impl BorrowedGlobalComponent {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let mut syscalls = ScryptoEnv;
-        let raw = syscalls
+        let mut env = ScryptoEnv;
+        let raw = env
             .sys_invoke_scrypto_method(
                 ScryptoMethodIdent {
                     receiver: ScryptoReceiver::Global(self.0),

@@ -553,7 +553,7 @@ mod tests {
     use radix_engine_interface::api::types::ResourceManagerFunction;
     use radix_engine_interface::core::NetworkDefinition;
     use radix_engine_interface::data::scrypto_encode;
-    use scrypto::scrypto;
+    use radix_engine_interface::scrypto;
 
     #[scrypto(TypeId, Encode, Decode)]
     struct BadResourceManagerCreateInput {

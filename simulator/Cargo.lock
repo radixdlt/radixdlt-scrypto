@@ -813,6 +813,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "native-sdk"
+version = "0.7.0"
+dependencies = [
+ "radix-engine-derive",
+ "radix-engine-interface",
+ "sbor",
+ "utils",
+]
+
+[[package]]
 name = "nom"
 version = "7.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1008,11 +1018,11 @@ dependencies = [
  "indexmap",
  "lru",
  "moka",
+ "native-sdk",
  "parity-wasm",
  "radix-engine-constants",
  "radix-engine-interface",
  "sbor",
- "scrypto",
  "transaction",
  "utils",
  "wasm-instrument",
@@ -1270,47 +1280,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8132065adcfd6e02db789d9285a0deb2f3fcb04002865ab67d5fb103533898"
 
 [[package]]
-name = "scrypto"
-version = "0.7.0"
-dependencies = [
- "bech32",
- "forward_ref",
- "hex",
- "num-bigint",
- "num-traits",
- "paste",
- "radix-engine-derive",
- "radix-engine-interface",
- "sbor",
- "scrypto-abi",
- "scrypto-derive",
- "serde",
- "sha2 0.10.6",
- "sha3",
- "strum",
- "utils",
-]
-
-[[package]]
 name = "scrypto-abi"
 version = "0.7.0"
 dependencies = [
  "sbor",
  "serde",
-]
-
-[[package]]
-name = "scrypto-derive"
-version = "0.7.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "sbor",
- "scrypto-abi",
- "serde",
- "serde_json",
- "syn",
- "uuid",
 ]
 
 [[package]]
@@ -1461,7 +1435,6 @@ dependencies = [
  "rand 0.8.5",
  "regex",
  "sbor",
- "scrypto",
  "serde",
  "serde_json",
  "temp-env",
@@ -1657,7 +1630,6 @@ dependencies = [
  "hex",
  "radix-engine-interface",
  "sbor",
- "scrypto",
  "secp256k1",
  "serde_with",
  "utils",

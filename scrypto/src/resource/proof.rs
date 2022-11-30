@@ -1,6 +1,5 @@
 use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
 use radix_engine_interface::api::types::{ProofId, RENodeId};
-use radix_engine_interface::data::{ScryptoDecode, ScryptoTypeId};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
@@ -45,43 +44,6 @@ impl From<NonFungibleAddress> for ProofValidationMode {
     }
 }
 
-pub trait SysProof {
-    fn sys_clone<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
-        &self,
-        sys_calls: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: EngineApi<E> + SysNativeInvokable<ProofCloneInvocation, E>;
-    fn sys_drop<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
-        self,
-        sys_calls: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: EngineApi<E>;
-}
-
-impl SysProof for Proof {
-    fn sys_clone<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
-        &self,
-        sys_calls: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: EngineApi<E> + SysNativeInvokable<ProofCloneInvocation, E>,
-    {
-        sys_calls.sys_invoke(ProofCloneInvocation { receiver: self.0 })
-    }
-
-    fn sys_drop<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
-        self,
-        sys_calls: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: EngineApi<E>,
-    {
-        sys_calls.sys_drop_node(RENodeId::Proof(self.0))
-    }
-}
-
 pub trait ScryptoProof: Sized {
     fn clone(&self) -> Self;
     fn validate_proof<T>(
@@ -118,7 +80,9 @@ pub trait ScryptoProof: Sized {
 
 impl ScryptoProof for Proof {
     fn clone(&self) -> Self {
-        Self(self.sys_clone(&mut ScryptoEnv).unwrap().0)
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ProofCloneInvocation { receiver: self.0 })
+            .unwrap()
     }
 
     /// Validates a `Proof`'s resource address creating a `ValidatedProof` if the validation succeeds.
@@ -282,7 +246,8 @@ impl ScryptoProof for Proof {
     }
 
     fn drop(self) {
-        self.sys_drop(&mut ScryptoEnv).unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_drop_node(RENodeId::Proof(self.0)).unwrap()
     }
 }
 

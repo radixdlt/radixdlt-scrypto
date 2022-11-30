@@ -40,13 +40,13 @@ mod tests {
     use radix_engine_interface::api::types::{
         NativeFunctionIdent, ResourceManagerFunction, ScryptoMethodIdent, ScryptoReceiver,
     };
+    use radix_engine_interface::core::Expression;
     use radix_engine_interface::crypto::Blob;
     use radix_engine_interface::data::*;
     use radix_engine_interface::math::{Decimal, PreciseDecimal};
     use radix_engine_interface::model::*;
     use sbor::rust::collections::*;
     use sbor::rust::str::FromStr;
-    use scrypto::runtime::Expression;
 
     #[test]
     fn test_compile() {

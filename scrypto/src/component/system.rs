@@ -65,8 +65,8 @@ impl ComponentSystem {
         blueprint_name: &str,
         state: T,
     ) -> Component {
-        let mut syscalls = ScryptoEnv;
-        let node_id = syscalls
+        let mut env = ScryptoEnv;
+        let node_id = env
             .sys_create_node(ScryptoRENode::Component(
                 Runtime::package_address(),
                 blueprint_name.to_string(),
