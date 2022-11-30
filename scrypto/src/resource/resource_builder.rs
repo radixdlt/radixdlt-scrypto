@@ -1,12 +1,11 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use radix_engine_interface::api::api::SysNativeInvokable;
+use crate::radix_engine_interface::api::api::SysNativeInvokable;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
+use radix_engine_interface::rule;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
-
-use crate::rule;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;
@@ -25,6 +24,7 @@ pub struct FungibleResourceBuilder {
 pub struct NonFungibleResourceBuilder {
     metadata: HashMap<String, String>,
     authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    id_type: NonFungibleIdType,
 }
 
 impl ResourceBuilder {
@@ -175,6 +175,7 @@ impl NonFungibleResourceBuilder {
         Self {
             metadata: HashMap::new(),
             authorization: HashMap::new(),
+            id_type: NonFungibleIdType::default(),
         }
     }
 
@@ -232,6 +233,12 @@ impl NonFungibleResourceBuilder {
         self
     }
 
+    /// Set ID type to use for this non fungible resource
+    pub fn set_id_type(&mut self, id_type: NonFungibleIdType) -> &mut Self {
+        self.id_type = id_type;
+        self
+    }
+
     /// Creates resource with the given initial supply.
     ///
     /// # Example
@@ -252,7 +259,6 @@ impl NonFungibleResourceBuilder {
         for (id, e) in entries {
             encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }
-
         self.build(Some(MintParams::NonFungible { entries: encoded }))
             .1
             .unwrap()
@@ -271,7 +277,9 @@ impl NonFungibleResourceBuilder {
 
         ScryptoEnv
             .sys_invoke(ResourceManagerCreateInvocation {
-                resource_type: ResourceType::NonFungible,
+                resource_type: ResourceType::NonFungible {
+                    id_type: self.id_type,
+                },
                 metadata: self.metadata.clone(),
                 access_rules: authorization,
                 mint_params,

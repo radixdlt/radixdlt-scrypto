@@ -159,6 +159,7 @@ pub enum EpochManagerFunction {
 #[strum(serialize_all = "snake_case")]
 pub enum ComponentMethod {
     SetRoyaltyConfig,
+    ClaimRoyalty,
 }
 
 #[derive(
@@ -180,6 +181,7 @@ pub enum ComponentMethod {
 #[strum(serialize_all = "snake_case")]
 pub enum PackageMethod {
     SetRoyaltyConfig,
+    ClaimRoyalty,
 }
 
 #[derive(

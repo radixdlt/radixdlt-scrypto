@@ -5,7 +5,7 @@ use radix_engine::model::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::core::NetworkDefinition;
-use scrypto::data::{IndexedScryptoValue, ValueFormattingContext};
+use radix_engine_interface::data::{IndexedScryptoValue, ValueFormattingContext};
 use std::collections::VecDeque;
 use utils::ContextualDisplay;
 
@@ -260,7 +260,10 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .map(|symbol| format!(", symbol: \"{}\"", symbol))
                 .unwrap_or(String::new()),
         );
-        if matches!(resource_manager.resource_type, ResourceType::NonFungible) {
+        if matches!(
+            resource_manager.resource_type,
+            ResourceType::NonFungible { .. }
+        ) {
             let ids = vault.0.ids();
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungibleSubstate = substate_store

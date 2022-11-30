@@ -3,13 +3,13 @@ use crate::engine::{
     CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref, NativeExecutor, NativeProcedure,
     REActor, ResolvedMethod, RuntimeError, SystemApi,
 };
-use crate::model::GlobalAddressSubstate;
+use crate::model::{BucketSubstate, GlobalAddressSubstate};
 use crate::types::*;
-use radix_engine_interface::api::api::SysInvokableNative;
-use radix_engine_interface::api::types::{ComponentOffset, SubstateOffset};
-use radix_engine_interface::model::*;
-use scrypto::access_rule_node;
-use scrypto::rule;
+use radix_engine_interface::access_rule_node;
+use radix_engine_interface::api::api::*;
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::constants::*;
+use radix_engine_interface::rule;
 
 impl ExecutableInvocation for ComponentGlobalizeWithOwnerInvocation {
     type Exec = NativeExecutor<Self>;
@@ -65,7 +65,7 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
 
         // TODO: Cleanup package address + NonFungibleId integration
         let bytes = scrypto_encode(&component_address).unwrap();
-        let non_fungible_id = NonFungibleId::from_bytes(bytes);
+        let non_fungible_id = NonFungibleId::Bytes(bytes);
         let non_fungible_address =
             NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id.clone());
 
@@ -199,9 +199,7 @@ impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::EpochManager(
-                EpochManagerMethod::GetCurrentEpoch,
-            )),
+            ResolvedMethod::Native(NativeMethod::Component(ComponentMethod::SetRoyaltyConfig)),
             resolved_receiver,
         );
         let executor = NativeExecutor(Self {
@@ -231,5 +229,62 @@ impl NativeProcedure for ComponentSetRoyaltyConfigInvocation {
         system_api.drop_lock(handle)?;
 
         Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl ExecutableInvocation for ComponentClaimRoyaltyInvocation {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = self.receiver;
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Component(ComponentMethod::ClaimRoyalty)),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(Self {
+            receiver: resolved_receiver.receiver,
+        });
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProcedure for ComponentClaimRoyaltyInvocation {
+    type Output = Bucket;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi,
+    {
+        // TODO: auth check
+        let node_id = self.receiver;
+        let offset = SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let mut substate_mut = system_api.get_ref_mut(handle)?;
+        let resource = substate_mut
+            .component_royalty_accumulator()
+            .royalty
+            .take_all();
+
+        let bucket_node_id = system_api.allocate_node_id(RENodeType::Bucket)?;
+        system_api.create_node(
+            bucket_node_id,
+            RENode::Bucket(BucketSubstate::new(resource)),
+        )?;
+        let bucket_id = bucket_node_id.into();
+
+        system_api.drop_lock(handle)?;
+
+        Ok((
+            Bucket(bucket_id),
+            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
+        ))
     }
 }

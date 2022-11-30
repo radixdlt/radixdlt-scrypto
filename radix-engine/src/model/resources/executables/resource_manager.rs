@@ -9,20 +9,18 @@ use crate::model::{
 };
 use crate::model::{NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
+use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFunction, NativeMethod, NonFungibleStoreId, NonFungibleStoreOffset,
     RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset,
     SubstateOffset,
 };
-use radix_engine_interface::dec;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::model::*;
-use scrypto::access_rule_node;
-use scrypto::resource::SysBucket;
-use scrypto::rule;
+use radix_engine_interface::{access_rule_node, dec, rule, scrypto};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -43,6 +41,7 @@ pub enum ResourceManagerError {
     NotNonFungible,
     MismatchingBucketResource,
     ResourceAddressAlreadySet,
+    NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
 }
 
 impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
@@ -116,7 +115,7 @@ fn build_resource_manager_substate<Y>(
 where
     Y: SystemApi,
 {
-    let substate_and_bucket = if matches!(resource_type, ResourceType::NonFungible) {
+    let substate_and_bucket = if let ResourceType::NonFungible { id_type } = resource_type {
         let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
         api.create_node(
             nf_store_node_id,
@@ -150,7 +149,7 @@ where
                 }
                 resource_manager.total_supply = entries.len().into();
                 let ids = entries.into_keys().collect();
-                let container = Resource::new_non_fungible(resource_address, ids);
+                let container = Resource::new_non_fungible(resource_address, ids, id_type);
                 let node_id = api.allocate_node_id(RENodeType::Bucket)?;
                 api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
                 let bucket_id = node_id.into();
@@ -498,7 +497,7 @@ impl NativeProcedure for ResourceManagerCreateWithOwnerInvocation {
         // TODO: Cleanup resource_address + NonFungibleId integration
         let (owner_badge_bucket, non_fungible_address) = {
             let bytes = scrypto_encode(&resource_address).unwrap();
-            let non_fungible_id = NonFungibleId::from_bytes(bytes);
+            let non_fungible_id = NonFungibleId::Bytes(bytes);
             let non_fungible_address =
                 NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id.clone());
 

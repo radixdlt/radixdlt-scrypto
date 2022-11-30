@@ -22,6 +22,7 @@ blueprint! {
             // Create non-fungible resource with mutable supply
             let resource_address = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
+                .set_id_type(NonFungibleIdType::U32)
                 .mintable(rule!(require(mint_badge.resource_address())), LOCKED)
                 .burnable(rule!(allow_all), LOCKED)
                 .updateable_non_fungible_data(rule!(require(mint_badge.resource_address())), LOCKED)
@@ -30,7 +31,7 @@ blueprint! {
             // Mint a non-fungible
             let non_fungible = mint_badge.authorize(|| {
                 borrow_resource_manager!(resource_address).mint_non_fungible(
-                    &NonFungibleId::from_u32(0),
+                    &NonFungibleId::U32(0),
                     Sandwich {
                         name: "Test".to_owned(),
                         available: false,
@@ -59,17 +60,18 @@ blueprint! {
         pub fn create_burnable_non_fungible() -> Bucket {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
+                .set_id_type(NonFungibleIdType::U32)
                 .burnable(rule!(allow_all), LOCKED)
                 .initial_supply([
                     (
-                        NonFungibleId::from_u32(0),
+                        NonFungibleId::U32(0),
                         Sandwich {
                             name: "Zero".to_owned(),
                             available: true,
                         },
                     ),
                     (
-                        NonFungibleId::from_u32(1),
+                        NonFungibleId::U32(1),
                         Sandwich {
                             name: "One".to_owned(),
                             available: true,
@@ -81,23 +83,24 @@ blueprint! {
         pub fn create_non_fungible_fixed() -> Bucket {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
+                .set_id_type(NonFungibleIdType::U32)
                 .initial_supply([
                     (
-                        NonFungibleId::from_u32(1),
+                        NonFungibleId::U32(1),
                         Sandwich {
                             name: "One".to_owned(),
                             available: true,
                         },
                     ),
                     (
-                        NonFungibleId::from_u32(2),
+                        NonFungibleId::U32(2),
                         Sandwich {
                             name: "Two".to_owned(),
                             available: true,
                         },
                     ),
                     (
-                        NonFungibleId::from_u32(3),
+                        NonFungibleId::U32(3),
                         Sandwich {
                             name: "Three".to_owned(),
                             available: true,
@@ -117,17 +120,17 @@ blueprint! {
         pub fn update_and_get_non_fungible() -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
             let mut data: Sandwich = borrow_resource_manager!(resource_address)
-                .get_non_fungible_data(&NonFungibleId::from_u32(0));
+                .get_non_fungible_data(&NonFungibleId::U32(0));
             assert_eq!(data.available, false);
 
             data.available = true;
             mint_badge.authorize(|| {
                 borrow_resource_manager!(resource_address)
-                    .update_non_fungible_data(&NonFungibleId::from_u32(0), data);
+                    .update_non_fungible_data(&NonFungibleId::U32(0), data);
             });
 
             let data: Sandwich = borrow_resource_manager!(resource_address)
-                .get_non_fungible_data(&NonFungibleId::from_u32(0));
+                .get_non_fungible_data(&NonFungibleId::U32(0));
             assert_eq!(data.available, true);
             (mint_badge, bucket)
         }
@@ -136,12 +139,12 @@ blueprint! {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
             assert_eq!(
                 borrow_resource_manager!(resource_address)
-                    .non_fungible_exists(&NonFungibleId::from_u32(0)),
+                    .non_fungible_exists(&NonFungibleId::U32(0)),
                 true
             );
             assert_eq!(
                 borrow_resource_manager!(resource_address)
-                    .non_fungible_exists(&NonFungibleId::from_u32(1)),
+                    .non_fungible_exists(&NonFungibleId::U32(1)),
                 false
             );
             (mint_badge, bucket)
@@ -177,11 +180,11 @@ blueprint! {
             let non_fungible_bucket = bucket.take(1);
             assert_eq!(
                 non_fungible_bucket.non_fungible_ids(),
-                BTreeSet::from([NonFungibleId::from_u32(1)])
+                BTreeSet::from([NonFungibleId::U32(1)])
             );
             assert_eq!(
                 bucket.non_fungible_ids(),
-                BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)])
+                BTreeSet::from([NonFungibleId::U32(2), NonFungibleId::U32(3)])
             );
             (bucket, non_fungible_bucket)
         }
@@ -189,11 +192,8 @@ blueprint! {
         pub fn get_non_fungible_id_bucket() -> (Bucket, Bucket) {
             let mut bucket = Self::create_non_fungible_fixed();
             let non_fungible_bucket = bucket.take(1);
-            assert_eq!(
-                non_fungible_bucket.non_fungible_id(),
-                NonFungibleId::from_u32(1)
-            );
-            assert_eq!(bucket.non_fungible_id(), NonFungibleId::from_u32(2));
+            assert_eq!(non_fungible_bucket.non_fungible_id(), NonFungibleId::U32(1));
+            assert_eq!(bucket.non_fungible_id(), NonFungibleId::U32(2));
             (bucket, non_fungible_bucket)
         }
 
@@ -202,11 +202,11 @@ blueprint! {
             let non_fungible_bucket = vault.take(1);
             assert_eq!(
                 non_fungible_bucket.non_fungible_ids(),
-                BTreeSet::from([NonFungibleId::from_u32(1)])
+                BTreeSet::from([NonFungibleId::U32(1)])
             );
             assert_eq!(
                 vault.non_fungible_ids(),
-                BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)])
+                BTreeSet::from([NonFungibleId::U32(2), NonFungibleId::U32(3)])
             );
 
             NonFungibleTest { vault }.instantiate().globalize();
@@ -217,11 +217,8 @@ blueprint! {
         pub fn get_non_fungible_id_vault() -> Bucket {
             let mut vault = Vault::with_bucket(Self::create_non_fungible_fixed());
             let non_fungible_bucket = vault.take(1);
-            assert_eq!(
-                non_fungible_bucket.non_fungible_id(),
-                NonFungibleId::from_u32(1)
-            );
-            assert_eq!(vault.non_fungible_id(), NonFungibleId::from_u32(2));
+            assert_eq!(non_fungible_bucket.non_fungible_id(), NonFungibleId::U32(1));
+            assert_eq!(vault.non_fungible_id(), NonFungibleId::U32(2));
 
             NonFungibleTest { vault }.instantiate().globalize();
 
@@ -249,6 +246,34 @@ blueprint! {
             // clean up
             vault.put(bucket);
             NonFungibleTest { vault }.instantiate().globalize();
+        }
+
+        pub fn create_wrong_non_fungible_id_type() -> Bucket {
+            // creating non-fungible id with id type set to default (UUID)
+            ResourceBuilder::new_non_fungible()
+                .metadata("name", "Katz's Sandwiches")
+                .initial_supply([(
+                    // adding non-fungible id with id type Number
+                    NonFungibleId::U32(0),
+                    Sandwich {
+                        name: "Zero".to_owned(),
+                        available: true,
+                    },
+                )])
+        }
+
+        pub fn create_with_default_non_fungible_id_type() -> Bucket {
+            // creating non-fungible id with id type set to default (UUID)
+            ResourceBuilder::new_non_fungible()
+                .metadata("name", "Katz's Sandwiches")
+                .initial_supply([(
+                    // adding random non-fungible id with type UUID
+                    ScryptoNonFungibleId::random(),
+                    Sandwich {
+                        name: "Zero".to_owned(),
+                        available: true,
+                    },
+                )])
         }
     }
 }

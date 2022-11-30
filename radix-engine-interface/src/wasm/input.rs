@@ -92,12 +92,14 @@ pub enum EpochManagerFunctionInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ComponentMethodInvocation {
     SetRoyaltyConfig(ComponentSetRoyaltyConfigInvocation),
+    ClaimRoyalty(ComponentClaimRoyaltyInvocation),
 }
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum PackageMethodInvocation {
     SetRoyaltyConfig(PackageSetRoyaltyConfigInvocation),
+    ClaimRoyalty(PackageClaimRoyaltyInvocation),
 }
 
 #[derive(Debug)]
@@ -245,9 +247,15 @@ impl NativeFnInvocation {
                     ComponentMethodInvocation::SetRoyaltyConfig(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    ComponentMethodInvocation::ClaimRoyalty(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::Package(package_method) => match package_method {
                     PackageMethodInvocation::SetRoyaltyConfig(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    PackageMethodInvocation::ClaimRoyalty(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },

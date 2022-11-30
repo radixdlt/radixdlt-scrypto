@@ -7,7 +7,6 @@ mod resource_builder;
 mod resource_manager;
 mod system;
 mod vault;
-mod worktop;
 
 pub use auth_zone::*;
 pub use bucket::*;
@@ -18,4 +17,3 @@ pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_N
 pub use resource_manager::*;
 pub use system::{init_resource_system, resource_system, ResourceSystem};
 pub use vault::*;
-pub use worktop::*;

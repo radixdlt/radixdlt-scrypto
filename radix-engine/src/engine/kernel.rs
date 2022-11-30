@@ -7,10 +7,10 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::*;
 
+use radix_engine_interface::access_rule_node;
+use radix_engine_interface::rule;
 use sbor::rust::fmt::Debug;
 use sbor::rust::mem;
-use scrypto::access_rule_node;
-use scrypto::rule;
 use transaction::errors::IdAllocationError;
 use transaction::model::AuthZoneParams;
 use transaction::validation::*;
@@ -176,13 +176,13 @@ where
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
                         NonFungibleAddress::new(
                             ECDSA_SECP256K1_TOKEN,
-                            NonFungibleId::from_bytes(address.into()),
+                            NonFungibleId::Bytes(address.into()),
                         )
                     }
                     ComponentAddress::EddsaEd25519VirtualAccount(address) => {
                         NonFungibleAddress::new(
                             EDDSA_ED25519_TOKEN,
-                            NonFungibleId::from_bytes(address.into()),
+                            NonFungibleId::Bytes(address.into()),
                         )
                     }
                     _ => return Ok(false),

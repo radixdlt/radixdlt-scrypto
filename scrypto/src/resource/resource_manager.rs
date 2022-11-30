@@ -20,233 +20,214 @@ pub struct ResourceManager(pub(crate) ResourceAddress);
 
 impl ResourceManager {
     pub fn set_metadata(&mut self, key: String, value: String) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(MetadataSetInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-                key,
-                value,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(MetadataSetInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            key,
+            value,
+        })
+        .unwrap()
     }
 
     pub fn get_metadata(&mut self, key: String) -> Option<String> {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(MetadataGetInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-                key,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(MetadataGetInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            key,
+        })
+        .unwrap()
     }
 
     pub fn set_mintable(&mut self, access_rule: AccessRule) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(AccessRulesSetAccessRuleInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-                index: 0,
-                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                    ResourceManagerMethod::Mint,
-                ))),
-                rule: access_rule,
-            })
-            .unwrap();
+        let mut env = ScryptoEnv;
+        env.sys_invoke(AccessRulesSetAccessRuleInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::Mint,
+            ))),
+            rule: access_rule,
+        })
+        .unwrap();
     }
 
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(AccessRulesSetAccessRuleInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-                index: 0,
-                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                    ResourceManagerMethod::Burn,
-                ))),
-                rule: access_rule,
-            })
-            .unwrap();
+        let mut env = ScryptoEnv;
+        env.sys_invoke(AccessRulesSetAccessRuleInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::Burn,
+            ))),
+            rule: access_rule,
+        })
+        .unwrap();
     }
 
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) -> () {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerUpdateVaultAuthInvocation {
-                receiver: self.0,
-                method: Withdraw,
-                access_rule,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerUpdateVaultAuthInvocation {
+            receiver: self.0,
+            method: Withdraw,
+            access_rule,
+        })
+        .unwrap()
     }
 
     pub fn set_depositable(&mut self, access_rule: AccessRule) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerUpdateVaultAuthInvocation {
-                receiver: self.0,
-                method: Deposit,
-                access_rule,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerUpdateVaultAuthInvocation {
+            receiver: self.0,
+            method: Deposit,
+            access_rule,
+        })
+        .unwrap()
     }
 
     pub fn set_recallable(&mut self, access_rule: AccessRule) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerUpdateVaultAuthInvocation {
-                receiver: self.0,
-                method: Recall,
-                access_rule,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerUpdateVaultAuthInvocation {
+            receiver: self.0,
+            method: Recall,
+            access_rule,
+        })
+        .unwrap()
     }
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(AccessRulesSetAccessRuleInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-                index: 0,
-                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                    MetadataMethod::Set,
-                ))),
-                rule: access_rule,
-            })
-            .unwrap();
+        let mut env = ScryptoEnv;
+        env.sys_invoke(AccessRulesSetAccessRuleInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
+            rule: access_rule,
+        })
+        .unwrap();
     }
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(AccessRulesSetAccessRuleInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-                index: 0,
-                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                    ResourceManagerMethod::UpdateNonFungibleData,
-                ))),
-                rule: access_rule,
-            })
-            .unwrap();
+        let mut env = ScryptoEnv;
+        env.sys_invoke(AccessRulesSetAccessRuleInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateNonFungibleData,
+            ))),
+            rule: access_rule,
+        })
+        .unwrap();
     }
 
     pub fn lock_mintable(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(AccessRulesSetMutabilityInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-                index: 0,
-                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                    ResourceManagerMethod::Mint,
-                ))),
-                mutability: AccessRule::DenyAll,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(AccessRulesSetMutabilityInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::Mint,
+            ))),
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
     pub fn lock_burnable(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(AccessRulesSetMutabilityInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-                index: 0,
-                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                    ResourceManagerMethod::Burn,
-                ))),
-                mutability: AccessRule::DenyAll,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(AccessRulesSetMutabilityInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::Burn,
+            ))),
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
     pub fn lock_updateable_metadata(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(AccessRulesSetMutabilityInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-                index: 0,
-                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                    MetadataMethod::Set,
-                ))),
-                mutability: AccessRule::DenyAll,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(AccessRulesSetMutabilityInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
     pub fn lock_updateable_non_fungible_data(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(AccessRulesSetMutabilityInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-                index: 0,
-                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                    ResourceManagerMethod::UpdateNonFungibleData,
-                ))),
-                mutability: AccessRule::DenyAll,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(AccessRulesSetMutabilityInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateNonFungibleData,
+            ))),
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
     pub fn lock_withdrawable(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
-                receiver: self.0,
-                method: Withdraw,
-                mutability: AccessRule::DenyAll,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
+            receiver: self.0,
+            method: Withdraw,
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
     pub fn lock_depositable(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
-                receiver: self.0,
-                method: Deposit,
-                mutability: AccessRule::DenyAll,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
+            receiver: self.0,
+            method: Deposit,
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
     pub fn lock_recallable(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
-                receiver: self.0,
-                method: Recall,
-                mutability: AccessRule::DenyAll,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
+            receiver: self.0,
+            method: Recall,
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
     fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerMintInvocation {
-                mint_params,
-                receiver: self.0,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerMintInvocation {
+            mint_params,
+            receiver: self.0,
+        })
+        .unwrap()
     }
 
     fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerUpdateNonFungibleDataInvocation {
-                id,
-                data,
-                receiver: self.0,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerUpdateNonFungibleDataInvocation {
+            id,
+            data,
+            receiver: self.0,
+        })
+        .unwrap()
     }
 
     fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(ResourceManagerGetNonFungibleInvocation {
-                id,
-                receiver: self.0,
-            })
-            .unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_invoke(ResourceManagerGetNonFungibleInvocation {
+            id,
+            receiver: self.0,
+        })
+        .unwrap()
     }
 
     scrypto_env_native_fn! {

@@ -8,14 +8,14 @@ use crate::model::{
     HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
+use radix_engine_interface::access_rule_node;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
     EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction,
     NativeMethod, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
-use scrypto::access_rule_node;
-use scrypto::rule;
+use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum EpochManagerError {

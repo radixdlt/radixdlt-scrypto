@@ -2,7 +2,7 @@ use crate::constants::*;
 use crate::type_id::*;
 use crate::*;
 
-impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> for Option<T> {
+impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E>> Encode<X, E> for Option<T> {
     #[inline]
     fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_type_id(Self::type_id())

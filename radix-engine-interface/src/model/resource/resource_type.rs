@@ -1,3 +1,4 @@
+use super::NonFungibleIdType;
 use crate::Describe;
 use sbor::*;
 
@@ -8,14 +9,21 @@ pub enum ResourceType {
     Fungible { divisibility: u8 },
 
     /// Represents a non-fungible resource
-    NonFungible,
+    NonFungible { id_type: NonFungibleIdType },
 }
 
 impl ResourceType {
     pub fn divisibility(&self) -> u8 {
         match self {
             ResourceType::Fungible { divisibility } => *divisibility,
-            ResourceType::NonFungible => 0,
+            ResourceType::NonFungible { .. } => 0,
+        }
+    }
+
+    pub fn non_fungible_id_type(&self) -> NonFungibleIdType {
+        match self {
+            ResourceType::Fungible { .. } => panic!("Called id_type on Fungible resource."),
+            ResourceType::NonFungible { id_type } => id_type.clone(),
         }
     }
 }
