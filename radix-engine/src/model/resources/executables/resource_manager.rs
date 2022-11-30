@@ -135,6 +135,17 @@ where
         let bucket = if let Some(mint_params) = mint_params {
             if let MintParams::NonFungible { entries } = mint_params {
                 for (non_fungible_id, data) in &entries {
+                    if non_fungible_id.id_type() != id_type {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::ResourceManagerError(
+                                ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                                    non_fungible_id.id_type(),
+                                    id_type,
+                                ),
+                            ),
+                        ));
+                    }
+
                     let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
                         non_fungible_id.clone(),
                     ));
