@@ -12,12 +12,12 @@ fn get_epoch_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/system");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/epoch_manager");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "SystemTest", "get_epoch", args![])
+        .call_function(package_address, "EpochManagerTest", "get_epoch", args![])
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -32,7 +32,7 @@ fn set_epoch_without_supervisor_auth_fails() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/system");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/epoch_manager");
 
     // Act
     let epoch = 9876u64;
@@ -40,11 +40,11 @@ fn set_epoch_without_supervisor_auth_fails() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
-            "SystemTest",
+            "EpochManagerTest",
             "set_epoch",
             args!(EPOCH_MANAGER, epoch),
         )
-        .call_function(package_address, "SystemTest", "get_epoch", args!())
+        .call_function(package_address, "EpochManagerTest", "get_epoch", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -55,7 +55,7 @@ fn set_epoch_without_supervisor_auth_fails() {
 }
 
 #[test]
-fn system_create_should_fail_with_supervisor_privilege() {
+fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -81,7 +81,7 @@ fn system_create_should_fail_with_supervisor_privilege() {
 }
 
 #[test]
-fn system_create_should_succeed_with_system_privilege() {
+fn epoch_manager_create_should_succeed_with_system_privilege() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);

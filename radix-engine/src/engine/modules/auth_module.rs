@@ -88,8 +88,11 @@ impl AuthModule {
 
         let method_auths = match actor.clone() {
             REActor::Function(function_ident) => match function_ident {
-                ResolvedFunction::Native(NativeFunction::EpochManager(system_func)) => {
-                    EpochManager::function_auth(&system_func)
+                ResolvedFunction::Native(NativeFunction::EpochManager(epoch_manager_func)) => {
+                    EpochManager::function_auth(&epoch_manager_func)
+                }
+                ResolvedFunction::Native(NativeFunction::Clock(clock_func)) => {
+                    Clock::function_auth(&clock_func)
                 }
                 _ => vec![],
             },
@@ -138,6 +141,7 @@ impl AuthModule {
                     (ResolvedMethod::Native(method), ..)
                         if matches!(method, NativeMethod::Metadata(..))
                             || matches!(method, NativeMethod::EpochManager(..))
+                            || matches!(method, NativeMethod::Clock(..))
                             || matches!(method, NativeMethod::ResourceManager(..)) =>
                     {
                         let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);

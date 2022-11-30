@@ -150,6 +150,7 @@ pub enum RENode {
     ResourceManager(Value),
     Package(Value),
     EpochManager(Value),
+    Clock(Value),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

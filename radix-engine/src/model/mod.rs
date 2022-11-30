@@ -1,6 +1,7 @@
 mod abi_extractor;
 mod auth;
 mod auth_converter;
+mod clock;
 mod component;
 mod epoch_manager;
 mod fee;
@@ -20,6 +21,7 @@ pub use crate::engine::InvokeError;
 pub use abi_extractor::*;
 pub use auth::*;
 pub use auth_converter::convert;
+pub use clock::*;
 pub use component::*;
 pub use epoch_manager::*;
 pub use fee::*;

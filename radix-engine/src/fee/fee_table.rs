@@ -1,8 +1,9 @@
 use radix_engine_interface::api::types::{
-    AccessRulesMethod, AuthZoneStackMethod, BucketMethod, ComponentFunction, ComponentMethod,
-    EpochManagerFunction, EpochManagerMethod, MetadataMethod, NativeFunction, NativeMethod,
-    PackageFunction, PackageMethod, ProofMethod, ResourceManagerFunction, ResourceManagerMethod,
-    TransactionProcessorFunction, VaultMethod, WorktopMethod,
+    AccessRulesMethod, AuthZoneStackMethod, BucketMethod, ClockFunction, ClockMethod,
+    ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, MetadataMethod,
+    NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
+    ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
+    WorktopMethod,
 };
 
 pub enum SystemApiCostingEntry {
@@ -157,8 +158,11 @@ impl FeeTable {
                 PackageFunction::PublishNoOwner => self.fixed_low,
                 PackageFunction::PublishWithOwner => self.fixed_low,
             },
-            NativeFunction::EpochManager(system_ident) => match system_ident {
+            NativeFunction::EpochManager(epoch_manager_fn) => match epoch_manager_fn {
                 EpochManagerFunction::Create => self.fixed_low,
+            },
+            NativeFunction::Clock(clock_fn) => match clock_fn {
+                ClockFunction::Create => self.fixed_low,
             },
             NativeFunction::ResourceManager(resource_manager_ident) => {
                 match resource_manager_ident {
@@ -184,9 +188,13 @@ impl FeeTable {
                     AuthZoneStackMethod::AssertAccessRule => self.fixed_high,
                 }
             }
-            NativeMethod::EpochManager(system_ident) => match system_ident {
+            NativeMethod::EpochManager(epoch_manager_method) => match epoch_manager_method {
                 EpochManagerMethod::GetCurrentEpoch => self.fixed_low,
                 EpochManagerMethod::SetEpoch => self.fixed_low,
+            },
+            NativeMethod::Clock(clock_method) => match clock_method {
+                ClockMethod::GetCurrentTimeRoundedToMinutes => self.fixed_medium,
+                ClockMethod::SetCurrentTime => self.fixed_low,
             },
             NativeMethod::Bucket(bucket_ident) => match bucket_ident {
                 BucketMethod::Take => self.fixed_medium,
