@@ -26,7 +26,7 @@ blueprint! {
                 .method(
                     "organizational_authenticated_method",
                     organizational_access_rule,
-                    LOCKED
+                    LOCKED,
                 )
                 .default(rule!(deny_all), LOCKED);
 
