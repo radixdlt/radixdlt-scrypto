@@ -5,3 +5,4 @@ pub mod component;
 pub mod cross_component;
 pub mod external_blueprint_target;
 pub mod reentrant_component;
+pub mod mutable_access_rules;

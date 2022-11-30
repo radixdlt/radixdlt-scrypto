@@ -179,6 +179,10 @@ impl VisibilityProperties {
                                     RENodeId::Component(_),
                                     SubstateOffset::Component(ComponentOffset::Info),
                                 ) => true,
+                                (
+                                    RENodeId::Component(_),
+                                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                                ) => flags == LockFlags::read_only(),
                                 _ => false,
                             }
                         }
@@ -197,6 +201,10 @@ impl VisibilityProperties {
                                 RENodeId::Component(_),
                                 SubstateOffset::Component(ComponentOffset::Info),
                             ) => true,
+                            (
+                                RENodeId::Component(_),
+                                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                            ) => flags == LockFlags::read_only(),
                             (
                                 RENodeId::Component(addr),
                                 SubstateOffset::Component(ComponentOffset::State),

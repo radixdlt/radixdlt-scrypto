@@ -1,14 +1,17 @@
 use radix_engine::engine::{
-    InterpreterError, KernelError, LockState, RuntimeError, ScryptoFnResolvingError, TrackError,
+    InterpreterError, KernelError, LockState, RuntimeError, ScryptoFnResolvingError, TrackError, ModuleError,
 };
 use radix_engine::ledger::TypedInMemorySubstateStore;
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::{RENodeId, ScryptoFunctionIdent};
 use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
+use radix_engine_interface::{data::*, rule};
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::model::TransactionManifest;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 #[test]
 fn test_component() {
@@ -219,4 +222,142 @@ fn missing_component_address_in_manifest_should_cause_rejection() {
 
     // Assert
     receipt.expect_rejection();
+}
+
+
+#[test]
+fn component_access_rules_should_be_readable_from_scrypto_methods_and_functions() {
+    // Arrange
+    let access_rules = vec![
+        AccessRules::new()
+            .method("deposit_funds", rule!(require(RADIX_TOKEN)), LOCKED)
+            .default(rule!(allow_all), LOCKED),
+        AccessRules::new()
+            .method(
+                "deposit_funds",
+                rule!(require(ECDSA_SECP256K1_TOKEN)),
+                LOCKED,
+            )
+            .default(rule!(allow_all), LOCKED),
+    ];
+    for call in [Call::Method, Call::Function] {
+        let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+
+        // Act
+        let read_access_rules = test_runner.access_rules(call);
+
+        // Assert
+        assert_eq!(access_rules, read_access_rules)
+    }
+}
+
+struct MutableAccessRulesTestRunner {
+    substate_store: TypedInMemorySubstateStore,
+    package_address: PackageAddress,
+    component_address: ComponentAddress,
+    initial_proofs: Vec<NonFungibleAddress>,
+}
+
+impl MutableAccessRulesTestRunner {
+    const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
+
+    pub fn new(access_rules: Vec<AccessRules>) -> Self {
+        let mut store = TypedInMemorySubstateStore::with_bootstrap();
+        let mut test_runner = TestRunner::new(true, &mut store);
+        let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
+
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .call_function(
+                package_address,
+                Self::BLUEPRINT_NAME,
+                "new",
+                args!(access_rules),
+            )
+            .build();
+        let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+        let component_address = receipt.new_component_addresses()[0];
+
+        Self {
+            substate_store: store,
+            package_address,
+            component_address,
+            initial_proofs: Vec::new(),
+        }
+    }
+
+    pub fn add_initial_proof(&mut self, initial_proof: NonFungibleAddress) {
+        self.initial_proofs.push(initial_proof);
+    }
+
+    pub fn access_rules(&mut self, call: Call) -> Vec<AccessRules> {
+        let manifest = match call {
+            Call::Method => Self::manifest_builder()
+                .call_method(self.component_address, "access_rules_method", args!())
+                .build(),
+            Call::Function => Self::manifest_builder()
+                .call_function(
+                    self.package_address,
+                    Self::BLUEPRINT_NAME,
+                    "access_rules_function",
+                    args!(self.component_address),
+                )
+                .build(),
+        };
+
+        self.execute_manifest(manifest).output(1)
+    }
+
+    pub fn set_method_auth(
+        &mut self,
+        index: usize,
+        method_name: &str,
+        access_rule: AccessRule,
+    ) -> TransactionReceipt {
+        let args = args!(index, method_name.to_string(), access_rule);
+        let manifest = Self::manifest_builder()
+            .call_method(self.component_address, "set_method_auth", args)
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn set_default_auth(
+        &mut self,
+        index: usize,
+        access_rule: AccessRule,
+    ) -> TransactionReceipt {
+        let args = args!(index, access_rule);
+        let manifest = Self::manifest_builder()
+            .call_method(self.component_address, "set_default", args)
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn lock_method_auth(&mut self, index: usize, method_name: &str) -> TransactionReceipt {
+        let args = args!(index, method_name.to_string());
+        let manifest = Self::manifest_builder()
+            .call_method(self.component_address, "lock_method_auth", args)
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn deposit_funds(&mut self) -> TransactionReceipt {
+        let manifest = Self::manifest_builder()
+            .call_method(self.component_address, "deposit_funds", args!())
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn manifest_builder() -> ManifestBuilder {
+        ManifestBuilder::new(&NetworkDefinition::simulator())
+    }
+
+    pub fn execute_manifest(&mut self, manifest: TransactionManifest) -> TransactionReceipt {
+        TestRunner::new(true, &mut self.substate_store)
+            .execute_manifest_ignoring_fee(manifest, self.initial_proofs.clone())
+    }
+}
+
+enum Call {
+    Method,
+    Function,
 }
