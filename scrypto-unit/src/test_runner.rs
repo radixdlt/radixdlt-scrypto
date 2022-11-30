@@ -27,7 +27,7 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::dec;
 
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::model::{AccessRule, FromPublicKey, NonFungibleIdType};
 use scrypto::{access_rule_node, rule};
 
 use transaction::builder::ManifestBuilder;
@@ -707,22 +707,24 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
 
         let mut entries = HashMap::new();
         entries.insert(
-            NonFungibleId::from_u32(1),
+            NonFungibleId::U32(1),
             (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
         entries.insert(
-            NonFungibleId::from_u32(2),
+            NonFungibleId::U32(2),
             (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
         entries.insert(
-            NonFungibleId::from_u32(3),
+            NonFungibleId::U32(3),
             (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
-                ResourceType::NonFungible,
+                ResourceType::NonFungible {
+                    id_type: NonFungibleIdType::U32,
+                },
                 HashMap::new(),
                 access_rules,
                 Some(MintParams::NonFungible { entries }),
@@ -811,10 +813,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
         self.kernel_call(
-            vec![NonFungibleAddress::new(
-                SYSTEM_TOKEN,
-                NonFungibleId::from_u32(0),
-            )],
+            vec![NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(0))],
             |kernel| {
                 kernel
                     .invoke(EpochManagerSetEpochInvocation {

@@ -249,7 +249,10 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .map(|symbol| format!(", symbol: \"{}\"", symbol))
                 .unwrap_or(String::new()),
         );
-        if matches!(resource_manager.resource_type, ResourceType::NonFungible) {
+        if matches!(
+            resource_manager.resource_type,
+            ResourceType::NonFungible { .. }
+        ) {
             let ids = vault.0.ids();
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungibleSubstate = substate_store

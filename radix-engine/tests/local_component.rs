@@ -74,7 +74,7 @@ fn local_component_with_access_rules_should_not_be_callable() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
     let (public_key, _, account) = test_runner.new_allocated_account();
     let auth_resource_address = test_runner.create_non_fungible_resource(account);
-    let auth_id = NonFungibleId::from_u32(1);
+    let auth_id = NonFungibleId::U32(1);
     let auth_address = NonFungibleAddress::new(auth_resource_address, auth_id);
 
     // Act
@@ -106,7 +106,7 @@ fn local_component_with_access_rules_should_be_callable() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
     let (public_key, _, account) = test_runner.new_allocated_account();
     let auth_resource_address = test_runner.create_non_fungible_resource(account);
-    let auth_id = NonFungibleId::from_u32(1);
+    let auth_id = NonFungibleId::U32(1);
     let auth_address = NonFungibleAddress::new(auth_resource_address, auth_id.clone());
 
     // Act
