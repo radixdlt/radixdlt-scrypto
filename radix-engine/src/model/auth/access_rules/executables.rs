@@ -174,8 +174,8 @@ impl NativeProcedure for AccessRulesSetAccessRuleInvocation {
 
         let authorization = {
             let substate_ref = api.get_ref(handle)?;
-            let access_rules_substate = substate_ref.access_rules();
-            access_rules_substate.mutability_authorization(&self.key)
+            let substate = substate_ref.access_rules();
+            substate.mutability_authorization(&self.key)
         };
 
         // Manual Auth
@@ -201,8 +201,8 @@ impl NativeProcedure for AccessRulesSetAccessRuleInvocation {
         }
 
         let mut substate_ref_mut = api.get_ref_mut(handle)?;
-        let access_rules_substate = substate_ref_mut.access_rules();
-        let access_rules_chain = &mut access_rules_substate.access_rules_chain;
+        let substate = substate_ref_mut.access_rules();
+        let access_rules_chain = &mut substate.access_rules_chain;
         let index: usize = self.index.try_into().unwrap();
         let access_rules =
             access_rules_chain
@@ -280,8 +280,8 @@ impl NativeProcedure for AccessRulesSetMutabilityInvocation {
 
         let authorization = {
             let substate_ref = api.get_ref(handle)?;
-            let access_rules_substate = substate_ref.access_rules();
-            access_rules_substate.mutability_authorization(&self.key)
+            let substate = substate_ref.access_rules();
+            substate.mutability_authorization(&self.key)
         };
 
         // Manual Auth
@@ -307,8 +307,8 @@ impl NativeProcedure for AccessRulesSetMutabilityInvocation {
         }
 
         let mut substate_ref_mut = api.get_ref_mut(handle)?;
-        let access_rules_substate = substate_ref_mut.access_rules();
-        let access_rules_chain = &mut access_rules_substate.access_rules_chain;
+        let substate = substate_ref_mut.access_rules();
+        let access_rules_chain = &mut substate.access_rules_chain;
         let index: usize = self.index.try_into().unwrap();
         let access_rules =
             access_rules_chain

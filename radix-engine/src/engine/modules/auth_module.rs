@@ -121,6 +121,9 @@ impl AuthModule {
                                 NativeFunction::Package(PackageFunction::PublishWithOwner),
                             ))
                             | REActor::Function(ResolvedFunction::Native(
+                                NativeFunction::Component(ComponentFunction::GlobalizeWithOwner),
+                            ))
+                            | REActor::Function(ResolvedFunction::Native(
                                 NativeFunction::ResourceManager(
                                     ResourceManagerFunction::CreateWithOwner,
                                 ),
@@ -240,20 +243,19 @@ impl AuthModule {
                             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
 
                         let substate_ref = system_api.get_ref(handle)?;
-                        let access_rules_substate = substate_ref.access_rules();
+                        let substate = substate_ref.access_rules();
 
                         // TODO: Revisit what the correct abstraction is for visibility in the auth module
                         let auth = match visibility {
-                            RENodeVisibilityOrigin::Normal => access_rules_substate
-                                .native_fn_authorization(NativeFn::Method(NativeMethod::Vault(
-                                    vault_fn.clone(),
-                                ))),
+                            RENodeVisibilityOrigin::Normal => substate.native_fn_authorization(
+                                NativeFn::Method(NativeMethod::Vault(vault_fn.clone())),
+                            ),
                             RENodeVisibilityOrigin::DirectAccess => match vault_fn {
                                 // TODO: Do we want to allow recaller to be able to withdraw from
                                 // TODO: any visible vault?
                                 VaultMethod::TakeNonFungibles | VaultMethod::Take => {
-                                    let access_rule = access_rules_substate.access_rules_chain[0]
-                                        .get_group("recall");
+                                    let access_rule =
+                                        substate.access_rules_chain[0].get_group("recall");
                                     let authorization = convert(
                                         &Type::Any,
                                         &IndexedScryptoValue::unit(),

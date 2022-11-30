@@ -228,7 +228,7 @@ where
     Ok(substate_and_bucket)
 }
 
-fn build_access_rules_substates(
+fn build_substates(
     mut access_rules_map: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
     metadata_access_rule: AccessRule,
     metadata_mutability: AccessRule,
@@ -335,7 +335,7 @@ fn build_access_rules_substates(
         DenyAll,
     );
 
-    let access_rules_substate = AccessRulesChainSubstate {
+    let substate = AccessRulesChainSubstate {
         access_rules_chain: vec![access_rules],
     };
 
@@ -426,11 +426,11 @@ fn build_access_rules_substates(
         DenyAll,
     );
 
-    let vault_access_rules_substate = AccessRulesChainSubstate {
+    let vault_substate = AccessRulesChainSubstate {
         access_rules_chain: vec![vault_access_rules],
     };
 
-    (access_rules_substate, vault_access_rules_substate)
+    (substate, vault_substate)
 }
 
 impl NativeProcedure for ResourceManagerCreateInvocation {
@@ -452,8 +452,7 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             self.mint_params,
             api,
         )?;
-        let (access_rules_substate, vault_access_rules_substate) =
-            build_access_rules_substates(self.access_rules, AllowAll, DenyAll);
+        let (substate, vault_substate) = build_substates(self.access_rules, AllowAll, DenyAll);
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
@@ -464,8 +463,8 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             RENode::ResourceManager(
                 resource_manager_substate,
                 metadata_substate,
-                access_rules_substate,
-                vault_access_rules_substate,
+                substate,
+                vault_substate,
             ),
         )?;
 
@@ -529,7 +528,7 @@ impl NativeProcedure for ResourceManagerCreateWithOwnerInvocation {
             self.mint_params,
             api,
         )?;
-        let (access_rules_substate, vault_access_rules_substate) = build_access_rules_substates(
+        let (substate, vault_substate) = build_substates(
             self.access_rules,
             rule!(require(non_fungible_address.clone())),
             rule!(require(non_fungible_address)),
@@ -544,8 +543,8 @@ impl NativeProcedure for ResourceManagerCreateWithOwnerInvocation {
             RENode::ResourceManager(
                 resource_manager_substate,
                 metadata_substate,
-                access_rules_substate,
-                vault_access_rules_substate,
+                substate,
+                vault_substate,
             ),
         )?;
 
@@ -712,21 +711,17 @@ impl NativeProcedure for ResourceManagerUpdateVaultAuthExecutable {
                 .expect("AuthZone does not exist");
 
             let substate_ref = api.get_ref(handle)?;
-            let access_rules_substate = substate_ref.access_rules();
+            let substate = substate_ref.access_rules();
 
             let access_rule = match self.1 {
                 Deposit => {
                     let key = AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
                         VaultMethod::Put,
                     )));
-                    access_rules_substate.access_rules_chain[0].get_mutability(&key)
+                    substate.access_rules_chain[0].get_mutability(&key)
                 }
-                Withdraw => {
-                    access_rules_substate.access_rules_chain[0].get_group_mutability("withdraw")
-                }
-                Recall => {
-                    access_rules_substate.access_rules_chain[0].get_group_mutability("recall")
-                }
+                Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
+                Recall => substate.access_rules_chain[0].get_group_mutability("recall"),
             }
             .clone();
 
@@ -737,23 +732,21 @@ impl NativeProcedure for ResourceManagerUpdateVaultAuthExecutable {
         }
 
         let mut substate_mut = api.get_ref_mut(handle)?;
-        let access_rules_substate = substate_mut.access_rules();
+        let substate = substate_mut.access_rules();
 
         match self.1 {
             VaultMethodAuthKey::Deposit => {
                 let key =
                     AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put)));
-                access_rules_substate.access_rules_chain[0].set_method_access_rule(key, self.2);
+                substate.access_rules_chain[0].set_method_access_rule(key, self.2);
             }
             VaultMethodAuthKey::Withdraw => {
                 let group_key = "withdraw".to_string();
-                access_rules_substate.access_rules_chain[0]
-                    .set_group_access_rule(group_key, self.2);
+                substate.access_rules_chain[0].set_group_access_rule(group_key, self.2);
             }
             VaultMethodAuthKey::Recall => {
                 let group_key = "recall".to_string();
-                access_rules_substate.access_rules_chain[0]
-                    .set_group_access_rule(group_key, self.2);
+                substate.access_rules_chain[0].set_group_access_rule(group_key, self.2);
             }
         }
 
@@ -811,21 +804,17 @@ impl NativeProcedure for ResourceManagerLockVaultAuthExecutable {
                 .expect("AuthZone does not exist");
 
             let substate_ref = api.get_ref(handle)?;
-            let access_rules_substate = substate_ref.access_rules();
+            let substate = substate_ref.access_rules();
 
             let access_rule = match self.1 {
                 Deposit => {
                     let key = AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
                         VaultMethod::Put,
                     )));
-                    access_rules_substate.access_rules_chain[0].get_mutability(&key)
+                    substate.access_rules_chain[0].get_mutability(&key)
                 }
-                Withdraw => {
-                    access_rules_substate.access_rules_chain[0].get_group_mutability("withdraw")
-                }
-                Recall => {
-                    access_rules_substate.access_rules_chain[0].get_group_mutability("recall")
-                }
+                Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
+                Recall => substate.access_rules_chain[0].get_group_mutability("recall"),
             }
             .clone();
 
@@ -836,21 +825,21 @@ impl NativeProcedure for ResourceManagerLockVaultAuthExecutable {
         }
 
         let mut substate_mut = api.get_ref_mut(handle)?;
-        let access_rules_substate = substate_mut.access_rules();
+        let substate = substate_mut.access_rules();
 
         match self.1 {
             Deposit => {
                 let key =
                     AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put)));
-                access_rules_substate.access_rules_chain[0].set_mutability(key, self.2);
+                substate.access_rules_chain[0].set_mutability(key, self.2);
             }
             Withdraw => {
                 let group_key = "withdraw".to_string();
-                access_rules_substate.access_rules_chain[0].set_group_mutability(group_key, self.2);
+                substate.access_rules_chain[0].set_group_mutability(group_key, self.2);
             }
             Recall => {
                 let group_key = "recall".to_string();
-                access_rules_substate.access_rules_chain[0].set_group_mutability(group_key, self.2);
+                substate.access_rules_chain[0].set_group_mutability(group_key, self.2);
             }
         }
 

@@ -192,7 +192,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
         metadata_access_rules = metadata_access_rules.default(rule!(allow_all));
         chain.push(metadata_access_rules);
 
-        let access_rules_substate = AccessRulesChainSubstate {
+        let substate = AccessRulesChainSubstate {
             access_rules_chain: chain,
         };
 
@@ -204,7 +204,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
                 package_royalty_config,
                 package_royalty_accumulator,
                 metadata_substate,
-                access_rules_substate,
+                substate,
             ),
         )?;
         let package_id: PackageId = node_id.into();

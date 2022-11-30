@@ -77,8 +77,10 @@ fn set_up_package_and_component() -> (
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
-    let component_address: ComponentAddress =
-        scrypto_decode(&receipt.expect_commit_success()[1]).unwrap();
+    let component_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     (
         store,
@@ -115,7 +117,25 @@ fn test_only_package_owner_can_set_royalty_config() {
     );
     receipt.expect_commit_success();
 
-    // TODO: add negative case
+    // Negative case
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(account, 100.into())
+            .call_native_method(
+                RENodeId::Global(GlobalAddress::Package(package_address)),
+                "set_royalty_config",
+                args!(
+                    package_address,
+                    HashMap::from([(
+                        "RoyaltyTest".to_owned(),
+                        RoyaltyConfigBuilder::new().default(dec!("0")),
+                    )])
+                ),
+            )
+            .build(),
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_failure();
 }
 
 #[test]
@@ -131,7 +151,7 @@ fn test_only_package_owner_can_claim_royalty() {
             .call_native_method(
                 RENodeId::Global(GlobalAddress::Package(package_address)),
                 "claim_royalty",
-                args!(),
+                args!(package_address),
             )
             .call_method(
                 account,
@@ -143,7 +163,24 @@ fn test_only_package_owner_can_claim_royalty() {
     );
     receipt.expect_commit_success();
 
-    // TODO: add negative case
+    // Negative case
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(account, 100.into())
+            .call_native_method(
+                RENodeId::Global(GlobalAddress::Package(package_address)),
+                "claim_royalty",
+                args!(package_address),
+            )
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
+            .build(),
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_failure();
 }
 
 #[test]
@@ -160,7 +197,7 @@ fn test_only_component_owner_can_set_royalty_config() {
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 "set_royalty_config",
                 args!(
-                    component_address,
+                    RENodeId::Global(GlobalAddress::Component(component_address)),
                     RoyaltyConfigBuilder::new().default(dec!("0"))
                 ),
             )
@@ -169,7 +206,22 @@ fn test_only_component_owner_can_set_royalty_config() {
     );
     receipt.expect_commit_success();
 
-    // TODO: add negative case
+    // Negative case
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(account, 100.into())
+            .call_native_method(
+                RENodeId::Global(GlobalAddress::Component(component_address)),
+                "set_royalty_config",
+                args!(
+                    RENodeId::Global(GlobalAddress::Component(component_address)),
+                    RoyaltyConfigBuilder::new().default(dec!("0"))
+                ),
+            )
+            .build(),
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_failure();
 }
 
 #[test]
@@ -185,7 +237,9 @@ fn test_only_component_owner_can_claim_royalty() {
             .call_native_method(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 "claim_royalty",
-                args!(),
+                args!(RENodeId::Global(GlobalAddress::Component(
+                    component_address
+                ))),
             )
             .call_method(
                 account,
@@ -197,5 +251,24 @@ fn test_only_component_owner_can_claim_royalty() {
     );
     receipt.expect_commit_success();
 
-    // TODO: add negative case
+    // Negative case
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(account, 100.into())
+            .call_native_method(
+                RENodeId::Global(GlobalAddress::Component(component_address)),
+                "claim_royalty",
+                args!(RENodeId::Global(GlobalAddress::Component(
+                    component_address
+                ))),
+            )
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
+            .build(),
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_failure();
 }
