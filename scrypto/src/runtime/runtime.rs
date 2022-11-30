@@ -4,7 +4,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::crypto::*;
-use radix_engine_interface::data::{scrypto_decode, ScryptoDecode, ScryptoTypeId};
+use radix_engine_interface::data::{scrypto_decode, ScryptoDecode};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt::Debug;
@@ -17,39 +17,29 @@ use scrypto::engine::scrypto_env::ScryptoEnv;
 pub struct Runtime {}
 
 impl Runtime {
+    /// Returns the current timestamp (in milliseconds), rounded to minutes
     pub fn current_time_rounded_to_minutes() -> u64 {
-        Self::sys_current_time_rounded_to_minutes(&mut ScryptoEnv).unwrap()
-    }
-
-    pub fn sys_current_time_rounded_to_minutes<Y, E>(env: &mut Y) -> Result<u64, E>
-    where
-        Y: SysNativeInvokable<ClockGetCurrentTimeRoundedToMinutesInvocation, E>,
-        E: Debug + ScryptoTypeId + ScryptoDecode,
-    {
+        let mut env = ScryptoEnv;
         env.sys_invoke(ClockGetCurrentTimeRoundedToMinutesInvocation { receiver: CLOCK })
+            .unwrap()
     }
 
+    /// Returns the current epoch
     pub fn current_epoch() -> u64 {
-        Self::sys_current_epoch(&mut ScryptoEnv).unwrap()
-    }
-
-    pub fn sys_current_epoch<Y, E>(env: &mut Y) -> Result<u64, E>
-    where
-        Y: SysNativeInvokable<EpochManagerGetCurrentEpochInvocation, E>,
-        E: Debug + ScryptoTypeId + ScryptoDecode,
-    {
+        let mut env = ScryptoEnv;
         env.sys_invoke(EpochManagerGetCurrentEpochInvocation {
             receiver: EPOCH_MANAGER,
         })
+        .unwrap()
     }
 
-    /// Returns the running entity, a component if within a call-method context or a
-    /// blueprint if within a call-function context.
+    /// Returns the running entity.
     pub fn actor() -> ScryptoActor {
-        let mut syscalls = ScryptoEnv;
-        syscalls.sys_get_actor().unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_get_actor().unwrap()
     }
 
+    /// Returns the current package address.
     pub fn package_address() -> PackageAddress {
         match Self::actor() {
             ScryptoActor::Blueprint(package_address, _)
@@ -59,8 +49,8 @@ impl Runtime {
 
     /// Generates a UUID.
     pub fn generate_uuid() -> u128 {
-        let mut syscalls = ScryptoEnv;
-        syscalls.sys_generate_uuid().unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_generate_uuid().unwrap()
     }
 
     /// Invokes a function on a blueprint.
@@ -70,8 +60,8 @@ impl Runtime {
         function_name: S2,
         args: Vec<u8>,
     ) -> T {
-        let mut syscalls = ScryptoEnv;
-        let rtn = syscalls
+        let mut env = ScryptoEnv;
+        let buffer = env
             .sys_invoke_scrypto_function(
                 ScryptoFunctionIdent {
                     package: ScryptoPackage::Global(package_address),
@@ -81,7 +71,7 @@ impl Runtime {
                 args,
             )
             .unwrap();
-        scrypto_decode(&rtn).unwrap()
+        scrypto_decode(&buffer).unwrap()
     }
 
     /// Invokes a method on a component.
@@ -90,8 +80,8 @@ impl Runtime {
         method: S,
         args: Vec<u8>,
     ) -> T {
-        let mut syscalls = ScryptoEnv;
-        let rtn = syscalls
+        let mut env = ScryptoEnv;
+        let buffer = env
             .sys_invoke_scrypto_method(
                 ScryptoMethodIdent {
                     receiver: ScryptoReceiver::Global(component_address),
@@ -100,12 +90,12 @@ impl Runtime {
                 args,
             )
             .unwrap();
-        scrypto_decode(&rtn).unwrap()
+        scrypto_decode(&buffer).unwrap()
     }
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let mut syscalls = ScryptoEnv;
-        syscalls.sys_get_transaction_hash().unwrap()
+        let mut env = ScryptoEnv;
+        env.sys_get_transaction_hash().unwrap()
     }
 }

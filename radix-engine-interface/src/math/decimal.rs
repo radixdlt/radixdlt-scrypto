@@ -1,9 +1,10 @@
-use core::ops::*;
+use num_bigint::BigInt;
 use num_traits::{One, Pow, ToPrimitive, Zero};
 use paste::paste;
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
 use sbor::rust::iter;
+use sbor::rust::ops::*;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::{String, ToString};
 use sbor::rust::vec::Vec;
@@ -197,7 +198,7 @@ impl Decimal {
         }
     }
 
-    /// The square root of a Decimal. Uses a standard Babylonian method.
+    /// Square root of a Decimal
     pub fn sqrt(&self) -> Option<Self> {
         if self.is_negative() {
             return None;
@@ -205,24 +206,47 @@ impl Decimal {
         if self.is_zero() {
             return Some(Self::ZERO);
         }
-        // Start with an arbitrary number as the first guess
-        let mut result = *self / Self::from(2u8);
-        // Too small to represent, so we start with self
-        // Future iterations could actually avoid using a decimal altogether and use a buffered
-        // vector, only combining back into a decimal on return
-        if result.is_zero() {
-            result = *self;
+
+        // The I256 i associated to a Decimal d is : i = d*10^18.
+        // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^9 => We lost precision
+        // To get the right precision, we compute : sqrt(i*10^18) = sqrt(d)*10^18
+        let self_512: I512 = I512::from(self.0);
+        let correct_nb = self_512 * I512::from(Decimal::one().0);
+        let sqrt = I256::try_from(correct_nb.sqrt()).unwrap();
+        Some(Decimal(sqrt))
+    }
+
+    /// Cubic root of a Decimal
+    pub fn cbrt(&self) -> Self {
+        if self.is_zero() {
+            return Self::ZERO;
         }
-        let mut last = result + Self::ONE;
-        // Keep going while the difference is larger than the tolerance
-        let mut circuit_breaker = 0;
-        while last != result {
-            circuit_breaker += 1;
-            assert!(circuit_breaker < 1000, "geo mean circuit breaker");
-            last = result;
-            result = (result + *self / result) / Self::from(2u8);
+
+        // By reasoning in the same way as before, we realise that we need to multiply by 10^36
+        let self_512: I512 = I512::from(self.0);
+        let correct_nb = self_512 * I512::from(Decimal::one().0).pow(2);
+        let cbrt = I256::try_from(correct_nb.cbrt()).unwrap();
+        Decimal(cbrt)
+    }
+
+    /// Nth root of a Decimal
+    pub fn nth_root(&self, n: u32) -> Option<Self> {
+        if (self.is_negative() && n % 2 == 0) || n == 0 {
+            None
+        } else if n == 1 {
+            Some(self.clone())
+        } else {
+            if self.is_zero() {
+                return Some(Self::ZERO);
+            }
+
+            // By induction, we need to multiply by the (n-1)th power of 10^18.
+            // To not overflow, we use BigInts
+            let self_bigint = BigInt::from(self.0);
+            let correct_nb = self_bigint * BigInt::from(Decimal::one().0).pow(n - 1);
+            let nth_root = I256::try_from(correct_nb.nth_root(n)).unwrap();
+            Some(Decimal(nth_root))
         }
-        Some(result)
     }
 }
 
@@ -307,11 +331,12 @@ where
     type Output = Decimal;
 
     fn mul(self, other: T) -> Self::Output {
-        let a = self.0;
+        let a = I320::from(self.0);
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b: I256 = b_dec.0;
-        let c: I256 = a * b / Self::ONE.0;
-        Decimal(c)
+        let b: I320 = I320::from(b_dec.0);
+        let c: I320 = a * b / I320::from(Self::ONE.0);
+        let c_256 = I256::try_from(c).unwrap();
+        Decimal(c_256)
     }
 }
 
@@ -322,11 +347,12 @@ where
     type Output = Decimal;
 
     fn div(self, other: T) -> Self::Output {
-        let a = self.0;
+        let a = I320::from(self.0);
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b: I256 = b_dec.0;
-        let c: I256 = a * Self::ONE.0 / b;
-        Decimal(c)
+        let b: I320 = I320::from(b_dec.0);
+        let c: I320 = a * I320::from(Self::ONE.0) / b;
+        let c_256 = I256::try_from(c).unwrap();
+        Decimal(c_256)
     }
 }
 
@@ -684,6 +710,7 @@ mod tests {
         let a = Decimal::from_str("1000000000").unwrap();
         let b = Decimal::from_str("1000000000").unwrap();
         assert_eq!((a * b).to_string(), "1000000000000000000");
+        let _ = Decimal::MAX * dec!(1);
     }
 
     #[test]
@@ -740,6 +767,7 @@ mod tests {
         let b = Decimal::from(7u32);
         assert_eq!((a / b).to_string(), "0.714285714285714285");
         assert_eq!((b / a).to_string(), "1.4");
+        let _ = Decimal::MAX / 1;
     }
 
     #[test]
@@ -1100,11 +1128,44 @@ mod tests {
 
     #[test]
     fn test_sqrt() {
-        let sqrt_of_42 = dec!("42").sqrt();
-        let sqrt_of_0 = dec!("0").sqrt();
+        let sqrt_of_42 = dec!(42).sqrt();
+        let sqrt_of_0 = dec!(0).sqrt();
         let sqrt_of_negative = dec!("-1").sqrt();
+        let sqrt_max = Decimal::MAX.sqrt();
         assert_eq!(sqrt_of_42.unwrap(), dec!("6.48074069840786023"));
-        assert_eq!(sqrt_of_0.unwrap(), dec!("0"));
+        assert_eq!(sqrt_of_0.unwrap(), dec!(0));
         assert_eq!(sqrt_of_negative, None);
+        assert_eq!(
+            sqrt_max.unwrap(),
+            dec!("240615969168004511545033772477.625056927114980741")
+        );
+    }
+
+    #[test]
+    fn test_cbrt() {
+        let cbrt_of_42 = dec!(42).cbrt();
+        let cbrt_of_0 = dec!(0).cbrt();
+        let cbrt_of_negative_42 = dec!("-42").cbrt();
+        let cbrt_max = Decimal::MAX.cbrt();
+        assert_eq!(cbrt_of_42, dec!("3.476026644886449786"));
+        assert_eq!(cbrt_of_0, dec!("0"));
+        assert_eq!(cbrt_of_negative_42, dec!("-3.476026644886449786"));
+        assert_eq!(cbrt_max, dec!("38685626227668133590.597631999999999999"));
+    }
+
+    #[test]
+    fn test_nth_root() {
+        let root_4_42 = dec!(42).nth_root(4);
+        let root_5_42 = dec!(42).nth_root(5);
+        let root_42_42 = dec!(42).nth_root(42);
+        let root_neg_4_42 = dec!("-42").nth_root(4);
+        let root_neg_5_42 = dec!("-42").nth_root(5);
+        let root_0 = dec!(42).nth_root(0);
+        assert_eq!(root_4_42.unwrap(), dec!("2.545729895021830518"));
+        assert_eq!(root_5_42.unwrap(), dec!("2.111785764966753912"));
+        assert_eq!(root_42_42.unwrap(), dec!("1.093072057934823618"));
+        assert_eq!(root_neg_4_42, None);
+        assert_eq!(root_neg_5_42.unwrap(), dec!("-2.111785764966753912"));
+        assert_eq!(root_0, None);
     }
 }

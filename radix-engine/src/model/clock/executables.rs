@@ -9,14 +9,14 @@ use crate::model::{
     HardResourceOrNonFungible, MethodAuthorization, SubstateRefMut,
 };
 use crate::types::*;
+use radix_engine_interface::access_rule_node;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
     ClockFunction, ClockMethod, ClockOffset, GlobalAddress, NativeFunction, NativeMethod, RENodeId,
     SubstateOffset,
 };
 use radix_engine_interface::model::*;
-use scrypto::access_rule_node;
-use scrypto::rule;
+use radix_engine_interface::rule;
 
 const SECONDS_TO_MS_FACTOR: u64 = 1000;
 const MINUTES_TO_MS_FACTOR: u64 = SECONDS_TO_MS_FACTOR * 60;

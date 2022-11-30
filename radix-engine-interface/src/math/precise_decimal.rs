@@ -1,8 +1,9 @@
-use core::ops::*;
+use num_bigint::BigInt;
 use num_traits::{One, Pow, ToPrimitive, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
 use sbor::rust::iter;
+use sbor::rust::ops::*;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
@@ -202,6 +203,57 @@ impl PreciseDecimal {
             );
         }
     }
+
+    /// Square root of a Decimal
+    pub fn sqrt(&self) -> Option<Self> {
+        if self.is_negative() {
+            return None;
+        }
+        if self.is_zero() {
+            return Some(Self::ZERO);
+        }
+
+        // The I512 i associated to a Decimal d is : i = d*10^64.
+        // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^32 => We lost precision
+        // To get the right precision, we compute : sqrt(i*10^64) = sqrt(d)*10^64
+        let self_bigint = BigInt::from(self.0);
+        let correct_nb = self_bigint * BigInt::from(PreciseDecimal::one().0);
+        let sqrt = I512::try_from(correct_nb.sqrt()).unwrap();
+        Some(PreciseDecimal(sqrt))
+    }
+
+    /// Cubic root of a Decimal
+    pub fn cbrt(&self) -> Self {
+        if self.is_zero() {
+            return Self::ZERO;
+        }
+
+        // By reasoning in the same way as before, we realise that we need to multiply by 10^36
+        let self_bigint = BigInt::from(self.0);
+        let correct_nb: BigInt = self_bigint * BigInt::from(PreciseDecimal::one().0).pow(2 as u32);
+        let cbrt = I512::try_from(correct_nb.cbrt()).unwrap();
+        PreciseDecimal(cbrt)
+    }
+
+    /// Nth root of a Decimal
+    pub fn nth_root(&self, n: u32) -> Option<Self> {
+        if (self.is_negative() && n % 2 == 0) || n == 0 {
+            None
+        } else if n == 1 {
+            Some(self.clone())
+        } else {
+            if self.is_zero() {
+                return Some(Self::ZERO);
+            }
+
+            // By induction, we need to multiply by the (n-1)th power of 10^64.
+            // To not overflow, we use BigInts
+            let self_bigint = BigInt::from(self.0);
+            let correct_nb = self_bigint * BigInt::from(PreciseDecimal::one().0).pow(n - 1);
+            let root = I512::try_from(correct_nb.nth_root(n)).unwrap();
+            Some(PreciseDecimal(root))
+        }
+    }
 }
 
 macro_rules! from_int {
@@ -285,11 +337,12 @@ where
     type Output = PreciseDecimal;
 
     fn mul(self, other: T) -> Self::Output {
-        let a = self.0;
+        let a = I728::from(self.0);
         let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b: I512 = b_dec.0;
-        let c: I512 = a * b / Self::ONE.0;
-        PreciseDecimal(c)
+        let b: I728 = I728::from(b_dec.0);
+        let c: I728 = a * b / I728::from(Self::ONE.0);
+        let c_512 = I512::try_from(c).unwrap();
+        PreciseDecimal(c_512)
     }
 }
 
@@ -300,11 +353,12 @@ where
     type Output = PreciseDecimal;
 
     fn div(self, other: T) -> Self::Output {
-        let a = self.0;
+        let a = I728::from(self.0);
         let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b: I512 = b_dec.0;
-        let c: I512 = a * Self::ONE.0 / b;
-        PreciseDecimal(c)
+        let b: I728 = I728::from(b_dec.0);
+        let c: I728 = a * I728::from(Self::ONE.0) / b;
+        let c_512 = I512::try_from(c).unwrap();
+        PreciseDecimal(c_512)
     }
 }
 
@@ -1120,5 +1174,62 @@ mod tests {
     fn test_from_str_failure_precise_decimal() {
         let pdec = PreciseDecimal::from_str("non_decimal_value");
         assert_eq!(pdec, Err(ParsePreciseDecimalError::InvalidChar('n')));
+    }
+
+    #[test]
+    fn test_sqrt() {
+        let sqrt_of_42 = pdec!(42).sqrt();
+        let sqrt_of_0 = pdec!(0).sqrt();
+        let sqrt_of_negative = pdec!("-1").sqrt();
+        assert_eq!(
+            sqrt_of_42.unwrap(),
+            pdec!("6.4807406984078602309659674360879966577052043070583465497113543978")
+        );
+        assert_eq!(sqrt_of_0.unwrap(), pdec!(0));
+        assert_eq!(sqrt_of_negative, None);
+    }
+
+    #[test]
+    fn test_cbrt() {
+        let cbrt_of_42 = pdec!(42).cbrt();
+        let cbrt_of_0 = pdec!(0).cbrt();
+        let cbrt_of_negative_42 = pdec!("-42").cbrt();
+        assert_eq!(
+            cbrt_of_42,
+            pdec!("3.4760266448864497867398652190045374340048385387869674214742239567")
+        );
+        assert_eq!(cbrt_of_0, pdec!("0"));
+        assert_eq!(
+            cbrt_of_negative_42,
+            pdec!("-3.4760266448864497867398652190045374340048385387869674214742239567")
+        );
+    }
+
+    #[test]
+    fn test_nth_root() {
+        let root_4_42 = pdec!(42).nth_root(4);
+        let root_5_42 = pdec!(42).nth_root(5);
+        let root_42_42 = pdec!(42).nth_root(42);
+        let root_neg_4_42 = pdec!("-42").nth_root(4);
+        let root_neg_5_42 = pdec!("-42").nth_root(5);
+        let root_0 = pdec!(42).nth_root(0);
+        assert_eq!(
+            root_4_42.unwrap(),
+            pdec!("2.5457298950218305182697889605762886851969608313019270894320607936")
+        );
+        assert_eq!(
+            root_5_42.unwrap(),
+            pdec!("2.1117857649667539127325673305502334863032026536306378208090387860")
+        );
+        assert_eq!(
+            root_42_42.unwrap(),
+            pdec!("1.0930720579348236186827847318556257862429004287369365621359139742")
+        );
+        assert_eq!(root_neg_4_42, None);
+        assert_eq!(
+            root_neg_5_42.unwrap(),
+            pdec!("-2.1117857649667539127325673305502334863032026536306378208090387860")
+        );
+        assert_eq!(root_0, None);
     }
 }

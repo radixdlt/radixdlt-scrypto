@@ -78,7 +78,7 @@ impl ProofSubstate {
                     .collect();
                 (LockedAmountOrIds::Amount(total), per_container)
             }
-            ResourceType::NonFungible => {
+            ResourceType::NonFungible { .. } => {
                 let mut max = HashMap::<ResourceContainerId, BTreeSet<NonFungibleId>>::new();
                 for proof in &proofs {
                     for (container_id, (_, locked_amount_or_ids)) in &proof.evidence {

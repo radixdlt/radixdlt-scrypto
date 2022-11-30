@@ -53,13 +53,14 @@ pub use macros::*;
 
 // Re-export radix engine derives
 pub extern crate radix_engine_derive;
-pub extern crate radix_engine_interface;
-pub extern crate scrypto_abi;
 pub use radix_engine_derive::{scrypto, Describe};
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;
 pub use scrypto_derive::{blueprint, import, NonFungibleData};
+
+pub extern crate radix_engine_interface;
+pub extern crate scrypto_abi;
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502

@@ -554,7 +554,7 @@ mod tests {
     use radix_engine_interface::api::types::ResourceManagerFunction;
     use radix_engine_interface::core::NetworkDefinition;
     use radix_engine_interface::data::scrypto_encode;
-    use scrypto::scrypto;
+    use radix_engine_interface::scrypto;
 
     #[scrypto(TypeId, Encode, Decode)]
     struct BadResourceManagerCreateInput {
@@ -573,7 +573,9 @@ mod tests {
                     function_name: ResourceManagerFunction::Create.to_string(),
                 },
                 args: scrypto_encode(&BadResourceManagerCreateInput {
-                    resource_type: ResourceType::NonFungible,
+                    resource_type: ResourceType::NonFungible {
+                        id_type: NonFungibleIdType::default(),
+                    },
                     metadata: HashMap::new(),
                     access_rules: HashMap::new(),
                 })
@@ -583,7 +585,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(manifest, "CALL_NATIVE_FUNCTION \"ResourceManager\" \"create\" Enum(\"NonFungible\") Array<Tuple>() Array<Tuple>();\n");
+        assert_eq!(manifest, "CALL_NATIVE_FUNCTION \"ResourceManager\" \"create\" Enum(\"NonFungible\", Enum(\"UUID\")) Array<Tuple>() Array<Tuple>();\n");
     }
 
     #[test]
