@@ -576,6 +576,7 @@ impl TransactionProcessor {
                         code: code.clone(),
                         abi: abi.clone(),
                         royalty_config: HashMap::new(),
+                        access_rules_chain: Vec::new(),
                         metadata: HashMap::new(),
                     })
                     .map(|address| IndexedScryptoValue::from_typed(&address))

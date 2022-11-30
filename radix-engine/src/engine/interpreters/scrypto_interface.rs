@@ -53,7 +53,13 @@ where
 
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
         let (node_id, node) = match node {
-            ScryptoRENode::Component(package_address, blueprint_name, royalty_config, state) => {
+            ScryptoRENode::Component(
+                package_address,
+                blueprint_name,
+                state,
+                royalty_config,
+                access_rules_chain,
+            ) => {
                 let node_id = self.allocate_node_id(RENodeType::Component)?;
                 let node = RENode::Component(
                     ComponentInfoSubstate::new(package_address, blueprint_name),
@@ -68,9 +74,7 @@ where
                     MetadataSubstate {
                         metadata: HashMap::new(),
                     },
-                    AccessRulesSubstate {
-                        access_rules: Vec::new(),
-                    },
+                    AccessRulesSubstate { access_rules_chain },
                 );
 
                 (node_id, node)

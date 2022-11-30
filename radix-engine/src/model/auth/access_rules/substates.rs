@@ -8,7 +8,7 @@ use radix_engine_interface::model::AccessRules;
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AccessRulesSubstate {
-    pub access_rules: Vec<AccessRules>,
+    pub access_rules_chain: Vec<AccessRules>,
 }
 
 impl AccessRulesSubstate {
@@ -24,7 +24,7 @@ impl AccessRulesSubstate {
             .expect("Failed to decode component state");
 
         let mut authorizations = Vec::new();
-        for auth in &self.access_rules {
+        for auth in &self.access_rules_chain {
             let method_auth = auth.get(&key);
             let authorization = convert(schema, &data, method_auth);
             authorizations.push(authorization);
@@ -37,7 +37,7 @@ impl AccessRulesSubstate {
         let key = AccessRuleKey::Native(native_fn);
 
         let mut authorizations = Vec::new();
-        for auth in &self.access_rules {
+        for auth in &self.access_rules_chain {
             let method_auth = auth.get(&key);
 
             // TODO: Remove
@@ -50,7 +50,7 @@ impl AccessRulesSubstate {
 
     pub fn mutability_authorization(&self, key: &AccessRuleKey) -> Vec<MethodAuthorization> {
         let mut authorizations = Vec::new();
-        for auth in &self.access_rules {
+        for auth in &self.access_rules_chain {
             let method_auth = auth.get_mutability(&key);
 
             // TODO: Remove

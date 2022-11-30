@@ -246,8 +246,8 @@ impl AuthModule {
                                 // TODO: Do we want to allow recaller to be able to withdraw from
                                 // TODO: any visible vault?
                                 VaultMethod::TakeNonFungibles | VaultMethod::Take => {
-                                    let access_rule =
-                                        access_rules_substate.access_rules[0].get_group("recall");
+                                    let access_rule = access_rules_substate.access_rules_chain[0]
+                                        .get_group("recall");
                                     let authorization = convert(
                                         &Type::Any,
                                         &IndexedScryptoValue::unit(),

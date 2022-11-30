@@ -103,7 +103,7 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
 
         let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
         let access_rules = substate_ref_mut.access_rules();
-        access_rules.access_rules.push(self.access_rules);
+        access_rules.access_rules_chain.push(self.access_rules);
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -196,10 +196,10 @@ impl NativeProcedure for AccessRulesSetAccessRuleInvocation {
 
         let mut substate_ref_mut = api.get_ref_mut(handle)?;
         let access_rules_substate = substate_ref_mut.access_rules();
-        let access_rules_list = &mut access_rules_substate.access_rules;
+        let access_rules_chain = &mut access_rules_substate.access_rules_chain;
         let index: usize = self.index.try_into().unwrap();
         let access_rules =
-            access_rules_list
+            access_rules_chain
                 .get_mut(index)
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::AccessRulesError(AccessRulesError::InvalidIndex(self.index)),
@@ -298,10 +298,10 @@ impl NativeProcedure for AccessRulesSetMutabilityInvocation {
 
         let mut substate_ref_mut = api.get_ref_mut(handle)?;
         let access_rules_substate = substate_ref_mut.access_rules();
-        let access_rules_list = &mut access_rules_substate.access_rules;
+        let access_rules_chain = &mut access_rules_substate.access_rules_chain;
         let index: usize = self.index.try_into().unwrap();
         let access_rules =
-            access_rules_list
+            access_rules_chain
                 .get_mut(index)
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::AccessRulesError(AccessRulesError::InvalidIndex(self.index)),

@@ -74,7 +74,7 @@ impl NativeProcedure for EpochManagerCreateInvocation {
         );
 
         let access_rules_substate = AccessRulesSubstate {
-            access_rules: vec![access_rules],
+            access_rules_chain: vec![access_rules],
         };
 
         api.create_node(

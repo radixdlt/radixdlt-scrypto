@@ -113,7 +113,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .unwrap();
 
             writeln!(output, "{}", "Access Rules".green().bold());
-            for (_, auth) in access_rules.access_rules.iter().identify_last() {
+            for (_, auth) in access_rules.access_rules_chain.iter().identify_last() {
                 for (last, (k, v)) in auth.iter().identify_last() {
                     writeln!(output, "{} {:?} => {:?}", list_item_prefix(last), k, v);
                 }

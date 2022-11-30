@@ -336,7 +336,7 @@ fn build_access_rules_substates(
     );
 
     let access_rules_substate = AccessRulesSubstate {
-        access_rules: vec![access_rules],
+        access_rules_chain: vec![access_rules],
     };
 
     let (deposit_access_rule, deposit_mutability) = access_rules_map
@@ -427,7 +427,7 @@ fn build_access_rules_substates(
     );
 
     let vault_access_rules_substate = AccessRulesSubstate {
-        access_rules: vec![vault_access_rules],
+        access_rules_chain: vec![vault_access_rules],
     };
 
     (access_rules_substate, vault_access_rules_substate)
@@ -718,10 +718,14 @@ impl NativeProcedure for ResourceManagerUpdateVaultAuthExecutable {
                     let key = AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
                         VaultMethod::Put,
                     )));
-                    access_rules_substate.access_rules[0].get_mutability(&key)
+                    access_rules_substate.access_rules_chain[0].get_mutability(&key)
                 }
-                Withdraw => access_rules_substate.access_rules[0].get_group_mutability("withdraw"),
-                Recall => access_rules_substate.access_rules[0].get_group_mutability("recall"),
+                Withdraw => {
+                    access_rules_substate.access_rules_chain[0].get_group_mutability("withdraw")
+                }
+                Recall => {
+                    access_rules_substate.access_rules_chain[0].get_group_mutability("recall")
+                }
             }
             .clone();
 
@@ -738,15 +742,17 @@ impl NativeProcedure for ResourceManagerUpdateVaultAuthExecutable {
             VaultMethodAuthKey::Deposit => {
                 let key =
                     AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put)));
-                access_rules_substate.access_rules[0].set_method_access_rule(key, self.2);
+                access_rules_substate.access_rules_chain[0].set_method_access_rule(key, self.2);
             }
             VaultMethodAuthKey::Withdraw => {
                 let group_key = "withdraw".to_string();
-                access_rules_substate.access_rules[0].set_group_access_rule(group_key, self.2);
+                access_rules_substate.access_rules_chain[0]
+                    .set_group_access_rule(group_key, self.2);
             }
             VaultMethodAuthKey::Recall => {
                 let group_key = "recall".to_string();
-                access_rules_substate.access_rules[0].set_group_access_rule(group_key, self.2);
+                access_rules_substate.access_rules_chain[0]
+                    .set_group_access_rule(group_key, self.2);
             }
         }
 
@@ -810,10 +816,14 @@ impl NativeProcedure for ResourceManagerLockVaultAuthExecutable {
                     let key = AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
                         VaultMethod::Put,
                     )));
-                    access_rules_substate.access_rules[0].get_mutability(&key)
+                    access_rules_substate.access_rules_chain[0].get_mutability(&key)
                 }
-                Withdraw => access_rules_substate.access_rules[0].get_group_mutability("withdraw"),
-                Recall => access_rules_substate.access_rules[0].get_group_mutability("recall"),
+                Withdraw => {
+                    access_rules_substate.access_rules_chain[0].get_group_mutability("withdraw")
+                }
+                Recall => {
+                    access_rules_substate.access_rules_chain[0].get_group_mutability("recall")
+                }
             }
             .clone();
 
@@ -830,15 +840,15 @@ impl NativeProcedure for ResourceManagerLockVaultAuthExecutable {
             Deposit => {
                 let key =
                     AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put)));
-                access_rules_substate.access_rules[0].set_mutability(key, self.2);
+                access_rules_substate.access_rules_chain[0].set_mutability(key, self.2);
             }
             Withdraw => {
                 let group_key = "withdraw".to_string();
-                access_rules_substate.access_rules[0].set_group_mutability(group_key, self.2);
+                access_rules_substate.access_rules_chain[0].set_group_mutability(group_key, self.2);
             }
             Recall => {
                 let group_key = "recall".to_string();
-                access_rules_substate.access_rules[0].set_group_mutability(group_key, self.2);
+                access_rules_substate.access_rules_chain[0].set_group_mutability(group_key, self.2);
             }
         }
 

@@ -70,8 +70,9 @@ impl ComponentSystem {
             .sys_create_node(ScryptoRENode::Component(
                 Runtime::package_address(),
                 blueprint_name.to_string(),
-                RoyaltyConfig::default(),
                 scrypto_encode(&state).unwrap(),
+                RoyaltyConfig::default(),
+                Vec::new(),
             ))
             .unwrap();
         Component(node_id.into())

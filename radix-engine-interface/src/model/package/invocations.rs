@@ -13,6 +13,7 @@ pub struct PackagePublishNoOwnerInvocation {
     pub code: Blob,
     pub abi: Blob,
     pub royalty_config: HashMap<String, RoyaltyConfig>,
+    pub access_rules_chain: Vec<AccessRules>,
     pub metadata: HashMap<String, String>,
 }
 
@@ -38,6 +39,7 @@ pub struct PackagePublishWithOwnerInvocation {
     pub code: Blob,
     pub abi: Blob,
     pub royalty_config: HashMap<String, RoyaltyConfig>,
+    pub access_rules_chain: Vec<AccessRules>,
     pub metadata: HashMap<String, String>,
 }
 

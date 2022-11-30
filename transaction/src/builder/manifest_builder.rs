@@ -530,6 +530,7 @@ impl ManifestBuilder {
                 code: Blob(code_hash),
                 abi: Blob(abi_hash),
                 royalty_config: HashMap::new(), // TODO: needs a strategy on how to deal with ever growing variation
+                access_rules_chain: Vec::new(),
                 metadata: HashMap::new(),
             })
             .unwrap(),

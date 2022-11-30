@@ -87,7 +87,7 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
         };
 
         let access_rules = AccessRulesSubstate {
-            access_rules: vec![AccessRules::new()],
+            access_rules_chain: vec![AccessRules::new()],
         };
         let node_id = api.allocate_node_id(RENodeType::Package)?;
         api.create_node(
@@ -190,7 +190,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
         );
 
         let access_rules_substate = AccessRulesSubstate {
-            access_rules: vec![access_rules],
+            access_rules_chain: vec![access_rules],
         };
 
         let node_id = api.allocate_node_id(RENodeType::Package)?;
