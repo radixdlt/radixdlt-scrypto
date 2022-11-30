@@ -16,6 +16,9 @@ macro_rules! construct_address {
     (EntityType::EpochManager, $($bytes:expr),*) => {
         radix_engine_interface::model::SystemAddress::EpochManager([$($bytes),*])
     };
+    (EntityType::Clock, $($bytes:expr),*) => {
+        radix_engine_interface::model::SystemAddress::Clock([$($bytes),*])
+    };
 }
 
 /// (Deprecated) Constructs an RE address.

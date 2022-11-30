@@ -274,7 +274,8 @@ impl SubstateProperties {
                 RENodeId::Component(..)
                 | RENodeId::Package(..)
                 | RENodeId::ResourceManager(..)
-                | RENodeId::EpochManager(..) => Ok(()),
+                | RENodeId::EpochManager(..)
+                | RENodeId::Clock(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),
                     node_id,

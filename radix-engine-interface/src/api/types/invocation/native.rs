@@ -39,6 +39,7 @@ pub enum NativeMethod {
     Vault(VaultMethod),
     Proof(ProofMethod),
     Worktop(WorktopMethod),
+    Clock(ClockMethod),
 }
 
 // Native method enum used by Kernel SystemAPI and WASM
@@ -49,6 +50,7 @@ pub enum NativeFunction {
     ResourceManager(ResourceManagerFunction),
     Package(PackageFunction),
     TransactionProcessor(TransactionProcessorFunction),
+    Clock(ClockFunction),
 }
 
 #[derive(
@@ -372,6 +374,49 @@ pub enum WorktopMethod {
     AssertContainsAmount,
     AssertContainsNonFungibles,
     Drain,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum ClockFunction {
+    Create,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum ClockMethod {
+    SetCurrentTime,
+    GetCurrentTimeRoundedToMinutes,
 }
 
 #[derive(

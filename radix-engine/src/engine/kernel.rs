@@ -142,6 +142,10 @@ where
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::System(CLOCK)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)),
             RENodeVisibilityOrigin::Normal,
         );
@@ -907,13 +911,21 @@ where
                 .id_allocator
                 .new_component_id(self.transaction_hash)
                 .map(|id| RENodeId::EpochManager(id)),
+            RENodeType::Clock => self
+                .id_allocator
+                .new_component_id(self.transaction_hash)
+                .map(|id| RENodeId::Clock(id)),
             RENodeType::GlobalPackage => self
                 .id_allocator
                 .new_package_address(self.transaction_hash)
                 .map(|address| RENodeId::Global(GlobalAddress::Package(address))),
             RENodeType::GlobalEpochManager => self
                 .id_allocator
-                .new_system_address(self.transaction_hash)
+                .new_epoch_manager_address(self.transaction_hash)
+                .map(|address| RENodeId::Global(GlobalAddress::System(address))),
+            RENodeType::GlobalClock => self
+                .id_allocator
+                .new_clock_address(self.transaction_hash)
                 .map(|address| RENodeId::Global(GlobalAddress::System(address))),
             RENodeType::GlobalResourceManager => self
                 .id_allocator
@@ -974,7 +986,11 @@ where
             ) => {}
             (
                 RENodeId::Global(GlobalAddress::System(..)),
-                RENode::Global(GlobalAddressSubstate::System(..)),
+                RENode::Global(GlobalAddressSubstate::EpochManager(..)),
+            ) => {}
+            (
+                RENodeId::Global(GlobalAddress::System(..)),
+                RENode::Global(GlobalAddressSubstate::Clock(..)),
             ) => {}
             (
                 RENodeId::Global(address),
@@ -1030,6 +1046,7 @@ where
             (RENodeId::NonFungibleStore(..), RENode::NonFungibleStore(..)) => {}
             (RENodeId::ResourceManager(..), RENode::ResourceManager(..)) => {}
             (RENodeId::EpochManager(..), RENode::EpochManager(..)) => {}
+            (RENodeId::Clock(..), RENode::Clock(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 
@@ -1645,6 +1662,7 @@ where
 
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(CLOCK)));
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
             ECDSA_SECP256K1_TOKEN,
         )));

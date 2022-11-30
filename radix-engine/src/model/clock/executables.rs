@@ -4,29 +4,26 @@ use crate::engine::{
     ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{
-    AccessRulesSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
-    HardResourceOrNonFungible, MethodAuthorization,
+    AccessRulesSubstate, CurrentTimeRoundedToMinutesSubstate, GlobalAddressSubstate, HardAuthRule,
+    HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
+use radix_engine_interface::access_rule_node;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
-    EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction,
-    NativeMethod, RENodeId, SubstateOffset,
+    ClockFunction, ClockMethod, ClockOffset, GlobalAddress, NativeFunction, NativeMethod, RENodeId,
+    SubstateOffset,
 };
 use radix_engine_interface::model::*;
 use radix_engine_interface::rule;
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub enum EpochManagerError {
-    InvalidRequestData(DecodeError),
-}
+const SECONDS_TO_MS_FACTOR: u64 = 1000;
+const MINUTES_TO_MS_FACTOR: u64 = SECONDS_TO_MS_FACTOR * 60;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct EpochManager {
-    pub info: EpochManagerSubstate,
-}
+pub struct Clock {}
 
-impl ExecutableInvocation for EpochManagerCreateInvocation {
+impl ExecutableInvocation for ClockCreateInvocation {
     type Exec = NativeExecutor<Self>;
 
     fn resolve<D: MethodDeref>(
@@ -36,8 +33,8 @@ impl ExecutableInvocation for EpochManagerCreateInvocation {
     where
         Self: Sized,
     {
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
-            EpochManagerFunction::Create,
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Clock(
+            ClockFunction::Create,
         )));
         let call_frame_update = CallFrameUpdate::empty();
         let executor = NativeExecutor(self);
@@ -46,28 +43,26 @@ impl ExecutableInvocation for EpochManagerCreateInvocation {
     }
 }
 
-impl NativeProcedure for EpochManagerCreateInvocation {
+impl NativeProcedure for ClockCreateInvocation {
     type Output = SystemAddress;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
     {
-        let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
-
-        let epoch_manager = EpochManagerSubstate { epoch: 0 };
+        let underlying_node_id = system_api.allocate_node_id(RENodeType::Clock)?;
 
         let auth_non_fungible = NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::supervisor_id());
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
-                EpochManagerMethod::SetEpoch,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
+                ClockMethod::SetCurrentTime,
             ))),
             rule!(require(auth_non_fungible)),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
-                EpochManagerMethod::GetCurrentEpoch,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
+                ClockMethod::GetCurrentTimeRoundedToMinutes,
             ))),
             rule!(allow_all),
         );
@@ -76,17 +71,20 @@ impl NativeProcedure for EpochManagerCreateInvocation {
             access_rules: vec![access_rules],
         };
 
-        api.create_node(
+        system_api.create_node(
             underlying_node_id,
-            RENode::EpochManager(epoch_manager, access_rules_substate),
+            RENode::Clock(
+                CurrentTimeRoundedToMinutesSubstate {
+                    current_time_rounded_to_minutes_ms: 0,
+                },
+                access_rules_substate,
+            ),
         )?;
 
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalEpochManager)?;
-        api.create_node(
+        let global_node_id = system_api.allocate_node_id(RENodeType::GlobalClock)?;
+        system_api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::EpochManager(
-                underlying_node_id.into(),
-            )),
+            RENode::Global(GlobalAddressSubstate::Clock(underlying_node_id.into())),
         )?;
 
         let system_address: SystemAddress = global_node_id.into();
@@ -102,10 +100,10 @@ impl NativeProcedure for EpochManagerCreateInvocation {
     }
 }
 
-pub struct EpochManagerGetCurrentEpochExecutable(RENodeId);
+pub struct ClockGetCurrentTimeRoundedToMinutesExecutable(RENodeId);
 
-impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
-    type Exec = NativeExecutor<EpochManagerGetCurrentEpochExecutable>;
+impl ExecutableInvocation for ClockGetCurrentTimeRoundedToMinutesInvocation {
+    type Exec = NativeExecutor<ClockGetCurrentTimeRoundedToMinutesExecutable>;
 
     fn resolve<D: MethodDeref>(
         self,
@@ -119,12 +117,12 @@ impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::EpochManager(
-                EpochManagerMethod::GetCurrentEpoch,
+            ResolvedMethod::Native(NativeMethod::Clock(
+                ClockMethod::GetCurrentTimeRoundedToMinutes,
             )),
             resolved_receiver,
         );
-        let executor = NativeExecutor(EpochManagerGetCurrentEpochExecutable(
+        let executor = NativeExecutor(ClockGetCurrentTimeRoundedToMinutesExecutable(
             resolved_receiver.receiver,
         ));
 
@@ -132,25 +130,28 @@ impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
     }
 }
 
-impl NativeProcedure for EpochManagerGetCurrentEpochExecutable {
+impl NativeProcedure for ClockGetCurrentTimeRoundedToMinutesExecutable {
     type Output = u64;
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(u64, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
+        let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
         let handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
-        let epoch_manager = substate_ref.epoch_manager();
-        Ok((epoch_manager.epoch, CallFrameUpdate::empty()))
+        let substate = substate_ref.current_time_rounded_to_minutes();
+        Ok((
+            substate.current_time_rounded_to_minutes_ms,
+            CallFrameUpdate::empty(),
+        ))
     }
 }
 
-pub struct EpochManagerSetEpochExecutable(RENodeId, u64);
+pub struct ClockSetCurrentTimeExecutable(RENodeId, u64);
 
-impl ExecutableInvocation for EpochManagerSetEpochInvocation {
-    type Exec = NativeExecutor<EpochManagerSetEpochExecutable>;
+impl ExecutableInvocation for ClockSetCurrentTimeInvocation {
+    type Exec = NativeExecutor<ClockSetCurrentTimeExecutable>;
 
     fn resolve<D: MethodDeref>(
         self,
@@ -164,37 +165,46 @@ impl ExecutableInvocation for EpochManagerSetEpochInvocation {
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::EpochManager(EpochManagerMethod::SetEpoch)),
+            ResolvedMethod::Native(NativeMethod::Clock(ClockMethod::SetCurrentTime)),
             resolved_receiver,
         );
-        let executor = NativeExecutor(EpochManagerSetEpochExecutable(
+        let executor = NativeExecutor(ClockSetCurrentTimeExecutable(
             resolved_receiver.receiver,
-            self.epoch,
+            self.current_time_ms,
         ));
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for EpochManagerSetEpochExecutable {
+impl NativeProcedure for ClockSetCurrentTimeExecutable {
     type Output = ();
 
     fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
-        let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
-        let mut substate_mut = system_api.get_ref_mut(handle)?;
-        substate_mut.epoch_manager().epoch = self.1;
+        let node_id = self.0;
+
+        let current_time_ms = self.1;
+        let current_time_rounded_to_minutes =
+            (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
+
+        let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let mut substate_ref = system_api.get_ref_mut(handle)?;
+        substate_ref
+            .current_time_rounded_to_minutes()
+            .current_time_rounded_to_minutes_ms = current_time_rounded_to_minutes;
+
         Ok(((), CallFrameUpdate::empty()))
     }
 }
 
-impl EpochManager {
-    pub fn function_auth(func: &EpochManagerFunction) -> Vec<MethodAuthorization> {
+impl Clock {
+    pub fn function_auth(func: &ClockFunction) -> Vec<MethodAuthorization> {
         match func {
-            EpochManagerFunction::Create => {
+            ClockFunction::Create => {
                 vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                     HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
                         NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::system_id()),

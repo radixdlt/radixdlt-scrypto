@@ -43,6 +43,7 @@ pub enum NativeMethodInvocation {
     Package(PackageMethodInvocation),
     Component(ComponentMethodInvocation),
     EpochManager(EpochManagerMethodInvocation),
+    Clock(ClockMethodInvocation),
     AuthZoneStack(AuthZoneStackMethodInvocation),
     ResourceManager(ResourceManagerMethodInvocation),
     Bucket(BucketMethodInvocation),
@@ -55,6 +56,7 @@ pub enum NativeMethodInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NativeFunctionInvocation {
     EpochManager(EpochManagerFunctionInvocation),
+    Clock(ClockFunctionInvocation),
     ResourceManager(ResourceManagerFunctionInvocation),
     Package(PackageFunctionInvocation),
 }
@@ -78,6 +80,18 @@ pub enum MetadataMethodInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum EpochManagerFunctionInvocation {
     Create(EpochManagerCreateInvocation),
+}
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum ClockFunctionInvocation {
+    Create(ClockCreateInvocation),
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum ClockMethodInvocation {
+    GetCurrentTimeRoundedToMinutes(ClockGetCurrentTimeRoundedToMinutesInvocation),
+    SetCurrentTime(ClockSetCurrentTimeInvocation),
 }
 
 #[derive(Debug)]
@@ -204,6 +218,11 @@ impl NativeFnInvocation {
             NativeFnInvocation::Function(native_function) => match native_function {
                 NativeFunctionInvocation::EpochManager(invocation) => match invocation {
                     EpochManagerFunctionInvocation::Create(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                },
+                NativeFunctionInvocation::Clock(invocation) => match invocation {
+                    ClockFunctionInvocation::Create(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
@@ -410,6 +429,14 @@ impl NativeFnInvocation {
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                     }
                 }
+                NativeMethodInvocation::Clock(clock_method) => match clock_method {
+                    ClockMethodInvocation::SetCurrentTime(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    ClockMethodInvocation::GetCurrentTimeRoundedToMinutes(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                },
                 NativeMethodInvocation::Worktop(worktop_method) => match worktop_method {
                     WorktopMethodInvocation::TakeNonFungibles(invocation) => system_api
                         .sys_invoke(invocation)

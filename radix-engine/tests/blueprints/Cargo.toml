@@ -5,9 +5,11 @@ members = [
     "bucket",
     "component",
     "core",
+    "clock",
     "data_access",
     "deref",
     "deep_sbor",
+    "epoch_manager",
     "execution_trace",
     "external_blueprint_caller",
     "fee",
@@ -26,7 +28,6 @@ members = [
     "stored_external_component",
     "stored_resource",
     "stored_values",
-    "system",
     "vault",
     "royalty"
 ]
