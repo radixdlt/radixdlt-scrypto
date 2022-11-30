@@ -331,11 +331,12 @@ where
     type Output = Decimal;
 
     fn mul(self, other: T) -> Self::Output {
-        let a = self.0;
+        let a = I320::from(self.0);
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b: I256 = b_dec.0;
-        let c: I256 = a * b / Self::ONE.0;
-        Decimal(c)
+        let b: I320 = I320::from(b_dec.0);
+        let c: I320 = a * b / I320::from(Self::ONE.0);
+        let c_256 = I256::try_from(c).unwrap();
+        Decimal(c_256)
     }
 }
 
@@ -346,11 +347,12 @@ where
     type Output = Decimal;
 
     fn div(self, other: T) -> Self::Output {
-        let a = self.0;
+        let a = I320::from(self.0);
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b: I256 = b_dec.0;
-        let c: I256 = a * Self::ONE.0 / b;
-        Decimal(c)
+        let b: I320 = I320::from(b_dec.0);
+        let c: I320 = a * I320::from(Self::ONE.0) / b;
+        let c_256 = I256::try_from(c).unwrap();
+        Decimal(c_256)
     }
 }
 
@@ -708,6 +710,7 @@ mod tests {
         let a = Decimal::from_str("1000000000").unwrap();
         let b = Decimal::from_str("1000000000").unwrap();
         assert_eq!((a * b).to_string(), "1000000000000000000");
+        let _ = Decimal::MAX * dec!(1);
     }
 
     #[test]
@@ -764,6 +767,7 @@ mod tests {
         let b = Decimal::from(7u32);
         assert_eq!((a / b).to_string(), "0.714285714285714285");
         assert_eq!((b / a).to_string(), "1.4");
+        let _ = Decimal::MAX / 1;
     }
 
     #[test]
