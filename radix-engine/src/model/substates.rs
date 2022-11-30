@@ -894,12 +894,12 @@ impl<'a> SubstateRef<'a> {
                     GlobalAddressSubstate::Component(component_id) => {
                         owned_nodes.insert(RENodeId::Component(*component_id))
                     }
-                    GlobalAddressSubstate::System(system_id) => match system_id {
-                        SystemId::EpochManager(epoch_manager_id) => {
-                            owned_nodes.insert(RENodeId::EpochManager(*epoch_manager_id))
-                        }
-                        SystemId::Clock(clock_id) => owned_nodes.insert(RENodeId::Clock(*clock_id)),
-                    },
+                    GlobalAddressSubstate::EpochManager(epoch_manager_id) => {
+                        owned_nodes.insert(RENodeId::EpochManager(*epoch_manager_id))
+                    }
+                    GlobalAddressSubstate::Clock(clock_id) => {
+                        owned_nodes.insert(RENodeId::Clock(*clock_id))
+                    }
                     GlobalAddressSubstate::Package(package_id) => {
                         owned_nodes.insert(RENodeId::Package(*package_id))
                     }

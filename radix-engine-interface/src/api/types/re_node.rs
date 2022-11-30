@@ -63,17 +63,9 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::Component(id) => id,
             RENodeId::ResourceManager(id) => id,
             RENodeId::Package(id) => id,
+            RENodeId::EpochManager(id) => id,
+            RENodeId::Clock(id) => id,
             _ => panic!("Not a stored id"),
-        }
-    }
-}
-
-impl Into<SystemId> for RENodeId {
-    fn into(self) -> SystemId {
-        match self {
-            RENodeId::EpochManager(id) => SystemId::EpochManager(id),
-            RENodeId::Clock(id) => SystemId::Clock(id),
-            _ => panic!("Not a system id"),
         }
     }
 }

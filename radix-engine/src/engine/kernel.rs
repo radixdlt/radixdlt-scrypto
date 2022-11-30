@@ -987,7 +987,11 @@ where
             ) => {}
             (
                 RENodeId::Global(GlobalAddress::System(..)),
-                RENode::Global(GlobalAddressSubstate::System(..)),
+                RENode::Global(GlobalAddressSubstate::EpochManager(..)),
+            ) => {}
+            (
+                RENodeId::Global(GlobalAddress::System(..)),
+                RENode::Global(GlobalAddressSubstate::Clock(..)),
             ) => {}
             (
                 RENodeId::Global(address),

@@ -10,7 +10,8 @@ pub enum GlobalAddressSubstate {
     Component(scrypto::component::Component),
     Resource(ResourceManagerId),
     Package(PackageId),
-    System(SystemId),
+    EpochManager(EpochManagerId),
+    Clock(ClockId),
 }
 
 blueprint! {

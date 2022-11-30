@@ -89,7 +89,7 @@ impl NativeProcedure for ClockCreateInvocation {
         let global_node_id = system_api.allocate_node_id(RENodeType::GlobalClock)?;
         system_api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::System(underlying_node_id.into())),
+            RENode::Global(GlobalAddressSubstate::Clock(underlying_node_id.into())),
         )?;
 
         let system_address: SystemAddress = global_node_id.into();
