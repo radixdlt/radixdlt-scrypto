@@ -41,6 +41,7 @@ pub enum ResourceManagerError {
     NotNonFungible,
     MismatchingBucketResource,
     ResourceAddressAlreadySet,
+    NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
 }
 
 impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
@@ -100,97 +101,110 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
         Y: SystemApi + Invokable<ScryptoInvocation>,
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
-        let resource_manager_substate = if matches!(self.resource_type, ResourceType::NonFungible) {
-            let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
-            api.create_node(
-                nf_store_node_id,
-                RENode::NonFungibleStore(NonFungibleStore::new()),
-            )?;
-            let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
+        let resource_manager_substate =
+            if matches!(self.resource_type, ResourceType::NonFungible { .. }) {
+                let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
+                api.create_node(
+                    nf_store_node_id,
+                    RENode::NonFungibleStore(NonFungibleStore::new()),
+                )?;
+                let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
 
-            let mut resource_manager = ResourceManagerSubstate::new(
-                self.resource_type,
-                self.metadata,
-                Some(nf_store_id),
-                global_node_id.into(),
-            )
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                }
-                InvokeError::Downstream(e) => e,
-            })?;
-
-            if let Some(mint_params) = &self.mint_params {
-                if let MintParams::NonFungible { entries } = mint_params {
-                    for (non_fungible_id, data) in entries {
-                        let offset = SubstateOffset::NonFungibleStore(
-                            NonFungibleStoreOffset::Entry(non_fungible_id.clone()),
-                        );
-                        let non_fungible_handle =
-                            api.lock_substate(nf_store_node_id, offset, LockFlags::MUTABLE)?;
-                        let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
-                        let non_fungible_mut = substate_mut.non_fungible();
-                        *non_fungible_mut = NonFungibleSubstate(Some(
-                            NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
-                        ));
-                        api.drop_lock(non_fungible_handle)?;
+                let mut resource_manager = ResourceManagerSubstate::new(
+                    self.resource_type,
+                    self.metadata,
+                    Some(nf_store_id),
+                    global_node_id.into(),
+                )
+                .map_err(|e| match e {
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
                     }
-                    resource_manager.total_supply = entries.len().into();
-                } else {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::ResourceTypeDoesNotMatch,
-                        ),
-                    ));
-                }
-            }
+                    InvokeError::Downstream(e) => e,
+                })?;
 
-            resource_manager
-        } else {
-            let mut resource_manager = ResourceManagerSubstate::new(
-                self.resource_type,
-                self.metadata,
-                None,
-                global_node_id.into(),
-            )
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                }
-                InvokeError::Downstream(e) => e,
-            })?;
-
-            if let Some(mint_params) = &self.mint_params {
-                if let MintParams::Fungible { amount } = mint_params {
-                    resource_manager
-                        .check_amount(*amount)
-                        .map_err(|e| match e {
-                            InvokeError::Error(e) => RuntimeError::ApplicationError(
-                                ApplicationError::ResourceManagerError(e),
-                            ),
-                            InvokeError::Downstream(e) => e,
-                        })?;
-                    // TODO: refactor this into mint function
-                    if *amount > dec!("1000000000000000000") {
+                if let Some(mint_params) = &self.mint_params {
+                    if let MintParams::NonFungible { entries } = mint_params {
+                        for (non_fungible_id, data) in entries {
+                            if non_fungible_id.id_type()
+                                != self.resource_type.non_fungible_id_type()
+                            {
+                                return Err(RuntimeError::ApplicationError(
+                                    ApplicationError::ResourceManagerError(
+                                        ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                                            non_fungible_id.id_type(),
+                                            self.resource_type.non_fungible_id_type(),
+                                        ),
+                                    ),
+                                ));
+                            }
+                            let offset = SubstateOffset::NonFungibleStore(
+                                NonFungibleStoreOffset::Entry(non_fungible_id.clone()),
+                            );
+                            let non_fungible_handle =
+                                api.lock_substate(nf_store_node_id, offset, LockFlags::MUTABLE)?;
+                            let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
+                            let non_fungible_mut = substate_mut.non_fungible();
+                            *non_fungible_mut = NonFungibleSubstate(Some(
+                                NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
+                            ));
+                            api.drop_lock(non_fungible_handle)?;
+                        }
+                        resource_manager.total_supply = entries.len().into();
+                    } else {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::ResourceManagerError(
-                                ResourceManagerError::MaxMintAmountExceeded,
+                                ResourceManagerError::ResourceTypeDoesNotMatch,
                             ),
                         ));
                     }
-                    resource_manager.total_supply = amount.clone();
-                } else {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::ResourceTypeDoesNotMatch,
-                        ),
-                    ));
                 }
-            }
 
-            resource_manager
-        };
+                resource_manager
+            } else {
+                let mut resource_manager = ResourceManagerSubstate::new(
+                    self.resource_type,
+                    self.metadata,
+                    None,
+                    global_node_id.into(),
+                )
+                .map_err(|e| match e {
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+                    }
+                    InvokeError::Downstream(e) => e,
+                })?;
+
+                if let Some(mint_params) = &self.mint_params {
+                    if let MintParams::Fungible { amount } = mint_params {
+                        resource_manager
+                            .check_amount(*amount)
+                            .map_err(|e| match e {
+                                InvokeError::Error(e) => RuntimeError::ApplicationError(
+                                    ApplicationError::ResourceManagerError(e),
+                                ),
+                                InvokeError::Downstream(e) => e,
+                            })?;
+                        // TODO: refactor this into mint function
+                        if *amount > dec!("1000000000000000000") {
+                            return Err(RuntimeError::ApplicationError(
+                                ApplicationError::ResourceManagerError(
+                                    ResourceManagerError::MaxMintAmountExceeded,
+                                ),
+                            ));
+                        }
+                        resource_manager.total_supply = amount.clone();
+                    } else {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::ResourceManagerError(
+                                ResourceManagerError::ResourceTypeDoesNotMatch,
+                            ),
+                        ));
+                    }
+                }
+
+                resource_manager
+            };
 
         let (mint_access_rule, mint_mutability) =
             self.access_rules.remove(&Mint).unwrap_or((DenyAll, LOCKED));
@@ -417,7 +431,11 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             let container = match mint_params {
                 MintParams::NonFungible { entries } => {
                     let ids = entries.into_keys().collect();
-                    Resource::new_non_fungible(resource_address, ids)
+                    Resource::new_non_fungible(
+                        resource_address,
+                        ids,
+                        self.resource_type.non_fungible_id_type(),
+                    )
                 }
                 MintParams::Fungible { amount } => Resource::new_fungible(
                     resource_address,

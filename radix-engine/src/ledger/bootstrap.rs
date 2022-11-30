@@ -79,7 +79,9 @@ pub fn create_genesis() -> SystemTransaction {
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: scrypto_encode(&ResourceManagerCreateInvocation {
-                resource_type: ResourceType::NonFungible,
+                resource_type: ResourceType::NonFungible {
+                    id_type: NonFungibleIdType::default(),
+                },
                 metadata,
                 access_rules,
                 mint_params: initial_supply,
@@ -103,7 +105,9 @@ pub fn create_genesis() -> SystemTransaction {
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: scrypto_encode(&ResourceManagerCreateInvocation {
-                resource_type: ResourceType::NonFungible,
+                resource_type: ResourceType::NonFungible {
+                    id_type: NonFungibleIdType::default(),
+                },
                 metadata,
                 access_rules,
                 mint_params: initial_supply,
@@ -180,7 +184,9 @@ pub fn create_genesis() -> SystemTransaction {
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: scrypto_encode(&ResourceManagerCreateInvocation {
-                resource_type: ResourceType::NonFungible,
+                resource_type: ResourceType::NonFungible {
+                    id_type: NonFungibleIdType::default(),
+                },
                 metadata,
                 access_rules,
                 mint_params: initial_supply,
@@ -203,7 +209,9 @@ pub fn create_genesis() -> SystemTransaction {
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: scrypto_encode(&ResourceManagerCreateInvocation {
-                resource_type: ResourceType::NonFungible,
+                resource_type: ResourceType::NonFungible {
+                    id_type: NonFungibleIdType::Bytes,
+                },
                 metadata,
                 access_rules,
                 mint_params: initial_supply,
