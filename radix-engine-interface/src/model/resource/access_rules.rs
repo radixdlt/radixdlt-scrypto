@@ -10,6 +10,20 @@ use crate::scrypto;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
+pub enum AccessRuleSelector {
+    Method(AccessRuleKey),
+    Group(String),
+    Default,
+}
+
+impl From<AccessRuleKey> for AccessRuleSelector {
+    fn from(value: AccessRuleKey) -> AccessRuleSelector {
+        AccessRuleSelector::Method(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum AccessRuleKey {
     ScryptoMethod(String),
     Native(NativeFn),
@@ -58,12 +72,20 @@ impl AccessRules {
             .unwrap_or(&self.default_auth_mutability)
     }
 
+    pub fn get_default_mutability(&self) -> &AccessRule {
+        &self.default_auth_mutability
+    }
+
     pub fn set_mutability(&mut self, key: AccessRuleKey, method_auth: AccessRule) {
         self.method_auth_mutability.insert(key, method_auth);
     }
 
     pub fn set_group_mutability(&mut self, key: String, method_auth: AccessRule) {
         self.grouped_auth_mutability.insert(key, method_auth);
+    }
+
+    pub fn set_default_mutability(&mut self, method_auth: AccessRule) {
+        self.default_auth_mutability = method_auth;
     }
 
     pub fn get(&self, key: &AccessRuleKey) -> &AccessRule {
@@ -109,6 +131,10 @@ impl AccessRules {
 
     pub fn set_group_access_rule(&mut self, group_key: String, access_rule: AccessRule) {
         self.grouped_auth.insert(group_key, access_rule);
+    }
+
+    pub fn set_default_access_rule(&mut self, access_rule: AccessRule) {
+        self.default_auth = access_rule;
     }
 
     pub fn set_group_access_rule_and_mutability(

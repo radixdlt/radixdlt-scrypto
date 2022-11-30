@@ -24,9 +24,10 @@ impl ResourceManager {
         env.sys_invoke(AccessRulesSetAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::Mint,
-            ))),
+            )))
+            .into(),
             rule: access_rule,
         })
         .unwrap();
@@ -37,9 +38,10 @@ impl ResourceManager {
         env.sys_invoke(AccessRulesSetAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::Burn,
-            ))),
+            )))
+            .into(),
             rule: access_rule,
         })
         .unwrap();
@@ -80,9 +82,10 @@ impl ResourceManager {
         env.sys_invoke(AccessRulesSetAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::UpdateMetadata,
-            ))),
+            )))
+            .into(),
             rule: access_rule,
         })
         .unwrap();
@@ -93,9 +96,10 @@ impl ResourceManager {
         env.sys_invoke(AccessRulesSetAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::UpdateNonFungibleData,
-            ))),
+            )))
+            .into(),
             rule: access_rule,
         })
         .unwrap();
@@ -106,9 +110,10 @@ impl ResourceManager {
         env.sys_invoke(AccessRulesSetMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::Mint,
-            ))),
+            )))
+            .into(),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -119,9 +124,10 @@ impl ResourceManager {
         env.sys_invoke(AccessRulesSetMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::Burn,
-            ))),
+            )))
+            .into(),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -132,9 +138,10 @@ impl ResourceManager {
         env.sys_invoke(AccessRulesSetMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::UpdateMetadata,
-            ))),
+            )))
+            .into(),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -145,9 +152,10 @@ impl ResourceManager {
         env.sys_invoke(AccessRulesSetMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::UpdateNonFungibleData,
-            ))),
+            )))
+            .into(),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()

@@ -1,17 +1,20 @@
 use radix_engine_derive::scrypto;
+use radix_engine_interface::api::api::SysNativeInvokable;
 use radix_engine_interface::api::types::{
-    AccessRulesOffset, ComponentId, GlobalAddress, RENodeId, SubstateOffset,
+    AccessRulesOffset, ComponentId, GlobalAddress, RENodeId, SubstateOffset, ToString,
 };
 use radix_engine_interface::model::{
-    AccessRule, AccessRules, ComponentAddress,
+    AccessRule, AccessRuleKey, AccessRuleSelector, AccessRules, AccessRulesSetAccessRuleInvocation,
+    AccessRulesSetMutabilityInvocation, ComponentAddress,
 };
 
+use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::{DataPointer, DataRef};
 
 use super::AccessRulesSubstate;
 
-// TODO: Should `Decode` be removed so that `StatefulAccessRules` can not be passed between
-// components?
+// TODO: Should `Encode` and `Decode` be removed so that `StatefulAccessRules` can not be passed
+// between components?
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 pub struct StatefulAccessRules {
@@ -37,27 +40,63 @@ impl StatefulAccessRules {
             SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
         );
         let state: DataRef<AccessRulesSubstate> = pointer.get();
-        state.access_rules.get(self.index).unwrap().clone()
+        state
+            .access_rules
+            .get(self.index)
+            .expect("No access rule found at trusted index")
+            .clone()
     }
 
     pub fn index(&self) -> usize {
         self.index
     }
 
-    pub fn set_method_auth(&mut self, _method_name: &str, _access_rule: AccessRule) {
-        todo!();
+    pub fn set_method_auth(&mut self, method_name: &str, access_rule: AccessRule) {
+        let mut syscalls = ScryptoEnv;
+        syscalls
+            .sys_invoke(AccessRulesSetAccessRuleInvocation {
+                receiver: self.component_re_node(),
+                index: self.index as u32,
+                selector: AccessRuleKey::ScryptoMethod(method_name.to_string()).into(),
+                rule: access_rule,
+            })
+            .unwrap();
     }
 
-    pub fn set_default(&mut self, _access_rule: AccessRule) {
-        todo!();
+    pub fn set_default(&mut self, access_rule: AccessRule) {
+        let mut syscalls = ScryptoEnv;
+        syscalls
+            .sys_invoke(AccessRulesSetAccessRuleInvocation {
+                receiver: self.component_re_node(),
+                index: self.index as u32,
+                selector: AccessRuleSelector::Default,
+                rule: access_rule,
+            })
+            .unwrap();
     }
 
-    pub fn lock_method_auth(&mut self, _method_name: &str) {
-        todo!();
+    pub fn lock_method_auth(&mut self, method_name: &str) {
+        let mut syscalls = ScryptoEnv;
+        syscalls
+            .sys_invoke(AccessRulesSetMutabilityInvocation {
+                receiver: self.component_re_node(),
+                index: self.index as u32,
+                selector: AccessRuleKey::ScryptoMethod(method_name.to_string()).into(),
+                mutability: AccessRule::DenyAll,
+            })
+            .unwrap();
     }
 
     pub fn lock_default(&mut self) {
-        todo!();
+        let mut syscalls = ScryptoEnv;
+        syscalls
+            .sys_invoke(AccessRulesSetMutabilityInvocation {
+                receiver: self.component_re_node(),
+                index: self.index as u32,
+                selector: AccessRuleSelector::Default,
+                mutability: AccessRule::DenyAll,
+            })
+            .unwrap();
     }
 
     fn component_re_node(&self) -> RENodeId {

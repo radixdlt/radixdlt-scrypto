@@ -153,9 +153,12 @@ impl NativeProcedure for AccessRulesSetAccessRuleInvocation {
             + SysInvokableNative<RuntimeError>,
     {
         // TODO: Should this invariant be inforced in a more static/structural way?
-        if self.key.eq(&AccessRuleKey::Native(NativeFn::Method(
-            NativeMethod::AccessRules(AccessRulesMethod::SetAccessRule),
-        ))) {
+        if self
+            .selector
+            .eq(&AccessRuleSelector::Method(AccessRuleKey::Native(
+                NativeFn::Method(NativeMethod::AccessRules(AccessRulesMethod::SetAccessRule)),
+            )))
+        {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::AccessRulesError(
                     AccessRulesError::CannotSetAccessRuleOnSetAccessRule,
@@ -169,7 +172,7 @@ impl NativeProcedure for AccessRulesSetAccessRuleInvocation {
         let authorization = {
             let substate_ref = api.get_ref(handle)?;
             let access_rules_substate = substate_ref.access_rules();
-            access_rules_substate.mutability_authorization(&self.key)
+            access_rules_substate.mutability_authorization(&self.selector)
         };
 
         // Manual Auth
@@ -205,7 +208,11 @@ impl NativeProcedure for AccessRulesSetAccessRuleInvocation {
                     ApplicationError::AccessRulesError(AccessRulesError::InvalidIndex(self.index)),
                 ))?;
 
-        access_rules.set_method_access_rule(self.key, self.rule);
+        match self.selector {
+            AccessRuleSelector::Method(key) => access_rules.set_method_access_rule(key, self.rule),
+            AccessRuleSelector::Group(name) => access_rules.set_group_access_rule(name, self.rule),
+            AccessRuleSelector::Default => access_rules.set_default_access_rule(self.rule),
+        };
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -255,9 +262,12 @@ impl NativeProcedure for AccessRulesSetMutabilityInvocation {
             + SysInvokableNative<RuntimeError>,
     {
         // TODO: Should this invariant be inforced in a more static/structural way?
-        if self.key.eq(&AccessRuleKey::Native(NativeFn::Method(
-            NativeMethod::AccessRules(AccessRulesMethod::SetAccessRule),
-        ))) {
+        if self
+            .selector
+            .eq(&AccessRuleSelector::Method(AccessRuleKey::Native(
+                NativeFn::Method(NativeMethod::AccessRules(AccessRulesMethod::SetAccessRule)),
+            )))
+        {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::AccessRulesError(
                     AccessRulesError::CannotSetAccessRuleOnSetAccessRule,
@@ -271,7 +281,7 @@ impl NativeProcedure for AccessRulesSetMutabilityInvocation {
         let authorization = {
             let substate_ref = api.get_ref(handle)?;
             let access_rules_substate = substate_ref.access_rules();
-            access_rules_substate.mutability_authorization(&self.key)
+            access_rules_substate.mutability_authorization(&self.selector)
         };
 
         // Manual Auth
@@ -307,7 +317,13 @@ impl NativeProcedure for AccessRulesSetMutabilityInvocation {
                     ApplicationError::AccessRulesError(AccessRulesError::InvalidIndex(self.index)),
                 ))?;
 
-        access_rules.set_mutability(self.key, self.mutability);
+        match self.selector {
+            AccessRuleSelector::Method(key) => access_rules.set_mutability(key, self.mutability),
+            AccessRuleSelector::Group(name) => {
+                access_rules.set_group_mutability(name, self.mutability)
+            }
+            AccessRuleSelector::Default => access_rules.set_default_mutability(self.mutability),
+        };
 
         Ok(((), CallFrameUpdate::empty()))
     }

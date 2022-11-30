@@ -33,7 +33,7 @@ impl Into<NativeFnInvocation> for AccessRulesAddAccessCheckInvocation {
 pub struct AccessRulesSetAccessRuleInvocation {
     pub receiver: RENodeId,
     pub index: u32,
-    pub key: AccessRuleKey,
+    pub selector: AccessRuleSelector,
     pub rule: AccessRule,
 }
 
@@ -58,7 +58,7 @@ impl Into<NativeFnInvocation> for AccessRulesSetAccessRuleInvocation {
 pub struct AccessRulesSetMutabilityInvocation {
     pub receiver: RENodeId,
     pub index: u32,
-    pub key: AccessRuleKey,
+    pub selector: AccessRuleSelector,
     pub mutability: AccessRule,
 }
 
