@@ -62,9 +62,9 @@ impl Into<ApplicationError> for VaultError {
     }
 }
 
-impl Into<ApplicationError> for AccessRulesError {
+impl Into<ApplicationError> for AccessRulesChainError {
     fn into(self) -> ApplicationError {
-        ApplicationError::AccessRulesError(self)
+        ApplicationError::AccessRulesChainError(self)
     }
 }
 

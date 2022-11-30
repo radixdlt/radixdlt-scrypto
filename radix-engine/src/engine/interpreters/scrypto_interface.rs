@@ -4,7 +4,7 @@ use crate::engine::{
 };
 use crate::fee::FeeReserve;
 use crate::model::{
-    AccessRulesSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
+    AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
     ComponentRoyaltyConfigSubstate, ComponentStateSubstate, KeyValueStore, RuntimeSubstate,
 };
 use crate::model::{MetadataSubstate, Resource};
@@ -74,7 +74,7 @@ where
                     MetadataSubstate {
                         metadata: HashMap::new(),
                     },
-                    AccessRulesSubstate { access_rules_chain },
+                    AccessRulesChainSubstate { access_rules_chain },
                 );
 
                 (node_id, node)

@@ -7,11 +7,11 @@ use radix_engine_interface::model::AccessRules;
 /// A transient resource container.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct AccessRulesSubstate {
+pub struct AccessRulesChainSubstate {
     pub access_rules_chain: Vec<AccessRules>,
 }
 
-impl AccessRulesSubstate {
+impl AccessRulesChainSubstate {
     pub fn method_authorization(
         &self,
         component_state: &ComponentStateSubstate,

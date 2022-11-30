@@ -4,7 +4,7 @@ use crate::engine::{
     ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{
-    AccessRulesSubstate, BucketSubstate, GlobalAddressSubstate, InvokeError, MetadataSubstate,
+    AccessRulesChainSubstate, BucketSubstate, GlobalAddressSubstate, InvokeError, MetadataSubstate,
     NonFungible, NonFungibleSubstate, Resource, VaultRuntimeSubstate,
 };
 use crate::model::{NonFungibleStore, ResourceManagerSubstate};
@@ -232,7 +232,7 @@ fn build_access_rules_substates(
     mut access_rules_map: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
     metadata_access_rule: AccessRule,
     metadata_mutability: AccessRule,
-) -> (AccessRulesSubstate, AccessRulesSubstate) {
+) -> (AccessRulesChainSubstate, AccessRulesChainSubstate) {
     let (mint_access_rule, mint_mutability) =
         access_rules_map.remove(&Mint).unwrap_or((DenyAll, LOCKED));
     let (burn_access_rule, burn_mutability) =
@@ -335,7 +335,7 @@ fn build_access_rules_substates(
         DenyAll,
     );
 
-    let access_rules_substate = AccessRulesSubstate {
+    let access_rules_substate = AccessRulesChainSubstate {
         access_rules_chain: vec![access_rules],
     };
 
@@ -426,7 +426,7 @@ fn build_access_rules_substates(
         DenyAll,
     );
 
-    let vault_access_rules_substate = AccessRulesSubstate {
+    let vault_access_rules_substate = AccessRulesChainSubstate {
         access_rules_chain: vec![vault_access_rules],
     };
 
@@ -699,7 +699,8 @@ impl NativeProcedure for ResourceManagerUpdateVaultAuthExecutable {
     where
         Y: SystemApi + SysInvokableNative<RuntimeError>,
     {
-        let offset = SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules);
+        let offset =
+            SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
         // TODO: Figure out how to move this access check into more appropriate place
@@ -797,7 +798,8 @@ impl NativeProcedure for ResourceManagerLockVaultAuthExecutable {
     where
         Y: SystemApi + SysInvokableNative<RuntimeError>,
     {
-        let offset = SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules);
+        let offset =
+            SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
         // TODO: Figure out how to move this access check into more appropriate place

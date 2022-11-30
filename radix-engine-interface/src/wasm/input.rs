@@ -38,7 +38,7 @@ pub enum NativeFnInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NativeMethodInvocation {
-    AccessRules(AccessRulesMethodInvocation),
+    AccessRulesChain(AccessRulesChainMethodInvocation),
     Metadata(MetadataMethodInvocation),
     Package(PackageMethodInvocation),
     Component(ComponentMethodInvocation),
@@ -62,7 +62,7 @@ pub enum NativeFunctionInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum AccessRulesMethodInvocation {
+pub enum AccessRulesChainMethodInvocation {
     AddAccessCheck(AccessRulesAddAccessCheckInvocation),
     SetAccessRule(AccessRulesSetAccessRuleInvocation),
     SetMutability(AccessRulesSetMutabilityInvocation),
@@ -354,15 +354,15 @@ impl NativeFnInvocation {
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
-                NativeMethodInvocation::AccessRules(access_rules_method) => {
+                NativeMethodInvocation::AccessRulesChain(access_rules_method) => {
                     match access_rules_method {
-                        AccessRulesMethodInvocation::AddAccessCheck(invocation) => system_api
+                        AccessRulesChainMethodInvocation::AddAccessCheck(invocation) => system_api
                             .sys_invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        AccessRulesMethodInvocation::SetAccessRule(invocation) => system_api
+                        AccessRulesChainMethodInvocation::SetAccessRule(invocation) => system_api
                             .sys_invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        AccessRulesMethodInvocation::SetMutability(invocation) => system_api
+                        AccessRulesChainMethodInvocation::SetMutability(invocation) => system_api
                             .sys_invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                     }

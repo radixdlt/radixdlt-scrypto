@@ -97,8 +97,8 @@ impl AuthModule {
                 match (method, resolved_receiver) {
                     // SetAccessRule auth is done manually within the method
                     (
-                        ResolvedMethod::Native(NativeMethod::AccessRules(
-                            AccessRulesMethod::SetAccessRule,
+                        ResolvedMethod::Native(NativeMethod::AccessRulesChain(
+                            AccessRulesChainMethod::SetAccessRule,
                         )),
                         ..,
                     ) => {
@@ -139,7 +139,9 @@ impl AuthModule {
                             || matches!(method, NativeMethod::Package(..))
                             || matches!(method, NativeMethod::Component(..)) =>
                     {
-                        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+                        let offset = SubstateOffset::AccessRulesChain(
+                            AccessRulesChainOffset::AccessRulesChain,
+                        );
                         let handle = system_api.lock_substate(
                             resolved_receiver.receiver,
                             offset,
@@ -193,8 +195,9 @@ impl AuthModule {
                             state
                         };
                         {
-                            let offset =
-                                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+                            let offset = SubstateOffset::AccessRulesChain(
+                                AccessRulesChainOffset::AccessRulesChain,
+                            );
                             let handle = system_api.lock_substate(
                                 component_node_id,
                                 offset,
@@ -230,8 +233,9 @@ impl AuthModule {
                             resource_address
                         };
                         let node_id = RENodeId::Global(GlobalAddress::Resource(resource_address));
-                        let offset =
-                            SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules);
+                        let offset = SubstateOffset::VaultAccessRulesChain(
+                            AccessRulesChainOffset::AccessRulesChain,
+                        );
                         let handle =
                             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
 

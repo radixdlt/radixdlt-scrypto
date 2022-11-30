@@ -2,7 +2,7 @@ use super::{PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate};
 use crate::engine::*;
 use crate::engine::{CallFrameUpdate, LockFlags, RuntimeError, SystemApi};
 use crate::model::{
-    AccessRulesSubstate, BucketSubstate, GlobalAddressSubstate, MetadataSubstate,
+    AccessRulesChainSubstate, BucketSubstate, GlobalAddressSubstate, MetadataSubstate,
     PackageInfoSubstate, Resource,
 };
 use crate::types::*;
@@ -85,7 +85,7 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
-        let access_rules = AccessRulesSubstate {
+        let access_rules = AccessRulesChainSubstate {
             access_rules_chain: self.access_rules_chain,
         };
         let node_id = api.allocate_node_id(RENodeType::Package)?;
@@ -192,7 +192,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
         metadata_access_rules = metadata_access_rules.default(rule!(allow_all));
         chain.push(metadata_access_rules);
 
-        let access_rules_substate = AccessRulesSubstate {
+        let access_rules_substate = AccessRulesChainSubstate {
             access_rules_chain: chain,
         };
 

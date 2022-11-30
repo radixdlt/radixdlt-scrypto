@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::{
-    AccessRulesMethod, AuthZoneStackMethod, BucketMethod, ComponentFunction, ComponentMethod,
+    AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, ComponentFunction, ComponentMethod,
     EpochManagerFunction, EpochManagerMethod, MetadataMethod, NativeFunction, NativeMethod,
     PackageFunction, PackageMethod, ProofMethod, ResourceManagerFunction, ResourceManagerMethod,
     TransactionProcessorFunction, VaultMethod, WorktopMethod,
@@ -226,10 +226,10 @@ impl FeeTable {
                 WorktopMethod::AssertContainsNonFungibles => self.fixed_low,
                 WorktopMethod::Drain => self.fixed_low,
             },
-            NativeMethod::AccessRules(component_ident) => match component_ident {
-                AccessRulesMethod::AddAccessCheck => self.fixed_low,
-                AccessRulesMethod::SetAccessRule => self.fixed_low,
-                AccessRulesMethod::SetMutability => self.fixed_low,
+            NativeMethod::AccessRulesChain(component_ident) => match component_ident {
+                AccessRulesChainMethod::AddAccessCheck => self.fixed_low,
+                AccessRulesChainMethod::SetAccessRule => self.fixed_low,
+                AccessRulesChainMethod::SetMutability => self.fixed_low,
             },
             NativeMethod::Metadata(metadata_method) => match metadata_method {
                 MetadataMethod::Set => self.fixed_low,

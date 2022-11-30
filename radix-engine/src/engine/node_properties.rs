@@ -4,7 +4,7 @@ use crate::engine::{
 };
 use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{
-    AccessRulesOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, GlobalOffset,
+    AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, GlobalOffset,
     KeyValueStoreOffset, NativeFunction, NativeMethod, PackageOffset, ProofOffset, RENodeId,
     ResourceManagerOffset, SubstateOffset, TransactionProcessorFunction, VaultOffset,
     WorktopOffset,
@@ -147,10 +147,10 @@ impl VisibilityProperties {
                     flags == LockFlags::read_only()
                 }
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
-                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => {
+                SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain) => {
                     flags == LockFlags::read_only()
                 }
-                SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules) => {
+                SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain) => {
                     flags == LockFlags::read_only()
                 }
                 _ => false,

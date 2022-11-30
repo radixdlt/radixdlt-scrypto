@@ -2,7 +2,7 @@ extern crate core;
 
 use radix_engine::engine::{ApplicationError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::model::{AccessRulesError, AuthZoneError};
+use radix_engine::model::{AccessRulesChainError, AuthZoneError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
@@ -87,8 +87,8 @@ fn locked_mint_auth_cannot_be_updated() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                AccessRulesError::Unauthorized(..)
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
+                AccessRulesChainError::Unauthorized(..)
             ))
         )
     })
@@ -101,8 +101,8 @@ fn locked_mint_auth_cannot_be_relocked() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                AccessRulesError::Unauthorized(..)
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
+                AccessRulesChainError::Unauthorized(..)
             ))
         )
     })
@@ -115,8 +115,8 @@ fn locked_burn_auth_cannot_be_updated() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                AccessRulesError::Unauthorized(..)
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
+                AccessRulesChainError::Unauthorized(..)
             ))
         )
     })
@@ -129,8 +129,8 @@ fn locked_burn_auth_cannot_be_relocked() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                AccessRulesError::Unauthorized(..)
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
+                AccessRulesChainError::Unauthorized(..)
             ))
         )
     })

@@ -162,8 +162,8 @@ pub enum AuthZoneStackOffset {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum AccessRulesOffset {
-    AccessRules,
+pub enum AccessRulesChainOffset {
+    AccessRulesChain,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -245,8 +245,8 @@ pub enum SubstateOffset {
     AuthZoneStack(AuthZoneStackOffset),
     FeeReserve(FeeReserveOffset),
     Component(ComponentOffset),
-    AccessRules(AccessRulesOffset),
-    VaultAccessRules(AccessRulesOffset),
+    AccessRulesChain(AccessRulesChainOffset),
+    VaultAccessRulesChain(AccessRulesChainOffset),
     Metadata(MetadataOffset),
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),

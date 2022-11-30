@@ -3,7 +3,7 @@ use radix_engine::engine::{
     ApplicationError, InterpreterError, KernelError, RuntimeError, ScryptoFnResolvingError,
 };
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::model::AccessRulesError;
+use radix_engine::model::AccessRulesChainError;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
@@ -33,8 +33,8 @@ fn test_invalid_access_rule_methods() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                AccessRulesError::BlueprintFunctionNotFound(..)
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
+                AccessRulesChainError::BlueprintFunctionNotFound(..)
             ))
         )
     })

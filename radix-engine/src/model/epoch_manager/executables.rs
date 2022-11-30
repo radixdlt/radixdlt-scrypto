@@ -4,8 +4,8 @@ use crate::engine::{
     ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{
-    AccessRulesSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
-    HardResourceOrNonFungible, MethodAuthorization,
+    AccessRulesChainSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule,
+    HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
 use radix_engine_interface::access_rule_node;
@@ -77,7 +77,7 @@ impl NativeProcedure for EpochManagerCreateInvocation {
             underlying_node_id,
             RENode::EpochManager(
                 epoch_manager,
-                AccessRulesSubstate {
+                AccessRulesChainSubstate {
                     access_rules_chain: vec![access_rules],
                 },
             ),
