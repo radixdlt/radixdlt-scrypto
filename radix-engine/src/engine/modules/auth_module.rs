@@ -124,6 +124,9 @@ impl AuthModule {
                                 NativeFunction::ResourceManager(
                                     ResourceManagerFunction::CreateWithOwner,
                                 ),
+                            ))
+                            | REActor::Function(ResolvedFunction::Native(
+                                NativeFunction::Component(ComponentFunction::GlobalizeWithOwner),
                             )) => {
                                 vec![MethodAuthorization::AllowAll]
                             }
