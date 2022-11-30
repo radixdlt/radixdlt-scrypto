@@ -73,13 +73,14 @@ impl NativeProcedure for EpochManagerCreateInvocation {
             rule!(allow_all),
         );
 
-        let access_rules_substate = AccessRulesSubstate {
-            access_rules_chain: vec![access_rules],
-        };
-
         api.create_node(
             underlying_node_id,
-            RENode::EpochManager(epoch_manager, access_rules_substate),
+            RENode::EpochManager(
+                epoch_manager,
+                AccessRulesSubstate {
+                    access_rules_chain: vec![access_rules],
+                },
+            ),
         )?;
 
         let global_node_id = api.allocate_node_id(RENodeType::GlobalEpochManager)?;

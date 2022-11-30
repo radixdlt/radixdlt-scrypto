@@ -203,7 +203,7 @@ fn test_claim_royalty() {
                 package_address,
                 "RoyaltyTest",
                 "claim_package_royalty",
-                args!(),
+                args!(package_address),
             )
             .call_method(
                 account,

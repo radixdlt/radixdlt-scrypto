@@ -85,9 +85,8 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
-
         let access_rules = AccessRulesSubstate {
-            access_rules_chain: vec![AccessRules::new()],
+            access_rules_chain: self.access_rules_chain,
         };
         let node_id = api.allocate_node_id(RENodeType::Package)?;
         api.create_node(
@@ -180,17 +179,21 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
         };
 
         let bucket = api.sys_invoke(mint_invocation)?;
-        let mut access_rules = AccessRules::new();
-        access_rules.set_access_rule_and_mutability(
+
+        let mut chain = self.access_rules_chain;
+        let mut metadata_access_rules = AccessRules::new();
+        metadata_access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,
             ))),
             rule!(require(non_fungible_address.clone())),
             rule!(require(non_fungible_address)),
         );
+        metadata_access_rules = metadata_access_rules.default(rule!(allow_all));
+        chain.push(metadata_access_rules);
 
         let access_rules_substate = AccessRulesSubstate {
-            access_rules_chain: vec![access_rules],
+            access_rules_chain: chain,
         };
 
         let node_id = api.allocate_node_id(RENodeType::Package)?;
