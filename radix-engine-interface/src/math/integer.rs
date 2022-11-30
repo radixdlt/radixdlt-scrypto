@@ -722,7 +722,6 @@ macro_rules! pow_impl {
 
 pow_impl! { I8, I16, I32, I64, I128, I256, I320, I384, I512, I728, U8, U16, U32, U64, U128, U256, U320, U384, U512, U728 }
 
-
 macro_rules! checked_impl_not_large {
     ($($t:ident),*) => {
         $(

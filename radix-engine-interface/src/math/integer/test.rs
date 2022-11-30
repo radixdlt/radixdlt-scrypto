@@ -1489,7 +1489,6 @@ fn test_format_121_i512_minus() {
     assert_eq!(format!("{}", i512), "-121");
 }
 
-
 #[test]
 fn test_format_i728() {
     let i728 = I728::from("12345678901234567890123456789012345678");
