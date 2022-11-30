@@ -883,6 +883,52 @@ macro_rules! checked_int_impl_unsigned_small {
 checked_int_impl_unsigned_large! { U256, U384, U512 }
 checked_int_impl_unsigned_small! { U8, U16, U32, U64, U128 }
 
+pub trait Sqrt {
+    fn sqrt(self) -> Self;
+}
+
+pub trait Cbrt {
+    fn cbrt(self) -> Self;
+}
+
+pub trait NthRoot {
+    fn nth_root(self, n: u32) -> Self;
+}
+
+macro_rules! roots_op_impl
+{
+    ($($t:ty),*) => {
+            paste! {
+                $(
+                    impl Sqrt for $t
+                    {
+                        fn sqrt(self) -> Self
+                        {
+                            BigInt::from(self).sqrt().try_into().unwrap()
+                        }
+                    }
+
+                    impl Cbrt for $t
+                    {
+                        fn cbrt(self) -> Self {
+                            BigInt::from(self).cbrt().try_into().unwrap()
+                        }
+                    }
+
+                    impl NthRoot for $t
+                    {
+                        fn nth_root(self, n: u32) -> Self
+                        {
+                            BigInt::from(self).nth_root(n).try_into().unwrap()
+                        }
+                    }
+                )*
+            }
+        };
+}
+
+roots_op_impl! {U8, U16, U32, U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512}
+
 #[cfg(test)]
 mod tests {
     use super::*;
