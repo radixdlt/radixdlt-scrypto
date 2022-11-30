@@ -147,7 +147,7 @@ where
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Package(SYS_FAUCET_PACKAGE)),
+            RENodeId::Global(GlobalAddress::Package(FAUCET_PACKAGE)),
             RENodeVisibilityOrigin::Normal,
         );
 

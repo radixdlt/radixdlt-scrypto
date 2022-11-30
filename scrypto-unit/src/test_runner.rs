@@ -343,6 +343,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     }
 
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
+        let (code, abi) = self.compile(package_dir);
+        self.publish_package(code, abi)
+    }
+
+    pub fn compile<P: AsRef<Path>>(
+        &mut self,
+        package_dir: P,
+    ) -> (Vec<u8>, HashMap<String, BlueprintAbi>) {
         // Build
         let status = Command::new("cargo")
             .current_dir(package_dir.as_ref())
@@ -387,7 +395,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         });
         let abi = extract_abi(&code).unwrap();
 
-        self.publish_package(code, abi)
+        (code, abi)
     }
 
     pub fn execute_manifest(
