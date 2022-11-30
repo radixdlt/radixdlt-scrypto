@@ -23,14 +23,18 @@ blueprint! {
 
         pub fn move_bucket() {
             let bucket = Self::create_test_token(1000);
-            let component_address = MoveTest { vaults: Vec::new() }.instantiate().globalize();
+            let component_address = MoveTest { vaults: Vec::new() }
+                .instantiate()
+                .globalize_no_owner();
 
             Runtime::call_method(component_address, "receive_bucket", args!(bucket))
         }
 
         pub fn move_proof() -> Bucket {
             let bucket = Self::create_test_token(1000);
-            let component_address = MoveTest { vaults: Vec::new() }.instantiate().globalize();
+            let component_address = MoveTest { vaults: Vec::new() }
+                .instantiate()
+                .globalize_no_owner();
 
             let _: () = Runtime::call_method(
                 component_address,

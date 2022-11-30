@@ -13,7 +13,7 @@ blueprint! {
                     .method("get_secret", rule!(require("some_non_fungible")))
                     .default(rule!(allow_all)),
             );
-            component.globalize()
+            component.globalize_no_owner()
         }
 
         pub fn get_secret(&self) -> String {

@@ -40,7 +40,7 @@ blueprint! {
                 .default(withdraw_rule);
             account.add_access_check(access_rules);
 
-            account.globalize()
+            account.globalize_no_owner()
         }
 
         pub fn new(withdraw_rule: AccessRule) -> ComponentAddress {

@@ -30,7 +30,7 @@ blueprint! {
 
     impl ExternalBlueprintCaller {
         pub fn create() -> ComponentAddress {
-            Self {}.instantiate().globalize()
+            Self {}.instantiate().globalize_no_owner()
         }
 
         pub fn run_tests_with_external_blueprint(&self, package_address: PackageAddress) {

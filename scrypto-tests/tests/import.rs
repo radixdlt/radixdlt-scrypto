@@ -176,7 +176,7 @@ blueprint! {
                 simple: address.into(),
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
     }
 }

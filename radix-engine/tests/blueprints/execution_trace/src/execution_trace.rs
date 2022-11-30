@@ -19,13 +19,13 @@ blueprint! {
                 vault: Vault::with_bucket(bucket),
             }
             .instantiate()
-            .globalize();
+            .globalize_no_owner();
 
             let target_component = ExecutionTraceTest {
                 vault: Vault::new(resource_address),
             }
             .instantiate()
-            .globalize();
+            .globalize_no_owner();
 
             let transfer_bucket: Bucket =
                 Runtime::call_method(source_component, "take", args!(amount));
@@ -44,7 +44,9 @@ blueprint! {
 
         pub fn create_and_fund_a_component(xrd: Vec<Bucket>) -> ComponentAddress {
             let vault = Vault::with_bucket(xrd.into_iter().nth(0).unwrap());
-            ExecutionTraceTest { vault }.instantiate().globalize()
+            ExecutionTraceTest { vault }
+                .instantiate()
+                .globalize_no_owner()
         }
 
         pub fn test_lock_contingent_fee(&mut self) {

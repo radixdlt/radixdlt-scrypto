@@ -8,7 +8,7 @@ blueprint! {
     impl StoredResource {
         pub fn create() -> ComponentAddress {
             let resource_address = ResourceBuilder::new_fungible().no_initial_supply();
-            Self { resource_address }.instantiate().globalize()
+            Self { resource_address }.instantiate().globalize_no_owner()
         }
 
         pub fn total_supply(&self) -> Decimal {

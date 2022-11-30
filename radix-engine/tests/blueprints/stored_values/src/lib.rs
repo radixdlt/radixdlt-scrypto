@@ -13,7 +13,7 @@ blueprint! {
                 .initial_supply(Decimal::from(5));
 
             let component = InvalidInitStoredBucket { bucket }.instantiate();
-            component.globalize()
+            component.globalize_no_owner()
         }
     }
 }
@@ -39,7 +39,7 @@ blueprint! {
             }
             .instantiate();
             component.put_bucket(bucket);
-            component.globalize()
+            component.globalize_no_owner()
         }
     }
 }

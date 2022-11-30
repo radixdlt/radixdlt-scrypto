@@ -11,13 +11,13 @@ blueprint! {
                 external_component: Option::None,
             }
             .instantiate()
-            .globalize();
+            .globalize_no_owner();
 
             Self {
                 external_component: Option::Some(external_component),
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn create_and_call() -> ComponentAddress {
@@ -25,7 +25,7 @@ blueprint! {
                 external_component: Option::None,
             }
             .instantiate()
-            .globalize();
+            .globalize_no_owner();
 
             let component = Self {
                 external_component: Option::Some(external_component),
@@ -33,7 +33,7 @@ blueprint! {
             .instantiate();
             component.func();
 
-            component.globalize()
+            component.globalize_no_owner()
         }
 
         pub fn func(&mut self) {
