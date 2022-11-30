@@ -506,6 +506,65 @@ fn method_that_falls_within_default_auth_mutability_cant_have_its_auth_mutated_a
     });
 }
 
+#[test]
+fn component_access_rules_can_be_mutated_through_manifest_native_call() {
+    // Arrange
+    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
+    let public_key = private_key.public_key();
+    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+
+    let access_rules = vec![AccessRules::new()
+        .method(
+            "deposit_funds",
+            rule!(require(RADIX_TOKEN)),
+            MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
+        )
+        .default(
+            rule!(allow_all),
+            MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
+        )];
+    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+    test_runner.add_initial_proof(virtual_badge_non_fungible_address.clone());
+
+    // Act
+    test_runner.execute_manifest(
+        MutableAccessRulesTestRunner::manifest_builder()
+            .call_native_method(
+                RENodeId::Global(GlobalAddress::Component(test_runner.component_address)),
+                &AccessRulesMethod::SetAccessRule.to_string(),
+                scrypto_encode(&AccessRulesSetAccessRuleInvocation {
+                    receiver: RENodeId::Global(GlobalAddress::Component(
+                        test_runner.component_address,
+                    )),
+                    index: 0,
+                    selector: AccessRuleSelector::Method(AccessRuleKey::ScryptoMethod(
+                        "withdraw_funds".to_string(),
+                    )),
+                    rule: rule!(deny_all),
+                })
+                .unwrap(),
+            )
+            .build(),
+    );
+
+    // Assert
+    let component_access_rules = test_runner.access_rules(Call::Function)[0].clone();
+    assert_eq!(
+        (
+            component_access_rules
+                .get(&AccessRuleKey::ScryptoMethod("withdraw_funds".to_string()))
+                .clone(),
+            component_access_rules
+                .get_mutability(&AccessRuleKey::ScryptoMethod("withdraw_funds".to_string()))
+                .clone()
+        ),
+        (
+            rule!(deny_all),
+            rule!(require(virtual_badge_non_fungible_address.clone()))
+        )
+    )
+}
+
 struct MutableAccessRulesTestRunner {
     substate_store: TypedInMemorySubstateStore,
     package_address: PackageAddress,
