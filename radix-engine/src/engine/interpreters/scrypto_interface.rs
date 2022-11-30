@@ -3,12 +3,12 @@ use crate::engine::{
     ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
-use crate::model::{MetadataSubstate, Resource};
 use crate::model::{
     AccessRulesSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
     ComponentRoyaltyConfigSubstate, ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore,
     RuntimeSubstate,
 };
+use crate::model::{MetadataSubstate, Resource};
 use crate::types::{HashMap, ScryptoInvocation};
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
@@ -96,7 +96,7 @@ where
                         ),
                     },
                     MetadataSubstate {
-                        metadata: HashMap::new()
+                        metadata: HashMap::new(),
                     },
                     AccessRulesSubstate {
                         access_rules: Vec::new(),

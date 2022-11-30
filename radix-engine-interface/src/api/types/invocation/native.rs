@@ -45,6 +45,7 @@ pub enum NativeMethod {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum NativeFunction {
+    Component(ComponentFunction),
     EpochManager(EpochManagerFunction),
     ResourceManager(ResourceManagerFunction),
     Package(PackageFunction),
@@ -94,6 +95,28 @@ pub enum AccessRulesMethod {
 pub enum MetadataMethod {
     Set,
     Get,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum ComponentFunction {
+    GlobalizeWithOwner,
+    GlobalizeNoOwner,
 }
 
 #[derive(

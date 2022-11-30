@@ -1,15 +1,176 @@
-use crate::engine::deref_and_update;
+use crate::engine::{deref_and_update, ResolvedFunction};
 use crate::engine::{
     CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref, NativeExecutor, NativeProcedure,
     REActor, ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::types::*;
+use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::{ComponentOffset, SubstateOffset};
 use radix_engine_interface::model::*;
+use scrypto::access_rule_node;
+use scrypto::rule;
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub enum ComponentError {
-    InvalidRequestData(DecodeError),
+impl ExecutableInvocation for ComponentGlobalizeWithOwnerInvocation {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Component(
+            ComponentFunction::GlobalizeWithOwner,
+        )));
+        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Component(self.component_id));
+        let executor = NativeExecutor(self);
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
+    type Output = (ComponentAddress, Bucket);
+
+    fn main<Y>(
+        self,
+        api: &mut Y,
+    ) -> Result<((ComponentAddress, Bucket), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + SysInvokableNative<RuntimeError>,
+    {
+        let component_node_id = RENodeId::Component(self.component_id);
+        let global_node_id = {
+            let handle = api.lock_substate(
+                component_node_id,
+                SubstateOffset::Component(ComponentOffset::Info),
+                LockFlags::read_only(),
+            )?;
+            let substate_ref = api.get_ref(handle)?;
+            let node_id = if substate_ref
+                .component_info()
+                .package_address
+                .eq(&ACCOUNT_PACKAGE)
+            {
+                api.allocate_node_id(RENodeType::GlobalAccount)?
+            } else {
+                api.allocate_node_id(RENodeType::GlobalComponent)?
+            };
+            api.drop_lock(handle)?;
+            node_id
+        };
+        let component_address: ComponentAddress = global_node_id.into();
+
+        // TODO: Cleanup package address + NonFungibleId integration
+        let bytes = scrypto_encode(&component_address).unwrap();
+        let non_fungible_id = NonFungibleId::from_bytes(bytes);
+        let non_fungible_address =
+            NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id.clone());
+
+        let mut entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)> = HashMap::new();
+        entries.insert(non_fungible_id, (vec![], vec![]));
+
+        let mint_invocation = ResourceManagerMintInvocation {
+            receiver: ENTITY_OWNER_TOKEN,
+            mint_params: MintParams::NonFungible { entries },
+        };
+        let owner_badge_bucket: Bucket = api.sys_invoke(mint_invocation)?;
+
+        let mut access_rules = AccessRules::new().default(AccessRule::DenyAll);
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
+            rule!(require(non_fungible_address.clone())),
+            rule!(require(non_fungible_address)),
+        );
+
+        api.sys_invoke(AccessRulesAddAccessCheckInvocation {
+            receiver: component_node_id,
+            access_rules,
+        })?;
+
+        let mut call_frame_update =
+            CallFrameUpdate::move_node(RENodeId::Bucket(owner_badge_bucket.0));
+        call_frame_update
+            .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::Component(
+                component_address,
+            )));
+
+        Ok(((component_address, owner_badge_bucket), call_frame_update))
+    }
+}
+
+impl ExecutableInvocation for ComponentGlobalizeNoOwnerInvocation {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Component(
+            ComponentFunction::GlobalizeNoOwner,
+        )));
+        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Component(self.component_id));
+        let executor = NativeExecutor(self);
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProcedure for ComponentGlobalizeNoOwnerInvocation {
+    type Output = ComponentAddress;
+
+    fn main<Y>(self, api: &mut Y) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + SysInvokableNative<RuntimeError>,
+    {
+        let component_node_id = RENodeId::Component(self.component_id);
+        let global_node_id = {
+            let handle = api.lock_substate(
+                component_node_id,
+                SubstateOffset::Component(ComponentOffset::Info),
+                LockFlags::read_only(),
+            )?;
+            let substate_ref = api.get_ref(handle)?;
+            let node_id = if substate_ref
+                .component_info()
+                .package_address
+                .eq(&ACCOUNT_PACKAGE)
+            {
+                api.allocate_node_id(RENodeType::GlobalAccount)?
+            } else {
+                api.allocate_node_id(RENodeType::GlobalComponent)?
+            };
+            api.drop_lock(handle)?;
+            node_id
+        };
+        let component_address: ComponentAddress = global_node_id.into();
+        let mut access_rules = AccessRules::new().default(AccessRule::DenyAll);
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
+            AccessRule::DenyAll,
+            AccessRule::DenyAll,
+        );
+
+        api.sys_invoke(AccessRulesAddAccessCheckInvocation {
+            receiver: component_node_id,
+            access_rules,
+        })?;
+
+        let call_frame_update = CallFrameUpdate::copy_ref(RENodeId::Global(
+            GlobalAddress::Component(component_address),
+        ));
+
+        Ok((component_address, call_frame_update))
+    }
 }
 
 impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {

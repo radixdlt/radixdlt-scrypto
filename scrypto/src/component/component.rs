@@ -74,7 +74,6 @@ impl Component {
         scrypto_decode(&rtn).unwrap()
     }
 
-
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
         let pointer = DataPointer::new(
@@ -138,11 +137,13 @@ impl Component {
     }
 
     pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
-        ScryptoEnv.sys_invoke(MetadataSetInvocation {
-            receiver: RENodeId::Component(self.0),
-            key: name.as_ref().to_owned(),
-            value: value.as_ref().to_owned(),
-        }).unwrap();
+        ScryptoEnv
+            .sys_invoke(MetadataSetInvocation {
+                receiver: RENodeId::Component(self.0),
+                key: name.as_ref().to_owned(),
+                value: value.as_ref().to_owned(),
+            })
+            .unwrap();
         self
     }
 
