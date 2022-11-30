@@ -84,3 +84,31 @@ pub struct PackageSetRoyaltyConfigExecutable {
     pub receiver: RENodeId,
     pub royalty_config: HashMap<String, RoyaltyConfig>,
 }
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct PackageClaimRoyaltyInvocation {
+    pub receiver: PackageAddress,
+}
+
+impl Invocation for PackageClaimRoyaltyInvocation {
+    type Output = Bucket;
+}
+
+impl ScryptoNativeInvocation for PackageClaimRoyaltyInvocation {
+    type ScryptoOutput = Bucket;
+}
+
+impl Into<NativeFnInvocation> for PackageClaimRoyaltyInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Package(
+            PackageMethodInvocation::ClaimRoyalty(self),
+        ))
+    }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct PackageClaimRoyaltyExecutable {
+    pub receiver: RENodeId,
+}

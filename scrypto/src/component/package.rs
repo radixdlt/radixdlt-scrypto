@@ -26,4 +26,10 @@ impl BorrowedPackage {
         })
         .unwrap();
     }
+
+    pub fn claim_royalty(&self) -> Bucket {
+        let mut env = ScryptoEnv;
+        env.sys_invoke(PackageClaimRoyaltyInvocation { receiver: self.0 })
+            .unwrap()
+    }
 }

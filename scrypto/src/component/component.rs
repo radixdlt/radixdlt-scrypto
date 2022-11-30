@@ -1,3 +1,4 @@
+use radix_engine_derive::Describe;
 use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
 use radix_engine_interface::api::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoRENode,
@@ -7,7 +8,6 @@ use radix_engine_interface::data::{
     scrypto_decode, ScryptoCustomTypeId, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::model::*;
-
 use radix_engine_interface::scrypto_type;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
@@ -23,7 +23,6 @@ use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::scrypto;
-use radix_engine_derive::Describe;
 
 /// Represents the state of a component.
 pub trait ComponentState<C: LocalComponent>: ScryptoEncode + ScryptoDecode {
@@ -161,6 +160,25 @@ impl BorrowedGlobalComponent {
         );
         let state: DataRef<ComponentInfoSubstate> = pointer.get();
         state.blueprint_name.clone()
+    }
+
+    pub fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
+        let mut env = ScryptoEnv;
+
+        env.sys_invoke(ComponentSetRoyaltyConfigInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+            royalty_config,
+        })
+        .unwrap();
+    }
+
+    pub fn claim_royalty(&self) -> Bucket {
+        let mut env = ScryptoEnv;
+
+        env.sys_invoke(ComponentClaimRoyaltyInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+        })
+        .unwrap()
     }
 }
 

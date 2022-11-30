@@ -2,7 +2,8 @@ use super::{PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate};
 use crate::engine::*;
 use crate::engine::{CallFrameUpdate, LockFlags, RuntimeError, SystemApi};
 use crate::model::{
-    AccessRulesSubstate, GlobalAddressSubstate, MetadataSubstate, PackageInfoSubstate, Resource,
+    AccessRulesSubstate, BucketSubstate, GlobalAddressSubstate, MetadataSubstate,
+    PackageInfoSubstate, Resource,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -269,5 +270,61 @@ impl NativeProcedure for PackageSetRoyaltyConfigExecutable {
         system_api.drop_lock(handle)?;
 
         Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl ExecutableInvocation for PackageClaimRoyaltyInvocation {
+    type Exec = NativeExecutor<PackageClaimRoyaltyExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Package(PackageMethod::ClaimRoyalty)),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(PackageClaimRoyaltyExecutable {
+            receiver: resolved_receiver.receiver,
+        });
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProcedure for PackageClaimRoyaltyExecutable {
+    type Output = Bucket;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi,
+    {
+        // TODO: auth check
+        let node_id = self.receiver;
+        let offset = SubstateOffset::Package(PackageOffset::RoyaltyAccumulator);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+
+        let mut substate_mut = system_api.get_ref_mut(handle)?;
+        let resource = substate_mut
+            .package_royalty_accumulator()
+            .royalty
+            .take_all();
+        let bucket_node_id = system_api.allocate_node_id(RENodeType::Bucket)?;
+        system_api.create_node(
+            bucket_node_id,
+            RENode::Bucket(BucketSubstate::new(resource)),
+        )?;
+        let bucket_id = bucket_node_id.into();
+
+        system_api.drop_lock(handle)?;
+
+        Ok((
+            Bucket(bucket_id),
+            CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
+        ))
     }
 }

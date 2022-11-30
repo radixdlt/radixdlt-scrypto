@@ -17,6 +17,7 @@ pub use sbor::rust::boxed::Box;
 pub use sbor::rust::cell::{Ref, RefCell, RefMut};
 pub use sbor::rust::collections::*;
 pub use sbor::rust::fmt;
+pub use sbor::rust::fmt::Debug;
 pub use sbor::rust::format;
 pub use sbor::rust::marker::PhantomData;
 pub use sbor::rust::num::NonZeroUsize;
