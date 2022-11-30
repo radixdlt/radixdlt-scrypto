@@ -54,6 +54,7 @@ pub enum NativeMethodInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NativeFunctionInvocation {
+    Component(ComponentFunctionInvocation),
     EpochManager(EpochManagerFunctionInvocation),
     ResourceManager(ResourceManagerFunctionInvocation),
     Package(PackageFunctionInvocation),
@@ -72,6 +73,13 @@ pub enum AccessRulesMethodInvocation {
 pub enum MetadataMethodInvocation {
     Set(MetadataSetInvocation),
     Get(MetadataGetInvocation),
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum ComponentFunctionInvocation {
+    GlobalizeWithOwner(ComponentGlobalizeWithOwnerInvocation),
+    GlobalizeNoOwner(ComponentGlobalizeNoOwnerInvocation),
 }
 
 #[derive(Debug)]
@@ -220,6 +228,14 @@ impl NativeFnInvocation {
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     PackageFunctionInvocation::PublishWithOwner(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                },
+                NativeFunctionInvocation::Component(invocation) => match invocation {
+                    ComponentFunctionInvocation::GlobalizeWithOwner(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    ComponentFunctionInvocation::GlobalizeNoOwner(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },

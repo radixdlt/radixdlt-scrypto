@@ -1,7 +1,7 @@
 use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
 use radix_engine_interface::api::types::{
-    ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoRENode,
-    ScryptoReceiver, SubstateOffset,
+    ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoReceiver,
+    SubstateOffset,
 };
 use radix_engine_interface::data::{
     scrypto_decode, ScryptoCustomTypeId, ScryptoDecode, ScryptoEncode,
@@ -34,14 +34,12 @@ pub trait ComponentState<C: LocalComponent>: ScryptoEncode + ScryptoDecode {
 pub trait LocalComponent {
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
+    fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self;
     fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
     fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self;
     fn globalize(self) -> ComponentAddress;
+    fn globalize_with_owner(self) -> (ComponentAddress, Bucket);
 }
-
-/// Represents an instantiated component.
-#[derive(PartialEq, Eq, Hash, Clone)]
-pub struct Component(pub ComponentId);
 
 // TODO: de-duplication
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -56,6 +54,10 @@ pub struct ComponentInfoSubstate {
 pub struct ComponentStateSubstate {
     pub raw: Vec<u8>,
 }
+
+/// Represents an instantiated component.
+#[derive(PartialEq, Eq, Hash, Clone)]
+pub struct Component(pub ComponentId);
 
 impl Component {
     /// Invokes a method on this component.
@@ -135,20 +137,31 @@ impl Component {
         Ok(self)
     }
 
-    pub fn globalize(self) -> ComponentAddress {
-        self.sys_globalize(&mut ScryptoEnv).unwrap()
+    pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+        ScryptoEnv
+            .sys_invoke(MetadataSetInvocation {
+                receiver: RENodeId::Component(self.0),
+                key: name.as_ref().to_owned(),
+                value: value.as_ref().to_owned(),
+            })
+            .unwrap();
+        self
     }
 
-    pub fn sys_globalize<Y, E: Debug + ScryptoDecode>(
-        self,
-        sys_calls: &mut Y,
-    ) -> Result<ComponentAddress, E>
-    where
-        Y: EngineApi<E>,
-    {
-        let node_id: RENodeId =
-            sys_calls.sys_create_node(ScryptoRENode::GlobalComponent(self.0))?;
-        Ok(node_id.into())
+    pub fn globalize(self) -> ComponentAddress {
+        ScryptoEnv
+            .sys_invoke(ComponentGlobalizeNoOwnerInvocation {
+                component_id: self.0,
+            })
+            .unwrap()
+    }
+
+    pub fn globalize_with_owner(self) -> (ComponentAddress, Bucket) {
+        ScryptoEnv
+            .sys_invoke(ComponentGlobalizeWithOwnerInvocation {
+                component_id: self.0,
+            })
+            .unwrap()
     }
 }
 
