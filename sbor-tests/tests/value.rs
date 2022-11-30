@@ -50,7 +50,7 @@ fn test_encode_as_json() {
                     "value": 1
                 },
                 {
-                    "elements": [
+                    "fields": [
                         {
                             "type": "U8",
                             "value": 2
@@ -79,7 +79,7 @@ fn test_encode_as_json() {
                     "value": "5"
                 }
             ],
-            "type": "Struct"
+            "type": "Tuple"
         }),
     );
 }

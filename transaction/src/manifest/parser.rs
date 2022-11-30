@@ -273,42 +273,35 @@ impl Parser {
             TokenKind::I64Literal(value) => advance_ok!(self, Value::I64(value)),
             TokenKind::I128Literal(value) => advance_ok!(self, Value::I128(value)),
             TokenKind::StringLiteral(value) => advance_ok!(self, Value::String(value)),
-            TokenKind::Struct => self.parse_struct(),
             TokenKind::Enum => self.parse_enum(),
             TokenKind::Array => self.parse_array(),
             TokenKind::Tuple => self.parse_tuple(),
             /* Global address */
-            TokenKind:: PackageAddress |
-            TokenKind:: SystemAddress |
-            TokenKind:: ComponentAddress |
+            TokenKind::PackageAddress |
+            TokenKind::SystemAddress |
+            TokenKind::ComponentAddress |
             TokenKind::ResourceAddress |
             /* RE Nodes */
             TokenKind::Component |
             TokenKind::KeyValueStore |
-            TokenKind:: Bucket |
+            TokenKind::Bucket |
             TokenKind::Proof |
             TokenKind::Vault |
             /* Other interpreted */
-            TokenKind:: Expression |
+            TokenKind::Expression |
             TokenKind::Blob |
-            TokenKind:: NonFungibleAddress |
+            TokenKind::NonFungibleAddress |
             /* Uninterpreted */
-            TokenKind:: Hash |
+            TokenKind::Hash |
             TokenKind::EcdsaSecp256k1PublicKey |
             TokenKind::EcdsaSecp256k1Signature |
             TokenKind::EddsaEd25519PublicKey |
             TokenKind::EddsaEd25519Signature |
             TokenKind::Decimal |
-            TokenKind:: PreciseDecimal |
-            TokenKind:: NonFungibleId  => self.parse_scrypto_types(),
+            TokenKind::PreciseDecimal |
+            TokenKind::NonFungibleId  => self.parse_scrypto_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
-    }
-    pub fn parse_struct(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::Struct);
-        let fields =
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
-        Ok(Value::Struct(fields))
     }
 
     pub fn parse_enum(&mut self) -> Result<Value, ParserError> {
@@ -459,7 +452,6 @@ impl Parser {
             TokenKind::U64 => Ok(Type::U64),
             TokenKind::U128 => Ok(Type::U128),
             TokenKind::String => Ok(Type::String),
-            TokenKind::Struct => Ok(Type::Struct),
             TokenKind::Enum => Ok(Type::Enum),
             TokenKind::Array => Ok(Type::Array),
             TokenKind::Tuple => Ok(Type::Tuple),
@@ -554,15 +546,6 @@ mod tests {
     }
 
     #[test]
-    fn test_struct() {
-        parse_value_ok!(
-            r#"Struct("Hello", 123u8)"#,
-            Value::Struct(vec![Value::String("Hello".into()), Value::U8(123),])
-        );
-        parse_value_ok!(r#"Struct()"#, Value::Struct(vec![]));
-    }
-
-    #[test]
     fn test_enum() {
         parse_value_ok!(
             r#"Enum("Variant", "Hello", 123u8)"#,
@@ -578,11 +561,20 @@ mod tests {
     }
 
     #[test]
-    fn test_array_tuple() {
+    fn test_array() {
         parse_value_ok!(
             r#"Array<U8>(1u8, 2u8)"#,
             Value::Array(Type::U8, vec![Value::U8(1), Value::U8(2)])
         );
+    }
+
+    #[test]
+    fn test_tuple() {
+        parse_value_ok!(
+            r#"Tuple("Hello", 123u8)"#,
+            Value::Tuple(vec![Value::String("Hello".into()), Value::U8(123),])
+        );
+        parse_value_ok!(r#"Tuple()"#, Value::Tuple(vec![]));
         parse_value_ok!(
             r#"Tuple(1u8, 2u8)"#,
             Value::Tuple(vec![Value::U8(1), Value::U8(2)])

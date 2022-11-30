@@ -36,7 +36,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     impl #impl_generics ::sbor::Encode <#custom_type_id_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                         #[inline]
                         fn encode_type_id(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            encoder.write_type_id(::sbor::type_id::SborTypeId::Struct)
+                            encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
                         }
 
                         #[inline]
@@ -61,7 +61,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     impl #impl_generics ::sbor::Encode <#custom_type_id_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                         #[inline]
                         fn encode_type_id(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            encoder.write_type_id(::sbor::type_id::SborTypeId::Struct)
+                            encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
                         }
 
                         #[inline]
@@ -79,7 +79,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     impl #impl_generics ::sbor::Encode <#custom_type_id_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                         #[inline]
                         fn encode_type_id(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            encoder.write_type_id(::sbor::type_id::SborTypeId::Struct)
+                            encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
                         }
 
                         #[inline]
@@ -208,7 +208,7 @@ mod tests {
                 impl <CTI: ::sbor::type_id::CustomTypeId, ENC: ::sbor::encoder::Encoder<CTI> > ::sbor::Encode<CTI, ENC> for Test {
                     #[inline]
                     fn encode_type_id(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_type_id(::sbor::type_id::SborTypeId::Struct)
+                        encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
                     }
 
                     #[inline]
@@ -274,7 +274,7 @@ mod tests {
                 impl <CTI: ::sbor::type_id::CustomTypeId, ENC: ::sbor::encoder::Encoder<CTI> > ::sbor::Encode<CTI, ENC> for Test {
                     #[inline]
                     fn encode_type_id(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_type_id(::sbor::type_id::SborTypeId::Struct)
+                        encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
                     }
 
                     #[inline]
@@ -302,7 +302,7 @@ mod tests {
                 impl <ENC: ::sbor::encoder::Encoder<NoCustomTypeId> > ::sbor::Encode<NoCustomTypeId, ENC> for Test {
                     #[inline]
                     fn encode_type_id(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_type_id(::sbor::type_id::SborTypeId::Struct)
+                        encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
                     }
 
                     #[inline]
@@ -330,7 +330,7 @@ mod tests {
                 impl <ENC: ::sbor::encoder::Encoder<::sbor::basic::NoCustomTypeId> > ::sbor::Encode<::sbor::basic::NoCustomTypeId, ENC> for Test {
                     #[inline]
                     fn encode_type_id(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_type_id(::sbor::type_id::SborTypeId::Struct)
+                        encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
                     }
 
                     #[inline]

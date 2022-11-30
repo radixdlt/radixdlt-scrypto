@@ -40,15 +40,15 @@ fn test_encode_struct() {
     #[rustfmt::skip]
     assert_eq!(
         vec![
-            16, // struct type
+            33, // tuple type
             1,  // number of fields
             9, 3, 0, 0, 0, // field value
             
-            16, // struct type
+            33, // tuple type
             1,  // number of fields
             9, 3, 0, 0, 0, // field value
             
-            16, // struct type
+            33, // tuple type
             0,  // number of fields
         ],
         bytes
