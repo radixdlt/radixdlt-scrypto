@@ -84,9 +84,8 @@ pub fn format_scrypto_value<F: fmt::Write>(
         SborValue::U64 { value } => write!(f, "{}u64", value)?,
         SborValue::U128 { value } => write!(f, "{}u128", value)?,
         SborValue::String { value } => write!(f, "\"{}\"", value)?,
-        // struct & enum
-        SborValue::Struct { fields } => {
-            f.write_str("Struct(")?;
+        SborValue::Tuple { fields } => {
+            f.write_str("Tuple(")?;
             format_elements(f, fields, context)?;
             f.write_str(")")?;
         }
@@ -103,7 +102,6 @@ pub fn format_scrypto_value<F: fmt::Write>(
             }
             f.write_str(")")?;
         }
-        // rust types
         SborValue::Array {
             element_type_id,
             elements,
@@ -111,11 +109,6 @@ pub fn format_scrypto_value<F: fmt::Write>(
             f.write_str("Array<")?;
             format_type_id(f, element_type_id)?;
             f.write_str(">(")?;
-            format_elements(f, elements, context)?;
-            f.write_str(")")?;
-        }
-        SborValue::Tuple { elements } => {
-            f.write_str("Tuple(")?;
             format_elements(f, elements, context)?;
             f.write_str(")")?;
         }
@@ -142,7 +135,6 @@ pub fn format_type_id<F: fmt::Write>(f: &mut F, type_id: &ScryptoSborTypeId) -> 
         SborTypeId::U64 => f.write_str("U64"),
         SborTypeId::U128 => f.write_str("U128"),
         SborTypeId::String => f.write_str("String"),
-        SborTypeId::Struct => f.write_str("Struct"),
         SborTypeId::Enum => f.write_str("Enum"),
         SborTypeId::Array => f.write_str("Array"),
         SborTypeId::Tuple => f.write_str("Tuple"),

@@ -82,7 +82,7 @@ macro_rules! args {
         let mut buf = ::sbor::rust::vec::Vec::new();
         let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut buf);
         encoder.write_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX).unwrap();
-        encoder.write_type_id(radix_engine_interface::data::ScryptoSborTypeId::Struct).unwrap();
+        encoder.write_type_id(radix_engine_interface::data::ScryptoSborTypeId::Tuple).unwrap();
         // Hack: stringify to skip ownership move semantics
         encoder.write_size(radix_engine_interface::count!($(stringify!($args)),*)).unwrap();
         $(
@@ -390,11 +390,11 @@ mod tests {
     }
 
     fn build_value_of_tuple_of_depth(depth: u8) -> ScryptoValue {
-        let mut value = ScryptoValue::Tuple { elements: vec![] };
+        let mut value = ScryptoValue::Tuple { fields: vec![] };
         let loop_count = depth - 1;
         for _ in 0..loop_count {
             value = ScryptoValue::Tuple {
-                elements: vec![value],
+                fields: vec![value],
             };
         }
         value
