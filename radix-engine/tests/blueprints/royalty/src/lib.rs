@@ -29,7 +29,7 @@ blueprint! {
             local_component.globalize()
         }
 
-        pub fn enable_package_royalty() -> PackageAddress {
+        pub fn enable_royalty_for_this_package() {
             let package_address = Runtime::package_address();
 
             borrow_package!(package_address).set_royalty_config(HashMap::from([(
@@ -39,14 +39,18 @@ blueprint! {
                     .add_rule("paid_method_panic", dec!("0.2"))
                     .default(dec!("0")),
             )]));
-
-            package_address
         }
 
-        pub fn claim_package_royalty() -> Bucket {
-            let package_address = Runtime::package_address();
+        pub fn disable_package_royalty(address: PackageAddress) {
+            borrow_package!(address).set_royalty_config(HashMap::from([]));
+        }
 
-            borrow_package!(package_address).claim_royalty()
+        pub fn disable_component_royalty(address: ComponentAddress) {
+            borrow_component!(address).set_royalty_config(RoyaltyConfig::default());
+        }
+
+        pub fn claim_package_royalty(address: PackageAddress) -> Bucket {
+            borrow_package!(address).claim_royalty()
         }
 
         pub fn claim_component_royalty(address: ComponentAddress) -> Bucket {

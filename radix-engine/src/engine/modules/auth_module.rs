@@ -135,7 +135,9 @@ impl AuthModule {
                     (ResolvedMethod::Native(method), ..)
                         if matches!(method, NativeMethod::Metadata(..))
                             || matches!(method, NativeMethod::EpochManager(..))
-                            || matches!(method, NativeMethod::ResourceManager(..)) =>
+                            || matches!(method, NativeMethod::ResourceManager(..))
+                            || matches!(method, NativeMethod::Package(..))
+                            || matches!(method, NativeMethod::Component(..)) =>
                     {
                         let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
                         let handle = system_api.lock_substate(

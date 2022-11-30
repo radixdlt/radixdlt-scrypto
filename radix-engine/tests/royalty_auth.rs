@@ -6,45 +6,6 @@ use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
-#[test]
-fn test_component_royalty() {
-    // Basic setup
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_allocated_account();
-
-    // Publish package
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/royalty");
-
-    // Instantiate component
-    let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(account, 10u32.into())
-            .call_function(
-                package_address,
-                "RoyaltyTest",
-                "create_component_with_royalty_enabled",
-                args!(),
-            )
-            .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
-    );
-    let component_address: ComponentAddress =
-        scrypto_decode(&receipt.expect_commit_success()[1]).unwrap();
-
-    // Call the paid method
-    let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(FAUCET_COMPONENT, 100.into())
-            .call_method(component_address, "paid_method", args!())
-            .build(),
-        vec![],
-    );
-
-    receipt.expect_commit_success();
-    assert_eq!(receipt.execution.fee_summary.royalty, dec!("0.1"));
-}
-
 fn set_up_package_and_component() -> (
     TypedInMemorySubstateStore,
     ComponentAddress,
@@ -67,7 +28,7 @@ fn set_up_package_and_component() -> (
             .call_function(
                 package_address,
                 "RoyaltyTest",
-                "enable_package_royalty",
+                "enable_royalty_for_this_package",
                 args!(),
             )
             .build(),
@@ -101,7 +62,7 @@ fn set_up_package_and_component() -> (
 }
 
 #[test]
-fn test_package_royalty() {
+fn test_only_package_owner_can_set_royalty_config() {
     let (mut store, account, public_key, _package_address, component_address) =
         set_up_package_and_component();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -122,8 +83,8 @@ fn test_package_royalty() {
 }
 
 #[test]
-fn test_royalty_accumulation_when_success() {
-    let (mut store, account, public_key, package_address, component_address) =
+fn test_only_package_owner_can_claim_royalty() {
+    let (mut store, account, public_key, _package_address, component_address) =
         set_up_package_and_component();
     let mut test_runner = TestRunner::new(true, &mut store);
 
@@ -137,43 +98,14 @@ fn test_royalty_accumulation_when_success() {
 
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner.inspect_package_royalty(package_address),
-        Some(dec!("0.2"))
-    );
-    assert_eq!(
-        test_runner.inspect_component_royalty(component_address),
-        Some(dec!("0.1"))
+        receipt.execution.fee_summary.royalty,
+        dec!("0.1") + dec!("0.2"),
     );
 }
 
 #[test]
-fn test_royalty_accumulation_when_failure() {
-    let (mut store, account, public_key, package_address, component_address) =
-        set_up_package_and_component();
-    let mut test_runner = TestRunner::new(true, &mut store);
-
-    let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(account, 100.into())
-            .call_method(component_address, "paid_method_panic", args!())
-            .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
-    );
-
-    receipt.expect_commit_failure();
-    assert_eq!(
-        test_runner.inspect_package_royalty(package_address),
-        Some(dec!("0"))
-    );
-    assert_eq!(
-        test_runner.inspect_component_royalty(component_address),
-        Some(dec!("0"))
-    );
-}
-
-#[test]
-fn test_claim_royalty() {
-    let (mut store, account, public_key, package_address, component_address) =
+fn test_only_component_owner_can_set_royalty_config() {
+    let (mut store, account, public_key, _package_address, component_address) =
         set_up_package_and_component();
     let mut test_runner = TestRunner::new(true, &mut store);
 
@@ -184,64 +116,31 @@ fn test_claim_royalty() {
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
-    receipt.expect_commit_success();
-    receipt.expect_commit_success();
-    assert_eq!(
-        test_runner.inspect_package_royalty(package_address),
-        Some(dec!("0.2"))
-    );
-    assert_eq!(
-        test_runner.inspect_component_royalty(component_address),
-        Some(dec!("0.1"))
-    );
 
-    // Claim package royalty
+    receipt.expect_commit_success();
+    assert_eq!(
+        receipt.execution.fee_summary.royalty,
+        dec!("0.1") + dec!("0.2"),
+    );
+}
+
+#[test]
+fn test_only_component_owner_can_claim_royalty() {
+    let (mut store, account, public_key, _package_address, component_address) =
+        set_up_package_and_component();
+    let mut test_runner = TestRunner::new(true, &mut store);
+
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
-            .call_function(
-                package_address,
-                "RoyaltyTest",
-                "claim_package_royalty",
-                args!(),
-            )
-            .call_method(
-                account,
-                "deposit_batch",
-                args!(Expression::entire_worktop()),
-            )
+            .call_method(component_address, "paid_method", args!())
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
-    receipt.expect_commit_success();
 
-    // Claim component royalty
-    let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(account, 100.into())
-            .call_function(
-                package_address,
-                "RoyaltyTest",
-                "claim_component_royalty",
-                args!(component_address),
-            )
-            .call_method(
-                account,
-                "deposit_batch",
-                args!(Expression::entire_worktop()),
-            )
-            .build(),
-        vec![NonFungibleAddress::from_public_key(&public_key)],
-    );
     receipt.expect_commit_success();
-
-    // assert nothing left
     assert_eq!(
-        test_runner.inspect_package_royalty(package_address),
-        Some(dec!("0"))
-    );
-    assert_eq!(
-        test_runner.inspect_component_royalty(component_address),
-        Some(dec!("0"))
+        receipt.execution.fee_summary.royalty,
+        dec!("0.1") + dec!("0.2"),
     );
 }
