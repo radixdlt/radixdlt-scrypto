@@ -513,7 +513,10 @@ impl NativeProcedure for ResourceManagerCreateWithOwnerInvocation {
                 NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id.clone());
 
             let mut entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)> = HashMap::new();
-            entries.insert(non_fungible_id, (vec![], vec![]));
+            entries.insert(
+                non_fungible_id,
+                (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
+            );
 
             let mint_invocation = ResourceManagerMintInvocation {
                 receiver: ENTITY_OWNER_TOKEN,
