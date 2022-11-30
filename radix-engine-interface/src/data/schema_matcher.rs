@@ -19,7 +19,7 @@ pub fn sbor_type_id(ty: &Type) -> Option<ScryptoSborTypeId> {
         Type::String => Some(SborTypeId::String),
         Type::Array { .. } => Some(SborTypeId::Array),
         Type::Tuple { .. } => Some(SborTypeId::Tuple),
-        Type::Struct { .. } => Some(SborTypeId::Struct),
+        Type::Struct { .. } => Some(SborTypeId::Tuple),
         Type::Enum { .. } => Some(SborTypeId::Enum),
         Type::Option { .. } => Some(SborTypeId::Enum),
         Type::Result { .. } => Some(SborTypeId::Enum),
@@ -100,12 +100,12 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
             }
         }
         Type::Tuple { element_types } => {
-            if let SborValue::Tuple { elements } = value {
-                element_types.len() == elements.len()
+            if let SborValue::Tuple { fields } = value {
+                element_types.len() == fields.len()
                     && element_types
                         .iter()
                         .enumerate()
-                        .all(|(i, e)| match_schema_with_value(e, elements.get(i).unwrap()))
+                        .all(|(i, e)| match_schema_with_value(e, fields.get(i).unwrap()))
             } else {
                 false
             }
@@ -184,10 +184,10 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
             {
                 *element_type_id == SborTypeId::Tuple
                     && elements.iter().all(|e| {
-                        if let SborValue::Tuple { elements } = e {
-                            elements.len() == 2
-                                && match_schema_with_value(key_type, &elements[0])
-                                && match_schema_with_value(value_type, &elements[1])
+                        if let SborValue::Tuple { fields } = e {
+                            fields.len() == 2
+                                && match_schema_with_value(key_type, &fields[0])
+                                && match_schema_with_value(value_type, &fields[1])
                         } else {
                             false
                         }
@@ -200,7 +200,7 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
             name: _,
             fields: type_fields,
         } => {
-            if let SborValue::Struct { fields } = value {
+            if let SborValue::Tuple { fields } = value {
                 match type_fields {
                     Fields::Unit => fields.is_empty(),
                     Fields::Unnamed { unnamed } => {

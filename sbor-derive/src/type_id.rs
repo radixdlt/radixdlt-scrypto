@@ -30,7 +30,7 @@ pub fn handle_type_id(input: TokenStream) -> Result<TokenStream> {
             impl #impl_generics ::sbor::TypeId <#sbor_cti> for #ident #ty_generics #where_clause {
                 #[inline]
                 fn type_id() -> ::sbor::type_id::SborTypeId <#sbor_cti> {
-                    ::sbor::type_id::SborTypeId::Struct
+                    ::sbor::type_id::SborTypeId::Tuple
                 }
             }
         },
@@ -76,7 +76,7 @@ mod tests {
                 impl <CTI: ::sbor::type_id::CustomTypeId> ::sbor::TypeId<CTI> for Test {
                     #[inline]
                     fn type_id() -> ::sbor::type_id::SborTypeId<CTI> {
-                        ::sbor::type_id::SborTypeId::Struct
+                        ::sbor::type_id::SborTypeId::Tuple
                     }
                 }
             },
@@ -94,7 +94,7 @@ mod tests {
                 impl <A, CTI: ::sbor::type_id::CustomTypeId> ::sbor::TypeId<CTI> for Test<A> {
                     #[inline]
                     fn type_id() -> ::sbor::type_id::SborTypeId<CTI> {
-                        ::sbor::type_id::SborTypeId::Struct
+                        ::sbor::type_id::SborTypeId::Tuple
                     }
                 }
             },

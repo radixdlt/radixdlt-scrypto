@@ -29,7 +29,6 @@ pub enum SborTypeId<X: CustomTypeId> {
     U64,
     U128,
     String,
-    Struct,
     Enum,
     Array,
     Tuple,
@@ -52,10 +51,9 @@ impl<X: CustomTypeId> SborTypeId<X> {
             SborTypeId::U64 => TYPE_U64,
             SborTypeId::U128 => TYPE_U128,
             SborTypeId::String => TYPE_STRING,
-            SborTypeId::Struct => TYPE_STRUCT,
+            SborTypeId::Tuple => TYPE_TUPLE,
             SborTypeId::Enum => TYPE_ENUM,
             SborTypeId::Array => TYPE_ARRAY,
-            SborTypeId::Tuple => TYPE_TUPLE,
             SborTypeId::Custom(type_id) => type_id.as_u8(),
         }
     }
@@ -75,10 +73,9 @@ impl<X: CustomTypeId> SborTypeId<X> {
             TYPE_U64 => Some(SborTypeId::U64),
             TYPE_U128 => Some(SborTypeId::U128),
             TYPE_STRING => Some(SborTypeId::String),
-            TYPE_STRUCT => Some(SborTypeId::Struct),
+            TYPE_TUPLE => Some(SborTypeId::Tuple),
             TYPE_ENUM => Some(SborTypeId::Enum),
             TYPE_ARRAY => Some(SborTypeId::Array),
-            TYPE_TUPLE => Some(SborTypeId::Tuple),
             type_id if type_id >= CUSTOM_TYPE_START => X::from_u8(type_id).map(SborTypeId::Custom),
             _ => None,
         }
@@ -99,12 +96,10 @@ pub const TYPE_U32: u8 = 0x09;
 pub const TYPE_U64: u8 = 0x0a;
 pub const TYPE_U128: u8 = 0x0b;
 pub const TYPE_STRING: u8 = 0x0c;
-// struct & enum
-pub const TYPE_STRUCT: u8 = 0x10;
-pub const TYPE_ENUM: u8 = 0x11;
 // composite types
+pub const TYPE_TUPLE: u8 = 0x21; // Any "product type" - Tuples and Structs (T1, T2, T3)
+pub const TYPE_ENUM: u8 = 0x11;
 pub const TYPE_ARRAY: u8 = 0x20; // [T; N]
-pub const TYPE_TUPLE: u8 = 0x21; // (T1, T2, T3)
 
 /// A SBOR type ID.
 pub trait TypeId<X: CustomTypeId> {

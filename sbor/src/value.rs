@@ -54,10 +54,6 @@ pub enum SborValue<X: CustomTypeId, Y> {
     String {
         value: String,
     },
-
-    Struct {
-        fields: Vec<SborValue<X, Y>>,
-    },
     Enum {
         discriminator: String,
         fields: Vec<SborValue<X, Y>>,
@@ -67,7 +63,7 @@ pub enum SborValue<X: CustomTypeId, Y> {
         elements: Vec<SborValue<X, Y>>,
     },
     Tuple {
-        elements: Vec<SborValue<X, Y>>,
+        fields: Vec<SborValue<X, Y>>,
     },
     Custom {
         value: Y,
@@ -91,7 +87,6 @@ impl<X: CustomTypeId, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for SborValue
             SborValue::U64 { .. } => encoder.write_type_id(SborTypeId::U64),
             SborValue::U128 { .. } => encoder.write_type_id(SborTypeId::U128),
             SborValue::String { .. } => encoder.write_type_id(SborTypeId::String),
-            SborValue::Struct { .. } => encoder.write_type_id(SborTypeId::Struct),
             SborValue::Enum { .. } => encoder.write_type_id(SborTypeId::Enum),
             SborValue::Array { .. } => encoder.write_type_id(SborTypeId::Array),
             SborValue::Tuple { .. } => encoder.write_type_id(SborTypeId::Tuple),
@@ -141,12 +136,6 @@ impl<X: CustomTypeId, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for SborValue
             SborValue::String { value } => {
                 value.encode_body(encoder)?;
             }
-            SborValue::Struct { fields } => {
-                encoder.write_size(fields.len())?;
-                for field in fields {
-                    encoder.encode(field)?;
-                }
-            }
             SborValue::Enum {
                 discriminator,
                 fields,
@@ -167,9 +156,9 @@ impl<X: CustomTypeId, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for SborValue
                     encoder.encode_deeper_body(item)?;
                 }
             }
-            SborValue::Tuple { elements } => {
-                encoder.write_size(elements.len())?;
-                for field in elements {
+            SborValue::Tuple { fields } => {
+                encoder.write_size(fields.len())?;
+                for field in fields {
                     encoder.encode(field)?;
                 }
             }
@@ -230,25 +219,19 @@ impl<X: CustomTypeId, D: Decoder<X>, Y: Decode<X, D>> Decode<X, D> for SborValue
             SborTypeId::String => Ok(SborValue::String {
                 value: <String>::decode_body_with_type_id(decoder, type_id)?,
             }),
-            // struct & enum
-            SborTypeId::Struct => {
-                // number of fields
-                let len = decoder.read_size()?;
-                // fields
-                let mut fields = Vec::with_capacity(if len <= 1024 { len } else { 1024 });
-                for _ in 0..len {
+            SborTypeId::Tuple => {
+                let length = decoder.read_size()?;
+                let mut fields = Vec::with_capacity(if length <= 1024 { length } else { 1024 });
+                for _ in 0..length {
                     fields.push(decoder.decode()?);
                 }
-                Ok(SborValue::Struct { fields })
+                Ok(SborValue::Tuple { fields })
             }
             SborTypeId::Enum => {
-                // discriminator
                 let discriminator = decoder.read_discriminator()?;
-                // number of fields
-                let len = decoder.read_size()?;
-                // fields
-                let mut fields = Vec::with_capacity(if len <= 1024 { len } else { 1024 });
-                for _ in 0..len {
+                let length = decoder.read_size()?;
+                let mut fields = Vec::with_capacity(if length <= 1024 { length } else { 1024 });
+                for _ in 0..length {
                     fields.push(decoder.decode()?);
                 }
                 Ok(SborValue::Enum {
@@ -256,31 +239,17 @@ impl<X: CustomTypeId, D: Decoder<X>, Y: Decode<X, D>> Decode<X, D> for SborValue
                     fields,
                 })
             }
-            // composite types
             SborTypeId::Array => {
-                // element type
                 let element_type_id = decoder.read_type_id()?;
-                // length
-                let len = decoder.read_size()?;
-                // values
-                let mut elements = Vec::with_capacity(if len <= 1024 { len } else { 1024 });
-                for _ in 0..len {
+                let length = decoder.read_size()?;
+                let mut elements = Vec::with_capacity(if length <= 1024 { length } else { 1024 });
+                for _ in 0..length {
                     elements.push(decoder.decode_deeper_body_with_type_id(element_type_id)?);
                 }
                 Ok(SborValue::Array {
                     element_type_id,
                     elements,
                 })
-            }
-            SborTypeId::Tuple => {
-                //length
-                let len = decoder.read_size()?;
-                // values
-                let mut elements = Vec::with_capacity(if len <= 1024 { len } else { 1024 });
-                for _ in 0..len {
-                    elements.push(decoder.decode()?);
-                }
-                Ok(SborValue::Tuple { elements })
             }
             SborTypeId::Custom(_) => Ok(SborValue::Custom {
                 value: Y::decode_body_with_type_id(decoder, type_id)?,
@@ -309,23 +278,21 @@ pub fn traverse_any<X: CustomTypeId, Y, V: CustomValueVisitor<Y, Err = E>, E>(
         | SborValue::U64 { .. }
         | SborValue::U128 { .. }
         | SborValue::String { .. } => {}
-        // struct & enum
-        SborValue::Struct { fields } | SborValue::Enum { fields, .. } => {
+        SborValue::Tuple { fields } => {
+            for (i, e) in fields.iter().enumerate() {
+                path.push(i);
+                traverse_any(path, e, visitor)?;
+                path.pop();
+            }
+        }
+        SborValue::Enum { fields, .. } => {
             for (i, field) in fields.iter().enumerate() {
                 path.push(i);
                 traverse_any(path, field, visitor)?;
                 path.pop();
             }
         }
-        // composite types
         SborValue::Array { elements, .. } => {
-            for (i, e) in elements.iter().enumerate() {
-                path.push(i);
-                traverse_any(path, e, visitor)?;
-                path.pop();
-            }
-        }
-        SborValue::Tuple { elements } => {
             for (i, e) in elements.iter().enumerate() {
                 path.push(i);
                 traverse_any(path, e, visitor)?;
@@ -443,7 +410,7 @@ mod tests {
         let sbor_value = basic_decode(&encoded_typed_value).unwrap();
 
         assert_eq!(
-            BasicSborValue::Struct {
+            BasicSborValue::Tuple {
                 fields: vec![
                     BasicSborValue::Unit,
                     BasicSborValue::Bool { value: true },
@@ -477,12 +444,12 @@ mod tests {
                         ]
                     },
                     BasicSborValue::Tuple {
-                        elements: vec![
+                        fields: vec![
                             BasicSborValue::U32 { value: 1 },
                             BasicSborValue::U32 { value: 2 },
                         ]
                     },
-                    BasicSborValue::Struct {
+                    BasicSborValue::Tuple {
                         fields: vec![BasicSborValue::U32 { value: 1 }]
                     },
                     BasicSborValue::Enum {
@@ -515,7 +482,7 @@ mod tests {
                     BasicSborValue::Array {
                         element_type_id: SborTypeId::Tuple,
                         elements: vec![BasicSborValue::Tuple {
-                            elements: vec![
+                            fields: vec![
                                 BasicSborValue::U32 { value: 1 },
                                 BasicSborValue::U32 { value: 2 }
                             ]
@@ -524,7 +491,7 @@ mod tests {
                     BasicSborValue::Array {
                         element_type_id: SborTypeId::Tuple,
                         elements: vec![BasicSborValue::Tuple {
-                            elements: vec![
+                            fields: vec![
                                 BasicSborValue::U32 { value: 3 },
                                 BasicSborValue::U32 { value: 4 }
                             ]
@@ -596,11 +563,11 @@ mod tests {
         encoder.write_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
         // Encodes depth - 1 structs containing 1 child
         for _ in 1..depth {
-            encoder.write_type_id(SborTypeId::Struct)?;
+            encoder.write_type_id(SborTypeId::Tuple)?;
             encoder.write_size(1)?;
         }
         // And finishes off encoding a single layer with 0 children
-        encoder.write_type_id(SborTypeId::Struct)?;
+        encoder.write_type_id(SborTypeId::Tuple)?;
         encoder.write_size(0)?;
 
         Ok(buf)
