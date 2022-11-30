@@ -150,7 +150,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 f,
                 "TAKE_FROM_WORKTOP_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\") Bucket(\"{}\");",
                 ids.iter()
-                    .map(|k| format!("NonFungibleId(\"{}\")", k))
+                    .map(|k| format!("NonFungibleId({})", k))
                     .collect::<Vec<String>>()
                     .join(", "),
                 resource_address.display(context.bech32_encoder),
@@ -194,7 +194,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 f,
                 "ASSERT_WORKTOP_CONTAINS_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\");",
                 ids.iter()
-                    .map(|k| format!("NonFungibleId(\"{}\")", k))
+                    .map(|k| format!("NonFungibleId({})", k))
                     .collect::<Vec<String>>()
                     .join(", "),
                 resource_address.display(context.bech32_encoder)
@@ -268,7 +268,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             write!(
                 f,
                 "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\") Proof(\"{}\");",ids.iter()
-                .map(|k| format!("NonFungibleId(\"{}\")", k))
+                .map(|k| format!("NonFungibleId({})", k))
                 .collect::<Vec<String>>()
                 .join(", "),
                 resource_address.display(context.bech32_encoder),
