@@ -1,6 +1,6 @@
 use radix_engine::engine::{
-    ApplicationError, InterpreterError, KernelError, LockState, ModuleError, RuntimeError,
-    ScryptoFnResolvingError, TrackError,
+    ApplicationError, AuthError, InterpreterError, KernelError, LockState, ModuleError,
+    RuntimeError, ScryptoFnResolvingError, TrackError,
 };
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::AccessRulesError;
@@ -10,6 +10,7 @@ use radix_engine_interface::api::types::{RENodeId, ScryptoFunctionIdent};
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::model::FromPublicKey;
 use radix_engine_interface::{data::*, rule};
+use scrypto::component::StatefulAccessRules;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TransactionManifest;
@@ -227,7 +228,7 @@ fn missing_component_address_in_manifest_should_cause_rejection() {
 }
 
 #[test]
-fn component_access_rules_should_be_readable_from_scrypto_methods_and_functions() {
+fn scrypto_methods_and_functions_should_be_able_to_return_access_rules_pointers() {
     // Arrange
     let access_rules = vec![
         AccessRules::new()
@@ -248,7 +249,7 @@ fn component_access_rules_should_be_readable_from_scrypto_methods_and_functions(
         let read_access_rules = test_runner.access_rules(call);
 
         // Assert
-        assert_eq!(access_rules, read_access_rules)
+        assert_eq!(access_rules.len(), read_access_rules.len())
     }
 }
 
@@ -429,47 +430,6 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
 }
 
 #[test]
-fn method_that_falls_within_default_auth_mutability_can_have_its_auth_mutated_later() {
-    // Arrange
-    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
-    let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
-
-    let access_rules = vec![AccessRules::new()
-        .method(
-            "deposit_funds",
-            rule!(require(RADIX_TOKEN)),
-            MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
-        )
-        .default(
-            rule!(allow_all),
-            MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
-        )];
-    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-    test_runner.add_initial_proof(virtual_badge_non_fungible_address.clone());
-
-    // Act
-    test_runner.set_method_auth(0, "withdraw_funds", rule!(deny_all));
-
-    // Assert
-    let component_access_rules = test_runner.access_rules(Call::Function)[0].clone();
-    assert_eq!(
-        (
-            component_access_rules
-                .get(&AccessRuleKey::ScryptoMethod("withdraw_funds".to_string()))
-                .clone(),
-            component_access_rules
-                .get_mutability(&AccessRuleKey::ScryptoMethod("withdraw_funds".to_string()))
-                .clone()
-        ),
-        (
-            rule!(deny_all),
-            rule!(require(virtual_badge_non_fungible_address.clone()))
-        )
-    )
-}
-
-#[test]
 fn method_that_falls_within_default_auth_mutability_cant_have_its_auth_mutated_after_default_is_locked(
 ) {
     // Arrange
@@ -493,7 +453,7 @@ fn method_that_falls_within_default_auth_mutability_cant_have_its_auth_mutated_a
     test_runner.lock_default_auth(0);
 
     // Act
-    let receipt = test_runner.set_method_auth(0, "withdraw_funds", rule!(deny_all));
+    let receipt = test_runner.set_method_auth(0, "borrow_funds", rule!(deny_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -527,7 +487,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
     test_runner.add_initial_proof(virtual_badge_non_fungible_address.clone());
 
     // Act
-    test_runner.execute_manifest(
+    let receipt = test_runner.execute_manifest(
         MutableAccessRulesTestRunner::manifest_builder()
             .call_native_method(
                 RENodeId::Global(GlobalAddress::Component(test_runner.component_address)),
@@ -538,7 +498,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
                     )),
                     index: 0,
                     selector: AccessRuleSelector::Method(AccessRuleKey::ScryptoMethod(
-                        "withdraw_funds".to_string(),
+                        "borrow_funds".to_string(),
                     )),
                     rule: rule!(deny_all),
                 })
@@ -548,21 +508,14 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
     );
 
     // Assert
-    let component_access_rules = test_runner.access_rules(Call::Function)[0].clone();
-    assert_eq!(
-        (
-            component_access_rules
-                .get(&AccessRuleKey::ScryptoMethod("withdraw_funds".to_string()))
-                .clone(),
-            component_access_rules
-                .get_mutability(&AccessRuleKey::ScryptoMethod("withdraw_funds".to_string()))
-                .clone()
-        ),
-        (
-            rule!(deny_all),
-            rule!(require(virtual_badge_non_fungible_address.clone()))
+    receipt.expect_commit_success();
+    let receipt = test_runner.borrow_funds();
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
         )
-    )
+    });
 }
 
 struct MutableAccessRulesTestRunner {
@@ -603,7 +556,7 @@ impl MutableAccessRulesTestRunner {
         self.initial_proofs.push(initial_proof);
     }
 
-    pub fn access_rules(&mut self, call: Call) -> Vec<AccessRules> {
+    pub fn access_rules(&mut self, call: Call) -> Vec<StatefulAccessRules> {
         let manifest = match call {
             Call::Method => Self::manifest_builder()
                 .call_method(self.component_address, "access_rules_method", args!())
@@ -665,6 +618,13 @@ impl MutableAccessRulesTestRunner {
     pub fn deposit_funds(&mut self) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
             .call_method(self.component_address, "deposit_funds", args!())
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn borrow_funds(&mut self) -> TransactionReceipt {
+        let manifest = Self::manifest_builder()
+            .call_method(self.component_address, "borrow_funds", args!())
             .build();
         self.execute_manifest(manifest)
     }

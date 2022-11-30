@@ -328,3 +328,59 @@ impl NativeProcedure for AccessRulesSetMutabilityInvocation {
         Ok(((), CallFrameUpdate::empty()))
     }
 }
+
+impl ExecutableInvocation for AccessRulesGetLengthInvocation {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        mut self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let mut call_frame_update = CallFrameUpdate::empty();
+
+        let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
+        match resolved_receiver.receiver {
+            RENodeId::Component(..) | RENodeId::Package(..) | RENodeId::ResourceManager(..) => {}
+            _ => {
+                return Err(RuntimeError::InterpreterError(
+                    InterpreterError::InvalidInvocation,
+                ));
+            }
+        }
+        self.receiver = resolved_receiver.receiver;
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::AccessRules(AccessRulesMethod::SetMutability)),
+            resolved_receiver,
+        );
+
+        let executor = NativeExecutor(self);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProcedure for AccessRulesGetLengthInvocation {
+    type Output = u32;
+
+    fn main<Y>(
+        self,
+        api: &mut Y,
+    ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi
+            + Invokable<ScryptoInvocation>
+            + EngineApi<RuntimeError>
+            + SysInvokableNative<RuntimeError>,
+    {
+        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+        let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
+
+        let substate_ref = api.get_ref(handle)?;
+        let access_rules_substate = substate_ref.access_rules();
+
+        Ok((
+            access_rules_substate.access_rules.len() as u32,
+            CallFrameUpdate::empty(),
+        ))
+    }
+}

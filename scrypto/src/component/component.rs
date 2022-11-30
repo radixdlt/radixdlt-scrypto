@@ -1,8 +1,8 @@
 use radix_engine_derive::Describe;
 use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
 use radix_engine_interface::api::types::{
-    AccessRulesOffset, ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent,
-    ScryptoRENode, ScryptoReceiver, SubstateOffset,
+    ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoRENode,
+    ScryptoReceiver, SubstateOffset,
 };
 use radix_engine_interface::data::{
     scrypto_decode, ScryptoCustomTypeId, ScryptoDecode, ScryptoEncode,
@@ -132,14 +132,13 @@ impl Component {
 
     /// Returns the layers of access rules on this component.
     pub fn access_rules(&self) -> Vec<StatefulAccessRules> {
-        let pointer = DataPointer::new(
-            RENodeId::Component(self.0),
-            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
-        );
-        let state: DataRef<AccessRulesSubstate> = pointer.get();
-        state
-            .access_rules
-            .clone()
+        let mut env = ScryptoEnv;
+        let length = env
+            .sys_invoke(AccessRulesGetLengthInvocation {
+                receiver: RENodeId::Component(self.0),
+            })
+            .unwrap();
+        (0..length)
             .into_iter()
             .enumerate()
             .map(|(id, _)| StatefulAccessRules::new(self.0, id))
@@ -207,14 +206,13 @@ impl BorrowedGlobalComponent {
 
     /// Returns the layers of access rules on this component.
     pub fn access_rules(&self) -> Vec<StatefulAccessRules> {
-        let pointer = DataPointer::new(
-            RENodeId::Global(GlobalAddress::Component(self.0)),
-            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
-        );
-        let state: DataRef<AccessRulesSubstate> = pointer.get();
-        state
-            .access_rules
-            .clone()
+        let mut env = ScryptoEnv;
+        let length = env
+            .sys_invoke(AccessRulesGetLengthInvocation {
+                receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+            })
+            .unwrap();
+        (0..length)
             .into_iter()
             .enumerate()
             .map(|(id, _)| StatefulAccessRules::new(self.0, id))

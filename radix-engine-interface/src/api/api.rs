@@ -52,6 +52,7 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
     + SysNativeInvokable<AccessRulesSetAccessRuleInvocation, E>
     + SysNativeInvokable<AccessRulesSetMutabilityInvocation, E>
+    + SysNativeInvokable<AccessRulesGetLengthInvocation, E>
     + SysNativeInvokable<AuthZonePopInvocation, E>
     + SysNativeInvokable<AuthZonePushInvocation, E>
     + SysNativeInvokable<AuthZoneCreateProofInvocation, E>

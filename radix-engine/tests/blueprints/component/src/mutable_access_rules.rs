@@ -12,22 +12,16 @@ blueprint! {
             component.globalize()
         }
 
-        pub fn access_rules_function(component_address: ComponentAddress) -> Vec<AccessRules> {
+        pub fn access_rules_function(
+            component_address: ComponentAddress,
+        ) -> Vec<StatefulAccessRules> {
             let component = borrow_component!(component_address);
-            component
-                .access_rules()
-                .into_iter()
-                .map(|x| x.access_rules())
-                .collect()
+            component.access_rules()
         }
 
-        pub fn access_rules_method(&self) -> Vec<AccessRules> {
+        pub fn access_rules_method(&self) -> Vec<StatefulAccessRules> {
             let component = Component(Runtime::actor().as_component().0);
-            component
-                .access_rules()
-                .into_iter()
-                .map(|x| x.access_rules())
-                .collect()
+            component.access_rules()
         }
 
         pub fn set_method_auth(&self, index: usize, method_name: String, rule: AccessRule) {

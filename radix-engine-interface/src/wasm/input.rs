@@ -65,6 +65,7 @@ pub enum AccessRulesMethodInvocation {
     AddAccessCheck(AccessRulesAddAccessCheckInvocation),
     SetAccessRule(AccessRulesSetAccessRuleInvocation),
     SetMutability(AccessRulesSetMutabilityInvocation),
+    GetLength(AccessRulesGetLengthInvocation),
 }
 
 #[derive(Debug)]
@@ -344,6 +345,9 @@ impl NativeFnInvocation {
                             .sys_invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                         AccessRulesMethodInvocation::SetMutability(invocation) => system_api
+                            .sys_invoke(invocation)
+                            .map(|a| IndexedScryptoValue::from_typed(&a)),
+                        AccessRulesMethodInvocation::GetLength(invocation) => system_api
                             .sys_invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                     }

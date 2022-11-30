@@ -77,3 +77,25 @@ impl Into<NativeFnInvocation> for AccessRulesSetMutabilityInvocation {
         ))
     }
 }
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct AccessRulesGetLengthInvocation {
+    pub receiver: RENodeId,
+}
+
+impl Invocation for AccessRulesGetLengthInvocation {
+    type Output = u32;
+}
+
+impl ScryptoNativeInvocation for AccessRulesGetLengthInvocation {
+    type ScryptoOutput = u32;
+}
+
+impl Into<NativeFnInvocation> for AccessRulesGetLengthInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::AccessRules(
+            AccessRulesMethodInvocation::GetLength(self),
+        ))
+    }
+}
