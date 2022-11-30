@@ -15,7 +15,7 @@ blueprint! {
             component.add_access_check(
                 AccessRules::new()
                     .method("no_method", rule!(require("something")), LOCKED)
-                    .default(rule!(allow_all), LOCKED),
+                    .default(rule!(allow_all)),
             );
             component.globalize()
         }

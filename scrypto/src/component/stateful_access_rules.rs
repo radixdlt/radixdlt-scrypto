@@ -2,7 +2,7 @@ use radix_engine_derive::scrypto;
 use radix_engine_interface::api::api::SysNativeInvokable;
 use radix_engine_interface::api::types::{ComponentId, GlobalAddress, RENodeId, ToString};
 use radix_engine_interface::model::{
-    AccessRule, AccessRuleKey, AccessRuleSelector, AccessRulesSetAccessRuleInvocation,
+    AccessRule, AccessRuleKey, AccessRulesSetAccessRuleInvocation,
     AccessRulesSetMutabilityInvocation, ComponentAddress,
 };
 
@@ -45,18 +45,6 @@ impl StatefulAccessRules {
             .unwrap();
     }
 
-    pub fn set_default(&mut self, access_rule: AccessRule) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(AccessRulesSetAccessRuleInvocation {
-                receiver: self.component_re_node(),
-                index: self.index as u32,
-                selector: AccessRuleSelector::Default,
-                rule: access_rule,
-            })
-            .unwrap();
-    }
-
     pub fn lock_method_auth(&mut self, method_name: &str) {
         let mut syscalls = ScryptoEnv;
         syscalls
@@ -64,18 +52,6 @@ impl StatefulAccessRules {
                 receiver: self.component_re_node(),
                 index: self.index as u32,
                 selector: AccessRuleKey::ScryptoMethod(method_name.to_string()).into(),
-                mutability: AccessRule::DenyAll,
-            })
-            .unwrap();
-    }
-
-    pub fn lock_default(&mut self) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .sys_invoke(AccessRulesSetMutabilityInvocation {
-                receiver: self.component_re_node(),
-                index: self.index as u32,
-                selector: AccessRuleSelector::Default,
                 mutability: AccessRule::DenyAll,
             })
             .unwrap();

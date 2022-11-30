@@ -57,7 +57,6 @@ impl AccessRulesSubstate {
             let method_auth = match selector {
                 AccessRuleSelector::Method(key) => auth.get_mutability(key),
                 AccessRuleSelector::Group(name) => auth.get_group_mutability(name),
-                AccessRuleSelector::Default => auth.get_default_mutability(),
             };
 
             // TODO: Remove

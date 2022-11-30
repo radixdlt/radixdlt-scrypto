@@ -211,7 +211,6 @@ impl NativeProcedure for AccessRulesSetAccessRuleInvocation {
         match self.selector {
             AccessRuleSelector::Method(key) => access_rules.set_method_access_rule(key, self.rule),
             AccessRuleSelector::Group(name) => access_rules.set_group_access_rule(name, self.rule),
-            AccessRuleSelector::Default => access_rules.set_default_access_rule(self.rule),
         };
 
         Ok(((), CallFrameUpdate::empty()))
@@ -322,7 +321,6 @@ impl NativeProcedure for AccessRulesSetMutabilityInvocation {
             AccessRuleSelector::Group(name) => {
                 access_rules.set_group_mutability(name, self.mutability)
             }
-            AccessRuleSelector::Default => access_rules.set_default_mutability(self.mutability),
         };
 
         Ok(((), CallFrameUpdate::empty()))

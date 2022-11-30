@@ -233,14 +233,14 @@ fn scrypto_methods_and_functions_should_be_able_to_return_access_rules_pointers(
     let access_rules = vec![
         AccessRules::new()
             .method("deposit_funds", rule!(require(RADIX_TOKEN)), LOCKED)
-            .default(rule!(allow_all), LOCKED),
+            .default(rule!(allow_all)),
         AccessRules::new()
             .method(
                 "deposit_funds",
                 rule!(require(ECDSA_SECP256K1_TOKEN)),
                 LOCKED,
             )
-            .default(rule!(allow_all), LOCKED),
+            .default(rule!(allow_all)),
     ];
     for call in [Call::Method, Call::Function] {
         let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
@@ -262,7 +262,7 @@ fn component_access_rules_may_be_changed_within_a_scrypto_method() {
             rule!(require(RADIX_TOKEN)),
             MUTABLE(rule!(allow_all)),
         )
-        .default(rule!(allow_all), LOCKED)];
+        .default(rule!(allow_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
@@ -291,7 +291,7 @@ fn access_rules_method_auth_can_not_be_mutated_when_locked() {
     // Arrange
     let access_rules = vec![AccessRules::new()
         .method("deposit_funds", rule!(require(RADIX_TOKEN)), LOCKED)
-        .default(rule!(allow_all), LOCKED)];
+        .default(rule!(allow_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
@@ -321,7 +321,7 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
             rule!(require(RADIX_TOKEN)),
             MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
         )
-        .default(rule!(allow_all), LOCKED)];
+        .default(rule!(allow_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
@@ -351,7 +351,7 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
             rule!(require(RADIX_TOKEN)),
             MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
         )
-        .default(rule!(allow_all), LOCKED)];
+        .default(rule!(allow_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
@@ -381,7 +381,7 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
             rule!(require(RADIX_TOKEN)),
             MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
         )
-        .default(rule!(allow_all), LOCKED)];
+        .default(rule!(allow_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
     test_runner.add_initial_proof(virtual_badge_non_fungible_address);
 
@@ -405,7 +405,7 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
             rule!(require(RADIX_TOKEN)),
             MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
         )
-        .default(rule!(allow_all), LOCKED)];
+        .default(rule!(allow_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
     test_runner.add_initial_proof(virtual_badge_non_fungible_address);
 
@@ -430,8 +430,7 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
 }
 
 #[test]
-fn method_that_falls_within_default_auth_mutability_cant_have_its_auth_mutated_after_default_is_locked(
-) {
+fn method_that_falls_within_default_cant_have_its_auth_mutated() {
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
@@ -443,10 +442,7 @@ fn method_that_falls_within_default_auth_mutability_cant_have_its_auth_mutated_a
             rule!(require(RADIX_TOKEN)),
             MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
         )
-        .default(
-            rule!(allow_all),
-            MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
-        )];
+        .default(rule!(allow_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
     test_runner.add_initial_proof(virtual_badge_non_fungible_address.clone());
 
@@ -479,10 +475,12 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
             rule!(require(RADIX_TOKEN)),
             MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
         )
-        .default(
-            rule!(allow_all),
+        .method(
+            "borrow_funds",
+            rule!(require(RADIX_TOKEN)),
             MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
-        )];
+        )
+        .default(rule!(allow_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
     test_runner.add_initial_proof(virtual_badge_non_fungible_address.clone());
 

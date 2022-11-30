@@ -13,7 +13,6 @@ use crate::scrypto;
 pub enum AccessRuleSelector {
     Method(AccessRuleKey),
     Group(String),
-    Default,
 }
 
 impl From<AccessRuleKey> for AccessRuleSelector {
@@ -72,20 +71,12 @@ impl AccessRules {
             .unwrap_or(&self.default_auth_mutability)
     }
 
-    pub fn get_default_mutability(&self) -> &AccessRule {
-        &self.default_auth_mutability
-    }
-
     pub fn set_mutability(&mut self, key: AccessRuleKey, method_auth: AccessRule) {
         self.method_auth_mutability.insert(key, method_auth);
     }
 
     pub fn set_group_mutability(&mut self, key: String, method_auth: AccessRule) {
         self.grouped_auth_mutability.insert(key, method_auth);
-    }
-
-    pub fn set_default_mutability(&mut self, method_auth: AccessRule) {
-        self.default_auth_mutability = method_auth;
     }
 
     pub fn get(&self, key: &AccessRuleKey) -> &AccessRule {
@@ -133,10 +124,6 @@ impl AccessRules {
         self.grouped_auth.insert(group_key, access_rule);
     }
 
-    pub fn set_default_access_rule(&mut self, access_rule: AccessRule) {
-        self.default_auth = access_rule;
-    }
-
     pub fn set_group_access_rule_and_mutability(
         &mut self,
         group_key: String,
@@ -169,13 +156,8 @@ impl AccessRules {
         self.method_auth_mutability.insert(key, mutability);
     }
 
-    pub fn default(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
+    pub fn default(mut self, method_auth: AccessRule) -> Self {
         self.default_auth = method_auth;
-        self.default_auth_mutability = if let MUTABLE(access_rule) = mutability {
-            access_rule
-        } else {
-            AccessRule::DenyAll
-        };
         self
     }
 
