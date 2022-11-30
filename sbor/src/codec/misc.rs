@@ -100,7 +100,7 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Rc<T> {
     }
 }
 
-impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>> Decode<X, D> for RefCell<T> {
+impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for RefCell<T> {
     #[inline]
     fn decode_body_with_type_id(
         decoder: &mut D,
