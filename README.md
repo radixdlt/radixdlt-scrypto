@@ -16,7 +16,7 @@ Documentation: https://docs.radixdlt.com/main/scrypto/introduction.html
     *  macOS:
         * Make sure you have the xcode command line tools: `xcode-select --install`.
         * Install cmake: `brew install cmake`
-        * Install the Rust compiler: 
+        * Install the Rust compiler:
         ```bash
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
         ```
@@ -47,6 +47,18 @@ Documentation: https://docs.radixdlt.com/main/scrypto/introduction.html
     ```
     ./doc.sh
     ```
+6. (Optional) Install `cargo nextest` to speedup test execution time
+    Installation method
+    ```
+    cargo install cargo-nextest
+    ```
+    more details: [cargo-nextest](https://nexte.st/index.html)
+7. (Optional) Install `sccache` to speedup compilation times.
+    Recommended installation method
+    ```
+    cargo install sccache
+    ```
+    more details: [sccache - Shared Compilation Cache](https://github.com/mozilla/sccache)
 
 ## Getting Started
 
