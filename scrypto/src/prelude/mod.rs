@@ -4,10 +4,9 @@ pub use crate::resource::non_fungible::ScryptoNonFungibleId;
 pub use crate::resource::*;
 pub use crate::runtime::*;
 pub use crate::{
-    access_and_or, access_rule_node, blueprint, borrow_component, borrow_package,
-    borrow_resource_manager, debug, error, external_blueprint, external_component, import,
-    include_abi, include_code, info, resource_list, rule, scrypto, this_package, trace, warn,
-    NonFungibleData,
+    blueprint, borrow_component, borrow_package, borrow_resource_manager, debug, error,
+    external_blueprint, external_component, import, include_abi, include_code, info, resource_list,
+    scrypto, this_package, trace, warn, NonFungibleData,
 };
 pub use num_traits::{
     cast::FromPrimitive, cast::ToPrimitive, identities::One, identities::Zero, pow::Pow,
@@ -22,7 +21,7 @@ pub use radix_engine_interface::math::integer::{
 };
 pub use radix_engine_interface::math::*;
 pub use radix_engine_interface::model::*;
-pub use radix_engine_interface::{dec, i, pdec};
+pub use radix_engine_interface::{access_and_or, access_rule_node, dec, i, pdec, rule};
 
 pub use sbor::rust::borrow::ToOwned;
 pub use sbor::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};

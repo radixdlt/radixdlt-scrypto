@@ -1,8 +1,8 @@
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
+use radix_engine_interface::scrypto;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::scrypto;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum MethodAuthorizationError {

@@ -1,7 +1,7 @@
 use radix_engine_interface::crypto::{hash, Hash, PublicKey};
 use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::scrypto;
 use sbor::*;
-use scrypto::scrypto;
 
 use crate::model::TransactionIntent;
 

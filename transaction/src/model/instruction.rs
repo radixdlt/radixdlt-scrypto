@@ -5,9 +5,9 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::crypto::Blob;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
+use radix_engine_interface::scrypto;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
-use scrypto::scrypto;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]

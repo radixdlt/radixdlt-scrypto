@@ -700,6 +700,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "native-sdk"
+version = "0.7.0"
+dependencies = [
+ "radix-engine-derive",
+ "radix-engine-interface",
+ "sbor",
+ "utils",
+]
+
+[[package]]
 name = "num-bigint"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -873,11 +883,11 @@ dependencies = [
  "indexmap",
  "lru",
  "moka",
+ "native-sdk",
  "parity-wasm",
  "radix-engine-constants",
  "radix-engine-interface",
  "sbor",
- "scrypto",
  "transaction",
  "utils",
  "wasm-instrument",
@@ -1405,7 +1415,6 @@ dependencies = [
  "hex",
  "radix-engine-interface",
  "sbor",
- "scrypto",
  "secp256k1",
  "serde_with",
  "utils",

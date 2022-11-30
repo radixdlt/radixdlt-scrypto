@@ -218,7 +218,7 @@ macro_rules! test_impl {
             }
     )*)
 }
-test_impl! { I8, I16, I32, I64, I128, I256, I384, I512, U8, U16, U32, U64, U128, U256, U384, U512 }
+test_impl! { I8, I16, I32, I64, I128, I256, I320, I384, I512, I728, U8, U16, U32, U64, U128, U256, U320, U384, U512, U728 }
 
 macro_rules! test_math {
     ($i:ident, $t:ident) => {
@@ -799,7 +799,7 @@ macro_rules! test_add_all {
     };
 }
 
-test_add_all! { I8, I16, I32, I64, I128, I256, I384, I512, U8, U16, U32, U64, U128, U256, U384, U512}
+test_add_all! { I8, I16, I32, I64, I128, I256, I320, I384, I512, I728, U8, U16, U32, U64, U128, U256, U320, U384, U512, U728}
 
 macro_rules! test_signed {
     ($($i:ident),*) => {
@@ -930,7 +930,7 @@ macro_rules! test_signed {
     };
 }
 
-test_signed! { I8, I16, I32, I64, I128, I256, I384, I512 }
+test_signed! { I8, I16, I32, I64, I128, I256, I320, I384, I512, I728 }
 
 macro_rules! test_unsigned {
     ($($i:ident),*) => {
@@ -1028,7 +1028,7 @@ macro_rules! test_unsigned {
     };
 }
 
-test_unsigned! { U8, U16, U32, U64, U128, U256, U384, U512 }
+test_unsigned! { U8, U16, U32, U64, U128, U256, U320, U384, U512, U728 }
 
 macro_rules! test_from_all_types_builtin_safe {
     ($i:ty, ($($from:ty),*)) => {
@@ -1153,11 +1153,17 @@ test_from_all_types_safe_safe! {I128, (U8, U16, U32, U64)}
 test_from_all_types_safe_safe! {I256, (I8, I16, I32, I64, I128)}
 test_from_all_types_safe_safe! {I256, (U8, U16, U32, U64, U128)}
 
-test_from_all_types_safe_safe! {I384, (I8, I16, I32, I64, I128, I256)}
-test_from_all_types_safe_safe! {I384, (U8, U16, U32, U64, U128, U256)}
+test_from_all_types_safe_safe! {I320, (I8, I16, I32, I64, I128, I256)}
+test_from_all_types_safe_safe! {I320, (U8, U16, U32, U64, U128, U256)}
 
-test_from_all_types_safe_safe! {I512, (I8, I16, I32, I64, I128, I256, I384)}
-test_from_all_types_safe_safe! {I512, (U8, U16, U32, U64, U128, U256, U384)}
+test_from_all_types_safe_safe! {I384, (I8, I16, I32, I64, I128, I256, I320)}
+test_from_all_types_safe_safe! {I384, (U8, U16, U32, U64, U128, U256, U320)}
+
+test_from_all_types_safe_safe! {I512, (I8, I16, I32, I64, I128, I256, I320, I384)}
+test_from_all_types_safe_safe! {I512, (U8, U16, U32, U64, U128, U256, U320, U384)}
+
+test_from_all_types_safe_safe! {I728, (I8, I16, I32, I64, I128, I256, I320, I384, I512)}
+test_from_all_types_safe_safe! {I728, (U8, U16, U32, U64, U128, U256, U320, U384, U512)}
 
 test_from_all_types_safe_safe! {U16, (U8)}
 
@@ -1169,9 +1175,13 @@ test_from_all_types_safe_safe! {U128, (U8, U16, U32, U64)}
 
 test_from_all_types_safe_safe! {U256, (U8, U16, U32, U64, U128)}
 
-test_from_all_types_safe_safe! {U384, (U8, U16, U32, U64, U128, U256)}
+test_from_all_types_safe_safe! {U320, (U8, U16, U32, U64, U128, U256)}
 
-test_from_all_types_safe_safe! {U512, (U8, U16, U32, U64, U128, U256, U384)}
+test_from_all_types_safe_safe! {U384, (U8, U16, U32, U64, U128, U256, U320)}
+
+test_from_all_types_safe_safe! {U512, (U8, U16, U32, U64, U128, U256, U320, U384)}
+
+test_from_all_types_safe_safe! {U728, (U8, U16, U32, U64, U128, U256, U320, U384, U512)}
 
 #[test]
 fn test_format_i256() {
@@ -1250,7 +1260,83 @@ fn test_format_121_i256_minus() {
     assert_eq!(format!("{}", i256), "-121");
 }
 //---------------
+#[test]
+fn test_format_i320() {
+    let i320 = I320::from("12345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", i320),
+        "12345678901234567890123456789012345678"
+    );
+}
 
+#[test]
+fn test_format_long_i320() {
+    let i320 =
+        I320::from("1234567890123456789012345678901234567812345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", i320),
+        "1234567890123456789012345678901234567812345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_longer_i320() {
+    let i320 =
+        I320::from("1000000000000000000000000000000000000000000000000000000000012345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", i320),
+        "1000000000000000000000000000000000000000000000000000000000012345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_zero_i320() {
+    let i320 = I320::from("0");
+    assert_eq!(format!("{}", i320), "0");
+}
+
+#[test]
+fn test_format_121_i320() {
+    let i320 = I320::from("121");
+    assert_eq!(format!("{}", i320), "121");
+}
+
+#[test]
+fn test_format_i320_minus() {
+    let i320 = I320::from("-12345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", i320),
+        "-12345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_long_i320_minus() {
+    let i320 =
+        I320::from("-1234567890123456789012345678901234567812345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", i320),
+        "-1234567890123456789012345678901234567812345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_longer_i320_minus() {
+    let i320 =
+        I320::from("-1000000000000000000000000000000000000000000000000000000000012345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", i320),
+        "-1000000000000000000000000000000000000000000000000000000000012345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_121_i320_minus() {
+    let i320 = I320::from("-121");
+    assert_eq!(format!("{}", i320), "-121");
+}
+
+//---------------
 #[test]
 fn test_format_i384() {
     let i384 = I384::from("12345678901234567890123456789012345678");
@@ -1404,6 +1490,82 @@ fn test_format_121_i512_minus() {
 }
 
 #[test]
+fn test_format_i728() {
+    let i728 = I728::from("12345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", i728),
+        "12345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_long_i728() {
+    let i728 =
+        I728::from("1234567890123456789012345678901234567812345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", i728),
+        "1234567890123456789012345678901234567812345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_longer_i728() {
+    let i728 =
+        I728::from("1000000000000000000000000000000000000000000000000000000000000000000000000000012345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", i728),
+        "1000000000000000000000000000000000000000000000000000000000000000000000000000012345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_zero_i728() {
+    let i728 = I728::from("0");
+    assert_eq!(format!("{}", i728), "0");
+}
+
+#[test]
+fn test_format_121_i728() {
+    let i728 = I728::from("121");
+    assert_eq!(format!("{}", i728), "121");
+}
+
+#[test]
+fn test_format_i728_minus() {
+    let i728 = I728::from("-12345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", i728),
+        "-12345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_long_i728_minus() {
+    let i728 =
+        I728::from("-1234567890123456789012345678901234567812345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", i728),
+        "-1234567890123456789012345678901234567812345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_longer_i728_minus() {
+    let i728 =
+        I728::from("-1000000000000000000000000000000000000000000000000000000000000000000000000000012345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", i728),
+        "-1000000000000000000000000000000000000000000000000000000000000000000000000000012345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_121_i728_minus() {
+    let i728 = I728::from("-121");
+    assert_eq!(format!("{}", i728), "-121");
+}
+
+#[test]
 fn test_format_u256() {
     let u256 = U256::from("12345678901234567890123456789012345678");
     assert_eq!(
@@ -1442,6 +1604,47 @@ fn test_format_zero_u256() {
 fn test_format_121_u256() {
     let u256 = U256::from("121");
     assert_eq!(format!("{}", u256), "121");
+}
+
+#[test]
+fn test_format_u320() {
+    let u320 = U320::from("12345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", u320),
+        "12345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_long_u320() {
+    let u320 =
+        U320::from("1234567890123456789012345678901234567812345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", u320),
+        "1234567890123456789012345678901234567812345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_longer_u320() {
+    let u320 =
+        U320::from("10000000000000000000000000000000000000012345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", u320),
+        "10000000000000000000000000000000000000012345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_zero_u320() {
+    let u320 = U320::from("0");
+    assert_eq!(format!("{}", u320), "0");
+}
+
+#[test]
+fn test_format_121_u320() {
+    let u320 = U320::from("121");
+    assert_eq!(format!("{}", u320), "121");
 }
 
 #[test]
@@ -1524,4 +1727,45 @@ fn test_format_zero_u512() {
 fn test_format_121_u512() {
     let u512 = U512::from("121");
     assert_eq!(format!("{}", u512), "121");
+}
+
+#[test]
+fn test_format_u728() {
+    let u728 = U728::from("12345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", u728),
+        "12345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_long_u728() {
+    let u728 =
+        U728::from("1234567890123456789012345678901234567812345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", u728),
+        "1234567890123456789012345678901234567812345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_longer_u728() {
+    let u728 =
+        U728::from("10000000000000000000000000000000000000012345678901234567890123456789012345678");
+    assert_eq!(
+        format!("{}", u728),
+        "10000000000000000000000000000000000000012345678901234567890123456789012345678"
+    );
+}
+
+#[test]
+fn test_format_zero_u728() {
+    let u728 = U728::from("0");
+    assert_eq!(format!("{}", u728), "0");
+}
+
+#[test]
+fn test_format_121_u728() {
+    let u728 = U728::from("121");
+    assert_eq!(format!("{}", u728), "121");
 }

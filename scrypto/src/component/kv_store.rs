@@ -32,10 +32,8 @@ pub struct KeyValueStoreEntrySubstate(pub Option<Vec<u8>>);
 impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValueStore<K, V> {
     /// Creates a new key value store.
     pub fn new() -> Self {
-        let mut syscalls = ScryptoEnv;
-        let id = syscalls
-            .sys_create_node(ScryptoRENode::KeyValueStore)
-            .unwrap();
+        let mut env = ScryptoEnv;
+        let id = env.sys_create_node(ScryptoRENode::KeyValueStore).unwrap();
 
         Self {
             id: id.into(),
@@ -46,17 +44,17 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
 
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<DataRef<V>> {
-        let mut syscalls = ScryptoEnv;
+        let mut env = ScryptoEnv;
         let offset =
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key).unwrap()));
-        let lock_handle = syscalls
+        let lock_handle = env
             .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset, false)
             .unwrap();
-        let raw_bytes = syscalls.sys_read(lock_handle).unwrap();
+        let raw_bytes = env.sys_read(lock_handle).unwrap();
         let value: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
 
         if value.0.is_none() {
-            syscalls.sys_drop_lock(lock_handle).unwrap();
+            env.sys_drop_lock(lock_handle).unwrap();
         }
 
         value
@@ -65,17 +63,17 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
     }
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
-        let mut syscalls = ScryptoEnv;
+        let mut env = ScryptoEnv;
         let offset =
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key).unwrap()));
-        let lock_handle = syscalls
+        let lock_handle = env
             .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset.clone(), true)
             .unwrap();
-        let raw_bytes = syscalls.sys_read(lock_handle).unwrap();
+        let raw_bytes = env.sys_read(lock_handle).unwrap();
         let value: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
 
         if value.0.is_none() {
-            syscalls.sys_drop_lock(lock_handle).unwrap();
+            env.sys_drop_lock(lock_handle).unwrap();
         }
 
         value
@@ -85,18 +83,17 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
 
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
-        let mut syscalls = ScryptoEnv;
+        let mut env = ScryptoEnv;
         let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
             scrypto_encode(&key).unwrap(),
         ));
-        let lock_handle = syscalls
+        let lock_handle = env
             .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset.clone(), true)
             .unwrap();
         let substate = KeyValueStoreEntrySubstate(Some(scrypto_encode(&value).unwrap()));
-        syscalls
-            .sys_write(lock_handle, scrypto_encode(&substate).unwrap())
+        env.sys_write(lock_handle, scrypto_encode(&substate).unwrap())
             .unwrap();
-        syscalls.sys_drop_lock(lock_handle).unwrap();
+        env.sys_drop_lock(lock_handle).unwrap();
     }
 }
 

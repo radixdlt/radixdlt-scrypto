@@ -1,8 +1,8 @@
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
-    ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
-    ScryptoPackage, ScryptoReceiver,
+    BucketId, ComponentId, GlobalAddress, KeyValueStoreId, NativeFunctionIdent, NativeMethodIdent,
+    ProofId, RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent,
+    ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
 };
 use radix_engine_interface::crypto::{
     Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
@@ -15,13 +15,12 @@ use radix_engine_interface::data::{
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
 
+use radix_engine_interface::core::Expression;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use sbor::*;
-use scrypto::component::{Component, KeyValueStore};
-use scrypto::runtime::Expression;
 
 use crate::errors::*;
 use crate::manifest::ast;
@@ -806,23 +805,30 @@ fn generate_hash(value: &ast::Value) -> Result<Hash, GeneratorError> {
     }
 }
 
-fn generate_component(value: &ast::Value) -> Result<Component, GeneratorError> {
+fn generate_component_id(value: &ast::Value) -> Result<ComponentId, GeneratorError> {
     match value {
         ast::Value::Component(inner) => match &**inner {
-            ast::Value::String(s) => {
-                Component::from_str(s).map_err(|_| GeneratorError::InvalidComponent(s.into()))
-            }
+            ast::Value::String(s) => hex::decode(s)
+                .map_err(|_| GeneratorError::InvalidComponent(s.into()))
+                .and_then(|x| {
+                    x.try_into()
+                        .map_err(|_| GeneratorError::InvalidComponent(s.into()))
+                }),
             v => invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::Component),
     }
 }
 
-fn generate_key_value_store(value: &ast::Value) -> Result<KeyValueStore<(), ()>, GeneratorError> {
+fn generate_key_value_store_id(value: &ast::Value) -> Result<KeyValueStoreId, GeneratorError> {
     match value {
         ast::Value::KeyValueStore(inner) => match &**inner {
-            ast::Value::String(s) => KeyValueStore::from_str(s)
-                .map_err(|_| GeneratorError::InvalidKeyValueStore(s.into())),
+            ast::Value::String(s) => hex::decode(s)
+                .map_err(|_| GeneratorError::InvalidComponent(s.into()))
+                .and_then(|x| {
+                    x.try_into()
+                        .map_err(|_| GeneratorError::InvalidComponent(s.into()))
+                }),
             v => invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::KeyValueStore),
@@ -1049,12 +1055,12 @@ fn generate_value(
             })
         }
 
-        ast::Value::Component(_) => generate_component(value).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Component(v.0),
+        ast::Value::Component(_) => generate_component_id(value).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Component(v),
         }),
         ast::Value::KeyValueStore(_) => {
-            generate_key_value_store(value).map(|v| SborValue::Custom {
-                value: ScryptoCustomValue::KeyValueStore(v.id),
+            generate_key_value_store_id(value).map(|v| SborValue::Custom {
+                value: ScryptoCustomValue::KeyValueStore(v),
             })
         }
         ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| SborValue::Custom {
@@ -1331,9 +1337,7 @@ mod tests {
         generate_value_ok!(
             r#"Expression("ENTIRE_WORKTOP")"#,
             SborValue::Custom {
-                value: ScryptoCustomValue::Expression(scrypto::runtime::Expression(
-                    "ENTIRE_WORKTOP".to_owned()
-                ))
+                value: ScryptoCustomValue::Expression(Expression("ENTIRE_WORKTOP".to_owned()))
             }
         );
     }
