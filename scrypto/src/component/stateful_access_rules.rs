@@ -20,7 +20,7 @@ pub struct StatefulAccessRules {
 }
 
 impl StatefulAccessRules {
-    pub fn new<T: Into<ComponentIdentifier>>(component: T, index: usize) -> Self {
+    pub(crate) fn new<T: Into<ComponentIdentifier>>(component: T, index: usize) -> Self {
         Self {
             component: component.into(),
             index,

@@ -251,6 +251,162 @@ fn component_access_rules_should_be_readable_from_scrypto_methods_and_functions(
     }
 }
 
+#[test]
+fn component_access_rules_may_be_changed_within_a_scrypto_method() {
+    // Arrange
+    let access_rules = vec![AccessRules::new()
+        .method(
+            "deposit_funds",
+            rule!(require(RADIX_TOKEN)),
+            MUTABLE(rule!(allow_all)),
+        )
+        .default(rule!(allow_all), LOCKED)];
+    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+
+    // Act
+    let receipt = test_runner.deposit_funds();
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+    });
+
+    // Act
+    let receipt = test_runner.set_method_auth(0, "deposit_funds", rule!(allow_all));
+
+    // Assert
+    receipt.expect_commit_success();
+
+    // Act
+    let receipt = test_runner.deposit_funds();
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn access_rules_method_auth_can_not_be_mutated_when_locked() {
+    // Arrange
+    let access_rules = vec![AccessRules::new()
+        .method("deposit_funds", rule!(require(RADIX_TOKEN)), LOCKED)
+        .default(rule!(allow_all), LOCKED)];
+    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+
+    // Act
+    let receipt = test_runner.set_method_auth(0, "deposit_funds", rule!(allow_all));
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+    });
+}
+
+#[test]
+fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present() {
+    // Arrange
+    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
+    let public_key = private_key.public_key();
+    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+
+    let access_rules = vec![AccessRules::new()
+        .method(
+            "deposit_funds",
+            rule!(require(RADIX_TOKEN)),
+            MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
+        )
+        .default(rule!(allow_all), LOCKED)];
+    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+
+    // Act
+    let receipt = test_runner.set_method_auth(0, "deposit_funds", rule!(allow_all));
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+    });
+}
+
+#[test]
+fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present() {
+    // Arrange
+    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
+    let public_key = private_key.public_key();
+    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+
+    let access_rules = vec![AccessRules::new()
+        .method(
+            "deposit_funds",
+            rule!(require(RADIX_TOKEN)),
+            MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
+        )
+        .default(rule!(allow_all), LOCKED)];
+    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+
+    // Act
+    let receipt = test_runner.lock_method_auth(0, "deposit_funds");
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+    });
+}
+
+#[test]
+fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
+    // Arrange
+    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
+    let public_key = private_key.public_key();
+    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+
+    let access_rules = vec![AccessRules::new()
+        .method(
+            "deposit_funds",
+            rule!(require(RADIX_TOKEN)),
+            MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
+        )
+        .default(rule!(allow_all), LOCKED)];
+    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+    test_runner.add_initial_proof(virtual_badge_non_fungible_address);
+
+    // Act
+    let receipt = test_runner.set_method_auth(0, "deposit_funds", rule!(allow_all));
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
+    // Arrange
+    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
+    let public_key = private_key.public_key();
+    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+
+    let access_rules = vec![AccessRules::new()
+        .method(
+            "deposit_funds",
+            rule!(require(RADIX_TOKEN)),
+            MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
+        )
+        .default(rule!(allow_all), LOCKED)];
+    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+    test_runner.add_initial_proof(virtual_badge_non_fungible_address);
+
+    // Act
+    let receipt = test_runner.lock_method_auth(0, "deposit_funds");
+
+    // Assert
+    receipt.expect_commit_success();
+
+    // Act
+    let receipt = test_runner.set_method_auth(0, "deposit_funds", rule!(allow_all));
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
+    });
+}
+
 struct MutableAccessRulesTestRunner {
     substate_store: TypedInMemorySubstateStore,
     package_address: PackageAddress,
