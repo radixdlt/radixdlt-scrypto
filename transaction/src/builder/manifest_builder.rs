@@ -529,6 +529,7 @@ impl ManifestBuilder {
             args: scrypto_encode(&PackagePublishWithOwnerInvocation {
                 code: Blob(code_hash),
                 abi: Blob(abi_hash),
+                royalty_config: HashMap::new(), // TODO: needs a strategy on how to deal with ever growing variation
                 metadata: HashMap::new(),
             })
             .unwrap(),
