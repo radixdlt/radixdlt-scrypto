@@ -4,9 +4,8 @@ use crate::engine::{
     ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{
-    AccessRulesSubstate, CurrentTimeRoundedToMinutesSubstate, CurrentTimeRoundedToSecondsSubstate,
-    CurrentTimeSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
-    HardResourceOrNonFungible, MethodAuthorization, SubstateRefMut,
+    AccessRulesSubstate, CurrentTimeRoundedToMinutesSubstate, GlobalAddressSubstate, HardAuthRule,
+    HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
 use radix_engine_interface::access_rule_node;
@@ -75,10 +74,6 @@ impl NativeProcedure for ClockCreateInvocation {
         system_api.create_node(
             underlying_node_id,
             RENode::Clock(
-                CurrentTimeSubstate { current_time_ms: 0 },
-                CurrentTimeRoundedToSecondsSubstate {
-                    current_time_rounded_to_seconds_ms: 0,
-                },
                 CurrentTimeRoundedToMinutesSubstate {
                     current_time_rounded_to_minutes_ms: 0,
                 },
@@ -192,58 +187,18 @@ impl NativeProcedure for ClockSetCurrentTimeExecutable {
         let node_id = self.0;
 
         let current_time_ms = self.1;
-        let current_time_rounded_to_seconds =
-            (current_time_ms / SECONDS_TO_MS_FACTOR) * SECONDS_TO_MS_FACTOR;
         let current_time_rounded_to_minutes =
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
-        update_clock_substate(
-            system_api,
-            node_id,
-            ClockOffset::CurrentTime,
-            |substate_ref| substate_ref.current_time().current_time_ms = current_time_ms,
-        )?;
-
-        update_clock_substate(
-            system_api,
-            node_id,
-            ClockOffset::CurrentTimeRoundedToSeconds,
-            |substate_ref| {
-                substate_ref
-                    .current_time_rounded_to_seconds()
-                    .current_time_rounded_to_seconds_ms = current_time_rounded_to_seconds
-            },
-        )?;
-
-        update_clock_substate(
-            system_api,
-            node_id,
-            ClockOffset::CurrentTimeRoundedToMinutes,
-            |substate_ref| {
-                substate_ref
-                    .current_time_rounded_to_minutes()
-                    .current_time_rounded_to_minutes_ms = current_time_rounded_to_minutes
-            },
-        )?;
+        let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let mut substate_ref = system_api.get_ref_mut(handle)?;
+        substate_ref
+            .current_time_rounded_to_minutes()
+            .current_time_rounded_to_minutes_ms = current_time_rounded_to_minutes;
 
         Ok(((), CallFrameUpdate::empty()))
     }
-}
-
-fn update_clock_substate<'a, Y, F>(
-    system_api: &'a mut Y,
-    node_id: RENodeId,
-    clock_offset: ClockOffset,
-    fun: F,
-) -> Result<(), RuntimeError>
-where
-    Y: SystemApi,
-    F: FnOnce(&mut SubstateRefMut<'a>) -> (),
-{
-    let offset = SubstateOffset::Clock(clock_offset);
-    let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-    let mut substate_ref = system_api.get_ref_mut(handle)?;
-    Ok(fun(&mut substate_ref))
 }
 
 impl Clock {

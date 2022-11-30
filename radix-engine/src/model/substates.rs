@@ -12,8 +12,6 @@ use radix_engine_interface::data::IndexedScryptoValue;
 pub enum PersistedSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
-    CurrentTime(CurrentTimeSubstate),
-    CurrentTimeRoundedToSeconds(CurrentTimeRoundedToSecondsSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
     AccessRules(AccessRulesSubstate),
@@ -71,10 +69,6 @@ impl PersistedSubstate {
         match self {
             PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
             PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
-            PersistedSubstate::CurrentTime(value) => RuntimeSubstate::CurrentTime(value),
-            PersistedSubstate::CurrentTimeRoundedToSeconds(value) => {
-                RuntimeSubstate::CurrentTimeRoundedToSeconds(value)
-            }
             PersistedSubstate::CurrentTimeRoundedToMinutes(value) => {
                 RuntimeSubstate::CurrentTimeRoundedToMinutes(value)
             }
@@ -115,8 +109,6 @@ pub enum PersistError {
 pub enum RuntimeSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
-    CurrentTime(CurrentTimeSubstate),
-    CurrentTimeRoundedToSeconds(CurrentTimeRoundedToSecondsSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
     Metadata(MetadataSubstate),
@@ -143,10 +135,6 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
-            RuntimeSubstate::CurrentTime(value) => PersistedSubstate::CurrentTime(value.clone()),
-            RuntimeSubstate::CurrentTimeRoundedToSeconds(value) => {
-                PersistedSubstate::CurrentTimeRoundedToSeconds(value.clone())
-            }
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 PersistedSubstate::CurrentTimeRoundedToMinutes(value.clone())
             }
@@ -196,10 +184,6 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
-            RuntimeSubstate::CurrentTime(value) => PersistedSubstate::CurrentTime(value),
-            RuntimeSubstate::CurrentTimeRoundedToSeconds(value) => {
-                PersistedSubstate::CurrentTimeRoundedToSeconds(value)
-            }
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 PersistedSubstate::CurrentTimeRoundedToMinutes(value)
             }
@@ -275,10 +259,6 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => SubstateRefMut::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRefMut::EpochManager(value),
-            RuntimeSubstate::CurrentTime(value) => SubstateRefMut::CurrentTime(value),
-            RuntimeSubstate::CurrentTimeRoundedToSeconds(value) => {
-                SubstateRefMut::CurrentTimeRoundedToSeconds(value)
-            }
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 SubstateRefMut::CurrentTimeRoundedToMinutes(value)
             }
@@ -315,10 +295,6 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => SubstateRef::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
-            RuntimeSubstate::CurrentTime(value) => SubstateRef::CurrentTime(value),
-            RuntimeSubstate::CurrentTimeRoundedToSeconds(value) => {
-                SubstateRef::CurrentTimeRoundedToSeconds(value)
-            }
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 SubstateRef::CurrentTimeRoundedToMinutes(value)
             }
@@ -431,18 +407,6 @@ impl Into<RuntimeSubstate> for MetadataSubstate {
 impl Into<RuntimeSubstate> for EpochManagerSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::EpochManager(self)
-    }
-}
-
-impl Into<RuntimeSubstate> for CurrentTimeSubstate {
-    fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::CurrentTime(self)
-    }
-}
-
-impl Into<RuntimeSubstate> for CurrentTimeRoundedToSecondsSubstate {
-    fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::CurrentTimeRoundedToSeconds(self)
     }
 }
 
@@ -712,8 +676,6 @@ pub enum SubstateRef<'a> {
     Vault(&'a VaultRuntimeSubstate),
     ResourceManager(&'a ResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
-    CurrentTime(&'a CurrentTimeSubstate),
-    CurrentTimeRoundedToSeconds(&'a CurrentTimeRoundedToSecondsSubstate),
     CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
     AccessRules(&'a AccessRulesSubstate),
     Metadata(&'a MetadataSubstate),
@@ -725,10 +687,6 @@ impl<'a> SubstateRef<'a> {
         match self {
             SubstateRef::Global(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::EpochManager(value) => IndexedScryptoValue::from_typed(*value),
-            SubstateRef::CurrentTime(value) => IndexedScryptoValue::from_typed(*value),
-            SubstateRef::CurrentTimeRoundedToSeconds(value) => {
-                IndexedScryptoValue::from_typed(*value)
-            }
             SubstateRef::CurrentTimeRoundedToMinutes(value) => {
                 IndexedScryptoValue::from_typed(*value)
             }
@@ -978,8 +936,6 @@ pub enum SubstateRefMut<'a> {
     Vault(&'a mut VaultRuntimeSubstate),
     ResourceManager(&'a mut ResourceManagerSubstate),
     EpochManager(&'a mut EpochManagerSubstate),
-    CurrentTime(&'a mut CurrentTimeSubstate),
-    CurrentTimeRoundedToSeconds(&'a mut CurrentTimeRoundedToSecondsSubstate),
     CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
     AccessRules(&'a mut AccessRulesSubstate),
     Metadata(&'a mut MetadataSubstate),
@@ -1102,20 +1058,6 @@ impl<'a> SubstateRefMut<'a> {
         match self {
             SubstateRefMut::EpochManager(value) => *value,
             _ => panic!("Not epoch manager"),
-        }
-    }
-
-    pub fn current_time(&mut self) -> &mut CurrentTimeSubstate {
-        match self {
-            SubstateRefMut::CurrentTime(value) => *value,
-            _ => panic!("Not a current time substate ref"),
-        }
-    }
-
-    pub fn current_time_rounded_to_seconds(&mut self) -> &mut CurrentTimeRoundedToSecondsSubstate {
-        match self {
-            SubstateRefMut::CurrentTimeRoundedToSeconds(value) => *value,
-            _ => panic!("Not a current time rounded to seconds"),
         }
     }
 
