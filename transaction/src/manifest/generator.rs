@@ -753,6 +753,7 @@ fn generate_re_node_id(
         ast::RENode::EpochManager(node_id) => {
             Ok(RENodeId::EpochManager(generate_node_id(node_id)?))
         }
+        ast::RENode::Clock(node_id) => Ok(RENodeId::Clock(generate_node_id(node_id)?)),
         ast::RENode::Vault(node_id) => Ok(RENodeId::Vault(generate_node_id(node_id)?)),
         ast::RENode::ResourceManager(node_id) => {
             Ok(RENodeId::ResourceManager(generate_node_id(node_id)?))
