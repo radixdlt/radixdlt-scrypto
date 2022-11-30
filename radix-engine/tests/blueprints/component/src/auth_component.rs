@@ -10,8 +10,8 @@ blueprint! {
             let mut component = Self { some_non_fungible }.instantiate();
             component.add_access_check(
                 AccessRules::new()
-                    .method("get_secret", rule!(require("some_non_fungible")))
-                    .default(rule!(allow_all)),
+                    .method("get_secret", rule!(require("some_non_fungible")), LOCKED)
+                    .default(rule!(allow_all), LOCKED),
             );
             component.globalize()
         }
