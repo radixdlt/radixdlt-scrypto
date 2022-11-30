@@ -41,14 +41,6 @@ blueprint! {
             )]));
         }
 
-        pub fn disable_package_royalty(address: PackageAddress) {
-            borrow_package!(address).set_royalty_config(HashMap::from([]));
-        }
-
-        pub fn disable_component_royalty(address: ComponentAddress) {
-            borrow_component!(address).set_royalty_config(RoyaltyConfig::default());
-        }
-
         pub fn claim_package_royalty(address: PackageAddress) -> Bucket {
             borrow_package!(address).claim_royalty()
         }
