@@ -1,9 +1,9 @@
-use core::ops::*;
 use num_traits::{One, Pow, ToPrimitive, Zero};
 use paste::paste;
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
 use sbor::rust::iter;
+use sbor::rust::ops::*;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::{String, ToString};
 use sbor::rust::vec::Vec;

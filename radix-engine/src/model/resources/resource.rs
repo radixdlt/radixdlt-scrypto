@@ -17,6 +17,8 @@ pub enum ResourceOperationError {
     NonFungibleOperationNotAllowed,
     /// Resource is locked because of proofs
     ResourceLocked,
+    /// Non-fungible resource id type is not matching this resource id type.
+    NonFungibleIdTypeNotMatching,
 }
 
 /// A raw record of resource persisted in the substate store
@@ -36,6 +38,8 @@ pub enum Resource {
         resource_address: ResourceAddress,
         /// The total non-fungible ids.
         ids: BTreeSet<NonFungibleId>,
+        /// NonFungible Id type
+        id_type: NonFungibleIdType,
     },
 }
 
@@ -55,10 +59,12 @@ impl Resource {
     pub fn new_non_fungible(
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleId>,
+        id_type: NonFungibleIdType,
     ) -> Self {
         Self::NonFungible {
             resource_address,
             ids,
+            id_type,
         }
     }
     pub fn new_empty(resource_address: ResourceAddress, resource_type: ResourceType) -> Self {
@@ -66,7 +72,9 @@ impl Resource {
             ResourceType::Fungible { divisibility } => {
                 Self::new_fungible(resource_address, divisibility, Decimal::zero())
             }
-            ResourceType::NonFungible => Self::new_non_fungible(resource_address, BTreeSet::new()),
+            ResourceType::NonFungible { id_type } => {
+                Self::new_non_fungible(resource_address, BTreeSet::new(), id_type)
+            }
         }
     }
 
@@ -90,6 +98,13 @@ impl Resource {
         self.amount().is_zero()
     }
 
+    pub fn id_type(&self) -> NonFungibleIdType {
+        match self {
+            Resource::Fungible { .. } => panic!("id_type() called on fungible resource"),
+            Resource::NonFungible { id_type, .. } => id_type.clone(),
+        }
+    }
+
     pub fn resource_address(&self) -> ResourceAddress {
         match self {
             Self::Fungible {
@@ -106,7 +121,7 @@ impl Resource {
             Self::Fungible { divisibility, .. } => ResourceType::Fungible {
                 divisibility: *divisibility,
             },
-            Self::NonFungible { .. } => ResourceType::NonFungible,
+            Self::NonFungible { id_type, .. } => ResourceType::NonFungible { id_type: *id_type },
         }
     }
 
@@ -121,7 +136,10 @@ impl Resource {
             Self::Fungible { amount, .. } => {
                 *amount += other.amount();
             }
-            Self::NonFungible { ids, .. } => {
+            Self::NonFungible { ids, id_type, .. } => {
+                if *id_type != other.id_type() {
+                    return Err(ResourceOperationError::NonFungibleIdTypeNotMatching);
+                }
                 ids.extend(other.ids().clone());
             }
         }
@@ -170,13 +188,17 @@ impl Resource {
         let resource_address = self.resource_address();
         match self {
             Self::Fungible { .. } => Err(ResourceOperationError::NonFungibleOperationNotAllowed),
-            Self::NonFungible { ids, .. } => {
+            Self::NonFungible { ids, id_type, .. } => {
                 for id in ids_to_take {
                     if !ids.remove(&id) {
                         return Err(ResourceOperationError::InsufficientBalance);
                     }
                 }
-                Ok(Resource::new_non_fungible(resource_address, ids.clone()))
+                Ok(Resource::new_non_fungible(
+                    resource_address,
+                    ids.clone(),
+                    *id_type,
+                ))
             }
         }
     }
@@ -213,10 +235,12 @@ impl Into<LockableResource> for Resource {
             Resource::NonFungible {
                 resource_address,
                 ids,
+                id_type,
             } => LockableResource::NonFungible {
                 resource_address,
                 locked_ids: BTreeMap::new(),
                 liquid_ids: ids,
+                id_type,
             },
         }
     }
@@ -242,6 +266,8 @@ pub enum LockableResource {
         locked_ids: BTreeMap<NonFungibleId, usize>,
         /// The liquid non-fungible ids.
         liquid_ids: BTreeSet<NonFungibleId>,
+        /// The non-fungible ID type.
+        id_type: NonFungibleIdType,
     },
 }
 
@@ -339,7 +365,12 @@ impl LockableResource {
     ) -> Result<Resource, ResourceOperationError> {
         match self {
             Self::Fungible { .. } => Err(ResourceOperationError::NonFungibleOperationNotAllowed),
-            Self::NonFungible { liquid_ids, .. } => {
+            Self::NonFungible {
+                liquid_ids,
+                id_type,
+                ..
+            } => {
+                let id_type = id_type.clone();
                 for id in ids {
                     if !liquid_ids.remove(&id) {
                         return Err(ResourceOperationError::InsufficientBalance);
@@ -348,6 +379,7 @@ impl LockableResource {
                 Ok(Resource::new_non_fungible(
                     self.resource_address(),
                     ids.clone(),
+                    id_type,
                 ))
             }
         }
@@ -419,10 +451,13 @@ impl LockableResource {
             Self::NonFungible {
                 locked_ids,
                 liquid_ids,
+                id_type,
                 ..
             } => {
                 for id in ids {
-                    if liquid_ids.remove(id) {
+                    if id.id_type() != *id_type {
+                        return Err(ResourceOperationError::NonFungibleIdTypeNotMatching);
+                    } else if liquid_ids.remove(id) {
                         // if the non-fungible is liquid, move it to locked.
                         locked_ids.insert(id.clone(), 1);
                     } else if let Some(cnt) = locked_ids.get_mut(id) {
@@ -562,7 +597,7 @@ impl LockableResource {
             Self::Fungible { divisibility, .. } => ResourceType::Fungible {
                 divisibility: *divisibility,
             },
-            Self::NonFungible { .. } => ResourceType::NonFungible,
+            Self::NonFungible { id_type, .. } => ResourceType::NonFungible { id_type: *id_type },
         }
     }
 
@@ -591,10 +626,12 @@ impl LockableResource {
             LockableResource::NonFungible {
                 resource_address,
                 liquid_ids,
+                id_type,
                 ..
             } => Resource::NonFungible {
                 resource_address: resource_address.clone(),
                 ids: liquid_ids.clone(),
+                id_type: *id_type,
             },
         }
     }
@@ -622,10 +659,12 @@ impl Into<Resource> for LockableResource {
             LockableResource::NonFungible {
                 resource_address,
                 liquid_ids,
+                id_type,
                 ..
             } => Resource::NonFungible {
                 resource_address,
                 ids: liquid_ids,
+                id_type: id_type,
             },
         }
     }

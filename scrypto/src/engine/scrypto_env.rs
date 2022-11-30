@@ -52,23 +52,23 @@ pub fn call_engine_to_raw(_input: RadixEngineInput) -> Vec<u8> {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct SyscallError;
+pub struct EngineApiError;
 
 pub struct ScryptoEnv;
 
-impl<N: ScryptoNativeInvocation> SysNativeInvokable<N, SyscallError> for ScryptoEnv {
-    fn sys_invoke(&mut self, input: N) -> Result<N::Output, SyscallError> {
+impl<N: ScryptoNativeInvocation> SysNativeInvokable<N, EngineApiError> for ScryptoEnv {
+    fn sys_invoke(&mut self, input: N) -> Result<N::Output, EngineApiError> {
         let rtn = call_engine(RadixEngineInput::InvokeNativeFn(input.into()));
         Ok(rtn)
     }
 }
 
-impl EngineApi<SyscallError> for ScryptoEnv {
+impl EngineApi<EngineApiError> for ScryptoEnv {
     fn sys_invoke_scrypto_function(
         &mut self,
         fn_ident: ScryptoFunctionIdent,
         args: Vec<u8>, // TODO: Update to any
-    ) -> Result<Vec<u8>, SyscallError> {
+    ) -> Result<Vec<u8>, EngineApiError> {
         let rtn = call_engine_to_raw(RadixEngineInput::InvokeScryptoFunction(fn_ident, args));
         Ok(rtn)
     }
@@ -77,22 +77,22 @@ impl EngineApi<SyscallError> for ScryptoEnv {
         &mut self,
         method_ident: ScryptoMethodIdent,
         args: Vec<u8>, // TODO: Update to any
-    ) -> Result<Vec<u8>, SyscallError> {
+    ) -> Result<Vec<u8>, EngineApiError> {
         let rtn = call_engine_to_raw(RadixEngineInput::InvokeScryptoMethod(method_ident, args));
         Ok(rtn)
     }
 
-    fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, SyscallError> {
+    fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, EngineApiError> {
         let rtn = call_engine(RadixEngineInput::CreateNode(node));
         Ok(rtn)
     }
 
-    fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), SyscallError> {
+    fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), EngineApiError> {
         let rtn = call_engine(RadixEngineInput::DropNode(node_id));
         Ok(rtn)
     }
 
-    fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, SyscallError> {
+    fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, EngineApiError> {
         let rtn = call_engine(RadixEngineInput::GetVisibleNodeIds());
         Ok(rtn)
     }
@@ -102,42 +102,46 @@ impl EngineApi<SyscallError> for ScryptoEnv {
         node_id: RENodeId,
         offset: SubstateOffset,
         mutable: bool,
-    ) -> Result<LockHandle, SyscallError> {
+    ) -> Result<LockHandle, EngineApiError> {
         let rtn = call_engine(RadixEngineInput::LockSubstate(node_id, offset, mutable));
         Ok(rtn)
     }
 
-    fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, SyscallError> {
+    fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, EngineApiError> {
         let rtn = call_engine_to_raw(RadixEngineInput::Read(lock_handle));
         Ok(rtn)
     }
 
-    fn sys_write(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), SyscallError> {
+    fn sys_write(
+        &mut self,
+        lock_handle: LockHandle,
+        buffer: Vec<u8>,
+    ) -> Result<(), EngineApiError> {
         let rtn = call_engine(RadixEngineInput::Write(lock_handle, buffer));
         Ok(rtn)
     }
 
-    fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), SyscallError> {
+    fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), EngineApiError> {
         let rtn = call_engine(RadixEngineInput::DropLock(lock_handle));
         Ok(rtn)
     }
 
-    fn sys_get_actor(&mut self) -> Result<ScryptoActor, SyscallError> {
+    fn sys_get_actor(&mut self) -> Result<ScryptoActor, EngineApiError> {
         let rtn = call_engine(RadixEngineInput::GetActor());
         Ok(rtn)
     }
 
-    fn sys_generate_uuid(&mut self) -> Result<u128, SyscallError> {
+    fn sys_generate_uuid(&mut self) -> Result<u128, EngineApiError> {
         let rtn = call_engine(RadixEngineInput::GenerateUuid());
         Ok(rtn)
     }
 
-    fn sys_get_transaction_hash(&mut self) -> Result<Hash, SyscallError> {
+    fn sys_get_transaction_hash(&mut self) -> Result<Hash, EngineApiError> {
         let rtn = call_engine(RadixEngineInput::GetTransactionHash());
         Ok(rtn)
     }
 
-    fn sys_emit_log(&mut self, level: Level, message: String) -> Result<(), SyscallError> {
+    fn sys_emit_log(&mut self, level: Level, message: String) -> Result<(), EngineApiError> {
         let rtn = call_engine(RadixEngineInput::EmitLog(level, message));
         Ok(rtn)
     }
@@ -152,28 +156,5 @@ macro_rules! scrypto_env_native_fn {
                 radix_engine_interface::api::api::SysNativeInvokable::sys_invoke(&mut env, $arg).unwrap()
             }
         )+
-    };
-}
-
-#[macro_export]
-macro_rules! sys_env_native_fn {
-    ($vis:vis $fn:ident $fn_name:ident ($($args:tt)+) -> $rtn:ty { $invocation:ident { $($invocation_args:tt)* } }) => {
-        $vis $fn $fn_name<Y, E>($($args)*, env: &mut Y) -> Result<$rtn, E>
-        where
-            Y: radix_engine_interface::api::api::SysNativeInvokable<$invocation, E>,
-            E: sbor::rust::fmt::Debug + TypeId<radix_engine_interface::data::ScryptoCustomTypeId> + radix_engine_interface::data::ScryptoDecode,
-        {
-            radix_engine_interface::api::api::SysNativeInvokable::sys_invoke(env, $invocation { $($invocation_args)* })
-        }
-    };
-
-    ($vis:vis $fn:ident $fn_name:ident () -> $rtn:ty { $invocation:ident { $($invocation_args:tt)* } }) => {
-        $vis $fn $fn_name<Y, E>(env: &mut Y) -> Result<$rtn, E>
-        where
-            Y: radix_engine_interface::api::api::SysNativeInvokable<$invocation, E>,
-            E: sbor::rust::fmt::Debug + TypeId<radix_engine_interface::data::ScryptoCustomTypeId> + radix_engine_interface::data::ScryptoDecode,
-        {
-            radix_engine_interface::api::api::SysNativeInvokable::sys_invoke(env, $invocation { $($invocation_args)* })
-        }
     };
 }

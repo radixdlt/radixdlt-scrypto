@@ -1,4 +1,4 @@
-use core::fmt;
+use sbor::rust::fmt;
 use std::str::FromStr;
 
 use radix_engine::types::{

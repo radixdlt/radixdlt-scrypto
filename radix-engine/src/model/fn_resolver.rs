@@ -29,7 +29,27 @@ pub fn resolve_native_function(
 
 // TODO: receiver should be receiver type rather than node_id
 pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<NativeMethod> {
-    let native_method = match receiver {
+    match receiver {
+        RENodeId::Package(_) | RENodeId::Global(GlobalAddress::Package(_)) => {
+            PackageMethod::from_str(method_name)
+                .ok()
+                .map(NativeMethod::Package)
+        }
+        RENodeId::Component(_) | RENodeId::Global(GlobalAddress::Component(_)) => {
+            ComponentMethod::from_str(method_name)
+                .ok()
+                .map(NativeMethod::Component)
+        }
+        RENodeId::ResourceManager(_) | RENodeId::Global(GlobalAddress::Resource(_)) => {
+            ResourceManagerMethod::from_str(method_name)
+                .ok()
+                .map(NativeMethod::ResourceManager)
+        }
+        RENodeId::EpochManager(_) | RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)) => {
+            EpochManagerMethod::from_str(method_name)
+                .ok()
+                .map(NativeMethod::EpochManager)
+        }
         RENodeId::Bucket(_) => BucketMethod::from_str(method_name)
             .ok()
             .map(NativeMethod::Bucket),
@@ -46,40 +66,19 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
             .ok()
             .map(NativeMethod::Worktop),
 
-        RENodeId::EpochManager(_) => EpochManagerMethod::from_str(method_name)
-            .ok()
-            .map(NativeMethod::EpochManager),
-        RENodeId::Global(GlobalAddress::System(system_address)) => match system_address {
-            EPOCH_MANAGER => EpochManagerMethod::from_str(method_name)
-                .ok()
-                .map(NativeMethod::EpochManager),
-            _ => None,
-        },
         RENodeId::Vault(_) => VaultMethod::from_str(method_name)
             .ok()
             .map(NativeMethod::Vault),
 
-        RENodeId::ResourceManager(_) | RENodeId::Global(GlobalAddress::Resource(_)) => {
-            ResourceManagerMethod::from_str(method_name)
-                .ok()
-                .map(NativeMethod::ResourceManager)
-        }
-        _ => None,
-    };
-
-    if native_method.is_some() {
-        return native_method;
+        RENodeId::Global(_)
+        | RENodeId::KeyValueStore(_)
+        | RENodeId::NonFungibleStore(_)
+        | RENodeId::FeeReserve(_) => None,
     }
-
-    let native_method = AccessRulesMethod::from_str(method_name)
+    .or(AccessRulesMethod::from_str(method_name)
         .ok()
-        .map(NativeMethod::AccessRules);
-
-    if native_method.is_some() {
-        return native_method;
-    }
-
-    MetadataMethod::from_str(method_name)
+        .map(NativeMethod::AccessRules))
+    .or(MetadataMethod::from_str(method_name)
         .ok()
-        .map(NativeMethod::Metadata)
+        .map(NativeMethod::Metadata))
 }

@@ -21,6 +21,11 @@ pub const TYPE_DECIMAL: u8 = 0xb5;
 pub const TYPE_PRECISE_DECIMAL: u8 = 0xb6;
 pub const TYPE_NON_FUNGIBLE_ID: u8 = 0xb7;
 
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = "type")
+)]
 #[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomTypeId {
     // Global address types

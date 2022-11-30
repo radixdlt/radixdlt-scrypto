@@ -109,11 +109,14 @@ impl ResourceManagerSubstate {
     ) -> Result<(Resource, HashMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
     {
         // check resource type
-        if !matches!(self.resource_type, ResourceType::NonFungible) {
-            return Err(InvokeError::Error(
-                ResourceManagerError::ResourceTypeDoesNotMatch,
-            ));
-        }
+        let this_non_fungible_id_type = match self.resource_type {
+            ResourceType::NonFungible { id_type } => id_type,
+            _ => {
+                return Err(InvokeError::Error(
+                    ResourceManagerError::ResourceTypeDoesNotMatch,
+                ))
+            }
+        };
 
         // check amount
         let amount: Decimal = entries.len().into();
@@ -125,11 +128,23 @@ impl ResourceManagerSubstate {
         let mut ids = BTreeSet::new();
         let mut non_fungibles = HashMap::new();
         for (id, data) in entries {
+            if id.id_type() != this_non_fungible_id_type {
+                return Err(InvokeError::Error(
+                    ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                        id.id_type(),
+                        this_non_fungible_id_type,
+                    ),
+                ));
+            }
+
             let non_fungible = NonFungible::new(data.0, data.1);
             ids.insert(id.clone());
             non_fungibles.insert(id, non_fungible);
         }
 
-        Ok((Resource::new_non_fungible(self_address, ids), non_fungibles))
+        Ok((
+            Resource::new_non_fungible(self_address, ids, this_non_fungible_id_type),
+            non_fungibles,
+        ))
     }
 }

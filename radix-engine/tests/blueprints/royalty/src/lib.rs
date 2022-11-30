@@ -29,7 +29,7 @@ blueprint! {
             local_component.globalize()
         }
 
-        pub fn enable_royalty() -> PackageAddress {
+        pub fn enable_package_royalty() -> PackageAddress {
             let package_address = Runtime::package_address();
 
             borrow_package!(package_address).set_royalty_config(HashMap::from([(
@@ -41,6 +41,16 @@ blueprint! {
             )]));
 
             package_address
+        }
+
+        pub fn claim_package_royalty() -> Bucket {
+            let package_address = Runtime::package_address();
+
+            borrow_package!(package_address).claim_royalty()
+        }
+
+        pub fn claim_component_royalty(address: ComponentAddress) -> Bucket {
+            borrow_component!(address).claim_royalty()
         }
     }
 }
