@@ -1,10 +1,10 @@
+use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_interface::api::api::SysNativeInvokable;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
-use crate::engine::scrypto_env::ScryptoEnv;
 
 use crate::rule;
 
@@ -120,7 +120,8 @@ impl FungibleResourceBuilder {
     }
 
     pub fn initial_supply_with_owner<T: Into<Decimal>>(&self, amount: T) -> (Bucket, Bucket) {
-        let (_, bucket, owner_badge_bucket) = self.build_with_owner(Some(MintParams::fungible(amount)));
+        let (_, bucket, owner_badge_bucket) =
+            self.build_with_owner(Some(MintParams::fungible(amount)));
         (bucket.unwrap(), owner_badge_bucket)
     }
 
@@ -129,20 +130,25 @@ impl FungibleResourceBuilder {
         (resource_address, owner_badge_bucket)
     }
 
-    fn build_with_owner(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>, Bucket) {
+    fn build_with_owner(
+        &self,
+        mint_params: Option<MintParams>,
+    ) -> (ResourceAddress, Option<Bucket>, Bucket) {
         let mut authorization = self.authorization.clone();
         if !authorization.contains_key(&ResourceMethodAuthKey::Withdraw) {
             authorization.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         }
 
-        ScryptoEnv.sys_invoke(ResourceManagerCreateWithOwnerInvocation {
-            resource_type: ResourceType::Fungible {
-                divisibility: self.divisibility,
-            },
-            metadata: self.metadata.clone(),
-            access_rules: authorization,
-            mint_params,
-        }).unwrap()
+        ScryptoEnv
+            .sys_invoke(ResourceManagerCreateWithOwnerInvocation {
+                resource_type: ResourceType::Fungible {
+                    divisibility: self.divisibility,
+                },
+                metadata: self.metadata.clone(),
+                access_rules: authorization,
+                mint_params,
+            })
+            .unwrap()
     }
 
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
@@ -151,14 +157,16 @@ impl FungibleResourceBuilder {
             authorization.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         }
 
-        ScryptoEnv.sys_invoke(ResourceManagerCreateInvocation {
-            resource_type: ResourceType::Fungible {
-                divisibility: self.divisibility,
-            },
-            metadata: self.metadata.clone(),
-            access_rules: authorization,
-            mint_params,
-        }).unwrap()
+        ScryptoEnv
+            .sys_invoke(ResourceManagerCreateInvocation {
+                resource_type: ResourceType::Fungible {
+                    divisibility: self.divisibility,
+                },
+                metadata: self.metadata.clone(),
+                access_rules: authorization,
+                mint_params,
+            })
+            .unwrap()
     }
 }
 
@@ -261,11 +269,13 @@ impl NonFungibleResourceBuilder {
             authorization.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         }
 
-        ScryptoEnv.sys_invoke(ResourceManagerCreateInvocation {
-            resource_type: ResourceType::NonFungible,
-            metadata: self.metadata.clone(),
-            access_rules: authorization,
-            mint_params,
-        }).unwrap()
+        ScryptoEnv
+            .sys_invoke(ResourceManagerCreateInvocation {
+                resource_type: ResourceType::NonFungible,
+                metadata: self.metadata.clone(),
+                access_rules: authorization,
+                mint_params,
+            })
+            .unwrap()
     }
 }
