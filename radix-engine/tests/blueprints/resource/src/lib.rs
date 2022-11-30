@@ -104,7 +104,10 @@ blueprint! {
 
             badge.authorize(|| {
                 token_resource_manager.set_metadata("a".to_owned(), "b".to_owned());
-                assert_eq!(token_resource_manager.get_metadata("a".to_owned()).unwrap(), "b".to_owned());
+                assert_eq!(
+                    token_resource_manager.get_metadata("a".to_owned()).unwrap(),
+                    "b".to_owned()
+                );
             });
 
             badge

@@ -44,13 +44,15 @@ where
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerFunction::CreateWithOwner => {
-                    let invocation: ResourceManagerCreateWithOwnerInvocation = scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    let invocation: ResourceManagerCreateWithOwnerInvocation =
+                        scrypto_decode(&args).map_err(|e| {
+                            RuntimeError::KernelError(KernelError::InvalidSborValue(e))
+                        })?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-            }
+            },
             NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run) => {
                 return Err(RuntimeError::InterpreterError(
                     InterpreterError::InvalidInvocation,

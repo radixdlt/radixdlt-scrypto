@@ -1,5 +1,3 @@
-use scrypto::access_rule_node;
-use scrypto::rule;
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Invokable,
     LockFlags, MethodDeref, NativeExecutor, NativeProcedure, REActor, RENode, ResolvedFunction,
@@ -22,7 +20,9 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::model::*;
+use scrypto::access_rule_node;
 use scrypto::resource::SysBucket;
+use scrypto::rule;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -430,7 +430,8 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
         self,
         api: &mut Y,
     ) -> Result<((ResourceAddress, Option<Bucket>), CallFrameUpdate), RuntimeError>
-    where Y: SystemApi
+    where
+        Y: SystemApi,
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
@@ -488,7 +489,8 @@ impl NativeProcedure for ResourceManagerCreateWithOwnerInvocation {
         self,
         api: &mut Y,
     ) -> Result<((ResourceAddress, Option<Bucket>, Bucket), CallFrameUpdate), RuntimeError>
-        where Y: SystemApi + SysInvokableNative<RuntimeError>
+    where
+        Y: SystemApi + SysInvokableNative<RuntimeError>,
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
@@ -511,19 +513,17 @@ impl NativeProcedure for ResourceManagerCreateWithOwnerInvocation {
             (owner_badge_bucket, non_fungible_address)
         };
 
-
         let (resource_manager_substate, bucket) = build_resource_manager_substate(
             resource_address,
             self.resource_type,
             self.mint_params,
             api,
         )?;
-        let (access_rules_substate, vault_access_rules_substate) =
-            build_access_rules_substates(
-                self.access_rules,
-                rule!(require(non_fungible_address.clone())),
-                rule!(require(non_fungible_address)),
-            );
+        let (access_rules_substate, vault_access_rules_substate) = build_access_rules_substates(
+            self.access_rules,
+            rule!(require(non_fungible_address.clone())),
+            rule!(require(non_fungible_address)),
+        );
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
