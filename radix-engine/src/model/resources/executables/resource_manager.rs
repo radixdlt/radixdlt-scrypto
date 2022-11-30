@@ -548,6 +548,7 @@ impl NativeProcedure for ResourceManagerCreateWithOwnerInvocation {
         if let Some(bucket) = &bucket {
             nodes_to_move.push(RENodeId::Bucket(bucket.0));
         }
+        nodes_to_move.push(RENodeId::Bucket(owner_badge_bucket.0));
 
         let mut node_refs_to_copy = HashSet::new();
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(resource_address)));
