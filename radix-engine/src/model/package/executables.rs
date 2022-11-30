@@ -181,20 +181,37 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
         let bucket = api.sys_invoke(mint_invocation)?;
 
         let mut chain = self.access_rules_chain;
+
+        // Add protection for metadata
         let mut metadata_access_rules = AccessRules::new();
         metadata_access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,
             ))),
             rule!(require(non_fungible_address.clone())),
-            rule!(require(non_fungible_address)),
+            rule!(require(non_fungible_address.clone())),
         );
         metadata_access_rules = metadata_access_rules.default(rule!(allow_all));
         chain.push(metadata_access_rules);
 
-        let substate = AccessRulesChainSubstate {
-            access_rules_chain: chain,
-        };
+        // Add protection for royalty
+        let mut royalty_access_rules = AccessRules::new().default(AccessRule::AllowAll);
+        royalty_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
+                PackageMethod::SetRoyaltyConfig,
+            ))),
+            rule!(require(non_fungible_address.clone())),
+            rule!(require(non_fungible_address.clone())),
+        );
+        royalty_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
+                PackageMethod::ClaimRoyalty,
+            ))),
+            rule!(require(non_fungible_address.clone())),
+            rule!(require(non_fungible_address.clone())),
+        );
+        royalty_access_rules = royalty_access_rules.default(rule!(allow_all));
+        chain.push(royalty_access_rules);
 
         let node_id = api.allocate_node_id(RENodeType::Package)?;
         api.create_node(
@@ -204,7 +221,9 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
                 package_royalty_config,
                 package_royalty_accumulator,
                 metadata_substate,
-                substate,
+                AccessRulesChainSubstate {
+                    access_rules_chain: chain,
+                },
             ),
         )?;
         let package_id: PackageId = node_id.into();

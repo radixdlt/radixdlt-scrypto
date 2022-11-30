@@ -78,19 +78,43 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
         };
         let owner_badge_bucket: Bucket = api.sys_invoke(mint_invocation)?;
 
+        // TODO: move to sdk
+
+        // Add protection for metadata
         let mut metadata_access_rules = AccessRules::new().default(AccessRule::AllowAll);
         metadata_access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,
             ))),
             rule!(require(non_fungible_address.clone())),
-            rule!(require(non_fungible_address)),
+            rule!(require(non_fungible_address.clone())),
         );
         metadata_access_rules = metadata_access_rules.default(rule!(allow_all));
-
         api.sys_invoke(AccessRulesAddAccessCheckInvocation {
             receiver: component_node_id,
             access_rules: metadata_access_rules,
+        })?;
+
+        // Add protection for royalty
+        let mut royalty_access_rules = AccessRules::new().default(AccessRule::AllowAll);
+        royalty_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Component(
+                ComponentMethod::SetRoyaltyConfig,
+            ))),
+            rule!(require(non_fungible_address.clone())),
+            rule!(require(non_fungible_address.clone())),
+        );
+        royalty_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Component(
+                ComponentMethod::ClaimRoyalty,
+            ))),
+            rule!(require(non_fungible_address.clone())),
+            rule!(require(non_fungible_address.clone())),
+        );
+        royalty_access_rules = royalty_access_rules.default(rule!(allow_all));
+        api.sys_invoke(AccessRulesAddAccessCheckInvocation {
+            receiver: component_node_id,
+            access_rules: royalty_access_rules,
         })?;
 
         api.create_node(
