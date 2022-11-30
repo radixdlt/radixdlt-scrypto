@@ -479,6 +479,10 @@ fn generate_stubs(
             fn blueprint_name(&self) -> String {
                 self.component.blueprint_name()
             }
+            fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+                self.component.metadata(name, value);
+                self
+            }
             fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
                 self.component.add_access_check(access_rules);
                 self
@@ -673,6 +677,10 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
+                    fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+                        self.component.metadata(name, value);
+                        self
+                    }
                     fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
                         self.component.add_access_check(access_rules);
                         self
@@ -759,6 +767,10 @@ mod tests {
                     }
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
+                    }
+                    fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+                        self.component.metadata(name, value);
+                        self
                     }
                     fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
                         self.component.add_access_check(access_rules);

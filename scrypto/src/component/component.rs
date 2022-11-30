@@ -34,14 +34,11 @@ pub trait ComponentState<C: LocalComponent>: ScryptoEncode + ScryptoDecode {
 pub trait LocalComponent {
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
+    fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self;
     fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
     fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self;
     fn globalize(self) -> ComponentAddress;
 }
-
-/// Represents an instantiated component.
-#[derive(PartialEq, Eq, Hash, Clone)]
-pub struct Component(pub ComponentId);
 
 // TODO: de-duplication
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -56,6 +53,10 @@ pub struct ComponentInfoSubstate {
 pub struct ComponentStateSubstate {
     pub raw: Vec<u8>,
 }
+
+/// Represents an instantiated component.
+#[derive(PartialEq, Eq, Hash, Clone)]
+pub struct Component(pub ComponentId);
 
 impl Component {
     /// Invokes a method on this component.
@@ -72,6 +73,7 @@ impl Component {
             .unwrap();
         scrypto_decode(&rtn).unwrap()
     }
+
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
@@ -133,6 +135,15 @@ impl Component {
         })?;
 
         Ok(self)
+    }
+
+    pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+        ScryptoEnv.sys_invoke(MetadataSetInvocation {
+            receiver: RENodeId::Component(self.0),
+            key: name.as_ref().to_owned(),
+            value: value.as_ref().to_owned(),
+        }).unwrap();
+        self
     }
 
     pub fn globalize(self) -> ComponentAddress {
