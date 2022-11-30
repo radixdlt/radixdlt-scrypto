@@ -494,6 +494,9 @@ fn generate_stubs(
             fn globalize(self) -> ComponentAddress {
                 self.component.globalize()
             }
+            fn globalize_with_owner(self) -> (ComponentAddress, Bucket) {
+                self.component.globalize_with_owner()
+            }
         }
 
         impl #value_ident {
@@ -692,6 +695,9 @@ mod tests {
                     fn globalize(self) -> ComponentAddress {
                         self.component.globalize()
                     }
+                    fn globalize_with_owner(self) -> (ComponentAddress, Bucket) {
+                        self.component.globalize_with_owner()
+                    }
                 }
 
                 impl TestComponent {
@@ -782,6 +788,9 @@ mod tests {
                     }
                     fn globalize(self) -> ComponentAddress {
                         self.component.globalize()
+                    }
+                    fn globalize_with_owner(self) -> (ComponentAddress, Bucket) {
+                        self.component.globalize_with_owner()
                     }
                 }
 

@@ -1,8 +1,9 @@
-use crate::engine::{deref_and_update, ResolvedFunction};
+use crate::engine::{deref_and_update, RENode, ResolvedFunction};
 use crate::engine::{
     CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref, NativeExecutor, NativeProcedure,
     REActor, ResolvedMethod, RuntimeError, SystemApi,
 };
+use crate::model::GlobalAddressSubstate;
 use crate::types::*;
 use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::{ComponentOffset, SubstateOffset};
@@ -77,7 +78,7 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
         };
         let owner_badge_bucket: Bucket = api.sys_invoke(mint_invocation)?;
 
-        let mut access_rules = AccessRules::new().default(AccessRule::DenyAll);
+        let mut access_rules = AccessRules::new().default(AccessRule::AllowAll);
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,
@@ -90,6 +91,11 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
             receiver: component_node_id,
             access_rules,
         })?;
+
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::Component(self.component_id)),
+        )?;
 
         let mut call_frame_update =
             CallFrameUpdate::move_node(RENodeId::Bucket(owner_badge_bucket.0));
@@ -151,7 +157,7 @@ impl NativeProcedure for ComponentGlobalizeNoOwnerInvocation {
             node_id
         };
         let component_address: ComponentAddress = global_node_id.into();
-        let mut access_rules = AccessRules::new().default(AccessRule::DenyAll);
+        let mut access_rules = AccessRules::new().default(AccessRule::AllowAll);
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,
@@ -164,6 +170,11 @@ impl NativeProcedure for ComponentGlobalizeNoOwnerInvocation {
             receiver: component_node_id,
             access_rules,
         })?;
+
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::Component(self.component_id)),
+        )?;
 
         let call_frame_update = CallFrameUpdate::copy_ref(RENodeId::Global(
             GlobalAddress::Component(component_address),
