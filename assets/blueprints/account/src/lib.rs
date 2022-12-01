@@ -16,7 +16,7 @@ blueprint! {
                 .method("balance", rule!(allow_all))
                 .method("deposit", rule!(allow_all))
                 .method("deposit_batch", rule!(allow_all))
-                .default(withdraw_rule);
+                .default(withdraw_rule.clone(), withdraw_rule);
             account.add_access_check(access_rules);
 
             account
@@ -37,7 +37,7 @@ blueprint! {
                 .method("balance", rule!(allow_all))
                 .method("deposit", rule!(allow_all))
                 .method("deposit_batch", rule!(allow_all))
-                .default(withdraw_rule);
+                .default(withdraw_rule.clone(), withdraw_rule);
             account.add_access_check(access_rules);
 
             let (component_address, owner_badge) = account.globalize_with_owner();

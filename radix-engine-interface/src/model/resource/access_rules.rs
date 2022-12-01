@@ -46,11 +46,32 @@ impl AccessRules {
         }
     }
 
-    pub fn with_default(default_auth: AccessRule, default_auth_mutability: AccessRule) -> Self {
-        let mut rules = AccessRules::new();
-        rules.default_auth = default_auth;
-        rules.default_auth_mutability = default_auth_mutability;
-        rules
+    // TODO: Move into scrypto repo as a builder
+    pub fn method(mut self, method_name: &str, method_auth: AccessRule) -> Self {
+        self.method_auth.insert(
+            AccessRuleKey::ScryptoMethod(method_name.to_string()),
+            AccessRuleEntry::AccessRule(method_auth),
+        );
+        self
+    }
+
+    // TODO: Move into scrypto repo as a builder
+    pub fn default(
+        mut self,
+        default_auth: AccessRule,
+        default_auth_mutability: AccessRule,
+    ) -> Self {
+        self.default_auth = default_auth;
+        self.default_auth_mutability = default_auth_mutability;
+        self
+    }
+
+    pub fn set_default_auth(&mut self, default_auth: AccessRule) {
+        self.default_auth = default_auth;
+    }
+
+    pub fn set_default_auth_mutability(&mut self, default_auth_mutability: AccessRule) {
+        self.default_auth_mutability = default_auth_mutability;
     }
 
     pub fn get_mutability(&self, key: &AccessRuleKey) -> &AccessRule {
@@ -87,15 +108,6 @@ impl AccessRules {
 
     pub fn get_default(&self) -> &AccessRule {
         &self.default_auth
-    }
-
-    // TODO: Move into scrypto repo
-    pub fn method(mut self, method_name: &str, method_auth: AccessRule) -> Self {
-        self.method_auth.insert(
-            AccessRuleKey::ScryptoMethod(method_name.to_string()),
-            AccessRuleEntry::AccessRule(method_auth),
-        );
-        self
     }
 
     pub fn set_method_access_rule(&mut self, key: AccessRuleKey, access_rule: AccessRule) {
@@ -144,5 +156,3 @@ impl AccessRules {
         l
     }
 }
-
-// TODO: add builder for `AccessRules`; would also like to rename this but require team agreement

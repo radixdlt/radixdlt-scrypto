@@ -27,7 +27,7 @@ blueprint! {
                     "organizational_authenticated_method",
                     organizational_access_rule,
                 )
-                .default(rule!(deny_all));
+                .default(rule!(deny_all), rule!(deny_all));
 
             let mut local_component = Self {}.instantiate();
             local_component.add_access_check(access_rules);

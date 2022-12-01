@@ -196,7 +196,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
 
         // Add protection for metadata
         let mut metadata_access_rules =
-            AccessRules::with_default(AccessRule::AllowAll, AccessRule::AllowAll);
+            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
         metadata_access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,
@@ -208,7 +208,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
 
         // Add protection for royalty
         let mut royalty_access_rules =
-            AccessRules::with_default(AccessRule::AllowAll, AccessRule::AllowAll);
+            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
         royalty_access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
                 PackageMethod::SetRoyaltyConfig,

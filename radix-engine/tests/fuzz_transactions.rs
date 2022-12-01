@@ -131,7 +131,7 @@ impl TransactionFuzzer {
 #[test]
 fn simple_transaction_fuzz_test() {
     let mut fuzzer = TransactionFuzzer::new();
-    let transactions: Vec<NotarizedTransaction> = (0..200)
+    let transactions: Vec<NotarizedTransaction> = (0..50)
         .into_iter()
         .map(|_| fuzzer.next_transaction())
         .collect();

@@ -23,8 +23,7 @@ blueprint! {
         ) -> ComponentAddress {
             let mut local_component = Self::new(12345);
             local_component.add_access_check(
-                AccessRules::with_default(rule!(require(some_non_fungible))),
-                rule!(deny_all),
+                AccessRules::new().default(rule!(require(some_non_fungible)), rule!(deny_all)),
             );
 
             let rtn = local_component.get_secret();
