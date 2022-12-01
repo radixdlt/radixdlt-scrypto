@@ -58,13 +58,12 @@ impl NativeProcedure for EpochManagerCreateInvocation {
 
         let epoch_manager = EpochManagerSubstate { epoch: 0 };
 
-        let auth_non_fungible = NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::supervisor_id());
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
                 EpochManagerMethod::SetEpoch,
             ))),
-            rule!(require(auth_non_fungible)),
+            rule!(require(AuthModule::supervisor_non_fungible_addr())),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
@@ -198,7 +197,7 @@ impl EpochManager {
             EpochManagerFunction::Create => {
                 vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                     HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                        NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::system_id()),
+                        AuthModule::system_non_fungible_addr(),
                     )),
                 ))]
             }

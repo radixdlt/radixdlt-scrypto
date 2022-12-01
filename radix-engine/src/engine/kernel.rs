@@ -106,7 +106,6 @@ where
         kernel
             .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |system_api| {
                 let auth_zone = AuthZoneStackSubstate::new(
-                    vec![],
                     auth_zone_params.virtualizable_proofs_resource_addresses,
                     auth_zone_params.initial_proofs.into_iter().collect(),
                 );
@@ -120,6 +119,10 @@ where
 
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
+            RENodeVisibilityOrigin::Normal,
+        );
+        kernel.current_frame.add_stored_ref(
+            RENodeId::Global(GlobalAddress::Resource(NATIVE_BLUEPRINT_TOKEN)),
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(

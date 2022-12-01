@@ -209,13 +209,11 @@ pub struct AuthZoneStackSubstate {
 
 impl AuthZoneStackSubstate {
     pub fn new(
-        proofs: Vec<ProofSubstate>,
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleAddress>,
     ) -> Self {
         Self {
             auth_zones: vec![AuthZone::new_with_virtual_proofs(
-                proofs,
                 virtual_resources,
                 virtual_non_fungibles,
                 false,
@@ -241,8 +239,7 @@ impl AuthZoneStackSubstate {
         Ok(())
     }
 
-    pub fn new_frame(&mut self, barrier: bool) {
-        let auth_zone = AuthZone::empty(barrier);
+    pub fn push_new_frame(&mut self, auth_zone: AuthZone) {
         self.auth_zones.push(auth_zone);
     }
 
@@ -277,23 +274,13 @@ pub struct AuthZone {
 }
 
 impl AuthZone {
-    fn empty(barrier: bool) -> Self {
-        Self {
-            proofs: vec![],
-            virtual_resources: BTreeSet::new(),
-            virtual_non_fungibles: BTreeSet::new(),
-            barrier,
-        }
-    }
-
-    fn new_with_virtual_proofs(
-        proofs: Vec<ProofSubstate>,
+    pub fn new_with_virtual_proofs(
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleAddress>,
         barrier: bool,
     ) -> Self {
         Self {
-            proofs,
+            proofs: vec![],
             virtual_resources,
             virtual_non_fungibles,
             barrier,

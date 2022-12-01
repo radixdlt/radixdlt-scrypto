@@ -52,13 +52,12 @@ impl NativeProcedure for ClockCreateInvocation {
     {
         let underlying_node_id = system_api.allocate_node_id(RENodeType::Clock)?;
 
-        let auth_non_fungible = NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::supervisor_id());
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
                 ClockMethod::SetCurrentTime,
             ))),
-            rule!(require(auth_non_fungible)),
+            rule!(require(AuthModule::supervisor_non_fungible_addr())),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
@@ -207,7 +206,7 @@ impl Clock {
             ClockFunction::Create => {
                 vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                     HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                        NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::system_id()),
+                        AuthModule::system_non_fungible_addr(),
                     )),
                 ))]
             }

@@ -21,12 +21,12 @@ pub enum AuthError {
 pub struct AuthModule;
 
 impl AuthModule {
-    pub fn supervisor_id() -> NonFungibleId {
-        NonFungibleId::U32(0)
+    pub fn supervisor_non_fungible_addr() -> NonFungibleAddress {
+        NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(0))
     }
 
-    pub fn system_id() -> NonFungibleId {
-        NonFungibleId::U32(1)
+    pub fn system_non_fungible_addr() -> NonFungibleAddress {
+        NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(1))
     }
 
     pub fn on_call_frame_enter<Y: SystemApi>(
@@ -55,7 +55,28 @@ impl AuthModule {
 
             // New auth zone frame managed by the AuthModule
             let is_barrier = Self::is_barrier(actor);
-            auth_zone_ref_mut.new_frame(is_barrier);
+
+            let mut virtual_non_fungibles = BTreeSet::new();
+
+            match actor {
+                // TODO: Update to be a virtualized actor badge
+                REActor::Function(ResolvedFunction::Native(..)) => {
+                    virtual_non_fungibles.insert(NonFungibleAddress::new(
+                        NATIVE_BLUEPRINT_TOKEN,
+                        NonFungibleId::U32(0),
+                    ));
+                }
+                _ => {}
+            }
+
+            let auth_zone = AuthZone::new_with_virtual_proofs(
+                BTreeSet::new(),
+                virtual_non_fungibles,
+                is_barrier,
+            );
+
+            auth_zone_ref_mut.push_new_frame(auth_zone);
+
             system_api.drop_lock(handle)?;
         }
 
@@ -106,37 +127,6 @@ impl AuthModule {
                         ..,
                     ) => {
                         vec![]
-                    }
-                    (
-                        ResolvedMethod::Native(NativeMethod::ResourceManager(
-                            ResourceManagerMethod::Mint,
-                        )),
-                        ResolvedReceiver {
-                            receiver: _,
-                            derefed_from:
-                                Some((RENodeId::Global(GlobalAddress::Resource(resource_address)), _)),
-                        },
-                    ) if resource_address.eq(&ENTITY_OWNER_TOKEN) => {
-                        let actor = system_api.get_actor();
-                        match actor {
-                            // TODO: Use associated function badge instead
-                            REActor::Function(ResolvedFunction::Native(
-                                NativeFunction::Package(PackageFunction::PublishWithOwner),
-                            ))
-                            | REActor::Function(ResolvedFunction::Native(
-                                NativeFunction::ResourceManager(
-                                    ResourceManagerFunction::CreateWithOwner,
-                                ),
-                            ))
-                            | REActor::Function(ResolvedFunction::Native(
-                                NativeFunction::Component(ComponentFunction::GlobalizeWithOwner),
-                            )) => {
-                                vec![MethodAuthorization::AllowAll]
-                            }
-                            _ => {
-                                vec![MethodAuthorization::DenyAll]
-                            }
-                        }
                     }
                     (ResolvedMethod::Native(method), ..)
                         if matches!(method, NativeMethod::Metadata(..))

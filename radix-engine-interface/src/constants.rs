@@ -290,6 +290,37 @@ pub const EDDSA_ED25519_TOKEN: ResourceAddress = construct_address!(
 /// The ED25519 virtual resource address.
 pub const ENTITY_OWNER_TOKEN: ResourceAddress = construct_address!(
     EntityType::Resource,
+    164,
+    118,
+    252,
+    242,
+    45,
+    239,
+    129,
+    211,
+    155,
+    52,
+    61,
+    103,
+    10,
+    165,
+    183,
+    134,
+    87,
+    179,
+    22,
+    142,
+    181,
+    94,
+    179,
+    91,
+    14,
+    251
+);
+
+/// The ED25519 virtual resource address.
+pub const NATIVE_BLUEPRINT_TOKEN: ResourceAddress = construct_address!(
+    EntityType::Resource,
     114,
     63,
     138,

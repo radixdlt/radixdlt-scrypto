@@ -7,6 +7,7 @@ use crate::transaction::{
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::GENESIS_CREATION_CREDIT;
+use radix_engine_interface::access_rule_node;
 use radix_engine_interface::api::types::{
     EpochManagerFunction, GlobalAddress, NativeFunctionIdent, RENodeId, ResourceManagerFunction,
     ResourceManagerOffset, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset,
@@ -35,6 +36,7 @@ pub struct GenesisReceipt {
     pub epoch_manager: SystemAddress,
     pub clock: SystemAddress,
     pub eddsa_ed25519_token: ResourceAddress,
+    pub native_blueprint_token: ResourceAddress,
     pub entity_owner_token: ResourceAddress,
 }
 
@@ -206,11 +208,38 @@ pub fn create_genesis() -> SystemTransaction {
         }
     };
 
+    // TODO: Upgrade this to be an actor token
+    let create_native_blueprint_token = {
+        let metadata: HashMap<String, String> = HashMap::new();
+        let mut access_rules = HashMap::new();
+        access_rules.insert(Withdraw, (AccessRule::DenyAll, LOCKED));
+        access_rules.insert(Deposit, (AccessRule::DenyAll, LOCKED));
+        let initial_supply: Option<MintParams> = None;
+
+        // TODO: Create token at a specific address
+        Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
+            args: scrypto_encode(&ResourceManagerCreateInvocation {
+                resource_type: ResourceType::NonFungible {
+                    id_type: NonFungibleIdType::U32,
+                },
+                metadata,
+                access_rules,
+                mint_params: initial_supply,
+            })
+            .unwrap(),
+        }
+    };
+
     let create_entity_owner_token = {
         let metadata: HashMap<String, String> = HashMap::new();
         let mut access_rules = HashMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Mint, (rule!(require(NATIVE_BLUEPRINT_TOKEN)), LOCKED));
+        access_rules.insert(Withdraw, (AccessRule::AllowAll, LOCKED));
+        access_rules.insert(Deposit, (AccessRule::AllowAll, LOCKED));
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
@@ -243,6 +272,7 @@ pub fn create_genesis() -> SystemTransaction {
             create_epoch_manager,
             create_clock,
             create_eddsa_ed25519_token,
+            create_native_blueprint_token,
             create_entity_owner_token,
         ],
         blobs,
@@ -265,8 +295,10 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
     let clock: SystemAddress = scrypto_decode(&invoke_result[8]).unwrap();
     let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) =
         scrypto_decode(&invoke_result[9]).unwrap();
-    let (entity_owner_token, _bucket): (ResourceAddress, Option<Bucket>) =
+    let (native_blueprint_token, _bucket): (ResourceAddress, Option<Bucket>) =
         scrypto_decode(&invoke_result[10]).unwrap();
+    let (entity_owner_token, _bucket): (ResourceAddress, Option<Bucket>) =
+        scrypto_decode(&invoke_result[11]).unwrap();
 
     GenesisReceipt {
         faucet_package,
@@ -279,6 +311,7 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
         clock,
         eddsa_ed25519_token,
         entity_owner_token,
+        native_blueprint_token,
     }
 }
 
@@ -371,6 +404,10 @@ mod tests {
         assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
         assert_eq!(genesis_receipt.clock, CLOCK);
         assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
+        assert_eq!(
+            genesis_receipt.native_blueprint_token,
+            NATIVE_BLUEPRINT_TOKEN
+        );
         assert_eq!(genesis_receipt.entity_owner_token, ENTITY_OWNER_TOKEN);
     }
 }
