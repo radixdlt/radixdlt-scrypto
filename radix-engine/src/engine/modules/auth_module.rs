@@ -29,73 +29,6 @@ impl AuthModule {
         NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(1))
     }
 
-    pub fn on_call_frame_enter<Y: SystemApi>(
-        call_frame_update: &mut CallFrameUpdate,
-        actor: &REActor,
-        system_api: &mut Y,
-    ) -> Result<(), RuntimeError> {
-        let refed = system_api.get_visible_node_ids()?;
-        let auth_zone_id = refed
-            .into_iter()
-            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
-            .unwrap();
-        call_frame_update.node_refs_to_copy.insert(auth_zone_id);
-
-        if !matches!(
-            actor,
-            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..)
-        ) {
-            let handle = system_api.lock_substate(
-                auth_zone_id,
-                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-                LockFlags::MUTABLE,
-            )?;
-            let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-            let auth_zone_ref_mut = substate_ref_mut.auth_zone();
-
-            // New auth zone frame managed by the AuthModule
-            let is_barrier = Self::is_barrier(actor);
-
-            let mut virtual_non_fungibles = BTreeSet::new();
-
-            match actor {
-                // TODO: Update to be a virtualized actor badge
-                REActor::Function(ResolvedFunction::Native(..)) => {
-                    virtual_non_fungibles.insert(NonFungibleAddress::new(
-                        NATIVE_BLUEPRINT_TOKEN,
-                        NonFungibleId::U32(0),
-                    ));
-                }
-                _ => {}
-            }
-
-            let auth_zone = AuthZone::new_with_virtual_proofs(
-                BTreeSet::new(),
-                virtual_non_fungibles,
-                is_barrier,
-            );
-
-            auth_zone_ref_mut.push_new_frame(auth_zone);
-
-            system_api.drop_lock(handle)?;
-        }
-
-        Ok(())
-    }
-
-    fn is_barrier(actor: &REActor) -> bool {
-        matches!(
-            actor,
-            REActor::Method(
-                _,
-                ResolvedReceiver {
-                    derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
-                    ..
-                }
-            )
-        )
-    }
-
     pub fn on_before_frame_start<Y>(actor: &REActor, system_api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: SystemApi,
@@ -297,6 +230,73 @@ impl AuthModule {
         system_api.drop_lock(handle)?;
 
         Ok(())
+    }
+
+    pub fn on_call_frame_enter<Y: SystemApi>(
+        call_frame_update: &mut CallFrameUpdate,
+        actor: &REActor,
+        system_api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        let refed = system_api.get_visible_node_ids()?;
+        let auth_zone_id = refed
+            .into_iter()
+            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
+            .unwrap();
+        call_frame_update.node_refs_to_copy.insert(auth_zone_id);
+
+        if !matches!(
+            actor,
+            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..)
+        ) {
+            let handle = system_api.lock_substate(
+                auth_zone_id,
+                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+                LockFlags::MUTABLE,
+            )?;
+            let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+            let auth_zone_ref_mut = substate_ref_mut.auth_zone();
+
+            // New auth zone frame managed by the AuthModule
+            let is_barrier = Self::is_barrier(actor);
+
+            let mut virtual_non_fungibles = BTreeSet::new();
+
+            match actor {
+                // TODO: Update to be a virtualized actor badge
+                REActor::Function(ResolvedFunction::Native(..)) => {
+                    virtual_non_fungibles.insert(NonFungibleAddress::new(
+                        NATIVE_BLUEPRINT_TOKEN,
+                        NonFungibleId::U32(0),
+                    ));
+                }
+                _ => {}
+            }
+
+            let auth_zone = AuthZone::new_with_virtual_proofs(
+                BTreeSet::new(),
+                virtual_non_fungibles,
+                is_barrier,
+            );
+
+            auth_zone_ref_mut.push_new_frame(auth_zone);
+
+            system_api.drop_lock(handle)?;
+        }
+
+        Ok(())
+    }
+
+    fn is_barrier(actor: &REActor) -> bool {
+        matches!(
+            actor,
+            REActor::Method(
+                _,
+                ResolvedReceiver {
+                    derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
+                    ..
+                }
+            )
+        )
     }
 
     pub fn on_call_frame_exit<Y>(system_api: &mut Y) -> Result<(), RuntimeError>
