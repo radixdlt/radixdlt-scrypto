@@ -151,32 +151,37 @@ impl FungibleResourceBuilder {
     ///     .initial_supply_no_owner(5);
     /// ```
     pub fn initial_supply_no_owner<T: Into<Decimal>>(self, amount: T) -> Bucket {
-        self.build_no_owner(Some(MintParams::fungible(amount)))
-            .1
-            .unwrap()
-    }
-
-    /// Creates resource with no initial supply.
-    pub fn no_initial_supply_no_owner(self) -> ResourceAddress {
-        self.build_no_owner(None).0
-    }
-
-    fn build_no_owner(self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = HashMap::new();
-        if !authorization.contains_key(&Withdraw) {
-            authorization.insert(Withdraw, (rule!(allow_all), LOCKED));
-        }
+        authorization.insert(Withdraw, (rule!(allow_all), LOCKED));
 
-        ScryptoEnv
+        let (_resource_address, bucket) = ScryptoEnv
             .sys_invoke(ResourceManagerCreateNoOwnerInvocation {
                 resource_type: ResourceType::Fungible {
                     divisibility: self.divisibility,
                 },
                 metadata: self.metadata.clone(),
                 access_rules: authorization,
-                mint_params,
+                mint_params: Some(MintParams::fungible(amount)),
             })
-            .unwrap()
+            .unwrap();
+
+        bucket.unwrap()
+    }
+
+
+    pub fn no_initial_supply_no_owner(self) -> ResourceAddress {
+        let (resource_address, _bucket) = ScryptoEnv
+            .sys_invoke(ResourceManagerCreateNoOwnerInvocation {
+                resource_type: ResourceType::Fungible {
+                    divisibility: self.divisibility,
+                },
+                metadata: self.metadata.clone(),
+                access_rules: HashMap::new(),
+                mint_params: None,
+            })
+            .unwrap();
+
+        resource_address
     }
 
     /*

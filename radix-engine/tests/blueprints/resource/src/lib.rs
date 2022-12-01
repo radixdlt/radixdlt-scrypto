@@ -45,20 +45,20 @@ blueprint! {
             (badge, tokens, token_address)
         }
 
-        pub fn create_fungible_wrong_resource_flags_should_fail() -> ResourceAddress {
-            let token_address = ResourceBuilder::new_fungible()
+        pub fn create_fungible_wrong_resource_flags_should_fail() -> Bucket {
+            let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .no_initial_supply_no_owner();
-            token_address
+                .initial_supply_no_owner(1u32);
+            bucket
         }
 
-        pub fn create_fungible_wrong_mutable_flags_should_fail() -> ResourceAddress {
-            let token_address = ResourceBuilder::new_fungible()
+        pub fn create_fungible_wrong_mutable_flags_should_fail() -> Bucket {
+            let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .no_initial_supply_no_owner();
-            token_address
+                .initial_supply_no_owner(1u32);
+            bucket
         }
 
         pub fn create_fungible_wrong_resource_permissions_should_fail() -> (Bucket, ResourceAddress)
