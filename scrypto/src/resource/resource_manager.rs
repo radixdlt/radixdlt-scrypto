@@ -21,10 +21,10 @@ pub struct ResourceManager(pub(crate) ResourceAddress);
 impl ResourceManager {
     pub fn set_mintable(&mut self, access_rule: AccessRule) {
         let mut env = ScryptoEnv;
-        env.sys_invoke(AccessRulesSetAccessRuleInvocation {
+        env.sys_invoke(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::Mint,
             )))
             .into(),
@@ -35,10 +35,10 @@ impl ResourceManager {
 
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
         let mut env = ScryptoEnv;
-        env.sys_invoke(AccessRulesSetAccessRuleInvocation {
+        env.sys_invoke(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::Burn,
             )))
             .into(),
@@ -79,10 +79,10 @@ impl ResourceManager {
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
         let mut env = ScryptoEnv;
-        env.sys_invoke(AccessRulesSetAccessRuleInvocation {
+        env.sys_invoke(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::UpdateMetadata,
             )))
             .into(),
@@ -93,10 +93,10 @@ impl ResourceManager {
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
         let mut env = ScryptoEnv;
-        env.sys_invoke(AccessRulesSetAccessRuleInvocation {
+        env.sys_invoke(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::UpdateNonFungibleData,
             )))
             .into(),
@@ -107,10 +107,10 @@ impl ResourceManager {
 
     pub fn lock_mintable(&mut self) {
         let mut env = ScryptoEnv;
-        env.sys_invoke(AccessRulesSetMutabilityInvocation {
+        env.sys_invoke(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::Mint,
             )))
             .into(),
@@ -121,10 +121,10 @@ impl ResourceManager {
 
     pub fn lock_burnable(&mut self) {
         let mut env = ScryptoEnv;
-        env.sys_invoke(AccessRulesSetMutabilityInvocation {
+        env.sys_invoke(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::Burn,
             )))
             .into(),
@@ -135,10 +135,10 @@ impl ResourceManager {
 
     pub fn lock_updateable_metadata(&mut self) {
         let mut env = ScryptoEnv;
-        env.sys_invoke(AccessRulesSetMutabilityInvocation {
+        env.sys_invoke(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::UpdateMetadata,
             )))
             .into(),
@@ -149,10 +149,10 @@ impl ResourceManager {
 
     pub fn lock_updateable_non_fungible_data(&mut self) {
         let mut env = ScryptoEnv;
-        env.sys_invoke(AccessRulesSetMutabilityInvocation {
+        env.sys_invoke(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::UpdateNonFungibleData,
             )))
             .into(),

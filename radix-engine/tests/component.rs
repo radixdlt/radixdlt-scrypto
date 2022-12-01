@@ -489,15 +489,15 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
         MutableAccessRulesTestRunner::manifest_builder()
             .call_native_method(
                 RENodeId::Global(GlobalAddress::Component(test_runner.component_address)),
-                &AccessRulesMethod::SetAccessRule.to_string(),
-                scrypto_encode(&AccessRulesSetAccessRuleInvocation {
+                &AccessRulesMethod::SetMethodAccessRule.to_string(),
+                scrypto_encode(&AccessRulesSetMethodAccessRuleInvocation {
                     receiver: RENodeId::Global(GlobalAddress::Component(
                         test_runner.component_address,
                     )),
                     index: 0,
-                    selector: AccessRuleSelector::Method(AccessRuleKey::ScryptoMethod(
+                    key: AccessRuleKey::ScryptoMethod(
                         "borrow_funds".to_string(),
-                    )),
+                    ),
                     rule: rule!(deny_all),
                 })
                 .unwrap(),

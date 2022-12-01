@@ -10,19 +10,6 @@ use crate::scrypto;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
-pub enum AccessRuleSelector {
-    Method(AccessRuleKey),
-    Group(String),
-}
-
-impl From<AccessRuleKey> for AccessRuleSelector {
-    fn from(value: AccessRuleKey) -> AccessRuleSelector {
-        AccessRuleSelector::Method(value)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum AccessRuleKey {
     ScryptoMethod(String),
     Native(NativeFn),

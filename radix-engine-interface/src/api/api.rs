@@ -53,8 +53,10 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ClockGetCurrentTimeRoundedToMinutesInvocation, E>
     + SysNativeInvokable<MetadataSetInvocation, E>
     + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
-    + SysNativeInvokable<AccessRulesSetAccessRuleInvocation, E>
-    + SysNativeInvokable<AccessRulesSetMutabilityInvocation, E>
+    + SysNativeInvokable<AccessRulesSetMethodAccessRuleInvocation, E>
+    + SysNativeInvokable<AccessRulesSetMethodMutabilityInvocation, E>
+    + SysNativeInvokable<AccessRulesSetGroupAccessRuleInvocation, E>
+    + SysNativeInvokable<AccessRulesSetGroupMutabilityInvocation, E>
     + SysNativeInvokable<AccessRulesGetLengthInvocation, E>
     + SysNativeInvokable<AuthZonePopInvocation, E>
     + SysNativeInvokable<AuthZonePushInvocation, E>

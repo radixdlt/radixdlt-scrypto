@@ -119,10 +119,10 @@ fn can_lock_package_metadata_with_owner() {
         .call_native_method(
             RENodeId::Global(GlobalAddress::Package(package_address)),
             "set_access_rule",
-            scrypto_encode(&AccessRulesSetAccessRuleInvocation {
+            scrypto_encode(&AccessRulesSetMethodAccessRuleInvocation {
                 receiver: RENodeId::Global(GlobalAddress::Package(package_address)),
                 index: 0,
-                selector: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                     MetadataMethod::Set,
                 )))
                 .into(),

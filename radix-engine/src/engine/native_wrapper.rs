@@ -293,15 +293,44 @@ where
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                AccessRulesMethod::SetAccessRule => {
-                    let invocation: AccessRulesSetAccessRuleInvocation = scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                AccessRulesMethod::SetMethodAccessRule => {
+                    let invocation: AccessRulesSetMethodAccessRuleInvocation =
+                        scrypto_decode(&args).map_err(|e| {
+                            RuntimeError::KernelError(KernelError::InvalidSborValue(e))
+                        })?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                AccessRulesMethod::SetMutability => {
-                    let invocation: AccessRulesSetMutabilityInvocation = scrypto_decode(&args)
+                AccessRulesMethod::SetMethodMutability => {
+                    let invocation: AccessRulesSetMethodMutabilityInvocation =
+                        scrypto_decode(&args).map_err(|e| {
+                            RuntimeError::KernelError(KernelError::InvalidSborValue(e))
+                        })?;
+                    system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
+                AccessRulesMethod::SetGroupAccessRule => {
+                    let invocation: AccessRulesSetGroupAccessRuleInvocation =
+                        scrypto_decode(&args).map_err(|e| {
+                            RuntimeError::KernelError(KernelError::InvalidSborValue(e))
+                        })?;
+                    system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
+                AccessRulesMethod::SetGroupMutability => {
+                    let invocation: AccessRulesSetGroupMutabilityInvocation =
+                        scrypto_decode(&args).map_err(|e| {
+                            RuntimeError::KernelError(KernelError::InvalidSborValue(e))
+                        })?;
+                    system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
+                AccessRulesMethod::GetLength => {
+                    let invocation: AccessRulesGetLengthInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)
