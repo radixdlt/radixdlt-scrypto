@@ -118,7 +118,7 @@ fn can_lock_package_metadata_with_owner() {
         .create_proof_from_account(account, ENTITY_OWNER_TOKEN)
         .call_native_method(
             RENodeId::Global(GlobalAddress::Package(package_address)),
-            "set_access_rule",
+            &AccessRulesMethod::SetMethodAccessRule.to_string(),
             scrypto_encode(&AccessRulesSetMethodAccessRuleInvocation {
                 receiver: RENodeId::Global(GlobalAddress::Package(package_address)),
                 index: 0,
