@@ -73,8 +73,11 @@ pub enum NativeFunction {
 #[strum(serialize_all = "snake_case")]
 pub enum AccessRulesChainMethod {
     AddAccessCheck,
-    SetAccessRule,
-    SetMutability,
+    SetMethodAccessRule,
+    SetGroupAccessRule,
+    SetMethodMutability,
+    SetGroupMutability,
+    GetLength,
 }
 
 #[derive(
@@ -254,7 +257,7 @@ pub enum AuthZoneStackMethod {
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFunction {
-    Create,
+    CreateNoOwner,
     CreateWithOwner,
     BurnBucket,
 }

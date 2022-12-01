@@ -11,7 +11,7 @@ blueprint! {
         ) -> (ResourceAddress, ComponentAddress, ComponentAddress) {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .initial_supply(1000000);
+                .initial_supply_no_owner(1000000);
 
             let resource_address = bucket.resource_address();
 

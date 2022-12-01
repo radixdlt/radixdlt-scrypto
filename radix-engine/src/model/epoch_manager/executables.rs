@@ -8,7 +8,6 @@ use crate::model::{
     HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
-use radix_engine_interface::access_rule_node;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
     EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction,

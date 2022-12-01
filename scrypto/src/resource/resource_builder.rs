@@ -108,15 +108,35 @@ impl FungibleResourceBuilder {
     /// ```ignore
     /// let bucket = ResourceBuilder::new_fungible()
     ///     .metadata("name", "TestToken")
-    ///     .initial_supply(5);
+    ///     .initial_supply_no_owner(5);
     /// ```
-    pub fn initial_supply<T: Into<Decimal>>(&self, amount: T) -> Bucket {
-        self.build(Some(MintParams::fungible(amount))).1.unwrap()
+    pub fn initial_supply_no_owner<T: Into<Decimal>>(&self, amount: T) -> Bucket {
+        self.build_no_owner(Some(MintParams::fungible(amount)))
+            .1
+            .unwrap()
     }
 
     /// Creates resource with no initial supply.
-    pub fn no_initial_supply(&self) -> ResourceAddress {
-        self.build(None).0
+    pub fn no_initial_supply_no_owner(&self) -> ResourceAddress {
+        self.build_no_owner(None).0
+    }
+
+    fn build_no_owner(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
+        let mut authorization = self.authorization.clone();
+        if !authorization.contains_key(&ResourceMethodAuthKey::Withdraw) {
+            authorization.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        }
+
+        ScryptoEnv
+            .sys_invoke(ResourceManagerCreateNoOwnerInvocation {
+                resource_type: ResourceType::Fungible {
+                    divisibility: self.divisibility,
+                },
+                metadata: self.metadata.clone(),
+                access_rules: authorization,
+                mint_params,
+            })
+            .unwrap()
     }
 
     pub fn initial_supply_with_owner<T: Into<Decimal>>(&self, amount: T) -> (Bucket, Bucket) {
@@ -141,24 +161,6 @@ impl FungibleResourceBuilder {
 
         ScryptoEnv
             .sys_invoke(ResourceManagerCreateWithOwnerInvocation {
-                resource_type: ResourceType::Fungible {
-                    divisibility: self.divisibility,
-                },
-                metadata: self.metadata.clone(),
-                access_rules: authorization,
-                mint_params,
-            })
-            .unwrap()
-    }
-
-    fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
-        let mut authorization = self.authorization.clone();
-        if !authorization.contains_key(&ResourceMethodAuthKey::Withdraw) {
-            authorization.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        }
-
-        ScryptoEnv
-            .sys_invoke(ResourceManagerCreateInvocation {
                 resource_type: ResourceType::Fungible {
                     divisibility: self.divisibility,
                 },
@@ -245,12 +247,12 @@ impl NonFungibleResourceBuilder {
     /// ```ignore
     /// let bucket = ResourceBuilder::new_non_fungible()
     ///     .metadata("name", "TestNonFungible")
-    ///     .initial_supply([
+    ///     .initial_supply_no_owner([
     ///         (NftKey::from(1u128), "immutable_part", "mutable_part"),
     ///         (NftKey::from(2u128), "another_immutable_part", "another_mutable_part"),
     ///     ]);
     /// ```
-    pub fn initial_supply<T, V>(&self, entries: T) -> Bucket
+    pub fn initial_supply_no_owner<T, V>(&self, entries: T) -> Bucket
     where
         T: IntoIterator<Item = (NonFungibleId, V)>,
         V: NonFungibleData,
@@ -259,24 +261,64 @@ impl NonFungibleResourceBuilder {
         for (id, e) in entries {
             encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }
-        self.build(Some(MintParams::NonFungible { entries: encoded }))
+        self.build_no_owner(Some(MintParams::NonFungible { entries: encoded }))
             .1
             .unwrap()
     }
 
     /// Creates resource with no initial supply.
-    pub fn no_initial_supply(&self) -> ResourceAddress {
-        self.build(None).0
+    pub fn no_initial_supply_no_owner(&self) -> ResourceAddress {
+        self.build_no_owner(None).0
     }
 
-    fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
+    fn build_no_owner(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
         if !authorization.contains_key(&ResourceMethodAuthKey::Withdraw) {
             authorization.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         }
 
         ScryptoEnv
-            .sys_invoke(ResourceManagerCreateInvocation {
+            .sys_invoke(ResourceManagerCreateNoOwnerInvocation {
+                resource_type: ResourceType::NonFungible {
+                    id_type: self.id_type,
+                },
+                metadata: self.metadata.clone(),
+                access_rules: authorization,
+                mint_params,
+            })
+            .unwrap()
+    }
+
+    pub fn initial_supply_with_owner<T, V>(&self, entries: T) -> (Bucket, Bucket)
+    where
+        T: IntoIterator<Item = (NonFungibleId, V)>,
+        V: NonFungibleData,
+    {
+        let mut encoded = HashMap::new();
+        for (id, e) in entries {
+            encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
+        }
+        let (_, bucket, owner_badge_bucket) =
+            self.build_with_owner(Some(MintParams::NonFungible { entries: encoded }));
+        (bucket.unwrap(), owner_badge_bucket)
+    }
+
+    /// Creates resource with no initial supply.
+    pub fn no_initial_supply_with_owner(&self) -> ResourceAddress {
+        self.build_with_owner(None).0
+    }
+
+    fn build_with_owner(
+        &self,
+        mint_params: Option<MintParams>,
+    ) -> (ResourceAddress, Option<Bucket>, Bucket) {
+        let mut authorization = self.authorization.clone();
+        if !authorization.contains_key(&ResourceMethodAuthKey::Withdraw) {
+            authorization.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        }
+
+        ScryptoEnv
+            .sys_invoke(ResourceManagerCreateWithOwnerInvocation {
                 resource_type: ResourceType::NonFungible {
                     id_type: self.id_type,
                 },

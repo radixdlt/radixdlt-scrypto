@@ -166,7 +166,7 @@ impl FeeTable {
             },
             NativeFunction::ResourceManager(resource_manager_ident) => {
                 match resource_manager_ident {
-                    ResourceManagerFunction::Create => self.fixed_high, // TODO: more investigation about fungibility
+                    ResourceManagerFunction::CreateNoOwner => self.fixed_high, // TODO: more investigation about fungibility
                     ResourceManagerFunction::CreateWithOwner => self.fixed_high, // TODO: more investigation about fungibility
                     ResourceManagerFunction::BurnBucket => self.fixed_low,
                 }
@@ -236,8 +236,11 @@ impl FeeTable {
             },
             NativeMethod::AccessRulesChain(component_ident) => match component_ident {
                 AccessRulesChainMethod::AddAccessCheck => self.fixed_low,
-                AccessRulesChainMethod::SetAccessRule => self.fixed_low,
-                AccessRulesChainMethod::SetMutability => self.fixed_low,
+                AccessRulesChainMethod::SetMethodAccessRule => self.fixed_low,
+                AccessRulesChainMethod::SetMethodMutability => self.fixed_low,
+                AccessRulesChainMethod::SetGroupAccessRule => self.fixed_low,
+                AccessRulesChainMethod::SetGroupMutability => self.fixed_low,
+                AccessRulesChainMethod::GetLength => self.fixed_low,
             },
             NativeMethod::Metadata(metadata_method) => match metadata_method {
                 MetadataMethod::Set => self.fixed_low,

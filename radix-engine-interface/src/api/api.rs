@@ -54,8 +54,11 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<MetadataSetInvocation, E>
     + SysNativeInvokable<MetadataGetInvocation, E>
     + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
-    + SysNativeInvokable<AccessRulesSetAccessRuleInvocation, E>
-    + SysNativeInvokable<AccessRulesSetMutabilityInvocation, E>
+    + SysNativeInvokable<AccessRulesSetMethodAccessRuleInvocation, E>
+    + SysNativeInvokable<AccessRulesSetMethodMutabilityInvocation, E>
+    + SysNativeInvokable<AccessRulesSetGroupAccessRuleInvocation, E>
+    + SysNativeInvokable<AccessRulesSetGroupMutabilityInvocation, E>
+    + SysNativeInvokable<AccessRulesGetLengthInvocation, E>
     + SysNativeInvokable<AuthZonePopInvocation, E>
     + SysNativeInvokable<AuthZonePushInvocation, E>
     + SysNativeInvokable<AuthZoneCreateProofInvocation, E>
@@ -86,7 +89,7 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ProofGetNonFungibleIdsInvocation, E>
     + SysNativeInvokable<ProofGetResourceAddressInvocation, E>
     + SysNativeInvokable<ResourceManagerBucketBurnInvocation, E>
-    + SysNativeInvokable<ResourceManagerCreateInvocation, E>
+    + SysNativeInvokable<ResourceManagerCreateNoOwnerInvocation, E>
     + SysNativeInvokable<ResourceManagerCreateWithOwnerInvocation, E>
     + SysNativeInvokable<ResourceManagerBurnInvocation, E>
     + SysNativeInvokable<ResourceManagerUpdateVaultAuthInvocation, E>

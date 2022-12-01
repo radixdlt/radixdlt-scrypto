@@ -20,7 +20,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::model::*;
-use radix_engine_interface::{access_rule_node, dec, rule, scrypto};
+use radix_engine_interface::{dec, rule, scrypto};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,7 +74,7 @@ impl NativeProcedure for ResourceManagerBucketBurnInvocation {
     }
 }
 
-impl ExecutableInvocation for ResourceManagerCreateInvocation {
+impl ExecutableInvocation for ResourceManagerCreateNoOwnerInvocation {
     type Exec = NativeExecutor<Self>;
 
     fn resolve<D: MethodDeref>(
@@ -83,7 +83,7 @@ impl ExecutableInvocation for ResourceManagerCreateInvocation {
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
-            ResourceManagerFunction::Create,
+            ResourceManagerFunction::CreateNoOwner,
         )));
         let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
@@ -433,7 +433,7 @@ fn build_substates(
     (substate, vault_substate)
 }
 
-impl NativeProcedure for ResourceManagerCreateInvocation {
+impl NativeProcedure for ResourceManagerCreateNoOwnerInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
 
     fn main<Y>(
