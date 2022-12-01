@@ -7,7 +7,7 @@ blueprint! {
 
     impl StoredResource {
         pub fn create() -> ComponentAddress {
-            let resource_address = ResourceBuilder::new_fungible().no_initial_supply();
+            let resource_address = ResourceBuilder::new_fungible().no_initial_supply_no_owner();
             Self { resource_address }.instantiate().globalize_no_owner()
         }
 

@@ -139,7 +139,7 @@ pub enum AuthZoneStackMethodInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerFunctionInvocation {
-    Create(ResourceManagerCreateInvocation),
+    Create(ResourceManagerCreateNoOwnerInvocation),
     CreateWithOwner(ResourceManagerCreateWithOwnerInvocation),
     BurnBucket(ResourceManagerBucketBurnInvocation),
 }

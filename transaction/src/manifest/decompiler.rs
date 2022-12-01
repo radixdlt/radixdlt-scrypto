@@ -393,7 +393,7 @@ pub fn decompile_call_native_function<F: fmt::Write>(
             }
         }
         ("ResourceManager", "create") => {
-            if let Ok(input) = scrypto_decode::<ResourceManagerCreateInvocation>(&args) {
+            if let Ok(input) = scrypto_decode::<ResourceManagerCreateNoOwnerInvocation>(&args) {
                 f.write_str(&format!(
                     "CREATE_RESOURCE {} {} {} {};",
                     IndexedScryptoValue::from_typed(&input.resource_type)

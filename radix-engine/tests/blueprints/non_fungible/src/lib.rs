@@ -17,7 +17,7 @@ blueprint! {
             // Create a mint badge
             let mint_badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
+                .initial_supply_no_owner(1);
 
             // Create non-fungible resource with mutable supply
             let resource_address = ResourceBuilder::new_non_fungible()
@@ -26,7 +26,7 @@ blueprint! {
                 .mintable(rule!(require(mint_badge.resource_address())), LOCKED)
                 .burnable(rule!(allow_all), LOCKED)
                 .updateable_non_fungible_data(rule!(require(mint_badge.resource_address())), LOCKED)
-                .no_initial_supply();
+                .no_initial_supply_no_owner();
 
             // Mint a non-fungible
             let non_fungible = mint_badge.authorize(|| {
@@ -62,7 +62,7 @@ blueprint! {
                 .metadata("name", "Katz's Sandwiches")
                 .set_id_type(NonFungibleIdType::U32)
                 .burnable(rule!(allow_all), LOCKED)
-                .initial_supply([
+                .initial_supply_no_owner([
                     (
                         NonFungibleId::U32(0),
                         Sandwich {
@@ -84,7 +84,7 @@ blueprint! {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
                 .set_id_type(NonFungibleIdType::U32)
-                .initial_supply([
+                .initial_supply_no_owner([
                     (
                         NonFungibleId::U32(1),
                         Sandwich {
@@ -252,7 +252,7 @@ blueprint! {
             // creating non-fungible id with id type set to default (UUID)
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .initial_supply([(
+                .initial_supply_no_owner([(
                     // adding non-fungible id with id type Number
                     NonFungibleId::U32(0),
                     Sandwich {
@@ -266,7 +266,7 @@ blueprint! {
             // creating non-fungible id with id type set to default (UUID)
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .initial_supply([(
+                .initial_supply_no_owner([(
                     // adding random non-fungible id with type UUID
                     ScryptoNonFungibleId::random(),
                     Sandwich {
