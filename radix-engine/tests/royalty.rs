@@ -43,7 +43,10 @@ fn test_component_royalty() {
     );
 
     receipt.expect_commit_success();
-    assert_eq!(receipt.execution.fee_summary.royalty, dec!("1"));
+    assert_eq!(
+        receipt.execution.fee_summary.royalty,
+        dec!("1") * DEFAULT_COST_UNIT_PRICE
+    );
 }
 
 fn set_up_package_and_component() -> (
@@ -116,7 +119,10 @@ fn test_package_royalty() {
     );
 
     receipt.expect_commit_success();
-    assert_eq!(receipt.execution.fee_summary.royalty, dec!("1") + dec!("2"),);
+    assert_eq!(
+        receipt.execution.fee_summary.royalty,
+        (dec!("1") + dec!("2")) * DEFAULT_COST_UNIT_PRICE
+    );
 }
 
 #[test]

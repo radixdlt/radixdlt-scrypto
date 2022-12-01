@@ -354,9 +354,9 @@ mod tests {
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), false);
         assert_eq!(summary.cost_unit_consumed, 2);
-        assert_eq!(summary.execution, dec!("10"));
+        assert_eq!(summary.execution, dec!("10.1"));
         assert_eq!(summary.royalty, dec!("0"));
-        assert_eq!(summary.bad_debt, dec!("10"));
+        assert_eq!(summary.bad_debt, dec!("10.1"));
         assert_eq!(summary.payments, vec![],);
     }
 
