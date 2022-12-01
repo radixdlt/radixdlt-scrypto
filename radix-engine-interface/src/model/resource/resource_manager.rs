@@ -30,6 +30,7 @@ pub enum ResourceMethodAuthKey {
     Mint,
     Burn,
     UpdateNonFungibleData,
+    UpdateMetadata,
     Withdraw,
     Deposit,
     Recall,
@@ -78,25 +79,25 @@ impl Into<NativeFnInvocation> for ResourceManagerCreateNoOwnerInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerCreateWithOwnerInvocation {
+pub struct ResourceManagerCreateWithManagerInvocation {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    pub manager_badge: NonFungibleAddress,
     pub mint_params: Option<MintParams>,
 }
 
-impl Invocation for ResourceManagerCreateWithOwnerInvocation {
-    type Output = (ResourceAddress, Option<Bucket>, Bucket);
+impl Invocation for ResourceManagerCreateWithManagerInvocation {
+    type Output = (ResourceAddress, Option<Bucket>);
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateWithOwnerInvocation {
-    type ScryptoOutput = (ResourceAddress, Option<Bucket>, Bucket);
+impl ScryptoNativeInvocation for ResourceManagerCreateWithManagerInvocation {
+    type ScryptoOutput = (ResourceAddress, Option<Bucket>);
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerCreateWithOwnerInvocation {
+impl Into<NativeFnInvocation> for ResourceManagerCreateWithManagerInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
-            ResourceManagerFunctionInvocation::CreateWithOwner(self),
+            ResourceManagerFunctionInvocation::CreateWithManager(self),
         ))
     }
 }

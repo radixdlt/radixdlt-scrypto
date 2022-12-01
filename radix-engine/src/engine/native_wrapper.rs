@@ -63,7 +63,7 @@ where
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerFunction::CreateWithOwner => {
-                    let invocation: ResourceManagerCreateWithOwnerInvocation =
+                    let invocation: ResourceManagerCreateWithManagerInvocation =
                         scrypto_decode(&args).map_err(|e| {
                             RuntimeError::KernelError(KernelError::InvalidSborValue(e))
                         })?;

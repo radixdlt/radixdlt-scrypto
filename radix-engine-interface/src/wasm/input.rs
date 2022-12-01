@@ -143,7 +143,7 @@ pub enum AuthZoneStackMethodInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerFunctionInvocation {
     Create(ResourceManagerCreateNoOwnerInvocation),
-    CreateWithOwner(ResourceManagerCreateWithOwnerInvocation),
+    CreateWithManager(ResourceManagerCreateWithManagerInvocation),
     BurnBucket(ResourceManagerBucketBurnInvocation),
 }
 
@@ -240,7 +240,7 @@ impl NativeFnInvocation {
                     ResourceManagerFunctionInvocation::Create(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerFunctionInvocation::CreateWithOwner(invocation) => system_api
+                    ResourceManagerFunctionInvocation::CreateWithManager(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerFunctionInvocation::BurnBucket(invocation) => system_api

@@ -96,10 +96,15 @@ blueprint! {
         }
 
         pub fn update_resource_metadata() -> Bucket {
-            let (resource_address, badge) = ResourceBuilder::new_fungible()
+            let badge = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_NONE)
+                .initial_supply_no_owner(1);
+
+            let resource_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .no_initial_supply_with_owner();
+                .updateable_metadata(rule!(require(badge.resource_address())), LOCKED)
+                .no_initial_supply_no_owner();
             let token_resource_manager = borrow_resource_manager!(resource_address);
 
             badge.authorize(|| {

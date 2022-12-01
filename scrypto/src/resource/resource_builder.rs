@@ -78,7 +78,7 @@ impl FungibleResourceBuilder {
 
     pub fn recallable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
         self.authorization
-            .insert(ResourceMethodAuthKey::Recall, (method_auth, mutability));
+            .insert(Recall, (method_auth, mutability));
         self
     }
 
@@ -88,7 +88,7 @@ impl FungibleResourceBuilder {
         mutability: Mutability,
     ) -> &mut Self {
         self.authorization
-            .insert(ResourceMethodAuthKey::Withdraw, (method_auth, mutability));
+            .insert(Withdraw, (method_auth, mutability));
         self
     }
 
@@ -98,7 +98,17 @@ impl FungibleResourceBuilder {
         mutability: Mutability,
     ) -> &mut Self {
         self.authorization
-            .insert(ResourceMethodAuthKey::Deposit, (method_auth, mutability));
+            .insert(Deposit, (method_auth, mutability));
+        self
+    }
+
+    pub fn updateable_metadata(
+        &mut self,
+        method_auth: AccessRule,
+        mutability: Mutability,
+    ) -> &mut Self {
+        self.authorization
+            .insert(UpdateMetadata, (method_auth, mutability));
         self
     }
 
@@ -139,6 +149,7 @@ impl FungibleResourceBuilder {
             .unwrap()
     }
 
+    /*
     pub fn initial_supply_with_owner<T: Into<Decimal>>(&self, amount: T) -> (Bucket, Bucket) {
         let (_, bucket, owner_badge_bucket) =
             self.build_with_owner(Some(MintParams::fungible(amount)));
@@ -160,7 +171,7 @@ impl FungibleResourceBuilder {
         }
 
         ScryptoEnv
-            .sys_invoke(ResourceManagerCreateWithOwnerInvocation {
+            .sys_invoke(ResourceManagerCreateWithManagerInvocation {
                 resource_type: ResourceType::Fungible {
                     divisibility: self.divisibility,
                 },
@@ -170,6 +181,7 @@ impl FungibleResourceBuilder {
             })
             .unwrap()
     }
+     */
 }
 
 impl NonFungibleResourceBuilder {
@@ -235,6 +247,16 @@ impl NonFungibleResourceBuilder {
         self
     }
 
+    pub fn updateable_metadata(
+        &mut self,
+        method_auth: AccessRule,
+        mutability: Mutability,
+    ) -> &mut Self {
+        self.authorization
+            .insert(UpdateMetadata, (method_auth, mutability));
+        self
+    }
+
     /// Set ID type to use for this non fungible resource
     pub fn set_id_type(&mut self, id_type: NonFungibleIdType) -> &mut Self {
         self.id_type = id_type;
@@ -289,6 +311,7 @@ impl NonFungibleResourceBuilder {
             .unwrap()
     }
 
+    /*
     pub fn initial_supply_with_owner<T, V>(&self, entries: T) -> (Bucket, Bucket)
     where
         T: IntoIterator<Item = (NonFungibleId, V)>,
@@ -318,7 +341,7 @@ impl NonFungibleResourceBuilder {
         }
 
         ScryptoEnv
-            .sys_invoke(ResourceManagerCreateWithOwnerInvocation {
+            .sys_invoke(ResourceManagerCreateWithManagerInvocation {
                 resource_type: ResourceType::NonFungible {
                     id_type: self.id_type,
                 },
@@ -328,4 +351,5 @@ impl NonFungibleResourceBuilder {
             })
             .unwrap()
     }
+     */
 }

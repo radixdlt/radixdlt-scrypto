@@ -90,8 +90,8 @@ impl ExecutableInvocation for ResourceManagerCreateNoOwnerInvocation {
     }
 }
 
-impl ExecutableInvocation for ResourceManagerCreateWithOwnerInvocation {
-    type Exec = NativeExecutor<Self>;
+impl ExecutableInvocation for ResourceManagerCreateWithManagerInvocation {
+    type Exec = NativeExecutor<ResourceManagerCreateNoOwnerInvocation>;
 
     fn resolve<D: MethodDeref>(
         self,
@@ -101,7 +101,24 @@ impl ExecutableInvocation for ResourceManagerCreateWithOwnerInvocation {
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
             ResourceManagerFunction::CreateWithOwner,
         )));
-        let executor = NativeExecutor(self);
+
+        let manager_badge = self.manager_badge;
+        let mut access_rules = HashMap::new();
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (AllowAll, MUTABLE(rule!(require(manager_badge.clone())))));
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (AllowAll, MUTABLE(rule!(require(manager_badge.clone())))));
+        access_rules.insert(ResourceMethodAuthKey::Recall, (DenyAll, MUTABLE(rule!(require(manager_badge.clone())))));
+        access_rules.insert(Mint, (DenyAll, MUTABLE(rule!(require(manager_badge.clone())))));
+        access_rules.insert(Burn, (DenyAll, MUTABLE(rule!(require(manager_badge.clone())))));
+        access_rules.insert(UpdateNonFungibleData, (rule!(require(manager_badge.clone())), MUTABLE(rule!(require(manager_badge.clone())))));
+
+        let invocation = ResourceManagerCreateNoOwnerInvocation {
+            resource_type: self.resource_type,
+            metadata: self.metadata,
+            access_rules,
+            mint_params: self.mint_params,
+        };
+
+        let executor = NativeExecutor(invocation);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -483,90 +500,6 @@ impl NativeProcedure for ResourceManagerCreateNoOwnerInvocation {
 
         Ok((
             (resource_address, bucket),
-            CallFrameUpdate {
-                nodes_to_move,
-                node_refs_to_copy,
-            },
-        ))
-    }
-}
-
-impl NativeProcedure for ResourceManagerCreateWithOwnerInvocation {
-    type Output = (ResourceAddress, Option<Bucket>, Bucket);
-
-    fn main<Y>(
-        self,
-        api: &mut Y,
-    ) -> Result<((ResourceAddress, Option<Bucket>, Bucket), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + SysInvokableNative<RuntimeError>,
-    {
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
-        let resource_address: ResourceAddress = global_node_id.into();
-
-        // TODO: Cleanup resource_address + NonFungibleId integration
-        let (owner_badge_bucket, non_fungible_address) = {
-            let bytes = scrypto_encode(&resource_address).unwrap();
-            let non_fungible_id = NonFungibleId::Bytes(bytes);
-            let non_fungible_address =
-                NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id.clone());
-
-            let mut entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)> = HashMap::new();
-            entries.insert(
-                non_fungible_id,
-                (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
-            );
-
-            let mint_invocation = ResourceManagerMintInvocation {
-                receiver: ENTITY_OWNER_TOKEN,
-                mint_params: MintParams::NonFungible { entries },
-            };
-            let owner_badge_bucket = api.sys_invoke(mint_invocation)?;
-            (owner_badge_bucket, non_fungible_address)
-        };
-
-        let (resource_manager_substate, bucket) = build_resource_manager_substate(
-            resource_address,
-            self.resource_type,
-            self.mint_params,
-            api,
-        )?;
-        let (substate, vault_substate) = build_substates(
-            self.access_rules,
-            rule!(require(non_fungible_address.clone())),
-            rule!(require(non_fungible_address)),
-        );
-        let metadata_substate = MetadataSubstate {
-            metadata: self.metadata,
-        };
-
-        let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
-        api.create_node(
-            underlying_node_id,
-            RENode::ResourceManager(
-                resource_manager_substate,
-                metadata_substate,
-                substate,
-                vault_substate,
-            ),
-        )?;
-
-        api.create_node(
-            global_node_id,
-            RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
-        )?;
-
-        let mut nodes_to_move = vec![];
-        if let Some(bucket) = &bucket {
-            nodes_to_move.push(RENodeId::Bucket(bucket.0));
-        }
-        nodes_to_move.push(RENodeId::Bucket(owner_badge_bucket.0));
-
-        let mut node_refs_to_copy = HashSet::new();
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(resource_address)));
-
-        Ok((
-            (resource_address, bucket, owner_badge_bucket),
             CallFrameUpdate {
                 nodes_to_move,
                 node_refs_to_copy,
