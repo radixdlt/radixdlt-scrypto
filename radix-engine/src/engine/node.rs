@@ -39,6 +39,10 @@ pub enum RENode {
         AccessRulesChainSubstate,
     ),
     EpochManager(EpochManagerSubstate, AccessRulesChainSubstate),
+    Clock(
+        CurrentTimeRoundedToMinutesSubstate,
+        AccessRulesChainSubstate,
+    ),
 }
 
 impl RENode {
@@ -187,6 +191,16 @@ impl RENode {
                 substates.insert(
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     access_rules.into(),
+                );
+            }
+            RENode::Clock(current_time_rounded_to_minutes_substate, access_rules_substate) => {
+                substates.insert(
+                    SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
+                    current_time_rounded_to_minutes_substate.into(),
+                );
+                substates.insert(
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    access_rules_substate.into(),
                 );
             }
             RENode::FeeReserve(fee_reserve) => {

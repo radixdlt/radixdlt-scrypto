@@ -106,8 +106,8 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
         let handle = system_api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
 
         let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-        let access_rules = substate_ref_mut.access_rules();
-        access_rules.access_rules_chain.push(self.access_rules);
+        let substate = substate_ref_mut.access_rules_chain();
+        substate.access_rules_chain.push(self.access_rules);
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -174,7 +174,7 @@ impl NativeProcedure for AccessRulesSetAccessRuleInvocation {
 
         let authorization = {
             let substate_ref = api.get_ref(handle)?;
-            let substate = substate_ref.access_rules();
+            let substate = substate_ref.access_rules_chain();
             substate.mutability_authorization(&self.key)
         };
 
@@ -201,7 +201,7 @@ impl NativeProcedure for AccessRulesSetAccessRuleInvocation {
         }
 
         let mut substate_ref_mut = api.get_ref_mut(handle)?;
-        let substate = substate_ref_mut.access_rules();
+        let substate = substate_ref_mut.access_rules_chain();
         let access_rules_chain = &mut substate.access_rules_chain;
         let index: usize = self.index.try_into().unwrap();
         let access_rules =
@@ -280,7 +280,7 @@ impl NativeProcedure for AccessRulesSetMutabilityInvocation {
 
         let authorization = {
             let substate_ref = api.get_ref(handle)?;
-            let substate = substate_ref.access_rules();
+            let substate = substate_ref.access_rules_chain();
             substate.mutability_authorization(&self.key)
         };
 
@@ -307,7 +307,7 @@ impl NativeProcedure for AccessRulesSetMutabilityInvocation {
         }
 
         let mut substate_ref_mut = api.get_ref_mut(handle)?;
-        let substate = substate_ref_mut.access_rules();
+        let substate = substate_ref_mut.access_rules_chain();
         let access_rules_chain = &mut substate.access_rules_chain;
         let index: usize = self.index.try_into().unwrap();
         let access_rules =

@@ -21,7 +21,7 @@ blueprint! {
                 garbage_vaults: Vec::new(),
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn lock_fee(&mut self, amount: Decimal) {

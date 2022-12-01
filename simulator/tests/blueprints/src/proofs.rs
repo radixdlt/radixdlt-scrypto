@@ -33,7 +33,7 @@ blueprint! {
             local_component.add_access_check(access_rules);
 
             (
-                local_component.globalize(),
+                local_component.globalize_no_owner(),
                 vec![supervisor_badge, admin_badge, superadmin_badge, token],
             )
         }

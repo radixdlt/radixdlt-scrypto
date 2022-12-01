@@ -85,10 +85,9 @@ impl<'a> SborValueRetriever<'a> {
         }
 
         match value {
-            SborValue::Struct { fields: vec }
+            SborValue::Tuple { fields: vec, .. }
             | SborValue::Enum { fields: vec, .. }
-            | SborValue::Array { elements: vec, .. }
-            | SborValue::Tuple { elements: vec, .. } => self.get_from_vector(vec),
+            | SborValue::Array { elements: vec, .. } => self.get_from_vector(vec),
             _ => Option::None,
         }
     }
@@ -112,10 +111,9 @@ impl<'a> SborValueRetriever<'a> {
         }
 
         match value {
-            SborValue::Struct { fields: vec }
+            SborValue::Tuple { fields: vec, .. }
             | SborValue::Enum { fields: vec, .. }
-            | SborValue::Array { elements: vec, .. }
-            | SborValue::Tuple { elements: vec, .. } => self.get_from_vector_mut(vec),
+            | SborValue::Array { elements: vec, .. } => self.get_from_vector_mut(vec),
             _ => Option::None,
         }
     }

@@ -113,6 +113,9 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
             .insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
         call_frame_update
             .node_refs_to_copy
+            .insert(RENodeId::Global(GlobalAddress::System(CLOCK)));
+        call_frame_update
+            .node_refs_to_copy
             .insert(RENodeId::Global(GlobalAddress::Resource(
                 ECDSA_SECP256K1_TOKEN,
             )));

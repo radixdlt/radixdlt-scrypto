@@ -26,7 +26,7 @@ blueprint! {
                     .default(dec!("0")),
             );
 
-            local_component.globalize()
+            local_component.globalize_no_owner()
         }
 
         pub fn enable_royalty_for_this_package() {

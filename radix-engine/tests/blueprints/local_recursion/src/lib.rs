@@ -25,7 +25,7 @@ blueprint! {
             .instantiate();
 
             let rtn_bucket = local_component.recurse();
-            local_component.globalize();
+            local_component.globalize_no_owner();
             rtn_bucket
         }
     }
@@ -56,7 +56,7 @@ blueprint! {
             let local_component = Self { vaults }.instantiate();
 
             let rtn_bucket = local_component.recurse();
-            local_component.globalize();
+            local_component.globalize_no_owner();
             rtn_bucket
         }
     }

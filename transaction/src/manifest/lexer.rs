@@ -38,7 +38,6 @@ pub enum TokenKind {
     U64,
     U128,
     String,
-    Struct,
     Enum,
     Array,
     Tuple,
@@ -62,6 +61,7 @@ pub enum TokenKind {
     Vault,
     ResourceManager,
     Package,
+    Clock,
 
     /* Other interpreted */
     Expression,
@@ -382,7 +382,6 @@ impl Lexer {
             "U64" => Ok(TokenKind::U64),
             "U128" => Ok(TokenKind::U128),
             "String" => Ok(TokenKind::String),
-            "Struct" => Ok(TokenKind::Struct),
             "Enum" => Ok(TokenKind::Enum),
             "Array" => Ok(TokenKind::Array),
             "Tuple" => Ok(TokenKind::Tuple),
@@ -404,6 +403,7 @@ impl Lexer {
             "Vault" => Ok(TokenKind::Vault),
             "ResourceManager" => Ok(TokenKind::ResourceManager),
             "Package" => Ok(TokenKind::Package),
+            "Clock" => Ok(TokenKind::Clock),
 
             "Expression" => Ok(TokenKind::Expression),
             "Blob" => Ok(TokenKind::Blob),

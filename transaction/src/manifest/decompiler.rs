@@ -490,7 +490,7 @@ pub fn format_args<F: fmt::Write>(
 ) -> Result<(), DecompileError> {
     let value =
         IndexedScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
-    if let SborValue::Struct { fields } = value.dom {
+    if let SborValue::Tuple { fields } = value.dom {
         for field in fields {
             let bytes = scrypto_encode(&field)?;
             let arg = IndexedScryptoValue::from_slice(&bytes)
@@ -535,6 +535,7 @@ fn format_node_id(node_id: &RENodeId, context: &mut DecompilationContext) -> Str
         RENodeId::NonFungibleStore(id) => format!("NonFungibleStore(\"{}\")", format_id(id)),
         RENodeId::Component(id) => format!("Component(\"{}\")", format_id(id)),
         RENodeId::EpochManager(id) => format!("EpochManager(\"{}\")", format_id(id)),
+        RENodeId::Clock(id) => format!("Clock(\"{}\")", format_id(id)),
         RENodeId::Vault(id) => format!("Vault(\"{}\")", format_id(id)),
         RENodeId::ResourceManager(id) => format!("ResourceManager(\"{}\")", format_id(id)),
         RENodeId::Package(id) => format!("Package(\"{}\")", format_id(id)),

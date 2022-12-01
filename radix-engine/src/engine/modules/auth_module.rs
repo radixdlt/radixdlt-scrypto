@@ -88,8 +88,11 @@ impl AuthModule {
 
         let method_auths = match actor.clone() {
             REActor::Function(function_ident) => match function_ident {
-                ResolvedFunction::Native(NativeFunction::EpochManager(system_func)) => {
-                    EpochManager::function_auth(&system_func)
+                ResolvedFunction::Native(NativeFunction::EpochManager(epoch_manager_func)) => {
+                    EpochManager::function_auth(&epoch_manager_func)
+                }
+                ResolvedFunction::Native(NativeFunction::Clock(clock_func)) => {
+                    Clock::function_auth(&clock_func)
                 }
                 _ => vec![],
             },
@@ -140,6 +143,7 @@ impl AuthModule {
                             || matches!(method, NativeMethod::EpochManager(..))
                             || matches!(method, NativeMethod::ResourceManager(..))
                             || matches!(method, NativeMethod::Package(..))
+                            || matches!(method, NativeMethod::Clock(..))
                             || matches!(method, NativeMethod::Component(..)) =>
                     {
                         let offset = SubstateOffset::AccessRulesChain(
@@ -151,8 +155,8 @@ impl AuthModule {
                             LockFlags::read_only(),
                         )?;
                         let substate_ref = system_api.get_ref(handle)?;
-                        let access_rules = substate_ref.access_rules();
-                        let auth = access_rules.native_fn_authorization(NativeFn::Method(method));
+                        let substate = substate_ref.access_rules_chain();
+                        let auth = substate.native_fn_authorization(NativeFn::Method(method));
                         system_api.drop_lock(handle)?;
                         auth
                     }
@@ -207,7 +211,7 @@ impl AuthModule {
                                 LockFlags::read_only(),
                             )?;
                             let substate_ref = system_api.get_ref(handle)?;
-                            let access_rules = substate_ref.access_rules();
+                            let access_rules = substate_ref.access_rules_chain();
                             let auth = access_rules.method_authorization(&state, &schema, ident);
                             system_api.drop_lock(handle)?;
                             auth
@@ -243,7 +247,7 @@ impl AuthModule {
                             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
 
                         let substate_ref = system_api.get_ref(handle)?;
-                        let substate = substate_ref.access_rules();
+                        let substate = substate_ref.access_rules_chain();
 
                         // TODO: Revisit what the correct abstraction is for visibility in the auth module
                         let auth = match visibility {

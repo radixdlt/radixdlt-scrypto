@@ -86,7 +86,9 @@ impl NativeProcedure for EpochManagerCreateInvocation {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalEpochManager)?;
         api.create_node(
             global_node_id,
-            RENode::Global(GlobalAddressSubstate::System(underlying_node_id.into())),
+            RENode::Global(GlobalAddressSubstate::EpochManager(
+                underlying_node_id.into(),
+            )),
         )?;
 
         let system_address: SystemAddress = global_node_id.into();
@@ -142,8 +144,8 @@ impl NativeProcedure for EpochManagerGetCurrentEpochExecutable {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
-        let system = substate_ref.epoch_manager();
-        Ok((system.epoch, CallFrameUpdate::empty()))
+        let epoch_manager = substate_ref.epoch_manager();
+        Ok((epoch_manager.epoch, CallFrameUpdate::empty()))
     }
 }
 

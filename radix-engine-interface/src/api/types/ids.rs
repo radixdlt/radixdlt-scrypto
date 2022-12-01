@@ -11,3 +11,4 @@ pub type VaultId = [u8; 36];
 pub type ResourceManagerId = [u8; 36];
 pub type PackageId = [u8; 36];
 pub type EpochManagerId = [u8; 36];
+pub type ClockId = [u8; 36];

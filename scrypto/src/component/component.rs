@@ -36,7 +36,7 @@ pub trait LocalComponent {
     fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self;
     fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
     fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self;
-    fn globalize(self) -> ComponentAddress;
+    fn globalize_no_owner(self) -> ComponentAddress;
     fn globalize_with_owner(self) -> (ComponentAddress, Bucket);
 }
 
@@ -127,7 +127,7 @@ impl Component {
         self
     }
 
-    pub fn globalize(self) -> ComponentAddress {
+    pub fn globalize_no_owner(self) -> ComponentAddress {
         ScryptoEnv
             .sys_invoke(ComponentGlobalizeNoOwnerInvocation {
                 component_id: self.0,

@@ -491,8 +491,8 @@ fn generate_stubs(
                 self.component.set_royalty_config(royalty_config);
                 self
             }
-            fn globalize(self) -> ComponentAddress {
-                self.component.globalize()
+            fn globalize_no_owner(self) -> ComponentAddress {
+                self.component.globalize_no_owner()
             }
             fn globalize_with_owner(self) -> (ComponentAddress, Bucket) {
                 self.component.globalize_with_owner()
@@ -692,8 +692,8 @@ mod tests {
                         self.component.set_royalty_config(royalty_config);
                         self
                     }
-                    fn globalize(self) -> ComponentAddress {
-                        self.component.globalize()
+                    fn globalize_no_owner(self) -> ComponentAddress {
+                        self.component.globalize_no_owner()
                     }
                     fn globalize_with_owner(self) -> (ComponentAddress, Bucket) {
                         self.component.globalize_with_owner()
@@ -786,8 +786,8 @@ mod tests {
                         self.component.set_royalty_config(royalty_config);
                         self
                     }
-                    fn globalize(self) -> ComponentAddress {
-                        self.component.globalize()
+                    fn globalize_no_owner(self) -> ComponentAddress {
+                        self.component.globalize_no_owner()
                     }
                     fn globalize_with_owner(self) -> (ComponentAddress, Bucket) {
                         self.component.globalize_with_owner()

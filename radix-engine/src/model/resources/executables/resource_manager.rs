@@ -512,7 +512,10 @@ impl NativeProcedure for ResourceManagerCreateWithOwnerInvocation {
                 NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id.clone());
 
             let mut entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)> = HashMap::new();
-            entries.insert(non_fungible_id, (vec![], vec![]));
+            entries.insert(
+                non_fungible_id,
+                (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
+            );
 
             let mint_invocation = ResourceManagerMintInvocation {
                 receiver: ENTITY_OWNER_TOKEN,
@@ -711,7 +714,7 @@ impl NativeProcedure for ResourceManagerUpdateVaultAuthExecutable {
                 .expect("AuthZone does not exist");
 
             let substate_ref = api.get_ref(handle)?;
-            let substate = substate_ref.access_rules();
+            let substate = substate_ref.access_rules_chain();
 
             let access_rule = match self.1 {
                 Deposit => {
@@ -732,7 +735,7 @@ impl NativeProcedure for ResourceManagerUpdateVaultAuthExecutable {
         }
 
         let mut substate_mut = api.get_ref_mut(handle)?;
-        let substate = substate_mut.access_rules();
+        let substate = substate_mut.access_rules_chain();
 
         match self.1 {
             VaultMethodAuthKey::Deposit => {
@@ -804,7 +807,7 @@ impl NativeProcedure for ResourceManagerLockVaultAuthExecutable {
                 .expect("AuthZone does not exist");
 
             let substate_ref = api.get_ref(handle)?;
-            let substate = substate_ref.access_rules();
+            let substate = substate_ref.access_rules_chain();
 
             let access_rule = match self.1 {
                 Deposit => {
@@ -825,7 +828,7 @@ impl NativeProcedure for ResourceManagerLockVaultAuthExecutable {
         }
 
         let mut substate_mut = api.get_ref_mut(handle)?;
-        let substate = substate_mut.access_rules();
+        let substate = substate_mut.access_rules_chain();
 
         match self.1 {
             Deposit => {

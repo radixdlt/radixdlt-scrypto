@@ -29,6 +29,7 @@ pub enum RENodeType {
     GlobalResourceManager,
     GlobalPackage,
     GlobalEpochManager,
+    GlobalClock,
     KeyValueStore,
     NonFungibleStore,
     Component,
@@ -36,6 +37,7 @@ pub enum RENodeType {
     ResourceManager,
     Package,
     EpochManager,
+    Clock,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
@@ -46,7 +48,6 @@ pub enum RENodeId {
     AuthZoneStack(AuthZoneStackId),
     FeeReserve(FeeReserveId),
     Worktop,
-
     Global(GlobalAddress),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
@@ -55,6 +56,7 @@ pub enum RENodeId {
     ResourceManager(ResourceManagerId),
     Package(PackageId),
     EpochManager(EpochManagerId),
+    Clock(ClockId),
 }
 
 impl Into<[u8; 36]> for RENodeId {
@@ -64,9 +66,10 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::NonFungibleStore(id) => id,
             RENodeId::Vault(id) => id,
             RENodeId::Component(id) => id,
-            RENodeId::EpochManager(id) => id,
             RENodeId::ResourceManager(id) => id,
             RENodeId::Package(id) => id,
+            RENodeId::EpochManager(id) => id,
+            RENodeId::Clock(id) => id,
             _ => panic!("Not a stored id"),
         }
     }
@@ -237,6 +240,11 @@ pub enum WorktopOffset {
     Worktop,
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ClockOffset {
+    CurrentTimeRoundedToMinutes,
+}
+
 /// Specifies a specific Substate into a given RENode
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -257,6 +265,7 @@ pub enum SubstateOffset {
     Bucket(BucketOffset),
     Proof(ProofOffset),
     Worktop(WorktopOffset),
+    Clock(ClockOffset),
 }
 
 /// TODO: separate space addresses?
