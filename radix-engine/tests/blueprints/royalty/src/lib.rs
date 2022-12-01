@@ -21,9 +21,9 @@ blueprint! {
 
             local_component.set_royalty_config(
                 RoyaltyConfigBuilder::new()
-                    .add_rule("paid_method", dec!("0.1"))
-                    .add_rule("paid_method_panic", dec!("0.1"))
-                    .default(dec!("0")),
+                    .add_rule("paid_method", 1)
+                    .add_rule("paid_method_panic", 1)
+                    .default(0),
             );
 
             local_component.globalize_no_owner()
@@ -35,9 +35,9 @@ blueprint! {
             borrow_package!(package_address).set_royalty_config(HashMap::from([(
                 "RoyaltyTest".to_owned(),
                 RoyaltyConfigBuilder::new()
-                    .add_rule("paid_method", dec!("0.2"))
-                    .add_rule("paid_method_panic", dec!("0.2"))
-                    .default(dec!("0")),
+                    .add_rule("paid_method", 2)
+                    .add_rule("paid_method_panic", 2)
+                    .default(0),
             )]));
         }
 

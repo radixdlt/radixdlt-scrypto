@@ -494,35 +494,35 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         };
 
         self.fee_reserve
-            .consume_flat(self.fee_table.tx_base_fee(), "base_fee", true)
+            .consume_execution(self.fee_table.tx_base_fee(), 1, "base_fee", true)
             .and_then(|()| {
-                self.fee_reserve.consume_sized(
-                    encoded_instructions_byte_length,
+                self.fee_reserve.consume_execution(
                     self.fee_table.tx_manifest_decoding_per_byte(),
+                    encoded_instructions_byte_length,
                     "decode_manifest",
                     true,
                 )
             })
             .and_then(|()| {
-                self.fee_reserve.consume_sized(
-                    encoded_instructions_byte_length,
+                self.fee_reserve.consume_execution(
                     self.fee_table.tx_manifest_verification_per_byte(),
+                    encoded_instructions_byte_length,
                     "verify_manifest",
                     true,
                 )
             })
             .and_then(|()| {
-                self.fee_reserve.consume_sized(
-                    transaction.auth_zone_params().initial_proofs.len(),
+                self.fee_reserve.consume_execution(
                     self.fee_table.tx_signature_verification_per_sig(),
+                    transaction.auth_zone_params().initial_proofs.len(),
                     "verify_signatures",
                     true,
                 )
             })
             .and_then(|()| {
-                self.fee_reserve.consume_sized(
-                    blobs_size,
+                self.fee_reserve.consume_execution(
                     self.fee_table.tx_blob_price_per_byte(),
+                    blobs_size,
                     "blobs",
                     true,
                 )
@@ -590,7 +590,7 @@ fn check_for_rejection(
     }
 
     // Check for errors before loan is repaid - in which case, we also reject
-    if !fee_summary.loan_fully_repaid {
+    if !fee_summary.loan_fully_repaid() {
         return Err(match invoke_result {
             Ok(..) => RejectionError::SuccessButFeeLoanNotRepaid,
             Err(error) => RejectionError::ErrorBeforeFeeLoanRepaid(error),
@@ -652,7 +652,7 @@ impl<'s> FinalizingTrack<'s> {
 
         // Finalize payments
         let mut actual_fee_payments: HashMap<VaultId, Decimal> = HashMap::new();
-        let mut required = fee_summary.burned + fee_summary.tipped + fee_summary.royalty;
+        let mut required = fee_summary.execution + fee_summary.royalty - fee_summary.bad_debt;
         let mut fees: Resource =
             Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 });
         for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
@@ -709,7 +709,10 @@ impl<'s> FinalizingTrack<'s> {
                         .to_ref_mut()
                         .package_royalty_accumulator()
                         .royalty
-                        .put(fees.take_by_amount(*amount).unwrap())
+                        .put(
+                            fees.take_by_amount(fee_summary.cost_unit_price * amount.clone())
+                                .unwrap(),
+                        )
                         .unwrap();
                     to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
                 }
@@ -725,7 +728,10 @@ impl<'s> FinalizingTrack<'s> {
                         .to_ref_mut()
                         .component_royalty_accumulator()
                         .royalty
-                        .put(fees.take_by_amount(*amount).unwrap())
+                        .put(
+                            fees.take_by_amount(fee_summary.cost_unit_price * amount.clone())
+                                .unwrap(),
+                        )
                         .unwrap();
                     to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
                 }
