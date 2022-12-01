@@ -73,6 +73,18 @@ impl AuthVerification {
         auth_zone: &AuthZoneStackSubstate,
     ) -> bool {
         Self::check_auth_zones(barrier_crossings_allowed, auth_zone, |auth_zone| {
+            if let HardResourceOrNonFungible::Resource(resource_address) = resource_rule {
+                if auth_zone.virtual_resources.contains(resource_address) {
+                    return true;
+                }
+
+                for non_fungible_address in &auth_zone.virtual_non_fungibles {
+                    if non_fungible_address.resource_address().eq(resource_address) {
+                        return true;
+                    }
+                }
+            }
+
             if let HardResourceOrNonFungible::NonFungible(non_fungible_address) = resource_rule {
                 if auth_zone
                     .virtual_non_fungibles
