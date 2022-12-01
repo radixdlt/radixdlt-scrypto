@@ -90,9 +90,9 @@ where
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
         let fee_reserve = SystemLoanFeeReserve::new(
-            transaction.cost_unit_limit(),
-            transaction.tip_percentage(),
             fee_reserve_config.cost_unit_price,
+            transaction.tip_percentage(),
+            transaction.cost_unit_limit().into(),
             fee_reserve_config.system_loan,
         );
 
@@ -193,9 +193,9 @@ where
             let break_down = receipt
                 .execution
                 .fee_summary
-                .cost_breakdown
+                .execution_breakdown
                 .iter()
-                .collect::<BTreeMap<&String, &u32>>();
+                .collect::<BTreeMap<&String, &u64>>();
             for (k, v) in break_down {
                 println!("{:<30}: {:>8}", k, v);
             }
