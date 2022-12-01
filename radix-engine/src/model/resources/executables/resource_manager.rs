@@ -104,12 +104,33 @@ impl ExecutableInvocation for ResourceManagerCreateWithManagerInvocation {
 
         let manager_badge = self.manager_badge;
         let mut access_rules = HashMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (AllowAll, MUTABLE(rule!(require(manager_badge.clone())))));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (AllowAll, MUTABLE(rule!(require(manager_badge.clone())))));
-        access_rules.insert(ResourceMethodAuthKey::Recall, (DenyAll, MUTABLE(rule!(require(manager_badge.clone())))));
-        access_rules.insert(Mint, (DenyAll, MUTABLE(rule!(require(manager_badge.clone())))));
-        access_rules.insert(Burn, (DenyAll, MUTABLE(rule!(require(manager_badge.clone())))));
-        access_rules.insert(UpdateNonFungibleData, (rule!(require(manager_badge.clone())), MUTABLE(rule!(require(manager_badge.clone())))));
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (AllowAll, MUTABLE(rule!(require(manager_badge.clone())))),
+        );
+        access_rules.insert(
+            ResourceMethodAuthKey::Deposit,
+            (AllowAll, MUTABLE(rule!(require(manager_badge.clone())))),
+        );
+        access_rules.insert(
+            ResourceMethodAuthKey::Recall,
+            (DenyAll, MUTABLE(rule!(require(manager_badge.clone())))),
+        );
+        access_rules.insert(
+            Mint,
+            (DenyAll, MUTABLE(rule!(require(manager_badge.clone())))),
+        );
+        access_rules.insert(
+            Burn,
+            (DenyAll, MUTABLE(rule!(require(manager_badge.clone())))),
+        );
+        access_rules.insert(
+            UpdateNonFungibleData,
+            (
+                rule!(require(manager_badge.clone())),
+                MUTABLE(rule!(require(manager_badge.clone()))),
+            ),
+        );
 
         let invocation = ResourceManagerCreateNoOwnerInvocation {
             resource_type: self.resource_type,
