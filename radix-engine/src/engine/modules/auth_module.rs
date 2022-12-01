@@ -51,11 +51,11 @@ impl AuthModule {
                 LockFlags::MUTABLE,
             )?;
             let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-            let auth_zone_ref_mut = substate_ref_mut.auth_zone();
+            let auth_zone_stack = substate_ref_mut.auth_zone_stack();
 
             // New auth zone frame managed by the AuthModule
             let is_barrier = Self::is_barrier(actor);
-            auth_zone_ref_mut.new_frame(is_barrier);
+            auth_zone_stack.new_frame(is_barrier);
             system_api.drop_lock(handle)?;
         }
 
@@ -100,8 +100,8 @@ impl AuthModule {
                 match (method, resolved_receiver) {
                     // SetAccessRule auth is done manually within the method
                     (
-                        ResolvedMethod::Native(NativeMethod::AccessRules(
-                            AccessRulesMethod::SetMethodAccessRule,
+                        ResolvedMethod::Native(NativeMethod::AccessRulesChain(
+                            AccessRulesChainMethod::SetMethodAccessRule,
                         )),
                         ..,
                     ) => {
@@ -124,12 +124,12 @@ impl AuthModule {
                                 NativeFunction::Package(PackageFunction::PublishWithOwner),
                             ))
                             | REActor::Function(ResolvedFunction::Native(
+                                NativeFunction::Component(ComponentFunction::GlobalizeWithOwner),
+                            ))
+                            | REActor::Function(ResolvedFunction::Native(
                                 NativeFunction::ResourceManager(
                                     ResourceManagerFunction::CreateWithOwner,
                                 ),
-                            ))
-                            | REActor::Function(ResolvedFunction::Native(
-                                NativeFunction::Component(ComponentFunction::GlobalizeWithOwner),
                             )) => {
                                 vec![MethodAuthorization::AllowAll]
                             }
@@ -141,18 +141,22 @@ impl AuthModule {
                     (ResolvedMethod::Native(method), ..)
                         if matches!(method, NativeMethod::Metadata(..))
                             || matches!(method, NativeMethod::EpochManager(..))
+                            || matches!(method, NativeMethod::ResourceManager(..))
+                            || matches!(method, NativeMethod::Package(..))
                             || matches!(method, NativeMethod::Clock(..))
-                            || matches!(method, NativeMethod::ResourceManager(..)) =>
+                            || matches!(method, NativeMethod::Component(..)) =>
                     {
-                        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+                        let offset = SubstateOffset::AccessRulesChain(
+                            AccessRulesChainOffset::AccessRulesChain,
+                        );
                         let handle = system_api.lock_substate(
                             resolved_receiver.receiver,
                             offset,
                             LockFlags::read_only(),
                         )?;
                         let substate_ref = system_api.get_ref(handle)?;
-                        let access_rules = substate_ref.access_rules();
-                        let auth = access_rules.native_fn_authorization(NativeFn::Method(method));
+                        let substate = substate_ref.access_rules_chain();
+                        let auth = substate.native_fn_authorization(NativeFn::Method(method));
                         system_api.drop_lock(handle)?;
                         auth
                     }
@@ -198,15 +202,16 @@ impl AuthModule {
                             state
                         };
                         {
-                            let offset =
-                                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+                            let offset = SubstateOffset::AccessRulesChain(
+                                AccessRulesChainOffset::AccessRulesChain,
+                            );
                             let handle = system_api.lock_substate(
                                 component_node_id,
                                 offset,
                                 LockFlags::read_only(),
                             )?;
                             let substate_ref = system_api.get_ref(handle)?;
-                            let access_rules = substate_ref.access_rules();
+                            let access_rules = substate_ref.access_rules_chain();
                             let auth = access_rules.method_authorization(&state, &schema, ident);
                             system_api.drop_lock(handle)?;
                             auth
@@ -235,26 +240,26 @@ impl AuthModule {
                             resource_address
                         };
                         let node_id = RENodeId::Global(GlobalAddress::Resource(resource_address));
-                        let offset =
-                            SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules);
+                        let offset = SubstateOffset::VaultAccessRulesChain(
+                            AccessRulesChainOffset::AccessRulesChain,
+                        );
                         let handle =
                             system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
 
                         let substate_ref = system_api.get_ref(handle)?;
-                        let access_rules_substate = substate_ref.access_rules();
+                        let substate = substate_ref.access_rules_chain();
 
                         // TODO: Revisit what the correct abstraction is for visibility in the auth module
                         let auth = match visibility {
-                            RENodeVisibilityOrigin::Normal => access_rules_substate
-                                .native_fn_authorization(NativeFn::Method(NativeMethod::Vault(
-                                    vault_fn.clone(),
-                                ))),
+                            RENodeVisibilityOrigin::Normal => substate.native_fn_authorization(
+                                NativeFn::Method(NativeMethod::Vault(vault_fn.clone())),
+                            ),
                             RENodeVisibilityOrigin::DirectAccess => match vault_fn {
                                 // TODO: Do we want to allow recaller to be able to withdraw from
                                 // TODO: any visible vault?
                                 VaultMethod::TakeNonFungibles | VaultMethod::Take => {
                                     let access_rule =
-                                        access_rules_substate.access_rules[0].get_group("recall");
+                                        substate.access_rules_chain[0].get_group("recall");
                                     let authorization = convert(
                                         &Type::Any,
                                         &IndexedScryptoValue::unit(),
@@ -290,11 +295,11 @@ impl AuthModule {
             LockFlags::read_only(),
         )?;
         let substate_ref = system_api.get_ref(handle)?;
-        let auth_zone_ref = substate_ref.auth_zone();
+        let auth_zone_stack = substate_ref.auth_zone_stack();
         let is_barrier = Self::is_barrier(actor);
 
         // Authorization check
-        auth_zone_ref
+        auth_zone_stack
             .check_auth(is_barrier, method_auths)
             .map_err(|(authorization, error)| {
                 RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
@@ -332,8 +337,8 @@ impl AuthModule {
         )?;
         {
             let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-            let auth_zone = substate_ref_mut.auth_zone();
-            auth_zone.pop_frame();
+            let auth_zone_stack = substate_ref_mut.auth_zone_stack();
+            auth_zone_stack.pop_frame();
         }
         system_api.drop_lock(handle)?;
 

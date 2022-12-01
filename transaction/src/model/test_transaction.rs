@@ -13,7 +13,7 @@ pub struct TestTransaction {
 }
 
 impl TestTransaction {
-    pub fn new(manifest: TransactionManifest, nonce: u64) -> Self {
+    pub fn new(manifest: TransactionManifest, nonce: u64, cost_unit_limit: u32) -> Self {
         let transaction = TransactionBuilder::new()
             .header(TransactionHeader {
                 version: TRANSACTION_VERSION_V1,
@@ -23,7 +23,7 @@ impl TestTransaction {
                 nonce,
                 notary_public_key: EcdsaSecp256k1PublicKey([0u8; 33]).into(),
                 notary_as_signatory: false,
-                cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+                cost_unit_limit,
                 tip_percentage: 5,
             })
             .manifest(manifest)

@@ -62,13 +62,16 @@ impl NativeProcedure for AuthZonePopInvocation {
 
         let proof = {
             let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
-            let auth_zone = substate_mut.auth_zone();
-            let proof = auth_zone.cur_auth_zone_mut().pop().map_err(|e| match e {
-                InvokeError::Downstream(runtime_error) => runtime_error,
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
-                }
-            })?;
+            let auth_zone_stack = substate_mut.auth_zone_stack();
+            let proof = auth_zone_stack
+                .cur_auth_zone_mut()
+                .pop()
+                .map_err(|e| match e {
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
+                    }
+                })?;
             proof
         };
 
@@ -131,8 +134,8 @@ impl NativeProcedure for AuthZonePushInvocation {
         cloned_proof.change_to_unrestricted();
 
         let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
-        let auth_zone = substate_mut.auth_zone();
-        auth_zone.cur_auth_zone_mut().push(cloned_proof);
+        let auth_zone_stack = substate_mut.auth_zone_stack();
+        auth_zone_stack.cur_auth_zone_mut().push(cloned_proof);
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -187,8 +190,8 @@ impl NativeProcedure for AuthZoneCreateProofInvocation {
 
         let proof = {
             let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
-            let auth_zone = substate_mut.auth_zone();
-            let proof = auth_zone
+            let auth_zone_stack = substate_mut.auth_zone_stack();
+            let proof = auth_zone_stack
                 .cur_auth_zone()
                 .create_proof(self.resource_address, resource_type)
                 .map_err(|e| match e {
@@ -260,8 +263,8 @@ impl NativeProcedure for AuthZoneCreateProofByAmountInvocation {
 
         let proof = {
             let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
-            let auth_zone = substate_mut.auth_zone();
-            let proof = auth_zone
+            let auth_zone_stack = substate_mut.auth_zone_stack();
+            let proof = auth_zone_stack
                 .cur_auth_zone()
                 .create_proof_by_amount(self.amount, self.resource_address, resource_type)
                 .map_err(|e| match e {
@@ -334,8 +337,8 @@ impl NativeProcedure for AuthZoneCreateProofByIdsInvocation {
 
         let proof = {
             let substate_ref = api.get_ref(auth_zone_handle)?;
-            let auth_zone = substate_ref.auth_zone();
-            let proof = auth_zone
+            let auth_zone_stack = substate_ref.auth_zone_stack();
+            let proof = auth_zone_stack
                 .cur_auth_zone()
                 .create_proof_by_ids(&self.ids, self.resource_address, resource_type)
                 .map_err(|e| match e {
@@ -391,8 +394,8 @@ impl NativeProcedure for AuthZoneClearInvocation {
         let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let auth_zone_handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
-        let auth_zone = substate_mut.auth_zone();
-        auth_zone.cur_auth_zone_mut().clear();
+        let auth_zone_stack = substate_mut.auth_zone_stack();
+        auth_zone_stack.cur_auth_zone_mut().clear();
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -432,8 +435,8 @@ impl NativeProcedure for AuthZoneDrainInvocation {
 
         let proofs = {
             let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
-            let auth_zone = substate_mut.auth_zone();
-            let proofs = auth_zone.cur_auth_zone_mut().drain();
+            let auth_zone_stack = substate_mut.auth_zone_stack();
+            let proofs = auth_zone_stack.cur_auth_zone_mut().drain();
             proofs
         };
 
@@ -491,11 +494,11 @@ impl NativeProcedure for AuthZoneAssertAccessRuleInvocation {
         let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
         let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = api.get_ref(handle)?;
-        let auth_zone_ref = substate_ref.auth_zone();
+        let auth_zone_stack = substate_ref.auth_zone_stack();
         let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), &self.access_rule);
 
         // Authorization check
-        auth_zone_ref
+        auth_zone_stack
             .check_auth(false, vec![authorization])
             .map_err(|(authorization, error)| {
                 RuntimeError::ApplicationError(ApplicationError::AuthZoneError(

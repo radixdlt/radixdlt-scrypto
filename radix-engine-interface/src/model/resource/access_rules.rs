@@ -46,6 +46,45 @@ impl AccessRules {
         }
     }
 
+    // TODO: Move into scrypto repo as a builder
+    pub fn method(
+        mut self,
+        method_name: &str,
+        method_auth: AccessRule,
+        mutability: Mutability,
+    ) -> Self {
+        let key = AccessRuleKey::ScryptoMethod(method_name.to_string());
+        let mutability = if let MUTABLE(access_rule) = mutability {
+            access_rule
+        } else {
+            AccessRule::DenyAll
+        };
+
+        self.method_auth
+            .insert(key.clone(), AccessRuleEntry::AccessRule(method_auth));
+        self.method_auth_mutability.insert(key, mutability);
+        self
+    }
+
+    // TODO: Move into scrypto repo as a builder
+    pub fn default(
+        mut self,
+        default_auth: AccessRule,
+        default_auth_mutability: AccessRule,
+    ) -> Self {
+        self.default_auth = default_auth;
+        self.default_auth_mutability = default_auth_mutability;
+        self
+    }
+
+    pub fn set_default_auth(&mut self, default_auth: AccessRule) {
+        self.default_auth = default_auth;
+    }
+
+    pub fn set_default_auth_mutability(&mut self, default_auth_mutability: AccessRule) {
+        self.default_auth_mutability = default_auth_mutability;
+    }
+
     pub fn get_mutability(&self, key: &AccessRuleKey) -> &AccessRule {
         self.method_auth_mutability
             .get(key)
@@ -80,26 +119,6 @@ impl AccessRules {
 
     pub fn get_default(&self) -> &AccessRule {
         &self.default_auth
-    }
-
-    // TODO: Move into scrypto repo
-    pub fn method(
-        mut self,
-        method_name: &str,
-        method_auth: AccessRule,
-        mutability: Mutability,
-    ) -> Self {
-        let key = AccessRuleKey::ScryptoMethod(method_name.to_string());
-        let mutability = if let MUTABLE(access_rule) = mutability {
-            access_rule
-        } else {
-            AccessRule::DenyAll
-        };
-
-        self.method_auth
-            .insert(key.clone(), AccessRuleEntry::AccessRule(method_auth));
-        self.method_auth_mutability.insert(key, mutability);
-        self
     }
 
     pub fn set_method_access_rule(&mut self, key: AccessRuleKey, access_rule: AccessRule) {
@@ -141,16 +160,6 @@ impl AccessRules {
         self.method_auth
             .insert(key.clone(), AccessRuleEntry::Group(group));
         self.method_auth_mutability.insert(key, mutability);
-    }
-
-    pub fn default(mut self, method_auth: AccessRule) -> Self {
-        self.default_auth = method_auth;
-        self
-    }
-
-    pub fn default_mutability(mut self, mutability: AccessRule) -> Self {
-        self.default_auth_mutability = mutability;
-        self
     }
 
     pub fn iter(&self) -> Iter<'_, AccessRuleKey, AccessRuleEntry> {

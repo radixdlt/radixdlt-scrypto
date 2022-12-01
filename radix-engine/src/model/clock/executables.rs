@@ -4,8 +4,8 @@ use crate::engine::{
     ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{
-    AccessRulesSubstate, CurrentTimeRoundedToMinutesSubstate, GlobalAddressSubstate, HardAuthRule,
-    HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
+    AccessRulesChainSubstate, CurrentTimeRoundedToMinutesSubstate, GlobalAddressSubstate,
+    HardAuthRule, HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
 use radix_engine_interface::api::api::EngineApi;
@@ -66,17 +66,15 @@ impl NativeProcedure for ClockCreateInvocation {
             rule!(allow_all),
         );
 
-        let access_rules_substate = AccessRulesSubstate {
-            access_rules: vec![access_rules],
-        };
-
         system_api.create_node(
             underlying_node_id,
             RENode::Clock(
                 CurrentTimeRoundedToMinutesSubstate {
                     current_time_rounded_to_minutes_ms: 0,
                 },
-                access_rules_substate,
+                AccessRulesChainSubstate {
+                    access_rules_chain: vec![access_rules],
+                },
             ),
         )?;
 

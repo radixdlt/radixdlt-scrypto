@@ -208,7 +208,7 @@ pub enum ApplicationError {
 
     ResourceManagerError(ResourceManagerError),
 
-    AccessRulesError(AccessRulesError),
+    AccessRulesChainError(AccessRulesChainError),
 
     BucketError(BucketError),
 

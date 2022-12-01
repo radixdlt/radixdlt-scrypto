@@ -150,7 +150,7 @@ where
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Package(SYS_FAUCET_PACKAGE)),
+            RENodeId::Global(GlobalAddress::Package(FAUCET_PACKAGE)),
             RENodeVisibilityOrigin::Normal,
         );
 
@@ -231,8 +231,8 @@ where
                         LockFlags::MUTABLE,
                     )?;
                     let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-                    let auth_zone = substate_ref_mut.auth_zone();
-                    auth_zone.clear_all();
+                    let auth_zone_stack = substate_ref_mut.auth_zone_stack();
+                    auth_zone_stack.clear_all();
                     system_api.drop_lock(handle)?;
                     Ok(())
                 }

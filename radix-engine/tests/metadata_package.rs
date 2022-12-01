@@ -6,6 +6,7 @@ use radix_engine_interface::core::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
+#[ignore = "See notes on `impl NativeProcedure for PackagePublishNoOwnerInvocation`"]
 #[test]
 fn cannot_set_package_metadata_with_no_owner() {
     // Arrange
@@ -118,7 +119,7 @@ fn can_lock_package_metadata_with_owner() {
         .create_proof_from_account(account, ENTITY_OWNER_TOKEN)
         .call_native_method(
             RENodeId::Global(GlobalAddress::Package(package_address)),
-            &AccessRulesMethod::SetMethodAccessRule.to_string(),
+            &AccessRulesChainMethod::SetMethodAccessRule.to_string(),
             scrypto_encode(&AccessRulesSetMethodAccessRuleInvocation {
                 receiver: RENodeId::Global(GlobalAddress::Package(package_address)),
                 index: 0,

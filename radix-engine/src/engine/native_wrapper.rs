@@ -3,9 +3,10 @@ use crate::engine::*;
 use crate::types::*;
 use radix_engine_interface::api::api::SysInvokableNative;
 use radix_engine_interface::api::types::{
-    AccessRulesMethod, AuthZoneStackMethod, BucketMethod, EpochManagerFunction, EpochManagerMethod,
-    NativeFn, NativeFunction, NativeMethod, PackageFunction, ProofMethod, ResourceManagerFunction,
-    ResourceManagerMethod, TransactionProcessorFunction, VaultMethod, WorktopMethod,
+    AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, EpochManagerFunction,
+    EpochManagerMethod, NativeFn, NativeFunction, NativeMethod, PackageFunction, ProofMethod,
+    ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
+    WorktopMethod,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
@@ -314,15 +315,15 @@ where
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
             },
-            NativeMethod::AccessRules(component_method) => match component_method {
-                AccessRulesMethod::AddAccessCheck => {
+            NativeMethod::AccessRulesChain(component_method) => match component_method {
+                AccessRulesChainMethod::AddAccessCheck => {
                     let invocation: AccessRulesAddAccessCheckInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                AccessRulesMethod::SetMethodAccessRule => {
+                AccessRulesChainMethod::SetMethodAccessRule => {
                     let invocation: AccessRulesSetMethodAccessRuleInvocation =
                         scrypto_decode(&args).map_err(|e| {
                             RuntimeError::KernelError(KernelError::InvalidSborValue(e))
@@ -331,7 +332,7 @@ where
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                AccessRulesMethod::SetMethodMutability => {
+                AccessRulesChainMethod::SetMethodMutability => {
                     let invocation: AccessRulesSetMethodMutabilityInvocation =
                         scrypto_decode(&args).map_err(|e| {
                             RuntimeError::KernelError(KernelError::InvalidSborValue(e))
@@ -340,21 +341,21 @@ where
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                AccessRulesMethod::SetGroupAccessRule => {
+                AccessRulesChainMethod::SetGroupAccessRule => {
                     let invocation: AccessRulesSetGroupAccessRuleInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                AccessRulesMethod::SetGroupMutability => {
+                AccessRulesChainMethod::SetGroupMutability => {
                     let invocation: AccessRulesSetGroupMutabilityInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                AccessRulesMethod::GetLength => {
+                AccessRulesChainMethod::GetLength => {
                     let invocation: AccessRulesGetLengthInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api

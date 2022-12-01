@@ -7,13 +7,13 @@ use crate::model::{MethodAuthorization, MethodAuthorizationError};
 use crate::types::*;
 use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
 use radix_engine_interface::api::types::{
-    AccessRulesMethod, GlobalAddress, NativeMethod, PackageOffset, RENodeId, SubstateOffset,
+    AccessRulesChainMethod, GlobalAddress, NativeMethod, PackageOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum AccessRulesError {
+pub enum AccessRulesChainError {
     BlueprintFunctionNotFound(String),
     InvalidIndex(u32),
     Unauthorized(MethodAuthorization, MethodAuthorizationError),
@@ -39,7 +39,9 @@ impl ExecutableInvocation for AccessRulesAddAccessCheckInvocation {
         self.receiver = resolved_receiver.receiver;
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRules(AccessRulesMethod::AddAccessCheck)),
+            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::AddAccessCheck,
+            )),
             resolved_receiver,
         );
 
@@ -89,8 +91,10 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
                 if let AccessRuleKey::ScryptoMethod(func_name) = key {
                     if !blueprint_abi.contains_fn(func_name.as_str()) {
                         return Err(RuntimeError::ApplicationError(
-                            ApplicationError::AccessRulesError(
-                                AccessRulesError::BlueprintFunctionNotFound(func_name.to_string()),
+                            ApplicationError::AccessRulesChainError(
+                                AccessRulesChainError::BlueprintFunctionNotFound(
+                                    func_name.to_string(),
+                                ),
                             ),
                         ));
                     }
@@ -98,12 +102,12 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
             }
         }
 
-        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+        let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = system_api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
 
         let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-        let access_rules = substate_ref_mut.access_rules();
-        access_rules.access_rules.push(self.access_rules);
+        let substate = substate_ref_mut.access_rules_chain();
+        substate.access_rules_chain.push(self.access_rules);
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -130,8 +134,8 @@ impl ExecutableInvocation for AccessRulesSetMethodAccessRuleInvocation {
         self.receiver = resolved_receiver.receiver;
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRules(
-                AccessRulesMethod::SetMethodAccessRule,
+            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::SetMethodAccessRule,
             )),
             resolved_receiver,
         );
@@ -156,36 +160,38 @@ impl NativeProcedure for AccessRulesSetMethodAccessRuleInvocation {
     {
         // TODO: Should this invariant be enforced in a more static/structural way?
         if [
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
-                AccessRulesMethod::GetLength,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::GetLength,
             ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
-                AccessRulesMethod::SetGroupAccessRule,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::SetGroupAccessRule,
             ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
-                AccessRulesMethod::SetGroupMutability,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::SetGroupMutability,
             ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
-                AccessRulesMethod::SetMethodAccessRule,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::SetMethodAccessRule,
             ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
-                AccessRulesMethod::SetMethodMutability,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::SetMethodMutability,
             ))),
         ]
         .iter()
         .any(|x| self.key == *x)
         {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::AccessRulesError(AccessRulesError::ProtectedMethod(self.key)),
+                ApplicationError::AccessRulesChainError(AccessRulesChainError::ProtectedMethod(
+                    self.key,
+                )),
             ));
         }
 
-        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+        let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
 
         let authorization = {
             let substate_ref = api.get_ref(handle)?;
-            let access_rules_substate = substate_ref.access_rules();
+            let access_rules_substate = substate_ref.access_rules_chain();
             access_rules_substate.method_mutability_authorization(&self.key)
         };
 
@@ -200,26 +206,28 @@ impl NativeProcedure for AccessRulesSetMethodAccessRuleInvocation {
             let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
             let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
             let substate_ref = api.get_ref(handle)?;
-            let auth_zone_substate = substate_ref.auth_zone();
+            let auth_zone_stack = substate_ref.auth_zone_stack();
 
-            auth_zone_substate
-                .check_auth(false, authorization)
-                .map_err(|(authorization, error)| {
-                    RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                        AccessRulesError::Unauthorized(authorization, error),
+            auth_zone_stack.check_auth(false, authorization).map_err(
+                |(authorization, error)| {
+                    RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
+                        AccessRulesChainError::Unauthorized(authorization, error),
                     ))
-                })?;
+                },
+            )?;
         }
 
         let mut substate_ref_mut = api.get_ref_mut(handle)?;
-        let access_rules_substate = substate_ref_mut.access_rules();
-        let access_rules_list = &mut access_rules_substate.access_rules;
+        let substate = substate_ref_mut.access_rules_chain();
+        let access_rules_chain = &mut substate.access_rules_chain;
         let index: usize = self.index.try_into().unwrap();
         let access_rules =
-            access_rules_list
+            access_rules_chain
                 .get_mut(index)
                 .ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::AccessRulesError(AccessRulesError::InvalidIndex(self.index)),
+                    ApplicationError::AccessRulesChainError(AccessRulesChainError::InvalidIndex(
+                        self.index,
+                    )),
                 ))?;
 
         access_rules.set_method_access_rule(self.key, self.rule);
@@ -249,8 +257,8 @@ impl ExecutableInvocation for AccessRulesSetGroupAccessRuleInvocation {
         self.receiver = resolved_receiver.receiver;
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRules(
-                AccessRulesMethod::SetGroupAccessRule,
+            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::SetGroupAccessRule,
             )),
             resolved_receiver,
         );
@@ -273,12 +281,12 @@ impl NativeProcedure for AccessRulesSetGroupAccessRuleInvocation {
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
-        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+        let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
 
         let authorization = {
             let substate_ref = api.get_ref(handle)?;
-            let access_rules_substate = substate_ref.access_rules();
+            let access_rules_substate = substate_ref.access_rules_chain();
             access_rules_substate.group_mutability_authorization(&self.name)
         };
 
@@ -293,26 +301,28 @@ impl NativeProcedure for AccessRulesSetGroupAccessRuleInvocation {
             let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
             let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
             let substate_ref = api.get_ref(handle)?;
-            let auth_zone_substate = substate_ref.auth_zone();
+            let auth_zone_substate = substate_ref.auth_zone_stack();
 
             auth_zone_substate
                 .check_auth(false, authorization)
                 .map_err(|(authorization, error)| {
-                    RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                        AccessRulesError::Unauthorized(authorization, error),
+                    RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
+                        AccessRulesChainError::Unauthorized(authorization, error),
                     ))
                 })?;
         }
 
         let mut substate_ref_mut = api.get_ref_mut(handle)?;
-        let access_rules_substate = substate_ref_mut.access_rules();
-        let access_rules_list = &mut access_rules_substate.access_rules;
+        let access_rules_substate = substate_ref_mut.access_rules_chain();
+        let access_rules_list = &mut access_rules_substate.access_rules_chain;
         let index: usize = self.index.try_into().unwrap();
         let access_rules =
             access_rules_list
                 .get_mut(index)
                 .ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::AccessRulesError(AccessRulesError::InvalidIndex(self.index)),
+                    ApplicationError::AccessRulesChainError(AccessRulesChainError::InvalidIndex(
+                        self.index,
+                    )),
                 ))?;
 
         access_rules.set_group_access_rule(self.name, self.rule);
@@ -342,8 +352,8 @@ impl ExecutableInvocation for AccessRulesSetMethodMutabilityInvocation {
         self.receiver = resolved_receiver.receiver;
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRules(
-                AccessRulesMethod::SetMethodMutability,
+            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::SetMethodMutability,
             )),
             resolved_receiver,
         );
@@ -368,36 +378,38 @@ impl NativeProcedure for AccessRulesSetMethodMutabilityInvocation {
     {
         // TODO: Should this invariant be enforced in a more static/structural way?
         if [
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
-                AccessRulesMethod::GetLength,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::GetLength,
             ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
-                AccessRulesMethod::SetGroupAccessRule,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::SetGroupAccessRule,
             ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
-                AccessRulesMethod::SetGroupMutability,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::SetGroupMutability,
             ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
-                AccessRulesMethod::SetMethodAccessRule,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::SetMethodAccessRule,
             ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
-                AccessRulesMethod::SetMethodMutability,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::SetMethodMutability,
             ))),
         ]
         .iter()
         .any(|x| self.key == *x)
         {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::AccessRulesError(AccessRulesError::ProtectedMethod(self.key)),
+                ApplicationError::AccessRulesChainError(AccessRulesChainError::ProtectedMethod(
+                    self.key,
+                )),
             ));
         }
 
-        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+        let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
 
         let authorization = {
             let substate_ref = api.get_ref(handle)?;
-            let access_rules_substate = substate_ref.access_rules();
+            let access_rules_substate = substate_ref.access_rules_chain();
             access_rules_substate.method_mutability_authorization(&self.key)
         };
 
@@ -412,26 +424,28 @@ impl NativeProcedure for AccessRulesSetMethodMutabilityInvocation {
             let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
             let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
             let substate_ref = api.get_ref(handle)?;
-            let auth_zone_substate = substate_ref.auth_zone();
+            let auth_zone_stack = substate_ref.auth_zone_stack();
 
-            auth_zone_substate
-                .check_auth(false, authorization)
-                .map_err(|(authorization, error)| {
-                    RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                        AccessRulesError::Unauthorized(authorization, error),
+            auth_zone_stack.check_auth(false, authorization).map_err(
+                |(authorization, error)| {
+                    RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
+                        AccessRulesChainError::Unauthorized(authorization, error),
                     ))
-                })?;
+                },
+            )?;
         }
 
         let mut substate_ref_mut = api.get_ref_mut(handle)?;
-        let access_rules_substate = substate_ref_mut.access_rules();
-        let access_rules_list = &mut access_rules_substate.access_rules;
+        let substate = substate_ref_mut.access_rules_chain();
+        let access_rules_chain = &mut substate.access_rules_chain;
         let index: usize = self.index.try_into().unwrap();
         let access_rules =
-            access_rules_list
+            access_rules_chain
                 .get_mut(index)
                 .ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::AccessRulesError(AccessRulesError::InvalidIndex(self.index)),
+                    ApplicationError::AccessRulesChainError(AccessRulesChainError::InvalidIndex(
+                        self.index,
+                    )),
                 ))?;
 
         access_rules.set_mutability(self.key, self.mutability);
@@ -461,8 +475,8 @@ impl ExecutableInvocation for AccessRulesSetGroupMutabilityInvocation {
         self.receiver = resolved_receiver.receiver;
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRules(
-                AccessRulesMethod::SetGroupMutability,
+            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::SetGroupMutability,
             )),
             resolved_receiver,
         );
@@ -485,12 +499,12 @@ impl NativeProcedure for AccessRulesSetGroupMutabilityInvocation {
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
-        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+        let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
 
         let authorization = {
             let substate_ref = api.get_ref(handle)?;
-            let access_rules_substate = substate_ref.access_rules();
+            let access_rules_substate = substate_ref.access_rules_chain();
             access_rules_substate.group_mutability_authorization(&self.name)
         };
 
@@ -505,26 +519,28 @@ impl NativeProcedure for AccessRulesSetGroupMutabilityInvocation {
             let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
             let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
             let substate_ref = api.get_ref(handle)?;
-            let auth_zone_substate = substate_ref.auth_zone();
+            let auth_zone_substate = substate_ref.auth_zone_stack();
 
             auth_zone_substate
                 .check_auth(false, authorization)
                 .map_err(|(authorization, error)| {
-                    RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                        AccessRulesError::Unauthorized(authorization, error),
+                    RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
+                        AccessRulesChainError::Unauthorized(authorization, error),
                     ))
                 })?;
         }
 
         let mut substate_ref_mut = api.get_ref_mut(handle)?;
-        let access_rules_substate = substate_ref_mut.access_rules();
-        let access_rules_list = &mut access_rules_substate.access_rules;
+        let access_rules_substate = substate_ref_mut.access_rules_chain();
+        let access_rules_list = &mut access_rules_substate.access_rules_chain;
         let index: usize = self.index.try_into().unwrap();
         let access_rules =
             access_rules_list
                 .get_mut(index)
                 .ok_or(RuntimeError::ApplicationError(
-                    ApplicationError::AccessRulesError(AccessRulesError::InvalidIndex(self.index)),
+                    ApplicationError::AccessRulesChainError(AccessRulesChainError::InvalidIndex(
+                        self.index,
+                    )),
                 ))?;
 
         access_rules.set_group_mutability(self.name, self.mutability);
@@ -554,7 +570,9 @@ impl ExecutableInvocation for AccessRulesGetLengthInvocation {
         self.receiver = resolved_receiver.receiver;
 
         let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRules(AccessRulesMethod::GetLength)),
+            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
+                AccessRulesChainMethod::GetLength,
+            )),
             resolved_receiver,
         );
 
@@ -576,14 +594,14 @@ impl NativeProcedure for AccessRulesGetLengthInvocation {
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
-        let offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+        let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
 
         let substate_ref = api.get_ref(handle)?;
-        let access_rules_substate = substate_ref.access_rules();
+        let access_rules_substate = substate_ref.access_rules_chain();
 
         Ok((
-            access_rules_substate.access_rules.len() as u32,
+            access_rules_substate.access_rules_chain.len() as u32,
             CallFrameUpdate::empty(),
         ))
     }

@@ -4,7 +4,7 @@ use crate::engine::{
 };
 use crate::fee::FeeReserve;
 use crate::model::{
-    AccessRulesSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
+    AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
     ComponentRoyaltyConfigSubstate, ComponentStateSubstate, KeyValueStore, RuntimeSubstate,
 };
 use crate::model::{MetadataSubstate, Resource};
@@ -18,7 +18,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
-use radix_engine_interface::model::{ResourceType, RoyaltyConfig};
+use radix_engine_interface::model::ResourceType;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
@@ -53,15 +53,18 @@ where
 
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
         let (node_id, node) = match node {
-            ScryptoRENode::Component(package_address, blueprint_name, state) => {
+            ScryptoRENode::Component(
+                package_address,
+                blueprint_name,
+                state,
+                royalty_config,
+                access_rules_chain,
+            ) => {
                 let node_id = self.allocate_node_id(RENodeType::Component)?;
-                // Create component
                 let node = RENode::Component(
                     ComponentInfoSubstate::new(package_address, blueprint_name),
                     ComponentStateSubstate::new(state),
-                    ComponentRoyaltyConfigSubstate {
-                        royalty_config: RoyaltyConfig::default(), // TODO: add user interface
-                    },
+                    ComponentRoyaltyConfigSubstate { royalty_config },
                     ComponentRoyaltyAccumulatorSubstate {
                         royalty: Resource::new_empty(
                             RADIX_TOKEN,
@@ -71,9 +74,7 @@ where
                     MetadataSubstate {
                         metadata: HashMap::new(),
                     },
-                    AccessRulesSubstate {
-                        access_rules: Vec::new(),
-                    },
+                    AccessRulesChainSubstate { access_rules_chain },
                 );
 
                 (node_id, node)

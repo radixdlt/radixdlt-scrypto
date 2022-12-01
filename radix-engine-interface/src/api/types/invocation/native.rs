@@ -28,7 +28,7 @@ pub enum NativeFn {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum NativeMethod {
-    AccessRules(AccessRulesMethod),
+    AccessRulesChain(AccessRulesChainMethod),
     Component(ComponentMethod), // TODO: investigate whether to make royalty universal and take any "receiver".
     Package(PackageMethod),
     Metadata(MetadataMethod),
@@ -71,7 +71,7 @@ pub enum NativeFunction {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum AccessRulesMethod {
+pub enum AccessRulesChainMethod {
     AddAccessCheck,
     SetMethodAccessRule,
     SetGroupAccessRule,

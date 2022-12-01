@@ -11,7 +11,7 @@ blueprint! {
             component.add_access_check(
                 AccessRules::new()
                     .method("get_secret", rule!(require("some_non_fungible")), LOCKED)
-                    .default(rule!(allow_all)),
+                    .default(rule!(allow_all), AccessRule::DenyAll),
             );
             component.globalize_no_owner()
         }

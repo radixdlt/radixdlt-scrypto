@@ -2,7 +2,7 @@ use super::{PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate};
 use crate::engine::*;
 use crate::engine::{CallFrameUpdate, LockFlags, RuntimeError, SystemApi};
 use crate::model::{
-    AccessRulesSubstate, BucketSubstate, GlobalAddressSubstate, MetadataSubstate,
+    AccessRulesChainSubstate, BucketSubstate, GlobalAddressSubstate, MetadataSubstate,
     PackageInfoSubstate, Resource,
 };
 use crate::types::*;
@@ -76,7 +76,7 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
             ))
         })?;
         let package_royalty_config = PackageRoyaltyConfigSubstate {
-            royalty_config: HashMap::new(), // TODO: add user interface
+            royalty_config: self.royalty_config,
         };
         let package_royalty_accumulator = PackageRoyaltyAccumulatorSubstate {
             royalty: Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }),
@@ -84,10 +84,18 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
-
-        let access_rules = AccessRulesSubstate {
-            access_rules: vec![AccessRules::new()],
+        let access_rules = AccessRulesChainSubstate {
+            access_rules_chain: self.access_rules_chain,
         };
+
+        // TODO: Can we trust developers enough to add protection for
+        // - `metadata::set`
+        // - `access_rules_chain::set_access_rules`
+        // - `access_rules_chain::add_access_rules`
+        // - `royalty::set_royalty_config`
+        // - `royalty::claim_royalty`
+
+        // Create package node
         let node_id = api.allocate_node_id(RENodeType::Package)?;
         api.create_node(
             node_id,
@@ -101,6 +109,7 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
         )?;
         let package_id: PackageId = node_id.into();
 
+        // Globalize
         let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
         api.create_node(
             global_node_id,
@@ -108,7 +117,6 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
         )?;
 
         let package_address: PackageAddress = global_node_id.into();
-
         Ok((package_address, CallFrameUpdate::empty()))
     }
 }
@@ -152,7 +160,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
             ))
         })?;
         let package_royalty_config = PackageRoyaltyConfigSubstate {
-            royalty_config: HashMap::new(), // TODO: add user interface
+            royalty_config: self.royalty_config,
         };
         let package_royalty_accumulator = PackageRoyaltyAccumulatorSubstate {
             royalty: Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }),
@@ -182,19 +190,41 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
         };
 
         let bucket = api.sys_invoke(mint_invocation)?;
-        let mut access_rules = AccessRules::new();
-        access_rules.set_access_rule_and_mutability(
+
+        let mut chain = self.access_rules_chain;
+
+        // Add protection for metadata
+        let mut metadata_access_rules =
+            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
+        metadata_access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,
             ))),
             rule!(require(non_fungible_address.clone())),
-            rule!(require(non_fungible_address)),
+            rule!(require(non_fungible_address.clone())),
         );
+        chain.push(metadata_access_rules);
 
-        let access_rules_substate = AccessRulesSubstate {
-            access_rules: vec![access_rules],
-        };
+        // Add protection for royalty
+        let mut royalty_access_rules =
+            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
+        royalty_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
+                PackageMethod::SetRoyaltyConfig,
+            ))),
+            rule!(require(non_fungible_address.clone())),
+            rule!(require(non_fungible_address.clone())),
+        );
+        royalty_access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
+                PackageMethod::ClaimRoyalty,
+            ))),
+            rule!(require(non_fungible_address.clone())),
+            rule!(require(non_fungible_address.clone())),
+        );
+        chain.push(royalty_access_rules);
 
+        // Create package node
         let node_id = api.allocate_node_id(RENodeType::Package)?;
         api.create_node(
             node_id,
@@ -203,11 +233,14 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
                 package_royalty_config,
                 package_royalty_accumulator,
                 metadata_substate,
-                access_rules_substate,
+                AccessRulesChainSubstate {
+                    access_rules_chain: chain,
+                },
             ),
         )?;
         let package_id: PackageId = node_id.into();
 
+        // Globalize
         api.create_node(
             global_node_id,
             RENode::Global(GlobalAddressSubstate::Package(package_id)),

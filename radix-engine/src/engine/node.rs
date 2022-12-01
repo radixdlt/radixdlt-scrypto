@@ -23,23 +23,26 @@ pub enum RENode {
         ComponentRoyaltyConfigSubstate,
         ComponentRoyaltyAccumulatorSubstate,
         MetadataSubstate,
-        AccessRulesSubstate,
+        AccessRulesChainSubstate,
     ),
     Package(
         PackageInfoSubstate,
         PackageRoyaltyConfigSubstate,
         PackageRoyaltyAccumulatorSubstate,
         MetadataSubstate,
-        AccessRulesSubstate,
+        AccessRulesChainSubstate,
     ),
     ResourceManager(
         ResourceManagerSubstate,
         MetadataSubstate,
-        AccessRulesSubstate,
-        AccessRulesSubstate,
+        AccessRulesChainSubstate,
+        AccessRulesChainSubstate,
     ),
-    EpochManager(EpochManagerSubstate, AccessRulesSubstate),
-    Clock(CurrentTimeRoundedToMinutesSubstate, AccessRulesSubstate),
+    EpochManager(EpochManagerSubstate, AccessRulesChainSubstate),
+    Clock(
+        CurrentTimeRoundedToMinutesSubstate,
+        AccessRulesChainSubstate,
+    ),
 }
 
 impl RENode {
@@ -110,7 +113,7 @@ impl RENode {
                     metadata.into(),
                 );
                 substates.insert(
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     access_rules.into(),
                 );
             }
@@ -144,7 +147,7 @@ impl RENode {
                     metadata.into(),
                 );
                 substates.insert(
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     access_rules.into(),
                 );
             }
@@ -163,12 +166,12 @@ impl RENode {
                     metadata.into(),
                 );
                 substates.insert(
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     access_rules.into(),
                 );
                 // TODO: Figure out what the right abstraction is for vault access rules
                 substates.insert(
-                    SubstateOffset::VaultAccessRules(AccessRulesOffset::AccessRules),
+                    SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     vault_access_rules.into(),
                 );
             }
@@ -186,7 +189,7 @@ impl RENode {
                     epoch_manager.into(),
                 );
                 substates.insert(
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     access_rules.into(),
                 );
             }
@@ -196,7 +199,7 @@ impl RENode {
                     current_time_rounded_to_minutes_substate.into(),
                 );
                 substates.insert(
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     access_rules_substate.into(),
                 );
             }

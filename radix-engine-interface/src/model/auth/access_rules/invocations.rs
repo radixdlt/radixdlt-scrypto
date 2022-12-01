@@ -22,8 +22,8 @@ impl ScryptoNativeInvocation for AccessRulesAddAccessCheckInvocation {
 
 impl Into<NativeFnInvocation> for AccessRulesAddAccessCheckInvocation {
     fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AccessRules(
-            AccessRulesMethodInvocation::AddAccessCheck(self),
+        NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
+            AccessRulesChainMethodInvocation::AddAccessCheck(self),
         ))
     }
 }
@@ -47,8 +47,8 @@ impl ScryptoNativeInvocation for AccessRulesSetMethodAccessRuleInvocation {
 
 impl Into<NativeFnInvocation> for AccessRulesSetMethodAccessRuleInvocation {
     fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AccessRules(
-            AccessRulesMethodInvocation::SetMethodAccessRule(self),
+        NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
+            AccessRulesChainMethodInvocation::SetMethodAccessRule(self),
         ))
     }
 }
@@ -72,8 +72,8 @@ impl ScryptoNativeInvocation for AccessRulesSetGroupAccessRuleInvocation {
 
 impl Into<NativeFnInvocation> for AccessRulesSetGroupAccessRuleInvocation {
     fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AccessRules(
-            AccessRulesMethodInvocation::SetGroupAccessRule(self),
+        NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
+            AccessRulesChainMethodInvocation::SetGroupAccessRule(self),
         ))
     }
 }
@@ -97,8 +97,8 @@ impl ScryptoNativeInvocation for AccessRulesSetMethodMutabilityInvocation {
 
 impl Into<NativeFnInvocation> for AccessRulesSetMethodMutabilityInvocation {
     fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AccessRules(
-            AccessRulesMethodInvocation::SetMethodMutability(self),
+        NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
+            AccessRulesChainMethodInvocation::SetMethodMutability(self),
         ))
     }
 }
@@ -122,8 +122,8 @@ impl ScryptoNativeInvocation for AccessRulesSetGroupMutabilityInvocation {
 
 impl Into<NativeFnInvocation> for AccessRulesSetGroupMutabilityInvocation {
     fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AccessRules(
-            AccessRulesMethodInvocation::SetGroupMutability(self),
+        NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
+            AccessRulesChainMethodInvocation::SetGroupMutability(self),
         ))
     }
 }
@@ -144,8 +144,8 @@ impl ScryptoNativeInvocation for AccessRulesGetLengthInvocation {
 
 impl Into<NativeFnInvocation> for AccessRulesGetLengthInvocation {
     fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AccessRules(
-            AccessRulesMethodInvocation::GetLength(self),
+        NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
+            AccessRulesChainMethodInvocation::GetLength(self),
         ))
     }
 }

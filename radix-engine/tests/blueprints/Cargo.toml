@@ -30,7 +30,8 @@ members = [
     "stored_resource",
     "stored_values",
     "vault",
-    "royalty"
+    "royalty",
+    "royalty-auth"
 ]
 
 [profile.release]

@@ -16,18 +16,18 @@ blueprint! {
             component_address: ComponentAddress,
         ) -> Vec<ComponentAccessRules> {
             let component = borrow_component!(component_address);
-            component.access_rules()
+            component.access_rules_chain()
         }
 
         pub fn access_rules_method(&self) -> Vec<ComponentAccessRules> {
             let component = Component(Runtime::actor().as_component().0);
-            component.access_rules()
+            component.access_rules_chain()
         }
 
         pub fn set_method_auth(&self, index: usize, method_name: String, rule: AccessRule) {
             let component = Component(Runtime::actor().as_component().0);
             component
-                .access_rules()
+                .access_rules_chain()
                 .get_mut(index)
                 .unwrap()
                 .set_method_auth(&method_name, rule);
@@ -36,7 +36,7 @@ blueprint! {
         pub fn lock_method_auth(&self, index: usize, method_name: String) {
             let component = Component(Runtime::actor().as_component().0);
             component
-                .access_rules()
+                .access_rules_chain()
                 .get_mut(index)
                 .unwrap()
                 .lock_method_auth(&method_name);

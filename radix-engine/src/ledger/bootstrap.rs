@@ -154,7 +154,7 @@ pub fn create_genesis() -> SystemTransaction {
         let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
         Instruction::CallFunction {
             function_ident: ScryptoFunctionIdent {
-                package: ScryptoPackage::Global(SYS_FAUCET_PACKAGE),
+                package: ScryptoPackage::Global(FAUCET_PACKAGE),
                 blueprint_name: FAUCET_BLUEPRINT.to_string(),
                 function_name: "new".to_string(),
             },
@@ -362,7 +362,7 @@ mod tests {
         let invoke_result = commit_result.outcome.expect_success();
         let genesis_receipt = genesis_result(&invoke_result);
 
-        assert_eq!(genesis_receipt.faucet_package, SYS_FAUCET_PACKAGE);
+        assert_eq!(genesis_receipt.faucet_package, FAUCET_PACKAGE);
         assert_eq!(genesis_receipt.account_package, ACCOUNT_PACKAGE);
         assert_eq!(genesis_receipt.ecdsa_secp256k1_token, ECDSA_SECP256K1_TOKEN);
         assert_eq!(genesis_receipt.system_token, SYSTEM_TOKEN);

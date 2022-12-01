@@ -146,7 +146,7 @@ impl Component {
     }
 
     /// Returns the layers of access rules on this component.
-    pub fn access_rules(&self) -> Vec<ComponentAccessRules> {
+    pub fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
         let mut env = ScryptoEnv;
         let length = env
             .sys_invoke(AccessRulesGetLengthInvocation {
@@ -219,7 +219,7 @@ impl BorrowedGlobalComponent {
     }
 
     /// Returns the layers of access rules on this component.
-    pub fn access_rules(&self) -> Vec<ComponentAccessRules> {
+    pub fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
         let mut env = ScryptoEnv;
         let length = env
             .sys_invoke(AccessRulesGetLengthInvocation {

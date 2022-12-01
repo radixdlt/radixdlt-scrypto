@@ -76,9 +76,18 @@ pub trait ScryptoProof: Sized {
     fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId>;
     fn resource_address(&self) -> ResourceAddress;
     fn drop(self);
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
 }
 
 impl ScryptoProof for Proof {
+    /// Uses resources in this proof as authorization for an operation.
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        ComponentAuthZone::push(self.clone());
+        let output = f();
+        ComponentAuthZone::pop().drop();
+        output
+    }
+
     fn clone(&self) -> Self {
         let mut env = ScryptoEnv;
         env.sys_invoke(ProofCloneInvocation { receiver: self.0 })

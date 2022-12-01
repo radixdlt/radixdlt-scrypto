@@ -57,35 +57,35 @@ fn batched_executions_should_result_in_the_same_result() {
     }
 
     // Test Runner 1: Batch
-    test_runner1.execute_batch(manifests.clone());
+    test_runner1.execute_batch(manifests.clone(), DEFAULT_COST_UNIT_LIMIT);
 
     // Test Runner 2: Multi-batch, Single-commit
     let (batch0, batch1) = manifests.split_at(5);
     let node_id0 = test_runner2.create_child_node(0);
-    test_runner2.execute_batch_on_node(node_id0, batch0.to_vec());
+    test_runner2.execute_batch_on_node(node_id0, batch0.to_vec(), DEFAULT_COST_UNIT_LIMIT);
     let node_id1 = test_runner2.create_child_node(node_id0);
-    test_runner2.execute_batch_on_node(node_id1, batch1.to_vec());
+    test_runner2.execute_batch_on_node(node_id1, batch1.to_vec(), DEFAULT_COST_UNIT_LIMIT);
     test_runner2.merge_node(node_id1);
 
     // Test Runner 3: Multi-batch, Multi-commit
     let (batch0, batch1) = manifests.split_at(5);
     let node_id0 = test_runner3.create_child_node(0);
-    test_runner3.execute_batch_on_node(node_id0, batch0.to_vec());
+    test_runner3.execute_batch_on_node(node_id0, batch0.to_vec(), DEFAULT_COST_UNIT_LIMIT);
     let node_id1 = test_runner3.create_child_node(node_id0);
-    test_runner3.execute_batch_on_node(node_id1, batch1.to_vec());
+    test_runner3.execute_batch_on_node(node_id1, batch1.to_vec(), DEFAULT_COST_UNIT_LIMIT);
     test_runner3.merge_node(node_id0);
     test_runner3.merge_node(node_id1);
 
     // Test Runner 3: Multi-batch, Fork, Single-commit
     let (batch0, batch1) = manifests.split_at(5);
     let node_id0 = test_runner4.create_child_node(0);
-    test_runner4.execute_batch_on_node(node_id0, batch0.to_vec());
+    test_runner4.execute_batch_on_node(node_id0, batch0.to_vec(), DEFAULT_COST_UNIT_LIMIT);
     let node_id1 = test_runner4.create_child_node(node_id0);
-    test_runner4.execute_batch_on_node(node_id1, batch1.to_vec());
+    test_runner4.execute_batch_on_node(node_id1, batch1.to_vec(), DEFAULT_COST_UNIT_LIMIT);
     let fork_id = test_runner4.create_child_node(node_id0);
-    test_runner4.execute_batch_on_node(fork_id, manifests.clone());
+    test_runner4.execute_batch_on_node(fork_id, manifests.clone(), DEFAULT_COST_UNIT_LIMIT);
     let fork_child_id = test_runner4.create_child_node(fork_id);
-    test_runner4.execute_batch_on_node(fork_child_id, manifests.clone());
+    test_runner4.execute_batch_on_node(fork_child_id, manifests.clone(), DEFAULT_COST_UNIT_LIMIT);
     test_runner4.merge_node(node_id1);
 
     // Assert

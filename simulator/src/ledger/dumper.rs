@@ -103,17 +103,17 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 c.blueprint_name
             );
 
-            let access_rules: AccessRulesSubstate = substate_store
+            let substate: AccessRulesChainSubstate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into())
                 .unwrap();
 
             writeln!(output, "{}", "Access Rules".green().bold());
-            for (_, auth) in access_rules.access_rules.iter().identify_last() {
+            for (_, auth) in substate.access_rules_chain.iter().identify_last() {
                 for (last, (k, v)) in auth.iter().identify_last() {
                     writeln!(output, "{} {:?} => {:?}", list_item_prefix(last), k, v);
                 }

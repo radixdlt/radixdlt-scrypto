@@ -13,14 +13,14 @@ fn test_loop() {
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
-    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000"));
+    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "100000"));
     let package_address =
         test_runner.publish_package(code, generate_single_function_abi("Test", "f", Type::Unit));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 1_000_000);
 
     // Assert
     receipt.expect_commit_success();
@@ -33,14 +33,14 @@ fn test_loop_out_of_cost_unit() {
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
-    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "70000000"));
+    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "200000"));
     let package_address =
         test_runner.publish_package(code, generate_single_function_abi("Test", "f", Type::Unit));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 45.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 1_000_000);
 
     // Assert
     receipt.expect_specific_failure(is_costing_error)
@@ -170,7 +170,7 @@ fn test_basic_transfer() {
         + 28500 /* read_substate */
         + 1000 /* run_native_function */
         + 2200 /* run_native_method */
-        + 323669 /* run_wasm */
+        + 322371 /* run_wasm */
         + 330 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 17000, /* write_substate */

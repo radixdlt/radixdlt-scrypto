@@ -9,7 +9,7 @@ use crate::model::*;
 // We've arranged the addresses in the order they're created in the genesis transaction.
 
 /// The address of the faucet package.
-pub const SYS_FAUCET_PACKAGE: PackageAddress = construct_address!(
+pub const FAUCET_PACKAGE: PackageAddress = construct_address!(
     EntityType::Package,
     0,
     44,

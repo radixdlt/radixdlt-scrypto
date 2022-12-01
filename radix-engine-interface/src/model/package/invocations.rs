@@ -6,12 +6,15 @@ use crate::scrypto;
 use crate::wasm::*;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PackagePublishNoOwnerInvocation {
     pub code: Blob,
     pub abi: Blob,
+    pub royalty_config: HashMap<String, RoyaltyConfig>,
+    pub access_rules_chain: Vec<AccessRules>,
     pub metadata: HashMap<String, String>,
 }
 
@@ -36,6 +39,8 @@ impl Into<NativeFnInvocation> for PackagePublishNoOwnerInvocation {
 pub struct PackagePublishWithOwnerInvocation {
     pub code: Blob,
     pub abi: Blob,
+    pub royalty_config: HashMap<String, RoyaltyConfig>,
+    pub access_rules_chain: Vec<AccessRules>,
     pub metadata: HashMap<String, String>,
 }
 

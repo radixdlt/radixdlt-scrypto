@@ -3,7 +3,7 @@ use radix_engine::engine::{
     RuntimeError, ScryptoFnResolvingError, TrackError,
 };
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::model::AccessRulesError;
+use radix_engine::model::AccessRulesChainError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::{RENodeId, ScryptoFunctionIdent};
@@ -233,20 +233,20 @@ fn scrypto_methods_and_functions_should_be_able_to_return_access_rules_pointers(
     let access_rules = vec![
         AccessRules::new()
             .method("deposit_funds", rule!(require(RADIX_TOKEN)), LOCKED)
-            .default(rule!(allow_all)),
+            .default(rule!(allow_all), rule!(deny_all)),
         AccessRules::new()
             .method(
                 "deposit_funds",
                 rule!(require(ECDSA_SECP256K1_TOKEN)),
                 LOCKED,
             )
-            .default(rule!(allow_all)),
+            .default(rule!(allow_all), rule!(deny_all)),
     ];
     for call in [Call::Method, Call::Function] {
         let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
         // Act
-        let read_access_rules = test_runner.access_rules(call);
+        let read_access_rules = test_runner.access_rules_chain(call);
 
         // Assert
 
@@ -266,7 +266,7 @@ fn component_access_rules_may_be_changed_within_a_scrypto_method() {
             rule!(require(RADIX_TOKEN)),
             MUTABLE(rule!(allow_all)),
         )
-        .default(rule!(allow_all))];
+        .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
@@ -295,7 +295,7 @@ fn access_rules_method_auth_can_not_be_mutated_when_locked() {
     // Arrange
     let access_rules = vec![AccessRules::new()
         .method("deposit_funds", rule!(require(RADIX_TOKEN)), LOCKED)
-        .default(rule!(allow_all))];
+        .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
@@ -305,8 +305,8 @@ fn access_rules_method_auth_can_not_be_mutated_when_locked() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                AccessRulesError::Unauthorized(..)
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
+                AccessRulesChainError::Unauthorized(..)
             ))
         )
     });
@@ -325,7 +325,7 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
             rule!(require(RADIX_TOKEN)),
             MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
         )
-        .default(rule!(allow_all))];
+        .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
@@ -335,8 +335,8 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                AccessRulesError::Unauthorized(..)
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
+                AccessRulesChainError::Unauthorized(..)
             ))
         )
     });
@@ -355,7 +355,7 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
             rule!(require(RADIX_TOKEN)),
             MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
         )
-        .default(rule!(allow_all))];
+        .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
@@ -365,8 +365,8 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                AccessRulesError::Unauthorized(..)
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
+                AccessRulesChainError::Unauthorized(..)
             ))
         )
     });
@@ -385,7 +385,7 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
             rule!(require(RADIX_TOKEN)),
             MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
         )
-        .default(rule!(allow_all))];
+        .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
     test_runner.add_initial_proof(virtual_badge_non_fungible_address);
 
@@ -409,7 +409,7 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
             rule!(require(RADIX_TOKEN)),
             MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
         )
-        .default(rule!(allow_all))];
+        .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
     test_runner.add_initial_proof(virtual_badge_non_fungible_address);
 
@@ -426,8 +426,8 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                AccessRulesError::Unauthorized(..)
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
+                AccessRulesChainError::Unauthorized(..)
             ))
         )
     });
@@ -446,7 +446,7 @@ fn method_that_falls_within_default_cant_have_its_auth_mutated() {
             rule!(require(RADIX_TOKEN)),
             MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
         )
-        .default(rule!(allow_all))];
+        .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
     test_runner.add_initial_proof(virtual_badge_non_fungible_address.clone());
 
@@ -459,8 +459,8 @@ fn method_that_falls_within_default_cant_have_its_auth_mutated() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesError(
-                AccessRulesError::Unauthorized(..)
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
+                AccessRulesChainError::Unauthorized(..)
             ))
         )
     });
@@ -484,7 +484,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
             rule!(require(RADIX_TOKEN)),
             MUTABLE(rule!(require(virtual_badge_non_fungible_address.clone()))),
         )
-        .default(rule!(allow_all))];
+        .default(rule!(allow_all), rule!(deny_all))];
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
     test_runner.add_initial_proof(virtual_badge_non_fungible_address.clone());
 
@@ -493,7 +493,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
         MutableAccessRulesTestRunner::manifest_builder()
             .call_native_method(
                 RENodeId::Global(GlobalAddress::Component(test_runner.component_address)),
-                &AccessRulesMethod::SetMethodAccessRule.to_string(),
+                &AccessRulesChainMethod::SetMethodAccessRule.to_string(),
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInvocation {
                     receiver: RENodeId::Global(GlobalAddress::Component(
                         test_runner.component_address,
@@ -522,11 +522,11 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
 fn user_can_not_mutate_auth_on_methods_that_control_auth() {
     // Arrange
     for method in [
-        AccessRulesMethod::GetLength,
-        AccessRulesMethod::SetGroupAccessRule,
-        AccessRulesMethod::SetGroupMutability,
-        AccessRulesMethod::SetMethodAccessRule,
-        AccessRulesMethod::SetMethodMutability,
+        AccessRulesChainMethod::GetLength,
+        AccessRulesChainMethod::SetGroupAccessRule,
+        AccessRulesChainMethod::SetGroupMutability,
+        AccessRulesChainMethod::SetMethodAccessRule,
+        AccessRulesChainMethod::SetMethodMutability,
     ] {
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
         let public_key = private_key.public_key();
@@ -550,15 +550,15 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
             MutableAccessRulesTestRunner::manifest_builder()
                 .call_native_method(
                     RENodeId::Global(GlobalAddress::Component(test_runner.component_address)),
-                    &AccessRulesMethod::SetMethodAccessRule.to_string(),
+                    &AccessRulesChainMethod::SetMethodAccessRule.to_string(),
                     scrypto_encode(&AccessRulesSetMethodAccessRuleInvocation {
                         receiver: RENodeId::Global(GlobalAddress::Component(
                             test_runner.component_address,
                         )),
                         index: 0,
-                        key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
-                            method,
-                        ))),
+                        key: AccessRuleKey::Native(NativeFn::Method(
+                            NativeMethod::AccessRulesChain(method),
+                        )),
                         rule: rule!(deny_all),
                     })
                     .unwrap(),
@@ -570,7 +570,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                RuntimeError::ApplicationError(ApplicationError::AccessRulesError(..))
+                RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
             )
         });
     }
@@ -614,7 +614,7 @@ impl MutableAccessRulesTestRunner {
         self.initial_proofs.push(initial_proof);
     }
 
-    pub fn access_rules(&mut self, call: Call) -> Vec<ComponentAccessRules> {
+    pub fn access_rules_chain(&mut self, call: Call) -> Vec<ComponentAccessRules> {
         let manifest = match call {
             Call::Method => Self::manifest_builder()
                 .call_method(self.component_address, "access_rules_method", args!())

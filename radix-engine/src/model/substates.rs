@@ -14,7 +14,7 @@ pub enum PersistedSubstate {
     EpochManager(EpochManagerSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
-    AccessRules(AccessRulesSubstate),
+    AccessRulesChain(AccessRulesChainSubstate),
     Metadata(MetadataSubstate),
     ComponentInfo(ComponentInfoSubstate),
     ComponentState(ComponentStateSubstate),
@@ -72,7 +72,7 @@ impl PersistedSubstate {
             PersistedSubstate::CurrentTimeRoundedToMinutes(value) => {
                 RuntimeSubstate::CurrentTimeRoundedToMinutes(value)
             }
-            PersistedSubstate::AccessRules(value) => RuntimeSubstate::AccessRules(value),
+            PersistedSubstate::AccessRulesChain(value) => RuntimeSubstate::AccessRulesChain(value),
             PersistedSubstate::Metadata(value) => RuntimeSubstate::Metadata(value),
             PersistedSubstate::ResourceManager(value) => RuntimeSubstate::ResourceManager(value),
             PersistedSubstate::ComponentInfo(value) => RuntimeSubstate::ComponentInfo(value),
@@ -111,9 +111,9 @@ pub enum RuntimeSubstate {
     EpochManager(EpochManagerSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
+    AccessRulesChain(AccessRulesChainSubstate),
     Metadata(MetadataSubstate),
     ComponentInfo(ComponentInfoSubstate),
-    AccessRules(AccessRulesSubstate),
     ComponentState(ComponentStateSubstate),
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
@@ -135,10 +135,12 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
+            RuntimeSubstate::AccessRulesChain(value) => {
+                PersistedSubstate::AccessRulesChain(value.clone())
+            }
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 PersistedSubstate::CurrentTimeRoundedToMinutes(value.clone())
             }
-            RuntimeSubstate::AccessRules(value) => PersistedSubstate::AccessRules(value.clone()),
             RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value.clone()),
             RuntimeSubstate::ResourceManager(value) => {
                 PersistedSubstate::ResourceManager(value.clone())
@@ -184,10 +186,10 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
+            RuntimeSubstate::AccessRulesChain(value) => PersistedSubstate::AccessRulesChain(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 PersistedSubstate::CurrentTimeRoundedToMinutes(value)
             }
-            RuntimeSubstate::AccessRules(value) => PersistedSubstate::AccessRules(value),
             RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => PersistedSubstate::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => PersistedSubstate::ComponentInfo(value),
@@ -262,7 +264,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 SubstateRefMut::CurrentTimeRoundedToMinutes(value)
             }
-            RuntimeSubstate::AccessRules(value) => SubstateRefMut::AccessRules(value),
+            RuntimeSubstate::AccessRulesChain(value) => SubstateRefMut::AccessRulesChain(value),
             RuntimeSubstate::Metadata(value) => SubstateRefMut::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => SubstateRefMut::ComponentInfo(value),
@@ -298,7 +300,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 SubstateRef::CurrentTimeRoundedToMinutes(value)
             }
-            RuntimeSubstate::AccessRules(value) => SubstateRef::AccessRules(value),
+            RuntimeSubstate::AccessRulesChain(value) => SubstateRef::AccessRulesChain(value),
             RuntimeSubstate::Metadata(value) => SubstateRef::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
             RuntimeSubstate::ComponentInfo(value) => SubstateRef::ComponentInfo(value),
@@ -392,9 +394,9 @@ impl RuntimeSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for AccessRulesSubstate {
+impl Into<RuntimeSubstate> for AccessRulesChainSubstate {
     fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::AccessRules(self)
+        RuntimeSubstate::AccessRulesChain(self)
     }
 }
 
@@ -638,9 +640,9 @@ impl Into<ProofSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<AccessRulesSubstate> for RuntimeSubstate {
-    fn into(self) -> AccessRulesSubstate {
-        if let RuntimeSubstate::AccessRules(substate) = self {
+impl Into<AccessRulesChainSubstate> for RuntimeSubstate {
+    fn into(self) -> AccessRulesChainSubstate {
+        if let RuntimeSubstate::AccessRulesChain(substate) = self {
             substate
         } else {
             panic!("Not access rules");
@@ -677,7 +679,7 @@ pub enum SubstateRef<'a> {
     ResourceManager(&'a ResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
     CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
-    AccessRules(&'a AccessRulesSubstate),
+    AccessRulesChain(&'a AccessRulesChainSubstate),
     Metadata(&'a MetadataSubstate),
     Global(&'a GlobalAddressSubstate),
 }
@@ -704,7 +706,7 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::NonFungible(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::KeyValueStoreEntry(value) => IndexedScryptoValue::from_typed(*value),
-            SubstateRef::AccessRules(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::AccessRulesChain(value) => IndexedScryptoValue::from_typed(*value),
             _ => panic!("Unsupported scrypto value"),
         }
     }
@@ -772,7 +774,7 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn auth_zone(&self) -> &AuthZoneStackSubstate {
+    pub fn auth_zone_stack(&self) -> &AuthZoneStackSubstate {
         match self {
             SubstateRef::AuthZoneStack(value) => *value,
             _ => panic!("Not an authzone"),
@@ -821,10 +823,10 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn access_rules(&self) -> &AccessRulesSubstate {
+    pub fn access_rules_chain(&self) -> &AccessRulesChainSubstate {
         match self {
-            SubstateRef::AccessRules(value) => *value,
-            _ => panic!("Not access rules"),
+            SubstateRef::AccessRulesChain(value) => *value,
+            _ => panic!("Not access rules chain"),
         }
     }
 
@@ -945,7 +947,7 @@ pub enum SubstateRefMut<'a> {
     ResourceManager(&'a mut ResourceManagerSubstate),
     EpochManager(&'a mut EpochManagerSubstate),
     CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
-    AccessRules(&'a mut AccessRulesSubstate),
+    AccessRulesChain(&'a mut AccessRulesChainSubstate),
     Metadata(&'a mut MetadataSubstate),
     Global(&'a mut GlobalAddressSubstate),
     Bucket(&'a mut BucketSubstate),
@@ -957,7 +959,7 @@ pub enum SubstateRefMut<'a> {
 }
 
 impl<'a> SubstateRefMut<'a> {
-    pub fn auth_zone(&mut self) -> &mut AuthZoneStackSubstate {
+    pub fn auth_zone_stack(&mut self) -> &mut AuthZoneStackSubstate {
         match self {
             SubstateRefMut::AuthZoneStack(value) => *value,
             _ => panic!("Not an authzone"),
@@ -1076,9 +1078,9 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn access_rules(&mut self) -> &mut AccessRulesSubstate {
+    pub fn access_rules_chain(&mut self) -> &mut AccessRulesChainSubstate {
         match self {
-            SubstateRefMut::AccessRules(value) => *value,
+            SubstateRefMut::AccessRulesChain(value) => *value,
             _ => panic!("Not access rules"),
         }
     }

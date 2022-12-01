@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::{
-    AccessRulesMethod, AuthZoneStackMethod, BucketMethod, ClockFunction, ClockMethod,
+    AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, ClockFunction, ClockMethod,
     ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, MetadataMethod,
     NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
     ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
@@ -234,13 +234,13 @@ impl FeeTable {
                 WorktopMethod::AssertContainsNonFungibles => self.fixed_low,
                 WorktopMethod::Drain => self.fixed_low,
             },
-            NativeMethod::AccessRules(component_ident) => match component_ident {
-                AccessRulesMethod::AddAccessCheck => self.fixed_low,
-                AccessRulesMethod::SetMethodAccessRule => self.fixed_low,
-                AccessRulesMethod::SetMethodMutability => self.fixed_low,
-                AccessRulesMethod::SetGroupAccessRule => self.fixed_low,
-                AccessRulesMethod::SetGroupMutability => self.fixed_low,
-                AccessRulesMethod::GetLength => self.fixed_low,
+            NativeMethod::AccessRulesChain(component_ident) => match component_ident {
+                AccessRulesChainMethod::AddAccessCheck => self.fixed_low,
+                AccessRulesChainMethod::SetMethodAccessRule => self.fixed_low,
+                AccessRulesChainMethod::SetMethodMutability => self.fixed_low,
+                AccessRulesChainMethod::SetGroupAccessRule => self.fixed_low,
+                AccessRulesChainMethod::SetGroupMutability => self.fixed_low,
+                AccessRulesChainMethod::GetLength => self.fixed_low,
             },
             NativeMethod::Metadata(metadata_method) => match metadata_method {
                 MetadataMethod::Set => self.fixed_low,

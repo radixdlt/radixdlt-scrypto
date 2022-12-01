@@ -67,7 +67,7 @@ fn set_up_package_and_component() -> (
             .call_function(
                 package_address,
                 "RoyaltyTest",
-                "enable_package_royalty",
+                "enable_royalty_for_this_package",
                 args!(),
             )
             .build(),
@@ -203,7 +203,7 @@ fn test_claim_royalty() {
                 package_address,
                 "RoyaltyTest",
                 "claim_package_royalty",
-                args!(),
+                args!(package_address),
             )
             .call_method(
                 account,

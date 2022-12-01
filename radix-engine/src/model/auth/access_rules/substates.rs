@@ -7,11 +7,11 @@ use radix_engine_interface::model::AccessRules;
 /// A transient resource container.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct AccessRulesSubstate {
-    pub access_rules: Vec<AccessRules>,
+pub struct AccessRulesChainSubstate {
+    pub access_rules_chain: Vec<AccessRules>,
 }
 
-impl AccessRulesSubstate {
+impl AccessRulesChainSubstate {
     pub fn method_authorization(
         &self,
         component_state: &ComponentStateSubstate,
@@ -24,7 +24,7 @@ impl AccessRulesSubstate {
             .expect("Failed to decode component state");
 
         let mut authorizations = Vec::new();
-        for auth in &self.access_rules {
+        for auth in &self.access_rules_chain {
             let method_auth = auth.get(&key);
             let authorization = convert(schema, &data, method_auth);
             authorizations.push(authorization);
@@ -37,7 +37,7 @@ impl AccessRulesSubstate {
         let key = AccessRuleKey::Native(native_fn);
 
         let mut authorizations = Vec::new();
-        for auth in &self.access_rules {
+        for auth in &self.access_rules_chain {
             let method_auth = auth.get(&key);
 
             // TODO: Remove
@@ -50,7 +50,7 @@ impl AccessRulesSubstate {
 
     pub fn method_mutability_authorization(&self, key: &AccessRuleKey) -> Vec<MethodAuthorization> {
         let mut authorizations = Vec::new();
-        for auth in &self.access_rules {
+        for auth in &self.access_rules_chain {
             let method_auth = auth.get_mutability(key);
 
             // TODO: Remove
@@ -63,7 +63,7 @@ impl AccessRulesSubstate {
 
     pub fn group_mutability_authorization(&self, name: &str) -> Vec<MethodAuthorization> {
         let mut authorizations = Vec::new();
-        for auth in &self.access_rules {
+        for auth in &self.access_rules_chain {
             let group_auth = auth.get_group_mutability(name);
 
             // TODO: Remove

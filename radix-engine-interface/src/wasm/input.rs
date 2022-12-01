@@ -38,7 +38,7 @@ pub enum NativeFnInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NativeMethodInvocation {
-    AccessRules(AccessRulesMethodInvocation),
+    AccessRulesChain(AccessRulesChainMethodInvocation),
     Metadata(MetadataMethodInvocation),
     Package(PackageMethodInvocation),
     Component(ComponentMethodInvocation),
@@ -64,7 +64,7 @@ pub enum NativeFunctionInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum AccessRulesMethodInvocation {
+pub enum AccessRulesChainMethodInvocation {
     AddAccessCheck(AccessRulesAddAccessCheckInvocation),
     SetMethodAccessRule(AccessRulesSetMethodAccessRuleInvocation),
     SetMethodMutability(AccessRulesSetMethodMutabilityInvocation),
@@ -376,24 +376,32 @@ impl NativeFnInvocation {
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
-                NativeMethodInvocation::AccessRules(access_rules_method) => {
+                NativeMethodInvocation::AccessRulesChain(access_rules_method) => {
                     match access_rules_method {
-                        AccessRulesMethodInvocation::AddAccessCheck(invocation) => system_api
+                        AccessRulesChainMethodInvocation::AddAccessCheck(invocation) => system_api
                             .sys_invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        AccessRulesMethodInvocation::SetMethodAccessRule(invocation) => system_api
-                            .sys_invoke(invocation)
-                            .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        AccessRulesMethodInvocation::SetMethodMutability(invocation) => system_api
-                            .sys_invoke(invocation)
-                            .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        AccessRulesMethodInvocation::SetGroupAccessRule(invocation) => system_api
-                            .sys_invoke(invocation)
-                            .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        AccessRulesMethodInvocation::SetGroupMutability(invocation) => system_api
-                            .sys_invoke(invocation)
-                            .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        AccessRulesMethodInvocation::GetLength(invocation) => system_api
+                        AccessRulesChainMethodInvocation::SetMethodAccessRule(invocation) => {
+                            system_api
+                                .sys_invoke(invocation)
+                                .map(|a| IndexedScryptoValue::from_typed(&a))
+                        }
+                        AccessRulesChainMethodInvocation::SetMethodMutability(invocation) => {
+                            system_api
+                                .sys_invoke(invocation)
+                                .map(|a| IndexedScryptoValue::from_typed(&a))
+                        }
+                        AccessRulesChainMethodInvocation::SetGroupAccessRule(invocation) => {
+                            system_api
+                                .sys_invoke(invocation)
+                                .map(|a| IndexedScryptoValue::from_typed(&a))
+                        }
+                        AccessRulesChainMethodInvocation::SetGroupMutability(invocation) => {
+                            system_api
+                                .sys_invoke(invocation)
+                                .map(|a| IndexedScryptoValue::from_typed(&a))
+                        }
+                        AccessRulesChainMethodInvocation::GetLength(invocation) => system_api
                             .sys_invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                     }
