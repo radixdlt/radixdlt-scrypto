@@ -166,7 +166,7 @@ impl FeeTable {
             },
             NativeFunction::ResourceManager(resource_manager_ident) => {
                 match resource_manager_ident {
-                    ResourceManagerFunction::Create => self.fixed_high, // TODO: more investigation about fungibility
+                    ResourceManagerFunction::CreateNoOwner => self.fixed_high, // TODO: more investigation about fungibility
                     ResourceManagerFunction::CreateWithOwner => self.fixed_high, // TODO: more investigation about fungibility
                     ResourceManagerFunction::BurnBucket => self.fixed_low,
                 }

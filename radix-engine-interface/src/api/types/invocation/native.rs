@@ -257,7 +257,7 @@ pub enum AuthZoneStackMethod {
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFunction {
-    Create,
+    CreateNoOwner,
     CreateWithOwner,
     BurnBucket,
 }
