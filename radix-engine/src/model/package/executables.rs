@@ -88,6 +88,8 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
         let access_rules = AccessRulesChainSubstate {
             access_rules_chain: self.access_rules_chain,
         };
+
+        // Create package node
         let node_id = api.allocate_node_id(RENodeType::Package)?;
         api.create_node(
             node_id,
@@ -101,6 +103,7 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
         )?;
         let package_id: PackageId = node_id.into();
 
+        // Globalize
         let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
         api.create_node(
             global_node_id,
@@ -108,7 +111,6 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
         )?;
 
         let package_address: PackageAddress = global_node_id.into();
-
         Ok((package_address, CallFrameUpdate::empty()))
     }
 }
@@ -186,7 +188,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
         let mut chain = self.access_rules_chain;
 
         // Add protection for metadata
-        let mut metadata_access_rules = AccessRules::new();
+        let mut metadata_access_rules = AccessRules::new().default(AccessRule::AllowAll);
         metadata_access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,
@@ -194,7 +196,6 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
             rule!(require(non_fungible_address.clone())),
             rule!(require(non_fungible_address.clone())),
         );
-        metadata_access_rules = metadata_access_rules.default(rule!(allow_all));
         chain.push(metadata_access_rules);
 
         // Add protection for royalty
@@ -213,9 +214,9 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
             rule!(require(non_fungible_address.clone())),
             rule!(require(non_fungible_address.clone())),
         );
-        royalty_access_rules = royalty_access_rules.default(rule!(allow_all));
         chain.push(royalty_access_rules);
 
+        // Create package node
         let node_id = api.allocate_node_id(RENodeType::Package)?;
         api.create_node(
             node_id,
@@ -231,6 +232,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
         )?;
         let package_id: PackageId = node_id.into();
 
+        // Globalize
         api.create_node(
             global_node_id,
             RENode::Global(GlobalAddressSubstate::Package(package_id)),

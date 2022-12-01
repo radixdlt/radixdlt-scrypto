@@ -92,7 +92,6 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
             rule!(require(non_fungible_address.clone())),
             rule!(require(non_fungible_address.clone())),
         );
-        metadata_access_rules = metadata_access_rules.default(rule!(allow_all));
         api.sys_invoke(AccessRulesAddAccessCheckInvocation {
             receiver: component_node_id,
             access_rules: metadata_access_rules,
@@ -114,12 +113,12 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
             rule!(require(non_fungible_address.clone())),
             rule!(require(non_fungible_address.clone())),
         );
-        royalty_access_rules = royalty_access_rules.default(rule!(allow_all));
         api.sys_invoke(AccessRulesAddAccessCheckInvocation {
             receiver: component_node_id,
             access_rules: royalty_access_rules,
         })?;
 
+        // Globalize
         api.create_node(
             global_node_id,
             RENode::Global(GlobalAddressSubstate::Component(self.component_id)),
