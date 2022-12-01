@@ -26,7 +26,7 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{AccessRule, FromPublicKey, NonFungibleIdType};
-use radix_engine_interface::{access_rule_node, dec, rule};
+use radix_engine_interface::{dec, rule};
 use transaction::builder::ManifestBuilder;
 use transaction::model::{AuthZoneParams, Executable, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};

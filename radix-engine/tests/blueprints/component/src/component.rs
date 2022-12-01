@@ -11,7 +11,7 @@ blueprint! {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(amount)
+                .initial_supply_no_owner(amount)
         }
 
         pub fn create_component() -> ComponentAddress {

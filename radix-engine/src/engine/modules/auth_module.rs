@@ -101,7 +101,7 @@ impl AuthModule {
                     // SetAccessRule auth is done manually within the method
                     (
                         ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                            AccessRulesChainMethod::SetAccessRule,
+                            AccessRulesChainMethod::SetMethodAccessRule,
                         )),
                         ..,
                     ) => {

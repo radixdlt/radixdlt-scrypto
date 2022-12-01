@@ -15,7 +15,7 @@ blueprint! {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1)
+                .initial_supply_no_owner(1)
         }
 
         pub fn new_vault_into_map() -> ComponentAddress {
@@ -125,7 +125,7 @@ blueprint! {
             let bucket = ResourceBuilder::new_non_fungible()
                 .metadata("name", "TestToken")
                 .set_id_type(NonFungibleIdType::U32)
-                .initial_supply([(NonFungibleId::U32(1), Data {})]);
+                .initial_supply_no_owner([(NonFungibleId::U32(1), Data {})]);
             Vault::with_bucket(bucket)
         }
 

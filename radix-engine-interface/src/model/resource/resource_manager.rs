@@ -53,22 +53,22 @@ impl Into<AccessRule> for Mutability {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerCreateInvocation {
+pub struct ResourceManagerCreateNoOwnerInvocation {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
     pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
     pub mint_params: Option<MintParams>,
 }
 
-impl Invocation for ResourceManagerCreateInvocation {
+impl Invocation for ResourceManagerCreateNoOwnerInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateInvocation {
+impl ScryptoNativeInvocation for ResourceManagerCreateNoOwnerInvocation {
     type ScryptoOutput = (ResourceAddress, Option<Bucket>);
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerCreateInvocation {
+impl Into<NativeFnInvocation> for ResourceManagerCreateNoOwnerInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
             ResourceManagerFunctionInvocation::Create(self),

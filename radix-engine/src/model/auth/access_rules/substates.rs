@@ -48,13 +48,26 @@ impl AccessRulesChainSubstate {
         authorizations
     }
 
-    pub fn mutability_authorization(&self, key: &AccessRuleKey) -> Vec<MethodAuthorization> {
+    pub fn method_mutability_authorization(&self, key: &AccessRuleKey) -> Vec<MethodAuthorization> {
         let mut authorizations = Vec::new();
         for auth in &self.access_rules_chain {
-            let method_auth = auth.get_mutability(&key);
+            let method_auth = auth.get_mutability(key);
 
             // TODO: Remove
             let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), method_auth);
+            authorizations.push(authorization);
+        }
+
+        authorizations
+    }
+
+    pub fn group_mutability_authorization(&self, name: &str) -> Vec<MethodAuthorization> {
+        let mut authorizations = Vec::new();
+        for auth in &self.access_rules_chain {
+            let group_auth = auth.get_group_mutability(name);
+
+            // TODO: Remove
+            let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), group_auth);
             authorizations.push(authorization);
         }
 
