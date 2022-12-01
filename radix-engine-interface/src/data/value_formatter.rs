@@ -269,7 +269,7 @@ pub fn format_custom_value<F: fmt::Write>(
             write!(f, "PreciseDecimal(\"{}\")", value)?;
         }
         ScryptoCustomValue::NonFungibleId(value) => {
-            write!(f, "NonFungibleId(\"{}\")", value)?;
+            write!(f, "NonFungibleId({})", value)?;
         }
     }
     Ok(())
