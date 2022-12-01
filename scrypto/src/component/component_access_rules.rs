@@ -8,16 +8,16 @@ use radix_engine_interface::model::{
 
 use crate::engine::scrypto_env::ScryptoEnv;
 
-// TODO: Should `Encode` and `Decode` be removed so that `StatefulAccessRules` can not be passed
+// TODO: Should `Encode` and `Decode` be removed so that `ComponentAccessRules` can not be passed
 // between components?
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
-pub struct StatefulAccessRules {
+pub struct ComponentAccessRules {
     component: ComponentIdentifier,
     index: usize,
 }
 
-impl StatefulAccessRules {
+impl ComponentAccessRules {
     pub(crate) fn new<T: Into<ComponentIdentifier>>(component: T, index: usize) -> Self {
         Self {
             component: component.into(),

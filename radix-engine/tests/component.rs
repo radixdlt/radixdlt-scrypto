@@ -10,7 +10,7 @@ use radix_engine_interface::api::types::{RENodeId, ScryptoFunctionIdent};
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::model::FromPublicKey;
 use radix_engine_interface::{data::*, rule};
-use scrypto::component::StatefulAccessRules;
+use scrypto::component::ComponentAccessRules;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TransactionManifest;
@@ -612,7 +612,7 @@ impl MutableAccessRulesTestRunner {
         self.initial_proofs.push(initial_proof);
     }
 
-    pub fn access_rules(&mut self, call: Call) -> Vec<StatefulAccessRules> {
+    pub fn access_rules(&mut self, call: Call) -> Vec<ComponentAccessRules> {
         let manifest = match call {
             Call::Method => Self::manifest_builder()
                 .call_method(self.component_address, "access_rules_method", args!())

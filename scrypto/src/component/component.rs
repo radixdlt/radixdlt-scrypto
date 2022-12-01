@@ -24,7 +24,7 @@ use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::scrypto;
 
-use super::StatefulAccessRules;
+use super::ComponentAccessRules;
 
 /// Represents the state of a component.
 pub trait ComponentState<C: LocalComponent>: ScryptoEncode + ScryptoDecode {
@@ -131,7 +131,7 @@ impl Component {
     }
 
     /// Returns the layers of access rules on this component.
-    pub fn access_rules(&self) -> Vec<StatefulAccessRules> {
+    pub fn access_rules(&self) -> Vec<ComponentAccessRules> {
         let mut env = ScryptoEnv;
         let length = env
             .sys_invoke(AccessRulesGetLengthInvocation {
@@ -141,7 +141,7 @@ impl Component {
         (0..length)
             .into_iter()
             .enumerate()
-            .map(|(id, _)| StatefulAccessRules::new(self.0, id))
+            .map(|(id, _)| ComponentAccessRules::new(self.0, id))
             .collect()
     }
 }
@@ -205,7 +205,7 @@ impl BorrowedGlobalComponent {
     }
 
     /// Returns the layers of access rules on this component.
-    pub fn access_rules(&self) -> Vec<StatefulAccessRules> {
+    pub fn access_rules(&self) -> Vec<ComponentAccessRules> {
         let mut env = ScryptoEnv;
         let length = env
             .sys_invoke(AccessRulesGetLengthInvocation {
@@ -215,7 +215,7 @@ impl BorrowedGlobalComponent {
         (0..length)
             .into_iter()
             .enumerate()
-            .map(|(id, _)| StatefulAccessRules::new(self.0, id))
+            .map(|(id, _)| ComponentAccessRules::new(self.0, id))
             .collect()
     }
 }
