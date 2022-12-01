@@ -3,6 +3,6 @@ CALL_FUNCTION PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpka
 
 # Invoke native function
 CALL_NATIVE_FUNCTION "EpochManager" "create";
-CALL_NATIVE_FUNCTION "ResourceManager" "create";
+CALL_NATIVE_FUNCTION "ResourceManager" "create_no_owner";
 CALL_NATIVE_FUNCTION "Package" "publish";
 CALL_NATIVE_FUNCTION "TransactionProcessor" "run";
