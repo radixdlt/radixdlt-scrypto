@@ -349,12 +349,36 @@ mod tests {
 
     #[test]
     fn test_bad_debt() {
-        let mut fee_reserve = SystemLoanFeeReserve::new(5.into(), 0, 100, 50);
+        let mut fee_reserve = SystemLoanFeeReserve::new(5.into(), 1, 100, 50);
         fee_reserve.consume_execution(2, 1, "test", false).unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), false);
         assert_eq!(summary.cost_unit_consumed, 2);
         assert_eq!(summary.execution, dec!("10"));
+        assert_eq!(summary.royalty, dec!("0"));
+        assert_eq!(summary.bad_debt, dec!("10"));
         assert_eq!(summary.payments, vec![],);
+    }
+
+    #[test]
+    fn test_royalty_execution_mix() {
+        let mut fee_reserve = SystemLoanFeeReserve::new(5.into(), 1, 100, 50);
+        fee_reserve.consume_execution(2, 1, "test", false).unwrap();
+        fee_reserve
+            .consume_royalty(
+                RoyaltyReceiver::Package(FAUCET_PACKAGE, RENodeId::Package([0u8; 36])),
+                2,
+            )
+            .unwrap();
+        fee_reserve
+            .lock_fee(TEST_VAULT_ID, xrd(100), false)
+            .unwrap();
+        let summary = fee_reserve.finalize();
+        assert_eq!(summary.loan_fully_repaid(), true);
+        assert_eq!(summary.cost_unit_consumed, 4);
+        assert_eq!(summary.execution, dec!("10.1"));
+        assert_eq!(summary.royalty, dec!("10"));
+        assert_eq!(summary.bad_debt, dec!("0"));
+        assert_eq!(summary.payments, vec![(TEST_VAULT_ID, xrd(100), false)],);
     }
 }
