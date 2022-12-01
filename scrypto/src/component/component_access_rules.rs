@@ -14,22 +14,22 @@ use crate::engine::scrypto_env::ScryptoEnv;
 #[scrypto(TypeId, Encode, Decode, Describe)]
 pub struct ComponentAccessRules {
     component: ComponentIdentifier,
-    index: usize,
+    index: u32,
 }
 
 impl ComponentAccessRules {
-    pub(crate) fn new<T: Into<ComponentIdentifier>>(component: T, index: usize) -> Self {
+    pub(crate) fn new<T: Into<ComponentIdentifier>>(component: T, index: u32) -> Self {
         Self {
             component: component.into(),
             index,
         }
     }
 
-    pub fn component_address(&self) -> ComponentIdentifier {
-        self.component.clone()
+    pub fn component_identifier(&self) -> &ComponentIdentifier {
+        &self.component
     }
 
-    pub fn index(&self) -> usize {
+    pub fn index(&self) -> u32 {
         self.index
     }
 
@@ -37,9 +37,9 @@ impl ComponentAccessRules {
         let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(AccessRulesSetMethodAccessRuleInvocation {
-                receiver: self.component_re_node(),
-                index: self.index as u32,
-                key: AccessRuleKey::ScryptoMethod(method_name.to_string()).into(),
+                receiver: self.component.clone().into(),
+                index: self.index,
+                key: AccessRuleKey::ScryptoMethod(method_name.to_string()),
                 rule: access_rule,
             })
             .unwrap();
@@ -49,39 +49,41 @@ impl ComponentAccessRules {
         let mut syscalls = ScryptoEnv;
         syscalls
             .sys_invoke(AccessRulesSetMethodMutabilityInvocation {
-                receiver: self.component_re_node(),
-                index: self.index as u32,
-                key: AccessRuleKey::ScryptoMethod(method_name.to_string()).into(),
+                receiver: self.component.clone().into(),
+                index: self.index,
+                key: AccessRuleKey::ScryptoMethod(method_name.to_string()),
                 mutability: AccessRule::DenyAll,
             })
             .unwrap();
-    }
-
-    fn component_re_node(&self) -> RENodeId {
-        match self.component {
-            ComponentIdentifier::NodeId(node_id) => RENodeId::Component(node_id),
-            ComponentIdentifier::ComponentAddress(component_address) => {
-                RENodeId::Global(GlobalAddress::Component(component_address))
-            }
-        }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum ComponentIdentifier {
-    NodeId(ComponentId),
-    ComponentAddress(ComponentAddress),
+    RENodeId(ComponentId),
+    GlobalAddress(ComponentAddress),
 }
 
 impl From<ComponentId> for ComponentIdentifier {
     fn from(value: ComponentId) -> Self {
-        ComponentIdentifier::NodeId(value)
+        ComponentIdentifier::RENodeId(value)
     }
 }
 
 impl From<ComponentAddress> for ComponentIdentifier {
     fn from(value: ComponentAddress) -> Self {
-        ComponentIdentifier::ComponentAddress(value)
+        ComponentIdentifier::GlobalAddress(value)
+    }
+}
+
+impl From<ComponentIdentifier> for RENodeId {
+    fn from(value: ComponentIdentifier) -> Self {
+        match value {
+            ComponentIdentifier::RENodeId(node_id) => RENodeId::Component(node_id),
+            ComponentIdentifier::GlobalAddress(component_address) => {
+                RENodeId::Global(GlobalAddress::Component(component_address))
+            }
+        }
     }
 }

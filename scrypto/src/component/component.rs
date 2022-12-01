@@ -52,16 +52,17 @@ pub struct ComponentInfoSubstate {
     pub blueprint_name: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct AccessRulesSubstate {
-    pub access_rules: Vec<AccessRules>,
-}
-
 // TODO: de-duplication
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
 pub struct ComponentStateSubstate {
     pub raw: Vec<u8>,
+}
+
+// TODO: de-duplication
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct AccessRulesSubstate {
+    pub access_rules: Vec<AccessRules>,
 }
 
 impl Component {
@@ -140,8 +141,7 @@ impl Component {
             .unwrap();
         (0..length)
             .into_iter()
-            .enumerate()
-            .map(|(id, _)| ComponentAccessRules::new(self.0, id))
+            .map(|id| ComponentAccessRules::new(self.0, id))
             .collect()
     }
 }
@@ -214,8 +214,7 @@ impl BorrowedGlobalComponent {
             .unwrap();
         (0..length)
             .into_iter()
-            .enumerate()
-            .map(|(id, _)| ComponentAccessRules::new(self.0, id))
+            .map(|id| ComponentAccessRules::new(self.0, id))
             .collect()
     }
 }

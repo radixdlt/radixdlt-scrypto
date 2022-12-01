@@ -515,7 +515,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
 }
 
 #[test]
-fn user_can_not_control_auth_on_methods_that_mutate_auth() {
+fn user_can_not_mutate_auth_on_methods_that_control_auth() {
     // Arrange
     for method in [
         AccessRulesMethod::GetLength,
@@ -563,8 +563,6 @@ fn user_can_not_control_auth_on_methods_that_mutate_auth() {
         );
 
         // Assert
-        receipt.expect_commit_success();
-        let receipt = test_runner.borrow_funds();
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,

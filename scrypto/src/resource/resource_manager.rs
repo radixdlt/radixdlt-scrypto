@@ -26,8 +26,7 @@ impl ResourceManager {
             index: 0,
             key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::Mint,
-            )))
-            .into(),
+            ))),
             rule: access_rule,
         })
         .unwrap();
@@ -40,8 +39,7 @@ impl ResourceManager {
             index: 0,
             key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::Burn,
-            )))
-            .into(),
+            ))),
             rule: access_rule,
         })
         .unwrap();
@@ -84,8 +82,7 @@ impl ResourceManager {
             index: 0,
             key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::UpdateMetadata,
-            )))
-            .into(),
+            ))),
             rule: access_rule,
         })
         .unwrap();
@@ -98,8 +95,7 @@ impl ResourceManager {
             index: 0,
             key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::UpdateNonFungibleData,
-            )))
-            .into(),
+            ))),
             rule: access_rule,
         })
         .unwrap();
@@ -112,8 +108,7 @@ impl ResourceManager {
             index: 0,
             key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::Mint,
-            )))
-            .into(),
+            ))),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -126,8 +121,7 @@ impl ResourceManager {
             index: 0,
             key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::Burn,
-            )))
-            .into(),
+            ))),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -140,8 +134,7 @@ impl ResourceManager {
             index: 0,
             key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::UpdateMetadata,
-            )))
-            .into(),
+            ))),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -154,8 +147,7 @@ impl ResourceManager {
             index: 0,
             key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
                 ResourceManagerMethod::UpdateNonFungibleData,
-            )))
-            .into(),
+            ))),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()

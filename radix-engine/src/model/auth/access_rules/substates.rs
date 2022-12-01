@@ -64,10 +64,10 @@ impl AccessRulesSubstate {
     pub fn group_mutability_authorization(&self, name: &str) -> Vec<MethodAuthorization> {
         let mut authorizations = Vec::new();
         for auth in &self.access_rules {
-            let method_auth = auth.get_group_mutability(name);
+            let group_auth = auth.get_group_mutability(name);
 
             // TODO: Remove
-            let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), method_auth);
+            let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), group_auth);
             authorizations.push(authorization);
         }
 

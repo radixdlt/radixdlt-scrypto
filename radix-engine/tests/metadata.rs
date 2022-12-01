@@ -124,8 +124,7 @@ fn can_lock_package_metadata_with_owner() {
                 index: 0,
                 key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                     MetadataMethod::Set,
-                )))
-                .into(),
+                ))),
                 rule: AccessRule::DenyAll,
             })
             .unwrap(),
