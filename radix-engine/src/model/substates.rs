@@ -704,6 +704,7 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::NonFungible(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::KeyValueStoreEntry(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::AccessRules(value) => IndexedScryptoValue::from_typed(*value),
             _ => panic!("Unsupported scrypto value"),
         }
     }

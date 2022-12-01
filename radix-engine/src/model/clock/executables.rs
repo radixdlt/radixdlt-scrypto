@@ -8,7 +8,6 @@ use crate::model::{
     HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
-use radix_engine_interface::access_rule_node;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
     ClockFunction, ClockMethod, ClockOffset, GlobalAddress, NativeFunction, NativeMethod, RENodeId,
