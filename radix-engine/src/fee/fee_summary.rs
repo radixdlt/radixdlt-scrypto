@@ -11,9 +11,9 @@ pub struct FeeSummary {
     /// The tip percentage
     pub tip_percentage: u8,
     /// The specified max cost units can be consumed.
-    pub cost_unit_limit: u64,
+    pub cost_unit_limit: u32,
     /// The total number of cost units consumed.
-    pub cost_unit_consumed: u64,
+    pub cost_unit_consumed: u32,
     /// The total amount of XRD burned.
     pub execution: Decimal,
     /// The total royalty.
@@ -23,9 +23,9 @@ pub struct FeeSummary {
     /// The fee payments
     pub payments: Vec<(VaultId, Resource, bool)>,
     /// The execution cost breakdown
-    pub execution_breakdown: HashMap<String, u64>,
+    pub execution_breakdown: HashMap<String, u32>,
     /// The royalty cost breakdown.
-    pub royalty_breakdown: HashMap<RoyaltyReceiver, u64>,
+    pub royalty_breakdown: HashMap<RoyaltyReceiver, u32>,
 }
 
 impl FeeSummary {

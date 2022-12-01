@@ -195,7 +195,7 @@ where
                 .fee_summary
                 .execution_breakdown
                 .iter()
-                .collect::<BTreeMap<&String, &u64>>();
+                .collect::<BTreeMap<&String, &u32>>();
             for (k, v) in break_down {
                 println!("{:<30}: {:>8}", k, v);
             }
