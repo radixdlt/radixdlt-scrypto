@@ -189,15 +189,15 @@ impl NativeProcedure for AccessRulesSetAccessRuleInvocation {
             let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
             let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
             let substate_ref = api.get_ref(handle)?;
-            let auth_zone_substate = substate_ref.auth_zone();
+            let auth_zone_stack = substate_ref.auth_zone_stack();
 
-            auth_zone_substate
-                .check_auth(false, authorization)
-                .map_err(|(authorization, error)| {
+            auth_zone_stack.check_auth(false, authorization).map_err(
+                |(authorization, error)| {
                     RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
                         AccessRulesChainError::Unauthorized(authorization, error),
                     ))
-                })?;
+                },
+            )?;
         }
 
         let mut substate_ref_mut = api.get_ref_mut(handle)?;
@@ -295,15 +295,15 @@ impl NativeProcedure for AccessRulesSetMutabilityInvocation {
             let offset = SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack);
             let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
             let substate_ref = api.get_ref(handle)?;
-            let auth_zone_substate = substate_ref.auth_zone();
+            let auth_zone_stack = substate_ref.auth_zone_stack();
 
-            auth_zone_substate
-                .check_auth(false, authorization)
-                .map_err(|(authorization, error)| {
+            auth_zone_stack.check_auth(false, authorization).map_err(
+                |(authorization, error)| {
                     RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
                         AccessRulesChainError::Unauthorized(authorization, error),
                     ))
-                })?;
+                },
+            )?;
         }
 
         let mut substate_ref_mut = api.get_ref_mut(handle)?;

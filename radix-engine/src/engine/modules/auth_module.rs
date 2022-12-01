@@ -51,11 +51,11 @@ impl AuthModule {
                 LockFlags::MUTABLE,
             )?;
             let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-            let auth_zone_ref_mut = substate_ref_mut.auth_zone();
+            let auth_zone_stack = substate_ref_mut.auth_zone_stack();
 
             // New auth zone frame managed by the AuthModule
             let is_barrier = Self::is_barrier(actor);
-            auth_zone_ref_mut.new_frame(is_barrier);
+            auth_zone_stack.new_frame(is_barrier);
             system_api.drop_lock(handle)?;
         }
 
@@ -295,11 +295,11 @@ impl AuthModule {
             LockFlags::read_only(),
         )?;
         let substate_ref = system_api.get_ref(handle)?;
-        let auth_zone_ref = substate_ref.auth_zone();
+        let auth_zone_stack = substate_ref.auth_zone_stack();
         let is_barrier = Self::is_barrier(actor);
 
         // Authorization check
-        auth_zone_ref
+        auth_zone_stack
             .check_auth(is_barrier, method_auths)
             .map_err(|(authorization, error)| {
                 RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
@@ -337,8 +337,8 @@ impl AuthModule {
         )?;
         {
             let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-            let auth_zone = substate_ref_mut.auth_zone();
-            auth_zone.pop_frame();
+            let auth_zone_stack = substate_ref_mut.auth_zone_stack();
+            auth_zone_stack.pop_frame();
         }
         system_api.drop_lock(handle)?;
 

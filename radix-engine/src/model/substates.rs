@@ -773,7 +773,7 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn auth_zone(&self) -> &AuthZoneStackSubstate {
+    pub fn auth_zone_stack(&self) -> &AuthZoneStackSubstate {
         match self {
             SubstateRef::AuthZoneStack(value) => *value,
             _ => panic!("Not an authzone"),
@@ -958,7 +958,7 @@ pub enum SubstateRefMut<'a> {
 }
 
 impl<'a> SubstateRefMut<'a> {
-    pub fn auth_zone(&mut self) -> &mut AuthZoneStackSubstate {
+    pub fn auth_zone_stack(&mut self) -> &mut AuthZoneStackSubstate {
         match self {
             SubstateRefMut::AuthZoneStack(value) => *value,
             _ => panic!("Not an authzone"),
