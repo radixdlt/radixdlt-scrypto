@@ -83,7 +83,7 @@ impl ExecutableInvocation for ResourceManagerCreateNoOwnerInvocation {
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
-            ResourceManagerFunction::Create,
+            ResourceManagerFunction::CreateNoOwner,
         )));
         let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))

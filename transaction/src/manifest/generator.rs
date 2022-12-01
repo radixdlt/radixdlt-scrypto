@@ -472,7 +472,7 @@ pub fn generate_instruction(
             Instruction::CallNativeFunction {
                 function_ident: NativeFunctionIdent {
                     blueprint_name: "ResourceManager".to_owned(),
-                    function_name: ResourceManagerFunction::Create.to_string(),
+                    function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
                 },
                 args,
             }

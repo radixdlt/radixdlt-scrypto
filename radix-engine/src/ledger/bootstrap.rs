@@ -77,7 +77,7 @@ pub fn create_genesis() -> SystemTransaction {
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: ResourceManagerFunction::Create.to_string(),
+                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
             },
             args: scrypto_encode(&ResourceManagerCreateNoOwnerInvocation {
                 resource_type: ResourceType::NonFungible {
@@ -103,7 +103,7 @@ pub fn create_genesis() -> SystemTransaction {
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: ResourceManagerFunction::Create.to_string(),
+                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
             },
             args: scrypto_encode(&ResourceManagerCreateNoOwnerInvocation {
                 resource_type: ResourceType::NonFungible {
@@ -134,7 +134,7 @@ pub fn create_genesis() -> SystemTransaction {
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: ResourceManagerFunction::Create.to_string(),
+                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
             },
             args: scrypto_encode(&ResourceManagerCreateNoOwnerInvocation {
                 resource_type: ResourceType::Fungible { divisibility: 18 },
@@ -192,7 +192,7 @@ pub fn create_genesis() -> SystemTransaction {
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: ResourceManagerFunction::Create.to_string(),
+                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
             },
             args: scrypto_encode(&ResourceManagerCreateNoOwnerInvocation {
                 resource_type: ResourceType::NonFungible {
@@ -217,7 +217,7 @@ pub fn create_genesis() -> SystemTransaction {
         Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: ResourceManagerFunction::Create.to_string(),
+                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
             },
             args: scrypto_encode(&ResourceManagerCreateNoOwnerInvocation {
                 resource_type: ResourceType::NonFungible {
