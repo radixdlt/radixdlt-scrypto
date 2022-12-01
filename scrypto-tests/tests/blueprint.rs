@@ -26,7 +26,7 @@ blueprint! {
                 state: 0
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn get_state(&self) -> u32 {

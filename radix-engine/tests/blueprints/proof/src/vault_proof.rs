@@ -11,7 +11,7 @@ blueprint! {
                 vault: Vault::with_bucket(bucket),
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn create_clone_drop_vault_proof(&self, amount: Decimal) {

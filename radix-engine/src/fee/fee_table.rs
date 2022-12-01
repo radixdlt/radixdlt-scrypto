@@ -1,8 +1,9 @@
 use radix_engine_interface::api::types::{
     AccessRulesMethod, AuthZoneStackMethod, BucketMethod, ClockFunction, ClockMethod,
-    ComponentMethod, EpochManagerFunction, EpochManagerMethod, MetadataMethod, NativeFunction,
-    NativeMethod, PackageFunction, PackageMethod, ProofMethod, ResourceManagerFunction,
-    ResourceManagerMethod, TransactionProcessorFunction, VaultMethod, WorktopMethod,
+    ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, MetadataMethod,
+    NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
+    ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
+    WorktopMethod,
 };
 
 pub enum SystemApiCostingEntry {
@@ -144,6 +145,10 @@ impl FeeTable {
 
     pub fn run_native_function_cost(&self, native_function: &NativeFunction) -> u32 {
         match native_function {
+            NativeFunction::Component(component_func) => match component_func {
+                ComponentFunction::GlobalizeWithOwner => self.fixed_high,
+                ComponentFunction::GlobalizeNoOwner => self.fixed_high,
+            },
             NativeFunction::TransactionProcessor(transaction_processor_fn) => {
                 match transaction_processor_fn {
                     TransactionProcessorFunction::Run => self.fixed_high,
@@ -161,7 +166,8 @@ impl FeeTable {
             },
             NativeFunction::ResourceManager(resource_manager_ident) => {
                 match resource_manager_ident {
-                    ResourceManagerFunction::Create => self.fixed_high, // TODO: more investigation about fungibility
+                    ResourceManagerFunction::CreateNoOwner => self.fixed_high, // TODO: more investigation about fungibility
+                    ResourceManagerFunction::CreateWithOwner => self.fixed_high, // TODO: more investigation about fungibility
                     ResourceManagerFunction::BurnBucket => self.fixed_low,
                 }
             }
@@ -211,10 +217,8 @@ impl FeeTable {
                 ResourceManagerMethod::CreateVault => self.fixed_medium,
                 ResourceManagerMethod::CreateBucket => self.fixed_medium,
                 ResourceManagerMethod::Mint => self.fixed_high,
-                ResourceManagerMethod::GetMetadata => self.fixed_low,
                 ResourceManagerMethod::GetResourceType => self.fixed_low,
                 ResourceManagerMethod::GetTotalSupply => self.fixed_low,
-                ResourceManagerMethod::UpdateMetadata => self.fixed_medium,
                 ResourceManagerMethod::UpdateNonFungibleData => self.fixed_medium,
                 ResourceManagerMethod::NonFungibleExists => self.fixed_low,
                 ResourceManagerMethod::GetNonFungible => self.fixed_medium,
@@ -240,6 +244,7 @@ impl FeeTable {
             },
             NativeMethod::Metadata(metadata_method) => match metadata_method {
                 MetadataMethod::Set => self.fixed_low,
+                MetadataMethod::Get => self.fixed_low,
             },
             NativeMethod::Component(method_ident) => match method_ident {
                 ComponentMethod::SetRoyaltyConfig => self.fixed_medium,

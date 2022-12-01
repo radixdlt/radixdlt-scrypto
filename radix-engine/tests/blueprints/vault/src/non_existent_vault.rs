@@ -13,7 +13,7 @@ blueprint! {
                 vaults: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn new() -> ComponentAddress {
@@ -22,7 +22,7 @@ blueprint! {
                 vaults: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn create_non_existent_vault(&mut self) {
@@ -37,7 +37,7 @@ blueprint! {
                 vaults,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn create_non_existent_vault_in_kv_store(&mut self) {

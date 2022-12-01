@@ -1,6 +1,6 @@
 use radix_engine_interface::api::api::SysNativeInvokable;
 use radix_engine_interface::api::types::{
-    GlobalAddress, NativeFn, NativeMethod, RENodeId, ResourceManagerMethod,
+    GlobalAddress, MetadataMethod, NativeFn, NativeMethod, RENodeId, ResourceManagerMethod,
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
@@ -19,6 +19,25 @@ use crate::scrypto;
 pub struct ResourceManager(pub(crate) ResourceAddress);
 
 impl ResourceManager {
+    pub fn set_metadata(&mut self, key: String, value: String) {
+        let mut env = ScryptoEnv;
+        env.sys_invoke(MetadataSetInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            key,
+            value,
+        })
+        .unwrap()
+    }
+
+    pub fn get_metadata(&mut self, key: String) -> Option<String> {
+        let mut env = ScryptoEnv;
+        env.sys_invoke(MetadataGetInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            key,
+        })
+        .unwrap()
+    }
+
     pub fn set_mintable(&mut self, access_rule: AccessRule) {
         let mut env = ScryptoEnv;
         env.sys_invoke(AccessRulesSetMethodAccessRuleInvocation {
@@ -80,8 +99,8 @@ impl ResourceManager {
         env.sys_invoke(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateMetadata,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
             ))),
             rule: access_rule,
         })
@@ -132,8 +151,8 @@ impl ResourceManager {
         env.sys_invoke(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateMetadata,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
             ))),
             mutability: AccessRule::DenyAll,
         })
@@ -212,11 +231,6 @@ impl ResourceManager {
     }
 
     scrypto_env_native_fn! {
-        pub fn metadata(&self) -> HashMap<String, String> {
-            ResourceManagerGetMetadataInvocation {
-                receiver: self.0,
-            }
-        }
         pub fn resource_type(&self) -> ResourceType {
             ResourceManagerGetResourceTypeInvocation {
                 receiver: self.0,
@@ -225,12 +239,6 @@ impl ResourceManager {
         pub fn total_supply(&self) -> Decimal {
             ResourceManagerGetTotalSupplyInvocation {
                 receiver: self.0,
-            }
-        }
-        pub fn update_metadata(&mut self, metadata: HashMap<String, String>) -> () {
-            ResourceManagerUpdateMetadataInvocation {
-                receiver: self.0,
-                metadata,
             }
         }
         pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {

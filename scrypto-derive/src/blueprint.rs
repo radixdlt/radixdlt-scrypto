@@ -479,6 +479,10 @@ fn generate_stubs(
             fn blueprint_name(&self) -> String {
                 self.component.blueprint_name()
             }
+            fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+                self.component.metadata(name, value);
+                self
+            }
             fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
                 self.component.add_access_check(access_rules);
                 self
@@ -487,8 +491,11 @@ fn generate_stubs(
                 self.component.set_royalty_config(royalty_config);
                 self
             }
-            fn globalize(self) -> ComponentAddress {
-                self.component.globalize()
+            fn globalize_no_owner(self) -> ComponentAddress {
+                self.component.globalize_no_owner()
+            }
+            fn globalize_with_owner(self) -> (ComponentAddress, Bucket) {
+                self.component.globalize_with_owner()
             }
         }
 
@@ -673,6 +680,10 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
+                    fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+                        self.component.metadata(name, value);
+                        self
+                    }
                     fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
                         self.component.add_access_check(access_rules);
                         self
@@ -681,8 +692,11 @@ mod tests {
                         self.component.set_royalty_config(royalty_config);
                         self
                     }
-                    fn globalize(self) -> ComponentAddress {
-                        self.component.globalize()
+                    fn globalize_no_owner(self) -> ComponentAddress {
+                        self.component.globalize_no_owner()
+                    }
+                    fn globalize_with_owner(self) -> (ComponentAddress, Bucket) {
+                        self.component.globalize_with_owner()
                     }
                 }
 
@@ -760,6 +774,10 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
+                    fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+                        self.component.metadata(name, value);
+                        self
+                    }
                     fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
                         self.component.add_access_check(access_rules);
                         self
@@ -768,8 +786,11 @@ mod tests {
                         self.component.set_royalty_config(royalty_config);
                         self
                     }
-                    fn globalize(self) -> ComponentAddress {
-                        self.component.globalize()
+                    fn globalize_no_owner(self) -> ComponentAddress {
+                        self.component.globalize_no_owner()
+                    }
+                    fn globalize_with_owner(self) -> (ComponentAddress, Bucket) {
+                        self.component.globalize_with_owner()
                     }
                 }
 

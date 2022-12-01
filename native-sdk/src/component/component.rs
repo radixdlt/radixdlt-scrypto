@@ -1,5 +1,5 @@
 use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
-use radix_engine_interface::api::types::{ComponentId, RENodeId, ScryptoRENode};
+use radix_engine_interface::api::types::{ComponentId, RENodeId};
 use radix_engine_interface::data::ScryptoDecode;
 use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
@@ -38,17 +38,5 @@ impl Component {
         })?;
 
         Ok(self)
-    }
-
-    pub fn sys_globalize<Y, E: Debug + ScryptoDecode>(
-        self,
-        sys_calls: &mut Y,
-    ) -> Result<ComponentAddress, E>
-    where
-        Y: EngineApi<E>,
-    {
-        let node_id: RENodeId =
-            sys_calls.sys_create_node(ScryptoRENode::GlobalComponent(self.0))?;
-        Ok(node_id.into())
     }
 }

@@ -4,8 +4,8 @@ use crate::engine::{
     ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{
-    AccessRulesSubstate, BucketSubstate, GlobalAddressSubstate, InvokeError, NonFungible,
-    NonFungibleSubstate, Resource, VaultRuntimeSubstate,
+    AccessRulesSubstate, BucketSubstate, GlobalAddressSubstate, InvokeError, MetadataSubstate,
+    NonFungible, NonFungibleSubstate, Resource, VaultRuntimeSubstate,
 };
 use crate::model::{NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
@@ -16,11 +16,11 @@ use radix_engine_interface::api::types::{
     RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset,
     SubstateOffset,
 };
-use radix_engine_interface::dec;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::model::*;
+use radix_engine_interface::{dec, rule, scrypto};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,7 +74,7 @@ impl NativeProcedure for ResourceManagerBucketBurnInvocation {
     }
 }
 
-impl ExecutableInvocation for ResourceManagerCreateInvocation {
+impl ExecutableInvocation for ResourceManagerCreateNoOwnerInvocation {
     type Exec = NativeExecutor<Self>;
 
     fn resolve<D: MethodDeref>(
@@ -83,39 +83,48 @@ impl ExecutableInvocation for ResourceManagerCreateInvocation {
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
-            ResourceManagerFunction::Create,
+            ResourceManagerFunction::CreateNoOwner,
         )));
         let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for ResourceManagerCreateInvocation {
-    type Output = (ResourceAddress, Option<Bucket>);
+impl ExecutableInvocation for ResourceManagerCreateWithOwnerInvocation {
+    type Exec = NativeExecutor<Self>;
 
-    fn main<Y>(
-        mut self,
-        api: &mut Y,
-    ) -> Result<((ResourceAddress, Option<Bucket>), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + Invokable<ScryptoInvocation>,
-    {
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
-        let resource_manager_substate =
-            if matches!(self.resource_type, ResourceType::NonFungible { .. }) {
-                let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
-                api.create_node(
-                    nf_store_node_id,
-                    RENode::NonFungibleStore(NonFungibleStore::new()),
-                )?;
-                let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let call_frame_update = CallFrameUpdate::empty();
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
+            ResourceManagerFunction::CreateWithOwner,
+        )));
+        let executor = NativeExecutor(self);
+        Ok((actor, call_frame_update, executor))
+    }
+}
 
-                let mut resource_manager = ResourceManagerSubstate::new(
-                    self.resource_type,
-                    self.metadata,
-                    Some(nf_store_id),
-                    global_node_id.into(),
-                )
+fn build_resource_manager_substate<Y>(
+    resource_address: ResourceAddress,
+    resource_type: ResourceType,
+    mint_params: Option<MintParams>,
+    api: &mut Y,
+) -> Result<(ResourceManagerSubstate, Option<Bucket>), RuntimeError>
+where
+    Y: SystemApi,
+{
+    let substate_and_bucket = if let ResourceType::NonFungible { id_type } = resource_type {
+        let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
+        api.create_node(
+            nf_store_node_id,
+            RENode::NonFungibleStore(NonFungibleStore::new()),
+        )?;
+        let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
+
+        let mut resource_manager =
+            ResourceManagerSubstate::new(resource_type, Some(nf_store_id), resource_address)
                 .map_err(|e| match e {
                     InvokeError::Error(e) => {
                         RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
@@ -123,291 +132,330 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
                     InvokeError::Downstream(e) => e,
                 })?;
 
-                if let Some(mint_params) = &self.mint_params {
-                    if let MintParams::NonFungible { entries } = mint_params {
-                        for (non_fungible_id, data) in entries {
-                            if non_fungible_id.id_type()
-                                != self.resource_type.non_fungible_id_type()
-                            {
-                                return Err(RuntimeError::ApplicationError(
-                                    ApplicationError::ResourceManagerError(
-                                        ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
-                                            non_fungible_id.id_type(),
-                                            self.resource_type.non_fungible_id_type(),
-                                        ),
-                                    ),
-                                ));
-                            }
-                            let offset = SubstateOffset::NonFungibleStore(
-                                NonFungibleStoreOffset::Entry(non_fungible_id.clone()),
-                            );
-                            let non_fungible_handle =
-                                api.lock_substate(nf_store_node_id, offset, LockFlags::MUTABLE)?;
-                            let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
-                            let non_fungible_mut = substate_mut.non_fungible();
-                            *non_fungible_mut = NonFungibleSubstate(Some(
-                                NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
-                            ));
-                            api.drop_lock(non_fungible_handle)?;
-                        }
-                        resource_manager.total_supply = entries.len().into();
-                    } else {
+        let bucket = if let Some(mint_params) = mint_params {
+            if let MintParams::NonFungible { entries } = mint_params {
+                for (non_fungible_id, data) in &entries {
+                    if non_fungible_id.id_type() != id_type {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::ResourceManagerError(
-                                ResourceManagerError::ResourceTypeDoesNotMatch,
+                                ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                                    non_fungible_id.id_type(),
+                                    id_type,
+                                ),
                             ),
                         ));
                     }
-                }
 
-                resource_manager
+                    let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
+                        non_fungible_id.clone(),
+                    ));
+                    let non_fungible_handle =
+                        api.lock_substate(nf_store_node_id, offset, LockFlags::MUTABLE)?;
+                    let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
+                    let non_fungible_mut = substate_mut.non_fungible();
+                    *non_fungible_mut = NonFungibleSubstate(Some(
+                        NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
+                    ));
+                    api.drop_lock(non_fungible_handle)?;
+                }
+                resource_manager.total_supply = entries.len().into();
+                let ids = entries.into_keys().collect();
+                let container = Resource::new_non_fungible(resource_address, ids, id_type);
+                let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+                api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+                let bucket_id = node_id.into();
+                Some(Bucket(bucket_id))
             } else {
-                let mut resource_manager = ResourceManagerSubstate::new(
-                    self.resource_type,
-                    self.metadata,
-                    None,
-                    global_node_id.into(),
-                )
-                .map_err(|e| match e {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ResourceManagerError(
+                        ResourceManagerError::ResourceTypeDoesNotMatch,
+                    ),
+                ));
+            }
+        } else {
+            None
+        };
+
+        (resource_manager, bucket)
+    } else {
+        let mut resource_manager =
+            ResourceManagerSubstate::new(resource_type, None, resource_address).map_err(
+                |e| match e {
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+                    }
+                    InvokeError::Downstream(e) => e,
+                },
+            )?;
+
+        let bucket = if let Some(mint_params) = mint_params {
+            if let MintParams::Fungible { amount } = mint_params {
+                resource_manager.check_amount(amount).map_err(|e| match e {
                     InvokeError::Error(e) => {
                         RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
                     }
                     InvokeError::Downstream(e) => e,
                 })?;
-
-                if let Some(mint_params) = &self.mint_params {
-                    if let MintParams::Fungible { amount } = mint_params {
-                        resource_manager
-                            .check_amount(*amount)
-                            .map_err(|e| match e {
-                                InvokeError::Error(e) => RuntimeError::ApplicationError(
-                                    ApplicationError::ResourceManagerError(e),
-                                ),
-                                InvokeError::Downstream(e) => e,
-                            })?;
-                        // TODO: refactor this into mint function
-                        if *amount > dec!("1000000000000000000") {
-                            return Err(RuntimeError::ApplicationError(
-                                ApplicationError::ResourceManagerError(
-                                    ResourceManagerError::MaxMintAmountExceeded,
-                                ),
-                            ));
-                        }
-                        resource_manager.total_supply = amount.clone();
-                    } else {
-                        return Err(RuntimeError::ApplicationError(
-                            ApplicationError::ResourceManagerError(
-                                ResourceManagerError::ResourceTypeDoesNotMatch,
-                            ),
-                        ));
-                    }
+                // TODO: refactor this into mint function
+                if amount > dec!("1000000000000000000") {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::MaxMintAmountExceeded,
+                        ),
+                    ));
                 }
+                resource_manager.total_supply = amount;
+                let container =
+                    Resource::new_fungible(resource_address, resource_type.divisibility(), amount);
+                let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+                api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+                let bucket_id = node_id.into();
+                Some(Bucket(bucket_id))
+            } else {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ResourceManagerError(
+                        ResourceManagerError::ResourceTypeDoesNotMatch,
+                    ),
+                ));
+            }
+        } else {
+            None
+        };
 
-                resource_manager
-            };
+        (resource_manager, bucket)
+    };
 
-        let (mint_access_rule, mint_mutability) =
-            self.access_rules.remove(&Mint).unwrap_or((DenyAll, LOCKED));
-        let (burn_access_rule, burn_mutability) =
-            self.access_rules.remove(&Burn).unwrap_or((DenyAll, LOCKED));
-        let (update_metadata_access_rule, update_metadata_mutability) = self
-            .access_rules
-            .remove(&UpdateMetadata)
-            .unwrap_or((AllowAll, LOCKED));
-        let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) = self
-            .access_rules
+    Ok(substate_and_bucket)
+}
+
+fn build_access_rules_substates(
+    mut access_rules_map: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    metadata_access_rule: AccessRule,
+    metadata_mutability: AccessRule,
+) -> (AccessRulesSubstate, AccessRulesSubstate) {
+    let (mint_access_rule, mint_mutability) =
+        access_rules_map.remove(&Mint).unwrap_or((DenyAll, LOCKED));
+    let (burn_access_rule, burn_mutability) =
+        access_rules_map.remove(&Burn).unwrap_or((DenyAll, LOCKED));
+    let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) =
+        access_rules_map
             .remove(&UpdateNonFungibleData)
             .unwrap_or((AllowAll, LOCKED));
 
-        let mut access_rules = AccessRules::new();
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::Mint,
-            ))),
-            mint_access_rule,
-            mint_mutability.into(),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::Burn,
-            ))),
-            burn_access_rule,
-            burn_mutability.into(),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateMetadata,
-            ))),
-            update_metadata_access_rule,
-            update_metadata_mutability.into(),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateNonFungibleData,
-            ))),
-            update_non_fungible_data_access_rule,
-            update_non_fungible_data_mutability.into(),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::CreateBucket,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetMetadata,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetResourceType,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetTotalSupply,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::CreateVault,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::NonFungibleExists,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetNonFungible,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateVaultAuth,
-            ))),
-            AllowAll, // Access verification occurs within method
-            DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::LockAuth,
-            ))),
-            AllowAll, // Access verification occurs within method
-            DenyAll,
-        );
+    let mut access_rules = AccessRules::new();
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::Mint,
+        ))),
+        mint_access_rule,
+        mint_mutability.into(),
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::Burn,
+        ))),
+        burn_access_rule,
+        burn_mutability.into(),
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+            MetadataMethod::Set,
+        ))),
+        metadata_access_rule,
+        metadata_mutability,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::UpdateNonFungibleData,
+        ))),
+        update_non_fungible_data_access_rule,
+        update_non_fungible_data_mutability.into(),
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+            MetadataMethod::Get,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::CreateBucket,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::GetResourceType,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::GetTotalSupply,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::CreateVault,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::NonFungibleExists,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::GetNonFungible,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::UpdateVaultAuth,
+        ))),
+        AllowAll, // Access verification occurs within method
+        DenyAll,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+            ResourceManagerMethod::LockAuth,
+        ))),
+        AllowAll, // Access verification occurs within method
+        DenyAll,
+    );
 
-        let access_rules_substate = AccessRulesSubstate {
-            access_rules: vec![access_rules],
-        };
+    let access_rules_substate = AccessRulesSubstate {
+        access_rules: vec![access_rules],
+    };
 
-        let (deposit_access_rule, deposit_mutability) = self
-            .access_rules
-            .remove(&ResourceMethodAuthKey::Deposit)
-            .unwrap_or((AllowAll, LOCKED));
-        let (withdraw_access_rule, withdraw_mutability) = self
-            .access_rules
-            .remove(&ResourceMethodAuthKey::Withdraw)
-            .unwrap_or((AllowAll, LOCKED));
-        let (recall_access_rule, recall_mutability) = self
-            .access_rules
-            .remove(&ResourceMethodAuthKey::Recall)
-            .unwrap_or((DenyAll, LOCKED));
+    let (deposit_access_rule, deposit_mutability) = access_rules_map
+        .remove(&ResourceMethodAuthKey::Deposit)
+        .unwrap_or((AllowAll, LOCKED));
+    let (withdraw_access_rule, withdraw_mutability) = access_rules_map
+        .remove(&ResourceMethodAuthKey::Withdraw)
+        .unwrap_or((AllowAll, LOCKED));
+    let (recall_access_rule, recall_mutability) = access_rules_map
+        .remove(&ResourceMethodAuthKey::Recall)
+        .unwrap_or((DenyAll, LOCKED));
 
-        let mut vault_access_rules = AccessRules::new();
-        vault_access_rules.set_group_access_rule_and_mutability(
-            "withdraw".to_string(),
-            withdraw_access_rule,
-            withdraw_mutability.into(),
-        );
-        vault_access_rules.set_group_access_rule_and_mutability(
-            "recall".to_string(),
-            recall_access_rule,
-            recall_mutability.into(),
-        );
-        vault_access_rules.set_group_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Take))),
-            "withdraw".to_string(),
-            DenyAll,
-        );
-        vault_access_rules.set_group_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                VaultMethod::TakeNonFungibles,
-            ))),
-            "withdraw".to_string(),
-            DenyAll,
-        );
-        vault_access_rules.set_group_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::LockFee))),
-            "withdraw".to_string(),
-            DenyAll,
-        );
+    let mut vault_access_rules = AccessRules::new();
+    vault_access_rules.set_group_access_rule_and_mutability(
+        "withdraw".to_string(),
+        withdraw_access_rule,
+        withdraw_mutability.into(),
+    );
+    vault_access_rules.set_group_access_rule_and_mutability(
+        "recall".to_string(),
+        recall_access_rule,
+        recall_mutability.into(),
+    );
+    vault_access_rules.set_group_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Take))),
+        "withdraw".to_string(),
+        DenyAll,
+    );
+    vault_access_rules.set_group_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+            VaultMethod::TakeNonFungibles,
+        ))),
+        "withdraw".to_string(),
+        DenyAll,
+    );
+    vault_access_rules.set_group_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::LockFee))),
+        "withdraw".to_string(),
+        DenyAll,
+    );
 
-        vault_access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put))),
-            deposit_access_rule,
-            deposit_mutability.into(),
-        );
-        vault_access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                VaultMethod::GetAmount,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        vault_access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                VaultMethod::GetResourceAddress,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        vault_access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                VaultMethod::GetNonFungibleIds,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        vault_access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                VaultMethod::CreateProof,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        vault_access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                VaultMethod::CreateProofByAmount,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
-        vault_access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                VaultMethod::CreateProofByIds,
-            ))),
-            AllowAll,
-            DenyAll,
-        );
+    vault_access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put))),
+        deposit_access_rule,
+        deposit_mutability.into(),
+    );
+    vault_access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+            VaultMethod::GetAmount,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    vault_access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+            VaultMethod::GetResourceAddress,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    vault_access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+            VaultMethod::GetNonFungibleIds,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    vault_access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+            VaultMethod::CreateProof,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    vault_access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+            VaultMethod::CreateProofByAmount,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
+    vault_access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
+            VaultMethod::CreateProofByIds,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
 
-        let vault_access_rules_substate = AccessRulesSubstate {
-            access_rules: vec![vault_access_rules],
+    let vault_access_rules_substate = AccessRulesSubstate {
+        access_rules: vec![vault_access_rules],
+    };
+
+    (access_rules_substate, vault_access_rules_substate)
+}
+
+impl NativeProcedure for ResourceManagerCreateNoOwnerInvocation {
+    type Output = (ResourceAddress, Option<Bucket>);
+
+    fn main<Y>(
+        self,
+        api: &mut Y,
+    ) -> Result<((ResourceAddress, Option<Bucket>), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi,
+    {
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let resource_address: ResourceAddress = global_node_id.into();
+
+        let (resource_manager_substate, bucket) = build_resource_manager_substate(
+            resource_address,
+            self.resource_type,
+            self.mint_params,
+            api,
+        )?;
+        let (access_rules_substate, vault_access_rules_substate) =
+            build_access_rules_substates(self.access_rules, AllowAll, DenyAll);
+        let metadata_substate = MetadataSubstate {
+            metadata: self.metadata,
         };
 
         let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
@@ -415,6 +463,7 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             underlying_node_id,
             RENode::ResourceManager(
                 resource_manager_substate,
+                metadata_substate,
                 access_rules_substate,
                 vault_access_rules_substate,
             ),
@@ -424,33 +473,6 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             global_node_id,
             RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
         )?;
-        let resource_address: ResourceAddress = global_node_id.into();
-
-        // Mint
-        let bucket = if let Some(mint_params) = self.mint_params {
-            let container = match mint_params {
-                MintParams::NonFungible { entries } => {
-                    let ids = entries.into_keys().collect();
-                    Resource::new_non_fungible(
-                        resource_address,
-                        ids,
-                        self.resource_type.non_fungible_id_type(),
-                    )
-                }
-                MintParams::Fungible { amount } => Resource::new_fungible(
-                    resource_address,
-                    self.resource_type.divisibility(),
-                    amount,
-                ),
-            };
-
-            let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-            api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
-            let bucket_id = node_id.into();
-            Some(Bucket(bucket_id))
-        } else {
-            None
-        };
 
         let mut nodes_to_move = vec![];
         if let Some(bucket) = &bucket {
@@ -462,6 +484,90 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
 
         Ok((
             (resource_address, bucket),
+            CallFrameUpdate {
+                nodes_to_move,
+                node_refs_to_copy,
+            },
+        ))
+    }
+}
+
+impl NativeProcedure for ResourceManagerCreateWithOwnerInvocation {
+    type Output = (ResourceAddress, Option<Bucket>, Bucket);
+
+    fn main<Y>(
+        self,
+        api: &mut Y,
+    ) -> Result<((ResourceAddress, Option<Bucket>, Bucket), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + SysInvokableNative<RuntimeError>,
+    {
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let resource_address: ResourceAddress = global_node_id.into();
+
+        // TODO: Cleanup resource_address + NonFungibleId integration
+        let (owner_badge_bucket, non_fungible_address) = {
+            let bytes = scrypto_encode(&resource_address).unwrap();
+            let non_fungible_id = NonFungibleId::Bytes(bytes);
+            let non_fungible_address =
+                NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id.clone());
+
+            let mut entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)> = HashMap::new();
+            entries.insert(
+                non_fungible_id,
+                (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
+            );
+
+            let mint_invocation = ResourceManagerMintInvocation {
+                receiver: ENTITY_OWNER_TOKEN,
+                mint_params: MintParams::NonFungible { entries },
+            };
+            let owner_badge_bucket = api.sys_invoke(mint_invocation)?;
+            (owner_badge_bucket, non_fungible_address)
+        };
+
+        let (resource_manager_substate, bucket) = build_resource_manager_substate(
+            resource_address,
+            self.resource_type,
+            self.mint_params,
+            api,
+        )?;
+        let (access_rules_substate, vault_access_rules_substate) = build_access_rules_substates(
+            self.access_rules,
+            rule!(require(non_fungible_address.clone())),
+            rule!(require(non_fungible_address)),
+        );
+        let metadata_substate = MetadataSubstate {
+            metadata: self.metadata,
+        };
+
+        let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
+        api.create_node(
+            underlying_node_id,
+            RENode::ResourceManager(
+                resource_manager_substate,
+                metadata_substate,
+                access_rules_substate,
+                vault_access_rules_substate,
+            ),
+        )?;
+
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+        )?;
+
+        let mut nodes_to_move = vec![];
+        if let Some(bucket) = &bucket {
+            nodes_to_move.push(RENodeId::Bucket(bucket.0));
+        }
+        nodes_to_move.push(RENodeId::Bucket(owner_badge_bucket.0));
+
+        let mut node_refs_to_copy = HashSet::new();
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(resource_address)));
+
+        Ok((
+            (resource_address, bucket, owner_badge_bucket),
             CallFrameUpdate {
                 nodes_to_move,
                 node_refs_to_copy,
@@ -952,54 +1058,6 @@ impl NativeProcedure for ResourceManagerMintExecutable {
     }
 }
 
-impl ExecutableInvocation for ResourceManagerGetMetadataInvocation {
-    type Exec = NativeExecutor<ResourceManagerGetMetadataExecutable>;
-
-    fn resolve<D: MethodDeref>(
-        self,
-        deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            deref,
-        )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetMetadata,
-            )),
-            resolved_receiver,
-        );
-        let executor = NativeExecutor(ResourceManagerGetMetadataExecutable(
-            resolved_receiver.receiver,
-        ));
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-pub struct ResourceManagerGetMetadataExecutable(RENodeId);
-
-impl NativeProcedure for ResourceManagerGetMetadataExecutable {
-    type Output = HashMap<String, String>;
-
-    fn main<'a, Y>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(HashMap<String, String>, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
-    {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
-
-        let substate_ref = system_api.get_ref(resman_handle)?;
-        let metadata = &substate_ref.resource_manager().metadata;
-
-        Ok((metadata.clone(), CallFrameUpdate::empty()))
-    }
-}
-
 impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
     type Exec = NativeExecutor<ResourceManagerGetResourceTypeExecutable>;
 
@@ -1089,60 +1147,6 @@ impl NativeProcedure for ResourceManagerGetTotalSupplyExecutable {
         let total_supply = substate_ref.resource_manager().total_supply;
 
         Ok((total_supply, CallFrameUpdate::empty()))
-    }
-}
-
-impl ExecutableInvocation for ResourceManagerUpdateMetadataInvocation {
-    type Exec = NativeExecutor<ResourceManagerUpdateMetadataExecutable>;
-
-    fn resolve<D: MethodDeref>(
-        self,
-        deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let resolved_receiver = deref_and_update(
-            RENodeId::Global(GlobalAddress::Resource(self.receiver)),
-            &mut call_frame_update,
-            deref,
-        )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetTotalSupply,
-            )),
-            resolved_receiver,
-        );
-        let executor = NativeExecutor(ResourceManagerUpdateMetadataExecutable(
-            resolved_receiver.receiver,
-            self.metadata,
-        ));
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-pub struct ResourceManagerUpdateMetadataExecutable(RENodeId, HashMap<String, String>);
-
-impl NativeProcedure for ResourceManagerUpdateMetadataExecutable {
-    type Output = ();
-
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
-    {
-        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
-
-        let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-        substate_mut
-            .resource_manager()
-            .update_metadata(self.1)
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                }
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            })?;
-
-        Ok(((), CallFrameUpdate::empty()))
     }
 }
 

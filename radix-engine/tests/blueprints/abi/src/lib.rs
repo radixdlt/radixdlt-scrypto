@@ -7,7 +7,7 @@ blueprint! {
     impl AbiComponent {
         pub fn create_component() -> ComponentAddress {
             let component = Self {}.instantiate();
-            component.globalize()
+            component.globalize_no_owner()
         }
 
         pub fn create_invalid_abi_component() -> ComponentAddress {
@@ -17,7 +17,7 @@ blueprint! {
                     .method("no_method", rule!(require("something")), LOCKED)
                     .default(rule!(allow_all)),
             );
-            component.globalize()
+            component.globalize_no_owner()
         }
     }
 }

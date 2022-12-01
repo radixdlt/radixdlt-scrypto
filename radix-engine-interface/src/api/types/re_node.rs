@@ -6,7 +6,6 @@ use crate::scrypto;
 #[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ScryptoRENode {
-    GlobalComponent(ComponentId),
     Component(PackageAddress, String, Vec<u8>),
     KeyValueStore,
 }

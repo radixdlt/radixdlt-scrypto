@@ -19,6 +19,7 @@ members = [
     "local_component",
     "local_recursion",
     "math-ops-check",
+    "metadata_component",
     "non_fungible",
     "package",
     "proof",

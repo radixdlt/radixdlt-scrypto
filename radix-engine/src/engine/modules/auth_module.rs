@@ -122,6 +122,14 @@ impl AuthModule {
                             // TODO: Use associated function badge instead
                             REActor::Function(ResolvedFunction::Native(
                                 NativeFunction::Package(PackageFunction::PublishWithOwner),
+                            ))
+                            | REActor::Function(ResolvedFunction::Native(
+                                NativeFunction::ResourceManager(
+                                    ResourceManagerFunction::CreateWithOwner,
+                                ),
+                            ))
+                            | REActor::Function(ResolvedFunction::Native(
+                                NativeFunction::Component(ComponentFunction::GlobalizeWithOwner),
                             )) => {
                                 vec![MethodAuthorization::AllowAll]
                             }

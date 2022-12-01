@@ -52,6 +52,7 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ClockSetCurrentTimeInvocation, E>
     + SysNativeInvokable<ClockGetCurrentTimeRoundedToMinutesInvocation, E>
     + SysNativeInvokable<MetadataSetInvocation, E>
+    + SysNativeInvokable<MetadataGetInvocation, E>
     + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
     + SysNativeInvokable<AccessRulesSetMethodAccessRuleInvocation, E>
     + SysNativeInvokable<AccessRulesSetMethodMutabilityInvocation, E>
@@ -67,6 +68,8 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<AuthZoneDrainInvocation, E>
     + SysNativeInvokable<AuthZoneAssertAccessRuleInvocation, E>
     + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
+    + SysNativeInvokable<ComponentGlobalizeWithOwnerInvocation, E>
+    + SysNativeInvokable<ComponentGlobalizeNoOwnerInvocation, E>
     + SysNativeInvokable<ComponentSetRoyaltyConfigInvocation, E>
     + SysNativeInvokable<ComponentClaimRoyaltyInvocation, E>
     + SysNativeInvokable<PackageSetRoyaltyConfigInvocation, E>
@@ -86,17 +89,16 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ProofGetNonFungibleIdsInvocation, E>
     + SysNativeInvokable<ProofGetResourceAddressInvocation, E>
     + SysNativeInvokable<ResourceManagerBucketBurnInvocation, E>
-    + SysNativeInvokable<ResourceManagerCreateInvocation, E>
+    + SysNativeInvokable<ResourceManagerCreateNoOwnerInvocation, E>
+    + SysNativeInvokable<ResourceManagerCreateWithOwnerInvocation, E>
     + SysNativeInvokable<ResourceManagerBurnInvocation, E>
     + SysNativeInvokable<ResourceManagerUpdateVaultAuthInvocation, E>
     + SysNativeInvokable<ResourceManagerSetVaultAuthMutabilityInvocation, E>
     + SysNativeInvokable<ResourceManagerCreateVaultInvocation, E>
     + SysNativeInvokable<ResourceManagerCreateBucketInvocation, E>
     + SysNativeInvokable<ResourceManagerMintInvocation, E>
-    + SysNativeInvokable<ResourceManagerGetMetadataInvocation, E>
     + SysNativeInvokable<ResourceManagerGetResourceTypeInvocation, E>
     + SysNativeInvokable<ResourceManagerGetTotalSupplyInvocation, E>
-    + SysNativeInvokable<ResourceManagerUpdateMetadataInvocation, E>
     + SysNativeInvokable<ResourceManagerUpdateNonFungibleDataInvocation, E>
     + SysNativeInvokable<ResourceManagerNonFungibleExistsInvocation, E>
     + SysNativeInvokable<ResourceManagerGetNonFungibleInvocation, E>

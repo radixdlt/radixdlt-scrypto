@@ -19,7 +19,7 @@ blueprint! {
             let token = ResourceBuilder::new_fungible()
                 .mintable(organizational_access_rule.clone(), LOCKED)
                 .restrict_withdraw(organizational_access_rule.clone(), LOCKED)
-                .initial_supply(100);
+                .initial_supply_no_owner(100);
 
             // Creating the access rules for the component and instantiating an new component
             let access_rules: AccessRules = AccessRules::new()
@@ -34,7 +34,7 @@ blueprint! {
             local_component.add_access_check(access_rules);
 
             (
-                local_component.globalize(),
+                local_component.globalize_no_owner(),
                 vec![supervisor_badge, admin_badge, superadmin_badge, token],
             )
         }
@@ -43,7 +43,7 @@ blueprint! {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
                 .metadata("name", name)
-                .initial_supply(1)
+                .initial_supply_no_owner(1)
         }
 
         pub fn organizational_authenticated_method(&self) {

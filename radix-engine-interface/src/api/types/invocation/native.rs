@@ -46,6 +46,7 @@ pub enum NativeMethod {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum NativeFunction {
+    Component(ComponentFunction),
     EpochManager(EpochManagerFunction),
     ResourceManager(ResourceManagerFunction),
     Package(PackageFunction),
@@ -98,6 +99,29 @@ pub enum AccessRulesMethod {
 #[strum(serialize_all = "snake_case")]
 pub enum MetadataMethod {
     Set,
+    Get,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum ComponentFunction {
+    GlobalizeWithOwner,
+    GlobalizeNoOwner,
 }
 
 #[derive(
@@ -233,7 +257,8 @@ pub enum AuthZoneStackMethod {
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFunction {
-    Create,
+    CreateNoOwner,
+    CreateWithOwner,
     BurnBucket,
 }
 
@@ -255,16 +280,14 @@ pub enum ResourceManagerFunction {
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerMethod {
+    Mint,
     Burn,
     UpdateVaultAuth,
     LockAuth,
-    Mint,
     UpdateNonFungibleData,
     GetNonFungible,
-    GetMetadata,
     GetResourceType,
     GetTotalSupply,
-    UpdateMetadata,
     NonFungibleExists,
     CreateBucket,
     CreateVault,

@@ -14,7 +14,7 @@ blueprint! {
             }
             .instantiate();
             component.add_access_check(access_rules);
-            component.globalize()
+            component.globalize_no_owner()
         }
 
         pub fn create_component() -> ComponentAddress {
@@ -23,7 +23,7 @@ blueprint! {
                 auth_vault: None,
             }
             .instantiate();
-            component.globalize()
+            component.globalize_no_owner()
         }
 
         pub fn put_auth(&mut self, mut auth_bucket: Vec<Bucket>) {

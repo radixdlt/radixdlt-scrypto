@@ -55,6 +55,7 @@ pub enum NativeMethodInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NativeFunctionInvocation {
+    Component(ComponentFunctionInvocation),
     EpochManager(EpochManagerFunctionInvocation),
     Clock(ClockFunctionInvocation),
     ResourceManager(ResourceManagerFunctionInvocation),
@@ -76,6 +77,14 @@ pub enum AccessRulesMethodInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum MetadataMethodInvocation {
     Set(MetadataSetInvocation),
+    Get(MetadataGetInvocation),
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum ComponentFunctionInvocation {
+    GlobalizeWithOwner(ComponentGlobalizeWithOwnerInvocation),
+    GlobalizeNoOwner(ComponentGlobalizeNoOwnerInvocation),
 }
 
 #[derive(Debug)]
@@ -133,26 +142,25 @@ pub enum AuthZoneStackMethodInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerFunctionInvocation {
-    Create(ResourceManagerCreateInvocation),
+    Create(ResourceManagerCreateNoOwnerInvocation),
+    CreateWithOwner(ResourceManagerCreateWithOwnerInvocation),
     BurnBucket(ResourceManagerBucketBurnInvocation),
 }
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerMethodInvocation {
+    GetResourceType(ResourceManagerGetResourceTypeInvocation),
     Burn(ResourceManagerBurnInvocation),
     Mint(ResourceManagerMintInvocation),
-    UpdateNonFungibleData(ResourceManagerUpdateNonFungibleDataInvocation),
-    GetNonFungible(ResourceManagerGetNonFungibleInvocation),
-    GetMetadata(ResourceManagerGetMetadataInvocation),
-    GetResourceType(ResourceManagerGetResourceTypeInvocation),
-    GetTotalSupply(ResourceManagerGetTotalSupplyInvocation),
-    UpdateMetadata(ResourceManagerUpdateMetadataInvocation),
-    NonFungibleExists(ResourceManagerNonFungibleExistsInvocation),
     CreateBucket(ResourceManagerCreateBucketInvocation),
     CreateVault(ResourceManagerCreateVaultInvocation),
     UpdateVaultAuth(ResourceManagerUpdateVaultAuthInvocation),
     LockVaultAuth(ResourceManagerSetVaultAuthMutabilityInvocation),
+    GetTotalSupply(ResourceManagerGetTotalSupplyInvocation),
+    UpdateNonFungibleData(ResourceManagerUpdateNonFungibleDataInvocation),
+    GetNonFungible(ResourceManagerGetNonFungibleInvocation),
+    NonFungibleExists(ResourceManagerNonFungibleExistsInvocation),
 }
 
 #[derive(Debug)]
@@ -232,6 +240,9 @@ impl NativeFnInvocation {
                     ResourceManagerFunctionInvocation::Create(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    ResourceManagerFunctionInvocation::CreateWithOwner(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerFunctionInvocation::BurnBucket(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
@@ -241,6 +252,14 @@ impl NativeFnInvocation {
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     PackageFunctionInvocation::PublishWithOwner(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                },
+                NativeFunctionInvocation::Component(invocation) => match invocation {
+                    ComponentFunctionInvocation::GlobalizeWithOwner(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    ComponentFunctionInvocation::GlobalizeNoOwner(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
@@ -383,6 +402,9 @@ impl NativeFnInvocation {
                     MetadataMethodInvocation::Set(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    MetadataMethodInvocation::Get(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::ResourceManager(resman_method) => match resman_method {
                     ResourceManagerMethodInvocation::Burn(invocation) => system_api
@@ -403,16 +425,10 @@ impl NativeFnInvocation {
                     ResourceManagerMethodInvocation::Mint(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::GetMetadata(invocation) => system_api
-                        .sys_invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::GetResourceType(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::GetTotalSupply(invocation) => system_api
-                        .sys_invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::UpdateMetadata(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::UpdateNonFungibleData(invocation) => {

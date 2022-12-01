@@ -8,22 +8,19 @@ use radix_engine_interface::model::*;
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerSubstate {
     pub resource_type: ResourceType,
-    pub metadata: HashMap<String, String>,
+    pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
     pub total_supply: Decimal,
     pub nf_store_id: Option<NonFungibleStoreId>,
-    pub resource_address: ResourceAddress, // TODO: Figure out a way to remove
 }
 
 impl ResourceManagerSubstate {
     pub fn new(
         resource_type: ResourceType,
-        metadata: HashMap<String, String>,
         nf_store_id: Option<NonFungibleStoreId>,
         resource_address: ResourceAddress,
     ) -> Result<ResourceManagerSubstate, InvokeError<ResourceManagerError>> {
         let resource_manager = ResourceManagerSubstate {
             resource_type,
-            metadata,
             total_supply: 0.into(),
             nf_store_id,
             resource_address,
@@ -49,15 +46,6 @@ impl ResourceManagerSubstate {
 
     pub fn burn(&mut self, amount: Decimal) {
         self.total_supply -= amount;
-    }
-
-    pub fn update_metadata(
-        &mut self,
-        new_metadata: HashMap<String, String>,
-    ) -> Result<(), InvokeError<ResourceManagerError>> {
-        self.metadata = new_metadata;
-
-        Ok(())
     }
 
     pub fn mint(

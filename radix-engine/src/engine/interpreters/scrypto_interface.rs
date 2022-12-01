@@ -3,20 +3,18 @@ use crate::engine::{
     ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
-use crate::model::Resource;
 use crate::model::{
     AccessRulesSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
-    ComponentRoyaltyConfigSubstate, ComponentStateSubstate, GlobalAddressSubstate, KeyValueStore,
-    RuntimeSubstate,
+    ComponentRoyaltyConfigSubstate, ComponentStateSubstate, KeyValueStore, RuntimeSubstate,
 };
-use crate::types::ScryptoInvocation;
+use crate::model::{MetadataSubstate, Resource};
+use crate::types::{HashMap, ScryptoInvocation};
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
-    ComponentOffset, Level, LockHandle, RENodeId, RENodeType, ScryptoActor, ScryptoFunctionIdent,
+    Level, LockHandle, RENodeId, RENodeType, ScryptoActor, ScryptoFunctionIdent,
     ScryptoMethodIdent, ScryptoRENode, SubstateOffset,
 };
-use radix_engine_interface::constants::ACCOUNT_PACKAGE;
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
@@ -55,40 +53,12 @@ where
 
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
         let (node_id, node) = match node {
-            ScryptoRENode::GlobalComponent(component_id) => {
-                // TODO: Remove this check
-                let node_id = {
-                    let handle = self.lock_substate(
-                        RENodeId::Component(component_id),
-                        SubstateOffset::Component(ComponentOffset::Info),
-                        LockFlags::read_only(),
-                    )?;
-                    let substate_ref = self.get_ref(handle)?;
-                    let node_id = if substate_ref
-                        .component_info()
-                        .package_address
-                        .eq(&ACCOUNT_PACKAGE)
-                    {
-                        self.allocate_node_id(RENodeType::GlobalAccount)?
-                    } else {
-                        self.allocate_node_id(RENodeType::GlobalComponent)?
-                    };
-                    self.drop_lock(handle)?;
-                    node_id
-                };
-
-                let node = RENode::Global(GlobalAddressSubstate::Component(component_id));
-                (node_id, node)
-            }
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
                 let node_id = self.allocate_node_id(RENodeType::Component)?;
                 // Create component
                 let node = RENode::Component(
                     ComponentInfoSubstate::new(package_address, blueprint_name),
                     ComponentStateSubstate::new(state),
-                    AccessRulesSubstate {
-                        access_rules: Vec::new(),
-                    },
                     ComponentRoyaltyConfigSubstate {
                         royalty_config: RoyaltyConfig::default(), // TODO: add user interface
                     },
@@ -97,6 +67,12 @@ where
                             RADIX_TOKEN,
                             ResourceType::Fungible { divisibility: 18 },
                         ),
+                    },
+                    MetadataSubstate {
+                        metadata: HashMap::new(),
+                    },
+                    AccessRulesSubstate {
+                        access_rules: Vec::new(),
                     },
                 );
 

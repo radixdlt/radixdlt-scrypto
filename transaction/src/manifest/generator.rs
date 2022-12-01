@@ -465,14 +465,14 @@ pub fn generate_instruction(
             let args = args_from_value_vec!(args);
 
             // Check if call data matches ABI
-            if scrypto_decode::<ResourceManagerCreateInvocation>(&args).is_err() {
+            if scrypto_decode::<ResourceManagerCreateNoOwnerInvocation>(&args).is_err() {
                 return Err(GeneratorError::ArgumentsDoNotMatchAbi);
             }
 
             Instruction::CallNativeFunction {
                 function_ident: NativeFunctionIdent {
                     blueprint_name: "ResourceManager".to_owned(),
-                    function_name: ResourceManagerFunction::Create.to_string(),
+                    function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
                 },
                 args,
             }

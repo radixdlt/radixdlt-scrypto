@@ -148,6 +148,11 @@ impl AccessRules {
         self
     }
 
+    pub fn default_mutability(mut self, mutability: AccessRule) -> Self {
+        self.default_auth_mutability = mutability;
+        self
+    }
+
     pub fn iter(&self) -> Iter<'_, AccessRuleKey, AccessRuleEntry> {
         let l = self.method_auth.iter();
         l

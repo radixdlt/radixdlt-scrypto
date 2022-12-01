@@ -249,7 +249,11 @@ fn scrypto_methods_and_functions_should_be_able_to_return_access_rules_pointers(
         let read_access_rules = test_runner.access_rules(call);
 
         // Assert
-        assert_eq!(access_rules.len(), read_access_rules.len())
+
+        assert_eq!(
+            access_rules.len() + 1, // TODO: The system adds a layer of access rules, is this the right abstraction?
+            read_access_rules.len(),
+        )
     }
 }
 

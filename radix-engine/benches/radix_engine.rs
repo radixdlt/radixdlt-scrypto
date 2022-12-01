@@ -10,7 +10,7 @@ use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::dec;
 use radix_engine_interface::model::FromPublicKey;
-use radix_engine_interface::{access_rule_node, rule};
+use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaSecp256k1PrivateKey;

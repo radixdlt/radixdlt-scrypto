@@ -15,14 +15,14 @@ blueprint! {
             let my_bucket: Bucket = ResourceBuilder::new_fungible()
                 .metadata("name", "HelloToken")
                 .metadata("symbol", "HT")
-                .initial_supply(1000);
+                .initial_supply_no_owner(1000);
 
             // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
             Self {
                 sample_vault: Vault::with_bucket(my_bucket)
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         // This is a method, because it needs a reference to self.  Methods can only be called on components

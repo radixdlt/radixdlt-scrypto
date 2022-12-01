@@ -835,6 +835,13 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn metadata(&self) -> &MetadataSubstate {
+        match self {
+            SubstateRef::Metadata(value) => *value,
+            _ => panic!("Not metadata"),
+        }
+    }
+
     pub fn current_time_rounded_to_minutes(&self) -> &CurrentTimeRoundedToMinutesSubstate {
         match self {
             SubstateRef::CurrentTimeRoundedToMinutes(substate) => *substate,

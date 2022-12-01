@@ -14,7 +14,7 @@ blueprint! {
                 transactions: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         /// Gives away tokens.

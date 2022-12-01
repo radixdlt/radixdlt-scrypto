@@ -20,7 +20,7 @@ blueprint! {
                 kv_stores,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn new_kv_store_into_kv_store() -> ComponentAddress {
@@ -34,7 +34,7 @@ blueprint! {
                 kv_stores,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn new_kv_store_into_map_then_get() -> ComponentAddress {
@@ -51,7 +51,7 @@ blueprint! {
                 kv_stores,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn new_kv_store_with_get() -> ComponentAddress {
@@ -64,7 +64,7 @@ blueprint! {
                 kv_stores,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn new_kv_store_with_put() -> ComponentAddress {
@@ -77,7 +77,7 @@ blueprint! {
                 kv_stores,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn overwrite_kv_store(&mut self) -> () {

@@ -15,7 +15,7 @@ blueprint! {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1)
+                .initial_supply_no_owner(1)
         }
 
         pub fn new_vault_into_map() -> ComponentAddress {
@@ -31,7 +31,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn invalid_double_ownership_of_vault() -> ComponentAddress {
@@ -52,7 +52,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn new_vault_into_map_then_get() -> ComponentAddress {
@@ -72,7 +72,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn overwrite_vault_in_map(&mut self) -> () {
@@ -93,7 +93,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn clear_vector(&mut self) -> () {
@@ -118,14 +118,14 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         fn create_non_fungible_vault() -> Vault {
             let bucket = ResourceBuilder::new_non_fungible()
                 .metadata("name", "TestToken")
                 .set_id_type(NonFungibleIdType::U32)
-                .initial_supply([(NonFungibleId::U32(1), Data {})]);
+                .initial_supply_no_owner([(NonFungibleId::U32(1), Data {})]);
             Vault::with_bucket(bucket)
         }
 
@@ -141,7 +141,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn new_vault_with_get_non_fungible_ids() -> ComponentAddress {
@@ -155,7 +155,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn new_vault_with_get_non_fungible_id() -> ComponentAddress {
@@ -169,7 +169,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn new_vault_with_get_amount() -> ComponentAddress {
@@ -183,7 +183,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
 
         pub fn new_vault_with_get_resource_manager() -> ComponentAddress {
@@ -197,7 +197,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize()
+            .globalize_no_owner()
         }
     }
 }

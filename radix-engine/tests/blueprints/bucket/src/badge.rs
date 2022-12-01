@@ -9,7 +9,7 @@ blueprint! {
                 .divisibility(DIVISIBILITY_NONE)
                 .restrict_withdraw(rule!(allow_all), LOCKED)
                 .metadata("name", "TestBadge")
-                .initial_supply(amount)
+                .initial_supply_no_owner(amount)
         }
 
         pub fn combine() -> Bucket {

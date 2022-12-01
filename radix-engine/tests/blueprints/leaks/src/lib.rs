@@ -12,14 +12,14 @@ blueprint! {
             let _bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1);
+                .initial_supply_no_owner(1);
         }
 
         pub fn dangling_vault() {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1);
+                .initial_supply_no_owner(1);
             let _vault = Vault::with_bucket(bucket);
         }
 
@@ -27,7 +27,7 @@ blueprint! {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1);
+                .initial_supply_no_owner(1);
             bucket
         }
 
@@ -41,7 +41,7 @@ blueprint! {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply(1);
+                .initial_supply_no_owner(1);
 
             bucket.create_proof()
         }

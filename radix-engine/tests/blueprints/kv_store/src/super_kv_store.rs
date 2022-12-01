@@ -25,7 +25,9 @@ blueprint! {
                 map3.insert(4u32, map4);
             }
 
-            SuperKeyValueStore { maps: map0 }.instantiate().globalize()
+            SuperKeyValueStore { maps: map0 }
+                .instantiate()
+                .globalize_no_owner()
         }
     }
 }

@@ -8,7 +8,7 @@ blueprint! {
             let super_admin_badge: ResourceAddress = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Super Admin Badge")
                 .mintable(rule!(allow_all), MUTABLE(rule!(allow_all)))
-                .no_initial_supply();
+                .no_initial_supply_no_owner();
 
             let super_admin_manager: &mut ResourceManager =
                 borrow_resource_manager!(super_admin_badge);
@@ -18,13 +18,13 @@ blueprint! {
         pub fn create_fungible() -> (Bucket, ResourceAddress) {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
+                .initial_supply_no_owner(1);
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .mintable(rule!(require(badge.resource_address())), LOCKED)
                 .burnable(rule!(require(badge.resource_address())), LOCKED)
-                .no_initial_supply();
+                .no_initial_supply_no_owner();
             (badge, token_address)
         }
 
@@ -34,13 +34,13 @@ blueprint! {
         ) -> (Bucket, Bucket, ResourceAddress) {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
+                .initial_supply_no_owner(1);
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(divisibility)
                 .metadata("name", "TestToken")
                 .mintable(rule!(require(badge.resource_address())), LOCKED)
                 .burnable(rule!(require(badge.resource_address())), LOCKED)
-                .no_initial_supply();
+                .no_initial_supply_no_owner();
             let tokens = badge.authorize(|| borrow_resource_manager!(token_address).mint(amount));
             (badge, tokens, token_address)
         }
@@ -49,7 +49,7 @@ blueprint! {
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .no_initial_supply();
+                .no_initial_supply_no_owner();
             token_address
         }
 
@@ -57,7 +57,7 @@ blueprint! {
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .no_initial_supply();
+                .no_initial_supply_no_owner();
             token_address
         }
 
@@ -65,22 +65,21 @@ blueprint! {
         {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
+                .initial_supply_no_owner(1);
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .mintable(rule!(require(badge.resource_address())), LOCKED)
                 .burnable(rule!(require(badge.resource_address())), LOCKED)
-                .no_initial_supply();
+                .no_initial_supply_no_owner();
             (badge, token_address)
         }
 
-        pub fn query() -> (Bucket, HashMap<String, String>, Decimal, ResourceType) {
+        pub fn query() -> (Bucket, Decimal, ResourceType) {
             let (badge, resource_address) = Self::create_fungible();
             let resource_manager = borrow_resource_manager!(resource_address);
             (
                 badge,
-                resource_manager.metadata(),
                 resource_manager.total_supply(),
                 resource_manager.resource_type(),
             )
@@ -97,20 +96,18 @@ blueprint! {
         }
 
         pub fn update_resource_metadata() -> Bucket {
-            let badge = ResourceBuilder::new_fungible()
-                .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
-            let token_resource_manager = borrow_resource_manager!(ResourceBuilder::new_fungible()
-                .updateable_metadata(rule!(require(badge.resource_address())), LOCKED)
+            let (resource_address, badge) = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .no_initial_supply());
+                .no_initial_supply_with_owner();
+            let token_resource_manager = borrow_resource_manager!(resource_address);
 
-            let mut new_metadata = HashMap::new();
-            new_metadata.insert("a".to_owned(), "b".to_owned());
             badge.authorize(|| {
-                token_resource_manager.update_metadata(new_metadata.clone());
-                assert_eq!(token_resource_manager.metadata(), new_metadata);
+                token_resource_manager.set_metadata("a".to_owned(), "b".to_owned());
+                assert_eq!(
+                    token_resource_manager.get_metadata("a".to_owned()).unwrap(),
+                    "b".to_owned()
+                );
             });
 
             badge

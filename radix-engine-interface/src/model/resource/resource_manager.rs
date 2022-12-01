@@ -29,7 +29,6 @@ pub enum VaultMethodAuthKey {
 pub enum ResourceMethodAuthKey {
     Mint,
     Burn,
-    UpdateMetadata,
     UpdateNonFungibleData,
     Withdraw,
     Deposit,
@@ -54,25 +53,50 @@ impl Into<AccessRule> for Mutability {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerCreateInvocation {
+pub struct ResourceManagerCreateNoOwnerInvocation {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
     pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
     pub mint_params: Option<MintParams>,
 }
 
-impl Invocation for ResourceManagerCreateInvocation {
+impl Invocation for ResourceManagerCreateNoOwnerInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateInvocation {
+impl ScryptoNativeInvocation for ResourceManagerCreateNoOwnerInvocation {
     type ScryptoOutput = (ResourceAddress, Option<Bucket>);
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerCreateInvocation {
+impl Into<NativeFnInvocation> for ResourceManagerCreateNoOwnerInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
             ResourceManagerFunctionInvocation::Create(self),
+        ))
+    }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ResourceManagerCreateWithOwnerInvocation {
+    pub resource_type: ResourceType,
+    pub metadata: HashMap<String, String>,
+    pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    pub mint_params: Option<MintParams>,
+}
+
+impl Invocation for ResourceManagerCreateWithOwnerInvocation {
+    type Output = (ResourceAddress, Option<Bucket>, Bucket);
+}
+
+impl ScryptoNativeInvocation for ResourceManagerCreateWithOwnerInvocation {
+    type ScryptoOutput = (ResourceAddress, Option<Bucket>, Bucket);
+}
+
+impl Into<NativeFnInvocation> for ResourceManagerCreateWithOwnerInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
+            ResourceManagerFunctionInvocation::CreateWithOwner(self),
         ))
     }
 }
@@ -239,28 +263,6 @@ impl Into<NativeFnInvocation> for ResourceManagerMintInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerGetMetadataInvocation {
-    pub receiver: ResourceAddress,
-}
-
-impl Invocation for ResourceManagerGetMetadataInvocation {
-    type Output = HashMap<String, String>;
-}
-
-impl ScryptoNativeInvocation for ResourceManagerGetMetadataInvocation {
-    type ScryptoOutput = HashMap<String, String>;
-}
-
-impl Into<NativeFnInvocation> for ResourceManagerGetMetadataInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::GetMetadata(self),
-        ))
-    }
-}
-
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerGetResourceTypeInvocation {
     pub receiver: ResourceAddress,
 }
@@ -299,29 +301,6 @@ impl Into<NativeFnInvocation> for ResourceManagerGetTotalSupplyInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
             ResourceManagerMethodInvocation::GetTotalSupply(self),
-        ))
-    }
-}
-
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerUpdateMetadataInvocation {
-    pub receiver: ResourceAddress,
-    pub metadata: HashMap<String, String>,
-}
-
-impl Invocation for ResourceManagerUpdateMetadataInvocation {
-    type Output = ();
-}
-
-impl ScryptoNativeInvocation for ResourceManagerUpdateMetadataInvocation {
-    type ScryptoOutput = ();
-}
-
-impl Into<NativeFnInvocation> for ResourceManagerUpdateMetadataInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::UpdateMetadata(self),
         ))
     }
 }
