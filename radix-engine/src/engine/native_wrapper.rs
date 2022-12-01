@@ -441,17 +441,22 @@ where
                 }
             },
             NativeMethod::Clock(clock_method) => match clock_method {
-                ClockMethod::GetCurrentTimeRoundedToMinutes => {
-                    let invocation: ClockGetCurrentTimeRoundedToMinutesInvocation =
-                        scrypto_decode(&args).map_err(|e| {
-                            RuntimeError::KernelError(KernelError::InvalidSborValue(e))
-                        })?;
+                ClockMethod::SetCurrentTime => {
+                    let invocation: ClockSetCurrentTimeInvocation = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                ClockMethod::SetCurrentTime => {
-                    let invocation: ClockSetCurrentTimeInvocation = scrypto_decode(&args)
+                ClockMethod::GetCurrentTime => {
+                    let invocation: ClockGetCurrentTimeInvocation = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
+                ClockMethod::CompareCurrentTime => {
+                    let invocation: ClockCompareCurrentTimeInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)

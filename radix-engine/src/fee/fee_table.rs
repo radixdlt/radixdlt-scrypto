@@ -187,8 +187,9 @@ impl FeeTable {
                 EpochManagerMethod::SetEpoch => self.fixed_low,
             },
             NativeMethod::Clock(clock_method) => match clock_method {
-                ClockMethod::GetCurrentTimeRoundedToMinutes => self.fixed_medium,
                 ClockMethod::SetCurrentTime => self.fixed_low,
+                ClockMethod::GetCurrentTime => self.fixed_high,
+                ClockMethod::CompareCurrentTime => self.fixed_high,
             },
             NativeMethod::Bucket(bucket_ident) => match bucket_ident {
                 BucketMethod::Take => self.fixed_medium,

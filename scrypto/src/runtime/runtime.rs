@@ -2,7 +2,7 @@ use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
 use radix_engine_interface::api::types::{
     ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
 };
-use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
+use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::crypto::*;
 use radix_engine_interface::data::{scrypto_decode, ScryptoDecode};
 use radix_engine_interface::model::*;
@@ -17,13 +17,6 @@ use scrypto::engine::scrypto_env::ScryptoEnv;
 pub struct Runtime {}
 
 impl Runtime {
-    /// Returns the current timestamp (in milliseconds), rounded to minutes
-    pub fn current_time_rounded_to_minutes() -> u64 {
-        let mut env = ScryptoEnv;
-        env.sys_invoke(ClockGetCurrentTimeRoundedToMinutesInvocation { receiver: CLOCK })
-            .unwrap()
-    }
-
     /// Returns the current epoch
     pub fn current_epoch() -> u64 {
         let mut env = ScryptoEnv;
