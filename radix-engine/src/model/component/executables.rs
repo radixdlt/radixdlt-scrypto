@@ -84,7 +84,8 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
         // TODO: move to sdk
 
         // Add protection for metadata
-        let mut metadata_access_rules = AccessRules::new().default(AccessRule::AllowAll);
+        let mut metadata_access_rules =
+            AccessRules::with_default(AccessRule::AllowAll, AccessRule::AllowAll);
         metadata_access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,
@@ -98,7 +99,8 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
         })?;
 
         // Add protection for royalty
-        let mut royalty_access_rules = AccessRules::new().default(AccessRule::AllowAll);
+        let mut royalty_access_rules =
+            AccessRules::with_default(AccessRule::AllowAll, AccessRule::AllowAll);
         royalty_access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Component(
                 ComponentMethod::SetRoyaltyConfig,
@@ -184,7 +186,8 @@ impl NativeProcedure for ComponentGlobalizeNoOwnerInvocation {
             node_id
         };
         let component_address: ComponentAddress = global_node_id.into();
-        let mut access_rules = AccessRules::new().default(AccessRule::AllowAll);
+        let mut access_rules =
+            AccessRules::with_default(AccessRule::AllowAll, AccessRule::AllowAll);
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,

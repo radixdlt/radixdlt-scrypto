@@ -6,6 +6,7 @@ use radix_engine_interface::core::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
+#[ignore = "See notes on `impl NativeProcedure for PackagePublishNoOwnerInvocation`"]
 #[test]
 fn cannot_set_package_metadata_with_no_owner() {
     // Arrange

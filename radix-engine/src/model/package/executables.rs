@@ -89,6 +89,13 @@ impl NativeProcedure for PackagePublishNoOwnerInvocation {
             access_rules_chain: self.access_rules_chain,
         };
 
+        // TODO: Can we trust developers enough to add protection for
+        // - `metadata::set`
+        // - `access_rules_chain::set_access_rules`
+        // - `access_rules_chain::add_access_rules`
+        // - `royalty::set_royalty_config`
+        // - `royalty::claim_royalty`
+
         // Create package node
         let node_id = api.allocate_node_id(RENodeType::Package)?;
         api.create_node(
@@ -188,7 +195,8 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
         let mut chain = self.access_rules_chain;
 
         // Add protection for metadata
-        let mut metadata_access_rules = AccessRules::new().default(AccessRule::AllowAll);
+        let mut metadata_access_rules =
+            AccessRules::with_default(AccessRule::AllowAll, AccessRule::AllowAll);
         metadata_access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,
@@ -199,7 +207,8 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
         chain.push(metadata_access_rules);
 
         // Add protection for royalty
-        let mut royalty_access_rules = AccessRules::new().default(AccessRule::AllowAll);
+        let mut royalty_access_rules =
+            AccessRules::with_default(AccessRule::AllowAll, AccessRule::AllowAll);
         royalty_access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
                 PackageMethod::SetRoyaltyConfig,

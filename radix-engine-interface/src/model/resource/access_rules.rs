@@ -46,6 +46,13 @@ impl AccessRules {
         }
     }
 
+    pub fn with_default(default_auth: AccessRule, default_auth_mutability: AccessRule) -> Self {
+        let mut rules = AccessRules::new();
+        rules.default_auth = default_auth;
+        rules.default_auth_mutability = default_auth_mutability;
+        rules
+    }
+
     pub fn get_mutability(&self, key: &AccessRuleKey) -> &AccessRule {
         self.method_auth_mutability
             .get(key)
@@ -130,11 +137,6 @@ impl AccessRules {
         self.method_auth
             .insert(key.clone(), AccessRuleEntry::Group(group));
         self.method_auth_mutability.insert(key, mutability);
-    }
-
-    pub fn default(mut self, method_auth: AccessRule) -> Self {
-        self.default_auth = method_auth;
-        self
     }
 
     pub fn iter(&self) -> Iter<'_, AccessRuleKey, AccessRuleEntry> {
