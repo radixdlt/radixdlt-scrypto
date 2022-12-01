@@ -3,7 +3,7 @@ use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
-use radix_engine_interface::{access_rule_node, rule};
+use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -17,7 +17,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let auth_id = NonFungibleId::U32(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id);
     let authorization =
-        AccessRules::new().method("get_component_state", rule!(require(auth_address)));
+        AccessRules::new().method("get_component_state", rule!(require(auth_address)), LOCKED);
 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -77,7 +77,7 @@ fn can_make_cross_component_call_with_authorization() {
     let auth_id = NonFungibleId::U32(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id.clone());
     let authorization =
-        AccessRules::new().method("get_component_state", rule!(require(auth_address)));
+        AccessRules::new().method("get_component_state", rule!(require(auth_address)), LOCKED);
 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -152,7 +152,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     let auth_id = NonFungibleId::U32(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id);
     let authorization =
-        AccessRules::new().method("get_component_state", rule!(require(auth_address)));
+        AccessRules::new().method("get_component_state", rule!(require(auth_address)), LOCKED);
 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

@@ -7,7 +7,7 @@ use radix_engine::ledger::{
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
-use radix_engine_interface::{access_and_or, access_rule_node, rule};
+use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::AuthModule;

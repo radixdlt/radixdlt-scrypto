@@ -24,6 +24,8 @@ use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::scrypto;
 
+use super::ComponentAccessRules;
+
 /// Represents the state of a component.
 pub trait ComponentState<C: LocalComponent>: ScryptoEncode + ScryptoDecode {
     /// Instantiates a component from this data structure.
@@ -54,6 +56,13 @@ pub struct ComponentInfoSubstate {
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
 pub struct ComponentStateSubstate {
     pub raw: Vec<u8>,
+}
+
+// TODO: de-duplication
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct AccessRulesSubstate {
+    pub access_rules: Vec<AccessRules>,
 }
 
 impl Component {
@@ -121,6 +130,20 @@ impl Component {
             .unwrap()
             .into()
     }
+
+    /// Returns the layers of access rules on this component.
+    pub fn access_rules(&self) -> Vec<ComponentAccessRules> {
+        let mut env = ScryptoEnv;
+        let length = env
+            .sys_invoke(AccessRulesGetLengthInvocation {
+                receiver: RENodeId::Component(self.0),
+            })
+            .unwrap();
+        (0..length)
+            .into_iter()
+            .map(|id| ComponentAccessRules::new(self.0, id))
+            .collect()
+    }
 }
 
 #[derive(PartialEq, Eq, Hash, Clone)]
@@ -179,6 +202,20 @@ impl BorrowedGlobalComponent {
             receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
         })
         .unwrap()
+    }
+
+    /// Returns the layers of access rules on this component.
+    pub fn access_rules(&self) -> Vec<ComponentAccessRules> {
+        let mut env = ScryptoEnv;
+        let length = env
+            .sys_invoke(AccessRulesGetLengthInvocation {
+                receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+            })
+            .unwrap();
+        (0..length)
+            .into_iter()
+            .map(|id| ComponentAccessRules::new(self.0, id))
+            .collect()
     }
 }
 
