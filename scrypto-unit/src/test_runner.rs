@@ -403,7 +403,18 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         manifest: TransactionManifest,
         initial_proofs: Vec<NonFungibleAddress>,
     ) -> TransactionReceipt {
-        let mut receipts = self.execute_batch(vec![(manifest, initial_proofs)]);
+        let mut receipts =
+            self.execute_batch(vec![(manifest, initial_proofs)], DEFAULT_COST_UNIT_LIMIT);
+        receipts.pop().unwrap()
+    }
+
+    pub fn execute_manifest_with_cost_unit_limit(
+        &mut self,
+        manifest: TransactionManifest,
+        initial_proofs: Vec<NonFungibleAddress>,
+        limit: u32,
+    ) -> TransactionReceipt {
+        let mut receipts = self.execute_batch(vec![(manifest, initial_proofs)], limit);
         receipts.pop().unwrap()
     }
 
@@ -469,9 +480,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     pub fn execute_batch(
         &mut self,
         manifests: Vec<(TransactionManifest, Vec<NonFungibleAddress>)>,
+        cost_unit_limit: u32,
     ) -> Vec<TransactionReceipt> {
         let node_id = self.create_child_node(0);
-        let receipts = self.execute_batch_on_node(node_id, manifests);
+        let receipts = self.execute_batch_on_node(node_id, manifests, cost_unit_limit);
         self.merge_node(node_id);
         receipts
     }
@@ -484,11 +496,13 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         &mut self,
         node_id: u64,
         manifests: Vec<(TransactionManifest, Vec<NonFungibleAddress>)>,
+        cost_unit_limit: u32,
     ) -> Vec<TransactionReceipt> {
         let mut store = self.execution_stores.get_output_store(node_id);
         let mut receipts = Vec::new();
         for (manifest, initial_proofs) in manifests {
-            let transaction = TestTransaction::new(manifest, self.next_transaction_nonce);
+            let transaction =
+                TestTransaction::new(manifest, self.next_transaction_nonce, cost_unit_limit);
             self.next_transaction_nonce += 1;
             let receipt = execute_and_commit_transaction(
                 &mut store,

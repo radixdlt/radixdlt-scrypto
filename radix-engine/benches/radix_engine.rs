@@ -6,6 +6,7 @@ use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
 use radix_engine::wasm::{DefaultWasmEngine, InstructionCostRules, WasmMeteringConfig};
+use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::dec;
@@ -49,7 +50,7 @@ fn bench_transfer(c: &mut Criterion) {
         &mut scrypto_interpreter,
         &FeeReserveConfig::standard(),
         &ExecutionConfig::default(),
-        &TestTransaction::new(manifest.clone(), 1)
+        &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
             .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
     )
     .expect_commit()
@@ -61,7 +62,7 @@ fn bench_transfer(c: &mut Criterion) {
         &mut scrypto_interpreter,
         &FeeReserveConfig::standard(),
         &ExecutionConfig::default(),
-        &TestTransaction::new(manifest, 2)
+        &TestTransaction::new(manifest, 2, DEFAULT_COST_UNIT_LIMIT)
             .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
     )
     .expect_commit()
@@ -84,7 +85,7 @@ fn bench_transfer(c: &mut Criterion) {
             &mut scrypto_interpreter,
             &FeeReserveConfig::standard(),
             &ExecutionConfig::default(),
-            &TestTransaction::new(manifest.clone(), nonce)
+            &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
                 .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
         )
         .expect_commit();
@@ -110,7 +111,7 @@ fn bench_transfer(c: &mut Criterion) {
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::standard(),
                 &ExecutionConfig::default(),
-                &TestTransaction::new(manifest.clone(), nonce)
+                &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
                     .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
             );
             receipt.expect_commit_success();

@@ -193,7 +193,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 initial_proofs.push(AuthModule::system_role_non_fungible_address());
             }
             let nonce = get_nonce()?;
-            let transaction = TestTransaction::new(manifest, nonce);
+            let transaction = TestTransaction::new(manifest, nonce, DEFAULT_COST_UNIT_LIMIT);
 
             let receipt = execute_and_commit_transaction(
                 &mut substate_store,
