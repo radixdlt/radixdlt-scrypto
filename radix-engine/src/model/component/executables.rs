@@ -80,7 +80,9 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
         };
         let owner_badge_bucket: Bucket = api.sys_invoke(mint_invocation)?;
 
-        let mut access_rules = AccessRules::new().default(AccessRule::AllowAll);
+        let mut access_rules = AccessRules::new()
+            .default(AccessRule::AllowAll)
+            .default_mutability(AccessRule::AllowAll);
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,
@@ -159,7 +161,9 @@ impl NativeProcedure for ComponentGlobalizeNoOwnerInvocation {
             node_id
         };
         let component_address: ComponentAddress = global_node_id.into();
-        let mut access_rules = AccessRules::new().default(AccessRule::AllowAll);
+        let mut access_rules = AccessRules::new()
+            .default(AccessRule::AllowAll)
+            .default_mutability(AccessRule::AllowAll);
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,
