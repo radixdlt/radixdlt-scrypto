@@ -5,7 +5,6 @@ use crate::engine::{
 };
 use crate::model::{BucketSubstate, GlobalAddressSubstate};
 use crate::types::*;
-use radix_engine_interface::access_rule_node;
 use radix_engine_interface::api::api::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::constants::*;

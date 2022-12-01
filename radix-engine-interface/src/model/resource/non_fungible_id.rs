@@ -175,7 +175,14 @@ impl fmt::Debug for NonFungibleIdType {
 
 impl fmt::Display for NonFungibleId {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", hex::encode(&self.to_vec()))
+        match self {
+            NonFungibleId::Bytes(b) => write!(f, "Bytes(\"{}\")", hex::encode(b)),
+            NonFungibleId::String(s) => write!(f, "\"{}\"", s),
+            NonFungibleId::U32(n) => write!(f, "{}u32", n),
+            NonFungibleId::U64(n) => write!(f, "{}u64", n),
+            NonFungibleId::Decimal(d) => write!(f, "Decimal(\"{}\")", d),
+            NonFungibleId::UUID(u) => write!(f, "{}u128", u),
+        }
     }
 }
 
@@ -190,25 +197,30 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_non_fungible_id_type() {
-        assert_eq!(NonFungibleId::U32(1u32).id_type(), NonFungibleIdType::U32);
-        assert_eq!(NonFungibleId::U64(1u64).id_type(), NonFungibleIdType::U64);
-        assert_eq!(
-            NonFungibleId::Decimal(Decimal::from(1234_u128)).id_type(),
-            NonFungibleIdType::Decimal
-        );
-        assert_eq!(
-            NonFungibleId::String(String::from("test")).id_type(),
-            NonFungibleIdType::String
-        );
-        assert_eq!(
-            NonFungibleId::UUID(1u128).id_type(),
-            NonFungibleIdType::UUID
-        );
-        assert_eq!(
-            NonFungibleId::Bytes(vec![1, 2, 3]).id_type(),
-            NonFungibleIdType::Bytes
-        );
+    fn test_non_fungible_id_type_and_display() {
+        let nfid = NonFungibleId::U32(1);
+        assert_eq!(nfid.id_type(), NonFungibleIdType::U32);
+        assert_eq!(format!("{}", nfid), "1u32");
+
+        let nfid = NonFungibleId::U64(100);
+        assert_eq!(nfid.id_type(), NonFungibleIdType::U64);
+        assert_eq!(format!("{}", nfid), "100u64");
+
+        let nfid = NonFungibleId::Decimal(Decimal::from(1234_u128));
+        assert_eq!(nfid.id_type(), NonFungibleIdType::Decimal);
+        assert_eq!(format!("{}", nfid), "Decimal(\"1234\")");
+
+        let nfid = NonFungibleId::String(String::from("test"));
+        assert_eq!(nfid.id_type(), NonFungibleIdType::String);
+        assert_eq!(format!("{}", nfid), "\"test\"");
+
+        let nfid = NonFungibleId::UUID(1_u128);
+        assert_eq!(nfid.id_type(), NonFungibleIdType::UUID);
+        assert_eq!(format!("{}", nfid), "1u128");
+
+        let nfid = NonFungibleId::Bytes(vec![1, 2, 3, 255]);
+        assert_eq!(nfid.id_type(), NonFungibleIdType::Bytes);
+        assert_eq!(format!("{}", nfid), "Bytes(\"010203ff\")");
     }
 
     #[test]

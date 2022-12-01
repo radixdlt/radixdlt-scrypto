@@ -3,7 +3,7 @@ use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
-use radix_engine_interface::{access_rule_node, rule};
+use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
@@ -103,7 +103,7 @@ fn test_dynamic_authlist(
         .iter()
         .map(|index| NonFungibleAddress::from_public_key(&key_and_addresses.get(*index).unwrap().0))
         .collect();
-    let authorization = AccessRules::new().method("get_secret", auth_rule);
+    let authorization = AccessRules::new().method("get_secret", auth_rule, LOCKED);
 
     // Arrange
     let package = test_runner.compile_and_publish("./tests/blueprints/component");

@@ -319,7 +319,7 @@ impl ManifestBuilder {
         access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         mint_params: Option<MintParams>,
     ) -> &mut Self {
-        let input = ResourceManagerCreateInvocation {
+        let input = ResourceManagerCreateNoOwnerInvocation {
             resource_type,
             metadata,
             access_rules,
