@@ -495,9 +495,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
                         test_runner.component_address,
                     )),
                     index: 0,
-                    key: AccessRuleKey::ScryptoMethod(
-                        "borrow_funds".to_string(),
-                    ),
+                    key: AccessRuleKey::ScryptoMethod("borrow_funds".to_string()),
                     rule: rule!(deny_all),
                 })
                 .unwrap(),
@@ -514,6 +512,66 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
         )
     });
+}
+
+#[test]
+fn user_can_not_control_auth_on_methods_that_mutate_auth() {
+    // Arrange
+    for method in [
+        AccessRulesMethod::GetLength,
+        AccessRulesMethod::SetGroupAccessRule,
+        AccessRulesMethod::SetGroupMutability,
+        AccessRulesMethod::SetMethodAccessRule,
+        AccessRulesMethod::SetMethodMutability,
+    ] {
+        let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
+        let public_key = private_key.public_key();
+        let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+
+        let access_rules = vec![scrypto_decode::<AccessRules>(&args!(
+            HashMap::<AccessRuleKey, AccessRuleEntry>::new(),
+            HashMap::<String, AccessRule>::new(),
+            AccessRule::AllowAll,
+            HashMap::<AccessRuleKey, AccessRule>::new(),
+            HashMap::<String, AccessRule>::new(),
+            AccessRule::AllowAll
+        ))
+        .unwrap()];
+
+        let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+        test_runner.add_initial_proof(virtual_badge_non_fungible_address.clone());
+
+        // Act
+        let receipt = test_runner.execute_manifest(
+            MutableAccessRulesTestRunner::manifest_builder()
+                .call_native_method(
+                    RENodeId::Global(GlobalAddress::Component(test_runner.component_address)),
+                    &AccessRulesMethod::SetMethodAccessRule.to_string(),
+                    scrypto_encode(&AccessRulesSetMethodAccessRuleInvocation {
+                        receiver: RENodeId::Global(GlobalAddress::Component(
+                            test_runner.component_address,
+                        )),
+                        index: 0,
+                        key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
+                            method,
+                        ))),
+                        rule: rule!(deny_all),
+                    })
+                    .unwrap(),
+                )
+                .build(),
+        );
+
+        // Assert
+        receipt.expect_commit_success();
+        let receipt = test_runner.borrow_funds();
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::ApplicationError(ApplicationError::AccessRulesError(..))
+            )
+        });
+    }
 }
 
 struct MutableAccessRulesTestRunner {

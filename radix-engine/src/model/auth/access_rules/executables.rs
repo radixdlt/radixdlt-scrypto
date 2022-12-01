@@ -17,7 +17,7 @@ pub enum AccessRulesError {
     BlueprintFunctionNotFound(String),
     InvalidIndex(u32),
     Unauthorized(MethodAuthorization, MethodAuthorizationError),
-    CannotSetAccessRuleOnSetAccessRule,
+    ProtectedMethod(AccessRuleKey),
 }
 
 impl ExecutableInvocation for AccessRulesAddAccessCheckInvocation {
@@ -155,13 +155,28 @@ impl NativeProcedure for AccessRulesSetMethodAccessRuleInvocation {
             + SysInvokableNative<RuntimeError>,
     {
         // TODO: Should this invariant be enforced in a more static/structural way?
-        if self.key.eq(&AccessRuleKey::Native(NativeFn::Method(
-            NativeMethod::AccessRules(AccessRulesMethod::SetMethodAccessRule),
-        ))) {
+        if [
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
+                AccessRulesMethod::GetLength,
+            ))),
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
+                AccessRulesMethod::SetGroupAccessRule,
+            ))),
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
+                AccessRulesMethod::SetGroupMutability,
+            ))),
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
+                AccessRulesMethod::SetMethodAccessRule,
+            ))),
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
+                AccessRulesMethod::SetMethodMutability,
+            ))),
+        ]
+        .iter()
+        .any(|x| self.key == *x)
+        {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::AccessRulesError(
-                    AccessRulesError::CannotSetAccessRuleOnSetAccessRule,
-                ),
+                ApplicationError::AccessRulesError(AccessRulesError::ProtectedMethod(self.key)),
             ));
         }
 
@@ -306,7 +321,6 @@ impl NativeProcedure for AccessRulesSetGroupAccessRuleInvocation {
     }
 }
 
-
 impl ExecutableInvocation for AccessRulesSetMethodMutabilityInvocation {
     type Exec = NativeExecutor<Self>;
 
@@ -352,14 +366,29 @@ impl NativeProcedure for AccessRulesSetMethodMutabilityInvocation {
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
-        // TODO: Should this invariant be inforced in a more static/structural way?
-        if self.key.eq(&AccessRuleKey::Native(NativeFn::Method(
-            NativeMethod::AccessRules(AccessRulesMethod::SetMethodAccessRule),
-        ))) {
+        // TODO: Should this invariant be enforced in a more static/structural way?
+        if [
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
+                AccessRulesMethod::GetLength,
+            ))),
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
+                AccessRulesMethod::SetGroupAccessRule,
+            ))),
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
+                AccessRulesMethod::SetGroupMutability,
+            ))),
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
+                AccessRulesMethod::SetMethodAccessRule,
+            ))),
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRules(
+                AccessRulesMethod::SetMethodMutability,
+            ))),
+        ]
+        .iter()
+        .any(|x| self.key == *x)
+        {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::AccessRulesError(
-                    AccessRulesError::CannotSetAccessRuleOnSetAccessRule,
-                ),
+                ApplicationError::AccessRulesError(AccessRulesError::ProtectedMethod(self.key)),
             ));
         }
 
