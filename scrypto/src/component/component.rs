@@ -109,8 +109,7 @@ impl Component {
 
     /// Set the royalty configuration of the component.
     pub fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self {
-        let mut env = ScryptoEnv;
-        env.sys_invoke(ComponentSetRoyaltyConfigInvocation {
+        ScryptoEnv.sys_invoke(ComponentSetRoyaltyConfigInvocation {
             receiver: RENodeId::Component(self.0),
             royalty_config,
         })

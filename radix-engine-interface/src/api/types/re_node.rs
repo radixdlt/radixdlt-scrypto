@@ -10,8 +10,6 @@ pub enum ScryptoRENode {
         PackageAddress,
         String,
         Vec<u8>,
-        RoyaltyConfig,
-        Vec<AccessRules>,
     ),
     KeyValueStore,
 }

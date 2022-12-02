@@ -71,8 +71,6 @@ impl ComponentSystem {
                 Runtime::package_address(),
                 blueprint_name.to_string(),
                 scrypto_encode(&state).unwrap(),
-                RoyaltyConfig::default(),
-                Vec::new(),
             ))
             .unwrap();
         Component(node_id.into())
