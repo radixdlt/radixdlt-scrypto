@@ -570,7 +570,7 @@ mod tests {
             &[Instruction::CallNativeFunction {
                 function_ident: NativeFunctionIdent {
                     blueprint_name: "ResourceManager".to_owned(),
-                    function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
+                    function_name: ResourceManagerFunction::Create.to_string(),
                 },
                 args: scrypto_encode(&BadResourceManagerCreateInput {
                     resource_type: ResourceType::NonFungible {

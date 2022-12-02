@@ -46,7 +46,7 @@ where
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                ResourceManagerFunction::CreateNoOwner => {
+                ResourceManagerFunction::Create => {
                     let invocation: ResourceManagerCreateInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api

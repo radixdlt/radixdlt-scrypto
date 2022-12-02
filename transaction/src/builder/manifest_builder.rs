@@ -329,7 +329,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: scrypto_encode(&input).unwrap(),
         });
@@ -569,7 +569,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
-                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
@@ -593,7 +593,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
-                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
@@ -629,7 +629,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
-                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
                 ResourceType::Fungible { divisibility: 0 },
@@ -653,7 +653,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
-                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
                 ResourceType::Fungible { divisibility: 0 },
