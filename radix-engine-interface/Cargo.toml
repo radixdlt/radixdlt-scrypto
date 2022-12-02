@@ -19,14 +19,17 @@ paste = { version = "1.0.7"}
 serde = { version = "1.0.144", default-features = false, optional = true }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
 
+[dev-dependencies]
+serde_json = { version = "1.0.81", default-features = false }
+
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "sbor/std", "scrypto-abi/std", "radix-engine-derive/std", "strum/std", "utils/std"]
-alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "radix-engine-derive/alloc", "utils/alloc"]
+std = ["hex/std", "sbor/std", "scrypto-abi/std", "radix-engine-derive/std", "strum/std", "utils/std", "serde_json/std"]
+alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "radix-engine-derive/alloc", "utils/alloc", "serde_json/alloc"]
 
 # Turn on this feature to enable tracing.
 trace = ["radix-engine-derive/trace"]
 
 # Enable serde derives
-serde = ["sbor/serde", "scrypto-abi/serde", "serde/derive"]
+serde = ["utils/serde", "sbor/serde", "scrypto-abi/serde", "serde/derive"]

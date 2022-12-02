@@ -10,6 +10,9 @@ mod schema_matcher;
 mod schema_path;
 /// Format any Scrypto value using the Manifest syntax.
 mod value_formatter;
+#[cfg(feature = "serde")]
+/// One-way serialize any Scrypto value.
+mod value_serializer;
 
 pub use crate::args;
 pub use custom_type_id::*;
@@ -23,6 +26,8 @@ use sbor::{
 pub use schema_matcher::*;
 pub use schema_path::*;
 pub use value_formatter::*;
+#[cfg(feature = "serde")]
+pub use value_serializer::*;
 
 pub const MAX_SCRYPTO_SBOR_DEPTH: u8 = 64;
 

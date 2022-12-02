@@ -11,7 +11,7 @@ use sbor::rust::fmt;
 /// It is therefore recommended that the `Context` implement `Copy`,
 /// to make it very easy to pass around and re-use.
 ///
-pub trait ContextualDisplay<Context>: Sized {
+pub trait ContextualDisplay<Context> {
     type Error;
 
     /// Formats the value to the given `fmt::Write` buffer, making use of the provided context.
@@ -72,7 +72,7 @@ pub trait ContextualDisplay<Context>: Sized {
 
 pub struct ContextDisplayable<'a, TValue, TContext>
 where
-    TValue: ContextualDisplay<TContext> + Sized,
+    TValue: ContextualDisplay<TContext> + ?Sized,
 {
     value: &'a TValue,
     context: TContext,
@@ -80,7 +80,7 @@ where
 
 impl<'a, 'b, TValue, TContext> fmt::Display for ContextDisplayable<'a, TValue, TContext>
 where
-    TValue: ContextualDisplay<TContext> + Sized,
+    TValue: ContextualDisplay<TContext> + ?Sized,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         self.value

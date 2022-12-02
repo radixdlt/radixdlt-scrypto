@@ -6,7 +6,11 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 mod contextual_display;
+#[cfg(feature = "serde")]
+mod contextual_serialize;
 mod slice;
 
 pub use contextual_display::*;
+#[cfg(feature = "serde")]
+pub use contextual_serialize::*;
 pub use slice::*;

@@ -13,7 +13,7 @@ echo "Testing crates..."
 (cd scrypto-derive; cargo test)
 (cd scrypto-tests; cargo test)
 (cd radix-engine-derive; cargo test)
-(cd radix-engine-interface; cargo test)
+(cd radix-engine-interface; cargo test --features serde)
 (cd radix-engine; cargo test)
 (cd transaction; cargo test)
 
