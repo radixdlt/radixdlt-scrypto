@@ -57,6 +57,12 @@ pub enum ScryptoCustomTypeId {
     NonFungibleId,
 }
 
+impl From<ScryptoCustomTypeId> for SborTypeId<ScryptoCustomTypeId> {
+    fn from(custom_type_id: ScryptoCustomTypeId) -> Self {
+        SborTypeId::Custom(custom_type_id)
+    }
+}
+
 impl CustomTypeId for ScryptoCustomTypeId {
     fn as_u8(&self) -> u8 {
         match self {

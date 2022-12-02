@@ -48,7 +48,9 @@ impl<'a> ScryptoValueFormattingContext<'a> {
     }
 }
 
-pub trait SerializableScryptoValue: for<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> {
+pub trait SerializableScryptoValue:
+    for<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>>
+{
     fn simple_serializable<'a, 'b, TContext: Into<ValueFormattingContext<'b>>>(
         &'a self,
         context: TContext,
@@ -84,58 +86,78 @@ pub fn serialize_schemaless_scrypto_value<S: Serializer>(
     match value {
         // primitive types
         SborValue::Unit => {
-            serialize_potentially_transparent_value(serializer, context, "Unit", &())
+            serialize_potentially_transparent_value(serializer, context, SborTypeId::Unit, &())
         }
         SborValue::Bool { value } => {
-            serialize_potentially_transparent_value(serializer, context, "Bool", value)
+            serialize_potentially_transparent_value(serializer, context, SborTypeId::Bool, value)
         }
         SborValue::I8 { value } => {
-            serialize_potentially_transparent_value(serializer, context, "I8", value)
+            serialize_potentially_transparent_value(serializer, context, SborTypeId::I8, value)
         }
         SborValue::I16 { value } => {
-            serialize_potentially_transparent_value(serializer, context, "I16", value)
+            serialize_potentially_transparent_value(serializer, context, SborTypeId::I16, value)
         }
         SborValue::I32 { value } => {
-            serialize_potentially_transparent_value(serializer, context, "I32", value)
+            serialize_potentially_transparent_value(serializer, context, SborTypeId::I32, value)
         }
         SborValue::I64 { value } => {
             // Javascript only safely decodes JSON integers up to 2^53
             // So to be safe, we encode I64s as strings
-            serialize_potentially_transparent_value(serializer, context, "I64", &value.to_string())
+            serialize_potentially_transparent_value(
+                serializer,
+                context,
+                SborTypeId::I64,
+                &value.to_string(),
+            )
         }
         SborValue::I128 { value } => {
             // Javascript only safely decodes JSON integers up to 2^53
             // So to be safe, we encode I128 as strings
             // Moreover, I128 isn't supported by the JSON serializer
-            serialize_potentially_transparent_value(serializer, context, "I128", &value.to_string())
+            serialize_potentially_transparent_value(
+                serializer,
+                context,
+                SborTypeId::I128,
+                &value.to_string(),
+            )
         }
         SborValue::U8 { value } => {
-            serialize_potentially_transparent_value(serializer, context, "U8", value)
+            serialize_potentially_transparent_value(serializer, context, SborTypeId::U8, value)
         }
         SborValue::U16 { value } => {
-            serialize_potentially_transparent_value(serializer, context, "U16", value)
+            serialize_potentially_transparent_value(serializer, context, SborTypeId::U16, value)
         }
         SborValue::U32 { value } => {
-            serialize_potentially_transparent_value(serializer, context, "U32", value)
+            serialize_potentially_transparent_value(serializer, context, SborTypeId::U32, value)
         }
         SborValue::U64 { value } => {
             // Javascript only safely decodes JSON integers up to 2^53
             // So to be safe, we encode U64s as strings
-            serialize_potentially_transparent_value(serializer, context, "U64", &value.to_string())
+            serialize_potentially_transparent_value(
+                serializer,
+                context,
+                SborTypeId::U64,
+                &value.to_string(),
+            )
         }
         SborValue::U128 { value } => {
             // Javascript only safely decodes JSON integers up to 2^53
             // So to be safe, we encode U128 as strings
             // Moreover, U128 isn't supported by the JSON serializer
-            serialize_potentially_transparent_value(serializer, context, "U128", &value.to_string())
+            serialize_potentially_transparent_value(
+                serializer,
+                context,
+                SborTypeId::U128,
+                &value.to_string(),
+            )
         }
         SborValue::String { value } => {
-            serialize_potentially_transparent_value(serializer, context, "String", value)
+            serialize_potentially_transparent_value(serializer, context, SborTypeId::String, value)
         }
         SborValue::Tuple { fields } => serialize_potentially_transparent_value(
             serializer,
             context,
-            "Tuple",
+            SborTypeId::Tuple,
             &fields.serializable(*context),
         ),
         SborValue::Enum {
@@ -144,7 +166,7 @@ pub fn serialize_schemaless_scrypto_value<S: Serializer>(
         } => serialize_potentially_transparent_value(
             serializer,
             context,
-            "Enum",
+            SborTypeId::Enum,
             &EnumVariant {
                 discriminator,
                 fields,
@@ -165,10 +187,7 @@ pub fn serialize_schemaless_scrypto_value<S: Serializer>(
                 ScryptoValueSerializationType::Invertible => {
                     let mut map = serializer.serialize_map(Some(2))?;
                     map.serialize_entry("type", "Array")?;
-                    map.serialize_entry(
-                        "element_type",
-                        &display_type_id(element_type_id).to_string(),
-                    )?;
+                    map.serialize_entry("element_type", &type_id_to_string(element_type_id))?;
                     map.serialize_entry("value", &serializable_value)?;
                     map.end()
                 }
@@ -205,6 +224,10 @@ impl<'a, 'b> ContextualSerialize<ScryptoValueFormattingContext<'a>> for ArrayVal
             serialize_schemaless_scrypto_value_slice(serializer, self.elements, context)
         }
     }
+}
+
+fn type_id_to_string(type_id: &ScryptoSborTypeId) -> String {
+    display_type_id(type_id).to_string()
 }
 
 pub struct EnumVariant<'a> {
@@ -284,7 +307,7 @@ pub fn serialize_custom_value<S: Serializer>(
             serialize_potentially_transparent_value(
                 serializer,
                 context,
-                "PackageAddress",
+                ScryptoCustomTypeId::PackageAddress,
                 &string_address,
             )
         }
@@ -295,7 +318,7 @@ pub fn serialize_custom_value<S: Serializer>(
             serialize_potentially_transparent_value(
                 serializer,
                 context,
-                "ComponentAddress",
+                ScryptoCustomTypeId::ComponentAddress,
                 &string_address,
             )
         }
@@ -306,7 +329,7 @@ pub fn serialize_custom_value<S: Serializer>(
             serialize_potentially_transparent_value(
                 serializer,
                 context,
-                "ResourceAddress",
+                ScryptoCustomTypeId::ResourceAddress,
                 &string_address,
             )
         }
@@ -317,82 +340,114 @@ pub fn serialize_custom_value<S: Serializer>(
             serialize_potentially_transparent_value(
                 serializer,
                 context,
-                "SystemAddress",
+                ScryptoCustomTypeId::SystemAddress,
                 &string_address,
             )
         }
         // RE node types
-        ScryptoCustomValue::Component(value) => {
-            serialize_type_name_tagged_value(serializer, context, "Component", &hex::encode(value))
-        }
+        ScryptoCustomValue::Component(value) => serialize_type_name_tagged_value(
+            serializer,
+            context,
+            ScryptoCustomTypeId::Component,
+            &hex::encode(value),
+        ),
         ScryptoCustomValue::KeyValueStore(value) => serialize_type_name_tagged_value(
             serializer,
             context,
-            "KeyValueStore",
+            ScryptoCustomTypeId::KeyValueStore,
             &hex::encode(value),
         ),
         ScryptoCustomValue::Bucket(value) => {
             if let Some(name) = context.display_context.get_bucket_name(&value) {
-                serialize_type_name_tagged_value(serializer, context, "Bucket", name)
+                serialize_type_name_tagged_value(
+                    serializer,
+                    context,
+                    ScryptoCustomTypeId::Bucket,
+                    name,
+                )
             } else {
-                serialize_type_name_tagged_value(serializer, context, "Bucket", value)
+                serialize_type_name_tagged_value(
+                    serializer,
+                    context,
+                    ScryptoCustomTypeId::Bucket,
+                    value,
+                )
             }
         }
         ScryptoCustomValue::Proof(value) => {
             if let Some(name) = context.display_context.get_proof_name(&value) {
-                serialize_type_name_tagged_value(serializer, context, "Proof", name)
+                serialize_type_name_tagged_value(
+                    serializer,
+                    context,
+                    ScryptoCustomTypeId::Proof,
+                    name,
+                )
             } else {
-                serialize_type_name_tagged_value(serializer, context, "Proof", value)
+                serialize_type_name_tagged_value(
+                    serializer,
+                    context,
+                    ScryptoCustomTypeId::Proof,
+                    value,
+                )
             }
         }
-        ScryptoCustomValue::Vault(value) => {
-            serialize_type_name_tagged_value(serializer, context, "Vault", &hex::encode(value))
-        }
+        ScryptoCustomValue::Vault(value) => serialize_type_name_tagged_value(
+            serializer,
+            context,
+            ScryptoCustomTypeId::Vault,
+            &hex::encode(value),
+        ),
         // Other interpreted types
         ScryptoCustomValue::Expression(value) => {
             // The fact it's an expression isn't so relevant, so favour simplicity over verbosity
             serialize_potentially_transparent_value(
                 serializer,
                 context,
-                "Expression",
+                ScryptoCustomTypeId::Expression,
                 &format!("{}", value),
             )
         }
-        ScryptoCustomValue::Blob(value) => {
-            serialize_type_name_tagged_value(serializer, context, "Blob", &format!("{}", value))
-        }
+        ScryptoCustomValue::Blob(value) => serialize_type_name_tagged_value(
+            serializer,
+            context,
+            ScryptoCustomTypeId::Blob,
+            &format!("{}", value),
+        ),
         ScryptoCustomValue::NonFungibleAddress(value) => serialize_type_name_tagged_value(
             serializer,
             context,
-            "NonFungibleAddress",
+            ScryptoCustomTypeId::NonFungibleAddress,
             &format!("{}", value),
         ),
         // Uninterpreted
-        ScryptoCustomValue::Hash(value) => {
-            serialize_type_name_tagged_value(serializer, context, "Hash", &format!("{}", value))
-        }
+        ScryptoCustomValue::Hash(value) => serialize_type_name_tagged_value(
+            serializer,
+            context,
+            ScryptoCustomTypeId::Hash,
+            &format!("{}", value),
+        ),
         ScryptoCustomValue::EcdsaSecp256k1PublicKey(value) => serialize_type_name_tagged_value(
             serializer,
             context,
-            "EcdsaSecp256k1PublicKey",
+            ScryptoCustomTypeId::EcdsaSecp256k1PublicKey,
             &format!("{}", value),
         ),
         ScryptoCustomValue::EcdsaSecp256k1Signature(value) => serialize_type_name_tagged_value(
             serializer,
             context,
-            "EcdsaSecp256k1Signature",
+            ScryptoCustomTypeId::EcdsaSecp256k1Signature,
             &format!("{}", value),
         ),
         ScryptoCustomValue::EddsaEd25519PublicKey(value) => serialize_type_name_tagged_value(
             serializer,
             context,
-            "EddsaEd25519PublicKey",
+            ScryptoCustomTypeId::EddsaEd25519PublicKey,
             &format!("{}", value),
         ),
         ScryptoCustomValue::EddsaEd25519Signature(value) => serialize_type_name_tagged_value(
             serializer,
             context,
-            "EddsaEd25519Signature",
+            ScryptoCustomTypeId::EddsaEd25519Signature,
             &format!("{}", value),
         ),
         ScryptoCustomValue::Decimal(value) => {
@@ -400,7 +455,7 @@ pub fn serialize_custom_value<S: Serializer>(
             serialize_potentially_transparent_value(
                 serializer,
                 context,
-                "Decimal",
+                ScryptoCustomTypeId::Decimal,
                 &format!("{}", value),
             )
         }
@@ -409,42 +464,50 @@ pub fn serialize_custom_value<S: Serializer>(
             serialize_potentially_transparent_value(
                 serializer,
                 context,
-                "PreciseDecimal",
+                ScryptoCustomTypeId::PreciseDecimal,
                 &format!("{}", value),
             )
         }
         ScryptoCustomValue::NonFungibleId(value) => serialize_type_name_tagged_value(
             serializer,
             context,
-            "NonFungibleId",
+            ScryptoCustomTypeId::NonFungibleId,
             &format!("{}", value),
         ),
     }
 }
 
-pub fn serialize_potentially_transparent_value<S: Serializer, T: Serialize>(
+pub fn serialize_potentially_transparent_value<
+    S: Serializer,
+    T: Serialize,
+    TypeId: Into<ScryptoSborTypeId>,
+>(
     serializer: S,
     context: &ScryptoValueFormattingContext,
-    type_name: &'static str,
+    type_id: TypeId,
     value: &T,
 ) -> Result<S::Ok, S::Error> {
     match context.serialization_type {
         ScryptoValueSerializationType::Simple => value.serialize(serializer),
         ScryptoValueSerializationType::Invertible => {
             // In the invertible case, we have to add the tag anyway
-            serialize_type_name_tagged_value(serializer, context, type_name, value)
+            serialize_type_name_tagged_value(serializer, context, type_id, value)
         }
     }
 }
 
-pub fn serialize_type_name_tagged_value<S: Serializer, T: Serialize + ?Sized>(
+pub fn serialize_type_name_tagged_value<
+    S: Serializer,
+    T: Serialize + ?Sized,
+    TypeId: Into<ScryptoSborTypeId>,
+>(
     serializer: S,
     _context: &ScryptoValueFormattingContext,
-    type_name: &'static str,
+    type_id: TypeId,
     value: &T,
 ) -> Result<S::Ok, S::Error> {
     let mut map = serializer.serialize_map(Some(2))?;
-    map.serialize_entry("type", type_name)?;
+    map.serialize_entry("type", &type_id_to_string(&type_id.into()))?;
     map.serialize_entry("value", value)?;
     map.end()
 }
