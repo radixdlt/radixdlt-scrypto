@@ -319,7 +319,7 @@ impl ManifestBuilder {
         access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         mint_params: Option<MintParams>,
     ) -> &mut Self {
-        let input = ResourceManagerCreateNoOwnerInvocation {
+        let input = ResourceManagerCreateInvocation {
             resource_type,
             metadata,
             access_rules,
@@ -513,6 +513,7 @@ impl ManifestBuilder {
         &mut self,
         code: Vec<u8>,
         abi: HashMap<String, BlueprintAbi>,
+        manager_badge: NonFungibleAddress,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
@@ -530,7 +531,7 @@ impl ManifestBuilder {
                 code: Blob(code_hash),
                 abi: Blob(abi_hash),
                 royalty_config: HashMap::new(), // TODO: needs a strategy on how to deal with ever growing variation
-                access_rules_chain: Vec::new(),
+                owner_badge: manager_badge,
                 metadata: HashMap::new(),
             })
             .unwrap(),

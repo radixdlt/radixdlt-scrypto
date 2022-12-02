@@ -89,8 +89,8 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ProofGetNonFungibleIdsInvocation, E>
     + SysNativeInvokable<ProofGetResourceAddressInvocation, E>
     + SysNativeInvokable<ResourceManagerBucketBurnInvocation, E>
-    + SysNativeInvokable<ResourceManagerCreateNoOwnerInvocation, E>
-    + SysNativeInvokable<ResourceManagerCreateWithManagerInvocation, E>
+    + SysNativeInvokable<ResourceManagerCreateInvocation, E>
+    + SysNativeInvokable<ResourceManagerCreateWithOwnerInvocation, E>
     + SysNativeInvokable<ResourceManagerBurnInvocation, E>
     + SysNativeInvokable<ResourceManagerUpdateVaultAuthInvocation, E>
     + SysNativeInvokable<ResourceManagerSetVaultAuthMutabilityInvocation, E>

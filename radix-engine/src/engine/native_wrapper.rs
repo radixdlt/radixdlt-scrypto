@@ -56,14 +56,14 @@ where
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerFunction::CreateNoOwner => {
-                    let invocation: ResourceManagerCreateNoOwnerInvocation = scrypto_decode(&args)
+                    let invocation: ResourceManagerCreateInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
                 ResourceManagerFunction::CreateWithOwner => {
-                    let invocation: ResourceManagerCreateWithManagerInvocation =
+                    let invocation: ResourceManagerCreateWithOwnerInvocation =
                         scrypto_decode(&args).map_err(|e| {
                             RuntimeError::KernelError(KernelError::InvalidSborValue(e))
                         })?;

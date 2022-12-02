@@ -40,16 +40,16 @@ pub struct PackagePublishWithOwnerInvocation {
     pub code: Blob,
     pub abi: Blob,
     pub royalty_config: HashMap<String, RoyaltyConfig>,
-    pub access_rules_chain: Vec<AccessRules>,
+    pub owner_badge: NonFungibleAddress,
     pub metadata: HashMap<String, String>,
 }
 
 impl Invocation for PackagePublishWithOwnerInvocation {
-    type Output = (PackageAddress, Bucket);
+    type Output = PackageAddress;
 }
 
 impl ScryptoNativeInvocation for PackagePublishWithOwnerInvocation {
-    type ScryptoOutput = (PackageAddress, Bucket);
+    type ScryptoOutput = PackageAddress;
 }
 
 impl Into<NativeFnInvocation> for PackagePublishWithOwnerInvocation {

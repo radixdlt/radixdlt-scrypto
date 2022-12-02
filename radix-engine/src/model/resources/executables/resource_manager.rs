@@ -74,7 +74,7 @@ impl NativeProcedure for ResourceManagerBucketBurnInvocation {
     }
 }
 
-impl ExecutableInvocation for ResourceManagerCreateNoOwnerInvocation {
+impl ExecutableInvocation for ResourceManagerCreateInvocation {
     type Exec = NativeExecutor<Self>;
 
     fn resolve<D: MethodDeref>(
@@ -90,8 +90,8 @@ impl ExecutableInvocation for ResourceManagerCreateNoOwnerInvocation {
     }
 }
 
-impl ExecutableInvocation for ResourceManagerCreateWithManagerInvocation {
-    type Exec = NativeExecutor<ResourceManagerCreateNoOwnerInvocation>;
+impl ExecutableInvocation for ResourceManagerCreateWithOwnerInvocation {
+    type Exec = NativeExecutor<ResourceManagerCreateInvocation>;
 
     fn resolve<D: MethodDeref>(
         self,
@@ -132,7 +132,7 @@ impl ExecutableInvocation for ResourceManagerCreateWithManagerInvocation {
             ),
         );
 
-        let invocation = ResourceManagerCreateNoOwnerInvocation {
+        let invocation = ResourceManagerCreateInvocation {
             resource_type: self.resource_type,
             metadata: self.metadata,
             access_rules,
@@ -471,7 +471,7 @@ fn build_substates(
     (substate, vault_substate)
 }
 
-impl NativeProcedure for ResourceManagerCreateNoOwnerInvocation {
+impl NativeProcedure for ResourceManagerCreateInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
 
     fn main<Y>(

@@ -54,22 +54,22 @@ impl Into<AccessRule> for Mutability {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerCreateNoOwnerInvocation {
+pub struct ResourceManagerCreateInvocation {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
     pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
     pub mint_params: Option<MintParams>,
 }
 
-impl Invocation for ResourceManagerCreateNoOwnerInvocation {
+impl Invocation for ResourceManagerCreateInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateNoOwnerInvocation {
+impl ScryptoNativeInvocation for ResourceManagerCreateInvocation {
     type ScryptoOutput = (ResourceAddress, Option<Bucket>);
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerCreateNoOwnerInvocation {
+impl Into<NativeFnInvocation> for ResourceManagerCreateInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
             ResourceManagerFunctionInvocation::Create(self),
@@ -79,25 +79,25 @@ impl Into<NativeFnInvocation> for ResourceManagerCreateNoOwnerInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerCreateWithManagerInvocation {
+pub struct ResourceManagerCreateWithOwnerInvocation {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
     pub manager_badge: NonFungibleAddress,
     pub mint_params: Option<MintParams>,
 }
 
-impl Invocation for ResourceManagerCreateWithManagerInvocation {
+impl Invocation for ResourceManagerCreateWithOwnerInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateWithManagerInvocation {
+impl ScryptoNativeInvocation for ResourceManagerCreateWithOwnerInvocation {
     type ScryptoOutput = (ResourceAddress, Option<Bucket>);
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerCreateWithManagerInvocation {
+impl Into<NativeFnInvocation> for ResourceManagerCreateWithOwnerInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
-            ResourceManagerFunctionInvocation::CreateWithManager(self),
+            ResourceManagerFunctionInvocation::CreateWithOwner(self),
         ))
     }
 }

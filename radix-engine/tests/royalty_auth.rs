@@ -17,18 +17,15 @@ fn set_up_package_and_component() -> (
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_allocated_account();
+    let owner_badge_resource = test_runner.create_non_fungible_resource(account);
+    let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::U32(1));
 
     // Publish package
     let (code, abi) = test_runner.compile("./tests/blueprints/royalty-auth");
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 10u32.into())
-            .publish_package_with_owner(code, abi)
-            .call_method(
-                account,
-                "deposit_batch",
-                args!(Expression::entire_worktop()),
-            )
+            .publish_package_with_owner(code, abi, owner_badge_addr)
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
@@ -38,7 +35,7 @@ fn set_up_package_and_component() -> (
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 10u32.into())
-            .create_proof_from_account(account, ENTITY_OWNER_TOKEN)
+            .create_proof_from_account(account, owner_badge_resource)
             .call_native_method(
                 RENodeId::Global(GlobalAddress::Package(package_address)),
                 "set_royalty_config",

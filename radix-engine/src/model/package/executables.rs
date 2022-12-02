@@ -138,12 +138,12 @@ impl ExecutableInvocation for PackagePublishWithOwnerInvocation {
 }
 
 impl NativeProcedure for PackagePublishWithOwnerInvocation {
-    type Output = (PackageAddress, Bucket);
+    type Output = PackageAddress;
 
     fn main<Y>(
         self,
         api: &mut Y,
-    ) -> Result<((PackageAddress, Bucket), CallFrameUpdate), RuntimeError>
+    ) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + SysInvokableNative<RuntimeError>,
     {
@@ -172,57 +172,30 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
         let package_address: PackageAddress = global_node_id.into();
 
-        // TODO: Cleanup package address + NonFungibleId integration
-        let bytes = scrypto_encode(&package_address).unwrap();
-        let non_fungible_id = NonFungibleId::Bytes(bytes);
-        let non_fungible_address =
-            NonFungibleAddress::new(ENTITY_OWNER_TOKEN, non_fungible_id.clone());
-
-        let mut entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)> = HashMap::new();
-        entries.insert(
-            non_fungible_id,
-            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
-        );
-
-        let mint_invocation = ResourceManagerMintInvocation {
-            receiver: ENTITY_OWNER_TOKEN,
-            mint_params: MintParams::NonFungible { entries },
-        };
-
-        let bucket = api.sys_invoke(mint_invocation)?;
-
-        let mut chain = self.access_rules_chain;
-
-        // Add protection for metadata
-        let mut metadata_access_rules =
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
-        metadata_access_rules.set_access_rule_and_mutability(
+        // Add protection for metadata/royalties
+        let mut access_rules =
+            AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
+        access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Set,
             ))),
-            rule!(require(non_fungible_address.clone())),
-            rule!(require(non_fungible_address.clone())),
+            rule!(require(self.owner_badge.clone())),
+            rule!(require(self.owner_badge.clone())),
         );
-        chain.push(metadata_access_rules);
-
-        // Add protection for royalty
-        let mut royalty_access_rules =
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
-        royalty_access_rules.set_access_rule_and_mutability(
+        access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
                 PackageMethod::SetRoyaltyConfig,
             ))),
-            rule!(require(non_fungible_address.clone())),
-            rule!(require(non_fungible_address.clone())),
+            rule!(require(self.owner_badge.clone())),
+            rule!(require(self.owner_badge.clone())),
         );
-        royalty_access_rules.set_access_rule_and_mutability(
+        access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
                 PackageMethod::ClaimRoyalty,
             ))),
-            rule!(require(non_fungible_address.clone())),
-            rule!(require(non_fungible_address.clone())),
+            rule!(require(self.owner_badge.clone())),
+            rule!(require(self.owner_badge.clone())),
         );
-        chain.push(royalty_access_rules);
 
         // Create package node
         let node_id = api.allocate_node_id(RENodeType::Package)?;
@@ -234,7 +207,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
                 package_royalty_accumulator,
                 metadata_substate,
                 AccessRulesChainSubstate {
-                    access_rules_chain: chain,
+                    access_rules_chain: vec![access_rules],
                 },
             ),
         )?;
@@ -246,11 +219,9 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
             RENode::Global(GlobalAddressSubstate::Package(package_id)),
         )?;
 
-        let bucket_node_id = RENodeId::Bucket(bucket.0);
-
         Ok((
-            (package_address, bucket),
-            CallFrameUpdate::move_node(bucket_node_id),
+            package_address,
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Package(package_address))),
         ))
     }
 }
