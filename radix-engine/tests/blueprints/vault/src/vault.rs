@@ -15,7 +15,7 @@ blueprint! {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply_no_owner(1)
+                .initial_supply(1)
         }
 
         pub fn new_vault_into_map() -> ComponentAddress {

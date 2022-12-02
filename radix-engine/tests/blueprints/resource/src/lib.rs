@@ -1,5 +1,12 @@
 use scrypto::prelude::*;
 
+#[derive(NonFungibleData)]
+pub struct Sandwich {
+    pub name: String,
+    #[scrypto(mutable)]
+    pub available: bool,
+}
+
 blueprint! {
     struct ResourceTest;
 
@@ -18,13 +25,13 @@ blueprint! {
         pub fn create_fungible() -> (Bucket, ResourceAddress) {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply_no_owner(1);
+                .initial_supply(1);
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .mintable(rule!(require(badge.resource_address())), LOCKED)
                 .burnable(rule!(require(badge.resource_address())), LOCKED)
-                .no_initial_supply_no_owner();
+                .no_initial_supply();
             (badge, token_address)
         }
 
@@ -34,13 +41,13 @@ blueprint! {
         ) -> (Bucket, Bucket, ResourceAddress) {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply_no_owner(1);
+                .initial_supply(1);
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(divisibility)
                 .metadata("name", "TestToken")
                 .mintable(rule!(require(badge.resource_address())), LOCKED)
                 .burnable(rule!(require(badge.resource_address())), LOCKED)
-                .no_initial_supply_no_owner();
+                .no_initial_supply();
             let tokens = badge.authorize(|| borrow_resource_manager!(token_address).mint(amount));
             (badge, tokens, token_address)
         }
@@ -49,7 +56,7 @@ blueprint! {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply_no_owner(1u32);
+                .initial_supply(1u32);
             bucket
         }
 
@@ -57,7 +64,7 @@ blueprint! {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply_no_owner(1u32);
+                .initial_supply(1u32);
             bucket
         }
 
@@ -65,13 +72,13 @@ blueprint! {
         {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply_no_owner(1);
+                .initial_supply(1);
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .mintable(rule!(require(badge.resource_address())), LOCKED)
                 .burnable(rule!(require(badge.resource_address())), LOCKED)
-                .no_initial_supply_no_owner();
+                .no_initial_supply();
             (badge, token_address)
         }
 
@@ -96,18 +103,25 @@ blueprint! {
         }
 
         pub fn update_resource_metadata() -> Bucket {
-            let badge = ResourceBuilder::new_fungible()
-                .divisibility(DIVISIBILITY_NONE)
-                .initial_supply_no_owner(1);
+            let badge = ResourceBuilder::new_non_fungible()
+                .set_id_type(NonFungibleIdType::U32)
+                .initial_supply_no_owner(vec![(
+                    NonFungibleId::U32(0),
+                    Sandwich {
+                        name: "name".to_string(),
+                        available: false,
+                    },
+                )]);
+            let manager_address =
+                NonFungibleAddress::new(badge.resource_address(), NonFungibleId::U32(0));
 
             let resource_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .updateable_metadata(rule!(require(badge.resource_address())), LOCKED)
-                .no_initial_supply_no_owner();
-            let token_resource_manager = borrow_resource_manager!(resource_address);
+                .no_initial_supply_with_manager(manager_address);
 
             badge.authorize(|| {
+                let token_resource_manager = borrow_resource_manager!(resource_address);
                 token_resource_manager.set_metadata("a".to_owned(), "b".to_owned());
                 assert_eq!(
                     token_resource_manager.get_metadata("a".to_owned()).unwrap(),

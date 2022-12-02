@@ -148,9 +148,9 @@ impl FungibleResourceBuilder {
     /// ```ignore
     /// let bucket = ResourceBuilder::new_fungible()
     ///     .metadata("name", "TestToken")
-    ///     .initial_supply_no_owner(5);
+    ///     .initial_supply(5);
     /// ```
-    pub fn initial_supply_no_owner<T: Into<Decimal>>(self, amount: T) -> Bucket {
+    pub fn initial_supply<T: Into<Decimal>>(self, amount: T) -> Bucket {
         let mut authorization = HashMap::new();
         authorization.insert(Withdraw, (rule!(allow_all), LOCKED));
 
@@ -168,8 +168,7 @@ impl FungibleResourceBuilder {
         bucket.unwrap()
     }
 
-
-    pub fn no_initial_supply_no_owner(self) -> ResourceAddress {
+    pub fn no_initial_supply(self) -> ResourceAddress {
         let (resource_address, _bucket) = ScryptoEnv
             .sys_invoke(ResourceManagerCreateNoOwnerInvocation {
                 resource_type: ResourceType::Fungible {
@@ -184,39 +183,42 @@ impl FungibleResourceBuilder {
         resource_address
     }
 
-    /*
-    pub fn initial_supply_with_owner<T: Into<Decimal>>(&self, amount: T) -> (Bucket, Bucket) {
-        let (_, bucket, owner_badge_bucket) =
-            self.build_with_owner(Some(MintParams::fungible(amount)));
-        (bucket.unwrap(), owner_badge_bucket)
-    }
-
-    pub fn no_initial_supply_with_owner(&self) -> (ResourceAddress, Bucket) {
-        let (resource_address, _, owner_badge_bucket) = self.build_with_owner(None);
-        (resource_address, owner_badge_bucket)
-    }
-
-    fn build_with_owner(
-        &self,
-        mint_params: Option<MintParams>,
-    ) -> (ResourceAddress, Option<Bucket>, Bucket) {
-        let mut authorization = self.authorization.clone();
-        if !authorization.contains_key(&ResourceMethodAuthKey::Withdraw) {
-            authorization.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        }
-
-        ScryptoEnv
+    pub fn initial_supply_with_manager<T: Into<Decimal>>(
+        self,
+        amount: T,
+        manager_badge: NonFungibleAddress,
+    ) -> Bucket {
+        let (_resource_address, bucket) = ScryptoEnv
             .sys_invoke(ResourceManagerCreateWithManagerInvocation {
                 resource_type: ResourceType::Fungible {
                     divisibility: self.divisibility,
                 },
                 metadata: self.metadata.clone(),
-                access_rules: authorization,
-                mint_params,
+                manager_badge,
+                mint_params: Some(MintParams::fungible(amount)),
             })
-            .unwrap()
+            .unwrap();
+
+        bucket.unwrap()
     }
-     */
+
+    pub fn no_initial_supply_with_manager(
+        self,
+        manager_badge: NonFungibleAddress,
+    ) -> ResourceAddress {
+        let (resource_address, _bucket) = ScryptoEnv
+            .sys_invoke(ResourceManagerCreateWithManagerInvocation {
+                resource_type: ResourceType::Fungible {
+                    divisibility: self.divisibility,
+                },
+                metadata: self.metadata.clone(),
+                manager_badge,
+                mint_params: None,
+            })
+            .unwrap();
+
+        resource_address
+    }
 }
 
 pub struct FungibleResourceWithAuthBuilder {
@@ -268,21 +270,21 @@ impl FungibleResourceWithAuthBuilder {
         self
     }
 
-    pub fn initial_supply_no_owner<T: Into<Decimal>>(self, amount: T) -> Bucket {
+    pub fn initial_supply<T: Into<Decimal>>(self, amount: T) -> Bucket {
         self.build_no_owner(Some(MintParams::fungible(amount)))
             .1
             .unwrap()
     }
 
     /// Creates resource with no initial supply.
-    pub fn no_initial_supply_no_owner(self) -> ResourceAddress {
+    pub fn no_initial_supply(self) -> ResourceAddress {
         self.build_no_owner(None).0
     }
 
     fn build_no_owner(self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
-        if !authorization.contains_key(&ResourceMethodAuthKey::Withdraw) {
-            authorization.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        if !authorization.contains_key(&Withdraw) {
+            authorization.insert(Withdraw, (rule!(allow_all), LOCKED));
         }
 
         ScryptoEnv

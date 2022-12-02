@@ -17,7 +17,7 @@ blueprint! {
             // Create a mint badge
             let mint_badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply_no_owner(1);
+                .initial_supply(1);
 
             // Create non-fungible resource with mutable supply
             let resource_address = ResourceBuilder::new_non_fungible()
