@@ -12,6 +12,7 @@ fn set_up_package_and_component() -> (
     EcdsaSecp256k1PublicKey,
     PackageAddress,
     ComponentAddress,
+    ResourceAddress,
 ) {
     // Basic setup
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
@@ -85,19 +86,20 @@ fn set_up_package_and_component() -> (
         public_key,
         package_address,
         component_address,
+        owner_badge_resource,
     )
 }
 
 #[test]
 fn test_only_package_owner_can_set_royalty_config() {
-    let (mut store, account, public_key, package_address, _component_address) =
+    let (mut store, account, public_key, package_address, _component_address, owner_badge_resource) =
         set_up_package_and_component();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
-            .create_proof_from_account(account, ENTITY_OWNER_TOKEN)
+            .create_proof_from_account(account, owner_badge_resource)
             .call_native_method(
                 RENodeId::Global(GlobalAddress::Package(package_address)),
                 "set_royalty_config",
@@ -137,14 +139,14 @@ fn test_only_package_owner_can_set_royalty_config() {
 
 #[test]
 fn test_only_package_owner_can_claim_royalty() {
-    let (mut store, account, public_key, package_address, _component_address) =
+    let (mut store, account, public_key, package_address, _component_address, owner_badge_resource) =
         set_up_package_and_component();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
-            .create_proof_from_account(account, ENTITY_OWNER_TOKEN)
+            .create_proof_from_account(account, owner_badge_resource)
             .call_native_method(
                 RENodeId::Global(GlobalAddress::Package(package_address)),
                 "claim_royalty",
@@ -182,14 +184,14 @@ fn test_only_package_owner_can_claim_royalty() {
 
 #[test]
 fn test_only_component_owner_can_set_royalty_config() {
-    let (mut store, account, public_key, _package_address, component_address) =
+    let (mut store, account, public_key, _package_address, component_address, owner_badge_resource) =
         set_up_package_and_component();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
-            .create_proof_from_account(account, ENTITY_OWNER_TOKEN)
+            .create_proof_from_account(account, owner_badge_resource)
             .call_native_method(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 "set_royalty_config",
@@ -223,14 +225,14 @@ fn test_only_component_owner_can_set_royalty_config() {
 
 #[test]
 fn test_only_component_owner_can_claim_royalty() {
-    let (mut store, account, public_key, _package_address, component_address) =
+    let (mut store, account, public_key, _package_address, component_address, owner_badge_resource) =
         set_up_package_and_component();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
-            .create_proof_from_account(account, ENTITY_OWNER_TOKEN)
+            .create_proof_from_account(account, owner_badge_resource)
             .call_native_method(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 "claim_royalty",
