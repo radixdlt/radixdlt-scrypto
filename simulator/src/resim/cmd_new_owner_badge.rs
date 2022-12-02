@@ -1,4 +1,5 @@
 use clap::Parser;
+use colored::Colorize;
 use radix_engine::types::*;
 use radix_engine_interface::core::*;
 use radix_engine_interface::data::*;
@@ -128,6 +129,8 @@ impl NewOwnerBadge {
             out,
             "Owner badge: {}",
             NonFungibleAddress::new(resource_address, NonFungibleId::U32(1))
+                .to_string()
+                .green()
         )
         .map_err(Error::IOError)?;
         Ok(())
