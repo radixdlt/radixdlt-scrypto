@@ -6,6 +6,7 @@ use crate::transaction::{
 };
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine_constants::GENESIS_CREATION_CREDIT;
 use radix_engine_interface::api::types::{
     EpochManagerFunction, GlobalAddress, NativeFunctionIdent, RENodeId, ResourceManagerFunction,
     ResourceManagerOffset, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset,
@@ -302,7 +303,10 @@ where
         };
 
         let genesis_transaction = create_genesis();
-        let fee_reserve = SystemLoanFeeReserve::no_fee();
+        let mut fee_reserve = SystemLoanFeeReserve::default();
+        fee_reserve
+            .credit_cost_units(GENESIS_CREATION_CREDIT)
+            .unwrap();
 
         let transaction_receipt = execute_transaction_with_fee_reserve(
             substate_store,
@@ -341,7 +345,10 @@ mod tests {
         };
         let substate_store = TypedInMemorySubstateStore::new();
         let genesis_transaction = create_genesis();
-        let fee_reserve = SystemLoanFeeReserve::no_fee();
+        let mut fee_reserve = SystemLoanFeeReserve::default();
+        fee_reserve
+            .credit_cost_units(GENESIS_CREATION_CREDIT)
+            .unwrap();
 
         let transaction_receipt = execute_transaction_with_fee_reserve(
             &substate_store,

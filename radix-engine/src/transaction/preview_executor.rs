@@ -11,6 +11,7 @@ use crate::ledger::*;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
 use crate::wasm::WasmEngine;
+use radix_engine_constants::PREVIEW_CREDIT;
 
 #[derive(Debug)]
 pub struct PreviewResult {
@@ -39,16 +40,15 @@ pub fn execute_preview<S: ReadableSubstateStore, W: WasmEngine, IHM: IntentHashM
             .validate_preview_intent(&preview_intent, intent_hash_manager)
             .map_err(PreviewError::TransactionValidationError)?;
 
-        let fee_reserve = if preview_intent.flags.unlimited_loan {
-            SystemLoanFeeReserve::no_fee()
-        } else {
-            SystemLoanFeeReserve::default()
-        };
+        let mut fee_reserve = SystemLoanFeeReserve::default();
+        if preview_intent.flags.unlimited_loan {
+            fee_reserve.credit_cost_units(PREVIEW_CREDIT).unwrap();
+        }
 
         execute_transaction_with_fee_reserve(
             substate_store,
             scrypto_interpreter,
-            fee_reserve,
+            SystemLoanFeeReserve::default(),
             &ExecutionConfig::default(),
             &executable,
         )

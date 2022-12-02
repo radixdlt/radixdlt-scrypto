@@ -26,7 +26,7 @@ pub struct ExecutionContext {
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub struct FeePayment {
     pub cost_unit_limit: u32,
-    pub tip_percentage: u8,
+    pub tip_percentage: u32,
 }
 
 /// Represents a validated transaction
@@ -97,7 +97,7 @@ impl<'a> Executable<'a> {
         self.context.fee_payment.cost_unit_limit
     }
 
-    pub fn tip_percentage(&self) -> u8 {
+    pub fn tip_percentage(&self) -> u32 {
         self.context.fee_payment.tip_percentage
     }
 
