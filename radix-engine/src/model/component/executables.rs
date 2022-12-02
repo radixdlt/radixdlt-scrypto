@@ -185,20 +185,6 @@ impl NativeProcedure for ComponentGlobalizeNoOwnerInvocation {
             node_id
         };
         let component_address: ComponentAddress = global_node_id.into();
-        let mut access_rules =
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Set,
-            ))),
-            AccessRule::DenyAll,
-            AccessRule::DenyAll,
-        );
-
-        api.sys_invoke(AccessRulesAddAccessCheckInvocation {
-            receiver: component_node_id,
-            access_rules,
-        })?;
 
         api.create_node(
             global_node_id,

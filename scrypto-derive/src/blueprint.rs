@@ -491,6 +491,10 @@ fn generate_stubs(
                 self.component.set_royalty_config(royalty_config);
                 self
             }
+            fn set_royalty_owner(&mut self, owner: NonFungibleAddress) -> &mut Self {
+                self.component.set_royalty_owner(owner);
+                self
+            }
             fn globalize_no_owner(self) -> ComponentAddress {
                 self.component.globalize_no_owner()
             }
@@ -692,6 +696,10 @@ mod tests {
                         self.component.set_royalty_config(royalty_config);
                         self
                     }
+                    fn set_royalty_owner(&mut self, owner: NonFungibleAddress) -> &mut Self {
+                        self.component.set_royalty_owner(owner);
+                        self
+                    }
                     fn globalize_no_owner(self) -> ComponentAddress {
                         self.component.globalize_no_owner()
                     }
@@ -784,6 +792,10 @@ mod tests {
                     }
                     fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) -> &mut Self {
                         self.component.set_royalty_config(royalty_config);
+                        self
+                    }
+                    fn set_royalty_owner(&mut self, owner: NonFungibleAddress) -> &mut Self {
+                        self.component.set_royalty_owner(owner);
                         self
                     }
                     fn globalize_no_owner(self) -> ComponentAddress {

@@ -26,7 +26,7 @@ fn set_up_package_and_component() -> (
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 10u32.into())
-            .publish_package_with_owner(code, abi, owner_badge_addr)
+            .publish_package_with_owner(code, abi, owner_badge_addr.clone())
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
@@ -65,7 +65,7 @@ fn set_up_package_and_component() -> (
                 package_address,
                 "RoyaltyTest",
                 "create_component_with_royalty_enabled",
-                args!(),
+                args!(owner_badge_addr),
             )
             .call_method(
                 account,
@@ -75,6 +75,7 @@ fn set_up_package_and_component() -> (
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
+    receipt.expect_commit_success();
     let component_address = receipt
         .expect_commit()
         .entity_changes

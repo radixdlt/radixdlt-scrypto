@@ -31,7 +31,9 @@ blueprint! {
             })
         }
 
-        pub fn create_component_with_royalty_enabled() -> (ComponentAddress, Bucket) {
+        pub fn create_component_with_royalty_enabled(
+            badge: NonFungibleAddress,
+        ) -> ComponentAddress {
             let mut local_component = Self {}.instantiate();
 
             local_component.set_royalty_config(
@@ -40,8 +42,9 @@ blueprint! {
                     .add_rule("paid_method_panic", dec!("0.1"))
                     .default(dec!("0")),
             );
+            local_component.set_royalty_owner(badge);
 
-            local_component.globalize_with_owner()
+            local_component.globalize_no_owner()
         }
 
         pub fn disable_package_royalty(address: PackageAddress, proof: Proof) {
