@@ -5,6 +5,8 @@ use serde::ser::*;
 use serde::*;
 use utils::{ContextSerializable, ContextualDisplay, ContextualSerialize};
 
+// TODO - Add a deserializer for invertible JSON, and tests that the process is invertible
+// TODO - Rewrite value formatter as a serializer/deserializer variant?
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ScryptoValueSerializationType {
     /// This "simple" encoding is intended to be "nice to read" for a human.
