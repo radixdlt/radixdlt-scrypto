@@ -38,7 +38,7 @@ pub trait TransactionValidator<T: ScryptoDecode> {
 pub struct ValidationConfig {
     pub network_id: u8,
     pub max_cost_unit_limit: u32,
-    pub min_tip_percentage: u32,
+    pub min_tip_percentage: u8,
     pub max_epoch_range: u64,
 }
 

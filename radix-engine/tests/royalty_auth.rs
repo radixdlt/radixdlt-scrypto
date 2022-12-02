@@ -45,9 +45,9 @@ fn set_up_package_and_component() -> (
                     HashMap::from([(
                         "RoyaltyTest".to_owned(),
                         RoyaltyConfigBuilder::new()
-                            .add_rule("paid_method", dec!("0.2"))
-                            .add_rule("paid_method_panic", dec!("0.2"))
-                            .default(dec!("0")),
+                            .add_rule("paid_method", 2)
+                            .add_rule("paid_method_panic", 2)
+                            .default(0),
                     )])
                 ),
             )
@@ -108,7 +108,7 @@ fn test_only_package_owner_can_set_royalty_config() {
                     package_address,
                     HashMap::from([(
                         "RoyaltyTest".to_owned(),
-                        RoyaltyConfigBuilder::new().default(dec!("0")),
+                        RoyaltyConfigBuilder::new().default(0),
                     )])
                 ),
             )
@@ -128,7 +128,7 @@ fn test_only_package_owner_can_set_royalty_config() {
                     package_address,
                     HashMap::from([(
                         "RoyaltyTest".to_owned(),
-                        RoyaltyConfigBuilder::new().default(dec!("0")),
+                        RoyaltyConfigBuilder::new().default(0),
                     )])
                 ),
             )
@@ -198,7 +198,7 @@ fn test_only_component_owner_can_set_royalty_config() {
                 "set_royalty_config",
                 args!(
                     RENodeId::Global(GlobalAddress::Component(component_address)),
-                    RoyaltyConfigBuilder::new().default(dec!("0"))
+                    RoyaltyConfigBuilder::new().default(0)
                 ),
             )
             .build(),
@@ -215,7 +215,7 @@ fn test_only_component_owner_can_set_royalty_config() {
                 "set_royalty_config",
                 args!(
                     RENodeId::Global(GlobalAddress::Component(component_address)),
-                    RoyaltyConfigBuilder::new().default(dec!("0"))
+                    RoyaltyConfigBuilder::new().default(0)
                 ),
             )
             .build(),
