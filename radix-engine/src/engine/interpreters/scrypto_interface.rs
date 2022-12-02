@@ -22,6 +22,8 @@ use radix_engine_interface::model::{
     AccessRule, AccessRuleKey, AccessRules, ResourceType, RoyaltyConfig,
 };
 use sbor::rust::string::String;
+use sbor::rust::string::ToString;
+use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 
 impl<'g, 's, W, R> EngineApi<RuntimeError> for Kernel<'g, 's, W, R>
