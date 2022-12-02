@@ -5,7 +5,6 @@ use radix_engine_interface::core::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
-#[ignore = "See notes on `impl NativeProcedure for PackagePublishInvocation`"]
 #[test]
 fn cannot_set_package_metadata_with_no_owner() {
     // Arrange
@@ -14,7 +13,13 @@ fn cannot_set_package_metadata_with_no_owner() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package_with_owner(code, HashMap::new(), NO_OWNER)
+        .publish_package(
+            code,
+            HashMap::new(),
+            HashMap::new(),
+            HashMap::new(),
+            AccessRules::new(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let package_address = receipt.expect_commit().entity_changes.new_package_addresses[0];

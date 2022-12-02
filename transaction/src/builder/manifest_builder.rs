@@ -2,9 +2,9 @@ use radix_engine_interface::abi;
 use radix_engine_interface::abi::*;
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
-    ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
-    ScryptoPackage, ScryptoReceiver,
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, PackageFunction, ProofId,
+    RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent,
+    ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
 };
 use radix_engine_interface::constants::*;
 use radix_engine_interface::core::NetworkDefinition;
@@ -487,6 +487,39 @@ impl ManifestBuilder {
                 args: args_from_bytes_vec!(arguments),
             })
             .0)
+    }
+
+    /// Publishes a package.
+    pub fn publish_package(
+        &mut self,
+        code: Vec<u8>,
+        abi: HashMap<String, BlueprintAbi>,
+        royalty_config: HashMap<String, RoyaltyConfig>,
+        metadata: HashMap<String, String>,
+        access_rules: AccessRules,
+    ) -> &mut Self {
+        let code_hash = hash(&code);
+        self.blobs.insert(code_hash, code);
+
+        let abi = scrypto_encode(&abi).unwrap();
+        let abi_hash = hash(&abi);
+        self.blobs.insert(abi_hash, abi);
+
+        self.add_instruction(Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+                function_name: PackageFunction::Publish.to_string(),
+            },
+            args: scrypto_encode(&PackagePublishInvocation {
+                code: Blob(code_hash),
+                abi: Blob(abi_hash),
+                royalty_config,
+                metadata,
+                access_rules,
+            })
+            .unwrap(),
+        })
+        .0
     }
 
     /// Publishes a package.

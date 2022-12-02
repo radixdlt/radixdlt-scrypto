@@ -115,7 +115,6 @@ pub enum Instruction {
     },
 
     // TODO: add PublishPackage instruction
-
     /// Publishes a package.
     PublishPackageWithOwner {
         code: Blob,

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -21,7 +22,6 @@ use radix_engine::wasm::{
 };
 use radix_engine_constants::*;
 use radix_engine_interface::api::types::{RENodeId, ScryptoMethodIdent};
-use radix_engine_interface::constants::NO_OWNER;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
@@ -318,7 +318,23 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         }
     }
 
-    // TODO: publish_package(code, abi, royalty_config, metadata, access_rules)
+    pub fn publish_package(
+        &mut self,
+        code: Vec<u8>,
+        abi: HashMap<String, BlueprintAbi>,
+        royalty_config: HashMap<String, RoyaltyConfig>,
+        metadata: HashMap<String, String>,
+        access_rules: AccessRules,
+    ) -> PackageAddress {
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .publish_package(code, abi, royalty_config, metadata, access_rules)
+            .build();
+
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit_success();
+        receipt.expect_commit().entity_changes.new_package_addresses[0]
+    }
 
     pub fn publish_package_with_owner(
         &mut self,
@@ -349,7 +365,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     }
 
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
-        self.compile_and_publish_with_owner(package_dir, NO_OWNER)
+        let (code, abi) = self.compile(package_dir);
+        self.publish_package(
+            code,
+            abi,
+            HashMap::new(),
+            HashMap::new(),
+            AccessRules::new(),
+        )
     }
 
     pub fn compile_and_publish_with_owner<P: AsRef<Path>>(

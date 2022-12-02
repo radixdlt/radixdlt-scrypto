@@ -14,10 +14,12 @@ fn test_loop() {
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "100000"));
-    let package_address = test_runner.publish_package_with_owner(
+    let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        NO_OWNER,
+        HashMap::new(),
+        HashMap::new(),
+        AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -37,10 +39,12 @@ fn test_loop_out_of_cost_unit() {
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "200000"));
-    let package_address = test_runner.publish_package_with_owner(
+    let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        NO_OWNER,
+        HashMap::new(),
+        HashMap::new(),
+        AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 45.into())
@@ -61,10 +65,12 @@ fn test_recursion() {
     // Act
     // In this test case, each call frame costs 4 stack units
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "256"));
-    let package_address = test_runner.publish_package_with_owner(
+    let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        NO_OWNER,
+        HashMap::new(),
+        HashMap::new(),
+        AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -84,10 +90,12 @@ fn test_recursion_stack_overflow() {
 
     // Act
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "257"));
-    let package_address = test_runner.publish_package_with_owner(
+    let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        NO_OWNER,
+        HashMap::new(),
+        HashMap::new(),
+        AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -107,10 +115,12 @@ fn test_grow_memory() {
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100"));
-    let package_address = test_runner.publish_package_with_owner(
+    let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        NO_OWNER,
+        HashMap::new(),
+        HashMap::new(),
+        AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -130,10 +140,12 @@ fn test_grow_memory_out_of_cost_unit() {
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
-    let package_address = test_runner.publish_package_with_owner(
+    let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        NO_OWNER,
+        HashMap::new(),
+        HashMap::new(),
+        AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -216,7 +228,13 @@ fn test_publish_large_package() {
     assert_eq!(4194343, code.len());
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 100.into())
-        .publish_package_with_owner(code, HashMap::new(), NO_OWNER)
+        .publish_package(
+            code,
+            HashMap::new(),
+            HashMap::new(),
+            HashMap::new(),
+            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();

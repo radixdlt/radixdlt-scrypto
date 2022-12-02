@@ -8,21 +8,6 @@ use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
-#[ignore] // TODO: enable this after allowing dynamic creation of blobs
-#[test]
-fn test_publish_package_from_scrypto() {
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
-    let package = test_runner.compile_and_publish("./tests/blueprints/package");
-
-    let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package, "PackageTest", "publish", args!())
-        .build();
-    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.expect_commit_success();
-}
-
 #[test]
 fn missing_memory_should_cause_error() {
     // Arrange
@@ -41,7 +26,13 @@ fn missing_memory_should_cause_error() {
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package_with_owner(code, HashMap::new(), NO_OWNER)
+        .publish_package(
+            code,
+            HashMap::new(),
+            HashMap::new(),
+            HashMap::new(),
+            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -137,7 +128,13 @@ fn test_basic_package() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package_with_owner(code, HashMap::new(), NO_OWNER)
+        .publish_package(
+            code,
+            HashMap::new(),
+            HashMap::new(),
+            HashMap::new(),
+            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -169,7 +166,13 @@ fn test_basic_package_missing_export() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package_with_owner(code, blueprints, NO_OWNER)
+        .publish_package(
+            code,
+            HashMap::new(),
+            HashMap::new(),
+            HashMap::new(),
+            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

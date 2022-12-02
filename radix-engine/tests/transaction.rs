@@ -123,10 +123,20 @@ fn test_non_existent_blob_hash() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(account, dec!("10"))
-        .add_instruction(Instruction::PublishPackageWithOwner {
-            code: Blob(Hash([0; 32])),
-            abi: Blob(Hash([0; 32])),
-            owner_badge: NO_OWNER,
+        .add_instruction(Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+                function_name: PackageFunction::Publish.to_string(),
+            },
+            args: scrypto_encode(&PackagePublishInvocation {
+                code: Blob(Hash([0; 32])),
+                abi: Blob(Hash([0; 32])),
+                royalty_config: HashMap::new(),
+                metadata: HashMap::new(),
+                access_rules: AccessRules::new()
+                    .default(AccessRule::AllowAll, AccessRule::AllowAll),
+            })
+            .unwrap(),
         })
         .0
         .build();

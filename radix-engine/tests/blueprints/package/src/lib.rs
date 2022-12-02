@@ -87,17 +87,3 @@ pub extern "C" fn ZeroReturnSize_abi(_input: *mut u8) -> *mut u8 {
 
     ::scrypto::buffer::scrypto_encode_to_buffer(&abi).unwrap()
 }
-
-blueprint! {
-    struct PackageTest;
-
-    impl PackageTest {
-        pub fn publish() -> PackageAddress {
-            component_system().publish_package_with_owner(
-                include_bytes!("../../../../../assets/faucet.wasm").to_vec(),
-                HashMap::new(),
-                NO_OWNER,
-            )
-        }
-    }
-}

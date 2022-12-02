@@ -42,10 +42,21 @@ pub fn create_genesis() -> SystemTransaction {
     let create_faucet_package = {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
-        let inst = Instruction::PublishPackageWithOwner {
-            code: Blob(hash(&faucet_code)),
-            abi: Blob(hash(&faucet_abi)),
-            owner_badge: NO_OWNER,
+        let inst = Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+                function_name: PackageFunction::Publish.to_string(),
+            },
+            args: scrypto_encode(&PackagePublishInvocation {
+                code: Blob(hash(&faucet_code)),
+                abi: Blob(hash(&faucet_abi)),
+                royalty_config: HashMap::new(),
+                metadata: HashMap::new(),
+                access_rules: AccessRules::new()
+                    .method("new", AccessRule::AllowAll, LOCKED)
+                    .default(AccessRule::DenyAll, AccessRule::DenyAll),
+            })
+            .unwrap(),
         };
 
         blobs.push(faucet_code);
@@ -56,10 +67,21 @@ pub fn create_genesis() -> SystemTransaction {
     let create_account_package = {
         let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
         let account_abi = include_bytes!("../../../assets/account.abi").to_vec();
-        let inst = Instruction::PublishPackageWithOwner {
-            code: Blob(hash(&account_code)),
-            abi: Blob(hash(&account_abi)),
-            owner_badge: NO_OWNER,
+        let inst = Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+                function_name: PackageFunction::Publish.to_string(),
+            },
+            args: scrypto_encode(&PackagePublishInvocation {
+                code: Blob(hash(&account_code)),
+                abi: Blob(hash(&account_abi)),
+                royalty_config: HashMap::new(),
+                metadata: HashMap::new(),
+                access_rules: AccessRules::new()
+                    .method("create", AccessRule::AllowAll, LOCKED)
+                    .default(AccessRule::DenyAll, AccessRule::DenyAll),
+            })
+            .unwrap(),
         };
 
         blobs.push(account_code);
