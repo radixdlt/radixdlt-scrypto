@@ -256,13 +256,31 @@ impl<'a, 'b> ContextualSerialize<ScryptoValueFormattingContext<'a>> for ArrayVal
                 };
                 bytes_vec.push(*byte);
             }
-            let mut map = serializer.serialize_map(Some(1))?;
-            map.serialize_entry("hex", &hex::encode(&bytes_vec))?;
-            map.end()
+            serialize_hex(serializer, &bytes_vec)
         } else {
             serialize_schemaless_scrypto_value_slice(serializer, self.elements, context)
         }
     }
+}
+
+pub struct BytesValue<'a> {
+    bytes: &'a [u8],
+}
+
+impl<'a, 'b> ContextualSerialize<ScryptoValueFormattingContext<'a>> for BytesValue<'b> {
+    fn contextual_serialize<S: Serializer>(
+        &self,
+        serializer: S,
+        _context: &ScryptoValueFormattingContext<'a>,
+    ) -> Result<S::Ok, S::Error> {
+        serialize_hex(serializer, &self.bytes)
+    }
+}
+
+fn serialize_hex<S: Serializer>(serializer: S, slice: &[u8]) -> Result<S::Ok, S::Error> {
+    let mut map = serializer.serialize_map(Some(1))?;
+    map.serialize_entry("hex", &hex::encode(slice))?;
+    map.end()
 }
 
 fn type_id_to_string(type_id: &ScryptoSborTypeId) -> String {
@@ -460,7 +478,7 @@ pub fn serialize_custom_value<S: Serializer>(
             serializer,
             context,
             ScryptoCustomTypeId::NonFungibleAddress,
-            &format!("{}", value),
+            &value.serializable(*context),
         ),
         // Uninterpreted
         ScryptoCustomValue::Hash(value) => serialize_value(
@@ -519,8 +537,80 @@ pub fn serialize_custom_value<S: Serializer>(
             serializer,
             context,
             ScryptoCustomTypeId::NonFungibleId,
-            &format!("{}", value),
+            &value.serializable(*context),
         ),
+    }
+}
+
+impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleAddress {
+    fn contextual_serialize<S: Serializer>(
+        &self,
+        serializer: S,
+        context: &ScryptoValueFormattingContext<'a>,
+    ) -> Result<S::Ok, S::Error> {
+        let mut tuple = serializer.serialize_tuple(2)?;
+        tuple.serialize_element(
+            &self
+                .resource_address()
+                .display(context.display_context.bech32_encoder)
+                .to_string(),
+        )?;
+        tuple.serialize_element(&self.non_fungible_id().serializable(*context))?;
+        tuple.end()
+    }
+}
+
+impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleId {
+    fn contextual_serialize<S: Serializer>(
+        &self,
+        serializer: S,
+        context: &ScryptoValueFormattingContext<'a>,
+    ) -> Result<S::Ok, S::Error> {
+        match self {
+            NonFungibleId::String(value) => serialize_value(
+                ValueEncoding::NoType,
+                serializer,
+                context,
+                SborTypeId::String,
+                value,
+            ),
+            NonFungibleId::U32(value) => serialize_value(
+                ValueEncoding::NoType,
+                serializer,
+                context,
+                SborTypeId::U32,
+                value,
+            ),
+            NonFungibleId::U64(value) => serialize_value(
+                ValueEncoding::NoType,
+                serializer,
+                context,
+                SborTypeId::U64,
+                &value.to_string(),
+            ),
+            NonFungibleId::Decimal(value) => serialize_value(
+                ValueEncoding::NoType,
+                serializer,
+                context,
+                ScryptoCustomTypeId::Decimal,
+                &value.to_string(),
+            ),
+            NonFungibleId::Bytes(value) => serialize_value_with_element_type(
+                ValueEncoding::NoType,
+                serializer,
+                context,
+                SborTypeId::Array,
+                SborTypeId::U8,
+                &BytesValue { bytes: value }.serializable(*context),
+            ),
+            NonFungibleId::UUID(value) => serialize_value(
+                ValueEncoding::NoType,
+                serializer,
+                context,
+                SborTypeId::U128,
+                &value.to_string(),
+            ),
+        }
     }
 }
 
@@ -653,12 +743,20 @@ mod tests {
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_complex_encoding_with_network() {
         use crate::{
+            constants::{ACCOUNT_PACKAGE, EPOCH_MANAGER, FAUCET_COMPONENT},
             core::Expression,
+            crypto::{
+                Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
+                EddsaEd25519Signature,
+            },
             math::{Decimal, PreciseDecimal},
         };
 
         let encoder = Bech32Encoder::for_simulator();
+        let account_package_address = ACCOUNT_PACKAGE.display(&encoder).to_string();
+        let faucet_address = FAUCET_COMPONENT.display(&encoder).to_string();
         let radix_token_address = RADIX_TOKEN.display(&encoder).to_string();
+        let epoch_manager_address = EPOCH_MANAGER.display(&encoder).to_string();
 
         let value = ScryptoValue::Tuple {
             fields: vec![
@@ -702,25 +800,102 @@ mod tests {
                 SborValue::Tuple {
                     fields: vec![
                         SborValue::Custom {
+                            value: ScryptoCustomValue::PackageAddress(ACCOUNT_PACKAGE),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::ComponentAddress(FAUCET_COMPONENT),
+                        },
+                        SborValue::Custom {
                             value: ScryptoCustomValue::ResourceAddress(RADIX_TOKEN),
                         },
                         SborValue::Custom {
-                            value: ScryptoCustomValue::Expression(Expression::entire_worktop()),
+                            value: ScryptoCustomValue::SystemAddress(EPOCH_MANAGER),
                         },
                         SborValue::Custom {
-                            value: ScryptoCustomValue::Decimal(Decimal::ONE),
+                            value: ScryptoCustomValue::Component([0; 36]),
                         },
                         SborValue::Custom {
-                            value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ZERO),
-                        },
-                        SborValue::Custom {
-                            value: ScryptoCustomValue::Decimal(Decimal::ONE / 100),
+                            value: ScryptoCustomValue::KeyValueStore([0; 36]),
                         },
                         SborValue::Custom {
                             value: ScryptoCustomValue::Bucket(1), // Will be mapped by context to "Hello"
                         },
                         SborValue::Custom {
                             value: ScryptoCustomValue::Bucket(10),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::Proof(2),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::Vault([0; 36]),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::Expression(Expression::entire_worktop()),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::Blob(Blob(Hash([0; 32]))),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::NonFungibleAddress(NonFungibleAddress::new(
+                                RADIX_TOKEN,
+                                NonFungibleId::Bytes(vec![0u8, 2u8]),
+                            )),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::Hash(Hash([0; 32])),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::EcdsaSecp256k1PublicKey(
+                                EcdsaSecp256k1PublicKey([0; 33]),
+                            ),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::EcdsaSecp256k1Signature(
+                                EcdsaSecp256k1Signature([0; 65]),
+                            ),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::EddsaEd25519PublicKey(
+                                EddsaEd25519PublicKey([0; 32]),
+                            ),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::EddsaEd25519Signature(
+                                EddsaEd25519Signature([0; 64]),
+                            ),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::Decimal(Decimal::ONE),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::Decimal(Decimal::ONE / 100),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ZERO),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::NonFungibleId(NonFungibleId::String(
+                                "hello".to_string(),
+                            )),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::NonFungibleId(NonFungibleId::U32(123)),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::NonFungibleId(NonFungibleId::U64(123)),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::NonFungibleId(NonFungibleId::Decimal(
+                                Decimal::ONE * 123456 / 1000,
+                            )),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::NonFungibleId(NonFungibleId::Bytes(vec![
+                                0x23, 0x45,
+                            ])),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::NonFungibleId(NonFungibleId::UUID(371)),
                         },
                     ],
                 },
@@ -746,13 +921,33 @@ mod tests {
             ["VariantSingleValue", 153],
             ["VariantMultiValues", [153, true]],
             [
+                account_package_address,
+                faucet_address,
                 radix_token_address,
-                "ENTIRE_WORKTOP",
-                "1",
-                "0",
-                "0.01",
+                epoch_manager_address,
+                { "type": "Component", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
+                { "type": "KeyValueStore", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                 { "type": "Bucket", "value": "Hello" },
                 { "type": "Bucket", "value": 10 },
+                { "type": "Proof", "value": 2 },
+                { "type": "Vault", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
+                "ENTIRE_WORKTOP",
+                { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+                { "type": "NonFungibleAddress", "value": [radix_token_address, { "hex": "0002" }] },
+                { "type": "Hash", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+                { "type": "EcdsaSecp256k1PublicKey", "value": "000000000000000000000000000000000000000000000000000000000000000000" },
+                { "type": "EcdsaSecp256k1Signature", "value": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
+                { "type": "EddsaEd25519PublicKey", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+                { "type": "EddsaEd25519Signature", "value": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
+                "1",
+                "0.01",
+                "0",
+                { "type": "NonFungibleId", "value": "hello" },
+                { "type": "NonFungibleId", "value": 123 },
+                { "type": "NonFungibleId", "value": "123" },
+                { "type": "NonFungibleId", "value": "123.456" },
+                { "type": "NonFungibleId", "value": { "hex": "2345" } },
+                { "type": "NonFungibleId", "value": "371" },
             ]
         ]);
 
@@ -786,13 +981,33 @@ mod tests {
                 {
                     "type": "Tuple",
                     "value": [
+                        { "type": "PackageAddress", "value": account_package_address },
+                        { "type": "ComponentAddress", "value": faucet_address },
                         { "type": "ResourceAddress", "value": radix_token_address },
-                        { "type": "Expression", "value": "ENTIRE_WORKTOP" },
-                        { "type": "Decimal", "value": "1" },
-                        { "type": "PreciseDecimal", "value": "0" },
-                        { "type": "Decimal", "value": "0.01" },
+                        { "type": "SystemAddress", "value": epoch_manager_address },
+                        { "type": "Component", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "KeyValueStore", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "Bucket", "value": "Hello" },
                         { "type": "Bucket", "value": 10 },
+                        { "type": "Proof", "value": 2 },
+                        { "type": "Vault", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "Expression", "value": "ENTIRE_WORKTOP" },
+                        { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "NonFungibleAddress", "value": [radix_token_address, { "type": "Array", "element_type": "U8", "value": { "hex": "0002" } }] },
+                        { "type": "Hash", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "EcdsaSecp256k1PublicKey", "value": "000000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "EcdsaSecp256k1Signature", "value": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "EddsaEd25519PublicKey", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "EddsaEd25519Signature", "value": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "Decimal", "value": "1" },
+                        { "type": "Decimal", "value": "0.01" },
+                        { "type": "PreciseDecimal", "value": "0" },
+                        { "type": "NonFungibleId", "value": { "type": "String", "value": "hello" } },
+                        { "type": "NonFungibleId", "value": { "type": "U32", "value": 123 } },
+                        { "type": "NonFungibleId", "value": { "type": "U64", "value": "123" } },
+                        { "type": "NonFungibleId", "value": { "type": "Decimal", "value": "123.456" } },
+                        { "type": "NonFungibleId", "value": { "type": "Array", "element_type": "U8", "value": { "hex": "2345" } } },
+                        { "type": "NonFungibleId", "value": { "type": "U128", "value": "371" } },
                     ]
                 }
             ]
