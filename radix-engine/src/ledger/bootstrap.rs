@@ -52,9 +52,7 @@ pub fn create_genesis() -> SystemTransaction {
                 abi: Blob(hash(&faucet_abi)),
                 royalty_config: HashMap::new(),
                 metadata: HashMap::new(),
-                access_rules: AccessRules::new()
-                    .method("new", AccessRule::AllowAll, LOCKED)
-                    .default(AccessRule::DenyAll, AccessRule::DenyAll),
+                access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
             })
             .unwrap(),
         };
@@ -77,9 +75,7 @@ pub fn create_genesis() -> SystemTransaction {
                 abi: Blob(hash(&account_abi)),
                 royalty_config: HashMap::new(),
                 metadata: HashMap::new(),
-                access_rules: AccessRules::new()
-                    .method("create", AccessRule::AllowAll, LOCKED)
-                    .default(AccessRule::DenyAll, AccessRule::DenyAll),
+                access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
             })
             .unwrap(),
         };

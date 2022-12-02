@@ -120,7 +120,8 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
         let component_address: ComponentAddress = global_node_id.into();
 
         // Add protection for metadata/royalties
-        let mut access_rules = AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
+        let mut access_rules =
+            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
         access_rules.set_access_rule_and_mutability(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
                 MetadataMethod::Get,
@@ -136,15 +137,15 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
             rule!(require(self.owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
-                PackageMethod::SetRoyaltyConfig,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Component(
+                ComponentMethod::SetRoyaltyConfig,
             ))),
             rule!(require(self.owner_badge.clone())),
             rule!(require(self.owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
-                PackageMethod::ClaimRoyalty,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Component(
+                ComponentMethod::ClaimRoyalty,
             ))),
             rule!(require(self.owner_badge.clone())),
             rule!(require(self.owner_badge.clone())),
