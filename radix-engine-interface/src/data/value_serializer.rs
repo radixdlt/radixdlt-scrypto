@@ -653,12 +653,20 @@ mod tests {
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_complex_encoding_with_network() {
         use crate::{
+            constants::{ACCOUNT_PACKAGE, EPOCH_MANAGER, FAUCET_COMPONENT},
             core::Expression,
+            crypto::{
+                Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
+                EddsaEd25519Signature,
+            },
             math::{Decimal, PreciseDecimal},
         };
 
         let encoder = Bech32Encoder::for_simulator();
+        let account_package_address = ACCOUNT_PACKAGE.display(&encoder).to_string();
+        let faucet_address = FAUCET_COMPONENT.display(&encoder).to_string();
         let radix_token_address = RADIX_TOKEN.display(&encoder).to_string();
+        let epoch_manager_address = EPOCH_MANAGER.display(&encoder).to_string();
 
         let value = ScryptoValue::Tuple {
             fields: vec![
@@ -702,25 +710,81 @@ mod tests {
                 SborValue::Tuple {
                     fields: vec![
                         SborValue::Custom {
+                            value: ScryptoCustomValue::PackageAddress(ACCOUNT_PACKAGE),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::ComponentAddress(FAUCET_COMPONENT),
+                        },
+                        SborValue::Custom {
                             value: ScryptoCustomValue::ResourceAddress(RADIX_TOKEN),
                         },
                         SborValue::Custom {
-                            value: ScryptoCustomValue::Expression(Expression::entire_worktop()),
+                            value: ScryptoCustomValue::SystemAddress(EPOCH_MANAGER),
                         },
                         SborValue::Custom {
-                            value: ScryptoCustomValue::Decimal(Decimal::ONE),
+                            value: ScryptoCustomValue::Component([0; 36]),
                         },
                         SborValue::Custom {
-                            value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ZERO),
-                        },
-                        SborValue::Custom {
-                            value: ScryptoCustomValue::Decimal(Decimal::ONE / 100),
+                            value: ScryptoCustomValue::KeyValueStore([0; 36]),
                         },
                         SborValue::Custom {
                             value: ScryptoCustomValue::Bucket(1), // Will be mapped by context to "Hello"
                         },
                         SborValue::Custom {
                             value: ScryptoCustomValue::Bucket(10),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::Proof(2),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::Vault([0; 36]),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::Expression(Expression::entire_worktop()),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::Blob(Blob(Hash([0; 32]))),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::NonFungibleAddress(NonFungibleAddress::new(
+                                RADIX_TOKEN,
+                                NonFungibleId::Bytes(vec![0u8, 2u8]),
+                            )),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::Hash(Hash([0; 32])),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::EcdsaSecp256k1PublicKey(
+                                EcdsaSecp256k1PublicKey([0; 33]),
+                            ),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::EcdsaSecp256k1Signature(
+                                EcdsaSecp256k1Signature([0; 65]),
+                            ),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::EddsaEd25519PublicKey(
+                                EddsaEd25519PublicKey([0; 32]),
+                            ),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::EddsaEd25519Signature(
+                                EddsaEd25519Signature([0; 64]),
+                            ),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::Decimal(Decimal::ONE),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::Decimal(Decimal::ONE / 100),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ZERO),
+                        },
+                        SborValue::Custom {
+                            value: ScryptoCustomValue::NonFungibleId(NonFungibleId::UUID(371)),
                         },
                     ],
                 },
@@ -746,13 +810,28 @@ mod tests {
             ["VariantSingleValue", 153],
             ["VariantMultiValues", [153, true]],
             [
+                account_package_address,
+                faucet_address,
                 radix_token_address,
-                "ENTIRE_WORKTOP",
-                "1",
-                "0",
-                "0.01",
+                epoch_manager_address,
+                { "type": "Component", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
+                { "type": "KeyValueStore", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                 { "type": "Bucket", "value": "Hello" },
                 { "type": "Bucket", "value": 10 },
+                { "type": "Proof", "value": 2 },
+                { "type": "Vault", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
+                "ENTIRE_WORKTOP",
+                { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+                { "type": "NonFungibleAddress", "value": "00ad82328d70223d5bae268260b3045dcc71dcf35f37a7434a09695c2007020002" },
+                { "type": "Hash", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+                { "type": "EcdsaSecp256k1PublicKey", "value": "000000000000000000000000000000000000000000000000000000000000000000" },
+                { "type": "EcdsaSecp256k1Signature", "value": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
+                { "type": "EddsaEd25519PublicKey", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+                { "type": "EddsaEd25519Signature", "value": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
+                "1",
+                "0.01",
+                "0",
+                { "type": "NonFungibleId", "value": "371u128" },
             ]
         ]);
 
@@ -786,13 +865,28 @@ mod tests {
                 {
                     "type": "Tuple",
                     "value": [
+                        { "type": "PackageAddress", "value": account_package_address },
+                        { "type": "ComponentAddress", "value": faucet_address },
                         { "type": "ResourceAddress", "value": radix_token_address },
-                        { "type": "Expression", "value": "ENTIRE_WORKTOP" },
-                        { "type": "Decimal", "value": "1" },
-                        { "type": "PreciseDecimal", "value": "0" },
-                        { "type": "Decimal", "value": "0.01" },
+                        { "type": "SystemAddress", "value": epoch_manager_address },
+                        { "type": "Component", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "KeyValueStore", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "Bucket", "value": "Hello" },
                         { "type": "Bucket", "value": 10 },
+                        { "type": "Proof", "value": 2 },
+                        { "type": "Vault", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "Expression", "value": "ENTIRE_WORKTOP" },
+                        { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "NonFungibleAddress", "value": "00ad82328d70223d5bae268260b3045dcc71dcf35f37a7434a09695c2007020002" },
+                        { "type": "Hash", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "EcdsaSecp256k1PublicKey", "value": "000000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "EcdsaSecp256k1Signature", "value": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "EddsaEd25519PublicKey", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "EddsaEd25519Signature", "value": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "Decimal", "value": "1" },
+                        { "type": "Decimal", "value": "0.01" },
+                        { "type": "PreciseDecimal", "value": "0" },
+                        { "type": "NonFungibleId", "value": "371u128" },
                     ]
                 }
             ]
