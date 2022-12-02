@@ -74,7 +74,7 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ComponentClaimRoyaltyInvocation, E>
     + SysNativeInvokable<PackageSetRoyaltyConfigInvocation, E>
     + SysNativeInvokable<PackageClaimRoyaltyInvocation, E>
-    + SysNativeInvokable<PackagePublishNoOwnerInvocation, E>
+    + SysNativeInvokable<PackagePublishInvocation, E>
     + SysNativeInvokable<PackagePublishWithOwnerInvocation, E>
     + SysNativeInvokable<BucketTakeInvocation, E>
     + SysNativeInvokable<BucketPutInvocation, E>

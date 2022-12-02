@@ -118,7 +118,7 @@ blueprint! {
             let resource_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .no_initial_supply_with_manager(manager_address);
+                .no_initial_supply_with_owner(manager_address);
 
             badge.authorize(|| {
                 let token_resource_manager = borrow_resource_manager!(resource_address);

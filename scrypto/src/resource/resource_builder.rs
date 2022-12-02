@@ -202,10 +202,7 @@ impl FungibleResourceBuilder {
         bucket.unwrap()
     }
 
-    pub fn no_initial_supply_with_owner(
-        self,
-        owner_badge: NonFungibleAddress,
-    ) -> ResourceAddress {
+    pub fn no_initial_supply_with_owner(self, owner_badge: NonFungibleAddress) -> ResourceAddress {
         let (resource_address, _bucket) = ScryptoEnv
             .sys_invoke(ResourceManagerCreateWithOwnerInvocation {
                 resource_type: ResourceType::Fungible {
@@ -498,10 +495,7 @@ impl NonFungibleResourceBuilder {
         bucket.unwrap()
     }
 
-    pub fn no_initial_supply_with_owner(
-        self,
-        owner_badge: NonFungibleAddress,
-    ) -> ResourceAddress {
+    pub fn no_initial_supply_with_owner(self, owner_badge: NonFungibleAddress) -> ResourceAddress {
         let (resource_address, _bucket) = ScryptoEnv
             .sys_invoke(ResourceManagerCreateWithOwnerInvocation {
                 resource_type: ResourceType::NonFungible {

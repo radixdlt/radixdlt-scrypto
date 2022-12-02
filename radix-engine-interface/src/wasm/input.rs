@@ -215,7 +215,7 @@ pub enum WorktopMethodInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum PackageFunctionInvocation {
-    PublishNoOwner(PackagePublishNoOwnerInvocation),
+    PublishNoOwner(PackagePublishInvocation),
     PublishWithOwner(PackagePublishWithOwnerInvocation),
 }
 

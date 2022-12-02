@@ -575,11 +575,12 @@ impl TransactionProcessor {
                     })
                 }
                 Instruction::PublishPackage { code, abi } => api
-                    .sys_invoke(PackagePublishNoOwnerInvocation {
+                    .sys_invoke(PackagePublishInvocation {
                         code: code.clone(),
                         abi: abi.clone(),
                         royalty_config: HashMap::new(),
-                        access_rules_chain: Vec::new(),
+                        access_rules: AccessRules::new()
+                            .default(AccessRule::DenyAll, AccessRule::DenyAll),
                         metadata: HashMap::new(),
                     })
                     .map(|address| IndexedScryptoValue::from_typed(&address))

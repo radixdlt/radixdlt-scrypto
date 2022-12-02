@@ -6,27 +6,26 @@ use crate::scrypto;
 use crate::wasm::*;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct PackagePublishNoOwnerInvocation {
+pub struct PackagePublishInvocation {
     pub code: Blob,
     pub abi: Blob,
     pub royalty_config: HashMap<String, RoyaltyConfig>,
-    pub access_rules_chain: Vec<AccessRules>,
+    pub access_rules: AccessRules,
     pub metadata: HashMap<String, String>,
 }
 
-impl Invocation for PackagePublishNoOwnerInvocation {
+impl Invocation for PackagePublishInvocation {
     type Output = PackageAddress;
 }
 
-impl ScryptoNativeInvocation for PackagePublishNoOwnerInvocation {
+impl ScryptoNativeInvocation for PackagePublishInvocation {
     type ScryptoOutput = PackageAddress;
 }
 
-impl Into<NativeFnInvocation> for PackagePublishNoOwnerInvocation {
+impl Into<NativeFnInvocation> for PackagePublishInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::Package(
             PackageFunctionInvocation::PublishNoOwner(self),
