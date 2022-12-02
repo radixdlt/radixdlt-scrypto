@@ -57,8 +57,8 @@ impl Into<AccessRule> for Mutability {
 pub struct ResourceManagerCreateInvocation {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub mint_params: Option<MintParams>,
     pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    pub mint_params: Option<MintParams>,
 }
 
 impl Invocation for ResourceManagerCreateInvocation {
@@ -82,8 +82,8 @@ impl Into<NativeFnInvocation> for ResourceManagerCreateInvocation {
 pub struct ResourceManagerCreateWithOwnerInvocation {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub mint_params: Option<MintParams>,
     pub owner_badge: NonFungibleAddress,
+    pub mint_params: Option<MintParams>,
 }
 
 impl Invocation for ResourceManagerCreateWithOwnerInvocation {
