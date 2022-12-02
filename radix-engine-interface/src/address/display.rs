@@ -15,14 +15,14 @@ impl<'a> AddressDisplayContext<'a> {
 
 pub static NO_NETWORK: AddressDisplayContext = AddressDisplayContext { encoder: None };
 
-impl<'a> Into<AddressDisplayContext<'a>> for &'a Bech32Encoder {
-    fn into(self) -> AddressDisplayContext<'a> {
-        AddressDisplayContext::with_encoder(self)
+impl<'a> From<&'a Bech32Encoder> for AddressDisplayContext<'a> {
+    fn from(encoder: &'a Bech32Encoder) -> Self {
+        Self::with_encoder(encoder)
     }
 }
 
-impl<'a> Into<AddressDisplayContext<'a>> for Option<&'a Bech32Encoder> {
-    fn into(self) -> AddressDisplayContext<'a> {
-        AddressDisplayContext { encoder: self }
+impl<'a> From<Option<&'a Bech32Encoder>> for AddressDisplayContext<'a> {
+    fn from(encoder: Option<&'a Bech32Encoder>) -> Self {
+        Self { encoder }
     }
 }

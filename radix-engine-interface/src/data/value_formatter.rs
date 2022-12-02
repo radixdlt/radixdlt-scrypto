@@ -7,9 +7,9 @@ use utils::ContextualDisplay;
 
 #[derive(Clone, Copy, Debug)]
 pub struct ValueFormattingContext<'a> {
-    bech32_encoder: Option<&'a Bech32Encoder>,
-    bucket_names: Option<&'a HashMap<BucketId, String>>,
-    proof_names: Option<&'a HashMap<ProofId, String>>,
+    pub bech32_encoder: Option<&'a Bech32Encoder>,
+    pub bucket_names: Option<&'a HashMap<BucketId, String>>,
+    pub proof_names: Option<&'a HashMap<ProofId, String>>,
 }
 
 impl<'a> ValueFormattingContext<'a> {
@@ -160,6 +160,18 @@ pub fn format_type_id<F: fmt::Write>(f: &mut F, type_id: &ScryptoSborTypeId) -> 
             ScryptoCustomTypeId::PreciseDecimal => f.write_str("PreciseDecimal"),
             ScryptoCustomTypeId::NonFungibleId => f.write_str("NonFungibleId"),
         },
+    }
+}
+
+pub fn display_type_id(type_id: &ScryptoSborTypeId) -> DisplayableScryptoSborTypeId {
+    DisplayableScryptoSborTypeId(type_id)
+}
+
+pub struct DisplayableScryptoSborTypeId<'a>(&'a ScryptoSborTypeId);
+
+impl<'a> fmt::Display for DisplayableScryptoSborTypeId<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        format_type_id(f, &self.0)
     }
 }
 

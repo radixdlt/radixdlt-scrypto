@@ -5,8 +5,10 @@ edition = "2021"
 
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
+serde = { version = "1.0.144", default-features = false, optional = true }
 
 [features]
 default = ["std"]
 std = ["sbor/std"]
 alloc = ["sbor/alloc"]
+serde = ["sbor/serde", "serde/derive"]
