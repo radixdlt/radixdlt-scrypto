@@ -19,13 +19,13 @@ blueprint! {
                 vault: Vault::with_bucket(bucket),
             }
             .instantiate()
-            .globalize_no_owner();
+            .globalize();
 
             let target_component = ExecutionTraceTest {
                 vault: Vault::new(resource_address),
             }
             .instantiate()
-            .globalize_no_owner();
+            .globalize();
 
             let transfer_bucket: Bucket =
                 Runtime::call_method(source_component, "take", args!(amount));
@@ -46,7 +46,7 @@ blueprint! {
             let vault = Vault::with_bucket(xrd.into_iter().nth(0).unwrap());
             ExecutionTraceTest { vault }
                 .instantiate()
-                .globalize_no_owner()
+                .globalize()
         }
 
         pub fn test_lock_contingent_fee(&mut self) {

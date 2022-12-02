@@ -9,7 +9,7 @@ blueprint! {
         pub fn new() -> ComponentAddress {
             Self { deep_object: None }
                 .instantiate()
-                .globalize_no_owner()
+                .globalize()
         }
 
         pub fn set_depth(&mut self, resource_address: ResourceAddress, exceed_depth: u8) {

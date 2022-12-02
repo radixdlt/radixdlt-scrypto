@@ -27,7 +27,7 @@ blueprint! {
 
             SuperKeyValueStore { maps: map0 }
                 .instantiate()
-                .globalize_no_owner()
+                .globalize()
         }
     }
 }

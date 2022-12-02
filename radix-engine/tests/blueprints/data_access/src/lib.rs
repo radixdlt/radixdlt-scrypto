@@ -8,7 +8,7 @@ blueprint! {
 
     impl DataAccess {
         pub fn create_component_and_read_state() {
-            let component_address = Self {}.instantiate().globalize_no_owner();
+            let component_address = Self {}.instantiate().globalize();
             let lock_handle: LockHandle = call_engine(RadixEngineInput::LockSubstate(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Component(ComponentOffset::State),
@@ -18,7 +18,7 @@ blueprint! {
         }
 
         pub fn create_component_and_write_state() {
-            let component_address = Self {}.instantiate().globalize_no_owner();
+            let component_address = Self {}.instantiate().globalize();
             let lock_handle: LockHandle = call_engine(RadixEngineInput::LockSubstate(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Component(ComponentOffset::State),
@@ -31,7 +31,7 @@ blueprint! {
         }
 
         pub fn create_component_and_read_info() -> ComponentInfoSubstate {
-            let component_address = Self {}.instantiate().globalize_no_owner();
+            let component_address = Self {}.instantiate().globalize();
             let lock_handle: LockHandle = call_engine(RadixEngineInput::LockSubstate(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Component(ComponentOffset::Info),
@@ -42,7 +42,7 @@ blueprint! {
         }
 
         pub fn create_component_and_write_info() -> () {
-            let component_address = Self {}.instantiate().globalize_no_owner();
+            let component_address = Self {}.instantiate().globalize();
             let lock_handle: LockHandle = call_engine(RadixEngineInput::LockSubstate(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Component(ComponentOffset::Info),

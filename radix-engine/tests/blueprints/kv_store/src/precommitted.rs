@@ -26,7 +26,7 @@ blueprint! {
                 deep_vault: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn can_reference_deep_precommitted_value() -> ComponentAddress {
@@ -44,7 +44,7 @@ blueprint! {
                 deep_vault: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn can_reference_deep_precommitted_vault() -> ComponentAddress {
@@ -70,7 +70,7 @@ blueprint! {
                 deep_vault,
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
     }
 }

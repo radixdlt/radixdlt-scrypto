@@ -170,7 +170,7 @@ blueprint! {
             assert_eq!(vault.amount(), 2.into());
             assert_eq!(non_fungible.amount(), 1.into());
 
-            NonFungibleTest { vault }.instantiate().globalize_no_owner();
+            NonFungibleTest { vault }.instantiate().globalize();
 
             non_fungible
         }
@@ -209,7 +209,7 @@ blueprint! {
                 BTreeSet::from([NonFungibleId::U32(2), NonFungibleId::U32(3)])
             );
 
-            NonFungibleTest { vault }.instantiate().globalize_no_owner();
+            NonFungibleTest { vault }.instantiate().globalize();
 
             non_fungible_bucket
         }
@@ -220,7 +220,7 @@ blueprint! {
             assert_eq!(non_fungible_bucket.non_fungible_id(), NonFungibleId::U32(1));
             assert_eq!(vault.non_fungible_id(), NonFungibleId::U32(2));
 
-            NonFungibleTest { vault }.instantiate().globalize_no_owner();
+            NonFungibleTest { vault }.instantiate().globalize();
 
             non_fungible_bucket
         }
@@ -245,7 +245,7 @@ blueprint! {
 
             // clean up
             vault.put(bucket);
-            NonFungibleTest { vault }.instantiate().globalize_no_owner();
+            NonFungibleTest { vault }.instantiate().globalize();
         }
 
         pub fn create_wrong_non_fungible_id_type() -> Bucket {

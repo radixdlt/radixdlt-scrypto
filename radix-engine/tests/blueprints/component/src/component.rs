@@ -20,7 +20,7 @@ blueprint! {
                 secret: "Secret".to_owned(),
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn get_component_info(component_address: ComponentAddress) -> (PackageAddress, String) {

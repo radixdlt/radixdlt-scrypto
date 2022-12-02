@@ -42,7 +42,7 @@ blueprint! {
 
             CyclicMap { store: kv_store0 }
                 .instantiate()
-                .globalize_no_owner()
+                .globalize()
         }
 
         pub fn new_self_cyclic() -> ComponentAddress {
@@ -69,7 +69,7 @@ blueprint! {
 
             CyclicMap { store: kv_store }
                 .instantiate()
-                .globalize_no_owner()
+                .globalize()
         }
     }
 }

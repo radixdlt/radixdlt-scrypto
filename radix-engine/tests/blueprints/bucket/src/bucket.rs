@@ -56,7 +56,7 @@ blueprint! {
 
             let token_bucket = auth_bucket.authorize(|| vault.take(1));
 
-            BucketTest { vault }.instantiate().globalize_no_owner();
+            BucketTest { vault }.instantiate().globalize();
             vec![auth_bucket, token_bucket]
         }
 

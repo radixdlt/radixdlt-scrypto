@@ -12,7 +12,7 @@ blueprint! {
 
             let mut component = Self { players }.instantiate();
             component.add_access_check(access_rules);
-            component.globalize_no_owner()
+            component.globalize()
         }
 
         pub fn make_move(&mut self) {

@@ -25,7 +25,7 @@ blueprint! {
                 store_store: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn cannot_directly_reference_vault_after_container_moved() -> ComponentAddress {
@@ -51,7 +51,7 @@ blueprint! {
                 store_store,
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn cannot_directly_reference_vault_after_container_stored() -> bool {
@@ -69,7 +69,7 @@ blueprint! {
                 store_store: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize_no_owner();
+            .globalize();
 
             let vault = Vault(vault_id);
             vault.is_empty()

@@ -44,7 +44,7 @@ blueprint! {
             );
             local_component.set_royalty_owner(badge);
 
-            local_component.globalize_no_owner()
+            local_component.globalize()
         }
 
         pub fn disable_package_royalty(address: PackageAddress, proof: Proof) {

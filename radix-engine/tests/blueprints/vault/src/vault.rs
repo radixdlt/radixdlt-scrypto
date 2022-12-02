@@ -31,7 +31,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn invalid_double_ownership_of_vault() -> ComponentAddress {
@@ -52,7 +52,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn new_vault_into_map_then_get() -> ComponentAddress {
@@ -72,7 +72,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn overwrite_vault_in_map(&mut self) -> () {
@@ -93,7 +93,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn clear_vector(&mut self) -> () {
@@ -118,7 +118,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         fn create_non_fungible_vault() -> Vault {
@@ -141,7 +141,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn new_vault_with_get_non_fungible_ids() -> ComponentAddress {
@@ -155,7 +155,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn new_vault_with_get_non_fungible_id() -> ComponentAddress {
@@ -169,7 +169,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn new_vault_with_get_amount() -> ComponentAddress {
@@ -183,7 +183,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn new_vault_with_get_resource_manager() -> ComponentAddress {
@@ -197,7 +197,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
     }
 }

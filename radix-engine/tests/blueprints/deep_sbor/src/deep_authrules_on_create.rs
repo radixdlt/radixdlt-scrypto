@@ -12,7 +12,7 @@ blueprint! {
                 access_rules_depth,
             ));
 
-            component.globalize_no_owner()
+            component.globalize()
         }
     }
 }

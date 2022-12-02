@@ -9,7 +9,7 @@ blueprint! {
             for access_rule in access_rules {
                 component.add_access_check(access_rule);
             }
-            component.globalize_no_owner()
+            component.globalize()
         }
 
         pub fn access_rules_function(

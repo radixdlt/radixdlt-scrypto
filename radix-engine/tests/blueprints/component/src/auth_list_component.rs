@@ -14,7 +14,7 @@ blueprint! {
         ) -> ComponentAddress {
             let mut component = Self { count, auth }.instantiate();
             component.add_access_check(access_rules);
-            component.globalize_no_owner()
+            component.globalize()
         }
 
         pub fn update_count(&mut self, count: u8) {

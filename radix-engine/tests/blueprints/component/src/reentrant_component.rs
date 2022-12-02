@@ -8,7 +8,7 @@ blueprint! {
 
     impl ReentrantComponent {
         pub fn new() -> ComponentAddress {
-            Self {}.instantiate().globalize_no_owner()
+            Self {}.instantiate().globalize()
         }
 
         pub fn mut_func(&mut self) {}

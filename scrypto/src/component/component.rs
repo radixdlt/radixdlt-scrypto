@@ -39,7 +39,7 @@ pub trait LocalComponent {
     fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
     fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self;
     fn set_royalty_owner(&mut self, owner: NonFungibleAddress) -> &mut Self;
-    fn globalize_no_owner(self) -> ComponentAddress;
+    fn globalize(self) -> ComponentAddress;
 }
 
 // TODO: de-duplication
@@ -149,7 +149,7 @@ impl Component {
         self
     }
 
-    pub fn globalize_no_owner(self) -> ComponentAddress {
+    pub fn globalize(self) -> ComponentAddress {
         ScryptoEnv
             .sys_invoke(ComponentGlobalizeNoOwnerInvocation {
                 component_id: self.0,
