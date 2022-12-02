@@ -25,11 +25,13 @@ fn test_loop() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
-    let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 1_000_000);
+    let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 1_200_000);
 
     // Assert
     receipt.expect_commit_success();
 }
+
+// TODO: investigate the case where cost_unit_limit < system_loan and transaction runs out of cost units.
 
 #[test]
 fn test_loop_out_of_cost_unit() {
@@ -50,7 +52,7 @@ fn test_loop_out_of_cost_unit() {
         .lock_fee(FAUCET_COMPONENT, 45.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
-    let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 1_000_000);
+    let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 1_200_000);
 
     // Assert
     receipt.expect_specific_failure(is_costing_error)

@@ -5,7 +5,6 @@ use radix_engine_interface::api::types::{
     ComponentOffset, GlobalAddress, GlobalOffset, PackageOffset, RENodeId, SubstateId,
     SubstateOffset,
 };
-use radix_engine_interface::math::Decimal;
 use radix_engine_interface::scrypto;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -114,7 +113,7 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
             .royalty_config
             .get(blueprint_name)
             .map(|x| x.get_rule(fn_ident).clone())
-            .unwrap_or(Decimal::ZERO);
+            .unwrap_or(0);
         track
             .fee_reserve
             .consume_royalty(RoyaltyReceiver::Package(*package_address, node_id), royalty)
