@@ -256,7 +256,14 @@ pub fn format_custom_value<F: fmt::Write>(
             write!(f, "Blob(\"{}\")", value)?;
         }
         ScryptoCustomValue::NonFungibleAddress(value) => {
-            write!(f, "NonFungibleAddress(\"{}\")", value)?;
+            f.write_str("NonFungibleAddress(\"")?;
+            value
+                .resource_address()
+                .format(f, context.bech32_encoder)
+                .expect("Failed to format address");
+            f.write_str(", ")?;
+            write!(f, "{}", value.non_fungible_id())?;
+            f.write_str("\")")?;
         }
         // Uninterpreted
         ScryptoCustomValue::Hash(value) => {

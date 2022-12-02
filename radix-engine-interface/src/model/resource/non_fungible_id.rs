@@ -144,16 +144,6 @@ scrypto_type!(
 // text
 //======
 
-impl FromStr for NonFungibleId {
-    type Err = ParseNonFungibleIdError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes =
-            hex::decode(s).map_err(|_| ParseNonFungibleIdError::InvalidHex(s.to_owned()))?;
-        Self::try_from(bytes.as_slice())
-    }
-}
-
 impl fmt::Display for NonFungibleIdType {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match self {

@@ -360,7 +360,11 @@ impl Parser {
             TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
             TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
             TokenKind::NonFungibleAddress => {
-                Ok(Value::NonFungibleAddress(self.parse_values_one()?.into()))
+                let values = self.parse_values_n(2)?;
+                Ok(Value::NonFungibleAddress(
+                    values.get(0).unwrap().clone().into(),
+                    values.get(1).unwrap().clone().into(),
+                ))
             }
 
             // Uninterpreted
@@ -413,6 +417,19 @@ impl Parser {
             })
         } else {
             Ok(values[0].clone())
+        }
+    }
+
+    fn parse_values_n(&mut self, n: usize) -> Result<Vec<Value>, ParserError> {
+        let values =
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
+        if values.len() != n {
+            Err(ParserError::InvalidNumberOfValues {
+                actual: values.len(),
+                expected: n,
+            })
+        } else {
+            Ok(values)
         }
     }
 

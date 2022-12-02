@@ -103,6 +103,11 @@ scrypto_type!(
 // text
 //======
 
+// TODO:
+// * Change to have contextual display
+// * Change to display as resource_address:simple_encoding_of_id
+// * Remove from_str
+// * Encode in manifest as NonFungibleAddress("resource_q23", <format NonFungibleId>)
 impl FromStr for NonFungibleAddress {
     type Err = ParseNonFungibleAddressError;
 
