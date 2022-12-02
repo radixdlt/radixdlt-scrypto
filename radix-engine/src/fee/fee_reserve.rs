@@ -79,6 +79,10 @@ pub struct SystemLoanFeeReserve {
     execution: HashMap<String, u32>,
     /// Royalty cost breakdown
     royalty: HashMap<RoyaltyReceiver, u32>,
+
+    // Cache
+    effective_execution_price: Decimal,
+    effective_royalty_price: Decimal,
 }
 
 fn checked_add(a: u32, b: u32) -> Result<u32, FeeReserveError> {
@@ -119,6 +123,8 @@ impl SystemLoanFeeReserve {
             execution_deferred: HashMap::new(),
             execution: HashMap::new(),
             royalty: HashMap::new(),
+            effective_execution_price: cost_unit_price + cost_unit_price * tip_percentage / 100,
+            effective_royalty_price: cost_unit_price,
         }
     }
 
@@ -173,11 +179,11 @@ impl SystemLoanFeeReserve {
     }
 
     fn execution_price(&self) -> Decimal {
-        self.cost_unit_price + self.cost_unit_price * self.tip_percentage / 100
+        self.effective_execution_price
     }
 
     fn royalty_price(&self) -> Decimal {
-        self.cost_unit_price
+        self.effective_royalty_price
     }
 
     fn fully_repaid(&self) -> bool {
