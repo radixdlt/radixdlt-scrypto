@@ -27,22 +27,48 @@ impl Into<NativeFnInvocation> for ClockCreateInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ClockGetCurrentTimeRoundedToMinutesInvocation {
+pub struct ClockGetCurrentTimeInvocation {
     pub receiver: SystemAddress,
+    pub precision: TimePrecision,
 }
 
-impl Invocation for ClockGetCurrentTimeRoundedToMinutesInvocation {
-    type Output = u64;
+impl Invocation for ClockGetCurrentTimeInvocation {
+    type Output = Instant;
 }
 
-impl ScryptoNativeInvocation for ClockGetCurrentTimeRoundedToMinutesInvocation {
-    type ScryptoOutput = u64;
+impl ScryptoNativeInvocation for ClockGetCurrentTimeInvocation {
+    type ScryptoOutput = Instant;
 }
 
-impl Into<NativeFnInvocation> for ClockGetCurrentTimeRoundedToMinutesInvocation {
+impl Into<NativeFnInvocation> for ClockGetCurrentTimeInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Clock(
-            ClockMethodInvocation::GetCurrentTimeRoundedToMinutes(self),
+            ClockMethodInvocation::GetCurrentTime(self),
+        ))
+    }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ClockCompareCurrentTimeInvocation {
+    pub receiver: SystemAddress,
+    pub instant: Instant,
+    pub precision: TimePrecision,
+    pub operator: TimeComparisonOperator,
+}
+
+impl Invocation for ClockCompareCurrentTimeInvocation {
+    type Output = bool;
+}
+
+impl ScryptoNativeInvocation for ClockCompareCurrentTimeInvocation {
+    type ScryptoOutput = bool;
+}
+
+impl Into<NativeFnInvocation> for ClockCompareCurrentTimeInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Clock(
+            ClockMethodInvocation::CompareCurrentTime(self),
         ))
     }
 }

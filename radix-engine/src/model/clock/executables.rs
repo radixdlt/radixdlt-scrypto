@@ -17,10 +17,10 @@ use radix_engine_interface::model::*;
 use radix_engine_interface::rule;
 
 const SECONDS_TO_MS_FACTOR: u64 = 1000;
-const MINUTES_TO_MS_FACTOR: u64 = SECONDS_TO_MS_FACTOR * 60;
+const MINUTES_TO_SECONDS_FACTOR: u64 = 60;
+const MINUTES_TO_MS_FACTOR: u64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACTOR;
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct Clock {}
+pub struct Clock;
 
 impl ExecutableInvocation for ClockCreateInvocation {
     type Exec = NativeExecutor<Self>;
@@ -61,7 +61,13 @@ impl NativeProcedure for ClockCreateInvocation {
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
-                ClockMethod::GetCurrentTimeRoundedToMinutes,
+                ClockMethod::GetCurrentTime,
+            ))),
+            rule!(allow_all),
+        );
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
+                ClockMethod::CompareCurrentTime,
             ))),
             rule!(allow_all),
         );
@@ -94,54 +100,6 @@ impl NativeProcedure for ClockCreateInvocation {
         };
 
         Ok((system_address, update))
-    }
-}
-
-pub struct ClockGetCurrentTimeRoundedToMinutesExecutable(RENodeId);
-
-impl ExecutableInvocation for ClockGetCurrentTimeRoundedToMinutesInvocation {
-    type Exec = NativeExecutor<ClockGetCurrentTimeRoundedToMinutesExecutable>;
-
-    fn resolve<D: MethodDeref>(
-        self,
-        deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Clock(
-                ClockMethod::GetCurrentTimeRoundedToMinutes,
-            )),
-            resolved_receiver,
-        );
-        let executor = NativeExecutor(ClockGetCurrentTimeRoundedToMinutesExecutable(
-            resolved_receiver.receiver,
-        ));
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl NativeProcedure for ClockGetCurrentTimeRoundedToMinutesExecutable {
-    type Output = u64;
-
-    fn main<Y>(self, system_api: &mut Y) -> Result<(u64, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi,
-    {
-        let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-        let handle = system_api.lock_substate(self.0, offset, LockFlags::read_only())?;
-        let substate_ref = system_api.get_ref(handle)?;
-        let substate = substate_ref.current_time_rounded_to_minutes();
-        Ok((
-            substate.current_time_rounded_to_minutes_ms,
-            CallFrameUpdate::empty(),
-        ))
     }
 }
 
@@ -195,6 +153,124 @@ impl NativeProcedure for ClockSetCurrentTimeExecutable {
             .current_time_rounded_to_minutes_ms = current_time_rounded_to_minutes;
 
         Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+pub struct ClockGetCurrentTimeExecutable(RENodeId, TimePrecision);
+
+impl ExecutableInvocation for ClockGetCurrentTimeInvocation {
+    type Exec = NativeExecutor<ClockGetCurrentTimeExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Clock(ClockMethod::GetCurrentTime)),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(ClockGetCurrentTimeExecutable(
+            resolved_receiver.receiver,
+            self.precision,
+        ));
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProcedure for ClockGetCurrentTimeExecutable {
+    type Output = Instant;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(Instant, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi,
+    {
+        let node_id = self.0;
+        let precision = self.1;
+
+        match precision {
+            TimePrecision::Minute => {
+                let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
+                let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
+                let substate_ref = system_api.get_ref(handle)?;
+                let substate = substate_ref.current_time_rounded_to_minutes();
+                let instant = Instant::new(
+                    substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
+                );
+                Ok((instant, CallFrameUpdate::empty()))
+            }
+        }
+    }
+}
+
+pub struct ClockCompareCurrentTimeExecutable {
+    node_id: RENodeId,
+    instant: Instant,
+    precision: TimePrecision,
+    operator: TimeComparisonOperator,
+}
+
+impl ExecutableInvocation for ClockCompareCurrentTimeInvocation {
+    type Exec = NativeExecutor<ClockCompareCurrentTimeExecutable>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Clock(ClockMethod::CompareCurrentTime)),
+            resolved_receiver,
+        );
+        let executor = NativeExecutor(ClockCompareCurrentTimeExecutable {
+            node_id: resolved_receiver.receiver,
+            instant: self.instant,
+            precision: self.precision,
+            operator: self.operator,
+        });
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProcedure for ClockCompareCurrentTimeExecutable {
+    type Output = bool;
+
+    fn main<Y>(self, system_api: &mut Y) -> Result<(bool, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi,
+    {
+        match self.precision {
+            TimePrecision::Minute => {
+                let offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
+                let handle =
+                    system_api.lock_substate(self.node_id, offset, LockFlags::read_only())?;
+                let substate_ref = system_api.get_ref(handle)?;
+                let substate = substate_ref.current_time_rounded_to_minutes();
+                let current_time_instant = Instant::new(
+                    substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
+                );
+                let other_instant_rounded = Instant::new(
+                    (self.instant.seconds_since_unix_epoch / MINUTES_TO_SECONDS_FACTOR)
+                        * MINUTES_TO_SECONDS_FACTOR,
+                );
+                let result = current_time_instant.compare(other_instant_rounded, self.operator);
+                Ok((result, CallFrameUpdate::empty()))
+            }
+        }
     }
 }
 
