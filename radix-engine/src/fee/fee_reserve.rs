@@ -25,11 +25,11 @@ pub trait FeeReserve {
         amount: u32,
     ) -> Result<(), FeeReserveError>;
 
-    fn consume_execution<T: ToString>(
+    fn consume_execution(
         &mut self,
         amount: u32,
         multiplier: usize,
-        reason: T,
+        reason: &'static str,
         deferred: bool,
     ) -> Result<(), FeeReserveError>;
 
@@ -75,9 +75,9 @@ pub struct SystemLoanFeeReserve {
     check_point: u32,
 
     /// Execution costs that are deferred
-    execution_deferred: HashMap<String, u32>,
+    execution_deferred: HashMap<&'static str, u32>,
     /// Execution cost breakdown
-    execution: HashMap<String, u32>,
+    execution: HashMap<&'static str, u32>,
     /// Royalty cost breakdown
     royalty: HashMap<RoyaltyReceiver, u32>,
 
@@ -204,6 +204,10 @@ impl FeeReserve for SystemLoanFeeReserve {
         receiver: RoyaltyReceiver,
         amount: u32,
     ) -> Result<(), FeeReserveError> {
+        if amount == 0 {
+            return Ok(());
+        }
+
         self.consume(amount.into(), self.execution_price())?;
         checked_assign_add(self.royalty.entry(receiver).or_default(), amount)?;
 
@@ -213,17 +217,20 @@ impl FeeReserve for SystemLoanFeeReserve {
         Ok(())
     }
 
-    fn consume_execution<T: ToString>(
+    fn consume_execution(
         &mut self,
         amount: u32,
         multiplier: usize,
-        reason: T,
+        reason: &'static str,
         deferred: bool,
     ) -> Result<(), FeeReserveError> {
+        if amount == 0 {
+            return Ok(());
+        }
+
         let n = u32::try_from(multiplier)
             .map_err(|_| FeeReserveError::Overflow)
             .and_then(|x| x.checked_mul(amount).ok_or(FeeReserveError::Overflow))?;
-        let reason = reason.to_string();
 
         if deferred {
             checked_assign_add(self.execution_deferred.entry(reason).or_default(), n)?;
@@ -277,7 +284,11 @@ impl FeeReserve for SystemLoanFeeReserve {
             ),
             bad_debt: u128_to_decimal(self.xrd_owed),
             payments: self.payments,
-            execution_breakdown: self.execution,
+            execution_breakdown: self
+                .execution
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v))
+                .collect(),
             royalty_breakdown: self.royalty,
         }
     }
