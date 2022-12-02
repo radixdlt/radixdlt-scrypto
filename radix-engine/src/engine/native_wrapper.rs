@@ -23,8 +23,8 @@ where
     match native_fn {
         NativeFn::Function(native_function) => match native_function {
             NativeFunction::Component(component_function) => match component_function {
-                ComponentFunction::GlobalizeNoOwner => {
-                    let invocation: ComponentGlobalizeNoOwnerInvocation = scrypto_decode(&args)
+                ComponentFunction::Globalize => {
+                    let invocation: ComponentGlobalizeInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)

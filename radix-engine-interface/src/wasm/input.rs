@@ -83,7 +83,7 @@ pub enum MetadataMethodInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ComponentFunctionInvocation {
-    GlobalizeNoOwner(ComponentGlobalizeNoOwnerInvocation),
+    Globalize(ComponentGlobalizeInvocation),
 }
 
 #[derive(Debug)]
@@ -255,7 +255,7 @@ impl NativeFnInvocation {
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeFunctionInvocation::Component(invocation) => match invocation {
-                    ComponentFunctionInvocation::GlobalizeNoOwner(invocation) => system_api
+                    ComponentFunctionInvocation::Globalize(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },

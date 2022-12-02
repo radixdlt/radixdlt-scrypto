@@ -151,7 +151,7 @@ impl Component {
 
     pub fn globalize(self) -> ComponentAddress {
         ScryptoEnv
-            .sys_invoke(ComponentGlobalizeNoOwnerInvocation {
+            .sys_invoke(ComponentGlobalizeInvocation {
                 component_id: self.0,
             })
             .unwrap()

@@ -8,7 +8,7 @@ use radix_engine_interface::api::api::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::constants::*;
 
-impl ExecutableInvocation for ComponentGlobalizeNoOwnerInvocation {
+impl ExecutableInvocation for ComponentGlobalizeInvocation {
     type Exec = NativeExecutor<Self>;
 
     fn resolve<D: MethodDeref>(
@@ -19,7 +19,7 @@ impl ExecutableInvocation for ComponentGlobalizeNoOwnerInvocation {
         Self: Sized,
     {
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Component(
-            ComponentFunction::GlobalizeNoOwner,
+            ComponentFunction::Globalize,
         )));
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Component(self.component_id));
         let executor = NativeExecutor(self);
@@ -28,7 +28,7 @@ impl ExecutableInvocation for ComponentGlobalizeNoOwnerInvocation {
     }
 }
 
-impl NativeProcedure for ComponentGlobalizeNoOwnerInvocation {
+impl NativeProcedure for ComponentGlobalizeInvocation {
     type Output = ComponentAddress;
 
     fn main<Y>(self, api: &mut Y) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
