@@ -7,9 +7,7 @@ blueprint! {
 
     impl DeepStruct {
         pub fn new() -> ComponentAddress {
-            Self { deep_object: None }
-                .instantiate()
-                .globalize()
+            Self { deep_object: None }.instantiate().globalize()
         }
 
         pub fn set_depth(&mut self, resource_address: ResourceAddress, exceed_depth: u8) {

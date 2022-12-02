@@ -60,7 +60,7 @@ fn set_up_package_and_component() -> (
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 10u32.into())
-            .create_proof_from_account(account, ENTITY_OWNER_TOKEN)
+            .create_proof_from_account(account, owner_badge_resource)
             .call_function(
                 package_address,
                 "RoyaltyTest",
