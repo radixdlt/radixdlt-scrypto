@@ -70,6 +70,74 @@ impl NativeProcedure for ComponentGlobalizeInvocation {
     }
 }
 
+
+
+impl ExecutableInvocation for ComponentGlobalizeWithOwnerInvocation {
+    type Exec = NativeExecutor<Self>;
+
+    fn resolve<D: MethodDeref>(
+        self,
+        _deref: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Component(
+            ComponentFunction::Globalize,
+        )));
+        let call_frame_update = CallFrameUpdate::move_node(RENodeId::Component(self.component_id));
+        let executor = NativeExecutor(self);
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
+    type Output = ComponentAddress;
+
+    fn main<Y>(self, api: &mut Y) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + SysInvokableNative<RuntimeError>,
+    {
+        // TODO: set up auth based on owner badge.
+
+        let component_node_id = RENodeId::Component(self.component_id);
+        let global_node_id = {
+            let handle = api.lock_substate(
+                component_node_id,
+                SubstateOffset::Component(ComponentOffset::Info),
+                LockFlags::read_only(),
+            )?;
+            let substate_ref = api.get_ref(handle)?;
+            let node_id = if substate_ref
+                .component_info()
+                .package_address
+                .eq(&ACCOUNT_PACKAGE)
+            {
+                api.allocate_node_id(RENodeType::GlobalAccount)?
+            } else {
+                api.allocate_node_id(RENodeType::GlobalComponent)?
+            };
+            api.drop_lock(handle)?;
+            node_id
+        };
+        let component_address: ComponentAddress = global_node_id.into();
+
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::Component(self.component_id)),
+        )?;
+
+        let call_frame_update = CallFrameUpdate::copy_ref(RENodeId::Global(
+            GlobalAddress::Component(component_address),
+        ));
+
+        Ok((component_address, call_frame_update))
+    }
+}
+
+
+
 impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {
     type Exec = NativeExecutor<Self>;
 

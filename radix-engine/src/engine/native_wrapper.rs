@@ -30,6 +30,13 @@ where
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
+                ComponentFunction::GlobalizeWithOwner => {
+                    let invocation: ComponentGlobalizeWithOwnerInvocation = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
             },
             NativeFunction::EpochManager(EpochManagerFunction::Create) => {
                 let invocation: EpochManagerCreateInvocation = scrypto_decode(&args)

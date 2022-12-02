@@ -30,6 +30,29 @@ impl Into<NativeFnInvocation> for ComponentGlobalizeInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
+pub struct ComponentGlobalizeWithOwnerInvocation {
+    pub component_id: ComponentId,
+    pub owner_badge: NonFungibleAddress,
+}
+
+impl Invocation for ComponentGlobalizeWithOwnerInvocation {
+    type Output = ComponentAddress;
+}
+
+impl ScryptoNativeInvocation for ComponentGlobalizeWithOwnerInvocation {
+    type ScryptoOutput = ComponentAddress;
+}
+
+impl Into<NativeFnInvocation> for ComponentGlobalizeWithOwnerInvocation {
+    fn into(self) -> NativeFnInvocation {
+        NativeFnInvocation::Function(NativeFunctionInvocation::Component(
+            ComponentFunctionInvocation::GlobalizeWithOwner(self),
+        ))
+    }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentSetRoyaltyConfigInvocation {
     /// TODO: change to component id, after `borrow_component` returns component id
     pub receiver: RENodeId,

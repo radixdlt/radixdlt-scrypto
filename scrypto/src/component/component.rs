@@ -157,6 +157,16 @@ impl Component {
             .unwrap()
     }
 
+    /// Globalize with owner badge, overwriting all existing access rule configurations
+    pub fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+        ScryptoEnv
+            .sys_invoke(ComponentGlobalizeWithOwnerInvocation {
+                component_id: self.0,
+                owner_badge
+            })
+            .unwrap()
+    }
+
     /// Returns the layers of access rules on this component.
     pub fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
         let mut env = ScryptoEnv;

@@ -69,6 +69,7 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<AuthZoneAssertAccessRuleInvocation, E>
     + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
     + SysNativeInvokable<ComponentGlobalizeInvocation, E>
+    + SysNativeInvokable<ComponentGlobalizeWithOwnerInvocation, E>
     + SysNativeInvokable<ComponentSetRoyaltyConfigInvocation, E>
     + SysNativeInvokable<ComponentClaimRoyaltyInvocation, E>
     + SysNativeInvokable<PackageSetRoyaltyConfigInvocation, E>

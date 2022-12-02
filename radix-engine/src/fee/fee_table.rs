@@ -147,6 +147,7 @@ impl FeeTable {
         match native_function {
             NativeFunction::Component(component_func) => match component_func {
                 ComponentFunction::Globalize => self.fixed_high,
+                ComponentFunction::GlobalizeWithOwner => self.fixed_high,
             },
             NativeFunction::TransactionProcessor(transaction_processor_fn) => {
                 match transaction_processor_fn {
