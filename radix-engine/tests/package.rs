@@ -168,7 +168,7 @@ fn test_basic_package_missing_export() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            HashMap::new(),
+            blueprints,
             HashMap::new(),
             HashMap::new(),
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
