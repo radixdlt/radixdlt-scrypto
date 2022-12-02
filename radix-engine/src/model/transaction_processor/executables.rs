@@ -574,13 +574,17 @@ impl TransactionProcessor {
                         Ok(result)
                     })
                 }
-                Instruction::PublishPackage { code, abi } => api
-                    .sys_invoke(PackagePublishNoOwnerInvocation {
+                Instruction::PublishPackageWithOwner {
+                    code,
+                    abi,
+                    owner_badge,
+                } => api
+                    .sys_invoke(PackagePublishWithOwnerInvocation {
                         code: code.clone(),
                         abi: abi.clone(),
                         royalty_config: HashMap::new(),
-                        access_rules_chain: Vec::new(),
                         metadata: HashMap::new(),
+                        owner_badge: owner_badge.clone(),
                     })
                     .map(|address| IndexedScryptoValue::from_typed(&address))
                     .map_err(InvokeError::Downstream),

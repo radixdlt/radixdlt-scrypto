@@ -11,7 +11,7 @@ blueprint! {
         ) -> (ResourceAddress, ComponentAddress, ComponentAddress) {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .initial_supply_no_owner(1000000);
+                .initial_supply(1000000);
 
             let resource_address = bucket.resource_address();
 
@@ -19,13 +19,13 @@ blueprint! {
                 vault: Vault::with_bucket(bucket),
             }
             .instantiate()
-            .globalize_no_owner();
+            .globalize();
 
             let target_component = ExecutionTraceTest {
                 vault: Vault::new(resource_address),
             }
             .instantiate()
-            .globalize_no_owner();
+            .globalize();
 
             let transfer_bucket: Bucket =
                 Runtime::call_method(source_component, "take", args!(amount));
@@ -44,9 +44,7 @@ blueprint! {
 
         pub fn create_and_fund_a_component(xrd: Vec<Bucket>) -> ComponentAddress {
             let vault = Vault::with_bucket(xrd.into_iter().nth(0).unwrap());
-            ExecutionTraceTest { vault }
-                .instantiate()
-                .globalize_no_owner()
+            ExecutionTraceTest { vault }.instantiate().globalize()
         }
 
         pub fn test_lock_contingent_fee(&mut self) {

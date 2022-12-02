@@ -24,7 +24,7 @@ blueprint! {
                 },
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn get_value_via_package_call() -> String {

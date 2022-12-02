@@ -287,37 +287,6 @@ pub const EDDSA_ED25519_TOKEN: ResourceAddress = construct_address!(
     106
 );
 
-/// The ED25519 virtual resource address.
-pub const ENTITY_OWNER_TOKEN: ResourceAddress = construct_address!(
-    EntityType::Resource,
-    114,
-    63,
-    138,
-    22,
-    205,
-    183,
-    174,
-    20,
-    68,
-    7,
-    164,
-    7,
-    239,
-    151,
-    153,
-    224,
-    209,
-    203,
-    205,
-    23,
-    249,
-    157,
-    63,
-    159,
-    19,
-    141
-);
-
 pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
 pub const CLOCK_BLUEPRINT: &str = "Clock";
 pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";

@@ -31,7 +31,9 @@ blueprint! {
             })
         }
 
-        pub fn create_component_with_royalty_enabled() -> (ComponentAddress, Bucket) {
+        pub fn create_component_with_royalty_enabled(
+            badge: NonFungibleAddress,
+        ) -> ComponentAddress {
             let mut local_component = Self {}.instantiate();
 
             local_component.set_royalty_config(
@@ -41,7 +43,7 @@ blueprint! {
                     .default(dec!("0")),
             );
 
-            local_component.globalize_with_owner()
+            local_component.globalize_with_owner(badge)
         }
 
         pub fn disable_package_royalty(address: PackageAddress, proof: Proof) {

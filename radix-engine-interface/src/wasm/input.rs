@@ -83,8 +83,8 @@ pub enum MetadataMethodInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ComponentFunctionInvocation {
+    Globalize(ComponentGlobalizeInvocation),
     GlobalizeWithOwner(ComponentGlobalizeWithOwnerInvocation),
-    GlobalizeNoOwner(ComponentGlobalizeNoOwnerInvocation),
 }
 
 #[derive(Debug)]
@@ -142,7 +142,7 @@ pub enum AuthZoneStackMethodInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerFunctionInvocation {
-    Create(ResourceManagerCreateNoOwnerInvocation),
+    Create(ResourceManagerCreateInvocation),
     CreateWithOwner(ResourceManagerCreateWithOwnerInvocation),
     BurnBucket(ResourceManagerBucketBurnInvocation),
 }
@@ -215,7 +215,7 @@ pub enum WorktopMethodInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum PackageFunctionInvocation {
-    PublishNoOwner(PackagePublishNoOwnerInvocation),
+    Publish(PackagePublishInvocation),
     PublishWithOwner(PackagePublishWithOwnerInvocation),
 }
 
@@ -248,7 +248,7 @@ impl NativeFnInvocation {
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeFunctionInvocation::Package(invocation) => match invocation {
-                    PackageFunctionInvocation::PublishNoOwner(invocation) => system_api
+                    PackageFunctionInvocation::Publish(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     PackageFunctionInvocation::PublishWithOwner(invocation) => system_api
@@ -256,10 +256,10 @@ impl NativeFnInvocation {
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeFunctionInvocation::Component(invocation) => match invocation {
-                    ComponentFunctionInvocation::GlobalizeWithOwner(invocation) => system_api
+                    ComponentFunctionInvocation::Globalize(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ComponentFunctionInvocation::GlobalizeNoOwner(invocation) => system_api
+                    ComponentFunctionInvocation::GlobalizeWithOwner(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },

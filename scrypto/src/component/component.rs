@@ -38,8 +38,8 @@ pub trait LocalComponent {
     fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self;
     fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
     fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self;
-    fn globalize_no_owner(self) -> ComponentAddress;
-    fn globalize_with_owner(self) -> (ComponentAddress, Bucket);
+    fn globalize(self) -> ComponentAddress;
+    fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress;
 }
 
 // TODO: de-duplication
@@ -109,12 +109,12 @@ impl Component {
 
     /// Set the royalty configuration of the component.
     pub fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self {
-        let mut env = ScryptoEnv;
-        env.sys_invoke(ComponentSetRoyaltyConfigInvocation {
-            receiver: RENodeId::Component(self.0),
-            royalty_config,
-        })
-        .unwrap();
+        ScryptoEnv
+            .sys_invoke(ComponentSetRoyaltyConfigInvocation {
+                receiver: RENodeId::Component(self.0),
+                royalty_config,
+            })
+            .unwrap();
         self
     }
 
@@ -129,18 +129,21 @@ impl Component {
         self
     }
 
-    pub fn globalize_no_owner(self) -> ComponentAddress {
+    pub fn globalize(self) -> ComponentAddress {
         ScryptoEnv
-            .sys_invoke(ComponentGlobalizeNoOwnerInvocation {
+            .sys_invoke(ComponentGlobalizeInvocation {
                 component_id: self.0,
             })
             .unwrap()
     }
 
-    pub fn globalize_with_owner(self) -> (ComponentAddress, Bucket) {
+    /// Globalize with owner badge. This will add additional access rules to protect native
+    /// methods, such as metadata and royalty.
+    pub fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
         ScryptoEnv
             .sys_invoke(ComponentGlobalizeWithOwnerInvocation {
                 component_id: self.0,
+                owner_badge,
             })
             .unwrap()
     }

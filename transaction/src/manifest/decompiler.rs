@@ -339,8 +339,16 @@ pub fn decompile_instruction<F: fmt::Write>(
         Instruction::CallNativeMethod { method_ident, args } => {
             decompile_call_native_method(f, context, method_ident, args)?
         }
-        Instruction::PublishPackage { code, abi } => {
-            write!(f, "PUBLISH_PACKAGE Blob(\"{}\") Blob(\"{}\");", code, abi)?;
+        Instruction::PublishPackageWithOwner {
+            code,
+            abi,
+            owner_badge,
+        } => {
+            write!(
+                f,
+                "PUBLISH_PACKAGE_WITH_OWNER Blob(\"{}\") Blob(\"{}\") NonFungibleAddress(\"{}\");",
+                code, abi, owner_badge,
+            )?;
         }
     }
     Ok(())
@@ -392,8 +400,8 @@ pub fn decompile_call_native_function<F: fmt::Write>(
                 return Ok(());
             }
         }
-        ("ResourceManager", "create_no_owner") => {
-            if let Ok(input) = scrypto_decode::<ResourceManagerCreateNoOwnerInvocation>(&args) {
+        ("ResourceManager", "create") => {
+            if let Ok(input) = scrypto_decode::<ResourceManagerCreateInvocation>(&args) {
                 f.write_str(&format!(
                     "CREATE_RESOURCE {} {} {} {};",
                     IndexedScryptoValue::from_typed(&input.resource_type)
@@ -570,7 +578,7 @@ mod tests {
             &[Instruction::CallNativeFunction {
                 function_ident: NativeFunctionIdent {
                     blueprint_name: "ResourceManager".to_owned(),
-                    function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
+                    function_name: ResourceManagerFunction::Create.to_string(),
                 },
                 args: scrypto_encode(&BadResourceManagerCreateInput {
                     resource_type: ResourceType::NonFungible {
@@ -585,7 +593,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(manifest, "CALL_NATIVE_FUNCTION \"ResourceManager\" \"create_no_owner\" Enum(\"NonFungible\", Enum(\"UUID\")) Array<Tuple>() Array<Tuple>();\n");
+        assert_eq!(manifest, "CALL_NATIVE_FUNCTION \"ResourceManager\" \"create\" Enum(\"NonFungible\", Enum(\"UUID\")) Array<Tuple>() Array<Tuple>();\n");
     }
 
     #[test]
@@ -620,7 +628,7 @@ CREATE_RESOURCE Enum("Fungible", 0u8) Array<Tuple>() Array<Tuple>() Enum("Some",
 CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch" Expression("ENTIRE_WORKTOP");
 DROP_ALL_PROOFS;
 CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "complicated_method" Decimal("1") PreciseDecimal("2");
-PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d");
+PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleAddress("00ed9100551d7fae91eaf413e50a3c5a59f8b96af9f1297890a8f45c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f");
 "#
         )
     }
@@ -639,7 +647,7 @@ PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02
             manifest2,
             r#"CALL_FUNCTION PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "Blueprint" "function";
 CALL_NATIVE_FUNCTION "EpochManager" "create";
-CALL_NATIVE_FUNCTION "ResourceManager" "create_no_owner";
+CALL_NATIVE_FUNCTION "ResourceManager" "create";
 CALL_NATIVE_FUNCTION "Package" "publish";
 CALL_NATIVE_FUNCTION "TransactionProcessor" "run";
 "#

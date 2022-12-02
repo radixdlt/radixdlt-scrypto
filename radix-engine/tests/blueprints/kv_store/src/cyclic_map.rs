@@ -40,9 +40,7 @@ blueprint! {
             let input = RadixEngineInput::Write(lock_handle, scrypto_encode(&substate).unwrap());
             let _: () = call_engine(input);
 
-            CyclicMap { store: kv_store0 }
-                .instantiate()
-                .globalize_no_owner()
+            CyclicMap { store: kv_store0 }.instantiate().globalize()
         }
 
         pub fn new_self_cyclic() -> ComponentAddress {
@@ -67,9 +65,7 @@ blueprint! {
             let input = RadixEngineInput::Write(lock_handle, scrypto_encode(&substate).unwrap());
             let _: () = call_engine(input);
 
-            CyclicMap { store: kv_store }
-                .instantiate()
-                .globalize_no_owner()
+            CyclicMap { store: kv_store }.instantiate().globalize()
         }
     }
 }

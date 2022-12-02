@@ -12,14 +12,18 @@ use crate::types::{HashMap, ScryptoInvocation};
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
-    Level, LockHandle, RENodeId, RENodeType, ScryptoActor, ScryptoFunctionIdent,
-    ScryptoMethodIdent, ScryptoRENode, SubstateOffset,
+    ComponentMethod, Level, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoActor,
+    ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
-use radix_engine_interface::model::ResourceType;
+use radix_engine_interface::model::{
+    AccessRule, AccessRuleKey, AccessRules, ResourceType, RoyaltyConfig,
+};
 use sbor::rust::string::String;
+use sbor::rust::string::ToString;
+use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 
 impl<'g, 's, W, R> EngineApi<RuntimeError> for Kernel<'g, 's, W, R>
@@ -53,28 +57,55 @@ where
 
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
         let (node_id, node) = match node {
-            ScryptoRENode::Component(
-                package_address,
-                blueprint_name,
-                state,
-                royalty_config,
-                access_rules_chain,
-            ) => {
+            ScryptoRENode::Component(package_address, blueprint_name, state) => {
                 let node_id = self.allocate_node_id(RENodeType::Component)?;
+
+                // Royalty initialization done here
+                let royalty_config = ComponentRoyaltyConfigSubstate {
+                    royalty_config: RoyaltyConfig::default(),
+                };
+                let royalty_accumulator = ComponentRoyaltyAccumulatorSubstate {
+                    royalty: Resource::new_empty(
+                        RADIX_TOKEN,
+                        ResourceType::Fungible { divisibility: 18 },
+                    ),
+                };
+
+                // TODO: Remove Royalties from Node's access rule chain, possibly implement this
+                // TODO: via associated nodes rather than inheritance?
+                let mut access_rules =
+                    AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
+                access_rules.set_group_and_mutability(
+                    AccessRuleKey::Native(NativeFn::Method(NativeMethod::Component(
+                        ComponentMethod::ClaimRoyalty,
+                    ))),
+                    "royalty".to_string(),
+                    AccessRule::DenyAll,
+                );
+                access_rules.set_group_and_mutability(
+                    AccessRuleKey::Native(NativeFn::Method(NativeMethod::Component(
+                        ComponentMethod::SetRoyaltyConfig,
+                    ))),
+                    "royalty".to_string(),
+                    AccessRule::DenyAll,
+                );
+                access_rules.set_group_access_rule_and_mutability(
+                    "royalty".to_string(),
+                    AccessRule::AllowAll,
+                    AccessRule::AllowAll,
+                );
+
                 let node = RENode::Component(
                     ComponentInfoSubstate::new(package_address, blueprint_name),
                     ComponentStateSubstate::new(state),
-                    ComponentRoyaltyConfigSubstate { royalty_config },
-                    ComponentRoyaltyAccumulatorSubstate {
-                        royalty: Resource::new_empty(
-                            RADIX_TOKEN,
-                            ResourceType::Fungible { divisibility: 18 },
-                        ),
-                    },
+                    royalty_config,
+                    royalty_accumulator,
                     MetadataSubstate {
                         metadata: HashMap::new(),
                     },
-                    AccessRulesChainSubstate { access_rules_chain },
+                    AccessRulesChainSubstate {
+                        access_rules_chain: vec![access_rules],
+                    },
                 );
 
                 (node_id, node)

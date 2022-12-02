@@ -103,9 +103,10 @@ pub enum Instruction {
         args: Vec<Value>,
     },
 
-    PublishPackage {
+    PublishPackageWithOwner {
         code: Value,
         abi: Value,
+        owner_badge: Value,
     },
 
     CreateResource {

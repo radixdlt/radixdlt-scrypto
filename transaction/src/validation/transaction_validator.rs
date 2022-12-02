@@ -264,7 +264,7 @@ impl NotarizedTransactionValidator {
                     Self::validate_call_data(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
-                Instruction::PublishPackage { .. } => {}
+                Instruction::PublishPackageWithOwner { .. } => {}
             }
         }
 

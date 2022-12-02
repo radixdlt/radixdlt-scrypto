@@ -30,6 +30,7 @@ pub enum ResourceMethodAuthKey {
     Mint,
     Burn,
     UpdateNonFungibleData,
+    UpdateMetadata,
     Withdraw,
     Deposit,
     Recall,
@@ -53,22 +54,22 @@ impl Into<AccessRule> for Mutability {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerCreateNoOwnerInvocation {
+pub struct ResourceManagerCreateInvocation {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
     pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
     pub mint_params: Option<MintParams>,
 }
 
-impl Invocation for ResourceManagerCreateNoOwnerInvocation {
+impl Invocation for ResourceManagerCreateInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateNoOwnerInvocation {
+impl ScryptoNativeInvocation for ResourceManagerCreateInvocation {
     type ScryptoOutput = (ResourceAddress, Option<Bucket>);
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerCreateNoOwnerInvocation {
+impl Into<NativeFnInvocation> for ResourceManagerCreateInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
             ResourceManagerFunctionInvocation::Create(self),
@@ -81,16 +82,16 @@ impl Into<NativeFnInvocation> for ResourceManagerCreateNoOwnerInvocation {
 pub struct ResourceManagerCreateWithOwnerInvocation {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    pub owner_badge: NonFungibleAddress,
     pub mint_params: Option<MintParams>,
 }
 
 impl Invocation for ResourceManagerCreateWithOwnerInvocation {
-    type Output = (ResourceAddress, Option<Bucket>, Bucket);
+    type Output = (ResourceAddress, Option<Bucket>);
 }
 
 impl ScryptoNativeInvocation for ResourceManagerCreateWithOwnerInvocation {
-    type ScryptoOutput = (ResourceAddress, Option<Bucket>, Bucket);
+    type ScryptoOutput = (ResourceAddress, Option<Bucket>);
 }
 
 impl Into<NativeFnInvocation> for ResourceManagerCreateWithOwnerInvocation {

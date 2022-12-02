@@ -8,44 +8,45 @@ use crate::wasm::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ComponentGlobalizeWithOwnerInvocation {
+pub struct ComponentGlobalizeInvocation {
     pub component_id: ComponentId,
 }
 
-impl Invocation for ComponentGlobalizeWithOwnerInvocation {
-    type Output = (ComponentAddress, Bucket);
+impl Invocation for ComponentGlobalizeInvocation {
+    type Output = ComponentAddress;
 }
 
-impl ScryptoNativeInvocation for ComponentGlobalizeWithOwnerInvocation {
-    type ScryptoOutput = (ComponentAddress, Bucket);
+impl ScryptoNativeInvocation for ComponentGlobalizeInvocation {
+    type ScryptoOutput = ComponentAddress;
 }
 
-impl Into<NativeFnInvocation> for ComponentGlobalizeWithOwnerInvocation {
+impl Into<NativeFnInvocation> for ComponentGlobalizeInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::Component(
-            ComponentFunctionInvocation::GlobalizeWithOwner(self),
+            ComponentFunctionInvocation::Globalize(self),
         ))
     }
 }
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ComponentGlobalizeNoOwnerInvocation {
+pub struct ComponentGlobalizeWithOwnerInvocation {
     pub component_id: ComponentId,
+    pub owner_badge: NonFungibleAddress,
 }
 
-impl Invocation for ComponentGlobalizeNoOwnerInvocation {
+impl Invocation for ComponentGlobalizeWithOwnerInvocation {
     type Output = ComponentAddress;
 }
 
-impl ScryptoNativeInvocation for ComponentGlobalizeNoOwnerInvocation {
+impl ScryptoNativeInvocation for ComponentGlobalizeWithOwnerInvocation {
     type ScryptoOutput = ComponentAddress;
 }
 
-impl Into<NativeFnInvocation> for ComponentGlobalizeNoOwnerInvocation {
+impl Into<NativeFnInvocation> for ComponentGlobalizeWithOwnerInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::Component(
-            ComponentFunctionInvocation::GlobalizeNoOwner(self),
+            ComponentFunctionInvocation::GlobalizeWithOwner(self),
         ))
     }
 }

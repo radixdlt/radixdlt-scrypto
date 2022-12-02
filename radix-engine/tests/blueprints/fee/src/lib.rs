@@ -12,7 +12,7 @@ blueprint! {
         pub fn new(xrd: Bucket) -> ComponentAddress {
             let doge_tokens = ResourceBuilder::new_fungible()
                 .metadata("name", "DogeCoin")
-                .initial_supply_no_owner(100);
+                .initial_supply(100);
 
             Self {
                 xrd: Vault::with_bucket(xrd),
@@ -21,7 +21,7 @@ blueprint! {
                 garbage_vaults: Vec::new(),
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn lock_fee(&mut self, amount: Decimal) {

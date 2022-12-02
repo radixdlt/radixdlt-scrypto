@@ -29,7 +29,7 @@ blueprint! {
             let rtn = local_component.get_secret();
             assert_eq!(12345, rtn);
 
-            local_component.globalize_no_owner()
+            local_component.globalize()
         }
 
         pub fn read_local_component() -> ComponentAddress {
@@ -38,7 +38,7 @@ blueprint! {
             let rtn = local_component.get_secret();
             assert_eq!(12345, rtn);
 
-            local_component.globalize_no_owner()
+            local_component.globalize()
         }
 
         pub fn write_local_component() -> ComponentAddress {
@@ -47,7 +47,7 @@ blueprint! {
             let rtn = local_component.get_secret();
             assert_eq!(99999, rtn);
 
-            local_component.globalize_no_owner()
+            local_component.globalize()
         }
 
         pub fn check_info_of_local_component(
@@ -59,7 +59,7 @@ blueprint! {
             assert_eq!(local_component.package_address(), expected_package_address);
             assert_eq!(local_component.blueprint_name(), expected_blueprint_name);
 
-            local_component.globalize_no_owner()
+            local_component.globalize()
         }
     }
 }
@@ -87,7 +87,7 @@ blueprint! {
         }
 
         pub fn new_global(secret: u32) -> ComponentAddress {
-            Self::new(secret).globalize_no_owner()
+            Self::new(secret).globalize()
         }
 
         pub fn call_read_on_stored_component_in_owned_component() -> ComponentAddress {
@@ -96,7 +96,7 @@ blueprint! {
             let rtn = my_component.parent_get_secret();
             assert_eq!(12345, rtn);
 
-            my_component.globalize_no_owner()
+            my_component.globalize()
         }
 
         pub fn call_write_on_stored_component_in_owned_component() -> ComponentAddress {
@@ -106,7 +106,7 @@ blueprint! {
             let rtn = my_component.parent_get_secret();
             assert_eq!(99999, rtn);
 
-            my_component.globalize_no_owner()
+            my_component.globalize()
         }
     }
 }
@@ -132,7 +132,7 @@ blueprint! {
         }
 
         pub fn new_global(secret: u32) -> ComponentAddress {
-            Self::new(secret).globalize_no_owner()
+            Self::new(secret).globalize()
         }
 
         pub fn call_read_on_stored_component_in_owned_component() -> ComponentAddress {
@@ -140,7 +140,7 @@ blueprint! {
             let rtn = my_component.parent_get_secret();
             assert_eq!(12345, rtn);
 
-            my_component.globalize_no_owner()
+            my_component.globalize()
         }
 
         pub fn call_write_on_stored_component_in_owned_component() -> ComponentAddress {
@@ -150,7 +150,7 @@ blueprint! {
             let rtn = my_component.parent_get_secret();
             assert_eq!(99999, rtn);
 
-            my_component.globalize_no_owner()
+            my_component.globalize()
         }
     }
 }

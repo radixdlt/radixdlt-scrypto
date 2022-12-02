@@ -51,6 +51,7 @@ fn set_up_package_and_component() -> (
     EcdsaSecp256k1PublicKey,
     PackageAddress,
     ComponentAddress,
+    ResourceAddress,
 ) {
     // Basic setup
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
@@ -58,12 +59,16 @@ fn set_up_package_and_component() -> (
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/royalty");
+    let owner_badge_resource = test_runner.create_non_fungible_resource(account);
+    let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::U32(1));
+    let package_address =
+        test_runner.compile_and_publish_with_owner("./tests/blueprints/royalty", owner_badge_addr);
 
     // Enable package royalty
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 10u32.into())
+            .create_proof_from_account(account, owner_badge_resource)
             .call_function(
                 package_address,
                 "RoyaltyTest",
@@ -97,13 +102,20 @@ fn set_up_package_and_component() -> (
         public_key,
         package_address,
         component_address,
+        owner_badge_resource,
     )
 }
 
 #[test]
 fn test_package_royalty() {
-    let (mut store, account, public_key, _package_address, component_address) =
-        set_up_package_and_component();
+    let (
+        mut store,
+        account,
+        public_key,
+        _package_address,
+        component_address,
+        _owner_badge_resource,
+    ) = set_up_package_and_component();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     let receipt = test_runner.execute_manifest(
@@ -123,7 +135,7 @@ fn test_package_royalty() {
 
 #[test]
 fn test_royalty_accumulation_when_success() {
-    let (mut store, account, public_key, package_address, component_address) =
+    let (mut store, account, public_key, package_address, component_address, _owner_badge_resource) =
         set_up_package_and_component();
     let mut test_runner = TestRunner::new(true, &mut store);
 
@@ -148,7 +160,7 @@ fn test_royalty_accumulation_when_success() {
 
 #[test]
 fn test_royalty_accumulation_when_failure() {
-    let (mut store, account, public_key, package_address, component_address) =
+    let (mut store, account, public_key, package_address, component_address, _owner_badge_resource) =
         set_up_package_and_component();
     let mut test_runner = TestRunner::new(true, &mut store);
 
@@ -173,7 +185,7 @@ fn test_royalty_accumulation_when_failure() {
 
 #[test]
 fn test_claim_royalty() {
-    let (mut store, account, public_key, package_address, component_address) =
+    let (mut store, account, public_key, package_address, component_address, owner_badge_resource) =
         set_up_package_and_component();
     let mut test_runner = TestRunner::new(true, &mut store);
 
@@ -199,6 +211,7 @@ fn test_claim_royalty() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
+            .create_proof_from_account(account, owner_badge_resource)
             .call_function(
                 package_address,
                 "RoyaltyTest",

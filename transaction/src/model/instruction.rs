@@ -114,6 +114,11 @@ pub enum Instruction {
         args: Vec<u8>,
     },
 
+    // TODO: add PublishPackage instruction
     /// Publishes a package.
-    PublishPackage { code: Blob, abi: Blob },
+    PublishPackageWithOwner {
+        code: Blob,
+        abi: Blob,
+        owner_badge: NonFungibleAddress,
+    },
 }
