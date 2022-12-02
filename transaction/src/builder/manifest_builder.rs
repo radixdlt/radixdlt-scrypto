@@ -490,7 +490,7 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package.
-    pub fn publish_package_no_owner(
+    pub fn publish_package(
         &mut self,
         code: Vec<u8>,
         abi: HashMap<String, BlueprintAbi>,

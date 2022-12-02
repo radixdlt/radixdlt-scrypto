@@ -14,7 +14,7 @@ fn cannot_set_package_metadata_with_no_owner() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package_no_owner(code, HashMap::new())
+        .publish_package(code, HashMap::new())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let package_address = receipt.expect_commit().entity_changes.new_package_addresses[0];

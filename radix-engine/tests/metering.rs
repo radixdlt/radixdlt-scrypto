@@ -198,7 +198,7 @@ fn test_publish_large_package() {
     assert_eq!(4194343, code.len());
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 100.into())
-        .publish_package_no_owner(code, HashMap::new())
+        .publish_package(code, HashMap::new())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();

@@ -322,7 +322,23 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .publish_package_no_owner(code, abi)
+            .publish_package(code, abi)
+            .build();
+
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit_success();
+        receipt.expect_commit().entity_changes.new_package_addresses[0]
+    }
+
+    pub fn publish_package_with_owner(
+        &mut self,
+        code: Vec<u8>,
+        abi: HashMap<String, BlueprintAbi>,
+        owner_badge: NonFungibleAddress,
+    ) -> PackageAddress {
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .publish_package_with_owner(code, abi, owner_badge)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -345,6 +361,15 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
         let (code, abi) = self.compile(package_dir);
         self.publish_package(code, abi)
+    }
+
+    pub fn compile_and_publish_with_owner<P: AsRef<Path>>(
+        &mut self,
+        package_dir: P,
+        owner_badge: NonFungibleAddress,
+    ) -> PackageAddress {
+        let (code, abi) = self.compile(package_dir);
+        self.publish_package_with_owner(code, abi, owner_badge)
     }
 
     pub fn compile<P: AsRef<Path>>(
