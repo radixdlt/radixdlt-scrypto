@@ -11,7 +11,7 @@ blueprint! {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply_no_owner(amount)
+                .initial_supply(amount)
         }
 
         pub fn create_component() -> ComponentAddress {
@@ -20,7 +20,7 @@ blueprint! {
                 secret: "Secret".to_owned(),
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn get_component_info(component_address: ComponentAddress) -> (PackageAddress, String) {

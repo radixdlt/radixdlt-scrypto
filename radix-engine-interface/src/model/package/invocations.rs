@@ -6,30 +6,29 @@ use crate::scrypto;
 use crate::wasm::*;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct PackagePublishNoOwnerInvocation {
+pub struct PackagePublishInvocation {
     pub code: Blob,
     pub abi: Blob,
     pub royalty_config: HashMap<String, RoyaltyConfig>,
-    pub access_rules_chain: Vec<AccessRules>,
     pub metadata: HashMap<String, String>,
+    pub access_rules: AccessRules,
 }
 
-impl Invocation for PackagePublishNoOwnerInvocation {
+impl Invocation for PackagePublishInvocation {
     type Output = PackageAddress;
 }
 
-impl ScryptoNativeInvocation for PackagePublishNoOwnerInvocation {
+impl ScryptoNativeInvocation for PackagePublishInvocation {
     type ScryptoOutput = PackageAddress;
 }
 
-impl Into<NativeFnInvocation> for PackagePublishNoOwnerInvocation {
+impl Into<NativeFnInvocation> for PackagePublishInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::Package(
-            PackageFunctionInvocation::PublishNoOwner(self),
+            PackageFunctionInvocation::Publish(self),
         ))
     }
 }
@@ -40,16 +39,16 @@ pub struct PackagePublishWithOwnerInvocation {
     pub code: Blob,
     pub abi: Blob,
     pub royalty_config: HashMap<String, RoyaltyConfig>,
-    pub access_rules_chain: Vec<AccessRules>,
     pub metadata: HashMap<String, String>,
+    pub owner_badge: NonFungibleAddress,
 }
 
 impl Invocation for PackagePublishWithOwnerInvocation {
-    type Output = (PackageAddress, Bucket);
+    type Output = PackageAddress;
 }
 
 impl ScryptoNativeInvocation for PackagePublishWithOwnerInvocation {
-    type ScryptoOutput = (PackageAddress, Bucket);
+    type ScryptoOutput = PackageAddress;
 }
 
 impl Into<NativeFnInvocation> for PackagePublishWithOwnerInvocation {

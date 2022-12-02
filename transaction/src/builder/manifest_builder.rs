@@ -123,7 +123,7 @@ impl ManifestBuilder {
                 let scrypt_value = IndexedScryptoValue::from_slice(&args).unwrap();
                 self.id_validator.move_resources(&scrypt_value).unwrap();
             }
-            Instruction::PublishPackage { .. } => {}
+            Instruction::PublishPackageWithOwner { .. } => {}
         }
 
         self.instructions.push(inst);
@@ -319,7 +319,7 @@ impl ManifestBuilder {
         access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         mint_params: Option<MintParams>,
     ) -> &mut Self {
-        let input = ResourceManagerCreateNoOwnerInvocation {
+        let input = ResourceManagerCreateInvocation {
             resource_type,
             metadata,
             access_rules,
@@ -329,7 +329,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: scrypto_encode(&input).unwrap(),
         });
@@ -490,29 +490,13 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package.
-    pub fn publish_package_no_owner(
+    pub fn publish_package(
         &mut self,
         code: Vec<u8>,
         abi: HashMap<String, BlueprintAbi>,
-    ) -> &mut Self {
-        let code_hash = hash(&code);
-        self.blobs.insert(code_hash, code);
-
-        let abi = scrypto_encode(&abi).unwrap();
-        let abi_hash = hash(&abi);
-        self.blobs.insert(abi_hash, abi);
-
-        self.add_instruction(Instruction::PublishPackage {
-            code: Blob(code_hash),
-            abi: Blob(abi_hash),
-        })
-        .0
-    }
-
-    pub fn publish_package_with_owner(
-        &mut self,
-        code: Vec<u8>,
-        abi: HashMap<String, BlueprintAbi>,
+        royalty_config: HashMap<String, RoyaltyConfig>,
+        metadata: HashMap<String, String>,
+        access_rules: AccessRules,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
@@ -524,16 +508,38 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-                function_name: PackageFunction::PublishWithOwner.to_string(),
+                function_name: PackageFunction::Publish.to_string(),
             },
-            args: scrypto_encode(&PackagePublishWithOwnerInvocation {
+            args: scrypto_encode(&PackagePublishInvocation {
                 code: Blob(code_hash),
                 abi: Blob(abi_hash),
-                royalty_config: HashMap::new(), // TODO: needs a strategy on how to deal with ever growing variation
-                access_rules_chain: Vec::new(),
-                metadata: HashMap::new(),
+                royalty_config,
+                metadata,
+                access_rules,
             })
             .unwrap(),
+        })
+        .0
+    }
+
+    /// Publishes a package.
+    pub fn publish_package_with_owner(
+        &mut self,
+        code: Vec<u8>,
+        abi: HashMap<String, BlueprintAbi>,
+        owner_badge: NonFungibleAddress,
+    ) -> &mut Self {
+        let code_hash = hash(&code);
+        self.blobs.insert(code_hash, code);
+
+        let abi = scrypto_encode(&abi).unwrap();
+        let abi_hash = hash(&abi);
+        self.blobs.insert(abi_hash, abi);
+
+        self.add_instruction(Instruction::PublishPackageWithOwner {
+            code: Blob(code_hash),
+            abi: Blob(abi_hash),
+            owner_badge,
         })
         .0
     }
@@ -568,7 +574,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
-                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
@@ -592,7 +598,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
-                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
@@ -628,7 +634,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
-                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
                 ResourceType::Fungible { divisibility: 0 },
@@ -652,7 +658,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
-                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
             },
             args: args!(
                 ResourceType::Fungible { divisibility: 0 },

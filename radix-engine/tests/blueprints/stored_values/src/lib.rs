@@ -10,10 +10,10 @@ blueprint! {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
                 .restrict_withdraw(rule!(allow_all), LOCKED)
-                .initial_supply_no_owner(Decimal::from(5));
+                .initial_supply(Decimal::from(5));
 
             let component = InvalidInitStoredBucket { bucket }.instantiate();
-            component.globalize_no_owner()
+            component.globalize()
         }
     }
 }
@@ -32,14 +32,14 @@ blueprint! {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
                 .restrict_withdraw(rule!(allow_all), LOCKED)
-                .initial_supply_no_owner(Decimal::from(5));
+                .initial_supply(Decimal::from(5));
 
             let component = InvalidStoredBucketInOwnedComponent {
                 bucket: Option::None,
             }
             .instantiate();
             component.put_bucket(bucket);
-            component.globalize_no_owner()
+            component.globalize()
         }
     }
 }

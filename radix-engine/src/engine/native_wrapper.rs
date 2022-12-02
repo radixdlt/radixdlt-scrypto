@@ -23,18 +23,18 @@ where
     match native_fn {
         NativeFn::Function(native_function) => match native_function {
             NativeFunction::Component(component_function) => match component_function {
+                ComponentFunction::Globalize => {
+                    let invocation: ComponentGlobalizeInvocation = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
                 ComponentFunction::GlobalizeWithOwner => {
                     let invocation: ComponentGlobalizeWithOwnerInvocation = scrypto_decode(&args)
                         .map_err(|e| {
                         RuntimeError::KernelError(KernelError::InvalidSborValue(e))
                     })?;
-                    system_api
-                        .sys_invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a))
-                }
-                ComponentFunction::GlobalizeNoOwner => {
-                    let invocation: ComponentGlobalizeNoOwnerInvocation = scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
@@ -55,8 +55,8 @@ where
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-                ResourceManagerFunction::CreateNoOwner => {
-                    let invocation: ResourceManagerCreateNoOwnerInvocation = scrypto_decode(&args)
+                ResourceManagerFunction::Create => {
+                    let invocation: ResourceManagerCreateInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)
@@ -85,8 +85,8 @@ where
                 ));
             }
             NativeFunction::Package(package_function) => match package_function {
-                PackageFunction::PublishNoOwner => {
-                    let invocation: PackagePublishNoOwnerInvocation = scrypto_decode(&args)
+                PackageFunction::Publish => {
+                    let invocation: PackagePublishInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api
                         .sys_invoke(invocation)

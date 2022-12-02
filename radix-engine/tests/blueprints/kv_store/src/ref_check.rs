@@ -12,7 +12,7 @@ blueprint! {
             let bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply_no_owner(1);
+                .initial_supply(1);
             let vault = Vault::with_bucket(bucket);
             let vault_id = vault.0.clone();
             store.insert(0u32, vault);
@@ -25,7 +25,7 @@ blueprint! {
                 store_store: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn cannot_directly_reference_vault_after_container_moved() -> ComponentAddress {
@@ -33,7 +33,7 @@ blueprint! {
             let bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply_no_owner(1);
+                .initial_supply(1);
             let vault = Vault::with_bucket(bucket);
             let vault_id = vault.0.clone();
             store.insert(0u32, vault);
@@ -51,7 +51,7 @@ blueprint! {
                 store_store,
             }
             .instantiate()
-            .globalize_no_owner()
+            .globalize()
         }
 
         pub fn cannot_directly_reference_vault_after_container_stored() -> bool {
@@ -59,7 +59,7 @@ blueprint! {
             let bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply_no_owner(1);
+                .initial_supply(1);
             let vault = Vault::with_bucket(bucket);
             let vault_id = vault.0.clone();
             store.insert(0u32, vault);
@@ -69,7 +69,7 @@ blueprint! {
                 store_store: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize_no_owner();
+            .globalize();
 
             let vault = Vault(vault_id);
             vault.is_empty()

@@ -181,9 +181,10 @@ impl Parser {
                 },
             },
 
-            TokenKind::PublishPackage => Instruction::PublishPackage {
+            TokenKind::PublishPackageWithOwner => Instruction::PublishPackageWithOwner {
                 code: self.parse_value()?,
                 abi: self.parse_value()?,
+                owner_badge: self.parse_value()?,
             },
             TokenKind::CreateResource => Instruction::CreateResource {
                 resource_type: self.parse_value()?,

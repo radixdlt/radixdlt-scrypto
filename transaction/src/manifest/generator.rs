@@ -437,9 +437,14 @@ pub fn generate_instruction(
             }
         }
 
-        ast::Instruction::PublishPackage { code, abi } => Instruction::PublishPackage {
+        ast::Instruction::PublishPackageWithOwner {
+            code,
+            abi,
+            owner_badge,
+        } => Instruction::PublishPackageWithOwner {
             code: generate_blob(code, blobs)?,
             abi: generate_blob(abi, blobs)?,
+            owner_badge: generate_non_fungible_address(owner_badge)?,
         },
         ast::Instruction::CreateResource {
             resource_type,
@@ -465,14 +470,14 @@ pub fn generate_instruction(
             let args = args_from_value_vec!(args);
 
             // Check if call data matches ABI
-            if scrypto_decode::<ResourceManagerCreateNoOwnerInvocation>(&args).is_err() {
+            if scrypto_decode::<ResourceManagerCreateInvocation>(&args).is_err() {
                 return Err(GeneratorError::ArgumentsDoNotMatchAbi);
             }
 
             Instruction::CallNativeFunction {
                 function_ident: NativeFunctionIdent {
                     blueprint_name: "ResourceManager".to_owned(),
-                    function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
+                    function_name: ResourceManagerFunction::Create.to_string(),
                 },
                 args,
             }

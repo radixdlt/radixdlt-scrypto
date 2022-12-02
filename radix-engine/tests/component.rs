@@ -278,7 +278,7 @@ fn component_access_rules_may_be_changed_within_a_scrypto_method() {
     });
 
     // Act
-    let receipt = test_runner.set_method_auth(0, "deposit_funds", rule!(allow_all));
+    let receipt = test_runner.set_method_auth(1, "deposit_funds", rule!(allow_all));
 
     // Assert
     receipt.expect_commit_success();
@@ -299,7 +299,7 @@ fn access_rules_method_auth_can_not_be_mutated_when_locked() {
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
-    let receipt = test_runner.set_method_auth(0, "deposit_funds", rule!(allow_all));
+    let receipt = test_runner.set_method_auth(1, "deposit_funds", rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -329,7 +329,7 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
-    let receipt = test_runner.set_method_auth(0, "deposit_funds", rule!(allow_all));
+    let receipt = test_runner.set_method_auth(1, "deposit_funds", rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -359,7 +359,7 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
-    let receipt = test_runner.lock_method_auth(0, "deposit_funds");
+    let receipt = test_runner.lock_method_auth(1, "deposit_funds");
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -390,7 +390,7 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     test_runner.add_initial_proof(virtual_badge_non_fungible_address);
 
     // Act
-    let receipt = test_runner.set_method_auth(0, "deposit_funds", rule!(allow_all));
+    let receipt = test_runner.set_method_auth(1, "deposit_funds", rule!(allow_all));
 
     // Assert
     receipt.expect_commit_success();
@@ -414,13 +414,13 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     test_runner.add_initial_proof(virtual_badge_non_fungible_address);
 
     // Act
-    let receipt = test_runner.lock_method_auth(0, "deposit_funds");
+    let receipt = test_runner.lock_method_auth(1, "deposit_funds");
 
     // Assert
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.set_method_auth(0, "deposit_funds", rule!(allow_all));
+    let receipt = test_runner.set_method_auth(1, "deposit_funds", rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -450,10 +450,10 @@ fn method_that_falls_within_default_cant_have_its_auth_mutated() {
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
     test_runner.add_initial_proof(virtual_badge_non_fungible_address.clone());
 
-    test_runner.lock_default_auth(0);
+    test_runner.lock_default_auth(1);
 
     // Act
-    let receipt = test_runner.set_method_auth(0, "borrow_funds", rule!(deny_all));
+    let receipt = test_runner.set_method_auth(1, "borrow_funds", rule!(deny_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -498,7 +498,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
                     receiver: RENodeId::Global(GlobalAddress::Component(
                         test_runner.component_address,
                     )),
-                    index: 0,
+                    index: 1,
                     key: AccessRuleKey::ScryptoMethod("borrow_funds".to_string()),
                     rule: rule!(deny_all),
                 })
@@ -555,7 +555,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
                         receiver: RENodeId::Global(GlobalAddress::Component(
                             test_runner.component_address,
                         )),
-                        index: 0,
+                        index: 1,
                         key: AccessRuleKey::Native(NativeFn::Method(
                             NativeMethod::AccessRulesChain(method),
                         )),

@@ -18,6 +18,9 @@ pub struct Publish {
     /// the path to a Scrypto package or a .wasm file
     path: PathBuf,
 
+    /// The owner badge.
+    owner_badge: NonFungibleAddress,
+
     /// The address of an existing package to overwrite
     #[clap(long)]
     package_address: Option<SimulatorPackageAddress>,
@@ -94,7 +97,7 @@ impl Publish {
         } else {
             let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
                 .lock_fee(FAUCET_COMPONENT, 100u32.into())
-                .publish_package_no_owner(code, abi)
+                .publish_package_with_owner(code, abi, self.owner_badge.clone())
                 .build();
 
             let receipt = handle_manifest(

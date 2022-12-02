@@ -146,8 +146,8 @@ impl FeeTable {
     pub fn run_native_function_cost(&self, native_function: &NativeFunction) -> u32 {
         match native_function {
             NativeFunction::Component(component_func) => match component_func {
+                ComponentFunction::Globalize => self.fixed_high,
                 ComponentFunction::GlobalizeWithOwner => self.fixed_high,
-                ComponentFunction::GlobalizeNoOwner => self.fixed_high,
             },
             NativeFunction::TransactionProcessor(transaction_processor_fn) => {
                 match transaction_processor_fn {
@@ -155,7 +155,7 @@ impl FeeTable {
                 }
             }
             NativeFunction::Package(package_fn) => match package_fn {
-                PackageFunction::PublishNoOwner => self.fixed_low,
+                PackageFunction::Publish => self.fixed_low,
                 PackageFunction::PublishWithOwner => self.fixed_low,
             },
             NativeFunction::EpochManager(epoch_manager_fn) => match epoch_manager_fn {
@@ -166,7 +166,7 @@ impl FeeTable {
             },
             NativeFunction::ResourceManager(resource_manager_ident) => {
                 match resource_manager_ident {
-                    ResourceManagerFunction::CreateNoOwner => self.fixed_high, // TODO: more investigation about fungibility
+                    ResourceManagerFunction::Create => self.fixed_high, // TODO: more investigation about fungibility
                     ResourceManagerFunction::CreateWithOwner => self.fixed_high, // TODO: more investigation about fungibility
                     ResourceManagerFunction::BurnBucket => self.fixed_low,
                 }

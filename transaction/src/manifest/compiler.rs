@@ -161,7 +161,7 @@ mod tests {
                 Instruction::CallNativeFunction {
                     function_ident: NativeFunctionIdent {
                         blueprint_name: "ResourceManager".to_owned(),
-                        function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
+                        function_name: ResourceManagerFunction::Create.to_string(),
                     },
                     args: args!(
                         ResourceType::Fungible { divisibility: 0 },
@@ -187,9 +187,10 @@ mod tests {
                     },
                     args: args!(Decimal::from(1u32), PreciseDecimal::from(2u32))
                 },
-                Instruction::PublishPackage {
+                Instruction::PublishPackageWithOwner {
                     code: Blob(code_hash),
                     abi: Blob(abi_hash),
+                    owner_badge: NonFungibleAddress::from_str("00ed9100551d7fae91eaf413e50a3c5a59f8b96af9f1297890a8f45c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap(),
                 },
             ]
         );

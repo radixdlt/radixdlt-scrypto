@@ -1,4 +1,3 @@
-use crate::abi::BlueprintAbi;
 use crate::component::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_interface::api::api::EngineApi;
@@ -6,9 +5,7 @@ use radix_engine_interface::api::types::ScryptoRENode;
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::model::*;
 use sbor::rust::collections::*;
-use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
 use scrypto::runtime::Runtime;
 
 /// Represents the Radix Engine component subsystem.
@@ -50,15 +47,6 @@ impl ComponentSystem {
             .or_insert(BorrowedGlobalComponent(component_address))
     }
 
-    /// Publishes a package.
-    pub fn publish_package(
-        &mut self,
-        _code: Vec<u8>,
-        _abi: HashMap<String, BlueprintAbi>,
-    ) -> PackageAddress {
-        todo!("Not supported yet due to lack of dynamic blob creation")
-    }
-
     /// Instantiates a component.
     pub fn create_component<T: ComponentState<C>, C: LocalComponent>(
         &self,
@@ -71,8 +59,6 @@ impl ComponentSystem {
                 Runtime::package_address(),
                 blueprint_name.to_string(),
                 scrypto_encode(&state).unwrap(),
-                RoyaltyConfig::default(),
-                Vec::new(),
             ))
             .unwrap();
         Component(node_id.into())

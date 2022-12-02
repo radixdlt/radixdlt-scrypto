@@ -17,16 +17,16 @@ blueprint! {
             // Create a mint badge
             let mint_badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .initial_supply_no_owner(1);
+                .initial_supply(1);
 
             // Create non-fungible resource with mutable supply
             let resource_address = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .set_id_type(NonFungibleIdType::U32)
+                .id_type(NonFungibleIdType::U32)
                 .mintable(rule!(require(mint_badge.resource_address())), LOCKED)
                 .burnable(rule!(allow_all), LOCKED)
                 .updateable_non_fungible_data(rule!(require(mint_badge.resource_address())), LOCKED)
-                .no_initial_supply_no_owner();
+                .no_initial_supply();
 
             // Mint a non-fungible
             let non_fungible = mint_badge.authorize(|| {
@@ -60,9 +60,9 @@ blueprint! {
         pub fn create_burnable_non_fungible() -> Bucket {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .set_id_type(NonFungibleIdType::U32)
+                .id_type(NonFungibleIdType::U32)
                 .burnable(rule!(allow_all), LOCKED)
-                .initial_supply_no_owner([
+                .initial_supply([
                     (
                         NonFungibleId::U32(0),
                         Sandwich {
@@ -83,8 +83,8 @@ blueprint! {
         pub fn create_non_fungible_fixed() -> Bucket {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .set_id_type(NonFungibleIdType::U32)
-                .initial_supply_no_owner([
+                .id_type(NonFungibleIdType::U32)
+                .initial_supply([
                     (
                         NonFungibleId::U32(1),
                         Sandwich {
@@ -170,7 +170,7 @@ blueprint! {
             assert_eq!(vault.amount(), 2.into());
             assert_eq!(non_fungible.amount(), 1.into());
 
-            NonFungibleTest { vault }.instantiate().globalize_no_owner();
+            NonFungibleTest { vault }.instantiate().globalize();
 
             non_fungible
         }
@@ -209,7 +209,7 @@ blueprint! {
                 BTreeSet::from([NonFungibleId::U32(2), NonFungibleId::U32(3)])
             );
 
-            NonFungibleTest { vault }.instantiate().globalize_no_owner();
+            NonFungibleTest { vault }.instantiate().globalize();
 
             non_fungible_bucket
         }
@@ -220,7 +220,7 @@ blueprint! {
             assert_eq!(non_fungible_bucket.non_fungible_id(), NonFungibleId::U32(1));
             assert_eq!(vault.non_fungible_id(), NonFungibleId::U32(2));
 
-            NonFungibleTest { vault }.instantiate().globalize_no_owner();
+            NonFungibleTest { vault }.instantiate().globalize();
 
             non_fungible_bucket
         }
@@ -245,14 +245,14 @@ blueprint! {
 
             // clean up
             vault.put(bucket);
-            NonFungibleTest { vault }.instantiate().globalize_no_owner();
+            NonFungibleTest { vault }.instantiate().globalize();
         }
 
         pub fn create_wrong_non_fungible_id_type() -> Bucket {
             // creating non-fungible id with id type set to default (UUID)
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .initial_supply_no_owner([(
+                .initial_supply([(
                     // adding non-fungible id with id type Number
                     NonFungibleId::U32(0),
                     Sandwich {
@@ -266,7 +266,7 @@ blueprint! {
             // creating non-fungible id with id type set to default (UUID)
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .initial_supply_no_owner([(
+                .initial_supply([(
                     // adding random non-fungible id with type UUID
                     ScryptoNonFungibleId::random(),
                     Sandwich {

@@ -120,8 +120,8 @@ pub enum MetadataMethod {
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ComponentFunction {
+    Globalize,
     GlobalizeWithOwner,
-    GlobalizeNoOwner,
 }
 
 #[derive(
@@ -257,7 +257,7 @@ pub enum AuthZoneStackMethod {
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFunction {
-    CreateNoOwner,
+    Create,
     CreateWithOwner,
     BurnBucket,
 }
@@ -463,7 +463,7 @@ pub enum ClockMethod {
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum PackageFunction {
-    PublishNoOwner,
+    Publish,
     PublishWithOwner,
 }
 

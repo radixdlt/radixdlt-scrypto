@@ -68,13 +68,13 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<AuthZoneDrainInvocation, E>
     + SysNativeInvokable<AuthZoneAssertAccessRuleInvocation, E>
     + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
+    + SysNativeInvokable<ComponentGlobalizeInvocation, E>
     + SysNativeInvokable<ComponentGlobalizeWithOwnerInvocation, E>
-    + SysNativeInvokable<ComponentGlobalizeNoOwnerInvocation, E>
     + SysNativeInvokable<ComponentSetRoyaltyConfigInvocation, E>
     + SysNativeInvokable<ComponentClaimRoyaltyInvocation, E>
     + SysNativeInvokable<PackageSetRoyaltyConfigInvocation, E>
     + SysNativeInvokable<PackageClaimRoyaltyInvocation, E>
-    + SysNativeInvokable<PackagePublishNoOwnerInvocation, E>
+    + SysNativeInvokable<PackagePublishInvocation, E>
     + SysNativeInvokable<PackagePublishWithOwnerInvocation, E>
     + SysNativeInvokable<BucketTakeInvocation, E>
     + SysNativeInvokable<BucketPutInvocation, E>
@@ -89,7 +89,7 @@ pub trait SysInvokableNative<E>:
     + SysNativeInvokable<ProofGetNonFungibleIdsInvocation, E>
     + SysNativeInvokable<ProofGetResourceAddressInvocation, E>
     + SysNativeInvokable<ResourceManagerBucketBurnInvocation, E>
-    + SysNativeInvokable<ResourceManagerCreateNoOwnerInvocation, E>
+    + SysNativeInvokable<ResourceManagerCreateInvocation, E>
     + SysNativeInvokable<ResourceManagerCreateWithOwnerInvocation, E>
     + SysNativeInvokable<ResourceManagerBurnInvocation, E>
     + SysNativeInvokable<ResourceManagerUpdateVaultAuthInvocation, E>

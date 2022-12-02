@@ -14,7 +14,7 @@ blueprint! {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Cars!")
                 .metadata("description", "Fast Cars")
-                .initial_supply_no_owner(vec![
+                .initial_supply(vec![
                     (
                         NonFungibleId::random(),
                         Car {
