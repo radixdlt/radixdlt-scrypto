@@ -96,7 +96,7 @@ blueprint! {
         }
 
         pub fn create_empty_bucket_non_fungible() -> Bucket {
-            let resource_address = ResourceBuilder::new_non_fungible().no_initial_supply_no_owner();
+            let resource_address = ResourceBuilder::new_non_fungible().no_initial_supply();
             Bucket::new(resource_address)
         }
     }

@@ -159,7 +159,7 @@ impl FungibleResourceBuilder {
                 resource_type: ResourceType::Fungible {
                     divisibility: self.divisibility,
                 },
-                metadata: self.metadata.clone(),
+                metadata: self.metadata,
                 access_rules: authorization,
                 mint_params: Some(MintParams::fungible(amount)),
             })
@@ -174,7 +174,7 @@ impl FungibleResourceBuilder {
                 resource_type: ResourceType::Fungible {
                     divisibility: self.divisibility,
                 },
-                metadata: self.metadata.clone(),
+                metadata: self.metadata,
                 access_rules: HashMap::new(),
                 mint_params: None,
             })
@@ -193,7 +193,7 @@ impl FungibleResourceBuilder {
                 resource_type: ResourceType::Fungible {
                     divisibility: self.divisibility,
                 },
-                metadata: self.metadata.clone(),
+                metadata: self.metadata,
                 manager_badge,
                 mint_params: Some(MintParams::fungible(amount)),
             })
@@ -211,7 +211,7 @@ impl FungibleResourceBuilder {
                 resource_type: ResourceType::Fungible {
                     divisibility: self.divisibility,
                 },
-                metadata: self.metadata.clone(),
+                metadata: self.metadata,
                 manager_badge,
                 mint_params: None,
             })
@@ -271,20 +271,18 @@ impl FungibleResourceWithAuthBuilder {
     }
 
     pub fn initial_supply<T: Into<Decimal>>(self, amount: T) -> Bucket {
-        self.build_no_owner(Some(MintParams::fungible(amount)))
-            .1
-            .unwrap()
+        self.build(Some(MintParams::fungible(amount))).1.unwrap()
     }
 
     /// Creates resource with no initial supply.
     pub fn no_initial_supply(self) -> ResourceAddress {
-        self.build_no_owner(None).0
+        self.build(None).0
     }
 
-    fn build_no_owner(self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
-        let mut authorization = self.authorization.clone();
-        if !authorization.contains_key(&Withdraw) {
-            authorization.insert(Withdraw, (rule!(allow_all), LOCKED));
+    fn build(mut self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
+        if !self.authorization.contains_key(&Withdraw) {
+            self.authorization
+                .insert(Withdraw, (rule!(allow_all), LOCKED));
         }
 
         ScryptoEnv
@@ -292,8 +290,8 @@ impl FungibleResourceWithAuthBuilder {
                 resource_type: ResourceType::Fungible {
                     divisibility: self.divisibility,
                 },
-                metadata: self.metadata.clone(),
-                access_rules: authorization,
+                metadata: self.metadata,
+                access_rules: self.authorization,
                 mint_params,
             })
             .unwrap()
@@ -302,7 +300,6 @@ impl FungibleResourceWithAuthBuilder {
 
 pub struct NonFungibleResourceBuilder {
     metadata: HashMap<String, String>,
-    authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
     id_type: NonFungibleIdType,
 }
 
@@ -310,7 +307,6 @@ impl NonFungibleResourceBuilder {
     pub fn new() -> Self {
         Self {
             metadata: HashMap::new(),
-            authorization: HashMap::new(),
             id_type: NonFungibleIdType::default(),
         }
     }
@@ -318,69 +314,112 @@ impl NonFungibleResourceBuilder {
     /// Adds a resource metadata.
     ///
     /// If a previous attribute with the same name has been set, it will be overwritten.
-    pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+    pub fn metadata<K: AsRef<str>, V: AsRef<str>>(mut self, name: K, value: V) -> Self {
         self.metadata
             .insert(name.as_ref().to_owned(), value.as_ref().to_owned());
         self
     }
 
-    pub fn mintable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
-        self.authorization.insert(Mint, (method_auth, mutability));
-        self
+    pub fn mintable(
+        self,
+        method_auth: AccessRule,
+        mutability: Mutability,
+    ) -> NonFungibleResourceWithAuthBuilder {
+        let mut authorization = HashMap::new();
+        authorization.insert(Mint, (method_auth, mutability));
+        NonFungibleResourceWithAuthBuilder {
+            id_type: self.id_type,
+            metadata: self.metadata,
+            authorization,
+        }
     }
 
-    pub fn burnable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
-        self.authorization.insert(Burn, (method_auth, mutability));
-        self
+    pub fn burnable(
+        self,
+        method_auth: AccessRule,
+        mutability: Mutability,
+    ) -> NonFungibleResourceWithAuthBuilder {
+        let mut authorization = HashMap::new();
+        authorization.insert(Burn, (method_auth, mutability));
+        NonFungibleResourceWithAuthBuilder {
+            id_type: self.id_type,
+            metadata: self.metadata,
+            authorization,
+        }
     }
 
-    pub fn recallable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
-        self.authorization.insert(Recall, (method_auth, mutability));
-        self
+    pub fn recallable(
+        self,
+        method_auth: AccessRule,
+        mutability: Mutability,
+    ) -> NonFungibleResourceWithAuthBuilder {
+        let mut authorization = HashMap::new();
+        authorization.insert(Recall, (method_auth, mutability));
+        NonFungibleResourceWithAuthBuilder {
+            id_type: self.id_type,
+            metadata: self.metadata,
+            authorization,
+        }
     }
 
     pub fn restrict_withdraw(
-        &mut self,
+        self,
         method_auth: AccessRule,
         mutability: Mutability,
-    ) -> &mut Self {
-        self.authorization
-            .insert(Withdraw, (method_auth, mutability));
-        self
+    ) -> NonFungibleResourceWithAuthBuilder {
+        let mut authorization = HashMap::new();
+        authorization.insert(Withdraw, (method_auth, mutability));
+        NonFungibleResourceWithAuthBuilder {
+            id_type: self.id_type,
+            metadata: self.metadata,
+            authorization,
+        }
     }
 
     pub fn restrict_deposit(
-        &mut self,
+        self,
         method_auth: AccessRule,
         mutability: Mutability,
-    ) -> &mut Self {
-        self.authorization
-            .insert(Deposit, (method_auth, mutability));
-        self
-    }
-
-    pub fn updateable_non_fungible_data(
-        &mut self,
-        method_auth: AccessRule,
-        mutability: Mutability,
-    ) -> &mut Self {
-        self.authorization
-            .insert(UpdateNonFungibleData, (method_auth, mutability));
-        self
+    ) -> NonFungibleResourceWithAuthBuilder {
+        let mut authorization = HashMap::new();
+        authorization.insert(Deposit, (method_auth, mutability));
+        NonFungibleResourceWithAuthBuilder {
+            id_type: self.id_type,
+            metadata: self.metadata,
+            authorization,
+        }
     }
 
     pub fn updateable_metadata(
-        &mut self,
+        self,
         method_auth: AccessRule,
         mutability: Mutability,
-    ) -> &mut Self {
-        self.authorization
-            .insert(UpdateMetadata, (method_auth, mutability));
-        self
+    ) -> NonFungibleResourceWithAuthBuilder {
+        let mut authorization = HashMap::new();
+        authorization.insert(UpdateMetadata, (method_auth, mutability));
+        NonFungibleResourceWithAuthBuilder {
+            id_type: self.id_type,
+            metadata: self.metadata,
+            authorization,
+        }
+    }
+
+    pub fn updateable_non_fungible_data(
+        self,
+        method_auth: AccessRule,
+        mutability: Mutability,
+    ) -> NonFungibleResourceWithAuthBuilder {
+        let mut authorization = HashMap::new();
+        authorization.insert(UpdateNonFungibleData, (method_auth, mutability));
+        NonFungibleResourceWithAuthBuilder {
+            id_type: self.id_type,
+            metadata: self.metadata,
+            authorization,
+        }
     }
 
     /// Set ID type to use for this non fungible resource
-    pub fn set_id_type(&mut self, id_type: NonFungibleIdType) -> &mut Self {
+    pub fn id_type(mut self, id_type: NonFungibleIdType) -> Self {
         self.id_type = id_type;
         self
     }
@@ -391,12 +430,12 @@ impl NonFungibleResourceBuilder {
     /// ```ignore
     /// let bucket = ResourceBuilder::new_non_fungible()
     ///     .metadata("name", "TestNonFungible")
-    ///     .initial_supply_no_owner([
+    ///     .initial_supply([
     ///         (NftKey::from(1u128), "immutable_part", "mutable_part"),
     ///         (NftKey::from(2u128), "another_immutable_part", "another_mutable_part"),
     ///     ]);
     /// ```
-    pub fn initial_supply_no_owner<T, V>(&self, entries: T) -> Bucket
+    pub fn initial_supply<T, V>(self, entries: T) -> Bucket
     where
         T: IntoIterator<Item = (NonFungibleId, V)>,
         V: NonFungibleData,
@@ -405,20 +444,166 @@ impl NonFungibleResourceBuilder {
         for (id, e) in entries {
             encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }
-        self.build_no_owner(Some(MintParams::NonFungible { entries: encoded }))
+        self.build(Some(MintParams::NonFungible { entries: encoded }))
             .1
             .unwrap()
     }
 
     /// Creates resource with no initial supply.
-    pub fn no_initial_supply_no_owner(&self) -> ResourceAddress {
-        self.build_no_owner(None).0
+    pub fn no_initial_supply(self) -> ResourceAddress {
+        self.build(None).0
     }
 
-    fn build_no_owner(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
-        let mut authorization = self.authorization.clone();
-        if !authorization.contains_key(&ResourceMethodAuthKey::Withdraw) {
-            authorization.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+    fn build(self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
+        let mut authorization = HashMap::new();
+        authorization.insert(Withdraw, (rule!(allow_all), LOCKED));
+
+        ScryptoEnv
+            .sys_invoke(ResourceManagerCreateNoOwnerInvocation {
+                resource_type: ResourceType::NonFungible {
+                    id_type: self.id_type,
+                },
+                metadata: self.metadata,
+                access_rules: authorization,
+                mint_params,
+            })
+            .unwrap()
+    }
+
+    pub fn initial_supply_with_manager<T, V>(
+        self,
+        entries: T,
+        manager_badge: NonFungibleAddress,
+    ) -> Bucket
+    where
+        T: IntoIterator<Item = (NonFungibleId, V)>,
+        V: NonFungibleData,
+    {
+        let mut encoded = HashMap::new();
+        for (id, e) in entries {
+            encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
+        }
+
+        let (_resource_address, bucket) = ScryptoEnv
+            .sys_invoke(ResourceManagerCreateWithManagerInvocation {
+                resource_type: ResourceType::NonFungible {
+                    id_type: self.id_type,
+                },
+                metadata: self.metadata,
+                manager_badge,
+                mint_params: Some(MintParams::NonFungible { entries: encoded }),
+            })
+            .unwrap();
+
+        bucket.unwrap()
+    }
+
+    pub fn no_initial_supply_with_manager(
+        self,
+        manager_badge: NonFungibleAddress,
+    ) -> ResourceAddress {
+        let (resource_address, _bucket) = ScryptoEnv
+            .sys_invoke(ResourceManagerCreateWithManagerInvocation {
+                resource_type: ResourceType::NonFungible {
+                    id_type: self.id_type,
+                },
+                metadata: self.metadata,
+                manager_badge,
+                mint_params: None,
+            })
+            .unwrap();
+
+        resource_address
+    }
+}
+
+pub struct NonFungibleResourceWithAuthBuilder {
+    id_type: NonFungibleIdType,
+    metadata: HashMap<String, String>,
+    authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+}
+
+impl NonFungibleResourceWithAuthBuilder {
+    /// Adds a resource metadata.
+    ///
+    /// If a previous attribute with the same name has been set, it will be overwritten.
+    pub fn metadata<K: AsRef<str>, V: AsRef<str>>(mut self, name: K, value: V) -> Self {
+        self.metadata
+            .insert(name.as_ref().to_owned(), value.as_ref().to_owned());
+        self
+    }
+
+    pub fn mintable(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
+        self.authorization.insert(Mint, (method_auth, mutability));
+        self
+    }
+
+    pub fn burnable(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
+        self.authorization.insert(Burn, (method_auth, mutability));
+        self
+    }
+
+    pub fn recallable(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
+        self.authorization.insert(Recall, (method_auth, mutability));
+        self
+    }
+
+    pub fn restrict_withdraw(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
+        self.authorization
+            .insert(Withdraw, (method_auth, mutability));
+        self
+    }
+
+    pub fn restrict_deposit(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
+        self.authorization
+            .insert(Deposit, (method_auth, mutability));
+        self
+    }
+
+    pub fn updateable_metadata(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
+        self.authorization
+            .insert(UpdateMetadata, (method_auth, mutability));
+        self
+    }
+
+    pub fn updateable_non_fungible_data(
+        mut self,
+        method_auth: AccessRule,
+        mutability: Mutability,
+    ) -> Self {
+        self.authorization
+            .insert(UpdateNonFungibleData, (method_auth, mutability));
+        self
+    }
+
+    pub fn id_type(mut self, id_type: NonFungibleIdType) -> Self {
+        self.id_type = id_type;
+        self
+    }
+
+    pub fn initial_supply<T, V>(self, entries: T) -> Bucket
+    where
+        T: IntoIterator<Item = (NonFungibleId, V)>,
+        V: NonFungibleData,
+    {
+        let mut encoded = HashMap::new();
+        for (id, e) in entries {
+            encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
+        }
+        self.build(Some(MintParams::NonFungible { entries: encoded }))
+            .1
+            .unwrap()
+    }
+
+    /// Creates resource with no initial supply.
+    pub fn no_initial_supply(self) -> ResourceAddress {
+        self.build(None).0
+    }
+
+    fn build(mut self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
+        if !self.authorization.contains_key(&Withdraw) {
+            self.authorization
+                .insert(Withdraw, (rule!(allow_all), LOCKED));
         }
 
         ScryptoEnv
@@ -426,52 +611,10 @@ impl NonFungibleResourceBuilder {
                 resource_type: ResourceType::NonFungible {
                     id_type: self.id_type,
                 },
-                metadata: self.metadata.clone(),
-                access_rules: authorization,
+                metadata: self.metadata,
+                access_rules: self.authorization,
                 mint_params,
             })
             .unwrap()
     }
-
-    /*
-    pub fn initial_supply_with_owner<T, V>(&self, entries: T) -> (Bucket, Bucket)
-    where
-        T: IntoIterator<Item = (NonFungibleId, V)>,
-        V: NonFungibleData,
-    {
-        let mut encoded = HashMap::new();
-        for (id, e) in entries {
-            encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
-        }
-        let (_, bucket, owner_badge_bucket) =
-            self.build_with_owner(Some(MintParams::NonFungible { entries: encoded }));
-        (bucket.unwrap(), owner_badge_bucket)
-    }
-
-    /// Creates resource with no initial supply.
-    pub fn no_initial_supply_with_owner(&self) -> ResourceAddress {
-        self.build_with_owner(None).0
-    }
-
-    fn build_with_owner(
-        &self,
-        mint_params: Option<MintParams>,
-    ) -> (ResourceAddress, Option<Bucket>, Bucket) {
-        let mut authorization = self.authorization.clone();
-        if !authorization.contains_key(&ResourceMethodAuthKey::Withdraw) {
-            authorization.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        }
-
-        ScryptoEnv
-            .sys_invoke(ResourceManagerCreateWithManagerInvocation {
-                resource_type: ResourceType::NonFungible {
-                    id_type: self.id_type,
-                },
-                metadata: self.metadata.clone(),
-                access_rules: authorization,
-                mint_params,
-            })
-            .unwrap()
-    }
-     */
 }

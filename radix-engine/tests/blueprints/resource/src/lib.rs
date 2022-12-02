@@ -15,7 +15,7 @@ blueprint! {
             let super_admin_badge: ResourceAddress = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Super Admin Badge")
                 .mintable(rule!(allow_all), MUTABLE(rule!(allow_all)))
-                .no_initial_supply_no_owner();
+                .no_initial_supply();
 
             let super_admin_manager: &mut ResourceManager =
                 borrow_resource_manager!(super_admin_badge);
@@ -104,8 +104,8 @@ blueprint! {
 
         pub fn update_resource_metadata() -> Bucket {
             let badge = ResourceBuilder::new_non_fungible()
-                .set_id_type(NonFungibleIdType::U32)
-                .initial_supply_no_owner(vec![(
+                .id_type(NonFungibleIdType::U32)
+                .initial_supply(vec![(
                     NonFungibleId::U32(0),
                     Sandwich {
                         name: "name".to_string(),
