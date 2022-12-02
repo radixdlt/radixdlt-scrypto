@@ -6,6 +6,7 @@ use radix_engine_interface::api::types::NativeMethod;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
+use sbor::rust::ops::Add;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -59,7 +60,7 @@ fn test_trace_resource_transfers() {
 
     let fee_resource_address = fee_summary.payments.first().unwrap().1.resource_address();
 
-    let total_fee_paid = fee_summary.execution + fee_summary.royalty - fee_summary.bad_debt;
+    let total_fee_paid = fee_summary.burned.add(fee_summary.tipped);
 
     // Source vault withdrawal
     assert!(receipt
@@ -139,7 +140,7 @@ fn test_trace_fee_payments() {
     let _ = receipt.expect_commit_success();
     let resource_changes = &receipt.expect_commit().resource_changes;
     let fee_summary = &receipt.execution.fee_summary;
-    let total_fee_paid = fee_summary.execution + fee_summary.royalty - fee_summary.bad_debt;
+    let total_fee_paid = fee_summary.burned.add(fee_summary.tipped);
 
     assert_eq!(1, resource_changes.len());
     assert!(resource_changes

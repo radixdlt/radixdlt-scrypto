@@ -40,7 +40,7 @@ blueprint! {
                 Runtime::package_address(),
                 "invalid_blueprint".to_owned(),
                 scrypto_encode(&NodeCreate {}).unwrap(),
-                RoyaltyConfigBuilder::new().default(0),
+                RoyaltyConfigBuilder::new().default(dec!("0")),
                 Vec::new(),
             ));
             let _: ComponentId = call_engine(input);
@@ -52,7 +52,7 @@ blueprint! {
                 package_address,
                 "NodeCreate".to_owned(),
                 scrypto_encode(&NodeCreate {}).unwrap(),
-                RoyaltyConfigBuilder::new().default(0),
+                RoyaltyConfigBuilder::new().default(dec!("0")),
                 Vec::new(),
             ));
             let _: ComponentId = call_engine(input);

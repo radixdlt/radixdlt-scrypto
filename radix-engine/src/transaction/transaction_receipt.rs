@@ -288,21 +288,19 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
 
         write!(
             f,
-            "\n{} {} XRD for execution, {} XRD for royalty, {} bad debt",
+            "\n{} {} XRD burned, {} XRD tipped to validators",
             "Transaction Fee:".bold().green(),
-            execution.fee_summary.execution,
-            execution.fee_summary.royalty,
-            execution.fee_summary.bad_debt,
+            execution.fee_summary.burned,
+            execution.fee_summary.tipped,
         )?;
 
         write!(
             f,
-            "\n{} {} limit, {} consumed, {} XRD per cost unit, {}% tip",
+            "\n{} {} limit, {} consumed, {} XRD per cost unit",
             "Cost Units:".bold().green(),
             execution.fee_summary.cost_unit_limit,
             execution.fee_summary.cost_unit_consumed,
             execution.fee_summary.cost_unit_price,
-            execution.fee_summary.tip_percentage
         )?;
 
         write!(
