@@ -76,7 +76,7 @@ where
                 ));
             }
             NativeFunction::Package(package_function) => match package_function {
-                PackageFunction::PublishNoOwner => {
+                PackageFunction::Publish => {
                     let invocation: PackagePublishInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     system_api

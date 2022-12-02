@@ -154,7 +154,7 @@ impl FeeTable {
                 }
             }
             NativeFunction::Package(package_fn) => match package_fn {
-                PackageFunction::PublishNoOwner => self.fixed_low,
+                PackageFunction::Publish => self.fixed_low,
                 PackageFunction::PublishWithOwner => self.fixed_low,
             },
             NativeFunction::EpochManager(epoch_manager_fn) => match epoch_manager_fn {

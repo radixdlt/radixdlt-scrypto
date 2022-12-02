@@ -28,7 +28,7 @@ impl ScryptoNativeInvocation for PackagePublishInvocation {
 impl Into<NativeFnInvocation> for PackagePublishInvocation {
     fn into(self) -> NativeFnInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::Package(
-            PackageFunctionInvocation::PublishNoOwner(self),
+            PackageFunctionInvocation::Publish(self),
         ))
     }
 }
