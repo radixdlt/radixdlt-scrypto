@@ -491,12 +491,11 @@ fn generate_stubs(
                 self.component.set_royalty_config(royalty_config);
                 self
             }
-            fn set_royalty_owner(&mut self, owner: NonFungibleAddress) -> &mut Self {
-                self.component.set_royalty_owner(owner);
-                self
-            }
             fn globalize(self) -> ComponentAddress {
                 self.component.globalize()
+            }
+            fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+                self.component.globalize_with_owner(owner_badge)
             }
         }
 
@@ -693,12 +692,11 @@ mod tests {
                         self.component.set_royalty_config(royalty_config);
                         self
                     }
-                    fn set_royalty_owner(&mut self, owner: NonFungibleAddress) -> &mut Self {
-                        self.component.set_royalty_owner(owner);
-                        self
-                    }
                     fn globalize(self) -> ComponentAddress {
                         self.component.globalize()
+                    }
+                    fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+                        self.component.globalize_with_owner(owner_badge)
                     }
                 }
 
@@ -788,12 +786,11 @@ mod tests {
                         self.component.set_royalty_config(royalty_config);
                         self
                     }
-                    fn set_royalty_owner(&mut self, owner: NonFungibleAddress) -> &mut Self {
-                        self.component.set_royalty_owner(owner);
-                        self
-                    }
                     fn globalize(self) -> ComponentAddress {
                         self.component.globalize()
+                    }
+                    fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+                        self.component.globalize_with_owner(owner_badge)
                     }
                 }
 

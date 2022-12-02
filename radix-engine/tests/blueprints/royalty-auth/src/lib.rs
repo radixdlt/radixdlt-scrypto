@@ -42,9 +42,8 @@ blueprint! {
                     .add_rule("paid_method_panic", dec!("0.1"))
                     .default(dec!("0")),
             );
-            local_component.set_royalty_owner(badge);
 
-            local_component.globalize()
+            local_component.globalize_with_owner(badge)
         }
 
         pub fn disable_package_royalty(address: PackageAddress, proof: Proof) {

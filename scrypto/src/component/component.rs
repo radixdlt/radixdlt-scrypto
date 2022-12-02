@@ -8,7 +8,7 @@ use radix_engine_interface::data::{
     scrypto_decode, ScryptoCustomTypeId, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::model::*;
-use radix_engine_interface::{rule, scrypto_type};
+use radix_engine_interface::scrypto_type;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
@@ -38,8 +38,8 @@ pub trait LocalComponent {
     fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self;
     fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
     fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self;
-    fn set_royalty_owner(&mut self, owner: NonFungibleAddress) -> &mut Self;
     fn globalize(self) -> ComponentAddress;
+    fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress;
 }
 
 // TODO: de-duplication
@@ -113,26 +113,6 @@ impl Component {
             .sys_invoke(ComponentSetRoyaltyConfigInvocation {
                 receiver: RENodeId::Component(self.0),
                 royalty_config,
-            })
-            .unwrap();
-        self
-    }
-
-    pub fn set_royalty_owner(&mut self, owner: NonFungibleAddress) -> &mut Self {
-        ScryptoEnv
-            .sys_invoke(AccessRulesSetGroupAccessRuleInvocation {
-                receiver: RENodeId::Component(self.0),
-                index: 0,
-                name: "royalty".to_string(),
-                rule: rule!(require(owner.clone())),
-            })
-            .unwrap();
-        ScryptoEnv
-            .sys_invoke(AccessRulesSetGroupMutabilityInvocation {
-                receiver: RENodeId::Component(self.0),
-                index: 0,
-                name: "royalty".to_string(),
-                mutability: rule!(require(owner)),
             })
             .unwrap();
         self
@@ -230,26 +210,6 @@ impl BorrowedGlobalComponent {
             royalty_config,
         })
         .unwrap();
-    }
-
-    pub fn set_royalty_owner(&mut self, owner: NonFungibleAddress) -> &mut Self {
-        ScryptoEnv
-            .sys_invoke(AccessRulesSetGroupAccessRuleInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
-                index: 0,
-                name: "royalty".to_string(),
-                rule: rule!(require(owner.clone())),
-            })
-            .unwrap();
-        ScryptoEnv
-            .sys_invoke(AccessRulesSetGroupMutabilityInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
-                index: 0,
-                name: "royalty".to_string(),
-                mutability: rule!(require(owner)),
-            })
-            .unwrap();
-        self
     }
 
     pub fn claim_royalty(&self) -> Bucket {
