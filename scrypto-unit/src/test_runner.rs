@@ -544,7 +544,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
                 &mut store,
                 &mut self.scrypto_interpreter,
                 &FeeReserveConfig {
-                    cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+                    cost_unit_price: DEFAULT_COST_UNIT_PRICE,
                     system_loan: DEFAULT_SYSTEM_LOAN,
                 },
                 &ExecutionConfig {

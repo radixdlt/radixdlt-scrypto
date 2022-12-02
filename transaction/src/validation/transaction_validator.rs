@@ -1,10 +1,9 @@
+use radix_engine_constants::*;
+use radix_engine_interface::constants::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::{Hash, PublicKey};
 use radix_engine_interface::data::*;
-
 use sbor::rust::collections::{BTreeSet, HashSet};
-
-use radix_engine_interface::constants::*;
 
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
@@ -37,8 +36,10 @@ pub trait TransactionValidator<T: ScryptoDecode> {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ValidationConfig {
     pub network_id: u8,
+    pub min_cost_unit_limit: u32,
     pub max_cost_unit_limit: u32,
     pub min_tip_percentage: u8,
+    pub max_tip_percentage: u8,
     pub max_epoch_range: u64,
 }
 
@@ -46,8 +47,10 @@ impl ValidationConfig {
     pub fn default(network_id: u8) -> Self {
         Self {
             network_id,
-            max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+            min_cost_unit_limit: DEFAULT_MIN_COST_UNIT_LIMIT,
+            max_cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
             min_tip_percentage: DEFAULT_MIN_TIP_PERCENTAGE,
+            max_tip_percentage: DEFAULT_MAX_TIP_PERCENTAGE,
             max_epoch_range: DEFAULT_MAX_EPOCH_RANGE,
         }
     }
@@ -292,11 +295,17 @@ impl NotarizedTransactionValidator {
             return Err(HeaderValidationError::EpochRangeTooLarge);
         }
 
-        // cost unit limit and tip
-        if header.cost_unit_limit > self.config.max_cost_unit_limit {
+        // cost unit limit
+        if header.cost_unit_limit < self.config.min_cost_unit_limit
+            || header.cost_unit_limit > self.config.max_cost_unit_limit
+        {
             return Err(HeaderValidationError::InvalidCostUnitLimit);
         }
-        if header.tip_percentage < self.config.min_tip_percentage {
+
+        // tip percentage
+        if header.tip_percentage < self.config.min_tip_percentage
+            || header.tip_percentage > self.config.max_tip_percentage
+        {
             return Err(HeaderValidationError::InvalidTipBps);
         }
 

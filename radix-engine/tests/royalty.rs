@@ -1,3 +1,4 @@
+use radix_engine::fee::u128_to_decimal;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_COST_UNIT_PRICE;
@@ -45,7 +46,7 @@ fn test_component_royalty() {
     receipt.expect_commit_success();
     assert_eq!(
         receipt.execution.fee_summary.royalty,
-        dec!("1") * DEFAULT_COST_UNIT_PRICE
+        dec!("1") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE)
     );
 }
 
@@ -133,7 +134,7 @@ fn test_package_royalty() {
     receipt.expect_commit_success();
     assert_eq!(
         receipt.execution.fee_summary.royalty,
-        (dec!("1") + dec!("2")) * DEFAULT_COST_UNIT_PRICE
+        (dec!("1") + dec!("2")) * u128_to_decimal(DEFAULT_COST_UNIT_PRICE)
     );
 }
 
@@ -154,11 +155,11 @@ fn test_royalty_accumulation_when_success() {
     receipt.expect_commit_success();
     assert_eq!(
         test_runner.inspect_package_royalty(package_address),
-        Some(dec!("2") * Decimal::from_str(DEFAULT_COST_UNIT_PRICE).unwrap())
+        Some(dec!("2") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE))
     );
     assert_eq!(
         test_runner.inspect_component_royalty(component_address),
-        Some(dec!("1") * Decimal::from_str(DEFAULT_COST_UNIT_PRICE).unwrap())
+        Some(dec!("1") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE))
     );
 }
 
@@ -204,11 +205,11 @@ fn test_claim_royalty() {
     receipt.expect_commit_success();
     assert_eq!(
         test_runner.inspect_package_royalty(package_address),
-        Some(dec!("2") * Decimal::from_str(DEFAULT_COST_UNIT_PRICE).unwrap())
+        Some(dec!("2") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE))
     );
     assert_eq!(
         test_runner.inspect_component_royalty(component_address),
-        Some(dec!("1") * Decimal::from_str(DEFAULT_COST_UNIT_PRICE).unwrap())
+        Some(dec!("1") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE))
     );
 
     // Claim package royalty
