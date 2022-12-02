@@ -162,7 +162,7 @@ impl Component {
         ScryptoEnv
             .sys_invoke(ComponentGlobalizeWithOwnerInvocation {
                 component_id: self.0,
-                owner_badge
+                owner_badge,
             })
             .unwrap()
     }

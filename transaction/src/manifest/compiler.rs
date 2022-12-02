@@ -190,6 +190,7 @@ mod tests {
                 Instruction::PublishPackageWithOwner {
                     code: Blob(code_hash),
                     abi: Blob(abi_hash),
+                    owner_badge: NonFungibleAddress::from_str("00ed9100551d7fae91eaf413e50a3c5a59f8b96af9f1297890a8f45c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap(),
                 },
             ]
         );

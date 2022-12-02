@@ -106,6 +106,7 @@ pub enum Instruction {
     PublishPackageWithOwner {
         code: Value,
         abi: Value,
+        owner_badge: Value,
     },
 
     CreateResource {

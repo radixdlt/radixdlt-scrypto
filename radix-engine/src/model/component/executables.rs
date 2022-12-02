@@ -70,8 +70,6 @@ impl NativeProcedure for ComponentGlobalizeInvocation {
     }
 }
 
-
-
 impl ExecutableInvocation for ComponentGlobalizeWithOwnerInvocation {
     type Exec = NativeExecutor<Self>;
 
@@ -135,8 +133,6 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
         Ok((component_address, call_frame_update))
     }
 }
-
-
 
 impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {
     type Exec = NativeExecutor<Self>;

@@ -2,9 +2,9 @@ use radix_engine_interface::abi;
 use radix_engine_interface::abi::*;
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, PackageFunction, ProofId,
-    RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent,
-    ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
+    ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
+    ScryptoPackage, ScryptoReceiver,
 };
 use radix_engine_interface::constants::*;
 use radix_engine_interface::core::NetworkDefinition;
@@ -494,6 +494,7 @@ impl ManifestBuilder {
         &mut self,
         code: Vec<u8>,
         abi: HashMap<String, BlueprintAbi>,
+        owner_badge: NonFungibleAddress,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
@@ -505,36 +506,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::PublishPackageWithOwner {
             code: Blob(code_hash),
             abi: Blob(abi_hash),
-        })
-        .0
-    }
-
-    pub fn publish_package_with_owner_with_owner(
-        &mut self,
-        code: Vec<u8>,
-        abi: HashMap<String, BlueprintAbi>,
-        manager_badge: NonFungibleAddress,
-    ) -> &mut Self {
-        let code_hash = hash(&code);
-        self.blobs.insert(code_hash, code);
-
-        let abi = scrypto_encode(&abi).unwrap();
-        let abi_hash = hash(&abi);
-        self.blobs.insert(abi_hash, abi);
-
-        self.add_instruction(Instruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-                function_name: PackageFunction::PublishWithOwner.to_string(),
-            },
-            args: scrypto_encode(&PackagePublishWithOwnerInvocation {
-                code: Blob(code_hash),
-                abi: Blob(abi_hash),
-                royalty_config: HashMap::new(), // TODO: needs a strategy on how to deal with ever growing variation
-                owner_badge: manager_badge,
-                metadata: HashMap::new(),
-            })
-            .unwrap(),
+            owner_badge,
         })
         .0
     }

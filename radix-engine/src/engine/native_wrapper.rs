@@ -32,7 +32,9 @@ where
                 }
                 ComponentFunction::GlobalizeWithOwner => {
                     let invocation: ComponentGlobalizeWithOwnerInvocation = scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                        .map_err(|e| {
+                        RuntimeError::KernelError(KernelError::InvalidSborValue(e))
+                    })?;
                     system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))

@@ -115,5 +115,9 @@ pub enum Instruction {
     },
 
     /// Publishes a package.
-    PublishPackageWithOwner { code: Blob, abi: Blob },
+    PublishPackageWithOwner {
+        code: Blob,
+        abi: Blob,
+        owner_badge: NonFungibleAddress,
+    },
 }

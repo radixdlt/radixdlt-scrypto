@@ -39,8 +39,8 @@ pub struct PackagePublishWithOwnerInvocation {
     pub code: Blob,
     pub abi: Blob,
     pub royalty_config: HashMap<String, RoyaltyConfig>,
-    pub owner_badge: NonFungibleAddress,
     pub metadata: HashMap<String, String>,
+    pub owner_badge: NonFungibleAddress,
 }
 
 impl Invocation for PackagePublishWithOwnerInvocation {

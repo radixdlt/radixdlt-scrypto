@@ -68,7 +68,7 @@ impl TryFrom<&[u8]> for NonFungibleAddress {
 }
 
 impl NonFungibleAddress {
-    pub fn new(resource_address: ResourceAddress, non_fungible_id: NonFungibleId) -> Self {
+    pub const fn new(resource_address: ResourceAddress, non_fungible_id: NonFungibleId) -> Self {
         Self {
             resource_address,
             non_fungible_id,

@@ -15,7 +15,6 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
 use radix_engine_interface::rule;
-
 use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};
 
@@ -43,9 +42,10 @@ pub fn create_genesis() -> SystemTransaction {
     let create_faucet_package = {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
-        let inst = Instruction::PublishPackage {
+        let inst = Instruction::PublishPackageWithOwner {
             code: Blob(hash(&faucet_code)),
             abi: Blob(hash(&faucet_abi)),
+            owner_badge: NO_OWNER,
         };
 
         blobs.push(faucet_code);
@@ -56,9 +56,10 @@ pub fn create_genesis() -> SystemTransaction {
     let create_account_package = {
         let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
         let account_abi = include_bytes!("../../../assets/account.abi").to_vec();
-        let inst = Instruction::PublishPackage {
+        let inst = Instruction::PublishPackageWithOwner {
             code: Blob(hash(&account_code)),
             abi: Blob(hash(&account_abi)),
+            owner_badge: NO_OWNER,
         };
 
         blobs.push(account_code);

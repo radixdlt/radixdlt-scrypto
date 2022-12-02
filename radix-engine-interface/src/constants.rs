@@ -292,3 +292,6 @@ pub const CLOCK_BLUEPRINT: &str = "Clock";
 pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
+
+pub const NO_OWNER: NonFungibleAddress =
+    NonFungibleAddress::new(ResourceAddress::Normal([0u8; 26]), NonFungibleId::U32(0));
