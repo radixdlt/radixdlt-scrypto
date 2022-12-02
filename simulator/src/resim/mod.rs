@@ -203,7 +203,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 &mut substate_store,
                 &mut scrypto_interpreter,
                 &FeeReserveConfig {
-                    cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+                    cost_unit_price: DEFAULT_COST_UNIT_PRICE,
                     system_loan: DEFAULT_SYSTEM_LOAN,
                 },
                 &ExecutionConfig {

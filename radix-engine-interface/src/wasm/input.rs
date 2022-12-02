@@ -101,7 +101,8 @@ pub enum ClockFunctionInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ClockMethodInvocation {
-    GetCurrentTimeRoundedToMinutes(ClockGetCurrentTimeRoundedToMinutesInvocation),
+    GetCurrentTime(ClockGetCurrentTimeInvocation),
+    CompareCurrentTime(ClockCompareCurrentTimeInvocation),
     SetCurrentTime(ClockSetCurrentTimeInvocation),
 }
 
@@ -465,7 +466,10 @@ impl NativeFnInvocation {
                     ClockMethodInvocation::SetCurrentTime(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ClockMethodInvocation::GetCurrentTimeRoundedToMinutes(invocation) => system_api
+                    ClockMethodInvocation::GetCurrentTime(invocation) => system_api
+                        .sys_invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    ClockMethodInvocation::CompareCurrentTime(invocation) => system_api
                         .sys_invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },

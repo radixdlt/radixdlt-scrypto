@@ -1,3 +1,4 @@
+use radix_engine_constants::TRANSACTION_VERSION_V1;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::{EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature};
 use radix_engine_interface::model::*;

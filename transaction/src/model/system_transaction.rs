@@ -1,10 +1,11 @@
 use crate::model::{AuthModule, AuthZoneParams, Executable, TransactionManifest};
+use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::crypto::Hash;
 
 use radix_engine_interface::scrypto;
 use std::collections::BTreeSet;
 
-use super::{ExecutionContext, FeePayment, DEFAULT_COST_UNIT_LIMIT};
+use super::{ExecutionContext, FeePayment};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]

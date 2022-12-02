@@ -1413,6 +1413,7 @@ dependencies = [
  "clap",
  "ed25519-dalek",
  "hex",
+ "radix-engine-constants",
  "radix-engine-interface",
  "sbor",
  "secp256k1",

@@ -1,29 +1,26 @@
-use radix_engine::engine::{ModuleError, RejectionError};
-use radix_engine::engine::{RuntimeError, ScryptoInterpreter};
+use radix_engine::engine::RejectionError;
+use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
 use radix_engine::wasm::{DefaultWasmEngine, InstructionCostRules, WasmMeteringConfig};
-use radix_engine_constants::DEFAULT_MAX_COST_UNIT_LIMIT;
+use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::core::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
-use transaction::model::{
-    Executable, NotarizedTransaction, TransactionHeader, DEFAULT_MAX_EPOCH_RANGE,
-};
+use transaction::errors::{HeaderValidationError, TransactionValidationError};
+use transaction::model::{Executable, NotarizedTransaction, TransactionHeader};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{
     NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig,
 };
 
 #[test]
-fn pre_execution_rejection_should_return_rejected_receipt() {
+fn low_cost_unit_limit_should_result_in_rejection() {
     // Arrange
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut substate_store);
     let transaction = create_notarized_transaction(TransactionParams {
         cost_unit_limit: 1,
         start_epoch_inclusive: 0,
@@ -31,18 +28,15 @@ fn pre_execution_rejection_should_return_rejected_receipt() {
     });
 
     // Act
-    let receipt = test_runner.execute_transaction(&get_executable(&transaction));
+    let result = get_executable(&transaction);
 
     // Assert
-    let rejection_error = receipt.expect_rejection();
-    if !matches!(
-        rejection_error,
-        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
-            ModuleError::CostingError(..)
+    assert_eq!(
+        result,
+        Err(TransactionValidationError::HeaderValidationError(
+            HeaderValidationError::InvalidCostUnitLimit
         ))
-    ) {
-        panic!("Expected costing error but was {}", rejection_error);
-    }
+    );
 }
 
 #[test]
@@ -58,13 +52,13 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
     test_runner.set_current_epoch(CURRENT_EPOCH);
 
     let transaction = create_notarized_transaction(TransactionParams {
-        cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
+        cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
         start_epoch_inclusive: VALID_FROM_EPOCH,
         end_epoch_exclusive: VALID_UNTIL_EPOCH + 1,
     });
 
     // Act
-    let receipt = test_runner.execute_transaction(&get_executable(&transaction));
+    let receipt = test_runner.execute_transaction(&get_executable(&transaction).unwrap());
 
     // Assert
     let rejection_error = receipt.expect_rejection();
@@ -95,13 +89,13 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     test_runner.set_current_epoch(CURRENT_EPOCH);
 
     let transaction = create_notarized_transaction(TransactionParams {
-        cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
+        cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
         start_epoch_inclusive: VALID_FROM_EPOCH,
         end_epoch_exclusive: VALID_UNTIL_EPOCH + 1,
     });
 
     // Act
-    let receipt = test_runner.execute_transaction(&get_executable(&transaction));
+    let receipt = test_runner.execute_transaction(&get_executable(&transaction).unwrap());
 
     // Assert
     let rejection_error = receipt.expect_rejection();
@@ -139,7 +133,7 @@ fn test_normal_transaction_flow() {
     let raw_transaction = create_notarized_transaction(TransactionParams {
         cost_unit_limit: 1_000_000,
         start_epoch_inclusive: 0,
-        end_epoch_exclusive: 0 + DEFAULT_MAX_EPOCH_RANGE,
+        end_epoch_exclusive: 100,
     })
     .to_bytes()
     .unwrap();
@@ -166,12 +160,12 @@ fn test_normal_transaction_flow() {
     receipt.expect_commit_success();
 }
 
-fn get_executable<'a>(transaction: &'a NotarizedTransaction) -> Executable<'a> {
+fn get_executable<'a>(
+    transaction: &'a NotarizedTransaction,
+) -> Result<Executable<'a>, TransactionValidationError> {
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
-    validator
-        .validate(&transaction, &TestIntentHashManager::new())
-        .unwrap()
+    validator.validate(&transaction, &TestIntentHashManager::new())
 }
 
 struct TransactionParams {

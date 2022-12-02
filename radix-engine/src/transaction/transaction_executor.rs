@@ -9,21 +9,18 @@ use crate::wasm::*;
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine_interface::math::Decimal;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
 pub struct FeeReserveConfig {
-    pub cost_unit_price: Decimal,
+    pub cost_unit_price: u128,
     pub system_loan: u32,
 }
 
 impl FeeReserveConfig {
     pub fn standard() -> Self {
         Self {
-            cost_unit_price: DEFAULT_COST_UNIT_PRICE
-                .parse()
-                .expect("Invalid cost unit price"),
+            cost_unit_price: DEFAULT_COST_UNIT_PRICE,
             system_loan: DEFAULT_SYSTEM_LOAN,
         }
     }
@@ -90,9 +87,9 @@ where
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
         let fee_reserve = SystemLoanFeeReserve::new(
-            transaction.cost_unit_limit(),
-            transaction.tip_percentage(),
             fee_reserve_config.cost_unit_price,
+            transaction.tip_percentage(),
+            transaction.cost_unit_limit().into(),
             fee_reserve_config.system_loan,
         );
 
@@ -193,7 +190,7 @@ where
             let break_down = receipt
                 .execution
                 .fee_summary
-                .cost_breakdown
+                .execution_breakdown
                 .iter()
                 .collect::<BTreeMap<&String, &u32>>();
             for (k, v) in break_down {

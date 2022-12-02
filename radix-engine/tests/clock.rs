@@ -82,7 +82,7 @@ fn validator_can_set_current_time() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
     let time_to_set_ms: u64 = 1669663688996;
-    let expected_time_rounded_to_minutes: u64 = 1669663680000;
+    let expected_unix_time_rounded_to_minutes: u64 = 1669663680;
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -107,10 +107,10 @@ fn validator_can_set_current_time() {
 
     // Assert
     let outputs = receipt.expect_commit_success();
-    let current_time_rounded_to_minutes: u64 = scrypto_decode(&outputs[2]).unwrap();
+    let current_unix_time_rounded_to_minutes: u64 = scrypto_decode(&outputs[2]).unwrap();
     assert_eq!(
-        current_time_rounded_to_minutes,
-        expected_time_rounded_to_minutes
+        current_unix_time_rounded_to_minutes,
+        expected_unix_time_rounded_to_minutes
     );
 }
 
@@ -137,4 +137,36 @@ fn no_auth_required_to_get_current_time_rounded_to_minutes() {
     let outputs = receipt.expect_commit_success();
     let current_time_rounded_to_minutes: u64 = scrypto_decode(&outputs[1]).unwrap();
     assert_eq!(current_time_rounded_to_minutes, 0);
+}
+
+#[test]
+fn test_clock_comparison_methods_against_the_current_time() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "ClockTest",
+            "set_current_time",
+            args!(CLOCK, 1669663688996 as u64),
+        )
+        .call_function(
+            package_address,
+            "ClockTest",
+            "test_clock_comparison_operators",
+            args![],
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![AuthModule::validator_role_non_fungible_address()],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
 }
