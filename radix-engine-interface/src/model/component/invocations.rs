@@ -8,28 +8,6 @@ use crate::wasm::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ComponentGlobalizeWithOwnerInvocation {
-    pub component_id: ComponentId,
-}
-
-impl Invocation for ComponentGlobalizeWithOwnerInvocation {
-    type Output = (ComponentAddress, Bucket);
-}
-
-impl ScryptoNativeInvocation for ComponentGlobalizeWithOwnerInvocation {
-    type ScryptoOutput = (ComponentAddress, Bucket);
-}
-
-impl Into<NativeFnInvocation> for ComponentGlobalizeWithOwnerInvocation {
-    fn into(self) -> NativeFnInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::Component(
-            ComponentFunctionInvocation::GlobalizeWithOwner(self),
-        ))
-    }
-}
-
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentGlobalizeNoOwnerInvocation {
     pub component_id: ComponentId,
 }

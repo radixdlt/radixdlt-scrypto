@@ -40,11 +40,7 @@ blueprint! {
                 .default(withdraw_rule.clone(), withdraw_rule);
             account.add_access_check(access_rules);
 
-            let (component_address, owner_badge) = account.globalize_with_owner();
-
-            let _: () = borrow_component!(component_address).call("deposit", args!(owner_badge));
-
-            component_address
+            account.globalize_no_owner()
         }
 
         pub fn new(withdraw_rule: AccessRule) -> ComponentAddress {

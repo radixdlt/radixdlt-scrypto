@@ -23,15 +23,6 @@ where
     match native_fn {
         NativeFn::Function(native_function) => match native_function {
             NativeFunction::Component(component_function) => match component_function {
-                ComponentFunction::GlobalizeWithOwner => {
-                    let invocation: ComponentGlobalizeWithOwnerInvocation = scrypto_decode(&args)
-                        .map_err(|e| {
-                        RuntimeError::KernelError(KernelError::InvalidSborValue(e))
-                    })?;
-                    system_api
-                        .sys_invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a))
-                }
                 ComponentFunction::GlobalizeNoOwner => {
                     let invocation: ComponentGlobalizeNoOwnerInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;

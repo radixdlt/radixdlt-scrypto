@@ -120,7 +120,6 @@ pub enum MetadataMethod {
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ComponentFunction {
-    GlobalizeWithOwner,
     GlobalizeNoOwner,
 }
 

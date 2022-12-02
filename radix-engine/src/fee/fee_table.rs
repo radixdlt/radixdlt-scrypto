@@ -146,7 +146,6 @@ impl FeeTable {
     pub fn run_native_function_cost(&self, native_function: &NativeFunction) -> u32 {
         match native_function {
             NativeFunction::Component(component_func) => match component_func {
-                ComponentFunction::GlobalizeWithOwner => self.fixed_high,
                 ComponentFunction::GlobalizeNoOwner => self.fixed_high,
             },
             NativeFunction::TransactionProcessor(transaction_processor_fn) => {

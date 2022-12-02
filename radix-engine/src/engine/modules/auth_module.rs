@@ -124,9 +124,6 @@ impl AuthModule {
                                 NativeFunction::Package(PackageFunction::PublishWithOwner),
                             ))
                             | REActor::Function(ResolvedFunction::Native(
-                                NativeFunction::Component(ComponentFunction::GlobalizeWithOwner),
-                            ))
-                            | REActor::Function(ResolvedFunction::Native(
                                 NativeFunction::ResourceManager(
                                     ResourceManagerFunction::CreateWithOwner,
                                 ),
