@@ -194,7 +194,7 @@ impl FungibleResourceBuilder {
                     divisibility: self.divisibility,
                 },
                 metadata: self.metadata,
-                manager_badge: owner_badge,
+                owner_badge: owner_badge,
                 mint_params: Some(MintParams::fungible(amount)),
             })
             .unwrap();
@@ -209,7 +209,7 @@ impl FungibleResourceBuilder {
                     divisibility: self.divisibility,
                 },
                 metadata: self.metadata,
-                manager_badge: owner_badge,
+                owner_badge: owner_badge,
                 mint_params: None,
             })
             .unwrap();
@@ -487,7 +487,7 @@ impl NonFungibleResourceBuilder {
                     id_type: self.id_type,
                 },
                 metadata: self.metadata,
-                manager_badge: owner_badge,
+                owner_badge: owner_badge,
                 mint_params: Some(MintParams::NonFungible { entries: encoded }),
             })
             .unwrap();
@@ -502,7 +502,7 @@ impl NonFungibleResourceBuilder {
                     id_type: self.id_type,
                 },
                 metadata: self.metadata,
-                manager_badge: owner_badge,
+                owner_badge: owner_badge,
                 mint_params: None,
             })
             .unwrap();

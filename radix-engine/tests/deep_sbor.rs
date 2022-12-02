@@ -121,8 +121,11 @@ fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: u8) -> Transaction
     let code = wat2wasm(
         &include_str!("wasm/deep_sbor_response.wat").replace("${depth}", &depth.to_string()),
     );
-    let package_address =
-        test_runner.publish_package(code, generate_single_function_abi("Test", "f", Type::Any));
+    let package_address = test_runner.publish_package_with_owner(
+        code,
+        generate_single_function_abi("Test", "f", Type::Any),
+        NO_OWNER,
+    );
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

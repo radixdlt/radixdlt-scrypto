@@ -6,7 +6,7 @@ use crate::engine::{
 use crate::model::{BucketSubstate, GlobalAddressSubstate};
 use radix_engine_interface::api::api::*;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::constants::*;
+use radix_engine_interface::{constants::*, rule};
 
 impl ExecutableInvocation for ComponentGlobalizeInvocation {
     type Exec = NativeExecutor<Self>;
@@ -97,8 +97,6 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
     where
         Y: SystemApi + SysInvokableNative<RuntimeError>,
     {
-        // TODO: set up auth based on owner badge.
-
         let component_node_id = RENodeId::Component(self.component_id);
         let global_node_id = {
             let handle = api.lock_substate(
@@ -120,6 +118,41 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
             node_id
         };
         let component_address: ComponentAddress = global_node_id.into();
+
+        // Add protection for metadata/royalties
+        let mut access_rules = AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Get,
+            ))),
+            AccessRule::AllowAll,
+            rule!(require(self.owner_badge.clone())),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
+            rule!(require(self.owner_badge.clone())),
+            rule!(require(self.owner_badge.clone())),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
+                PackageMethod::SetRoyaltyConfig,
+            ))),
+            rule!(require(self.owner_badge.clone())),
+            rule!(require(self.owner_badge.clone())),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
+                PackageMethod::ClaimRoyalty,
+            ))),
+            rule!(require(self.owner_badge.clone())),
+            rule!(require(self.owner_badge.clone())),
+        );
+        api.sys_invoke(AccessRulesAddAccessCheckInvocation {
+            receiver: component_node_id,
+            access_rules,
+        })?;
 
         api.create_node(
             global_node_id,

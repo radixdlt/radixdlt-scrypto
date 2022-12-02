@@ -157,7 +157,8 @@ impl Component {
             .unwrap()
     }
 
-    /// Globalize with owner badge, overwriting all existing access rule configurations
+    /// Globalize with owner badge. This will add additional access rules to protect native
+    /// methods, such as metadata and royalty.
     pub fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
         ScryptoEnv
             .sys_invoke(ComponentGlobalizeWithOwnerInvocation {

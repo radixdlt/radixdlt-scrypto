@@ -318,6 +318,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         }
     }
 
+    // TODO: publish_package(code, abi, royalty_config, metadata, access_rules)
+
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,

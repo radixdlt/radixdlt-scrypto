@@ -13,8 +13,8 @@ pub struct PackagePublishInvocation {
     pub code: Blob,
     pub abi: Blob,
     pub royalty_config: HashMap<String, RoyaltyConfig>,
-    pub access_rules: AccessRules,
     pub metadata: HashMap<String, String>,
+    pub access_rules: AccessRules,
 }
 
 impl Invocation for PackagePublishInvocation {

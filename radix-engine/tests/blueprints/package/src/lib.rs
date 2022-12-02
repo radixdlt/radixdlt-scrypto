@@ -93,9 +93,10 @@ blueprint! {
 
     impl PackageTest {
         pub fn publish() -> PackageAddress {
-            component_system().publish_package(
+            component_system().publish_package_with_owner(
                 include_bytes!("../../../../../assets/faucet.wasm").to_vec(),
                 HashMap::new(),
+                NO_OWNER,
             )
         }
     }

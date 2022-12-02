@@ -102,33 +102,33 @@ impl ExecutableInvocation for ResourceManagerCreateWithOwnerInvocation {
             ResourceManagerFunction::CreateWithOwner,
         )));
 
-        let manager_badge = self.manager_badge;
+        let owner_badge = self.owner_badge;
         let mut access_rules = HashMap::new();
         access_rules.insert(
             ResourceMethodAuthKey::Withdraw,
-            (AllowAll, MUTABLE(rule!(require(manager_badge.clone())))),
+            (AllowAll, MUTABLE(rule!(require(owner_badge.clone())))),
         );
         access_rules.insert(
             ResourceMethodAuthKey::Deposit,
-            (AllowAll, MUTABLE(rule!(require(manager_badge.clone())))),
+            (AllowAll, MUTABLE(rule!(require(owner_badge.clone())))),
         );
         access_rules.insert(
             ResourceMethodAuthKey::Recall,
-            (DenyAll, MUTABLE(rule!(require(manager_badge.clone())))),
+            (DenyAll, MUTABLE(rule!(require(owner_badge.clone())))),
         );
         access_rules.insert(
             Mint,
-            (DenyAll, MUTABLE(rule!(require(manager_badge.clone())))),
+            (DenyAll, MUTABLE(rule!(require(owner_badge.clone())))),
         );
         access_rules.insert(
             Burn,
-            (DenyAll, MUTABLE(rule!(require(manager_badge.clone())))),
+            (DenyAll, MUTABLE(rule!(require(owner_badge.clone())))),
         );
         access_rules.insert(
             UpdateNonFungibleData,
             (
-                rule!(require(manager_badge.clone())),
-                MUTABLE(rule!(require(manager_badge.clone()))),
+                rule!(require(owner_badge.clone())),
+                MUTABLE(rule!(require(owner_badge.clone()))),
             ),
         );
 

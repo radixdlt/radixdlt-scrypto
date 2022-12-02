@@ -123,9 +123,10 @@ fn test_non_existent_blob_hash() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(account, dec!("10"))
-        .add_instruction(Instruction::PublishPackage {
+        .add_instruction(Instruction::PublishPackageWithOwner {
             code: Blob(Hash([0; 32])),
             abi: Blob(Hash([0; 32])),
+            owner_badge: NO_OWNER,
         })
         .0
         .build();
