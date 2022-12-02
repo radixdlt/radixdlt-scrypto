@@ -133,7 +133,7 @@ fn can_lock_package_metadata_with_owner() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .create_proof_from_account(account, ENTITY_OWNER_TOKEN)
+        .create_proof_from_account(account, owner_badge_resource)
         .call_native_method(
             RENodeId::Global(GlobalAddress::Package(package_address)),
             "set",

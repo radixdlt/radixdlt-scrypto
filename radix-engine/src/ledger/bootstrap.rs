@@ -35,7 +35,6 @@ pub struct GenesisReceipt {
     pub epoch_manager: SystemAddress,
     pub clock: SystemAddress,
     pub eddsa_ed25519_token: ResourceAddress,
-    pub entity_owner_token: ResourceAddress,
 }
 
 pub fn create_genesis() -> SystemTransaction {
@@ -206,31 +205,6 @@ pub fn create_genesis() -> SystemTransaction {
         }
     };
 
-    let create_entity_owner_token = {
-        let metadata: HashMap<String, String> = HashMap::new();
-        let mut access_rules = HashMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        let initial_supply: Option<MintParams> = None;
-
-        // TODO: Create token at a specific address
-        Instruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: ResourceManagerFunction::CreateNoOwner.to_string(),
-            },
-            args: scrypto_encode(&ResourceManagerCreateInvocation {
-                resource_type: ResourceType::NonFungible {
-                    id_type: NonFungibleIdType::Bytes,
-                },
-                metadata,
-                access_rules,
-                mint_params: initial_supply,
-            })
-            .unwrap(),
-        }
-    };
-
     let manifest = TransactionManifest {
         instructions: vec![
             create_faucet_package,
@@ -243,7 +217,6 @@ pub fn create_genesis() -> SystemTransaction {
             create_epoch_manager,
             create_clock,
             create_eddsa_ed25519_token,
-            create_entity_owner_token,
         ],
         blobs,
     };
@@ -265,8 +238,6 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
     let clock: SystemAddress = scrypto_decode(&invoke_result[8]).unwrap();
     let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) =
         scrypto_decode(&invoke_result[9]).unwrap();
-    let (entity_owner_token, _bucket): (ResourceAddress, Option<Bucket>) =
-        scrypto_decode(&invoke_result[10]).unwrap();
 
     GenesisReceipt {
         faucet_package,
@@ -278,7 +249,6 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
         epoch_manager,
         clock,
         eddsa_ed25519_token,
-        entity_owner_token,
     }
 }
 
@@ -371,6 +341,5 @@ mod tests {
         assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
         assert_eq!(genesis_receipt.clock, CLOCK);
         assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
-        assert_eq!(genesis_receipt.entity_owner_token, ENTITY_OWNER_TOKEN);
     }
 }

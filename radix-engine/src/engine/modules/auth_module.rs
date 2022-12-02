@@ -107,34 +107,6 @@ impl AuthModule {
                     ) => {
                         vec![]
                     }
-                    (
-                        ResolvedMethod::Native(NativeMethod::ResourceManager(
-                            ResourceManagerMethod::Mint,
-                        )),
-                        ResolvedReceiver {
-                            receiver: _,
-                            derefed_from:
-                                Some((RENodeId::Global(GlobalAddress::Resource(resource_address)), _)),
-                        },
-                    ) if resource_address.eq(&ENTITY_OWNER_TOKEN) => {
-                        let actor = system_api.get_actor();
-                        match actor {
-                            // TODO: Use associated function badge instead
-                            REActor::Function(ResolvedFunction::Native(
-                                NativeFunction::Package(PackageFunction::PublishWithOwner),
-                            ))
-                            | REActor::Function(ResolvedFunction::Native(
-                                NativeFunction::ResourceManager(
-                                    ResourceManagerFunction::CreateWithOwner,
-                                ),
-                            )) => {
-                                vec![MethodAuthorization::AllowAll]
-                            }
-                            _ => {
-                                vec![MethodAuthorization::DenyAll]
-                            }
-                        }
-                    }
                     (ResolvedMethod::Native(method), ..)
                         if matches!(method, NativeMethod::Metadata(..))
                             || matches!(method, NativeMethod::EpochManager(..))
