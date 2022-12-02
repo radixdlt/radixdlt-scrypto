@@ -187,7 +187,7 @@ mod tests {
                     },
                     args: args!(Decimal::from(1u32), PreciseDecimal::from(2u32))
                 },
-                Instruction::PublishPackage {
+                Instruction::PublishPackageWithOwner {
                     code: Blob(code_hash),
                     abi: Blob(abi_hash),
                 },

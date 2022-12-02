@@ -103,7 +103,7 @@ pub enum Instruction {
         args: Vec<Value>,
     },
 
-    PublishPackage {
+    PublishPackageWithOwner {
         code: Value,
         abi: Value,
     },

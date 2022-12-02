@@ -339,8 +339,12 @@ pub fn decompile_instruction<F: fmt::Write>(
         Instruction::CallNativeMethod { method_ident, args } => {
             decompile_call_native_method(f, context, method_ident, args)?
         }
-        Instruction::PublishPackage { code, abi } => {
-            write!(f, "PUBLISH_PACKAGE Blob(\"{}\") Blob(\"{}\");", code, abi)?;
+        Instruction::PublishPackageWithOwner { code, abi } => {
+            write!(
+                f,
+                "PUBLISH_PACKAGE_WITH_OWNER Blob(\"{}\") Blob(\"{}\");",
+                code, abi
+            )?;
         }
     }
     Ok(())
@@ -620,7 +624,7 @@ CREATE_RESOURCE Enum("Fungible", 0u8) Array<Tuple>() Array<Tuple>() Enum("Some",
 CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch" Expression("ENTIRE_WORKTOP");
 DROP_ALL_PROOFS;
 CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "complicated_method" Decimal("1") PreciseDecimal("2");
-PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d");
+PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d");
 "#
         )
     }

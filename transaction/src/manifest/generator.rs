@@ -437,10 +437,12 @@ pub fn generate_instruction(
             }
         }
 
-        ast::Instruction::PublishPackage { code, abi } => Instruction::PublishPackage {
-            code: generate_blob(code, blobs)?,
-            abi: generate_blob(abi, blobs)?,
-        },
+        ast::Instruction::PublishPackageWithOwner { code, abi } => {
+            Instruction::PublishPackageWithOwner {
+                code: generate_blob(code, blobs)?,
+                abi: generate_blob(abi, blobs)?,
+            }
+        }
         ast::Instruction::CreateResource {
             resource_type,
             metadata,
