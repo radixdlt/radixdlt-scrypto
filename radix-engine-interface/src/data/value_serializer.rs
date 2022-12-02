@@ -48,7 +48,7 @@ impl<'a> ScryptoValueFormattingContext<'a> {
     }
 }
 
-trait SerializableScryptoValue: for<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> {
+pub trait SerializableScryptoValue: for<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> {
     fn simple_serializable<'a, 'b, TContext: Into<ValueFormattingContext<'b>>>(
         &'a self,
         context: TContext,
