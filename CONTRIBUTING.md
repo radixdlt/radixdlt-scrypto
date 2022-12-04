@@ -13,7 +13,7 @@ This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDU
 * **Ensure the bug was not already reported** by searching on GitHub under [Issues](https://github.com/radixdlt/radixdlt-scrypto/issues).
 * If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/radixdlt/radixdlt-scrypto/issues/new). Be sure to include:
   * a **title**,
-  * a **clear description**, 
+  * a **clear description**,
   * as much **relevant information** as possible,
   * a **code sample** or an **executable test case** demonstrating the expected behavior that is not occurring.
 
@@ -21,7 +21,7 @@ This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDU
 
 Development flow:
 1. Create feature branches using develop as a starting point to start new work;
-1. Submit a new pull request to the `develop` branch 
+1. Submit a new pull request to the `develop` branch
    * please ensure the PR description clearly describes the problem and solution and include the relevant issue number if applicable.
 
 Release workflow:
@@ -58,12 +58,25 @@ Release workflow:
    * [Markdown Preview Enhanced](https://marketplace.visualstudio.com/items?itemName=shd101wyy.markdown-preview-enhanced)
    * [Radix Transaction Manifest Support](https://marketplace.visualstudio.com/items?itemName=RadixPublishing.radix-transaction-manifest-support)
    * [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+6. (Optional) Install `cargo nextest` to speedup test execution time
+    Installation method
+    ```
+    cargo install cargo-nextest
+    ```
+    more details: [cargo-nextest](https://nexte.st/index.html)
+7. (Optional) Install `sccache` to speedup compilation times.
+    Recommended installation method
+    ```
+    cargo install sccache
+    ```
+    more details: [sccache - Shared Compilation Cache](https://github.com/mozilla/sccache)
 
 
 Bash scripts that might be of help:
 * `format.sh` - Formats the entire repo
 * `build.sh` - Builds main packages
-* `test.sh` - Runs all the tests
+* `test.sh` - Runs the essential tests
+* `test_extra.sh` - Runs the additional tests
 * `assets/update-assets.sh` - Updates `Account`/`Faucet` scrypto packages (needed when your change would affect the output WASM)
 
 ## Branching strategy
@@ -95,7 +108,7 @@ When QA gives the green light, a new release branch is created
 
 These branches will stay alive forever, or at least while we support the release, thereby allowing us to release security hotfixes for older versions.
 
-If QA discovers a bug with any of the features before a release happens, it is fixed in the feature branch taken from the release branch and then merged into the release again. 
+If QA discovers a bug with any of the features before a release happens, it is fixed in the feature branch taken from the release branch and then merged into the release again.
 
 These changes should immediately be propagated to the current release candidate branch.
 

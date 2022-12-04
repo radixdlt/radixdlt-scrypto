@@ -47,18 +47,6 @@ Documentation: https://docs.radixdlt.com/main/scrypto/introduction.html
     ```
     ./doc.sh
     ```
-6. (Optional) Install `cargo nextest` to speedup test execution time
-    Installation method
-    ```
-    cargo install cargo-nextest
-    ```
-    more details: [cargo-nextest](https://nexte.st/index.html)
-7. (Optional) Install `sccache` to speedup compilation times.
-    Recommended installation method
-    ```
-    cargo install sccache
-    ```
-    more details: [sccache - Shared Compilation Cache](https://github.com/mozilla/sccache)
 
 ## Getting Started
 
