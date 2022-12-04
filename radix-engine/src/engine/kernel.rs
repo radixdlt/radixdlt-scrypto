@@ -580,17 +580,37 @@ where
     }
 }
 
-pub trait MethodDeref {
+pub trait ResolveApi<W: WasmEngine> {
     fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError>;
+    fn vm(&mut self) -> &ScryptoInterpreter<W>;
+    fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
 }
 
-impl<'g, 's, W, R> MethodDeref for Kernel<'g, 's, W, R>
+impl<'g, 's, W, R> ResolveApi<W> for Kernel<'g, 's, W, R>
 where
     W: WasmEngine,
     R: FeeReserve,
 {
     fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
         self.node_method_deref(node_id)
+    }
+
+    fn vm(&mut self) -> &ScryptoInterpreter<W> {
+        self.scrypto_interpreter
+    }
+
+    fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
+        for m in &mut self.modules {
+            m.on_wasm_instantiation(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                code,
+            )
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -608,12 +628,12 @@ pub trait Executor {
             + SysInvokableNative<RuntimeError>;
 }
 
-pub trait ExecutableInvocation: Invocation {
+pub trait ExecutableInvocation<W:WasmEngine>: Invocation {
     type Exec: Executor<Output = Self::Output>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<Y: ResolveApi<W> + SystemApi> (
         self,
-        deref: &mut D,
+        api: &mut Y,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
 }
 
@@ -621,7 +641,7 @@ impl<'g, 's, W, R, N> Invokable<N> for Kernel<'g, 's, W, R>
 where
     W: WasmEngine,
     R: FeeReserve,
-    N: ExecutableInvocation,
+    N: ExecutableInvocation<W>,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         for m in &mut self.modules {
@@ -665,6 +685,7 @@ where
 }
 
 // TODO: remove redundant code and move this method to the interpreter
+/*
 impl<'g, 's, W, R> Invokable<ScryptoInvocation> for Kernel<'g, 's, W, R>
 where
     W: WasmEngine,
@@ -712,6 +733,7 @@ where
         Ok(rtn)
     }
 }
+ */
 
 impl<'g, 's, W, R> SystemApi for Kernel<'g, 's, W, R>
 where
@@ -1420,23 +1442,19 @@ where
     }
 }
 
+/*
 pub trait InvocationResolver<V, X: Executor> {
     fn resolve(&mut self, invocation: V) -> Result<(X, REActor, CallFrameUpdate), RuntimeError>;
 }
+ */
 
-impl<'g, 's, W, R> InvocationResolver<ScryptoInvocation, ScryptoExecutor<W::WasmInstance>>
-    for Kernel<'g, 's, W, R>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-{
-    fn resolve(
-        &mut self,
-        invocation: ScryptoInvocation,
-    ) -> Result<(ScryptoExecutor<W::WasmInstance>, REActor, CallFrameUpdate), RuntimeError> {
+impl<W:WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
+    type Exec = ScryptoExecutor<W::WasmInstance>;
+
+    fn resolve<D: ResolveApi<W> + SystemApi>(self, api: &mut D) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
 
-        let (executor, actor) = match &invocation {
+        let (executor, actor) = match &self {
             ScryptoInvocation::Function(function_ident, args) => {
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
@@ -1445,7 +1463,7 @@ where
                 };
                 let global_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
 
-                let package = self.execute_in_mode::<_, _, RuntimeError>(
+                let package = api.execute_in_mode::<_, _, RuntimeError>(
                     ExecutionMode::ScryptoInterpreter,
                     |system_api| {
                         let handle = system_api.lock_substate(
@@ -1501,19 +1519,10 @@ where
                 }
 
                 // Emit event
-                for m in &mut self.modules {
-                    m.on_wasm_instantiation(
-                        &self.current_frame,
-                        &mut self.heap,
-                        &mut self.track,
-                        package.code(),
-                    )
-                    .map_err(RuntimeError::ModuleError)?;
-                }
+                api.on_wasm_instantiation(package.code())?;
 
                 (
-                    self.scrypto_interpreter
-                        .create_executor(&package.code, invocation.args().clone()),
+                    api.vm().create_executor(&package.code, self.args().clone()),
                     REActor::Function(ResolvedFunction::Scrypto {
                         package_address,
                         blueprint_name: function_ident.blueprint_name.clone(),
@@ -1534,7 +1543,7 @@ where
                 // Deref if global
                 // TODO: Move into kernel
                 let resolved_receiver = if let Some((derefed, derefed_lock)) =
-                    self.node_method_deref(original_node_id)?
+                api.deref(original_node_id)?
                 {
                     ResolvedReceiver::derefed(derefed, original_node_id, derefed_lock)
                 } else {
@@ -1544,7 +1553,7 @@ where
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
                 let component_node_id = resolved_receiver.receiver;
-                let component_info = self.execute_in_mode::<_, _, RuntimeError>(
+                let component_info = api.execute_in_mode::<_, _, RuntimeError>(
                     ExecutionMode::ScryptoInterpreter,
                     |system_api| {
                         let handle = system_api.lock_substate(
@@ -1559,7 +1568,7 @@ where
                         Ok(component_info)
                     },
                 )?;
-                let package = self.execute_in_mode::<_, _, RuntimeError>(
+                let package = api.execute_in_mode::<_, _, RuntimeError>(
                     ExecutionMode::ScryptoInterpreter,
                     |system_api| {
                         let package_global = RENodeId::Global(GlobalAddress::Package(
@@ -1622,19 +1631,10 @@ where
                 }
 
                 // Emit event
-                for m in &mut self.modules {
-                    m.on_wasm_instantiation(
-                        &self.current_frame,
-                        &mut self.heap,
-                        &mut self.track,
-                        package.code(),
-                    )
-                    .map_err(RuntimeError::ModuleError)?;
-                }
+                api.on_wasm_instantiation(package.code())?;
 
                 (
-                    self.scrypto_interpreter
-                        .create_executor(&package.code, invocation.args().clone()),
+                    api.vm().create_executor(&package.code, self.args().clone()),
                     REActor::Method(
                         ResolvedMethod::Scrypto {
                             package_address: component_info.package_address,
@@ -1649,7 +1649,7 @@ where
             }
         };
 
-        for global_address in invocation.args().global_references() {
+        for global_address in self.args().global_references() {
             node_refs_to_copy.insert(RENodeId::Global(global_address));
         }
 
@@ -1665,12 +1665,12 @@ where
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
         Ok((
-            executor,
             actor,
             CallFrameUpdate {
-                nodes_to_move: invocation.args().node_ids().into_iter().collect(),
+                nodes_to_move: self.args().node_ids().into_iter().collect(),
                 node_refs_to_copy,
             },
+            executor,
         ))
     }
 }

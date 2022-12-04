@@ -1,5 +1,5 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, ResolveApi,
     NativeExecutor, NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver,
     RuntimeError, SystemApi,
 };
@@ -14,6 +14,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 use sbor::rust::vec::Vec;
+use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -28,10 +29,10 @@ pub enum AuthZoneError {
     AssertAccessRuleError(MethodAuthorization, MethodAuthorizationError),
 }
 
-impl ExecutableInvocation for AuthZonePopInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for AuthZonePopInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -86,10 +87,10 @@ impl NativeProcedure for AuthZonePopInvocation {
     }
 }
 
-impl ExecutableInvocation for AuthZonePushInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for AuthZonePushInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -141,10 +142,10 @@ impl NativeProcedure for AuthZonePushInvocation {
     }
 }
 
-impl ExecutableInvocation for AuthZoneCreateProofInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -214,10 +215,10 @@ impl NativeProcedure for AuthZoneCreateProofInvocation {
     }
 }
 
-impl ExecutableInvocation for AuthZoneCreateProofByAmountInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -288,10 +289,10 @@ impl NativeProcedure for AuthZoneCreateProofByAmountInvocation {
     }
 }
 
-impl ExecutableInvocation for AuthZoneCreateProofByIdsInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -362,10 +363,10 @@ impl NativeProcedure for AuthZoneCreateProofByIdsInvocation {
     }
 }
 
-impl ExecutableInvocation for AuthZoneClearInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for AuthZoneClearInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -401,10 +402,10 @@ impl NativeProcedure for AuthZoneClearInvocation {
     }
 }
 
-impl ExecutableInvocation for AuthZoneDrainInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for AuthZoneDrainInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -460,10 +461,10 @@ impl NativeProcedure for AuthZoneDrainInvocation {
     }
 }
 
-impl ExecutableInvocation for AuthZoneAssertAccessRuleInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for AuthZoneAssertAccessRuleInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

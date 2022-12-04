@@ -8,7 +8,7 @@ impl<'g, 's, W, R, N, T> SysNativeInvokable<N, RuntimeError> for Kernel<'g, 's, 
 where
     W: WasmEngine,
     R: FeeReserve,
-    N: ScryptoNativeInvocation<ScryptoOutput = T> + ExecutableInvocation<Output = T>,
+    N: ScryptoNativeInvocation<ScryptoOutput = T> + ExecutableInvocation<W, Output = T>,
 {
     fn sys_invoke(&mut self, invocation: N) -> Result<T, RuntimeError> {
         self.invoke(invocation)

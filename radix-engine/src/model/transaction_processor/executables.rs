@@ -17,6 +17,7 @@ use crate::model::resolve_native_function;
 use crate::model::resolve_native_method;
 use crate::model::{InvokeError, WorktopSubstate};
 use crate::types::*;
+use crate::wasm::WasmEngine;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -50,12 +51,12 @@ impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<Vec<u8>>;
 }
 
-impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
+impl<'a, W:WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvocation<'a> {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();

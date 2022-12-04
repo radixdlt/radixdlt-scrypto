@@ -1,17 +1,18 @@
 use crate::engine::{deref_and_update, RENode, ResolvedFunction};
 use crate::engine::{
-    CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref, NativeExecutor, NativeProcedure,
+    CallFrameUpdate, ExecutableInvocation, LockFlags, ResolveApi, NativeExecutor, NativeProcedure,
     REActor, ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::model::{BucketSubstate, GlobalAddressSubstate};
 use radix_engine_interface::api::api::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::{constants::*, rule};
+use crate::wasm::WasmEngine;
 
-impl ExecutableInvocation for ComponentGlobalizeInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -70,10 +71,10 @@ impl NativeProcedure for ComponentGlobalizeInvocation {
     }
 }
 
-impl ExecutableInvocation for ComponentGlobalizeWithOwnerInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeWithOwnerInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -168,10 +169,10 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
     }
 }
 
-impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for ComponentSetRoyaltyConfigInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -216,10 +217,10 @@ impl NativeProcedure for ComponentSetRoyaltyConfigInvocation {
     }
 }
 
-impl ExecutableInvocation for ComponentClaimRoyaltyInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for ComponentClaimRoyaltyInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

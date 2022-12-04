@@ -40,12 +40,12 @@ impl Package {
     }
 }
 
-impl ExecutableInvocation for PackagePublishInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Package(
@@ -120,12 +120,12 @@ impl NativeProcedure for PackagePublishInvocation {
     }
 }
 
-impl ExecutableInvocation for PackagePublishWithOwnerInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for PackagePublishWithOwnerInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
         let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Package(
@@ -228,19 +228,19 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
     }
 }
 
-impl ExecutableInvocation for PackageSetRoyaltyConfigInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocation {
     type Exec = NativeExecutor<PackageSetRoyaltyConfigExecutable>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
-        deref: &mut D,
+        api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, api)?;
 
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Package(PackageMethod::SetRoyaltyConfig)),
@@ -276,16 +276,16 @@ impl NativeProcedure for PackageSetRoyaltyConfigExecutable {
     }
 }
 
-impl ExecutableInvocation for PackageClaimRoyaltyInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for PackageClaimRoyaltyInvocation {
     type Exec = NativeExecutor<PackageClaimRoyaltyExecutable>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
-        deref: &mut D,
+        api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, api)?;
 
         let actor = REActor::Method(
             ResolvedMethod::Native(NativeMethod::Package(PackageMethod::ClaimRoyalty)),

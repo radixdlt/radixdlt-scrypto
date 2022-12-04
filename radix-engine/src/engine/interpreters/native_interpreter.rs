@@ -4,6 +4,7 @@ use crate::types::*;
 use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
 use radix_engine_interface::api::types::RENodeId;
 use sbor::rust::fmt::Debug;
+use crate::wasm::WasmEngine;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
     fn into(self) -> RuntimeError {
@@ -100,7 +101,7 @@ impl<N: NativeProcedure> Executor for NativeExecutor<N> {
     }
 }
 
-pub fn deref_and_update<D: MethodDeref>(
+pub fn deref_and_update<D: ResolveApi<W>, W: WasmEngine>(
     receiver: RENodeId,
     call_frame_update: &mut CallFrameUpdate,
     deref: &mut D,

@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, InterpreterError,
-    Invokable, LockFlags, MethodDeref, NativeExecutor, NativeProcedure, REActor, ResolvedMethod,
+    Invokable, LockFlags, ResolveApi, NativeExecutor, NativeProcedure, REActor, ResolvedMethod,
     RuntimeError, SystemApi,
 };
 use crate::model::{MethodAuthorization, MethodAuthorizationError};
@@ -10,6 +10,7 @@ use radix_engine_interface::api::types::{
     AccessRulesChainMethod, GlobalAddress, NativeMethod, PackageOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
+use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -20,10 +21,10 @@ pub enum AccessRulesChainError {
     ProtectedMethod(AccessRuleKey),
 }
 
-impl ExecutableInvocation for AccessRulesAddAccessCheckInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for AccessRulesAddAccessCheckInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -113,10 +114,10 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
     }
 }
 
-impl ExecutableInvocation for AccessRulesSetMethodAccessRuleInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodAccessRuleInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -236,10 +237,10 @@ impl NativeProcedure for AccessRulesSetMethodAccessRuleInvocation {
     }
 }
 
-impl ExecutableInvocation for AccessRulesSetGroupAccessRuleInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupAccessRuleInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -331,10 +332,10 @@ impl NativeProcedure for AccessRulesSetGroupAccessRuleInvocation {
     }
 }
 
-impl ExecutableInvocation for AccessRulesSetMethodMutabilityInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodMutabilityInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -454,10 +455,10 @@ impl NativeProcedure for AccessRulesSetMethodMutabilityInvocation {
     }
 }
 
-impl ExecutableInvocation for AccessRulesSetGroupMutabilityInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupMutabilityInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -549,10 +550,10 @@ impl NativeProcedure for AccessRulesSetGroupMutabilityInvocation {
     }
 }
 
-impl ExecutableInvocation for AccessRulesGetLengthInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for AccessRulesGetLengthInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

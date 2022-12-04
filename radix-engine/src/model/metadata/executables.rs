@@ -1,16 +1,17 @@
 use crate::engine::{
     deref_and_update, CallFrameUpdate, ExecutableInvocation, InterpreterError, LockFlags,
-    MethodDeref, NativeExecutor, NativeProcedure, REActor, ResolvedMethod, RuntimeError, SystemApi,
+    ResolveApi, NativeExecutor, NativeProcedure, REActor, ResolvedMethod, RuntimeError, SystemApi,
 };
 use crate::types::*;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{NativeMethod, RENodeId, SubstateOffset};
 use radix_engine_interface::model::*;
+use crate::wasm::WasmEngine;
 
-impl ExecutableInvocation for MetadataSetInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for MetadataSetInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -57,10 +58,10 @@ impl NativeProcedure for MetadataSetInvocation {
     }
 }
 
-impl ExecutableInvocation for MetadataGetInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for MetadataGetInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

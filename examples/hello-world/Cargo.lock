@@ -1454,6 +1454,7 @@ name = "utils"
 version = "0.7.0"
 dependencies = [
  "sbor",
+ "serde",
 ]
 
 [[package]]

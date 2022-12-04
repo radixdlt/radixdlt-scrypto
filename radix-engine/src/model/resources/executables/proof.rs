@@ -1,5 +1,5 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, ResolveApi,
     NativeExecutor, NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver,
     RuntimeError, SystemApi,
 };
@@ -9,6 +9,7 @@ use radix_engine_interface::api::types::{
     GlobalAddress, NativeMethod, ProofMethod, ProofOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
+use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -27,12 +28,12 @@ pub enum ProofError {
     InvalidRequestData(DecodeError),
 }
 
-impl ExecutableInvocation for ProofGetAmountInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for ProofGetAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -62,12 +63,12 @@ impl NativeProcedure for ProofGetAmountInvocation {
     }
 }
 
-impl ExecutableInvocation for ProofGetNonFungibleIdsInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for ProofGetNonFungibleIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -106,12 +107,12 @@ impl NativeProcedure for ProofGetNonFungibleIdsInvocation {
     }
 }
 
-impl ExecutableInvocation for ProofGetResourceAddressInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for ProofGetResourceAddressInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -146,12 +147,12 @@ impl NativeProcedure for ProofGetResourceAddressInvocation {
     }
 }
 
-impl ExecutableInvocation for ProofCloneInvocation {
+impl<W:WasmEngine> ExecutableInvocation<W> for ProofCloneInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolveApi<W>> (
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
