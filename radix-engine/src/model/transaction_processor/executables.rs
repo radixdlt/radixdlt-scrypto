@@ -532,6 +532,7 @@ impl TransactionProcessor {
                     .and_then(|args| {
                         // TODO: Replace with trusted indexed argument
                         api.invoke(ScryptoInvocation::Function(function_ident.clone(), args.raw))
+                            .map(|r| IndexedScryptoValue::from_slice(&r).unwrap())
                             .map_err(InvokeError::Downstream)
                     })
                     .and_then(|result| {
@@ -560,6 +561,7 @@ impl TransactionProcessor {
                     .and_then(|args| {
                         // TODO: Replace with trusted indexed argument
                         api.invoke(ScryptoInvocation::Method(method_ident.clone(), args.raw))
+                            .map(|r| IndexedScryptoValue::from_slice(&r).unwrap())
                             .map_err(InvokeError::Downstream)
                     })
                     .and_then(|result| {

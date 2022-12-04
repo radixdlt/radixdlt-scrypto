@@ -7,6 +7,7 @@ mod metadata;
 mod package;
 mod resource;
 mod system;
+mod scrypto;
 
 pub use auth::*;
 pub use clock::*;
@@ -16,4 +17,5 @@ pub use fee::*;
 pub use metadata::*;
 pub use package::*;
 pub use resource::*;
+pub use scrypto::*;
 pub use system::*;

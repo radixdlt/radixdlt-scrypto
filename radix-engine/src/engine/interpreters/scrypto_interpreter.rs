@@ -11,12 +11,12 @@ pub struct ScryptoExecutor<I: WasmInstance> {
 }
 
 impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
-    type Output = IndexedScryptoValue;
+    type Output = Vec<u8>;
 
     fn execute<Y>(
         mut self,
         system_api: &mut Y,
-    ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
+    ) -> Result<(Vec<u8>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation>
@@ -71,7 +71,7 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
             Ok((output, update))
         };
 
-        rtn
+        rtn.map(|(indexed, update)| (indexed.raw, update))
     }
 }
 

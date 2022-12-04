@@ -36,7 +36,6 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         self.invoke(ScryptoInvocation::Function(fn_ident, args))
-            .map(|v| v.raw)
     }
 
     fn sys_invoke_scrypto_method(
@@ -45,7 +44,6 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         self.invoke(ScryptoInvocation::Method(method_ident, args))
-            .map(|v| v.raw)
     }
 
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {

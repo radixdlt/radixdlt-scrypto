@@ -187,6 +187,7 @@ where
                     _ => return Ok(false),
                 };
 
+                // TODO: Replace with trusted IndexedScryptoValue
                 let access_rule = rule!(require(non_fungible_address));
                 let result = self.invoke(ScryptoInvocation::Function(
                     ScryptoFunctionIdent {
@@ -196,6 +197,7 @@ where
                     },
                     args!(access_rule),
                 ))?;
+                let result = IndexedScryptoValue::from_slice(&result).unwrap();
                 let component_id = result.component_ids.into_iter().next().unwrap();
 
                 // TODO: Use system_api to globalize component when create_node is refactored
@@ -1441,12 +1443,6 @@ where
         Ok(())
     }
 }
-
-/*
-pub trait InvocationResolver<V, X: Executor> {
-    fn resolve(&mut self, invocation: V) -> Result<(X, REActor, CallFrameUpdate), RuntimeError>;
-}
- */
 
 impl<W:WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
     type Exec = ScryptoExecutor<W::WasmInstance>;
