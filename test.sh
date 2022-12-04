@@ -18,7 +18,8 @@ test_crates_features \
     scrypto-tests \
     radix-engine-derive \
     radix-engine-interface \
-    radix-engine transaction"
+    radix-engine \
+    transaction"
 
 echo "Testing scrypto packages..."
 test_packages \
