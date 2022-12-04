@@ -298,22 +298,10 @@ impl<'a, 'b> ContextualSerialize<ScryptoValueFormattingContext<'a>> for EnumVari
         serializer: S,
         context: &ScryptoValueFormattingContext<'a>,
     ) -> Result<S::Ok, S::Error> {
-        let mut discriminator_value_pair = serializer.serialize_tuple(2)?;
-        discriminator_value_pair.serialize_element(self.discriminator)?;
-
-        match self.fields.len() {
-            0 => {
-                discriminator_value_pair.serialize_element(&())?;
-            }
-            1 => {
-                discriminator_value_pair
-                    .serialize_element(&self.fields.get(0).unwrap().serializable(*context))?;
-            }
-            _ => {
-                discriminator_value_pair.serialize_element(&self.fields.serializable(*context))?;
-            }
-        }
-        discriminator_value_pair.end()
+        let mut map = serializer.serialize_map(Some(2))?;
+        map.serialize_entry("variant", &self.discriminator)?;
+        map.serialize_entry("fields", &self.fields.serializable(*context))?;
+        map.end()
     }
 }
 
@@ -917,9 +905,9 @@ mod tests {
             "-5",
             { "hex": "3a92" },
             [153, 62],
-            ["VariantUnit", null],
-            ["VariantSingleValue", 153],
-            ["VariantMultiValues", [153, true]],
+            { "variant": "VariantUnit", "fields": [] },
+            { "variant": "VariantSingleValue", "fields": [153] },
+            { "variant": "VariantMultiValues", "fields": [153, true] },
             [
                 account_package_address,
                 faucet_address,
@@ -975,9 +963,9 @@ mod tests {
                         { "type": "U32", "value": 62 },
                     ]
                 },
-                { "type": "Enum", "value": ["VariantUnit", null] },
-                { "type": "Enum", "value": ["VariantSingleValue", { "type": "U32", "value": 153 }] },
-                { "type": "Enum", "value": ["VariantMultiValues", [{ "type": "U32", "value": 153 }, { "type": "Bool", "value": true }]] },
+                { "type": "Enum", "value": { "variant": "VariantUnit", "fields": [] } },
+                { "type": "Enum", "value": { "variant": "VariantSingleValue", "fields": [{ "type": "U32", "value": 153 }] } },
+                { "type": "Enum", "value": { "variant": "VariantMultiValues", "fields": [{ "type": "U32", "value": 153 }, { "type": "Bool", "value": true }] } },
                 {
                     "type": "Tuple",
                     "value": [
