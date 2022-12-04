@@ -36,8 +36,8 @@ use radix_engine_interface::api::api::Invocation;
 /// Scrypto function/method invocation.
 #[derive(Debug)]
 pub enum ScryptoInvocation {
-    Function(ScryptoFunctionIdent, IndexedScryptoValue),
-    Method(ScryptoMethodIdent, IndexedScryptoValue),
+    Function(ScryptoFunctionIdent, Vec<u8>),
+    Method(ScryptoMethodIdent, Vec<u8>),
 }
 
 impl Invocation for ScryptoInvocation {
@@ -45,7 +45,7 @@ impl Invocation for ScryptoInvocation {
 }
 
 impl ScryptoInvocation {
-    pub fn args(&self) -> &IndexedScryptoValue {
+    pub fn args(&self) -> &[u8] {
         match self {
             ScryptoInvocation::Function(_, args) => &args,
             ScryptoInvocation::Method(_, args) => &args,

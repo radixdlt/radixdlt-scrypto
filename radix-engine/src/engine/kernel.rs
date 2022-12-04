@@ -194,7 +194,7 @@ where
                         blueprint_name: "Account".to_string(),
                         function_name: "create".to_string(),
                     },
-                    IndexedScryptoValue::from_slice(&args!(access_rule)).unwrap(),
+                    args!(access_rule),
                 ))?;
                 let component_id = result.component_ids.into_iter().next().unwrap();
 
@@ -1453,9 +1453,16 @@ impl<W:WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
 
     fn resolve<D: ResolveApi<W> + SystemApi>(self, api: &mut D) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
+        let args = IndexedScryptoValue::from_slice(&self.args())
+            .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
+
+        let nodes_to_move = args.node_ids().into_iter().collect();
+        for global_address in args.global_references() {
+            node_refs_to_copy.insert(RENodeId::Global(global_address));
+        }
 
         let (executor, actor) = match &self {
-            ScryptoInvocation::Function(function_ident, args) => {
+            ScryptoInvocation::Function(function_ident, _) => {
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
                 let package_address = match function_ident.package {
@@ -1509,6 +1516,7 @@ impl<W:WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                     ));
                 }
                 // Check input against the ABI
+
                 if !match_schema_with_value(&fn_abi.input, &args.dom) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
@@ -1522,7 +1530,7 @@ impl<W:WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                 api.on_wasm_instantiation(package.code())?;
 
                 (
-                    api.vm().create_executor(&package.code, self.args().clone()),
+                    api.vm().create_executor(&package.code, args),
                     REActor::Function(ResolvedFunction::Scrypto {
                         package_address,
                         blueprint_name: function_ident.blueprint_name.clone(),
@@ -1532,7 +1540,7 @@ impl<W:WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                     }),
                 )
             }
-            ScryptoInvocation::Method(method_ident, args) => {
+            ScryptoInvocation::Method(method_ident, _) => {
                 let original_node_id = match method_ident.receiver {
                     ScryptoReceiver::Global(address) => {
                         RENodeId::Global(GlobalAddress::Component(address))
@@ -1634,7 +1642,7 @@ impl<W:WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                 api.on_wasm_instantiation(package.code())?;
 
                 (
-                    api.vm().create_executor(&package.code, self.args().clone()),
+                    api.vm().create_executor(&package.code, args),
                     REActor::Method(
                         ResolvedMethod::Scrypto {
                             package_address: component_info.package_address,
@@ -1648,10 +1656,6 @@ impl<W:WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                 )
             }
         };
-
-        for global_address in self.args().global_references() {
-            node_refs_to_copy.insert(RENodeId::Global(global_address));
-        }
 
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
@@ -1667,7 +1671,7 @@ impl<W:WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
         Ok((
             actor,
             CallFrameUpdate {
-                nodes_to_move: self.args().node_ids().into_iter().collect(),
+                nodes_to_move,
                 node_refs_to_copy,
             },
             executor,

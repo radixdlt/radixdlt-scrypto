@@ -17,7 +17,6 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::{
     AccessRule, AccessRuleKey, AccessRules, ResourceType, RoyaltyConfig,
 };
@@ -36,9 +35,6 @@ where
         fn_ident: ScryptoFunctionIdent,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let args = IndexedScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
-
         self.invoke(ScryptoInvocation::Function(fn_ident, args))
             .map(|v| v.raw)
     }
@@ -48,9 +44,6 @@ where
         method_ident: ScryptoMethodIdent,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let args = IndexedScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
-
         self.invoke(ScryptoInvocation::Method(method_ident, args))
             .map(|v| v.raw)
     }
