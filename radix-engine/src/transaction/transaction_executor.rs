@@ -190,7 +190,7 @@ where
             let break_down = receipt
                 .execution
                 .fee_summary
-                .execution_breakdown
+                .execution_cost_unit_breakdown
                 .iter()
                 .collect::<BTreeMap<&String, &u32>>();
             for (k, v) in break_down {
