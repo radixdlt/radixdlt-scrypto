@@ -51,12 +51,9 @@ where
         let input: RadixEngineInput = scrypto_decode(&input.raw)
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         let rtn = match input {
-            RadixEngineInput::InvokeScryptoFunction(function_ident, args) => self
+            RadixEngineInput::InvokeScrypto(invocation) => self
                 .system_api
-                .sys_invoke_scrypto_function(function_ident, args)?,
-            RadixEngineInput::InvokeScryptoMethod(method_ident, args) => self
-                .system_api
-                .sys_invoke_scrypto_method(method_ident, args)?,
+                .invoke_scrypto(invocation)?,
             RadixEngineInput::InvokeNativeFn(native_fn) => {
                 native_fn.invoke(self.system_api).map(|v| v.raw)?
             }

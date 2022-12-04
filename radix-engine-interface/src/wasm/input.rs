@@ -9,8 +9,7 @@ use sbor::rust::vec::Vec;
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum RadixEngineInput {
-    InvokeScryptoFunction(ScryptoFunctionIdent, Vec<u8>),
-    InvokeScryptoMethod(ScryptoMethodIdent, Vec<u8>),
+    InvokeScrypto(ScryptoInvocation),
     InvokeNativeFn(NativeFnInvocation),
 
     CreateNode(ScryptoRENode),

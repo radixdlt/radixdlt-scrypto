@@ -13,7 +13,7 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
     ComponentMethod, Level, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoActor,
-    ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode, SubstateOffset,
+    ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::crypto::Hash;
@@ -30,20 +30,11 @@ where
     W: WasmEngine,
     R: FeeReserve,
 {
-    fn sys_invoke_scrypto_function(
+    fn invoke_scrypto(
         &mut self,
-        fn_ident: ScryptoFunctionIdent,
-        args: Vec<u8>,
+        invocation: ScryptoInvocation,
     ) -> Result<Vec<u8>, RuntimeError> {
-        self.invoke(ScryptoInvocation::Function(fn_ident, args))
-    }
-
-    fn sys_invoke_scrypto_method(
-        &mut self,
-        method_ident: ScryptoMethodIdent,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        self.invoke(ScryptoInvocation::Method(method_ident, args))
+        self.invoke(invocation)
     }
 
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {

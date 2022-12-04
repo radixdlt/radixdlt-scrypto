@@ -1,10 +1,11 @@
 use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
 use radix_engine_interface::api::types::{
-    Level, LockHandle, RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent,
+    Level, LockHandle, RENodeId, ScryptoActor,
     ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::ScryptoDecode;
+use radix_engine_interface::model::ScryptoInvocation;
 use radix_engine_interface::wasm::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -64,21 +65,11 @@ impl<N: ScryptoNativeInvocation> SysNativeInvokable<N, EngineApiError> for Scryp
 }
 
 impl EngineApi<EngineApiError> for ScryptoEnv {
-    fn sys_invoke_scrypto_function(
+    fn invoke_scrypto(
         &mut self,
-        fn_ident: ScryptoFunctionIdent,
-        args: Vec<u8>, // TODO: Update to any
+        invocation: ScryptoInvocation,
     ) -> Result<Vec<u8>, EngineApiError> {
-        let rtn = call_engine_to_raw(RadixEngineInput::InvokeScryptoFunction(fn_ident, args));
-        Ok(rtn)
-    }
-
-    fn sys_invoke_scrypto_method(
-        &mut self,
-        method_ident: ScryptoMethodIdent,
-        args: Vec<u8>, // TODO: Update to any
-    ) -> Result<Vec<u8>, EngineApiError> {
-        let rtn = call_engine_to_raw(RadixEngineInput::InvokeScryptoMethod(method_ident, args));
+        let rtn = call_engine_to_raw(RadixEngineInput::InvokeScrypto(invocation));
         Ok(rtn)
     }
 

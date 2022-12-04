@@ -1,8 +1,10 @@
 use crate::api::api::Invocation;
 use crate::api::types::{ScryptoFunctionIdent, ScryptoMethodIdent};
+use crate::scrypto;
 
 /// Scrypto function/method invocation.
 #[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ScryptoInvocation {
     Function(ScryptoFunctionIdent, Vec<u8>),
     Method(ScryptoMethodIdent, Vec<u8>),

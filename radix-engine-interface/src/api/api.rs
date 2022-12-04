@@ -16,15 +16,9 @@ pub trait SysNativeInvokable<I: Invocation, E> {
 }
 
 pub trait EngineApi<E: Debug> {
-    fn sys_invoke_scrypto_function(
+    fn invoke_scrypto(
         &mut self,
-        fn_ident: ScryptoFunctionIdent,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, E>;
-    fn sys_invoke_scrypto_method(
-        &mut self,
-        method_ident: ScryptoMethodIdent,
-        args: Vec<u8>,
+        invocation: ScryptoInvocation,
     ) -> Result<Vec<u8>, E>;
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, E>;
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), E>;
