@@ -714,7 +714,7 @@ CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9
             NonFungibleId::String("HelloWorld!".to_string()),
             NonFungibleId::Decimal("1234".parse().unwrap()),
             NonFungibleId::Bytes(vec![0x12, 0x19, 0x22, 0xff, 0x3]),
-            NonFungibleId::UUID(1922931322)
+            NonFungibleId::UUID(1922931322),
         ];
 
         let manifest = non_fungible_ids
@@ -727,7 +727,8 @@ CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9
         let compiled = compile(&manifest, &NetworkDefinition::simulator(), Vec::new()).unwrap();
 
         // Act
-        let decompiled = decompile(&compiled.instructions, &NetworkDefinition::simulator()).unwrap();
+        let decompiled =
+            decompile(&compiled.instructions, &NetworkDefinition::simulator()).unwrap();
 
         // Assert
         assert_eq!(manifest, decompiled)
