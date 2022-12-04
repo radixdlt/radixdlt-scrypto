@@ -45,10 +45,6 @@ test_packages() {
     do
         (cd $p; scrypto test)
     done
-    (cd assets/blueprints/account; scrypto test)
-    (cd assets/blueprints/faucet; scrypto test)
-    (cd examples/hello-world; scrypto test)
-    (cd examples/no-std; scrypto test)
 }
 
 test_cli() {
