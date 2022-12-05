@@ -252,7 +252,7 @@ pub enum Value {
     // Other interpreted types
     Expression(Box<Value>),
     Blob(Box<Value>),
-    NonFungibleAddress(Vec<Value>),
+    NonFungibleAddress(Box<Value>, Box<Value>),
 
     // Uninterpreted,
     Hash(Box<Value>),
@@ -302,7 +302,7 @@ impl Value {
             // Other interpreted types
             Value::Expression(_) => Type::Expression,
             Value::Blob(_) => Type::Blob,
-            Value::NonFungibleAddress(_) => Type::NonFungibleAddress,
+            Value::NonFungibleAddress(_,_) => Type::NonFungibleAddress,
 
             // Uninterpreted,
             Value::Hash(_) => Type::Hash,

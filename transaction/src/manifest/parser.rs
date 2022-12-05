@@ -360,10 +360,10 @@ impl Parser {
             // Interpreted
             TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
             TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
-            TokenKind::NonFungibleAddress => Ok(Value::NonFungibleAddress(
-                self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?
-                    .into(),
-            )),
+            TokenKind::NonFungibleAddress => {
+                let values = self.parse_values_two()?;
+                Ok(Value::NonFungibleAddress(values.0.into(), values.1.into()))
+            }
 
             // Uninterpreted
             TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
@@ -419,6 +419,19 @@ impl Parser {
         }
     }
 
+    fn parse_values_two(&mut self) -> Result<(Value, Value), ParserError> {
+        let values =
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
+        if values.len() != 2 {
+            Err(ParserError::InvalidNumberOfValues {
+                actual: values.len(),
+                expected: 2,
+            })
+        } else {
+            Ok((values[0].clone(), values[1].clone()))
+        }
+    }
+    
     fn parse_generics(&mut self, n: usize) -> Result<Vec<Type>, ParserError> {
         advance_match!(self, TokenKind::LessThan);
         let mut types = Vec::new();
