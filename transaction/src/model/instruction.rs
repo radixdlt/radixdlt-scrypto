@@ -145,13 +145,13 @@ pub enum Instruction {
         mint_params: Option<MintParams>,
     },
 
+    BurnResource {
+        bucket_id: BucketId,
+    },
+
     MintFungible {
         resource_address: ResourceAddress,
         amount: Decimal,
-    },
-
-    Burn {
-        bucket_id: BucketId,
     },
 
     SetMetadata {
@@ -169,5 +169,8 @@ pub enum Instruction {
         component_address: ComponentAddress,
         royalty_config: RoyaltyConfig,
     },
+
+    ClaimRoyalty {},
+
     // TODO: add_access_rules & set_access_rules
 }

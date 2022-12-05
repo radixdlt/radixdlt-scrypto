@@ -566,7 +566,9 @@ impl ManifestBuilder {
     /// Burns a resource.
     pub fn burn(&mut self, resource_address: ResourceAddress, amount: Decimal) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
-            builder.add_instruction(Instruction::Burn { bucket_id }).0
+            builder
+                .add_instruction(Instruction::BurnResource { bucket_id })
+                .0
         })
     }
 
@@ -576,7 +578,11 @@ impl ManifestBuilder {
         self.take_from_worktop_by_ids(
             &ids,
             non_fungible_address.resource_address(),
-            |builder, bucket_id| builder.add_instruction(Instruction::Burn { bucket_id }).0,
+            |builder, bucket_id| {
+                builder
+                    .add_instruction(Instruction::BurnResource { bucket_id })
+                    .0
+            },
         )
     }
 
