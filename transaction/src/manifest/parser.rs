@@ -628,11 +628,11 @@ mod tests {
         parse_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  Proof("admin_auth");"#,
             Instruction::CallMethod {
-                receiver: ScryptoReceiver::Global(
+                component_address: Value::ComponentAddress(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
                 ),
-                method: Value::String("refill".into()),
+                method_name: Value::String("refill".into()),
                 args: vec![
                     Value::Bucket(Value::String("xrd_bucket".into()).into()),
                     Value::Proof(Value::String("admin_auth".into()).into())
@@ -642,11 +642,11 @@ mod tests {
         parse_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleId("00")  Proof("admin_auth");"#,
             Instruction::CallMethod {
-                receiver: ScryptoReceiver::Global(
+                component_address: Value::ComponentAddress(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
                 ),
-                method: Value::String("withdraw_non_fungible".into()),
+                method_name: Value::String("withdraw_non_fungible".into()),
                 args: vec![
                     Value::NonFungibleId(Value::String("00".into()).into()),
                     Value::Proof(Value::String("admin_auth".into()).into())

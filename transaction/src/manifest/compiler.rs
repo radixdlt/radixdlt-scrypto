@@ -37,9 +37,6 @@ pub fn compile(
 mod tests {
     use super::*;
     use crate::model::Instruction;
-    use radix_engine_interface::api::types::{
-        NativeFunctionIdent, ResourceManagerFunction, ScryptoMethodIdent, ScryptoReceiver,
-    };
     use radix_engine_interface::core::Expression;
     use radix_engine_interface::crypto::Blob;
     use radix_engine_interface::data::*;
@@ -76,10 +73,8 @@ mod tests {
                 .instructions,
             vec![
                 Instruction::CallMethod {
-                    method_ident: ScryptoMethodIdent {
-                        receiver: ScryptoReceiver::Global(component1),
-                        method_name: "withdraw_by_amount".to_string(),
-                    },
+                    component_address: component1,
+                        method_name: "withdraw_by_amount".to_string(), 
                     args: args!(
                         Decimal::from(5u32),
                         bech32_decoder
@@ -98,10 +93,8 @@ mod tests {
                         .unwrap(),
                 },
                 Instruction::CallMethod {
-                    method_ident: ScryptoMethodIdent {
-                        receiver: ScryptoReceiver::Global(component2),
-                        method_name: "buy_gumball".to_string(),
-                    },
+                    component_address: component2 ,
+                        method_name: "buy_gumball".to_string(), 
                     args: args!(Bucket(512))
                 },
                 Instruction::AssertWorktopContainsByAmount {
@@ -131,10 +124,8 @@ mod tests {
                 Instruction::DropProof { proof_id: 514 },
                 Instruction::DropProof { proof_id: 515 },
                 Instruction::CallMethod {
-                    method_ident: ScryptoMethodIdent {
-                        receiver: ScryptoReceiver::Global(component1),
-                        method_name: "create_proof_by_amount".to_string(),
-                    },
+                    component_address: component1 ,
+                        method_name: "create_proof_by_amount".to_string(), 
                     args: args!(
                         Decimal::from(5u32),
                         bech32_decoder
@@ -158,33 +149,23 @@ mod tests {
                         )
                         .unwrap()
                 },
-                Instruction::CallNativeFunction {
-                    function_ident: NativeFunctionIdent {
-                        blueprint_name: "ResourceManager".to_owned(),
-                        function_name: ResourceManagerFunction::Create.to_string(),
-                    },
-                    args: args!(
-                        ResourceType::Fungible { divisibility: 0 },
-                        HashMap::<String, String>::new(),
-                        HashMap::<ResourceMethodAuthKey, (AccessRule, Mutability)>::new(),
-                        Some(MintParams::Fungible {
+                Instruction::CreateResource  {
+                      resource_type: ResourceType::Fungible { divisibility: 0 },
+                        metadata: HashMap::<String, String>::new(),
+                        access_rules: HashMap::<ResourceMethodAuthKey, (AccessRule, Mutability)>::new(),
+                        mint_params: Some(MintParams::Fungible {
                             amount: "1.0".into()
                         })
-                    ),
                 },
                 Instruction::CallMethod {
-                    method_ident: ScryptoMethodIdent {
-                        receiver: ScryptoReceiver::Global(component1),
-                        method_name: "deposit_batch".to_string(),
-                    },
+                    component_address: component1 ,
+                        method_name: "deposit_batch".to_string(), 
                     args: args!(Expression("ENTIRE_WORKTOP".to_owned()))
                 },
                 Instruction::DropAllProofs,
                 Instruction::CallMethod {
-                    method_ident: ScryptoMethodIdent {
-                        receiver: ScryptoReceiver::Global(component2),
-                        method_name: "complicated_method".to_string(),
-                    },
+                    component_address: component2 ,
+                        method_name: "complicated_method".to_string(), 
                     args: args!(Decimal::from(1u32), PreciseDecimal::from(2u32))
                 },
                 Instruction::PublishPackageWithOwner {

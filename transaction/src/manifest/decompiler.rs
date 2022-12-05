@@ -542,10 +542,8 @@ pub fn format_args<F: fmt::Write>(
 mod tests {
     use super::*;
     use crate::manifest::*;
-    use radix_engine_interface::api::types::ResourceManagerFunction;
     use radix_engine_interface::core::NetworkDefinition;
-    use radix_engine_interface::data::scrypto_encode;
-    use radix_engine_interface::scrypto;
+    use radix_engine_interface::model::NonFungibleId;
 
     #[test]
     fn test_decompile_complex() {

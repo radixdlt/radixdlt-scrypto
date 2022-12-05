@@ -1286,45 +1286,29 @@ mod tests {
         generate_instruction_ok!(
             r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
             Instruction::CallFunction {
-                function_ident: ScryptoFunctionIdent {
-                    package: ScryptoPackage::Global(
-                        Bech32Decoder::for_simulator()
-                            .validate_and_decode_package_address(
-                                "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7"
-                                    .into()
-                            )
-                            .unwrap()
-                    ),
-                    blueprint_name: "Airdrop".into(),
-                    function_name: "new".to_string(),
-                },
+                package_address: Bech32Decoder::for_simulator()
+                    .validate_and_decode_package_address(
+                        "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
+                    )
+                    .unwrap(),
+                blueprint_name: "Airdrop".into(),
+                function_name: "new".to_string(),
                 args: args!(500u32, pdec!("120"))
             }
         );
         generate_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
             Instruction::CallMethod {
-                method_ident: ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Global(component),
-                    method_name: "refill".to_string(),
-                },
+                component_address: component,
+                method_name: "refill".to_string(),
                 args: args!()
             }
         );
         generate_instruction_ok!(
             r#"MINT_FUNGIBLE  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Decimal("100");"#,
-            Instruction::CallNativeMethod {
-                method_ident: NativeMethodIdent {
-                    receiver: RENodeId::Global(GlobalAddress::Resource(resource)),
-                    method_name: ResourceManagerMethod::Mint.to_string(),
-                },
-                args: scrypto_encode(&ResourceManagerMintInvocation {
-                    receiver: resource,
-                    mint_params: MintParams::Fungible {
-                        amount: Decimal::from_str("100").unwrap(),
-                    },
-                })
-                .unwrap(),
+            Instruction::MintFungible {
+                resource_address: resource,
+                amount: Decimal::from_str("100").unwrap()
             }
         );
     }
