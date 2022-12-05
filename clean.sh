@@ -16,7 +16,7 @@ cd "$(dirname "$0")"
 (cd transaction; cargo clean)
 (cd simulator; cargo clean)
 
-(cd assets/account; cargo clean)
-(cd assets/faucet; cargo clean)
+(cd assets/blueprints/account; cargo clean)
+(cd assets/blueprints/faucet; cargo clean)
 (cd examples/hello-world; cargo clean)
 (cd examples/no-std; cargo clean)

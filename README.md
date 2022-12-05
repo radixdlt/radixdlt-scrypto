@@ -16,7 +16,7 @@ Documentation: https://docs.radixdlt.com/main/scrypto/introduction.html
     *  macOS:
         * Make sure you have the xcode command line tools: `xcode-select --install`.
         * Install cmake: `brew install cmake`
-        * Install the Rust compiler: 
+        * Install the Rust compiler:
         ```bash
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
         ```
