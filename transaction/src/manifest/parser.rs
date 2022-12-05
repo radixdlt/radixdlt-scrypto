@@ -277,6 +277,7 @@ impl Parser {
             TokenKind::Enum => self.parse_enum(),
             TokenKind::Array => self.parse_array(),
             TokenKind::Tuple => self.parse_tuple(),
+            TokenKind::Bytes => self.parse_bytes(),
             /* Global address */
             TokenKind::PackageAddress |
             TokenKind::SystemAddress |
@@ -300,8 +301,7 @@ impl Parser {
             TokenKind::EddsaEd25519Signature |
             TokenKind::Decimal |
             TokenKind::PreciseDecimal |
-            TokenKind::NonFungibleId |
-            TokenKind::Bytes => self.parse_scrypto_types(),
+            TokenKind::NonFungibleId => self.parse_scrypto_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -335,6 +335,12 @@ impl Parser {
             TokenKind::OpenParenthesis,
             TokenKind::CloseParenthesis,
         )?))
+    }
+
+    pub fn parse_bytes(&mut self) -> Result<Value, ParserError> {
+        advance_match!(self, TokenKind::Bytes);
+        let value = self.parse_values_one()?.into();
+        Ok(Value::Bytes(value))
     }
 
     pub fn parse_scrypto_types(&mut self) -> Result<Value, ParserError> {
@@ -382,7 +388,6 @@ impl Parser {
             TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
             TokenKind::PreciseDecimal => Ok(Value::PreciseDecimal(self.parse_values_one()?.into())),
             TokenKind::NonFungibleId => Ok(Value::NonFungibleId(self.parse_values_one()?.into())),
-            TokenKind::Bytes => Ok(Value::Bytes(self.parse_values_one()?.into())),
 
             _ => Err(ParserError::UnexpectedToken(token)),
         }

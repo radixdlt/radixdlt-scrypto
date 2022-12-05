@@ -932,15 +932,15 @@ fn generate_non_fungible_id_internal(value: &ast::Value) -> Result<NonFungibleId
         ast::Value::U64(u) => Ok(NonFungibleId::U64(*u)),
         ast::Value::U128(u) => Ok(NonFungibleId::UUID(*u)),
         ast::Value::String(s) => Ok(NonFungibleId::String(s.clone())),
-        ast::Value::Bytes(v) => match &**v {
-            ast::Value::String(s) => {
-                Ok(NonFungibleId::Bytes(hex::decode(s).map_err(|_| {
-                    GeneratorError::InvalidNonFungibleId(s.into())
-                })?))
-            }
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::String),
+        ast::Value::Bytes(v) => Ok(NonFungibleId::Bytes(generate_bytes(v)?)),
+        v => invalid_type!(
+            v,
+            ast::Type::U32,
+            ast::Type::U64,
+            ast::Type::U128,
+            ast::Type::String,
+            ast::Type::Bytes
+        ),
     }
 }
 
@@ -1011,6 +1011,18 @@ fn generate_non_fungible_ids(
             values.iter().map(|v| generate_non_fungible_id(v)).collect()
         }
         v => invalid_type!(v, ast::Type::Array),
+    }
+}
+
+fn generate_bytes(value: &ast::Value) -> Result<Vec<u8>, GeneratorError> {
+    match value {
+        ast::Value::String(s) => Ok(hex::decode(s)
+            .map_err(|_| GeneratorError::InvalidValue {
+                expected_type: vec![ast::Type::String],
+                actual: value.clone(),
+            })?
+            .to_vec()),
+        v => invalid_type!(v, ast::Type::String),
     }
 }
 
@@ -1150,8 +1162,9 @@ fn generate_value(
                 value: ScryptoCustomValue::NonFungibleId(v),
             })
         }
-        ast::Value::Bytes(value) => Ok(SborValue::String {
-            value: generate_string(value)?,
+        ast::Value::Bytes(_) => generate_bytes(value).map(|v| SborValue::Array {
+            element_type_id: SborTypeId::U8,
+            elements: v.iter().map(|i| SborValue::U8 { value: *i }).collect(),
         }),
     }
 }
@@ -1232,7 +1245,7 @@ fn generate_type_id(ty: &ast::Type) -> ScryptoSborTypeId {
         ast::Type::Decimal => SborTypeId::Custom(ScryptoCustomTypeId::Decimal),
         ast::Type::PreciseDecimal => SborTypeId::Custom(ScryptoCustomTypeId::PreciseDecimal),
         ast::Type::NonFungibleId => SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleId),
-        ast::Type::Bytes => SborTypeId::String,
+        ast::Type::Bytes => SborTypeId::Array,
     }
 }
 
