@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, AuthModule, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, REActor, RENode, ResolveApi, ResolvedFunction, ResolvedMethod, RuntimeError,
+    NativeProcedure, REActor, RENode, ResolvedFunction, ResolvedMethod, ResolverApi, RuntimeError,
     SystemApi,
 };
 use crate::model::{
@@ -26,7 +26,7 @@ pub struct Clock;
 impl<W: WasmEngine> ExecutableInvocation<W> for ClockCreateInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -109,7 +109,7 @@ pub struct ClockSetCurrentTimeExecutable(RENodeId, u64);
 impl<W: WasmEngine> ExecutableInvocation<W> for ClockSetCurrentTimeInvocation {
     type Exec = NativeExecutor<ClockSetCurrentTimeExecutable>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -162,7 +162,7 @@ pub struct ClockGetCurrentTimeExecutable(RENodeId, TimePrecision);
 impl<W: WasmEngine> ExecutableInvocation<W> for ClockGetCurrentTimeInvocation {
     type Exec = NativeExecutor<ClockGetCurrentTimeExecutable>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -221,7 +221,7 @@ pub struct ClockCompareCurrentTimeExecutable {
 impl<W: WasmEngine> ExecutableInvocation<W> for ClockCompareCurrentTimeInvocation {
     type Exec = NativeExecutor<ClockCompareCurrentTimeExecutable>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>

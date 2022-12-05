@@ -12,7 +12,7 @@ use crate::types::HashMap;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
-    ComponentMethod, Level, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoActor,
+    ComponentMethod, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoActor,
     ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::constants::RADIX_TOKEN;
@@ -20,7 +20,6 @@ use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::model::{
     AccessRule, AccessRuleKey, AccessRules, ResourceType, RoyaltyConfig,
 };
-use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
@@ -185,9 +184,5 @@ where
 
     fn sys_get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         self.read_transaction_hash()
-    }
-
-    fn sys_emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.emit_log(level, message)
     }
 }

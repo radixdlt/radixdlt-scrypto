@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, Invokable};
+use radix_engine_interface::api::api::{EngineApi, Invokable, LoggerApi};
 use radix_engine_interface::api::types::{
     Level, LockHandle, RENodeId, ScryptoActor, ScryptoRENode, SubstateOffset,
 };
@@ -121,8 +121,10 @@ impl EngineApi<EngineApiError> for ScryptoEnv {
         let rtn = call_engine(RadixEngineInput::GetTransactionHash());
         Ok(rtn)
     }
+}
 
-    fn sys_emit_log(&mut self, level: Level, message: String) -> Result<(), EngineApiError> {
+impl LoggerApi<EngineApiError> for ScryptoEnv {
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), EngineApiError> {
         let rtn = call_engine(RadixEngineInput::EmitLog(level, message));
         Ok(rtn)
     }

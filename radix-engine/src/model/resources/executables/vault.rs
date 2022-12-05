@@ -1,6 +1,6 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, REActor, RENode, ResolveApi, ResolvedMethod, ResolvedReceiver, RuntimeError,
+    NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver, ResolverApi, RuntimeError,
     SystemApi,
 };
 use crate::fee::FeeReserveError;
@@ -31,7 +31,7 @@ pub enum VaultError {
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -82,7 +82,7 @@ impl NativeProcedure for VaultTakeInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultPutInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -130,7 +130,7 @@ impl NativeProcedure for VaultPutInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultLockFeeInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -199,7 +199,7 @@ impl NativeProcedure for VaultLockFeeInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeNonFungiblesInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -252,7 +252,7 @@ impl NativeProcedure for VaultTakeNonFungiblesInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -289,7 +289,7 @@ impl NativeProcedure for VaultGetAmountInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetResourceAddressInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -332,7 +332,7 @@ impl NativeProcedure for VaultGetResourceAddressInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetNonFungibleIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -376,7 +376,7 @@ impl NativeProcedure for VaultGetNonFungibleIdsInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -428,7 +428,7 @@ impl NativeProcedure for VaultCreateProofInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -480,7 +480,7 @@ impl NativeProcedure for VaultCreateProofByAmountInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

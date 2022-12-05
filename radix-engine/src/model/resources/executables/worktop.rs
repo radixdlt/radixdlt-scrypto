@@ -1,6 +1,6 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, REActor, RENode, ResolveApi, ResolvedMethod, ResolvedReceiver, RuntimeError,
+    NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver, ResolverApi, RuntimeError,
     SystemApi,
 };
 use crate::model::{BucketSubstate, Resource, ResourceOperationError};
@@ -28,7 +28,7 @@ pub enum WorktopError {
 impl<W: WasmEngine> ExecutableInvocation<W> for WorktopPutInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -75,7 +75,7 @@ impl NativeProcedure for WorktopPutInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -151,7 +151,7 @@ impl NativeProcedure for WorktopTakeAmountInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeAllInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -226,7 +226,7 @@ impl NativeProcedure for WorktopTakeAllInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeNonFungiblesInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -303,7 +303,7 @@ impl NativeProcedure for WorktopTakeNonFungiblesInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -349,7 +349,7 @@ impl NativeProcedure for WorktopAssertContainsInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -395,7 +395,7 @@ impl NativeProcedure for WorktopAssertContainsAmountInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsNonFungiblesInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -451,7 +451,7 @@ impl NativeProcedure for WorktopAssertContainsNonFungiblesInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for WorktopDrainInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

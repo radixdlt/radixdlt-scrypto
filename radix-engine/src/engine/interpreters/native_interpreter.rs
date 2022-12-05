@@ -101,7 +101,7 @@ impl<N: NativeProcedure> Executor for NativeExecutor<N> {
     }
 }
 
-pub fn deref_and_update<D: ResolveApi<W>, W: WasmEngine>(
+pub fn deref_and_update<D: ResolverApi<W>, W: WasmEngine>(
     receiver: RENodeId,
     call_frame_update: &mut CallFrameUpdate,
     deref: &mut D,

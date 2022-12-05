@@ -1,6 +1,6 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, REActor, RENode, ResolveApi, ResolvedMethod, ResolvedReceiver, RuntimeError,
+    NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver, ResolverApi, RuntimeError,
     SystemApi,
 };
 use crate::model::{InvokeError, ResourceOperationError};
@@ -31,7 +31,7 @@ pub enum ProofError {
 impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -66,7 +66,7 @@ impl NativeProcedure for ProofGetAmountInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetNonFungibleIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -110,7 +110,7 @@ impl NativeProcedure for ProofGetNonFungibleIdsInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetResourceAddressInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -150,7 +150,7 @@ impl NativeProcedure for ProofGetResourceAddressInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for ProofCloneInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

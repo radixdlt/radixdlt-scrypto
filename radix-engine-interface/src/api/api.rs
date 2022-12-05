@@ -31,7 +31,10 @@ pub trait EngineApi<E: Debug> {
     fn sys_get_actor(&mut self) -> Result<ScryptoActor, E>;
     fn sys_generate_uuid(&mut self) -> Result<u128, E>;
     fn sys_get_transaction_hash(&mut self) -> Result<Hash, E>;
-    fn sys_emit_log(&mut self, level: Level, message: String) -> Result<(), E>;
+}
+
+pub trait LoggerApi<E: Debug> {
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), E>;
 }
 
 pub trait InvokableModel<E>:

@@ -1,4 +1,6 @@
-use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel};
+use radix_engine_interface::api::api::{
+    EngineApi, Invocation, Invokable, InvokableModel, LoggerApi,
+};
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
     ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset,
@@ -580,13 +582,7 @@ where
     }
 }
 
-pub trait ResolveApi<W: WasmEngine> {
-    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError>;
-    fn vm(&mut self) -> &ScryptoInterpreter<W>;
-    fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
-}
-
-impl<'g, 's, W, R> ResolveApi<W> for Kernel<'g, 's, W, R>
+impl<'g, 's, W, R> ResolverApi<W> for Kernel<'g, 's, W, R>
 where
     W: WasmEngine,
     R: FeeReserve,
@@ -612,21 +608,18 @@ where
 pub trait Executor {
     type Output: Debug;
 
-    fn execute<Y>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoInvocation, RuntimeError>
             + EngineApi<RuntimeError>
-            + InvokableModel<RuntimeError>;
+            + InvokableModel<RuntimeError>
+            + LoggerApi<RuntimeError>;
 }
 
 pub trait ExecutableInvocation<W: WasmEngine>: Invocation {
     type Exec: Executor<Output = Self::Output>;
 
-    fn resolve<Y: ResolveApi<W> + SystemApi>(
+    fn resolve<Y: ResolverApi<W> + SystemApi>(
         self,
         api: &mut Y,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
@@ -1328,6 +1321,40 @@ where
         Ok(uuid)
     }
 
+    fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallInput::EmitEvent { event: &event },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        if let Event::Tracked(tracked_event) = event {
+            self.track.add_event(tracked_event);
+        }
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallOutput::EmitEvent,
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl<'g, 's, W, R> LoggerApi<RuntimeError> for Kernel<'g, 's, W, R>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+{
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
@@ -1350,34 +1377,6 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::EmitLog,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(())
-    }
-
-    fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::EmitEvent { event: &event },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        if let Event::Tracked(tracked_event) = event {
-            self.track.add_event(tracked_event);
-        }
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::EmitEvent,
             )
             .map_err(RuntimeError::ModuleError)?;
         }

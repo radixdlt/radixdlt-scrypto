@@ -1,6 +1,6 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, REActor, RENode, ResolveApi, ResolvedMethod, ResolvedReceiver, RuntimeError,
+    NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver, ResolverApi, RuntimeError,
     SystemApi,
 };
 use crate::model::{BucketSubstate, ProofError, ResourceOperationError};
@@ -27,7 +27,7 @@ pub enum BucketError {
 impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -74,7 +74,7 @@ impl NativeProcedure for BucketTakeInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for BucketCreateProofInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -122,7 +122,7 @@ impl NativeProcedure for BucketCreateProofInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeNonFungiblesInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -169,7 +169,7 @@ impl NativeProcedure for BucketTakeNonFungiblesInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetNonFungibleIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -212,7 +212,7 @@ impl NativeProcedure for BucketGetNonFungibleIdsInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -247,7 +247,7 @@ impl NativeProcedure for BucketGetAmountInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for BucketPutInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -294,7 +294,7 @@ impl NativeProcedure for BucketPutInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetResourceAddressInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

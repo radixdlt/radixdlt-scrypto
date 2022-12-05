@@ -3,7 +3,7 @@ use crate::fee::*;
 use crate::model::InvokeError;
 use crate::types::{scrypto_decode, scrypto_encode, ScryptoInvocation};
 use crate::wasm::*;
-use radix_engine_interface::api::api::{EngineApi, Invokable, InvokableModel};
+use radix_engine_interface::api::api::{EngineApi, Invokable, InvokableModel, LoggerApi};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoEncode};
 use radix_engine_interface::wasm::*;
 use sbor::rust::vec::Vec;
@@ -16,15 +16,15 @@ pub struct RadixEngineWasmRuntime<'y, Y>
 where
     Y: SystemApi + EngineApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
 {
-    system_api: &'y mut Y,
+    api: &'y mut Y,
 }
 
 impl<'y, Y> RadixEngineWasmRuntime<'y, Y>
 where
     Y: SystemApi + EngineApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
 {
-    pub fn new(system_api: &'y mut Y) -> Self {
-        RadixEngineWasmRuntime { system_api }
+    pub fn new(api: &'y mut Y) -> Self {
+        RadixEngineWasmRuntime { api }
     }
 }
 
@@ -38,10 +38,7 @@ fn encode<T: ScryptoEncode>(output: T) -> Result<Vec<u8>, InvokeError<WasmError>
 
 impl<'y, Y> WasmRuntime for RadixEngineWasmRuntime<'y, Y>
 where
-    Y: SystemApi
-        + EngineApi<RuntimeError>
-        + Invokable<ScryptoInvocation, RuntimeError>
-        + InvokableModel<RuntimeError>,
+    Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError> + LoggerApi<RuntimeError>,
 {
     // TODO: expose API for reading blobs
     // TODO: do we want to allow dynamic creation of blobs?
@@ -53,35 +50,30 @@ where
         let rtn = match input {
             RadixEngineInput::Invoke(invocation) => match invocation {
                 SerializedInvocation::Scrypto(invocation) => {
-                    encode(self.system_api.invoke(invocation)?)? // TODO: Figure out to remove encode
+                    encode(self.api.invoke(invocation)?)? // TODO: Figure out to remove encode
                 }
                 SerializedInvocation::Native(invocation) => {
-                    invocation.invoke(self.system_api).map(|v| v.raw)?
+                    invocation.invoke(self.api).map(|v| v.raw)?
                 }
             },
-            RadixEngineInput::CreateNode(node) => encode(self.system_api.sys_create_node(node)?)?,
-            RadixEngineInput::GetVisibleNodeIds() => {
-                encode(self.system_api.sys_get_visible_nodes()?)?
+            RadixEngineInput::CreateNode(node) => encode(self.api.sys_create_node(node)?)?,
+            RadixEngineInput::GetVisibleNodeIds() => encode(self.api.sys_get_visible_nodes()?)?,
+            RadixEngineInput::DropNode(node_id) => encode(self.api.sys_drop_node(node_id)?)?,
+            RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
+                encode(self.api.sys_lock_substate(node_id, offset, mutable)?)?
             }
-            RadixEngineInput::DropNode(node_id) => encode(self.system_api.sys_drop_node(node_id)?)?,
-            RadixEngineInput::LockSubstate(node_id, offset, mutable) => encode(
-                self.system_api
-                    .sys_lock_substate(node_id, offset, mutable)?,
-            )?,
-            RadixEngineInput::Read(lock_handle) => self.system_api.sys_read(lock_handle)?,
+            RadixEngineInput::Read(lock_handle) => self.api.sys_read(lock_handle)?,
             RadixEngineInput::Write(lock_handle, value) => {
-                encode(self.system_api.sys_write(lock_handle, value)?)?
+                encode(self.api.sys_write(lock_handle, value)?)?
             }
             RadixEngineInput::DropLock(lock_handle) => {
-                encode(self.system_api.sys_drop_lock(lock_handle)?)?
+                encode(self.api.sys_drop_lock(lock_handle)?)?
             }
-            RadixEngineInput::GetActor() => encode(self.system_api.sys_get_actor()?)?,
-            RadixEngineInput::GetTransactionHash() => {
-                encode(self.system_api.sys_get_transaction_hash()?)?
-            }
-            RadixEngineInput::GenerateUuid() => encode(self.system_api.sys_generate_uuid()?)?,
+            RadixEngineInput::GetActor() => encode(self.api.sys_get_actor()?)?,
+            RadixEngineInput::GetTransactionHash() => encode(self.api.sys_get_transaction_hash()?)?,
+            RadixEngineInput::GenerateUuid() => encode(self.api.sys_generate_uuid()?)?,
             RadixEngineInput::EmitLog(level, message) => {
-                encode(self.system_api.sys_emit_log(level, message)?)?
+                encode(self.api.emit_log(level, message)?)?
             }
         };
 
@@ -89,7 +81,7 @@ where
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>> {
-        self.system_api
+        self.api
             .consume_cost_units(n)
             .map_err(InvokeError::downstream)
     }

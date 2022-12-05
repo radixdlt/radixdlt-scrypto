@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, AuthModule, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, REActor, RENode, ResolveApi, ResolvedFunction, ResolvedMethod, RuntimeError,
+    NativeProcedure, REActor, RENode, ResolvedFunction, ResolvedMethod, ResolverApi, RuntimeError,
     SystemApi,
 };
 use crate::model::{
@@ -30,7 +30,7 @@ pub struct EpochManager {
 impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -109,7 +109,7 @@ pub struct EpochManagerGetCurrentEpochExecutable(RENodeId);
 impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerGetCurrentEpochInvocation {
     type Exec = NativeExecutor<EpochManagerGetCurrentEpochExecutable>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -154,7 +154,7 @@ pub struct EpochManagerSetEpochExecutable(RENodeId, u64);
 impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerSetEpochInvocation {
     type Exec = NativeExecutor<EpochManagerSetEpochExecutable>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>

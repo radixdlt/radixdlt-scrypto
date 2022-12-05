@@ -7,7 +7,7 @@ use crate::wasm::*;
 impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
     type Exec = ScryptoExecutor<W::WasmInstance>;
 
-    fn resolve<D: ResolveApi<W> + SystemApi>(
+    fn resolve<D: ResolverApi<W> + SystemApi>(
         self,
         api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -240,7 +240,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
     type Exec = ScryptoExecutorToParsed<W::WasmInstance>;
 
-    fn resolve<D: ResolveApi<W> + SystemApi>(
+    fn resolve<D: ResolverApi<W> + SystemApi>(
         self,
         api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

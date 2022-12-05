@@ -1,6 +1,6 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, REActor, RENode, ResolveApi, ResolvedMethod, ResolvedReceiver, RuntimeError,
+    NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver, ResolverApi, RuntimeError,
     SystemApi,
 };
 use crate::model::{
@@ -32,7 +32,7 @@ pub enum AuthZoneError {
 impl<W: WasmEngine> ExecutableInvocation<W> for AuthZonePopInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -90,7 +90,7 @@ impl NativeProcedure for AuthZonePopInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for AuthZonePushInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -145,7 +145,7 @@ impl NativeProcedure for AuthZonePushInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -218,7 +218,7 @@ impl NativeProcedure for AuthZoneCreateProofInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -292,7 +292,7 @@ impl NativeProcedure for AuthZoneCreateProofByAmountInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -366,7 +366,7 @@ impl NativeProcedure for AuthZoneCreateProofByIdsInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneClearInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -405,7 +405,7 @@ impl NativeProcedure for AuthZoneClearInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneDrainInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -464,7 +464,7 @@ impl NativeProcedure for AuthZoneDrainInvocation {
 impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneAssertAccessRuleInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

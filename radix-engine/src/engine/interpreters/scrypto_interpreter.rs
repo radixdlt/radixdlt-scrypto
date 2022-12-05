@@ -1,7 +1,7 @@
 use crate::engine::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
-use radix_engine_interface::api::api::{EngineApi, InvokableModel};
+use radix_engine_interface::api::api::{EngineApi, InvokableModel, LoggerApi};
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::data::{match_schema_with_value, IndexedScryptoValue};
 
@@ -18,7 +18,10 @@ impl<I: WasmInstance> Executor for ScryptoExecutorToParsed<I> {
         api: &mut Y,
     ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: SystemApi
+            + EngineApi<RuntimeError>
+            + InvokableModel<RuntimeError>
+            + LoggerApi<RuntimeError>,
     {
         let (export_name, return_type) = match api.get_actor() {
             REActor::Method(
@@ -81,7 +84,10 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
 
     fn execute<Y>(self, api: &mut Y) -> Result<(Vec<u8>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: SystemApi
+            + EngineApi<RuntimeError>
+            + InvokableModel<RuntimeError>
+            + LoggerApi<RuntimeError>,
     {
         ScryptoExecutorToParsed {
             instance: self.instance,
