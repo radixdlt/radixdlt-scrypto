@@ -15,8 +15,8 @@ use radix_engine_interface::model::*;
 use sbor::rust::borrow::Borrow;
 
 use radix_engine_interface::core::Expression;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use sbor::*;
@@ -74,15 +74,15 @@ pub enum NameResolverError {
 }
 
 pub struct NameResolver {
-    named_buckets: HashMap<String, BucketId>,
-    named_proofs: HashMap<String, ProofId>,
+    named_buckets: BTreeMap<String, BucketId>,
+    named_proofs: BTreeMap<String, ProofId>,
 }
 
 impl NameResolver {
     pub fn new() -> Self {
         Self {
-            named_buckets: HashMap::new(),
-            named_proofs: HashMap::new(),
+            named_buckets: BTreeMap::new(),
+            named_proofs: BTreeMap::new(),
         }
     }
 
@@ -130,7 +130,7 @@ impl NameResolver {
 pub fn generate_manifest(
     instructions: &[ast::Instruction],
     bech32_decoder: &Bech32Decoder,
-    blobs: HashMap<Hash, Vec<u8>>,
+    blobs: BTreeMap<Hash, Vec<u8>>,
 ) -> Result<TransactionManifest, GeneratorError> {
     let mut id_validator = IdValidator::new();
     let mut name_resolver = NameResolver::new();
@@ -157,7 +157,7 @@ pub fn generate_instruction(
     id_validator: &mut IdValidator,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &HashMap<Hash, Vec<u8>>,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
@@ -478,7 +478,7 @@ fn generate_typed_value<T: ScryptoDecode>(
     value: &ast::Value,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &HashMap<Hash, Vec<u8>>,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<T, GeneratorError> {
     let value = generate_value(value, None, resolver, bech32_decoder, blobs)?;
     let encoded = scrypto_encode(&value).map_err(GeneratorError::ArgumentEncodingError)?;
@@ -490,7 +490,7 @@ fn generate_args(
     values: &Vec<ast::Value>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &HashMap<Hash, Vec<u8>>,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<ScryptoValue, GeneratorError> {
     let mut fields = Vec::new();
     for v in values {
@@ -806,8 +806,27 @@ fn generate_vault(value: &ast::Value) -> Result<Vault, GeneratorError> {
 fn generate_non_fungible_id(value: &ast::Value) -> Result<NonFungibleId, GeneratorError> {
     match value {
         ast::Value::NonFungibleId(inner) => match &**inner {
-            ast::Value::String(s) => NonFungibleId::from_str(s)
-                .map_err(|_| GeneratorError::InvalidNonFungibleId(s.into())),
+            ast::Value::U32(n) => Ok(NonFungibleId::U32(*n)),
+            ast::Value::U64(n) => Ok(NonFungibleId::U64(*n)),
+            ast::Value::U128(n) => Ok(NonFungibleId::UUID(*n)),
+            ast::Value::String(s) => Ok(NonFungibleId::String(s.clone())),
+            ast::Value::Array(ast::Type::U8, elements) => {
+                let mut buffer = Vec::new();
+                for element in elements {
+                    match element {
+                        ast::Value::U8(v) => {
+                            buffer.push(*v);
+                        }
+                        _ => {
+                            return Err(GeneratorError::InvalidValue {
+                                expected_type: vec![ast::Type::U8],
+                                actual: element.clone(),
+                            });
+                        }
+                    }
+                }
+                Ok(NonFungibleId::Bytes(buffer))
+            }
             v => invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::NonFungibleId),
@@ -839,7 +858,7 @@ fn generate_expression(value: &ast::Value) -> Result<Expression, GeneratorError>
 
 fn generate_blob(
     value: &ast::Value,
-    blobs: &HashMap<Hash, Vec<u8>>,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<Blob, GeneratorError> {
     match value {
         ast::Value::Blob(inner) => match &**inner {
@@ -879,7 +898,7 @@ fn generate_value(
     expected: Option<ast::Type>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &HashMap<Hash, Vec<u8>>,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<ScryptoValue, GeneratorError> {
     if let Some(ty) = expected {
         if ty != value.kind() {
@@ -1018,7 +1037,7 @@ fn generate_singletons(
     ty: Option<ast::Type>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &HashMap<Hash, Vec<u8>>,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<Vec<ScryptoValue>, GeneratorError> {
     let mut result = vec![];
     for element in elements {
@@ -1113,7 +1132,7 @@ mod tests {
                     None,
                     &mut resolver,
                     &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                    &mut HashMap::new()
+                    &mut BTreeMap::new()
                 ),
                 Ok($expected)
             );
@@ -1134,7 +1153,7 @@ mod tests {
                     &mut id_validator,
                     &mut resolver,
                     &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                    &mut HashMap::new()
+                    &mut BTreeMap::new()
                 ),
                 Ok($expected)
             );
@@ -1150,7 +1169,7 @@ mod tests {
                 None,
                 &mut NameResolver::new(),
                 &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                &mut HashMap::new(),
+                &mut BTreeMap::new(),
             ) {
                 Ok(_) => {
                     panic!("Expected {:?} but no error is thrown", $expected);

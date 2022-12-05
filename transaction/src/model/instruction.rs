@@ -3,8 +3,8 @@ use radix_engine_interface::crypto::Blob;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use radix_engine_interface::scrypto;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -119,8 +119,8 @@ pub enum Instruction {
     PublishPackage {
         code: Blob,
         abi: Blob,
-        royalty_config: HashMap<String, RoyaltyConfig>,
-        metadata: HashMap<String, String>,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
         access_rules: AccessRules,
     },
 
@@ -133,14 +133,14 @@ pub enum Instruction {
 
     CreateResource {
         resource_type: ResourceType,
-        metadata: HashMap<String, String>,
-        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         mint_params: Option<MintParams>,
     },
 
     CreateResourceWithOwner {
         resource_type: ResourceType,
-        metadata: HashMap<String, String>,
+        metadata: BTreeMap<String, String>,
         owner_badge: NonFungibleAddress,
         mint_params: Option<MintParams>,
     },
@@ -156,12 +156,12 @@ pub enum Instruction {
 
     SetMetadata {
         entity_address: GlobalAddress,
-        metadata: HashMap<String, String>,
+        metadata: BTreeMap<String, String>,
     },
 
     SetPackageRoyaltyConfig {
         package_address: PackageAddress,
-        royalty_config: HashMap<String, RoyaltyConfig>,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
     },
 
     SetComponentRoyaltyConfig {

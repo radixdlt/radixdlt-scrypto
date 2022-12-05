@@ -146,7 +146,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 f,
                 "TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>({}) ResourceAddress(\"{}\") Bucket(\"{}\");",
                 ids.iter()
-                    .map(|k| format!("NonFungibleId(\"{}\")", hex::encode(&k.to_vec())))
+                    .map(|k| format!("NonFungibleId({})",  k))
                     .collect::<Vec<String>>()
                     .join(", "),
                 resource_address.display(context.bech32_encoder),
@@ -724,7 +724,6 @@ CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9
             NonFungibleId::U32(12),
             NonFungibleId::U64(19),
             NonFungibleId::String("HelloWorld!".to_string()),
-            NonFungibleId::Decimal("1234".parse().unwrap()),
             NonFungibleId::Bytes(vec![0x12, 0x19, 0x22, 0xff, 0x3]),
             NonFungibleId::UUID(1922931322),
         ];
@@ -732,7 +731,7 @@ CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9
         let manifest = non_fungible_ids
             .iter()
             .enumerate()
-            .map(|(i, id)| format!("TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId(\"{}\")) ResourceAddress(\"resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag\") Bucket(\"bucket{}\");\n", hex::encode(&id.to_vec()), i + 1))
+            .map(|(i, id)| format!("TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId({})) ResourceAddress(\"resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag\") Bucket(\"bucket{}\");\n", id, i + 1))
             .collect::<Vec<String>>()
             .join("");
 
@@ -743,6 +742,8 @@ CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9
             decompile(&compiled.instructions, &NetworkDefinition::simulator()).unwrap();
 
         // Assert
+        println!("{}", manifest);
+        println!("{}", decompiled);
         assert_eq!(manifest, decompiled)
     }
 }

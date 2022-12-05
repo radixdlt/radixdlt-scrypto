@@ -42,7 +42,7 @@ pub struct ManifestBuilder {
     /// Instructions generated.
     instructions: Vec<Instruction>,
     /// Blobs
-    blobs: HashMap<Hash, Vec<u8>>,
+    blobs: BTreeMap<Hash, Vec<u8>>,
 }
 
 impl ManifestBuilder {
@@ -52,7 +52,7 @@ impl ManifestBuilder {
             decoder: Bech32Decoder::new(network),
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             instructions: Vec::new(),
-            blobs: HashMap::default(),
+            blobs: BTreeMap::default(),
         }
     }
 
@@ -270,8 +270,8 @@ impl ManifestBuilder {
     pub fn create_resource(
         &mut self,
         resource_type: ResourceType,
-        metadata: HashMap<String, String>,
-        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         mint_params: Option<MintParams>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CreateResource {
@@ -399,9 +399,9 @@ impl ManifestBuilder {
     pub fn publish_package(
         &mut self,
         code: Vec<u8>,
-        abi: HashMap<String, BlueprintAbi>,
-        royalty_config: HashMap<String, RoyaltyConfig>,
-        metadata: HashMap<String, String>,
+        abi: BTreeMap<String, BlueprintAbi>,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
         access_rules: AccessRules,
     ) -> &mut Self {
         let code_hash = hash(&code);
@@ -425,7 +425,7 @@ impl ManifestBuilder {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        abi: HashMap<String, BlueprintAbi>,
+        abi: BTreeMap<String, BlueprintAbi>,
         owner_badge: NonFungibleAddress,
     ) -> &mut Self {
         let code_hash = hash(&code);
@@ -455,10 +455,10 @@ impl ManifestBuilder {
     /// Creates a token resource with mutable supply.
     pub fn new_token_mutable(
         &mut self,
-        metadata: HashMap<String, String>,
+        metadata: BTreeMap<String, String>,
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(
             Mint,
@@ -482,10 +482,10 @@ impl ManifestBuilder {
     /// Creates a token resource with fixed supply.
     pub fn new_token_fixed(
         &mut self,
-        metadata: HashMap<String, String>,
+        metadata: BTreeMap<String, String>,
         initial_supply: Decimal,
     ) -> &mut Self {
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CreateResource {
@@ -502,10 +502,10 @@ impl ManifestBuilder {
     /// Creates a badge resource with mutable supply.
     pub fn new_badge_mutable(
         &mut self,
-        metadata: HashMap<String, String>,
+        metadata: BTreeMap<String, String>,
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(
             Mint,
@@ -530,10 +530,10 @@ impl ManifestBuilder {
     /// Creates a badge resource with fixed supply.
     pub fn new_badge_fixed(
         &mut self,
-        metadata: HashMap<String, String>,
+        metadata: BTreeMap<String, String>,
         initial_supply: Decimal,
     ) -> &mut Self {
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CreateResource {

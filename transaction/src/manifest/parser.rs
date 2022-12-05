@@ -238,6 +238,7 @@ impl Parser {
             TokenKind::Enum => self.parse_enum(),
             TokenKind::Array => self.parse_array(),
             TokenKind::Tuple => self.parse_tuple(),
+            TokenKind::Bytes => self.parse_bytes(),
             /* Global address */
             TokenKind::PackageAddress |
             TokenKind::SystemAddress |
@@ -295,6 +296,23 @@ impl Parser {
             TokenKind::OpenParenthesis,
             TokenKind::CloseParenthesis,
         )?))
+    }
+
+    pub fn parse_bytes(&mut self) -> Result<Value, ParserError> {
+        advance_match!(self, TokenKind::Bytes);
+        advance_match!(self, TokenKind::OpenParenthesis);
+        let t = self.advance()?;
+        let bytes = if let TokenKind::StringLiteral(str) = &t.kind {
+            hex::decode(str).map_err(|_| ParserError::InvalidHex(str.to_owned()))?
+        } else {
+            return Err(ParserError::UnexpectedToken(t));
+        };
+        advance_match!(self, TokenKind::CloseParenthesis);
+
+        Ok(Value::Array(
+            Type::U8,
+            bytes.into_iter().map(|b| Value::U8(b)).collect(),
+        ))
     }
 
     pub fn parse_scrypto_types(&mut self) -> Result<Value, ParserError> {

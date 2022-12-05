@@ -41,6 +41,7 @@ pub enum TokenKind {
     Enum,
     Array,
     Tuple,
+    Bytes,
 
     /* Global address */
     PackageAddress,
@@ -390,6 +391,7 @@ impl Lexer {
             "Enum" => Ok(TokenKind::Enum),
             "Array" => Ok(TokenKind::Array),
             "Tuple" => Ok(TokenKind::Tuple),
+            "Bytes" => Ok(TokenKind::Bytes),
 
             "PackageAddress" => Ok(TokenKind::PackageAddress),
             "SystemAddress" => Ok(TokenKind::SystemAddress),
