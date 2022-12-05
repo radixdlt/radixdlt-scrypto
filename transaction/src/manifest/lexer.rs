@@ -115,7 +115,8 @@ pub enum TokenKind {
     SetMetadata,
     SetPackageRoyaltyConfig,
     SetComponentRoyaltyConfig,
-    ClaimRoyalty,
+    ClaimPackageRoyalty,
+    ClaimComponentRoyalty,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -452,7 +453,8 @@ impl Lexer {
             "SET_METADATA" => Ok(TokenKind::SetMetadata),
             "SET_PACKAGE_ROYALTY_CONFIG" => Ok(TokenKind::SetPackageRoyaltyConfig),
             "SET_COMPONENT_ROYALTY_CONFIG" => Ok(TokenKind::SetComponentRoyaltyConfig),
-            "CLAIM_ROYALTY" => Ok(TokenKind::ClaimRoyalty),
+            "CLAIM_PACKAGE_ROYALTY" => Ok(TokenKind::ClaimPackageRoyalty),
+            "CLAIM_COMPONENT_ROYALTY" => Ok(TokenKind::ClaimComponentRoyalty),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }

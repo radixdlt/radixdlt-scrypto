@@ -158,29 +158,14 @@ impl Parser {
                     values
                 },
             },
-            TokenKind::CallNativeFunction => Instruction::CallNativeFunction {
-                blueprint_name: self.parse_value()?,
-                function_name: self.parse_value()?,
-                args: {
-                    let mut values = vec![];
-                    while self.peek()?.kind != TokenKind::Semicolon {
-                        values.push(self.parse_value()?);
-                    }
-                    values
-                },
-            },
-            TokenKind::CallNativeMethod => Instruction::CallNativeMethod {
-                receiver: self.parse_receiver()?,
-                method: self.parse_value()?,
-                args: {
-                    let mut values = vec![];
-                    while self.peek()?.kind != TokenKind::Semicolon {
-                        values.push(self.parse_value()?);
-                    }
-                    values
-                },
-            },
 
+            TokenKind::PublishPackage => Instruction::PublishPackage {
+                code: self.parse_value()?,
+                abi: self.parse_value()?,
+                royalty_config: self.parse_value()?,
+                metadata: self.parse_value()?,
+                access_rules: self.parse_value()?,
+            },
             TokenKind::PublishPackageWithOwner => Instruction::PublishPackageWithOwner {
                 code: self.parse_value()?,
                 abi: self.parse_value()?,
@@ -192,12 +177,31 @@ impl Parser {
                 access_rules: self.parse_value()?,
                 mint_params: self.parse_value()?,
             },
-            TokenKind::BurnBucket => Instruction::BurnBucket {
+            TokenKind::BurnResource => Instruction::BurnResource {
                 bucket: self.parse_value()?,
             },
             TokenKind::MintFungible => Instruction::MintFungible {
                 resource_address: self.parse_value()?,
                 amount: self.parse_value()?,
+            },
+            TokenKind::SetMetadata => Instruction::SetMetadata {
+                entity_address: self.parse_value()?,
+                key: self.parse_value()?,
+                value: self.parse_value()?,
+            },
+            TokenKind::SetPackageRoyaltyConfig => Instruction::SetPackageRoyaltyConfig {
+                package_address: self.parse_value()?,
+                royalty_config: self.parse_value()?,
+            },
+            TokenKind::SetComponentRoyaltyConfig => Instruction::SetComponentRoyaltyConfig {
+                component_address: self.parse_value()?,
+                royalty_config: self.parse_value()?,
+            },
+            TokenKind::ClaimPackageRoyalty => Instruction::ClaimPackageRoyalty {
+                package_address: self.parse_value()?,
+            },
+            TokenKind::ClaimComponentRoyalty => Instruction::ClaimComponentRoyalty {
+                component_address: self.parse_value()?,
             },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));

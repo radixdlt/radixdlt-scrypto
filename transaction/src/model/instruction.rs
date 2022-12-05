@@ -170,7 +170,13 @@ pub enum Instruction {
         royalty_config: RoyaltyConfig,
     },
 
-    ClaimRoyalty {},
+    ClaimPackageRoyalty {
+        package_address: PackageAddress,
+    },
+
+    ClaimComponentRoyalty {
+        component_address: ComponentAddress,
+    },
 
     // TODO: add_access_rules & set_access_rules
 }

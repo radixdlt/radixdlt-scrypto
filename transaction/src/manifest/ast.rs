@@ -91,16 +91,12 @@ pub enum Instruction {
         args: Vec<Value>,
     },
 
-    CallNativeFunction {
-        blueprint_name: Value,
-        function_name: Value,
-        args: Vec<Value>,
-    },
-
-    CallNativeMethod {
-        receiver: Receiver,
-        method: Value,
-        args: Vec<Value>,
+    PublishPackage {
+        code: Value,
+        abi: Value,
+        royalty_config: Value,
+        metadata: Value,
+        access_rules: Value,
     },
 
     PublishPackageWithOwner {
@@ -116,13 +112,44 @@ pub enum Instruction {
         mint_params: Value,
     },
 
-    BurnBucket {
+    CreateResourceWithOwner {
+        resource_type: Value,
+        metadata: Value,
+        owner_badge: Value,
+        mint_params: Value,
+    },
+
+    BurnResource {
         bucket: Value,
     },
 
     MintFungible {
         resource_address: Value,
         amount: Value,
+    },
+
+    SetMetadata {
+        entity_address: Value,
+        key: Value,
+        value: Value,
+    },
+
+    SetPackageRoyaltyConfig {
+        package_address: Value,
+        royalty_config: Value,
+    },
+
+    SetComponentRoyaltyConfig {
+        component_address: Value,
+        royalty_config: Value,
+    },
+
+    ClaimPackageRoyalty {
+        package_address: Value,
+    },
+
+    ClaimComponentRoyalty {
+        component_address: Value,
     },
 }
 
