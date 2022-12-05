@@ -46,7 +46,6 @@ mod tests {
     use radix_engine_interface::math::{Decimal, PreciseDecimal};
     use radix_engine_interface::model::*;
     use sbor::rust::collections::*;
-    use sbor::rust::str::FromStr;
 
     #[test]
     fn test_compile() {
@@ -149,8 +148,14 @@ mod tests {
                 Instruction::ReturnToWorktop { bucket_id: 513 },
                 Instruction::TakeFromWorktopByIds {
                     ids: BTreeSet::from([
-                        NonFungibleId::try_bytes_from_hex("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap(),
-                        NonFungibleId::try_bytes_from_hex("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap(),
+                        NonFungibleId::try_bytes_from_hex(
+                            "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"
+                        )
+                        .unwrap(),
+                        NonFungibleId::try_bytes_from_hex(
+                            "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"
+                        )
+                        .unwrap(),
                     ]),
                     resource_address: bech32_decoder
                         .validate_and_decode_resource_address(
@@ -190,7 +195,17 @@ mod tests {
                 Instruction::PublishPackageWithOwner {
                     code: Blob(code_hash),
                     abi: Blob(abi_hash),
-                    owner_badge: NonFungibleAddress::from_str("0000000000000000000000000000000000000000000000000000045c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap(),
+                    owner_badge: NonFungibleAddress::new(
+                        bech32_decoder
+                            .validate_and_decode_resource_address(
+                                "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
+                            )
+                            .unwrap(),
+                        NonFungibleId::try_bytes_from_hex(
+                            "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"
+                        )
+                        .unwrap()
+                    )
                 },
             ]
         );
