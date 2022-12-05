@@ -1,7 +1,7 @@
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::types::*;
-use radix_engine_interface::api::api::InvokableNative;
+use radix_engine_interface::api::api::InvokableModel;
 use radix_engine_interface::api::types::{
     AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, EpochManagerFunction,
     EpochManagerMethod, NativeFn, NativeFunction, NativeMethod, PackageFunction, ProofMethod,
@@ -18,7 +18,7 @@ pub fn parse_and_invoke_native_fn<'a, Y>(
     system_api: &mut Y,
 ) -> Result<IndexedScryptoValue, RuntimeError>
 where
-    Y: InvokableNative<RuntimeError>,
+    Y: InvokableModel<RuntimeError>,
 {
     match native_fn {
         NativeFn::Function(native_function) => match native_function {

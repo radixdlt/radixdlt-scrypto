@@ -16,15 +16,16 @@ impl Invocation for ComponentGlobalizeInvocation {
     type Output = ComponentAddress;
 }
 
-impl ScryptoNativeInvocation for ComponentGlobalizeInvocation {
+impl SerializableInvocation for ComponentGlobalizeInvocation {
     type ScryptoOutput = ComponentAddress;
 }
 
-impl Into<NativeFnInvocation> for ComponentGlobalizeInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ComponentGlobalizeInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::Component(
             ComponentFunctionInvocation::Globalize(self),
         ))
+        .into()
     }
 }
 
@@ -39,15 +40,16 @@ impl Invocation for ComponentGlobalizeWithOwnerInvocation {
     type Output = ComponentAddress;
 }
 
-impl ScryptoNativeInvocation for ComponentGlobalizeWithOwnerInvocation {
+impl SerializableInvocation for ComponentGlobalizeWithOwnerInvocation {
     type ScryptoOutput = ComponentAddress;
 }
 
-impl Into<NativeFnInvocation> for ComponentGlobalizeWithOwnerInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ComponentGlobalizeWithOwnerInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::Component(
             ComponentFunctionInvocation::GlobalizeWithOwner(self),
         ))
+        .into()
     }
 }
 
@@ -63,15 +65,16 @@ impl Invocation for ComponentSetRoyaltyConfigInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ComponentSetRoyaltyConfigInvocation {
+impl SerializableInvocation for ComponentSetRoyaltyConfigInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for ComponentSetRoyaltyConfigInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ComponentSetRoyaltyConfigInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Component(
             ComponentMethodInvocation::SetRoyaltyConfig(self),
         ))
+        .into()
     }
 }
 
@@ -86,14 +89,15 @@ impl Invocation for ComponentClaimRoyaltyInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for ComponentClaimRoyaltyInvocation {
+impl SerializableInvocation for ComponentClaimRoyaltyInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<NativeFnInvocation> for ComponentClaimRoyaltyInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ComponentClaimRoyaltyInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Component(
             ComponentMethodInvocation::ClaimRoyalty(self),
         ))
+        .into()
     }
 }

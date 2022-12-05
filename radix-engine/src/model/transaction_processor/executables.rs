@@ -1,6 +1,6 @@
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableNative};
+use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel};
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent,
     ProofId, RENodeId, TransactionProcessorFunction,
@@ -145,7 +145,7 @@ impl<'a> NativeProcedure for TransactionProcessorRunInvocation<'a> {
         Y: SystemApi
             + Invokable<ScryptoInvocation, RuntimeError>
             + EngineApi<RuntimeError>
-            + InvokableNative<RuntimeError>,
+            + InvokableModel<RuntimeError>,
     {
         TransactionProcessor::run(self, system_api)
             .map(|rtn| (rtn, CallFrameUpdate::empty()))
@@ -179,7 +179,7 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<IndexedScryptoValue, InvokeError<TransactionProcessorError>>
     where
-        Y: EngineApi<RuntimeError> + InvokableNative<RuntimeError>,
+        Y: EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let mut value = args.dom;
         for (expression, path) in args.expressions {
@@ -220,7 +220,7 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<(), InvokeError<TransactionProcessorError>>
     where
-        Y: InvokableNative<RuntimeError>,
+        Y: InvokableModel<RuntimeError>,
     {
         let should_skip_assertion = request.skip_assertion;
         match &request.validation {
@@ -267,7 +267,7 @@ impl TransactionProcessor {
         Y: SystemApi
             + EngineApi<RuntimeError>
             + Invokable<ScryptoInvocation, RuntimeError>
-            + InvokableNative<RuntimeError>,
+            + InvokableModel<RuntimeError>,
     {
         for request in input.runtime_validations.as_ref() {
             Self::perform_validation(request, api)?;

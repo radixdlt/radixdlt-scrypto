@@ -3,7 +3,7 @@ use crate::fee::*;
 use crate::model::InvokeError;
 use crate::types::{scrypto_decode, scrypto_encode, ScryptoInvocation};
 use crate::wasm::*;
-use radix_engine_interface::api::api::{EngineApi, Invokable, InvokableNative};
+use radix_engine_interface::api::api::{EngineApi, Invokable, InvokableModel};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoEncode};
 use radix_engine_interface::wasm::*;
 use sbor::rust::vec::Vec;
@@ -41,7 +41,7 @@ where
     Y: SystemApi
         + EngineApi<RuntimeError>
         + Invokable<ScryptoInvocation, RuntimeError>
-        + InvokableNative<RuntimeError>,
+        + InvokableModel<RuntimeError>,
 {
     // TODO: expose API for reading blobs
     // TODO: do we want to allow dynamic creation of blobs?
@@ -51,12 +51,12 @@ where
         let input: RadixEngineInput = scrypto_decode(&input.raw)
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         let rtn = match input {
-            RadixEngineInput::InvokeScrypto(invocation) => {
-                self.system_api.invoke_scrypto(invocation)?
-            }
-            RadixEngineInput::InvokeNativeFn(native_fn) => {
-                native_fn.invoke(self.system_api).map(|v| v.raw)?
-            }
+            RadixEngineInput::Invoke(invocation) => match invocation {
+                SerializedInvocation::Scrypto(invocation) => self.system_api.invoke(invocation)?,
+                SerializedInvocation::Native(invocation) => {
+                    invocation.invoke(self.system_api).map(|v| v.raw)?
+                }
+            },
             RadixEngineInput::CreateNode(node) => encode(self.system_api.sys_create_node(node)?)?,
             RadixEngineInput::GetVisibleNodeIds() => {
                 encode(self.system_api.sys_get_visible_nodes()?)?

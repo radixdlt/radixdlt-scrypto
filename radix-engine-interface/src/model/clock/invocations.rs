@@ -13,15 +13,16 @@ impl Invocation for ClockCreateInvocation {
     type Output = SystemAddress;
 }
 
-impl ScryptoNativeInvocation for ClockCreateInvocation {
+impl SerializableInvocation for ClockCreateInvocation {
     type ScryptoOutput = SystemAddress;
 }
 
-impl Into<NativeFnInvocation> for ClockCreateInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ClockCreateInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::Clock(
             ClockFunctionInvocation::Create(self),
         ))
+        .into()
     }
 }
 
@@ -36,15 +37,16 @@ impl Invocation for ClockGetCurrentTimeInvocation {
     type Output = Instant;
 }
 
-impl ScryptoNativeInvocation for ClockGetCurrentTimeInvocation {
+impl SerializableInvocation for ClockGetCurrentTimeInvocation {
     type ScryptoOutput = Instant;
 }
 
-impl Into<NativeFnInvocation> for ClockGetCurrentTimeInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ClockGetCurrentTimeInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Clock(
             ClockMethodInvocation::GetCurrentTime(self),
         ))
+        .into()
     }
 }
 
@@ -61,15 +63,16 @@ impl Invocation for ClockCompareCurrentTimeInvocation {
     type Output = bool;
 }
 
-impl ScryptoNativeInvocation for ClockCompareCurrentTimeInvocation {
+impl SerializableInvocation for ClockCompareCurrentTimeInvocation {
     type ScryptoOutput = bool;
 }
 
-impl Into<NativeFnInvocation> for ClockCompareCurrentTimeInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ClockCompareCurrentTimeInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Clock(
             ClockMethodInvocation::CompareCurrentTime(self),
         ))
+        .into()
     }
 }
 
@@ -84,14 +87,15 @@ impl Invocation for ClockSetCurrentTimeInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ClockSetCurrentTimeInvocation {
+impl SerializableInvocation for ClockSetCurrentTimeInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for ClockSetCurrentTimeInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ClockSetCurrentTimeInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Clock(
             ClockMethodInvocation::SetCurrentTime(self),
         ))
+        .into()
     }
 }

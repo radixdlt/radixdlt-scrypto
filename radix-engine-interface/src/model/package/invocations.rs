@@ -21,15 +21,16 @@ impl Invocation for PackagePublishInvocation {
     type Output = PackageAddress;
 }
 
-impl ScryptoNativeInvocation for PackagePublishInvocation {
+impl SerializableInvocation for PackagePublishInvocation {
     type ScryptoOutput = PackageAddress;
 }
 
-impl Into<NativeFnInvocation> for PackagePublishInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for PackagePublishInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::Package(
             PackageFunctionInvocation::Publish(self),
         ))
+        .into()
     }
 }
 
@@ -47,15 +48,16 @@ impl Invocation for PackagePublishWithOwnerInvocation {
     type Output = PackageAddress;
 }
 
-impl ScryptoNativeInvocation for PackagePublishWithOwnerInvocation {
+impl SerializableInvocation for PackagePublishWithOwnerInvocation {
     type ScryptoOutput = PackageAddress;
 }
 
-impl Into<NativeFnInvocation> for PackagePublishWithOwnerInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for PackagePublishWithOwnerInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::Package(
             PackageFunctionInvocation::PublishWithOwner(self),
         ))
+        .into()
     }
 }
 
@@ -70,15 +72,16 @@ impl Invocation for PackageSetRoyaltyConfigInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for PackageSetRoyaltyConfigInvocation {
+impl SerializableInvocation for PackageSetRoyaltyConfigInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for PackageSetRoyaltyConfigInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for PackageSetRoyaltyConfigInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Package(
             PackageMethodInvocation::SetRoyaltyConfig(self),
         ))
+        .into()
     }
 }
 
@@ -99,15 +102,16 @@ impl Invocation for PackageClaimRoyaltyInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for PackageClaimRoyaltyInvocation {
+impl SerializableInvocation for PackageClaimRoyaltyInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<NativeFnInvocation> for PackageClaimRoyaltyInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for PackageClaimRoyaltyInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Package(
             PackageMethodInvocation::ClaimRoyalty(self),
         ))
+        .into()
     }
 }
 

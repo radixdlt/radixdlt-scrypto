@@ -16,15 +16,16 @@ impl Invocation for WorktopPutInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for WorktopPutInvocation {
+impl SerializableInvocation for WorktopPutInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for WorktopPutInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for WorktopPutInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
             WorktopMethodInvocation::Put(self),
         ))
+        .into()
     }
 }
 
@@ -39,15 +40,16 @@ impl Invocation for WorktopTakeAmountInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for WorktopTakeAmountInvocation {
+impl SerializableInvocation for WorktopTakeAmountInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<NativeFnInvocation> for WorktopTakeAmountInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for WorktopTakeAmountInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
             WorktopMethodInvocation::TakeAmount(self),
         ))
+        .into()
     }
 }
 
@@ -62,15 +64,16 @@ impl Invocation for WorktopTakeNonFungiblesInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for WorktopTakeNonFungiblesInvocation {
+impl SerializableInvocation for WorktopTakeNonFungiblesInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<NativeFnInvocation> for WorktopTakeNonFungiblesInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for WorktopTakeNonFungiblesInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
             WorktopMethodInvocation::TakeNonFungibles(self),
         ))
+        .into()
     }
 }
 
@@ -84,15 +87,16 @@ impl Invocation for WorktopTakeAllInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for WorktopTakeAllInvocation {
+impl SerializableInvocation for WorktopTakeAllInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<NativeFnInvocation> for WorktopTakeAllInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for WorktopTakeAllInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
             WorktopMethodInvocation::TakeAll(self),
         ))
+        .into()
     }
 }
 
@@ -106,15 +110,16 @@ impl Invocation for WorktopAssertContainsInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for WorktopAssertContainsInvocation {
+impl SerializableInvocation for WorktopAssertContainsInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for WorktopAssertContainsInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for WorktopAssertContainsInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
             WorktopMethodInvocation::AssertContains(self),
         ))
+        .into()
     }
 }
 
@@ -128,15 +133,16 @@ impl Invocation for WorktopAssertContainsAmountInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for WorktopAssertContainsAmountInvocation {
+impl SerializableInvocation for WorktopAssertContainsAmountInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for WorktopAssertContainsAmountInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for WorktopAssertContainsAmountInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
             WorktopMethodInvocation::AssertContainsAmount(self),
         ))
+        .into()
     }
 }
 
@@ -151,15 +157,16 @@ impl Invocation for WorktopAssertContainsNonFungiblesInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for WorktopAssertContainsNonFungiblesInvocation {
+impl SerializableInvocation for WorktopAssertContainsNonFungiblesInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for WorktopAssertContainsNonFungiblesInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for WorktopAssertContainsNonFungiblesInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
             WorktopMethodInvocation::AssertContainsNonFungibles(self),
         ))
+        .into()
     }
 }
 
@@ -171,14 +178,15 @@ impl Invocation for WorktopDrainInvocation {
     type Output = Vec<Bucket>;
 }
 
-impl ScryptoNativeInvocation for WorktopDrainInvocation {
+impl SerializableInvocation for WorktopDrainInvocation {
     type ScryptoOutput = Vec<Bucket>;
 }
 
-impl Into<NativeFnInvocation> for WorktopDrainInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for WorktopDrainInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
             WorktopMethodInvocation::Drain(self),
         ))
+        .into()
     }
 }

@@ -1,4 +1,4 @@
-use radix_engine_interface::wasm::ScryptoNativeInvocation;
+use radix_engine_interface::wasm::SerializableInvocation;
 use sbor::rust::fmt::Debug;
 
 use crate::api::{api::*, types::*};
@@ -16,15 +16,16 @@ impl Invocation for AccessRulesAddAccessCheckInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for AccessRulesAddAccessCheckInvocation {
+impl SerializableInvocation for AccessRulesAddAccessCheckInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for AccessRulesAddAccessCheckInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for AccessRulesAddAccessCheckInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
             AccessRulesChainMethodInvocation::AddAccessCheck(self),
         ))
+        .into()
     }
 }
 
@@ -41,15 +42,16 @@ impl Invocation for AccessRulesSetMethodAccessRuleInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for AccessRulesSetMethodAccessRuleInvocation {
+impl SerializableInvocation for AccessRulesSetMethodAccessRuleInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for AccessRulesSetMethodAccessRuleInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for AccessRulesSetMethodAccessRuleInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
             AccessRulesChainMethodInvocation::SetMethodAccessRule(self),
         ))
+        .into()
     }
 }
 
@@ -66,15 +68,16 @@ impl Invocation for AccessRulesSetGroupAccessRuleInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for AccessRulesSetGroupAccessRuleInvocation {
+impl SerializableInvocation for AccessRulesSetGroupAccessRuleInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for AccessRulesSetGroupAccessRuleInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for AccessRulesSetGroupAccessRuleInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
             AccessRulesChainMethodInvocation::SetGroupAccessRule(self),
         ))
+        .into()
     }
 }
 
@@ -91,15 +94,16 @@ impl Invocation for AccessRulesSetMethodMutabilityInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for AccessRulesSetMethodMutabilityInvocation {
+impl SerializableInvocation for AccessRulesSetMethodMutabilityInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for AccessRulesSetMethodMutabilityInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for AccessRulesSetMethodMutabilityInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
             AccessRulesChainMethodInvocation::SetMethodMutability(self),
         ))
+        .into()
     }
 }
 
@@ -116,15 +120,16 @@ impl Invocation for AccessRulesSetGroupMutabilityInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for AccessRulesSetGroupMutabilityInvocation {
+impl SerializableInvocation for AccessRulesSetGroupMutabilityInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for AccessRulesSetGroupMutabilityInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for AccessRulesSetGroupMutabilityInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
             AccessRulesChainMethodInvocation::SetGroupMutability(self),
         ))
+        .into()
     }
 }
 
@@ -138,14 +143,15 @@ impl Invocation for AccessRulesGetLengthInvocation {
     type Output = u32;
 }
 
-impl ScryptoNativeInvocation for AccessRulesGetLengthInvocation {
+impl SerializableInvocation for AccessRulesGetLengthInvocation {
     type ScryptoOutput = u32;
 }
 
-impl Into<NativeFnInvocation> for AccessRulesGetLengthInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for AccessRulesGetLengthInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
             AccessRulesChainMethodInvocation::GetLength(self),
         ))
+        .into()
     }
 }

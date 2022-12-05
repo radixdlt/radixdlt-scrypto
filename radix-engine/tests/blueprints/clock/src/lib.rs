@@ -100,12 +100,12 @@ blueprint! {
         }
 
         pub fn set_current_time(clock: SystemAddress, current_time_ms: u64) {
-            let input = RadixEngineInput::InvokeNativeFn(NativeFnInvocation::Method(
-                NativeMethodInvocation::Clock(ClockMethodInvocation::SetCurrentTime(
-                    ClockSetCurrentTimeInvocation {
+            let input = RadixEngineInput::Invoke(SerializedInvocation::Native(
+                NativeFnInvocation::Method(NativeMethodInvocation::Clock(
+                    ClockMethodInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
                         receiver: clock,
                         current_time_ms,
-                    },
+                    }),
                 )),
             ));
             call_engine(input)

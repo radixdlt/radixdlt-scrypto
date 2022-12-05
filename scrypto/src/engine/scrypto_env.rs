@@ -4,7 +4,6 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::ScryptoDecode;
-use radix_engine_interface::model::ScryptoInvocation;
 use radix_engine_interface::wasm::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -56,19 +55,14 @@ pub struct EngineApiError;
 
 pub struct ScryptoEnv;
 
-impl<N: ScryptoNativeInvocation> Invokable<N, EngineApiError> for ScryptoEnv {
+impl<N: SerializableInvocation> Invokable<N, EngineApiError> for ScryptoEnv {
     fn invoke(&mut self, input: N) -> Result<N::Output, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::InvokeNativeFn(input.into()));
+        let rtn = call_engine(RadixEngineInput::Invoke(input.into()));
         Ok(rtn)
     }
 }
 
 impl EngineApi<EngineApiError> for ScryptoEnv {
-    fn invoke_scrypto(&mut self, invocation: ScryptoInvocation) -> Result<Vec<u8>, EngineApiError> {
-        let rtn = call_engine_to_raw(RadixEngineInput::InvokeScrypto(invocation));
-        Ok(rtn)
-    }
-
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, EngineApiError> {
         let rtn = call_engine(RadixEngineInput::CreateNode(node));
         Ok(rtn)

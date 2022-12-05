@@ -1,6 +1,6 @@
 use crate::api::types::*;
 use crate::scrypto;
-use radix_engine_interface::api::api::InvokableNative;
+use radix_engine_interface::api::api::InvokableModel;
 use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -9,8 +9,7 @@ use sbor::rust::vec::Vec;
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum RadixEngineInput {
-    InvokeScrypto(ScryptoInvocation),
-    InvokeNativeFn(NativeFnInvocation),
+    Invoke(SerializedInvocation),
 
     CreateNode(ScryptoRENode),
     GetVisibleNodeIds(),
@@ -29,9 +28,22 @@ pub enum RadixEngineInput {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
+pub enum SerializedInvocation {
+    Native(NativeFnInvocation),
+    Scrypto(ScryptoInvocation),
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum NativeFnInvocation {
     Method(NativeMethodInvocation),
     Function(NativeFunctionInvocation),
+}
+
+impl Into<SerializedInvocation> for NativeFnInvocation {
+    fn into(self) -> SerializedInvocation {
+        SerializedInvocation::Native(self)
+    }
 }
 
 #[derive(Debug)]
@@ -222,7 +234,7 @@ pub enum PackageFunctionInvocation {
 impl NativeFnInvocation {
     pub fn invoke<Y, E>(self, system_api: &mut Y) -> Result<IndexedScryptoValue, E>
     where
-        Y: InvokableNative<E>,
+        Y: InvokableModel<E>,
     {
         match self {
             NativeFnInvocation::Function(native_function) => match native_function {

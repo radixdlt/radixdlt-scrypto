@@ -8,9 +8,9 @@ use crate::model::{
     ComponentRoyaltyConfigSubstate, ComponentStateSubstate, KeyValueStore, RuntimeSubstate,
 };
 use crate::model::{MetadataSubstate, Resource};
-use crate::types::{HashMap, ScryptoInvocation};
+use crate::types::HashMap;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::{EngineApi, Invokable};
+use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
     ComponentMethod, Level, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoActor,
     ScryptoRENode, SubstateOffset,
@@ -30,10 +30,6 @@ where
     W: WasmEngine,
     R: FeeReserve,
 {
-    fn invoke_scrypto(&mut self, invocation: ScryptoInvocation) -> Result<Vec<u8>, RuntimeError> {
-        self.invoke(invocation)
-    }
-
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
         let (node_id, node) = match node {
             ScryptoRENode::Component(package_address, blueprint_name, state) => {

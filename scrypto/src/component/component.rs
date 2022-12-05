@@ -1,5 +1,5 @@
 use radix_engine_derive::Describe;
-use radix_engine_interface::api::api::{EngineApi, Invokable};
+use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoReceiver,
     SubstateOffset,
@@ -65,7 +65,7 @@ impl Component {
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let mut env = ScryptoEnv;
         let buffer = env
-            .invoke_scrypto(ScryptoInvocation::Method(
+            .invoke(ScryptoInvocation::Method(
                 ScryptoMethodIdent {
                     receiver: ScryptoReceiver::Component(self.0),
                     method_name: method.to_string(),
@@ -171,7 +171,7 @@ impl BorrowedGlobalComponent {
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let mut env = ScryptoEnv;
         let raw = env
-            .invoke_scrypto(ScryptoInvocation::Method(
+            .invoke(ScryptoInvocation::Method(
                 ScryptoMethodIdent {
                     receiver: ScryptoReceiver::Global(self.0),
                     method_name: method.to_string(),

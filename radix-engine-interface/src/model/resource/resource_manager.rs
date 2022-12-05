@@ -65,15 +65,16 @@ impl Invocation for ResourceManagerCreateInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateInvocation {
+impl SerializableInvocation for ResourceManagerCreateInvocation {
     type ScryptoOutput = (ResourceAddress, Option<Bucket>);
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerCreateInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ResourceManagerCreateInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
             ResourceManagerFunctionInvocation::Create(self),
         ))
+        .into()
     }
 }
 
@@ -90,15 +91,16 @@ impl Invocation for ResourceManagerCreateWithOwnerInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateWithOwnerInvocation {
+impl SerializableInvocation for ResourceManagerCreateWithOwnerInvocation {
     type ScryptoOutput = (ResourceAddress, Option<Bucket>);
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerCreateWithOwnerInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ResourceManagerCreateWithOwnerInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
             ResourceManagerFunctionInvocation::CreateWithOwner(self),
         ))
+        .into()
     }
 }
 
@@ -112,15 +114,16 @@ impl Invocation for ResourceManagerBucketBurnInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ResourceManagerBucketBurnInvocation {
+impl SerializableInvocation for ResourceManagerBucketBurnInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerBucketBurnInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ResourceManagerBucketBurnInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
             ResourceManagerFunctionInvocation::BurnBucket(self),
         ))
+        .into()
     }
 }
 
@@ -135,15 +138,16 @@ impl Invocation for ResourceManagerBurnInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ResourceManagerBurnInvocation {
+impl SerializableInvocation for ResourceManagerBurnInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerBurnInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ResourceManagerBurnInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
             ResourceManagerMethodInvocation::Burn(self),
         ))
+        .into()
     }
 }
 
@@ -159,15 +163,16 @@ impl Invocation for ResourceManagerUpdateVaultAuthInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ResourceManagerUpdateVaultAuthInvocation {
+impl SerializableInvocation for ResourceManagerUpdateVaultAuthInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerUpdateVaultAuthInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ResourceManagerUpdateVaultAuthInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
             ResourceManagerMethodInvocation::UpdateVaultAuth(self),
         ))
+        .into()
     }
 }
 
@@ -183,15 +188,16 @@ impl Invocation for ResourceManagerSetVaultAuthMutabilityInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
+impl SerializableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerSetVaultAuthMutabilityInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ResourceManagerSetVaultAuthMutabilityInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
             ResourceManagerMethodInvocation::LockVaultAuth(self),
         ))
+        .into()
     }
 }
 
@@ -205,15 +211,16 @@ impl Invocation for ResourceManagerCreateVaultInvocation {
     type Output = Vault;
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateVaultInvocation {
+impl SerializableInvocation for ResourceManagerCreateVaultInvocation {
     type ScryptoOutput = Vault;
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerCreateVaultInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ResourceManagerCreateVaultInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
             ResourceManagerMethodInvocation::CreateVault(self),
         ))
+        .into()
     }
 }
 
@@ -227,15 +234,16 @@ impl Invocation for ResourceManagerCreateBucketInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for ResourceManagerCreateBucketInvocation {
+impl SerializableInvocation for ResourceManagerCreateBucketInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerCreateBucketInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ResourceManagerCreateBucketInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
             ResourceManagerMethodInvocation::CreateBucket(self),
         ))
+        .into()
     }
 }
 
@@ -250,15 +258,16 @@ impl Invocation for ResourceManagerMintInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for ResourceManagerMintInvocation {
+impl SerializableInvocation for ResourceManagerMintInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerMintInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ResourceManagerMintInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
             ResourceManagerMethodInvocation::Mint(self),
         ))
+        .into()
     }
 }
 
@@ -272,15 +281,16 @@ impl Invocation for ResourceManagerGetResourceTypeInvocation {
     type Output = ResourceType;
 }
 
-impl ScryptoNativeInvocation for ResourceManagerGetResourceTypeInvocation {
+impl SerializableInvocation for ResourceManagerGetResourceTypeInvocation {
     type ScryptoOutput = ResourceType;
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerGetResourceTypeInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ResourceManagerGetResourceTypeInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
             ResourceManagerMethodInvocation::GetResourceType(self),
         ))
+        .into()
     }
 }
 
@@ -294,15 +304,16 @@ impl Invocation for ResourceManagerGetTotalSupplyInvocation {
     type Output = Decimal;
 }
 
-impl ScryptoNativeInvocation for ResourceManagerGetTotalSupplyInvocation {
+impl SerializableInvocation for ResourceManagerGetTotalSupplyInvocation {
     type ScryptoOutput = Decimal;
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerGetTotalSupplyInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ResourceManagerGetTotalSupplyInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
             ResourceManagerMethodInvocation::GetTotalSupply(self),
         ))
+        .into()
     }
 }
 
@@ -318,15 +329,16 @@ impl Invocation for ResourceManagerUpdateNonFungibleDataInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
+impl SerializableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerUpdateNonFungibleDataInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ResourceManagerUpdateNonFungibleDataInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
             ResourceManagerMethodInvocation::UpdateNonFungibleData(self),
         ))
+        .into()
     }
 }
 
@@ -341,15 +353,16 @@ impl Invocation for ResourceManagerNonFungibleExistsInvocation {
     type Output = bool;
 }
 
-impl ScryptoNativeInvocation for ResourceManagerNonFungibleExistsInvocation {
+impl SerializableInvocation for ResourceManagerNonFungibleExistsInvocation {
     type ScryptoOutput = bool;
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerNonFungibleExistsInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ResourceManagerNonFungibleExistsInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
             ResourceManagerMethodInvocation::NonFungibleExists(self),
         ))
+        .into()
     }
 }
 
@@ -364,15 +377,16 @@ impl Invocation for ResourceManagerGetNonFungibleInvocation {
     type Output = [Vec<u8>; 2];
 }
 
-impl ScryptoNativeInvocation for ResourceManagerGetNonFungibleInvocation {
+impl SerializableInvocation for ResourceManagerGetNonFungibleInvocation {
     type ScryptoOutput = [Vec<u8>; 2];
 }
 
-impl Into<NativeFnInvocation> for ResourceManagerGetNonFungibleInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ResourceManagerGetNonFungibleInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
             ResourceManagerMethodInvocation::GetNonFungible(self),
         ))
+        .into()
     }
 }
 

@@ -16,7 +16,6 @@ pub trait Invokable<I: Invocation, E> {
 }
 
 pub trait EngineApi<E: Debug> {
-    fn invoke_scrypto(&mut self, invocation: ScryptoInvocation) -> Result<Vec<u8>, E>;
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, E>;
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), E>;
     fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, E>;
@@ -35,8 +34,9 @@ pub trait EngineApi<E: Debug> {
     fn sys_emit_log(&mut self, level: Level, message: String) -> Result<(), E>;
 }
 
-pub trait InvokableNative<E>:
-    Invokable<EpochManagerCreateInvocation, E>
+pub trait InvokableModel<E>:
+    Invokable<ScryptoInvocation, E>
+    + Invokable<EpochManagerCreateInvocation, E>
     + Invokable<EpochManagerSetEpochInvocation, E>
     + Invokable<EpochManagerGetCurrentEpochInvocation, E>
     + Invokable<ClockCreateInvocation, E>

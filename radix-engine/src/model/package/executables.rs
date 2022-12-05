@@ -8,7 +8,7 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
-use radix_engine_interface::api::api::InvokableNative;
+use radix_engine_interface::api::api::InvokableModel;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId, RENodeId};
 use radix_engine_interface::model::*;
@@ -141,7 +141,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
 
     fn main<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<RuntimeError>,
+        Y: SystemApi + InvokableModel<RuntimeError>,
     {
         let code = api.read_blob(&self.code.0)?.to_vec();
         let blob = api.read_blob(&self.abi.0)?;

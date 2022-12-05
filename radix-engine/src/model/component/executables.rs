@@ -34,7 +34,7 @@ impl NativeProcedure for ComponentGlobalizeInvocation {
 
     fn main<Y>(self, api: &mut Y) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<RuntimeError>,
+        Y: SystemApi + InvokableModel<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
         let global_node_id = {
@@ -96,7 +96,7 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
 
     fn main<Y>(self, api: &mut Y) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableNative<RuntimeError>,
+        Y: SystemApi + InvokableModel<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
         let global_node_id = {

@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableNative};
+use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel};
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
     ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset,
@@ -621,7 +621,7 @@ pub trait Executor {
         Y: SystemApi
             + Invokable<ScryptoInvocation, RuntimeError>
             + EngineApi<RuntimeError>
-            + InvokableNative<RuntimeError>;
+            + InvokableModel<RuntimeError>;
 }
 
 pub trait ExecutableInvocation<W: WasmEngine>: Invocation {
