@@ -1005,6 +1005,9 @@ fn generate_value(
     }
 
     match value {
+        // ==============
+        // Basic types
+        // ==============
         ast::Value::Unit => Ok(SborValue::Unit),
         ast::Value::Bool(value) => Ok(SborValue::Bool { value: *value }),
         ast::Value::I8(value) => Ok(SborValue::I8 { value: *value }),
@@ -1037,6 +1040,46 @@ fn generate_value(
                 blobs,
             )?,
         }),
+        // ==============
+        // Aliases
+        // ==============
+        ast::Value::Some(value) => Ok(SborValue::Enum {
+            discriminator: "Some".to_owned(),
+            fields: vec![generate_value(
+                value,
+                None,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?],
+        }),
+        ast::Value::None => Ok(SborValue::Enum {
+            discriminator: "None".to_owned(),
+            fields: vec![],
+        }),
+        ast::Value::Ok(value) => Ok(SborValue::Enum {
+            discriminator: "Ok".to_owned(),
+            fields: vec![generate_value(
+                value,
+                None,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?],
+        }),
+        ast::Value::Err(value) => Ok(SborValue::Enum {
+            discriminator: "Err".to_owned(),
+            fields: vec![generate_value(
+                value,
+                None,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?],
+        }),
+        // ==============
+        // Custom Types
+        // ==============
         ast::Value::PackageAddress(_) => {
             generate_package_address(value, bech32_decoder).map(|v| SborValue::Custom {
                 value: ScryptoCustomValue::PackageAddress(v),
