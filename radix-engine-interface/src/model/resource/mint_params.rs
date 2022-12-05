@@ -1,4 +1,4 @@
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
 use crate::math::*;
@@ -14,7 +14,7 @@ pub enum MintParams {
 
     /// To mint non-fungible resource, represented by non-fungible id and data pairs
     NonFungible {
-        entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+        entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
     },
 }
 
@@ -30,7 +30,7 @@ impl MintParams {
         T: IntoIterator<Item = (NonFungibleId, V)>,
         V: NonFungibleData,
     {
-        let mut encoded = HashMap::new();
+        let mut encoded = BTreeMap::new();
         for (id, e) in entries {
             encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }

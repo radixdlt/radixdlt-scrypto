@@ -4,7 +4,7 @@ use crate::crypto::Blob;
 use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 
 #[derive(Debug)]
@@ -12,8 +12,8 @@ use sbor::rust::string::String;
 pub struct PackagePublishInvocation {
     pub code: Blob,
     pub abi: Blob,
-    pub royalty_config: HashMap<String, RoyaltyConfig>,
-    pub metadata: HashMap<String, String>,
+    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
+    pub metadata: BTreeMap<String, String>,
     pub access_rules: AccessRules,
 }
 
@@ -39,8 +39,8 @@ impl Into<SerializedInvocation> for PackagePublishInvocation {
 pub struct PackagePublishWithOwnerInvocation {
     pub code: Blob,
     pub abi: Blob,
-    pub royalty_config: HashMap<String, RoyaltyConfig>,
-    pub metadata: HashMap<String, String>,
+    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
+    pub metadata: BTreeMap<String, String>,
     pub owner_badge: NonFungibleAddress,
 }
 
@@ -65,7 +65,7 @@ impl Into<SerializedInvocation> for PackagePublishWithOwnerInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PackageSetRoyaltyConfigInvocation {
     pub receiver: PackageAddress,
-    pub royalty_config: HashMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
+    pub royalty_config: BTreeMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
 }
 
 impl Invocation for PackageSetRoyaltyConfigInvocation {
@@ -89,7 +89,7 @@ impl Into<SerializedInvocation> for PackageSetRoyaltyConfigInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PackageSetRoyaltyConfigExecutable {
     pub receiver: RENodeId,
-    pub royalty_config: HashMap<String, RoyaltyConfig>,
+    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }
 
 #[derive(Debug)]

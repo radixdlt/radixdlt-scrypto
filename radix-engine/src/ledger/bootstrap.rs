@@ -7,8 +7,7 @@ use crate::transaction::{
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_interface::api::types::{
-    EpochManagerFunction, GlobalAddress, NativeFunctionIdent, RENodeId, ResourceManagerFunction,
-    ResourceManagerOffset, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset,
+    GlobalAddress, RENodeId, ResourceManagerOffset, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
@@ -41,19 +40,12 @@ pub fn create_genesis() -> SystemTransaction {
     let create_faucet_package = {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
-        let inst = Instruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-                function_name: PackageFunction::Publish.to_string(),
-            },
-            args: scrypto_encode(&PackagePublishInvocation {
-                code: Blob(hash(&faucet_code)),
-                abi: Blob(hash(&faucet_abi)),
-                royalty_config: HashMap::new(),
-                metadata: HashMap::new(),
-                access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
-            })
-            .unwrap(),
+        let inst = Instruction::PublishPackage {
+            code: Blob(hash(&faucet_code)),
+            abi: Blob(hash(&faucet_abi)),
+            royalty_config: BTreeMap::new(),
+            metadata: BTreeMap::new(),
+            access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
         };
 
         blobs.push(faucet_code);
@@ -64,19 +56,12 @@ pub fn create_genesis() -> SystemTransaction {
     let create_account_package = {
         let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
         let account_abi = include_bytes!("../../../assets/account.abi").to_vec();
-        let inst = Instruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-                function_name: PackageFunction::Publish.to_string(),
-            },
-            args: scrypto_encode(&PackagePublishInvocation {
-                code: Blob(hash(&account_code)),
-                abi: Blob(hash(&account_abi)),
-                royalty_config: HashMap::new(),
-                metadata: HashMap::new(),
-                access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
-            })
-            .unwrap(),
+        let inst = Instruction::PublishPackage {
+            code: Blob(hash(&account_code)),
+            abi: Blob(hash(&account_abi)),
+            royalty_config: BTreeMap::new(),
+            metadata: BTreeMap::new(),
+            access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
         };
 
         blobs.push(account_code);
@@ -84,82 +69,62 @@ pub fn create_genesis() -> SystemTransaction {
 
         inst
     };
+
     let create_ecdsa_secp256k1_token = {
-        let metadata: HashMap<String, String> = HashMap::new();
-        let mut access_rules = HashMap::new();
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
-        Instruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: ResourceManagerFunction::Create.to_string(),
+        Instruction::CreateResource {
+            resource_type: ResourceType::NonFungible {
+                id_type: NonFungibleIdType::default(),
             },
-            args: scrypto_encode(&ResourceManagerCreateInvocation {
-                resource_type: ResourceType::NonFungible {
-                    id_type: NonFungibleIdType::default(),
-                },
-                metadata,
-                access_rules,
-                mint_params: initial_supply,
-            })
-            .unwrap(),
+            metadata,
+            access_rules,
+            mint_params: initial_supply,
         }
     };
 
     // TODO: Perhaps combine with ecdsa token?
     let create_system_token = {
-        let metadata: HashMap<String, String> = HashMap::new();
-        let mut access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> =
-            HashMap::new();
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let mut access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)> =
+            BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
-        Instruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: ResourceManagerFunction::Create.to_string(),
+        Instruction::CreateResource {
+            resource_type: ResourceType::NonFungible {
+                id_type: NonFungibleIdType::default(),
             },
-            args: scrypto_encode(&ResourceManagerCreateInvocation {
-                resource_type: ResourceType::NonFungible {
-                    id_type: NonFungibleIdType::default(),
-                },
-                metadata,
-                access_rules,
-                mint_params: initial_supply,
-            })
-            .unwrap(),
+            metadata,
+            access_rules,
+            mint_params: initial_supply,
         }
     };
 
     let create_xrd_token = {
-        let mut metadata = HashMap::new();
+        let mut metadata = BTreeMap::new();
         metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
         metadata.insert("name".to_owned(), XRD_NAME.to_owned());
         metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
         metadata.insert("url".to_owned(), XRD_URL.to_owned());
 
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
 
         let initial_supply: Option<MintParams> = Option::Some(MintParams::Fungible {
             amount: XRD_MAX_SUPPLY.into(),
         });
 
-        Instruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: ResourceManagerFunction::Create.to_string(),
-            },
-            args: scrypto_encode(&ResourceManagerCreateInvocation {
-                resource_type: ResourceType::Fungible { divisibility: 18 },
-                metadata,
-                access_rules,
-                mint_params: initial_supply,
-            })
-            .unwrap(),
+        Instruction::CreateResource {
+            resource_type: ResourceType::Fungible { divisibility: 18 },
+            metadata,
+            access_rules,
+            mint_params: initial_supply,
         }
     };
 
@@ -170,11 +135,9 @@ pub fn create_genesis() -> SystemTransaction {
     let create_xrd_faucet = {
         let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
         Instruction::CallFunction {
-            function_ident: ScryptoFunctionIdent {
-                package: ScryptoPackage::Global(FAUCET_PACKAGE),
-                blueprint_name: FAUCET_BLUEPRINT.to_string(),
-                function_name: "new".to_string(),
-            },
+            package_address: FAUCET_PACKAGE,
+            blueprint_name: FAUCET_BLUEPRINT.to_string(),
+            function_name: "new".to_string(),
             args: args!(bucket),
         }
     };
@@ -200,26 +163,19 @@ pub fn create_genesis() -> SystemTransaction {
     };
 
     let create_eddsa_ed25519_token = {
-        let metadata: HashMap<String, String> = HashMap::new();
-        let mut access_rules = HashMap::new();
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
-        Instruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: ResourceManagerFunction::Create.to_string(),
+        Instruction::CreateResource {
+            resource_type: ResourceType::NonFungible {
+                id_type: NonFungibleIdType::default(),
             },
-            args: scrypto_encode(&ResourceManagerCreateInvocation {
-                resource_type: ResourceType::NonFungible {
-                    id_type: NonFungibleIdType::default(),
-                },
-                metadata,
-                access_rules,
-                mint_params: initial_supply,
-            })
-            .unwrap(),
+            metadata,
+            access_rules,
+            mint_params: initial_supply,
         }
     };
 

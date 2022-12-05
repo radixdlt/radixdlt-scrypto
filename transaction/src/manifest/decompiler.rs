@@ -424,11 +424,13 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
         Instruction::SetMetadata {
             entity_address,
-            metadata,
+            key,
+            value,
         } => {
             f.write_str("SET_METADATA")?;
             format_entity_address(f, context, entity_address)?;
-            format_typed_value(f, context, metadata)?;
+            format_typed_value(f, context, key)?;
+            format_typed_value(f, context, value)?;
             f.write_str(";")?;
         }
         Instruction::SetPackageRoyaltyConfig {

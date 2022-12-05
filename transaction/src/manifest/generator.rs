@@ -432,10 +432,12 @@ pub fn generate_instruction(
         },
         ast::Instruction::SetMetadata {
             entity_address,
-            metadata,
+            key,
+            value,
         } => Instruction::SetMetadata {
             entity_address: generate_entity_address(entity_address, bech32_decoder)?,
-            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+            key: generate_string(key)?,
+            value: generate_string(value)?,
         },
         ast::Instruction::SetPackageRoyaltyConfig {
             package_address,

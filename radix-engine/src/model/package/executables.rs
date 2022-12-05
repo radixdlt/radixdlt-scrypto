@@ -29,7 +29,7 @@ pub enum PackageError {
 impl Package {
     fn new(
         code: Vec<u8>,
-        abi: HashMap<String, BlueprintAbi>,
+        abi: BTreeMap<String, BlueprintAbi>,
     ) -> Result<PackageInfoSubstate, PrepareError> {
         WasmValidator::default().validate(&code, &abi)?;
 
@@ -65,7 +65,7 @@ impl NativeProcedure for PackagePublishInvocation {
     {
         let code = api.read_blob(&self.code.0)?.to_vec();
         let blob = api.read_blob(&self.abi.0)?;
-        let abi = scrypto_decode::<HashMap<String, BlueprintAbi>>(blob).map_err(|e| {
+        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(blob).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidAbi(e),
             ))
@@ -145,7 +145,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
     {
         let code = api.read_blob(&self.code.0)?.to_vec();
         let blob = api.read_blob(&self.abi.0)?;
-        let abi = scrypto_decode::<HashMap<String, BlueprintAbi>>(blob).map_err(|e| {
+        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(blob).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidAbi(e),
             ))

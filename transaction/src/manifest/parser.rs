@@ -191,7 +191,8 @@ impl Parser {
             },
             TokenKind::SetMetadata => Instruction::SetMetadata {
                 entity_address: self.parse_value()?,
-                metadata: self.parse_value()?,
+                key: self.parse_value()?,
+                value: self.parse_value()?,
             },
             TokenKind::SetPackageRoyaltyConfig => Instruction::SetPackageRoyaltyConfig {
                 package_address: self.parse_value()?,

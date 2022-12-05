@@ -104,7 +104,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateWithOwnerIn
         )));
 
         let owner_badge = self.owner_badge;
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(
             ResourceMethodAuthKey::Withdraw,
             (AllowAll, MUTABLE(rule!(require(owner_badge.clone())))),
@@ -268,7 +268,7 @@ where
 }
 
 fn build_substates(
-    mut access_rules_map: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
     metadata_access_rule: AccessRule,
     metadata_mutability: AccessRule,
 ) -> (AccessRulesChainSubstate, AccessRulesChainSubstate) {

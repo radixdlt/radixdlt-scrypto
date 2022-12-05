@@ -131,7 +131,8 @@ pub enum Instruction {
 
     SetMetadata {
         entity_address: Value,
-        metadata: Value,
+        key: Value,
+        value: Value,
     },
 
     SetPackageRoyaltyConfig {

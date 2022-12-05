@@ -6,7 +6,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::model::*;
 
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
@@ -264,7 +264,7 @@ impl ResourceManager {
 
     /// Mints non-fungible resources
     pub fn mint_non_fungible<T: NonFungibleData>(&mut self, id: &NonFungibleId, data: T) -> Bucket {
-        let mut entries = HashMap::new();
+        let mut entries = BTreeMap::new();
         entries.insert(
             id.clone(),
             (data.immutable_data().unwrap(), data.mutable_data().unwrap()),

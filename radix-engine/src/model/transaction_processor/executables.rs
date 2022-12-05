@@ -1,9 +1,11 @@
+use crate::model::resolve_native_function;
+use crate::model::resolve_native_method;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel};
 use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent,
-    ProofId, RENodeId, TransactionProcessorFunction,
+    BucketId, GlobalAddress, NativeFunction, NativeFunctionIdent, NativeMethodIdent, ProofId,
+    RENodeId, TransactionProcessorFunction,
 };
 use radix_engine_interface::data::{IndexedScryptoValue, ValueReplacingError};
 use radix_engine_interface::model::*;
@@ -13,8 +15,6 @@ use transaction::model::*;
 use transaction::validation::*;
 
 use crate::engine::*;
-use crate::model::resolve_native_function;
-use crate::model::resolve_native_method;
 use crate::model::{InvokeError, WorktopSubstate};
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -519,7 +519,9 @@ impl TransactionProcessor {
                         .map_err(InvokeError::Downstream)
                 }
                 Instruction::CallFunction {
-                    function_ident,
+                    package_address,
+                    blueprint_name,
+                    function_name,
                     args,
                 } => {
                     Self::replace_ids(
@@ -531,7 +533,11 @@ impl TransactionProcessor {
                     .and_then(|args| Self::process_expressions(args, api))
                     .and_then(|args| {
                         api.invoke(ParsedScryptoInvocation::Function(
-                            function_ident.clone(),
+                            ScryptoFunctionIdent {
+                                package: ScryptoPackage::Global(package_address.clone()),
+                                blueprint_name: blueprint_name.clone(),
+                                function_name: blueprint_name.clone(),
+                            },
                             args,
                         ))
                         .map_err(InvokeError::Downstream)
@@ -551,7 +557,11 @@ impl TransactionProcessor {
                         Ok(result)
                     })
                 }
-                Instruction::CallMethod { method_ident, args } => {
+                Instruction::CallMethod {
+                    component_address,
+                    method_name,
+                    args,
+                } => {
                     Self::replace_ids(
                         &mut proof_id_mapping,
                         &mut bucket_id_mapping,
@@ -560,8 +570,14 @@ impl TransactionProcessor {
                     )
                     .and_then(|args| Self::process_expressions(args, api))
                     .and_then(|args| {
-                        api.invoke(ParsedScryptoInvocation::Method(method_ident.clone(), args))
-                            .map_err(InvokeError::Downstream)
+                        api.invoke(ParsedScryptoInvocation::Method(
+                            ScryptoMethodIdent {
+                                receiver: ScryptoReceiver::Global(component_address.clone()),
+                                method_name: method_name.clone(),
+                            },
+                            args,
+                        ))
+                        .map_err(InvokeError::Downstream)
                     })
                     .and_then(|result| {
                         // Auto move into auth_zone
@@ -578,6 +594,22 @@ impl TransactionProcessor {
                         Ok(result)
                     })
                 }
+                Instruction::PublishPackage {
+                    code,
+                    abi,
+                    royalty_config,
+                    metadata,
+                    access_rules,
+                } => api
+                    .invoke(PackagePublishInvocation {
+                        code: code.clone(),
+                        abi: abi.clone(),
+                        royalty_config: royalty_config.clone(),
+                        metadata: metadata.clone(),
+                        access_rules: access_rules.clone(),
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream),
                 Instruction::PublishPackageWithOwner {
                     code,
                     abi,
@@ -586,11 +618,112 @@ impl TransactionProcessor {
                     .invoke(PackagePublishWithOwnerInvocation {
                         code: code.clone(),
                         abi: abi.clone(),
-                        royalty_config: HashMap::new(),
-                        metadata: HashMap::new(),
+                        royalty_config: BTreeMap::new(),
+                        metadata: BTreeMap::new(),
                         owner_badge: owner_badge.clone(),
                     })
-                    .map(|address| IndexedScryptoValue::from_typed(&address))
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream),
+                Instruction::CreateResource {
+                    resource_type,
+                    metadata,
+                    access_rules,
+                    mint_params,
+                } => api
+                    .invoke(ResourceManagerCreateInvocation {
+                        resource_type: resource_type.clone(),
+                        metadata: metadata.clone(),
+                        access_rules: access_rules.clone(),
+                        mint_params: mint_params.clone(),
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream),
+                Instruction::CreateResourceWithOwner {
+                    resource_type,
+                    metadata,
+                    owner_badge,
+                    mint_params,
+                } => api
+                    .invoke(ResourceManagerCreateWithOwnerInvocation {
+                        resource_type: resource_type.clone(),
+                        metadata: metadata.clone(),
+                        owner_badge: owner_badge.clone(),
+                        mint_params: mint_params.clone(),
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream),
+                Instruction::BurnResource { bucket_id } => bucket_id_mapping
+                    .get(bucket_id)
+                    .cloned()
+                    .ok_or(InvokeError::Error(
+                        TransactionProcessorError::BucketNotFound(*bucket_id),
+                    ))
+                    .and_then(|bucket_id| {
+                        api.invoke(ResourceManagerBucketBurnInvocation {
+                            bucket: Bucket(bucket_id.clone()),
+                        })
+                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                        .map_err(InvokeError::Downstream)
+                    }),
+                Instruction::MintFungible {
+                    resource_address,
+                    amount,
+                } => api
+                    .invoke(ResourceManagerMintInvocation {
+                        receiver: resource_address.clone(),
+                        mint_params: MintParams::Fungible {
+                            amount: amount.clone(),
+                        },
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream),
+                Instruction::SetMetadata {
+                    entity_address,
+                    key,
+                    value,
+                } => api
+                    .invoke(MetadataSetInvocation {
+                        receiver: RENodeId::Global(entity_address.clone()),
+                        key: key.clone(),
+                        value: value.clone(),
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream),
+                Instruction::SetPackageRoyaltyConfig {
+                    package_address,
+                    royalty_config,
+                } => api
+                    .invoke(PackageSetRoyaltyConfigInvocation {
+                        receiver: package_address.clone(),
+                        royalty_config: royalty_config.clone(),
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream),
+                Instruction::SetComponentRoyaltyConfig {
+                    component_address,
+                    royalty_config,
+                } => api
+                    .invoke(ComponentSetRoyaltyConfigInvocation {
+                        receiver: RENodeId::Global(GlobalAddress::Component(
+                            component_address.clone(),
+                        )),
+                        royalty_config: royalty_config.clone(),
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream),
+                Instruction::ClaimPackageRoyalty { package_address } => api
+                    .invoke(PackageClaimRoyaltyInvocation {
+                        receiver: package_address.clone(),
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream),
+                Instruction::ClaimComponentRoyalty { component_address } => api
+                    .invoke(ComponentClaimRoyaltyInvocation {
+                        receiver: RENodeId::Global(GlobalAddress::Component(
+                            component_address.clone(),
+                        )),
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream),
                 Instruction::CallNativeFunction {
                     function_ident,

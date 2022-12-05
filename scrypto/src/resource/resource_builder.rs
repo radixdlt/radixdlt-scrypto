@@ -4,7 +4,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use radix_engine_interface::rule;
 use sbor::rust::borrow::ToOwned;
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 
 /// Not divisible.
@@ -29,14 +29,14 @@ impl ResourceBuilder {
 
 pub struct FungibleResourceBuilder {
     divisibility: u8,
-    metadata: HashMap<String, String>,
+    metadata: BTreeMap<String, String>,
 }
 
 impl FungibleResourceBuilder {
     pub fn new() -> Self {
         Self {
             divisibility: DIVISIBILITY_MAXIMUM,
-            metadata: HashMap::new(),
+            metadata: BTreeMap::new(),
         }
     }
 
@@ -63,7 +63,7 @@ impl FungibleResourceBuilder {
         method_auth: AccessRule,
         mutability: Mutability,
     ) -> FungibleResourceWithAuthBuilder {
-        let mut authorization = HashMap::new();
+        let mut authorization = BTreeMap::new();
         authorization.insert(Mint, (method_auth, mutability));
         FungibleResourceWithAuthBuilder {
             divisibility: self.divisibility,
@@ -77,7 +77,7 @@ impl FungibleResourceBuilder {
         method_auth: AccessRule,
         mutability: Mutability,
     ) -> FungibleResourceWithAuthBuilder {
-        let mut authorization = HashMap::new();
+        let mut authorization = BTreeMap::new();
         authorization.insert(Burn, (method_auth, mutability));
         FungibleResourceWithAuthBuilder {
             divisibility: self.divisibility,
@@ -91,7 +91,7 @@ impl FungibleResourceBuilder {
         method_auth: AccessRule,
         mutability: Mutability,
     ) -> FungibleResourceWithAuthBuilder {
-        let mut authorization = HashMap::new();
+        let mut authorization = BTreeMap::new();
         authorization.insert(Recall, (method_auth, mutability));
         FungibleResourceWithAuthBuilder {
             divisibility: self.divisibility,
@@ -105,7 +105,7 @@ impl FungibleResourceBuilder {
         method_auth: AccessRule,
         mutability: Mutability,
     ) -> FungibleResourceWithAuthBuilder {
-        let mut authorization = HashMap::new();
+        let mut authorization = BTreeMap::new();
         authorization.insert(Withdraw, (method_auth, mutability));
         FungibleResourceWithAuthBuilder {
             divisibility: self.divisibility,
@@ -119,7 +119,7 @@ impl FungibleResourceBuilder {
         method_auth: AccessRule,
         mutability: Mutability,
     ) -> FungibleResourceWithAuthBuilder {
-        let mut authorization = HashMap::new();
+        let mut authorization = BTreeMap::new();
         authorization.insert(Deposit, (method_auth, mutability));
         FungibleResourceWithAuthBuilder {
             divisibility: self.divisibility,
@@ -133,7 +133,7 @@ impl FungibleResourceBuilder {
         method_auth: AccessRule,
         mutability: Mutability,
     ) -> FungibleResourceWithAuthBuilder {
-        let mut authorization = HashMap::new();
+        let mut authorization = BTreeMap::new();
         authorization.insert(UpdateMetadata, (method_auth, mutability));
         FungibleResourceWithAuthBuilder {
             divisibility: self.divisibility,
@@ -151,7 +151,7 @@ impl FungibleResourceBuilder {
     ///     .initial_supply(5);
     /// ```
     pub fn initial_supply<T: Into<Decimal>>(self, amount: T) -> Bucket {
-        let mut authorization = HashMap::new();
+        let mut authorization = BTreeMap::new();
         authorization.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         let (_resource_address, bucket) = ScryptoEnv
@@ -175,7 +175,7 @@ impl FungibleResourceBuilder {
                     divisibility: self.divisibility,
                 },
                 metadata: self.metadata,
-                access_rules: HashMap::new(),
+                access_rules: BTreeMap::new(),
                 mint_params: None,
             })
             .unwrap();
@@ -220,8 +220,8 @@ impl FungibleResourceBuilder {
 
 pub struct FungibleResourceWithAuthBuilder {
     divisibility: u8,
-    metadata: HashMap<String, String>,
-    authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    metadata: BTreeMap<String, String>,
+    authorization: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
 }
 
 impl FungibleResourceWithAuthBuilder {
@@ -296,14 +296,14 @@ impl FungibleResourceWithAuthBuilder {
 }
 
 pub struct NonFungibleResourceBuilder {
-    metadata: HashMap<String, String>,
+    metadata: BTreeMap<String, String>,
     id_type: NonFungibleIdType,
 }
 
 impl NonFungibleResourceBuilder {
     pub fn new() -> Self {
         Self {
-            metadata: HashMap::new(),
+            metadata: BTreeMap::new(),
             id_type: NonFungibleIdType::default(),
         }
     }
@@ -322,7 +322,7 @@ impl NonFungibleResourceBuilder {
         method_auth: AccessRule,
         mutability: Mutability,
     ) -> NonFungibleResourceWithAuthBuilder {
-        let mut authorization = HashMap::new();
+        let mut authorization = BTreeMap::new();
         authorization.insert(Mint, (method_auth, mutability));
         NonFungibleResourceWithAuthBuilder {
             id_type: self.id_type,
@@ -336,7 +336,7 @@ impl NonFungibleResourceBuilder {
         method_auth: AccessRule,
         mutability: Mutability,
     ) -> NonFungibleResourceWithAuthBuilder {
-        let mut authorization = HashMap::new();
+        let mut authorization = BTreeMap::new();
         authorization.insert(Burn, (method_auth, mutability));
         NonFungibleResourceWithAuthBuilder {
             id_type: self.id_type,
@@ -350,7 +350,7 @@ impl NonFungibleResourceBuilder {
         method_auth: AccessRule,
         mutability: Mutability,
     ) -> NonFungibleResourceWithAuthBuilder {
-        let mut authorization = HashMap::new();
+        let mut authorization = BTreeMap::new();
         authorization.insert(Recall, (method_auth, mutability));
         NonFungibleResourceWithAuthBuilder {
             id_type: self.id_type,
@@ -364,7 +364,7 @@ impl NonFungibleResourceBuilder {
         method_auth: AccessRule,
         mutability: Mutability,
     ) -> NonFungibleResourceWithAuthBuilder {
-        let mut authorization = HashMap::new();
+        let mut authorization = BTreeMap::new();
         authorization.insert(Withdraw, (method_auth, mutability));
         NonFungibleResourceWithAuthBuilder {
             id_type: self.id_type,
@@ -378,7 +378,7 @@ impl NonFungibleResourceBuilder {
         method_auth: AccessRule,
         mutability: Mutability,
     ) -> NonFungibleResourceWithAuthBuilder {
-        let mut authorization = HashMap::new();
+        let mut authorization = BTreeMap::new();
         authorization.insert(Deposit, (method_auth, mutability));
         NonFungibleResourceWithAuthBuilder {
             id_type: self.id_type,
@@ -392,7 +392,7 @@ impl NonFungibleResourceBuilder {
         method_auth: AccessRule,
         mutability: Mutability,
     ) -> NonFungibleResourceWithAuthBuilder {
-        let mut authorization = HashMap::new();
+        let mut authorization = BTreeMap::new();
         authorization.insert(UpdateMetadata, (method_auth, mutability));
         NonFungibleResourceWithAuthBuilder {
             id_type: self.id_type,
@@ -406,7 +406,7 @@ impl NonFungibleResourceBuilder {
         method_auth: AccessRule,
         mutability: Mutability,
     ) -> NonFungibleResourceWithAuthBuilder {
-        let mut authorization = HashMap::new();
+        let mut authorization = BTreeMap::new();
         authorization.insert(UpdateNonFungibleData, (method_auth, mutability));
         NonFungibleResourceWithAuthBuilder {
             id_type: self.id_type,
@@ -437,7 +437,7 @@ impl NonFungibleResourceBuilder {
         T: IntoIterator<Item = (NonFungibleId, V)>,
         V: NonFungibleData,
     {
-        let mut encoded = HashMap::new();
+        let mut encoded = BTreeMap::new();
         for (id, e) in entries {
             encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }
@@ -452,7 +452,7 @@ impl NonFungibleResourceBuilder {
     }
 
     fn build(self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
-        let mut authorization = HashMap::new();
+        let mut authorization = BTreeMap::new();
         authorization.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         ScryptoEnv
@@ -476,7 +476,7 @@ impl NonFungibleResourceBuilder {
         T: IntoIterator<Item = (NonFungibleId, V)>,
         V: NonFungibleData,
     {
-        let mut encoded = HashMap::new();
+        let mut encoded = BTreeMap::new();
         for (id, e) in entries {
             encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }
@@ -513,8 +513,8 @@ impl NonFungibleResourceBuilder {
 
 pub struct NonFungibleResourceWithAuthBuilder {
     id_type: NonFungibleIdType,
-    metadata: HashMap<String, String>,
-    authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    metadata: BTreeMap<String, String>,
+    authorization: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
 }
 
 impl NonFungibleResourceWithAuthBuilder {
@@ -580,7 +580,7 @@ impl NonFungibleResourceWithAuthBuilder {
         T: IntoIterator<Item = (NonFungibleId, V)>,
         V: NonFungibleData,
     {
-        let mut encoded = HashMap::new();
+        let mut encoded = BTreeMap::new();
         for (id, e) in entries {
             encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }

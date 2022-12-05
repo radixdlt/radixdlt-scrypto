@@ -156,7 +156,8 @@ pub enum Instruction {
 
     SetMetadata {
         entity_address: GlobalAddress,
-        metadata: BTreeMap<String, String>,
+        key: String,
+        value: String,
     },
 
     SetPackageRoyaltyConfig {
