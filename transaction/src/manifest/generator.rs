@@ -668,27 +668,20 @@ fn generate_entity_address(
                 .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
             v => return invalid_type!(v, ast::Type::String),
         },
+        ast::Value::SystemAddress(value) => match value.borrow() {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_system_address(s)
+                .map(|a| GlobalAddress::System(a))
+                .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
+            v => return invalid_type!(v, ast::Type::String),
+        },
         v => invalid_type!(
             v,
             ast::Type::PackageAddress,
             ast::Type::ResourceAddress,
-            ast::Type::ComponentAddress
+            ast::Type::ComponentAddress,
+            ast::Type::SystemAddress
         ),
-    }
-}
-
-fn generate_node_id(node_id: &ast::Value) -> Result<[u8; 36], GeneratorError> {
-    match node_id {
-        ast::Value::String(s) => {
-            if s.len() != 72 {
-                return Err(GeneratorError::InvalidNodeId(s.into()));
-            }
-            let mut buf = [0u8; 36];
-            hex::decode_to_slice(s, &mut buf)
-                .map_err(|_| GeneratorError::InvalidNodeId(s.into()))?;
-            Ok(buf)
-        }
-        v => invalid_type!(v, ast::Type::String),
     }
 }
 

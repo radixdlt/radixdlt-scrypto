@@ -264,26 +264,10 @@ impl NotarizedTransactionValidator {
                     Self::validate_call_data(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
-                Instruction::PublishPackage {
-                    code,
-                    abi,
-                    royalty_config,
-                    metadata,
-                    access_rules,
-                } => {}
+                Instruction::PublishPackage { .. } => {}
                 Instruction::PublishPackageWithOwner { .. } => {}
-                Instruction::CreateResource {
-                    resource_type,
-                    metadata,
-                    access_rules,
-                    mint_params,
-                } => {}
-                Instruction::CreateResourceWithOwner {
-                    resource_type,
-                    metadata,
-                    owner_badge,
-                    mint_params,
-                } => {}
+                Instruction::CreateResource { .. } => {}
+                Instruction::CreateResourceWithOwner { .. } => {}
                 Instruction::BurnResource { bucket_id } => {
                     id_validator
                         .drop_bucket(*bucket_id)

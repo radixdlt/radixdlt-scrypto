@@ -1,10 +1,10 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
-use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId, RENodeId};
+use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId};
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::{
-    scrypto_encode, IndexedScryptoValue, ScryptoValueDecodeError, ValueFormattingContext,
+    scrypto_encode, IndexedScryptoValue, ScryptoEncode, ScryptoValueDecodeError,
+    ValueFormattingContext,
 };
-use radix_engine_interface::model::*;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use sbor::{EncodeError, SborValue};
@@ -326,106 +326,193 @@ pub fn decompile_instruction<F: fmt::Write>(
             blueprint_name,
             function_name,
             args,
-        } => decompile_call_function(
-            f,
-            context,
-            package_address,
-            blueprint_name,
-            function_name,
-            args,
-        )?,
+        } => {
+            write!(
+                f,
+                "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
+                package_address.display(context.bech32_encoder),
+                blueprint_name,
+                function_name,
+            )?;
+            format_args(f, context, args)?;
+            f.write_str(";")?;
+        }
         Instruction::CallMethod {
             component_address,
             method_name,
             args,
-        } => decompile_call_method(f, context, component_address, method_name, args)?,
+        } => {
+            f.write_str(&format!(
+                "CALL_METHOD ComponentAddress({}) \"{}\"",
+                component_address.display(context.bech32_encoder),
+                method_name
+            ))?;
+            format_args(f, context, args)?;
+            f.write_str(";")?;
+        }
         Instruction::PublishPackage {
             code,
             abi,
             royalty_config,
             metadata,
             access_rules,
-        } => todo!(),
+        } => {
+            f.write_str("PUBLISH_PACKAGE")?;
+            format_typed_value(f, context, code)?;
+            format_typed_value(f, context, abi)?;
+            format_typed_value(f, context, royalty_config)?;
+            format_typed_value(f, context, metadata)?;
+            format_typed_value(f, context, access_rules)?;
+            f.write_str(";")?;
+        }
         Instruction::PublishPackageWithOwner {
             code,
             abi,
             owner_badge,
         } => {
-            write!(
-                f,
-                "PUBLISH_PACKAGE_WITH_OWNER Blob(\"{}\") Blob(\"{}\") NonFungibleAddress(\"{}\");",
-                code, abi, owner_badge,
-            )?;
+            f.write_str("PUBLISH_PACKAGE_WITH_OWNER")?;
+            format_typed_value(f, context, code)?;
+            format_typed_value(f, context, abi)?;
+            format_typed_value(f, context, owner_badge)?;
+            f.write_str(";")?;
         }
         Instruction::CreateResource {
             resource_type,
             metadata,
             access_rules,
             mint_params,
-        } => todo!(),
+        } => {
+            f.write_str("CREATE_RESOURCE")?;
+            format_typed_value(f, context, resource_type)?;
+            format_typed_value(f, context, metadata)?;
+            format_typed_value(f, context, access_rules)?;
+            format_typed_value(f, context, mint_params)?;
+            f.write_str(";")?;
+        }
         Instruction::CreateResourceWithOwner {
             resource_type,
             metadata,
             owner_badge,
             mint_params,
-        } => todo!(),
-        Instruction::BurnResource { bucket_id } => todo!(),
+        } => {
+            f.write_str("CREATE_RESOURCE")?;
+            format_typed_value(f, context, resource_type)?;
+            format_typed_value(f, context, metadata)?;
+            format_typed_value(f, context, owner_badge)?;
+            format_typed_value(f, context, mint_params)?;
+            f.write_str(";")?;
+        }
+        Instruction::BurnResource { bucket_id } => {
+            write!(
+                f,
+                "BURN_RESOURCE Bucket({});",
+                context
+                    .bucket_names
+                    .get(&bucket_id)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", bucket_id)),
+            )?;
+        }
         Instruction::MintFungible {
             resource_address,
             amount,
-        } => todo!(),
+        } => {
+            f.write_str("MINT_FUNGIBLE")?;
+            format_typed_value(f, context, resource_address)?;
+            format_typed_value(f, context, amount)?;
+            f.write_str(";")?;
+        }
         Instruction::SetMetadata {
             entity_address,
             metadata,
-        } => todo!(),
+        } => {
+            f.write_str("SET_METADATA")?;
+            format_entity_address(f, context, entity_address)?;
+            format_typed_value(f, context, metadata)?;
+            f.write_str(";")?;
+        }
         Instruction::SetPackageRoyaltyConfig {
             package_address,
             royalty_config,
-        } => todo!(),
+        } => {
+            f.write_str("SET_PACKAGE_ROYALTY_CONFIG")?;
+            format_typed_value(f, context, package_address)?;
+            format_typed_value(f, context, royalty_config)?;
+            f.write_str(";")?;
+        }
         Instruction::SetComponentRoyaltyConfig {
             component_address,
             royalty_config,
-        } => todo!(),
-        Instruction::ClaimPackageRoyalty { package_address } => todo!(),
-        Instruction::ClaimComponentRoyalty { component_address } => todo!(),
+        } => {
+            f.write_str("SET_COMPONENT_ROYALTY_CONFIG")?;
+            format_typed_value(f, context, component_address)?;
+            format_typed_value(f, context, royalty_config)?;
+            f.write_str(";")?;
+        }
+        Instruction::ClaimPackageRoyalty { package_address } => {
+            f.write_str("CLAIM_PACKAGE_ROYALTY")?;
+            format_typed_value(f, context, package_address)?;
+            f.write_str(";")?;
+        }
+        Instruction::ClaimComponentRoyalty { component_address } => {
+            f.write_str("CLAIM_COMPONENT_ROYALTY")?;
+            format_typed_value(f, context, component_address)?;
+            f.write_str(";")?;
+        }
     }
     Ok(())
 }
 
-pub fn decompile_call_function<F: fmt::Write>(
+pub fn format_typed_value<F: fmt::Write, T: ScryptoEncode>(
     f: &mut F,
     context: &mut DecompilationContext,
-    package_address: &PackageAddress,
-    blueprint_name: &String,
-    function_name: &String,
-    args: &Vec<u8>,
+    value: &T,
 ) -> Result<(), DecompileError> {
-    write!(
-        f,
-        "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-        package_address.display(context.bech32_encoder),
-        blueprint_name,
-        function_name,
-    )?;
-    format_args(f, context, args)?;
-    f.write_str(";")?;
+    let bytes = scrypto_encode(value).map_err(DecompileError::InvalidSborValue)?;
+    let value =
+        IndexedScryptoValue::from_slice(&bytes).map_err(DecompileError::InvalidScryptoValue)?;
+    f.write_char(' ')?;
+    write!(f, "{}", &value.display(context.for_value_display()))?;
     Ok(())
 }
 
-pub fn decompile_call_method<F: fmt::Write>(
+pub fn format_entity_address<F: fmt::Write>(
     f: &mut F,
     context: &mut DecompilationContext,
-    component_address: &ComponentAddress,
-    method_name: &String,
-    args: &Vec<u8>,
+    address: &GlobalAddress,
 ) -> Result<(), DecompileError> {
-    f.write_str(&format!(
-        "CALL_METHOD ComponentAddress({}) \"{}\"",
-        component_address.display(context.bech32_encoder),
-        method_name
-    ))?;
-    format_args(f, context, args)?;
-    f.write_str(";")?;
+    f.write_char(' ')?;
+    match address {
+        GlobalAddress::Component(address) => {
+            write!(
+                f,
+                "ComponentAddress({})",
+                &address.display(context.bech32_encoder)
+            )?;
+        }
+        GlobalAddress::Package(address) => {
+            write!(
+                f,
+                "PackageAddress({})",
+                &address.display(context.bech32_encoder)
+            )?;
+        }
+        GlobalAddress::Resource(address) => {
+            write!(
+                f,
+                "ResourceAddress({})",
+                &address.display(context.bech32_encoder)
+            )?;
+        }
+        GlobalAddress::System(address) => {
+            write!(
+                f,
+                "SystemAddress({})",
+                &address.display(context.bech32_encoder)
+            )?;
+        }
+    }
+
     Ok(())
 }
 
@@ -451,48 +538,6 @@ pub fn format_args<F: fmt::Write>(
     Ok(())
 }
 
-fn format_node_id(node_id: &RENodeId, context: &mut DecompilationContext) -> String {
-    match node_id {
-        RENodeId::Global(global_address) => match global_address {
-            GlobalAddress::Component(address) => {
-                format!("Global(\"{}\")", address.display(context.bech32_encoder))
-            }
-            GlobalAddress::Package(address) => {
-                format!("Global(\"{}\")", address.display(context.bech32_encoder))
-            }
-            GlobalAddress::Resource(address) => {
-                format!("Global(\"{}\")", address.display(context.bech32_encoder))
-            }
-            GlobalAddress::System(address) => {
-                format!("Global(\"{}\")", address.display(context.bech32_encoder))
-            }
-        },
-        RENodeId::Bucket(id) => match context.bucket_names.get(id) {
-            Some(name) => format!("Bucket(\"{}\")", name),
-            None => format!("Bucket({}u32)", id),
-        },
-        RENodeId::Proof(id) => match context.proof_names.get(id) {
-            Some(name) => format!("Proof(\"{}\")", name),
-            None => format!("Proof({}u32)", id),
-        },
-        RENodeId::AuthZoneStack(id) => format!("AuthZoneStack({}u32)", id),
-        RENodeId::Worktop => "Worktop".to_owned(),
-        RENodeId::KeyValueStore(id) => format!("KeyValueStore(\"{}\")", format_id(id)),
-        RENodeId::NonFungibleStore(id) => format!("NonFungibleStore(\"{}\")", format_id(id)),
-        RENodeId::Component(id) => format!("Component(\"{}\")", format_id(id)),
-        RENodeId::EpochManager(id) => format!("EpochManager(\"{}\")", format_id(id)),
-        RENodeId::Clock(id) => format!("Clock(\"{}\")", format_id(id)),
-        RENodeId::Vault(id) => format!("Vault(\"{}\")", format_id(id)),
-        RENodeId::ResourceManager(id) => format!("ResourceManager(\"{}\")", format_id(id)),
-        RENodeId::Package(id) => format!("Package(\"{}\")", format_id(id)),
-        RENodeId::FeeReserve(id) => format!("FeeReserve({}u32)", id),
-    }
-}
-
-fn format_id(id: &[u8; 36]) -> String {
-    hex::encode(id)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -501,38 +546,6 @@ mod tests {
     use radix_engine_interface::core::NetworkDefinition;
     use radix_engine_interface::data::scrypto_encode;
     use radix_engine_interface::scrypto;
-
-    #[scrypto(TypeId, Encode, Decode)]
-    struct BadResourceManagerCreateInput {
-        pub resource_type: ResourceType,
-        pub metadata: HashMap<String, String>,
-        pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
-        // pub mint_params: Option<MintParams>,
-    }
-
-    #[test]
-    fn test_decompile_create_resource_with_invalid_arguments() {
-        let manifest = decompile(
-            &[Instruction::CallNativeFunction {
-                function_ident: NativeFunctionIdent {
-                    blueprint_name: "ResourceManager".to_owned(),
-                    function_name: ResourceManagerFunction::Create.to_string(),
-                },
-                args: scrypto_encode(&BadResourceManagerCreateInput {
-                    resource_type: ResourceType::NonFungible {
-                        id_type: NonFungibleIdType::default(),
-                    },
-                    metadata: HashMap::new(),
-                    access_rules: HashMap::new(),
-                })
-                .unwrap(),
-            }],
-            &NetworkDefinition::simulator(),
-        )
-        .unwrap();
-
-        assert_eq!(manifest, "CALL_NATIVE_FUNCTION \"ResourceManager\" \"create\" Enum(\"NonFungible\", Enum(\"UUID\")) Array<Tuple>() Array<Tuple>();\n");
-    }
 
     #[test]
     fn test_decompile_complex() {
