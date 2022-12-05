@@ -1,4 +1,4 @@
-use radix_engine_interface::api::types::{BucketId, ProofId};
+use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId};
 use radix_engine_interface::crypto::Blob;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
@@ -153,4 +153,21 @@ pub enum Instruction {
     Burn {
         bucket_id: BucketId,
     },
+
+    SetMetadata {
+        entity: GlobalAddress,
+        key: String,
+        value: String,
+    },
+
+    SetPackageRoyaltyConfig {
+        package_address: PackageAddress,
+        royalty_config: HashMap<String, RoyaltyConfig>,
+    },
+
+    SetComponentRoyaltyConfig {
+        component_address: ComponentAddress,
+        royalty_config: RoyaltyConfig,
+    },
+    // TODO: add_access_rules & set_access_rules
 }
