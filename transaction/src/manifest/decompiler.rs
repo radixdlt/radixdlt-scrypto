@@ -546,14 +546,14 @@ mod tests {
     use radix_engine_interface::model::NonFungibleId;
 
     #[test]
-    fn test_decompile_complex() {
+    fn test_resource_move() {
         let network = NetworkDefinition::simulator();
-        let manifest_str = include_str!("../../examples/complex.rtm");
+        let manifest_str = include_str!("../../examples/resource_move.rtm");
         let blobs = vec![
             include_bytes!("../../examples/code.blob").to_vec(),
             include_bytes!("../../examples/abi.blob").to_vec(),
         ];
-        let manifest = compile(manifest_str, &network, blobs).unwrap();
+        let manifest = compile(manifest_str, &network, blobs.clone()).unwrap();
 
         let manifest2 = decompile(&manifest.instructions, &network).unwrap();
         assert_eq!(
@@ -573,21 +573,136 @@ POP_FROM_AUTH_ZONE Proof("proof3");
 DROP_PROOF Proof("proof3");
 RETURN_TO_WORKTOP Bucket("bucket2");
 TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId("5c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f")) ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket3");
-CREATE_RESOURCE Enum("Fungible", 0u8) Array<Tuple>() Array<Tuple>() Enum("Some", Enum("Fungible", Decimal("1")));
-CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch" Expression("ENTIRE_WORKTOP");
 DROP_ALL_PROOFS;
-CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "complicated_method" Decimal("1") PreciseDecimal("2");
+CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch" Expression("ENTIRE_WORKTOP");
+"#
+        );
+
+        let manifest3 = compile(&manifest2, &network, blobs).unwrap();
+        assert_eq!(manifest3, manifest);
+    }
+
+    #[test]
+    fn test_resource_manipulate() {
+        let network = NetworkDefinition::simulator();
+        let manifest_str = include_str!("../../examples/resource_manipulate.rtm");
+        let blobs = vec![
+            include_bytes!("../../examples/code.blob").to_vec(),
+            include_bytes!("../../examples/abi.blob").to_vec(),
+        ];
+        let manifest = compile(manifest_str, &network, blobs.clone()).unwrap();
+
+        let manifest2 = decompile(&manifest.instructions, &network).unwrap();
+        assert_eq!(
+            manifest2,
+            r#"TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");
+CREATE_RESOURCE Enum("Fungible", 0u8) Array<Tuple>() Array<Tuple>() Enum("Some", Enum("Fungible", Decimal("1")));
+CREATE_RESOURCE Enum("Fungible", 0u8) Array<Tuple>() NonFungibleAddress("00ed9100551d7fae91eaf413e50a3c5a59f8b96af9f1297890a8f45c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f") Enum("None");
+BURN_RESOURCE Bucket("bucket1");
+"#
+        );
+
+        let manifest3 = compile(&manifest2, &network, blobs).unwrap();
+        assert_eq!(manifest3, manifest);
+    }
+
+    #[test]
+    fn test_publish_package() {
+        let network = NetworkDefinition::simulator();
+        let manifest_str = include_str!("../../examples/publish_package.rtm");
+        let blobs = vec![
+            include_bytes!("../../examples/code.blob").to_vec(),
+            include_bytes!("../../examples/abi.blob").to_vec(),
+        ];
+        let manifest = compile(manifest_str, &network, blobs.clone()).unwrap();
+
+        let manifest2 = decompile(&manifest.instructions, &network).unwrap();
+        assert_eq!(
+            manifest2,
+            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Array<Tuple>() Array<Tuple>() Tuple(Array<Tuple>(), Array<Tuple>(), Enum("AllowAll"), Array<Tuple>(), Array<Tuple>(), Enum("AllowAll"));
 PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleAddress("00ed9100551d7fae91eaf413e50a3c5a59f8b96af9f1297890a8f45c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f");
 "#
         )
     }
 
     #[test]
-    fn test_decompile_any_value() {
+    fn test_invocation() {
         let network = NetworkDefinition::simulator();
-        let manifest_str = include_str!("../../examples/any_value.rtm");
-        let blobs = vec![include_bytes!("../../examples/code.blob").to_vec()];
-        let manifest = compile(manifest_str, &network, blobs).unwrap();
+        let manifest_str = include_str!("../../examples/invocation.rtm");
+        let blobs = vec![
+            include_bytes!("../../examples/code.blob").to_vec(),
+            include_bytes!("../../examples/abi.blob").to_vec(),
+        ];
+        let manifest = compile(manifest_str, &network, blobs.clone()).unwrap();
+
+        let manifest2 = decompile(&manifest.instructions, &network).unwrap();
+        assert_eq!(
+            manifest2,
+            r#"CALL_FUNCTION PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "BlueprintName" "f" "string";
+CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "complicated_method" Decimal("1") PreciseDecimal("2");
+"#
+        );
+
+        let manifest3 = compile(&manifest2, &network, blobs).unwrap();
+        assert_eq!(manifest3, manifest);
+    }
+
+    #[test]
+    fn test_royalty() {
+        let network = NetworkDefinition::simulator();
+        let manifest_str = include_str!("../../examples/royalty.rtm");
+        let blobs = vec![
+            include_bytes!("../../examples/code.blob").to_vec(),
+            include_bytes!("../../examples/abi.blob").to_vec(),
+        ];
+        let manifest = compile(manifest_str, &network, blobs.clone()).unwrap();
+
+        let manifest2 = decompile(&manifest.instructions, &network).unwrap();
+        assert_eq!(
+            manifest2,
+            r#"SET_PACKAGE_ROYALTY_CONFIG PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") Array<Tuple>(Tuple("Blueprint", Tuple(Array<Tuple>(Tuple("method", 1u32)), 0u32)));
+SET_COMPONENT_ROYALTY_CONFIG ComponentAddress("component_sim1qg2jwzl3hxnkqye8tfj5v3p2wp7cv9xdcjv4nl63refs785pvt") Tuple(Array<Tuple>(Tuple("method", 1u32)), 0u32);
+CLAIM_PACKAGE_ROYALTY PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe");
+CLAIM_COMPONENT_ROYALTY ComponentAddress("component_sim1qg2jwzl3hxnkqye8tfj5v3p2wp7cv9xdcjv4nl63refs785pvt");
+"#
+        );
+
+        let manifest3 = compile(&manifest2, &network, blobs).unwrap();
+        assert_eq!(manifest3, manifest);
+    }
+
+    #[test]
+    fn test_metadata() {
+        let network = NetworkDefinition::simulator();
+        let manifest_str = include_str!("../../examples/metadata.rtm");
+        let blobs = vec![
+            include_bytes!("../../examples/code.blob").to_vec(),
+            include_bytes!("../../examples/abi.blob").to_vec(),
+        ];
+        let manifest = compile(manifest_str, &network, blobs.clone()).unwrap();
+
+        let manifest2 = decompile(&manifest.instructions, &network).unwrap();
+        assert_eq!(
+            manifest2,
+            r#"SET_METADATA PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") Array<Tuple>(Tuple("k", "v"));
+SET_METADATA ComponentAddress("component_sim1qg2jwzl3hxnkqye8tfj5v3p2wp7cv9xdcjv4nl63refs785pvt") Array<Tuple>(Tuple("k", "v"));
+SET_METADATA ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk59ddd4qs8cr5v") Array<Tuple>(Tuple("k", "v"));
+"#
+        );
+
+        let manifest3 = compile(&manifest2, &network, blobs).unwrap();
+        assert_eq!(manifest3, manifest);
+    }
+
+    #[test]
+    fn test_values() {
+        let network = NetworkDefinition::simulator();
+        let manifest_str = include_str!("../../examples/values.rtm");
+        let blobs = vec![
+            include_bytes!("../../examples/code.blob").to_vec(),
+            include_bytes!("../../examples/abi.blob").to_vec(),
+        ];
+        let manifest = compile(manifest_str, &network, blobs.clone()).unwrap();
 
         let manifest2 = decompile(&manifest.instructions, &network).unwrap();
         assert_eq!(
@@ -596,7 +711,10 @@ PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e
 CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Proof("proof1");
 CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "with_all_types" PackageAddress("package_sim1qyqzcexvnyg60z7lnlwauh66nhzg3m8tch2j8wc0e70qkydk8r") ComponentAddress("account_sim1q0u9gxewjxj8nhxuaschth2mgencma2hpkgwz30s9wlslthace") ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk59ddd4qs8cr5v") SystemAddress("system_sim1qne8qu4seyvzfgd94p3z8rjcdl3v0nfhv84judpum2lq7x4635") Component("000000000000000000000000000000000000000000000000000000000000000005000000") KeyValueStore("000000000000000000000000000000000000000000000000000000000000000005000000") Bucket("bucket1") Proof("proof1") Vault("000000000000000000000000000000000000000000000000000000000000000005000000") Expression("ALL_WORKTOP_RESOURCES") Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") NonFungibleAddress("00ed9100551d7fae91eaf413e50a3c5a59f8b96af9f1297890a8f45c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f") Hash("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824") EcdsaSecp256k1PublicKey("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798") EcdsaSecp256k1Signature("0079224ea514206706298d8d620f660828f7987068d6d02757e6f3cbbf4a51ab133395db69db1bc9b2726dd99e34efc252d8258dcb003ebaba42be349f50f7765e") EddsaEd25519PublicKey("4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29") EddsaEd25519Signature("ce993adc51111309a041faa65cbcf1154d21ed0ecdc2d54070bc90b9deb744aa8605b3f686fa178fba21070b4a4678e54eee3486a881e0e328251cd37966de09") Decimal("1.2") PreciseDecimal("1.2") NonFungibleId(Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"));
 "#
-        )
+        );
+
+        let manifest3 = compile(&manifest2, &network, blobs).unwrap();
+        assert_eq!(manifest3, manifest);
     }
 
     #[test]

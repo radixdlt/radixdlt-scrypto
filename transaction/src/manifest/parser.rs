@@ -176,6 +176,12 @@ impl Parser {
                 access_rules: self.parse_value()?,
                 mint_params: self.parse_value()?,
             },
+            TokenKind::CreateResourceWithOwner => Instruction::CreateResourceWithOwner {
+                resource_type: self.parse_value()?,
+                metadata: self.parse_value()?,
+                owner_badge: self.parse_value()?,
+                mint_params: self.parse_value()?,
+            },
             TokenKind::BurnResource => Instruction::BurnResource {
                 bucket: self.parse_value()?,
             },
