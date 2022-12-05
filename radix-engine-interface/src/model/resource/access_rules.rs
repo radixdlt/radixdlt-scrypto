@@ -166,4 +166,28 @@ impl AccessRules {
         let l = self.method_auth.iter();
         l
     }
+
+    pub fn get_all_method_auth(&self) -> &HashMap<AccessRuleKey, AccessRuleEntry> {
+        &self.method_auth
+    }
+
+    pub fn get_all_grouped_auth(&self) -> &HashMap<String, AccessRule> {
+        &self.grouped_auth
+    }
+
+    pub fn get_default_auth(&self) -> &AccessRule {
+        &self.default_auth
+    }
+
+    pub fn get_all_method_auth_mutability(&self) -> &HashMap<AccessRuleKey, AccessRule> {
+        &self.method_auth_mutability
+    }
+
+    pub fn get_all_grouped_auth_mutability(&self) -> &HashMap<String, AccessRule> {
+        &self.grouped_auth_mutability
+    }
+
+    pub fn get_default_auth_mutability(&self) -> &AccessRule {
+        &self.default_auth_mutability
+    }
 }

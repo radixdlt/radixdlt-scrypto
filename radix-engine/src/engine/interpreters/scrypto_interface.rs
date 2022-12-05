@@ -1,5 +1,5 @@
 use crate::engine::{
-    Invokable, Kernel, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
+    Kernel, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
     ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
@@ -8,20 +8,18 @@ use crate::model::{
     ComponentRoyaltyConfigSubstate, ComponentStateSubstate, KeyValueStore, RuntimeSubstate,
 };
 use crate::model::{MetadataSubstate, Resource};
-use crate::types::{HashMap, ScryptoInvocation};
+use crate::types::HashMap;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
-    ComponentMethod, Level, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoActor,
-    ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoRENode, SubstateOffset,
+    ComponentMethod, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoActor,
+    ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::{
     AccessRule, AccessRuleKey, AccessRules, ResourceType, RoyaltyConfig,
 };
-use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
@@ -31,30 +29,6 @@ where
     W: WasmEngine,
     R: FeeReserve,
 {
-    fn sys_invoke_scrypto_function(
-        &mut self,
-        fn_ident: ScryptoFunctionIdent,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        let args = IndexedScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
-
-        self.invoke(ScryptoInvocation::Function(fn_ident, args))
-            .map(|v| v.raw)
-    }
-
-    fn sys_invoke_scrypto_method(
-        &mut self,
-        method_ident: ScryptoMethodIdent,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        let args = IndexedScryptoValue::from_slice(&args)
-            .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
-
-        self.invoke(ScryptoInvocation::Method(method_ident, args))
-            .map(|v| v.raw)
-    }
-
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
         let (node_id, node) = match node {
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
@@ -210,9 +184,5 @@ where
 
     fn sys_get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         self.read_transaction_hash()
-    }
-
-    fn sys_emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.emit_log(level, message)
     }
 }

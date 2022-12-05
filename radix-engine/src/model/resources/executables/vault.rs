@@ -1,13 +1,14 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
-    NativeExecutor, NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver,
-    RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
+    NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver, ResolverApi, RuntimeError,
+    SystemApi,
 };
 use crate::fee::FeeReserveError;
 use crate::model::{
     BucketSubstate, InvokeError, ProofError, ResourceContainerId, ResourceOperationError,
 };
 use crate::types::*;
+use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeMethod, RENodeId, SubstateOffset, VaultMethod, VaultOffset,
 };
@@ -27,12 +28,12 @@ pub enum VaultError {
     LockFeeRepayFailure(FeeReserveError),
 }
 
-impl ExecutableInvocation for VaultTakeInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -78,12 +79,12 @@ impl NativeProcedure for VaultTakeInvocation {
     }
 }
 
-impl ExecutableInvocation for VaultPutInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for VaultPutInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Vault(self.receiver);
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -126,12 +127,12 @@ impl NativeProcedure for VaultPutInvocation {
     }
 }
 
-impl ExecutableInvocation for VaultLockFeeInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for VaultLockFeeInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -195,12 +196,12 @@ impl NativeProcedure for VaultLockFeeInvocation {
     }
 }
 
-impl ExecutableInvocation for VaultTakeNonFungiblesInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeNonFungiblesInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -248,12 +249,12 @@ impl NativeProcedure for VaultTakeNonFungiblesInvocation {
     }
 }
 
-impl ExecutableInvocation for VaultGetAmountInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -285,12 +286,12 @@ impl NativeProcedure for VaultGetAmountInvocation {
     }
 }
 
-impl ExecutableInvocation for VaultGetResourceAddressInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetResourceAddressInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -328,12 +329,12 @@ impl NativeProcedure for VaultGetResourceAddressInvocation {
     }
 }
 
-impl ExecutableInvocation for VaultGetNonFungibleIdsInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetNonFungibleIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -372,12 +373,12 @@ impl NativeProcedure for VaultGetNonFungibleIdsInvocation {
     }
 }
 
-impl ExecutableInvocation for VaultCreateProofInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -424,12 +425,12 @@ impl NativeProcedure for VaultCreateProofInvocation {
     }
 }
 
-impl ExecutableInvocation for VaultCreateProofByAmountInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -476,12 +477,12 @@ impl NativeProcedure for VaultCreateProofByAmountInvocation {
     }
 }
 
-impl ExecutableInvocation for VaultCreateProofByIdsInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);

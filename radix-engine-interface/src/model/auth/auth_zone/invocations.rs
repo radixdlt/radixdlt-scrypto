@@ -19,15 +19,16 @@ impl Invocation for AuthZonePopInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for AuthZonePopInvocation {
+impl SerializableInvocation for AuthZonePopInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<NativeFnInvocation> for AuthZonePopInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for AuthZonePopInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
             AuthZoneStackMethodInvocation::Pop(self),
         ))
+        .into()
     }
 }
 
@@ -42,15 +43,16 @@ impl Invocation for AuthZonePushInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for AuthZonePushInvocation {
+impl SerializableInvocation for AuthZonePushInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for AuthZonePushInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for AuthZonePushInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
             AuthZoneStackMethodInvocation::Push(self),
         ))
+        .into()
     }
 }
 
@@ -65,15 +67,16 @@ impl Invocation for AuthZoneCreateProofInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for AuthZoneCreateProofInvocation {
+impl SerializableInvocation for AuthZoneCreateProofInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<NativeFnInvocation> for AuthZoneCreateProofInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for AuthZoneCreateProofInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
             AuthZoneStackMethodInvocation::CreateProof(self),
         ))
+        .into()
     }
 }
 
@@ -89,15 +92,16 @@ impl Invocation for AuthZoneCreateProofByAmountInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for AuthZoneCreateProofByAmountInvocation {
+impl SerializableInvocation for AuthZoneCreateProofByAmountInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<NativeFnInvocation> for AuthZoneCreateProofByAmountInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for AuthZoneCreateProofByAmountInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
             AuthZoneStackMethodInvocation::CreateProofByAmount(self),
         ))
+        .into()
     }
 }
 
@@ -113,15 +117,16 @@ impl Invocation for AuthZoneCreateProofByIdsInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for AuthZoneCreateProofByIdsInvocation {
+impl SerializableInvocation for AuthZoneCreateProofByIdsInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<NativeFnInvocation> for AuthZoneCreateProofByIdsInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for AuthZoneCreateProofByIdsInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
             AuthZoneStackMethodInvocation::CreateProofByIds(self),
         ))
+        .into()
     }
 }
 
@@ -135,15 +140,16 @@ impl Invocation for AuthZoneClearInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for AuthZoneClearInvocation {
+impl SerializableInvocation for AuthZoneClearInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for AuthZoneClearInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for AuthZoneClearInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
             AuthZoneStackMethodInvocation::Clear(self),
         ))
+        .into()
     }
 }
 
@@ -157,15 +163,16 @@ impl Invocation for AuthZoneDrainInvocation {
     type Output = Vec<Proof>;
 }
 
-impl ScryptoNativeInvocation for AuthZoneDrainInvocation {
+impl SerializableInvocation for AuthZoneDrainInvocation {
     type ScryptoOutput = Vec<Proof>;
 }
 
-impl Into<NativeFnInvocation> for AuthZoneDrainInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for AuthZoneDrainInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
             AuthZoneStackMethodInvocation::Drain(self),
         ))
+        .into()
     }
 }
 
@@ -180,14 +187,15 @@ impl Invocation for AuthZoneAssertAccessRuleInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for AuthZoneAssertAccessRuleInvocation {
+impl SerializableInvocation for AuthZoneAssertAccessRuleInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for AuthZoneAssertAccessRuleInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for AuthZoneAssertAccessRuleInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
             AuthZoneStackMethodInvocation::AssertAuthRule(self),
         ))
+        .into()
     }
 }

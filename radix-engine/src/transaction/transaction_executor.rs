@@ -9,6 +9,7 @@ use crate::wasm::*;
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
+use radix_engine_interface::api::api::Invokable;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
@@ -190,7 +191,7 @@ where
             let break_down = receipt
                 .execution
                 .fee_summary
-                .execution_breakdown
+                .execution_cost_unit_breakdown
                 .iter()
                 .collect::<BTreeMap<&String, &u32>>();
             for (k, v) in break_down {

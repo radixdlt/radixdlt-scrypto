@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::SysNativeInvokable;
+use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::constants::CLOCK;
 use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
@@ -17,7 +17,7 @@ impl Clock {
     /// Returns the current timestamp (in seconds), rounded down to the specified precision
     pub fn current_time(precision: TimePrecision) -> Instant {
         let mut env = ScryptoEnv;
-        env.sys_invoke(ClockGetCurrentTimeInvocation {
+        env.invoke(ClockGetCurrentTimeInvocation {
             receiver: CLOCK,
             precision: precision,
         })
@@ -57,7 +57,7 @@ impl Clock {
         operator: TimeComparisonOperator,
     ) -> bool {
         let mut env = ScryptoEnv;
-        env.sys_invoke(ClockCompareCurrentTimeInvocation {
+        env.invoke(ClockCompareCurrentTimeInvocation {
             receiver: CLOCK,
             instant: instant,
             precision: precision,

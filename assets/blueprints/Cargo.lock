@@ -1025,6 +1025,7 @@ name = "sbor"
 version = "0.7.0"
 dependencies = [
  "hex",
+ "indexmap",
  "sbor-derive",
  "serde",
 ]
@@ -1465,6 +1466,7 @@ name = "utils"
 version = "0.7.0"
 dependencies = [
  "sbor",
+ "serde",
 ]
 
 [[package]]

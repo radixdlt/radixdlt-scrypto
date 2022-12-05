@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
+use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::data::{ScryptoDecode, ScryptoTypeId};
 use radix_engine_interface::math::Decimal;
@@ -14,42 +14,42 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Vec<Proof>, E>
     where
-        Y: EngineApi<E> + SysNativeInvokable<AuthZoneDrainInvocation, E>,
+        Y: EngineApi<E> + Invokable<AuthZoneDrainInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        env.sys_invoke(AuthZoneDrainInvocation {
+        env.invoke(AuthZoneDrainInvocation {
             receiver: node_id.into(),
         })
     }
 
     pub fn sys_clear<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(env: &mut Y) -> Result<(), E>
     where
-        Y: EngineApi<E> + SysNativeInvokable<AuthZoneClearInvocation, E>,
+        Y: EngineApi<E> + Invokable<AuthZoneClearInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        env.sys_invoke(AuthZoneClearInvocation {
+        env.invoke(AuthZoneClearInvocation {
             receiver: node_id.into(),
         })
     }
 
     pub fn sys_pop<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(env: &mut Y) -> Result<Proof, E>
     where
-        Y: EngineApi<E> + SysNativeInvokable<AuthZonePopInvocation, E>,
+        Y: EngineApi<E> + Invokable<AuthZonePopInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        env.sys_invoke(AuthZonePopInvocation {
+        env.invoke(AuthZonePopInvocation {
             receiver: node_id.into(),
         })
     }
@@ -59,14 +59,14 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: EngineApi<E> + SysNativeInvokable<AuthZoneCreateProofInvocation, E>,
+        Y: EngineApi<E> + Invokable<AuthZoneCreateProofInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        env.sys_invoke(AuthZoneCreateProofInvocation {
+        env.invoke(AuthZoneCreateProofInvocation {
             receiver: node_id.into(),
             resource_address,
         })
@@ -78,14 +78,14 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: EngineApi<E> + SysNativeInvokable<AuthZoneCreateProofByAmountInvocation, E>,
+        Y: EngineApi<E> + Invokable<AuthZoneCreateProofByAmountInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        env.sys_invoke(AuthZoneCreateProofByAmountInvocation {
+        env.invoke(AuthZoneCreateProofByAmountInvocation {
             receiver: node_id.into(),
             amount,
             resource_address,
@@ -98,14 +98,14 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: EngineApi<E> + SysNativeInvokable<AuthZoneCreateProofByIdsInvocation, E>,
+        Y: EngineApi<E> + Invokable<AuthZoneCreateProofByIdsInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        env.sys_invoke(AuthZoneCreateProofByIdsInvocation {
+        env.invoke(AuthZoneCreateProofByIdsInvocation {
             receiver: node_id.into(),
             ids: ids.clone(),
             resource_address,
@@ -117,7 +117,7 @@ impl ComponentAuthZone {
         env: &mut Y,
     ) -> Result<(), E>
     where
-        Y: EngineApi<E> + SysNativeInvokable<AuthZonePushInvocation, E>,
+        Y: EngineApi<E> + Invokable<AuthZonePushInvocation, E>,
     {
         let owned_node_ids = env.sys_get_visible_nodes()?;
         let node_id = owned_node_ids
@@ -127,7 +127,7 @@ impl ComponentAuthZone {
 
         let proof: Proof = proof.into();
 
-        env.sys_invoke(AuthZonePushInvocation {
+        env.invoke(AuthZonePushInvocation {
             receiver: node_id.into(),
             proof,
         })

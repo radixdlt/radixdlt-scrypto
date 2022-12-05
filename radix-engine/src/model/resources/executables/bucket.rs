@@ -1,10 +1,11 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
-    NativeExecutor, NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver,
-    RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
+    NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver, ResolverApi, RuntimeError,
+    SystemApi,
 };
 use crate::model::{BucketSubstate, ProofError, ResourceOperationError};
 use crate::types::*;
+use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
     BucketMethod, BucketOffset, GlobalAddress, NativeMethod, RENodeId, SubstateOffset,
 };
@@ -23,12 +24,12 @@ pub enum BucketError {
     MethodNotFound(BucketMethod),
 }
 
-impl ExecutableInvocation for BucketTakeInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Bucket(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -70,12 +71,12 @@ impl NativeProcedure for BucketTakeInvocation {
     }
 }
 
-impl ExecutableInvocation for BucketCreateProofInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for BucketCreateProofInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Bucket(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -118,12 +119,12 @@ impl NativeProcedure for BucketCreateProofInvocation {
     }
 }
 
-impl ExecutableInvocation for BucketTakeNonFungiblesInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeNonFungiblesInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Bucket(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -165,12 +166,12 @@ impl NativeProcedure for BucketTakeNonFungiblesInvocation {
     }
 }
 
-impl ExecutableInvocation for BucketGetNonFungibleIdsInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetNonFungibleIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Bucket(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -208,12 +209,12 @@ impl NativeProcedure for BucketGetNonFungibleIdsInvocation {
     }
 }
 
-impl ExecutableInvocation for BucketGetAmountInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Bucket(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -243,12 +244,12 @@ impl NativeProcedure for BucketGetAmountInvocation {
     }
 }
 
-impl ExecutableInvocation for BucketPutInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for BucketPutInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Bucket(self.receiver);
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -290,12 +291,12 @@ impl NativeProcedure for BucketPutInvocation {
     }
 }
 
-impl ExecutableInvocation for BucketGetResourceAddressInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetResourceAddressInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Bucket(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);

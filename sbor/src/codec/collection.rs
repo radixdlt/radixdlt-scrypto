@@ -93,6 +93,26 @@ impl<X: CustomTypeId, E: Encoder<X>, K: Encode<X, E> + Ord + Hash, V: Encode<X, 
     }
 }
 
+#[cfg(feature = "indexmap")]
+impl<X: CustomTypeId, E: Encoder<X>, K: Encode<X, E> + Ord + Hash, V: Encode<X, E>> Encode<X, E>
+    for indexmap::IndexMap<K, V>
+{
+    #[inline]
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(<(K, V)>::type_id())?;
+        encoder.write_size(self.len())?;
+        for (key, value) in self {
+            encoder.encode_deeper_body(&(key, value))?;
+        }
+        Ok(())
+    }
+}
+
 impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>> Decode<X, D> for Vec<T> {
     #[inline]
     fn decode_body_with_type_id(
@@ -165,6 +185,21 @@ impl<X: CustomTypeId, D: Decoder<X>, K: Decode<X, D> + Ord, V: Decode<X, D>> Dec
 
 impl<X: CustomTypeId, D: Decoder<X>, K: Decode<X, D> + Hash + Eq, V: Decode<X, D>> Decode<X, D>
     for HashMap<K, V>
+{
+    #[inline]
+    fn decode_body_with_type_id(
+        decoder: &mut D,
+        type_id: SborTypeId<X>,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+        let elements: Vec<(K, V)> = Vec::<(K, V)>::decode_body_with_type_id(decoder, type_id)?;
+        Ok(elements.into_iter().collect())
+    }
+}
+
+#[cfg(feature = "indexmap")]
+impl<X: CustomTypeId, D: Decoder<X>, K: Decode<X, D> + Hash + Eq, V: Decode<X, D>> Decode<X, D>
+    for indexmap::IndexMap<K, V>
 {
     #[inline]
     fn decode_body_with_type_id(

@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
+use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::{
     ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
 };
@@ -20,7 +20,7 @@ impl Runtime {
     /// Returns the current epoch
     pub fn current_epoch() -> u64 {
         let mut env = ScryptoEnv;
-        env.sys_invoke(EpochManagerGetCurrentEpochInvocation {
+        env.invoke(EpochManagerGetCurrentEpochInvocation {
             receiver: EPOCH_MANAGER,
         })
         .unwrap()
@@ -55,14 +55,14 @@ impl Runtime {
     ) -> T {
         let mut env = ScryptoEnv;
         let buffer = env
-            .sys_invoke_scrypto_function(
+            .invoke(ScryptoInvocation::Function(
                 ScryptoFunctionIdent {
                     package: ScryptoPackage::Global(package_address),
                     blueprint_name: blueprint_name.as_ref().to_owned(),
                     function_name: function_name.as_ref().to_owned(),
                 },
                 args,
-            )
+            ))
             .unwrap();
         scrypto_decode(&buffer).unwrap()
     }
@@ -75,13 +75,13 @@ impl Runtime {
     ) -> T {
         let mut env = ScryptoEnv;
         let buffer = env
-            .sys_invoke_scrypto_method(
+            .invoke(ScryptoInvocation::Method(
                 ScryptoMethodIdent {
                     receiver: ScryptoReceiver::Global(component_address),
                     method_name: method.as_ref().to_string(),
                 },
                 args,
-            )
+            ))
             .unwrap();
         scrypto_decode(&buffer).unwrap()
     }

@@ -301,6 +301,14 @@ impl<X: CustomTypeId, K, V> TypeId<X> for HashMap<K, V> {
     }
 }
 
+#[cfg(feature = "indexmap")]
+impl<X: CustomTypeId, K, V> TypeId<X> for indexmap::IndexMap<K, V> {
+    #[inline]
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::Array
+    }
+}
+
 pub trait CustomTypeId: Copy + Debug + Clone + PartialEq + Eq {
     fn as_u8(&self) -> u8;
 

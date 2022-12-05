@@ -1,7 +1,8 @@
 use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
+use crate::wasm::WasmEngine;
+use radix_engine_interface::api::api::{EngineApi, Invokable, InvokableModel};
 use radix_engine_interface::api::types::RENodeId;
 use sbor::rust::fmt::Debug;
 
@@ -79,9 +80,9 @@ pub trait NativeProcedure {
     fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoInvocation>
+            + Invokable<ScryptoInvocation, RuntimeError>
             + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>;
+            + InvokableModel<RuntimeError>;
 }
 
 pub struct NativeExecutor<N: NativeProcedure>(pub N);
@@ -92,15 +93,15 @@ impl<N: NativeProcedure> Executor for NativeExecutor<N> {
     fn execute<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoInvocation>
+            + Invokable<ScryptoInvocation, RuntimeError>
             + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>,
+            + InvokableModel<RuntimeError>,
     {
         self.0.main(system_api)
     }
 }
 
-pub fn deref_and_update<D: MethodDeref>(
+pub fn deref_and_update<D: ResolverApi<W>, W: WasmEngine>(
     receiver: RENodeId,
     call_frame_update: &mut CallFrameUpdate,
     deref: &mut D,

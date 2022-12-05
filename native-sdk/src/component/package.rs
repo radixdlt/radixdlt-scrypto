@@ -1,5 +1,5 @@
 use radix_engine_interface::api::api::EngineApi;
-use radix_engine_interface::api::api::SysNativeInvokable;
+use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::data::ScryptoDecode;
 use radix_engine_interface::model::*;
 use sbor::rust::collections::HashMap;
@@ -16,9 +16,9 @@ impl BorrowedPackage {
         sys_calls: &mut Y,
     ) -> Result<&Self, E>
     where
-        Y: EngineApi<E> + SysNativeInvokable<PackageSetRoyaltyConfigInvocation, E>,
+        Y: EngineApi<E> + Invokable<PackageSetRoyaltyConfigInvocation, E>,
     {
-        sys_calls.sys_invoke(PackageSetRoyaltyConfigInvocation {
+        sys_calls.invoke(PackageSetRoyaltyConfigInvocation {
             receiver: self.0,
             royalty_config,
         })?;

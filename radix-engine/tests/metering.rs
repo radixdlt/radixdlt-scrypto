@@ -196,13 +196,13 @@ fn test_basic_transfer() {
         + 2000 /* drop_node */
         + 800  /* emit_event */
         + 0 /* instantiate_wasm */
-        + 1460 /* invoke */
+        + 900 /* invoke */
         + 8400 /* lock_substate */
         + 3000 /* read_owned_nodes */
         + 28500 /* read_substate */
         + 1000 /* run_native_function */
         + 2200 /* run_native_method */
-        + 322786 /* run_wasm */
+        + 324222 /* run_wasm */
         + 330 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 17000, /* write_substate */

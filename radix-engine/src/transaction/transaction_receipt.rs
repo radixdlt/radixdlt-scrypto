@@ -290,9 +290,9 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             f,
             "\n{} {} XRD used for execution, {} XRD used for royalty, {} XRD in bad debt",
             "Transaction Fee:".bold().green(),
-            execution.fee_summary.execution,
-            execution.fee_summary.royalty,
-            execution.fee_summary.bad_debt,
+            execution.fee_summary.total_execution_cost_xrd,
+            execution.fee_summary.total_royalty_cost_xrd,
+            execution.fee_summary.bad_debt_xrd,
         )?;
 
         write!(

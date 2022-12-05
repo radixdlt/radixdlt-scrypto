@@ -1,6 +1,6 @@
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
+use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel};
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent,
     ProofId, RENodeId, TransactionProcessorFunction,
@@ -17,6 +17,7 @@ use crate::model::resolve_native_function;
 use crate::model::resolve_native_method;
 use crate::model::{InvokeError, WorktopSubstate};
 use crate::types::*;
+use crate::wasm::WasmEngine;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -50,12 +51,12 @@ impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<Vec<u8>>;
 }
 
-impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
+impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvocation<'a> {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
@@ -142,9 +143,9 @@ impl<'a> NativeProcedure for TransactionProcessorRunInvocation<'a> {
     fn main<Y>(self, system_api: &mut Y) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoInvocation>
+            + Invokable<ScryptoInvocation, RuntimeError>
             + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>,
+            + InvokableModel<RuntimeError>,
     {
         TransactionProcessor::run(self, system_api)
             .map(|rtn| (rtn, CallFrameUpdate::empty()))
@@ -178,7 +179,7 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<IndexedScryptoValue, InvokeError<TransactionProcessorError>>
     where
-        Y: EngineApi<RuntimeError> + SysInvokableNative<RuntimeError>,
+        Y: EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let mut value = args.dom;
         for (expression, path) in args.expressions {
@@ -219,7 +220,7 @@ impl TransactionProcessor {
         env: &mut Y,
     ) -> Result<(), InvokeError<TransactionProcessorError>>
     where
-        Y: SysInvokableNative<RuntimeError>,
+        Y: InvokableModel<RuntimeError>,
     {
         let should_skip_assertion = request.skip_assertion;
         match &request.validation {
@@ -265,8 +266,8 @@ impl TransactionProcessor {
     where
         Y: SystemApi
             + EngineApi<RuntimeError>
-            + Invokable<ScryptoInvocation>
-            + SysInvokableNative<RuntimeError>,
+            + Invokable<ScryptoInvocation, RuntimeError>
+            + InvokableModel<RuntimeError>,
     {
         for request in input.runtime_validations.as_ref() {
             Self::perform_validation(request, api)?;
@@ -529,8 +530,11 @@ impl TransactionProcessor {
                     )
                     .and_then(|args| Self::process_expressions(args, api))
                     .and_then(|args| {
-                        api.invoke(ScryptoInvocation::Function(function_ident.clone(), args))
-                            .map_err(InvokeError::Downstream)
+                        api.invoke(ParsedScryptoInvocation::Function(
+                            function_ident.clone(),
+                            args,
+                        ))
+                        .map_err(InvokeError::Downstream)
                     })
                     .and_then(|result| {
                         // Auto move into auth_zone
@@ -556,7 +560,7 @@ impl TransactionProcessor {
                     )
                     .and_then(|args| Self::process_expressions(args, api))
                     .and_then(|args| {
-                        api.invoke(ScryptoInvocation::Method(method_ident.clone(), args))
+                        api.invoke(ParsedScryptoInvocation::Method(method_ident.clone(), args))
                             .map_err(InvokeError::Downstream)
                     })
                     .and_then(|result| {
@@ -579,7 +583,7 @@ impl TransactionProcessor {
                     abi,
                     owner_badge,
                 } => api
-                    .sys_invoke(PackagePublishWithOwnerInvocation {
+                    .invoke(PackagePublishWithOwnerInvocation {
                         code: code.clone(),
                         abi: abi.clone(),
                         royalty_config: HashMap::new(),

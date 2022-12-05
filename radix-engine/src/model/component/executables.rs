@@ -1,17 +1,18 @@
 use crate::engine::{deref_and_update, RENode, ResolvedFunction};
 use crate::engine::{
-    CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref, NativeExecutor, NativeProcedure,
-    REActor, ResolvedMethod, RuntimeError, SystemApi,
+    CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor, NativeProcedure, REActor,
+    ResolvedMethod, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{BucketSubstate, GlobalAddressSubstate};
+use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::{constants::*, rule};
 
-impl ExecutableInvocation for ComponentGlobalizeInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -33,7 +34,7 @@ impl NativeProcedure for ComponentGlobalizeInvocation {
 
     fn main<Y>(self, api: &mut Y) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + InvokableModel<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
         let global_node_id = {
@@ -70,10 +71,10 @@ impl NativeProcedure for ComponentGlobalizeInvocation {
     }
 }
 
-impl ExecutableInvocation for ComponentGlobalizeWithOwnerInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeWithOwnerInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -95,7 +96,7 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
 
     fn main<Y>(self, api: &mut Y) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + InvokableModel<RuntimeError>,
     {
         let component_node_id = RENodeId::Component(self.component_id);
         let global_node_id = {
@@ -150,7 +151,7 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
             rule!(require(self.owner_badge.clone())),
             rule!(require(self.owner_badge.clone())),
         );
-        api.sys_invoke(AccessRulesAddAccessCheckInvocation {
+        api.invoke(AccessRulesAddAccessCheckInvocation {
             receiver: component_node_id,
             access_rules,
         })?;
@@ -168,10 +169,10 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
     }
 }
 
-impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for ComponentSetRoyaltyConfigInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -216,10 +217,10 @@ impl NativeProcedure for ComponentSetRoyaltyConfigInvocation {
     }
 }
 
-impl ExecutableInvocation for ComponentClaimRoyaltyInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for ComponentClaimRoyaltyInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

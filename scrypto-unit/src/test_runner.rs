@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use radix_engine::engine::{Invokable, Kernel, KernelError, ModuleError, ScryptoInterpreter};
+use radix_engine::engine::{Kernel, KernelError, ModuleError, ScryptoInterpreter};
 use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
@@ -20,6 +20,7 @@ use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
 use radix_engine_constants::*;
+use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{RENodeId, ScryptoMethodIdent};
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::hash;
