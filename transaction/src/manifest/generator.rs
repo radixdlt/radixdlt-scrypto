@@ -444,7 +444,7 @@ pub fn generate_instruction(
         } => Instruction::PublishPackageWithOwner {
             code: generate_blob(code, blobs)?,
             abi: generate_blob(abi, blobs)?,
-            owner_badge: generate_non_fungible_address(owner_badge)?,
+            owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
         },
         ast::Instruction::CreateResource {
             resource_type,
@@ -670,17 +670,24 @@ fn generate_component_address(
     }
 }
 
+fn generate_resource_address_internal(
+    value: &ast::Value,
+    bech32_decoder: &Bech32Decoder,
+) -> Result<ResourceAddress, GeneratorError> {
+    match value {
+        ast::Value::String(s) => bech32_decoder
+            .validate_and_decode_resource_address(s)
+            .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
+        v => invalid_type!(v, ast::Type::String),
+    }
+}
+
 fn generate_resource_address(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
 ) -> Result<ResourceAddress, GeneratorError> {
     match value {
-        ast::Value::ResourceAddress(inner) => match &**inner {
-            ast::Value::String(s) => bech32_decoder
-                .validate_and_decode_resource_address(s)
-                .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
-            v => invalid_type!(v, ast::Type::String),
-        },
+        ast::Value::ResourceAddress(inner) => generate_resource_address_internal(inner,bech32_decoder),
         v => invalid_type!(v, ast::Type::ResourceAddress),
     }
 }
@@ -939,17 +946,13 @@ fn generate_non_fungible_id(value: &ast::Value) -> Result<NonFungibleId, Generat
     }
 }
 
-fn generate_non_fungible_address(value: &ast::Value) -> Result<NonFungibleAddress, GeneratorError> {
+fn generate_non_fungible_address(value: &ast::Value, bech32_decoder: &Bech32Decoder) -> Result<NonFungibleAddress, GeneratorError> {
     match value {
         ast::Value::NonFungibleAddress(vec) => {
             if vec.len() != 2 {
-                return invalid_type!(value, ast::Type::NonFungibleAddress)
+                invalid_type!(value, ast::Type::NonFungibleAddress)
             } else {
-                let resource_address = match &vec[0] {
-                    ast::Value::String(s) => ResourceAddress::try_from_hex(s).
-                        map_err(|_| GeneratorError::InvalidNonFungibleAddress(s.into()))?,
-                    _ => return invalid_type!(value, ast::Type::NonFungibleAddress)
-                };
+                let resource_address = generate_resource_address_internal(&vec[0], bech32_decoder)?;
                 let nfid = generate_non_fungible_id_internal(&vec[1])?;
                 Ok(NonFungibleAddress::new(resource_address, nfid))
             } 
@@ -1102,7 +1105,7 @@ fn generate_value(
             value: ScryptoCustomValue::Blob(v),
         }),
         ast::Value::NonFungibleAddress(_) => {
-            generate_non_fungible_address(value).map(|v| SborValue::Custom {
+            generate_non_fungible_address(value, bech32_decoder).map(|v| SborValue::Custom {
                 value: ScryptoCustomValue::NonFungibleAddress(v),
             })
         }
