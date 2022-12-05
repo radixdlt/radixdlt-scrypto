@@ -213,6 +213,9 @@ pub enum Type {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
+    // ==============
+    // Basic Types
+    // ==============
     Unit,
     Bool(bool),
     I8(i8),
@@ -230,6 +233,15 @@ pub enum Value {
     Enum(String, Vec<Value>),
     Array(Type, Vec<Value>),
     Tuple(Vec<Value>),
+
+    // ==============
+    // Aliases
+    // ==============
+    Some(Box<Value>),
+    None,
+
+    Ok(Box<Value>),
+    Err(Box<Value>),
 
     // ==============
     // Custom Types
@@ -267,6 +279,9 @@ pub enum Value {
 impl Value {
     pub const fn kind(&self) -> Type {
         match self {
+            // ==============
+            // Basic Types
+            // ==============
             Value::Unit => Type::Unit,
             Value::Bool(_) => Type::Bool,
             Value::I8(_) => Type::I8,
@@ -283,6 +298,18 @@ impl Value {
             Value::Enum(_, _) => Type::Enum,
             Value::Array(_, _) => Type::Array,
             Value::Tuple(_) => Type::Tuple,
+
+            // ==============
+            // Aliases
+            // ==============
+            Value::Some(_) => Type::Enum,
+            Value::None => Type::Enum,
+            Value::Ok(_) => Type::Enum,
+            Value::Err(_) => Type::Enum,
+
+            // ==============
+            // Custom Types
+            // ==============
 
             // Global address types
             Value::PackageAddress(_) => Type::PackageAddress,
