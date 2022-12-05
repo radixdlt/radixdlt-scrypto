@@ -343,7 +343,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             args,
         } => {
             f.write_str(&format!(
-                "CALL_METHOD ComponentAddress({}) \"{}\"",
+                "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
                 component_address.display(context.bech32_encoder),
                 method_name
             ))?;
@@ -486,28 +486,28 @@ pub fn format_entity_address<F: fmt::Write>(
         GlobalAddress::Component(address) => {
             write!(
                 f,
-                "ComponentAddress({})",
+                "ComponentAddress(\"{}\")",
                 &address.display(context.bech32_encoder)
             )?;
         }
         GlobalAddress::Package(address) => {
             write!(
                 f,
-                "PackageAddress({})",
+                "PackageAddress(\"{}\")",
                 &address.display(context.bech32_encoder)
             )?;
         }
         GlobalAddress::Resource(address) => {
             write!(
                 f,
-                "ResourceAddress({})",
+                "ResourceAddress(\"{}\")",
                 &address.display(context.bech32_encoder)
             )?;
         }
         GlobalAddress::System(address) => {
             write!(
                 f,
-                "SystemAddress({})",
+                "SystemAddress(\"{}\")",
                 &address.display(context.bech32_encoder)
             )?;
         }
@@ -578,61 +578,6 @@ CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pn
 DROP_ALL_PROOFS;
 CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "complicated_method" Decimal("1") PreciseDecimal("2");
 PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleAddress("00ed9100551d7fae91eaf413e50a3c5a59f8b96af9f1297890a8f45c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f");
-"#
-        )
-    }
-
-    #[test]
-    fn test_decompile_call_function() {
-        let network = NetworkDefinition::simulator();
-        let manifest = compile(
-            include_str!("../../examples/call_function.rtm"),
-            &network,
-            vec![],
-        )
-        .unwrap();
-        let manifest2 = decompile(&manifest.instructions, &network).unwrap();
-        assert_eq!(
-            manifest2,
-            r#"CALL_FUNCTION PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "Blueprint" "function";
-CALL_NATIVE_FUNCTION "EpochManager" "create";
-CALL_NATIVE_FUNCTION "ResourceManager" "create";
-CALL_NATIVE_FUNCTION "Package" "publish";
-CALL_NATIVE_FUNCTION "TransactionProcessor" "run";
-"#
-        )
-    }
-
-    #[test]
-    fn test_decompile_call_method() {
-        let network = NetworkDefinition::simulator();
-        let manifest = compile(
-            include_str!("../../examples/call_method.rtm"),
-            &network,
-            vec![],
-        )
-        .unwrap();
-        let manifest2 = decompile(&manifest.instructions, &network).unwrap();
-        assert_eq!(
-            manifest2,
-            r#"CALL_METHOD ComponentAddress("component_sim1qgvyxt5rrjhwctw7krgmgkrhv82zuamcqkq75tkkrwgs00m736") "free_xrd";
-CALL_METHOD Component("000000000000000000000000000000000000000000000000000000000000000005000000") "free_xrd";
-TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");
-CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Proof("proof1");
-CALL_NATIVE_METHOD Bucket("bucket1") "get_resource_address";
-CALL_NATIVE_METHOD Bucket(1u32) "get_resource_address";
-CALL_NATIVE_METHOD Bucket(513u32) "get_resource_address";
-CALL_NATIVE_METHOD Bucket(1u32) "get_resource_address";
-CALL_NATIVE_METHOD AuthZoneStack(1u32) "drain";
-CALL_NATIVE_METHOD Worktop "drain";
-CALL_NATIVE_METHOD KeyValueStore("000000000000000000000000000000000000000000000000000000000000000005000000") "method";
-CALL_NATIVE_METHOD NonFungibleStore("000000000000000000000000000000000000000000000000000000000000000005000000") "method";
-CALL_NATIVE_METHOD Component("000000000000000000000000000000000000000000000000000000000000000005000000") "add_access_check";
-CALL_NATIVE_METHOD EpochManager("000000000000000000000000000000000000000000000000000000000000000005000000") "get_transaction_hash";
-CALL_NATIVE_METHOD Vault("000000000000000000000000000000000000000000000000000000000000000005000000") "get_resource_address";
-CALL_NATIVE_METHOD ResourceManager("000000000000000000000000000000000000000000000000000000000000000000000005") "burn";
-CALL_NATIVE_METHOD Package("000000000000000000000000000000000000000000000000000000000000000000000005") "method";
-CALL_NATIVE_METHOD Global("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "method";
 "#
         )
     }
