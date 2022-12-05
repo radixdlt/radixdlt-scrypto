@@ -1,6 +1,7 @@
 use crate::api::api::Invocation;
 use crate::api::types::{ScryptoFunctionIdent, ScryptoMethodIdent};
 use crate::scrypto;
+use sbor::rust::vec::Vec;
 
 /// Scrypto function/method invocation.
 #[derive(Debug)]

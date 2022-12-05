@@ -59,7 +59,7 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
         system_api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError>,
     {
         // Abi checks
         {
@@ -155,7 +155,6 @@ impl NativeProcedure for AccessRulesSetMethodAccessRuleInvocation {
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
@@ -278,7 +277,6 @@ impl NativeProcedure for AccessRulesSetGroupAccessRuleInvocation {
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
@@ -373,7 +371,6 @@ impl NativeProcedure for AccessRulesSetMethodMutabilityInvocation {
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
@@ -496,7 +493,6 @@ impl NativeProcedure for AccessRulesSetGroupMutabilityInvocation {
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
@@ -591,7 +587,6 @@ impl NativeProcedure for AccessRulesGetLengthInvocation {
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {

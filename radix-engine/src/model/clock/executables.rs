@@ -48,7 +48,7 @@ impl NativeProcedure for ClockCreateInvocation {
 
     fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError>,
     {
         let underlying_node_id = system_api.allocate_node_id(RENodeType::Clock)?;
 

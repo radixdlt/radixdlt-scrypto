@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
+use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative, SysNativeInvokable};
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
     PackageOffset, ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver,
@@ -189,7 +189,7 @@ where
 
                 // TODO: Replace with trusted IndexedScryptoValue
                 let access_rule = rule!(require(non_fungible_address));
-                let result = self.invoke(ScryptoInvocation::Function(
+                let result = self.sys_invoke(ScryptoInvocation::Function(
                     ScryptoFunctionIdent {
                         package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
                         blueprint_name: "Account".to_string(),
@@ -625,7 +625,7 @@ pub trait Executor {
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoInvocation>
+            + SysNativeInvokable<ScryptoInvocation, RuntimeError>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>;
 }
@@ -639,6 +639,55 @@ pub trait ExecutableInvocation<W:WasmEngine>: Invocation {
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
 }
 
+
+impl<'g, 's, W, R, N> SysNativeInvokable<N, RuntimeError> for Kernel<'g, 's, W, R>
+    where
+        W: WasmEngine,
+        R: FeeReserve,
+        N: ExecutableInvocation<W>,
+{
+    fn sys_invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallInput::Invoke {
+                    invocation: &invocation,
+                    input_size: 0,  // TODO: Fix this
+                    value_count: 0, // TODO: Fix this
+                    depth: self.current_frame.depth,
+                },
+            )
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
+        // Change to kernel mode
+        let saved_mode = self.execution_mode;
+        self.execution_mode = ExecutionMode::Kernel;
+
+        let (actor, call_frame_update, executor) = invocation.resolve(self)?;
+
+        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
+
+        // Restore previous mode
+        self.execution_mode = saved_mode;
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                SysCallOutput::Invoke { rtn: &rtn },
+            )
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(rtn)
+    }
+}
+
+/*
 impl<'g, 's, W, R, N> Invokable<N> for Kernel<'g, 's, W, R>
 where
     W: WasmEngine,
@@ -667,56 +716,6 @@ where
 
         let (actor, call_frame_update, executor) = invocation.resolve(self)?;
 
-        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
-
-        // Restore previous mode
-        self.execution_mode = saved_mode;
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::Invoke { rtn: &rtn },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(rtn)
-    }
-}
-
-// TODO: remove redundant code and move this method to the interpreter
-/*
-impl<'g, 's, W, R> Invokable<ScryptoInvocation> for Kernel<'g, 's, W, R>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-{
-    fn invoke(
-        &mut self,
-        invocation: ScryptoInvocation,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::Invoke {
-                    invocation: &invocation,
-                    input_size: invocation.args().raw.len() as u32,
-                    value_count: invocation.args().value_count() as u32,
-                    depth: self.current_frame.depth,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // Change to kernel mode
-        let saved_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
-        let (executor, actor, call_frame_update) = self.resolve(invocation)?;
         let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 
         // Restore previous mode

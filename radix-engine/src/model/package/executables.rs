@@ -61,7 +61,7 @@ impl NativeProcedure for PackagePublishInvocation {
 
     fn main<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation>,
+        Y: SystemApi,
     {
         let code = api.read_blob(&self.code.0)?.to_vec();
         let blob = api.read_blob(&self.abi.0)?;

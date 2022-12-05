@@ -10,7 +10,7 @@ use crate::model::{
 use crate::model::{MetadataSubstate, Resource};
 use crate::types::{HashMap, ScryptoInvocation};
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::EngineApi;
+use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
 use radix_engine_interface::api::types::{
     ComponentMethod, Level, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoActor,
     ScryptoRENode, SubstateOffset,
@@ -34,7 +34,7 @@ where
         &mut self,
         invocation: ScryptoInvocation,
     ) -> Result<Vec<u8>, RuntimeError> {
-        self.invoke(invocation)
+        self.sys_invoke(invocation)
     }
 
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {

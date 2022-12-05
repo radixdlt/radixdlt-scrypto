@@ -66,7 +66,7 @@ impl NativeProcedure for ResourceManagerBucketBurnInvocation {
 
     fn main<Y>(self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation> + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + SysInvokableNative<RuntimeError>,
     {
         let bucket = Bucket(self.bucket.0);
         bucket.sys_burn(env)?;

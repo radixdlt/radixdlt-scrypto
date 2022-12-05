@@ -52,7 +52,7 @@ impl NativeProcedure for EpochManagerCreateInvocation {
 
     fn main<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError>,
     {
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
 
