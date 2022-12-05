@@ -259,15 +259,42 @@ impl NotarizedTransactionValidator {
                         .drop_all_proofs()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CallFunction { args, .. }
-                | Instruction::CallMethod { args, .. }
-                | Instruction::CallNativeFunction { args, .. }
-                | Instruction::CallNativeMethod { args, .. } => {
+                Instruction::CallFunction { args, .. } | Instruction::CallMethod { args, .. } => {
                     // TODO: decode into Value
                     Self::validate_call_data(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
+                Instruction::PublishPackage {
+                    code,
+                    abi,
+                    royalty_config,
+                    metadata,
+                    access_rules,
+                } => {}
                 Instruction::PublishPackageWithOwner { .. } => {}
+                Instruction::CreateResource {
+                    resource_type,
+                    metadata,
+                    access_rules,
+                    mint_params,
+                } => {}
+                Instruction::CreateResourceWithOwner {
+                    resource_type,
+                    metadata,
+                    owner_badge,
+                    mint_params,
+                } => {}
+                Instruction::BurnResource { bucket_id } => {
+                    id_validator
+                        .drop_bucket(*bucket_id)
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
+                Instruction::MintFungible { .. } => {}
+                Instruction::SetMetadata { .. } => {}
+                Instruction::SetPackageRoyaltyConfig { .. } => {}
+                Instruction::SetComponentRoyaltyConfig { .. } => {}
+                Instruction::ClaimPackageRoyalty { .. } => {}
+                Instruction::ClaimComponentRoyalty { .. } => {}
             }
         }
 
