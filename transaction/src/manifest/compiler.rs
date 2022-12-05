@@ -38,12 +38,10 @@ mod tests {
     use super::*;
     use crate::model::Instruction;
     use radix_engine_interface::core::Expression;
-    use radix_engine_interface::crypto::Blob;
     use radix_engine_interface::data::*;
-    use radix_engine_interface::math::{Decimal, PreciseDecimal};
+    use radix_engine_interface::math::Decimal;
     use radix_engine_interface::model::*;
     use sbor::rust::collections::*;
-    use sbor::rust::str::FromStr;
 
     #[test]
     fn test_compile() {
@@ -53,8 +51,6 @@ mod tests {
             include_bytes!("../../examples/code.blob").to_vec(),
             include_bytes!("../../examples/abi.blob").to_vec(),
         ];
-        let code_hash = hash(&blobs[0]);
-        let abi_hash = hash(&blobs[1]);
 
         let component1 = bech32_decoder
             .validate_and_decode_component_address(
@@ -74,7 +70,7 @@ mod tests {
             vec![
                 Instruction::CallMethod {
                     component_address: component1,
-                        method_name: "withdraw_by_amount".to_string(), 
+                    method_name: "withdraw_by_amount".to_string(),
                     args: args!(
                         Decimal::from(5u32),
                         bech32_decoder
@@ -93,8 +89,8 @@ mod tests {
                         .unwrap(),
                 },
                 Instruction::CallMethod {
-                    component_address: component2 ,
-                        method_name: "buy_gumball".to_string(), 
+                    component_address: component2,
+                    method_name: "buy_gumball".to_string(),
                     args: args!(Bucket(512))
                 },
                 Instruction::AssertWorktopContainsByAmount {
@@ -124,8 +120,8 @@ mod tests {
                 Instruction::DropProof { proof_id: 514 },
                 Instruction::DropProof { proof_id: 515 },
                 Instruction::CallMethod {
-                    component_address: component1 ,
-                        method_name: "create_proof_by_amount".to_string(), 
+                    component_address: component1,
+                    method_name: "create_proof_by_amount".to_string(),
                     args: args!(
                         Decimal::from(5u32),
                         bech32_decoder
@@ -139,39 +135,18 @@ mod tests {
                 Instruction::DropProof { proof_id: 516 },
                 Instruction::ReturnToWorktop { bucket_id: 513 },
                 Instruction::TakeFromWorktopByIds {
-                    ids: BTreeSet::from([
-                        NonFungibleId::from_str("5c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap(),
-                        NonFungibleId::from_str("5c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap(),
-                    ]),
+                    ids: BTreeSet::from([NonFungibleId::U32(1),]),
                     resource_address: bech32_decoder
                         .validate_and_decode_resource_address(
                             "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                         )
                         .unwrap()
                 },
-                Instruction::CreateResource  {
-                      resource_type: ResourceType::Fungible { divisibility: 0 },
-                        metadata: BTreeMap::<String, String>::new(),
-                        access_rules: BTreeMap::<ResourceMethodAuthKey, (AccessRule, Mutability)>::new(),
-                        mint_params: Some(MintParams::Fungible {
-                            amount: "1.0".into()
-                        })
-                },
-                Instruction::CallMethod {
-                    component_address: component1 ,
-                        method_name: "deposit_batch".to_string(), 
-                    args: args!(Expression("ENTIRE_WORKTOP".to_owned()))
-                },
                 Instruction::DropAllProofs,
                 Instruction::CallMethod {
-                    component_address: component2 ,
-                        method_name: "complicated_method".to_string(), 
-                    args: args!(Decimal::from(1u32), PreciseDecimal::from(2u32))
-                },
-                Instruction::PublishPackageWithOwner {
-                    code: Blob(code_hash),
-                    abi: Blob(abi_hash),
-                    owner_badge: NonFungibleAddress::from_str("00ed9100551d7fae91eaf413e50a3c5a59f8b96af9f1297890a8f45c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap(),
+                    component_address: component1,
+                    method_name: "deposit_batch".to_string(),
+                    args: args!(Expression("ENTIRE_WORKTOP".to_owned()))
                 },
             ]
         );
