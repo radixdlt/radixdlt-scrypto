@@ -188,15 +188,14 @@ where
 
                 // TODO: Replace with trusted IndexedScryptoValue
                 let access_rule = rule!(require(non_fungible_address));
-                let result = self.invoke(ScryptoInvocation::Function(
+                let result = self.invoke(ParsedScryptoInvocation::Function(
                     ScryptoFunctionIdent {
                         package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
                         blueprint_name: "Account".to_string(),
                         function_name: "create".to_string(),
                     },
-                    args!(access_rule),
+                    IndexedScryptoValue::from_slice(&args!(access_rule)).unwrap(),
                 ))?;
-                let result = IndexedScryptoValue::from_slice(&result).unwrap();
                 let component_id = result.component_ids.into_iter().next().unwrap();
 
                 // TODO: Use system_api to globalize component when create_node is refactored

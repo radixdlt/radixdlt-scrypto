@@ -35,7 +35,8 @@ pub trait EngineApi<E: Debug> {
 }
 
 pub trait InvokableModel<E>:
-    Invokable<ScryptoInvocation, E>
+    Invokable<ParsedScryptoInvocation, E>
+    + Invokable<ScryptoInvocation, E>
     + Invokable<EpochManagerCreateInvocation, E>
     + Invokable<EpochManagerSetEpochInvocation, E>
     + Invokable<EpochManagerGetCurrentEpochInvocation, E>

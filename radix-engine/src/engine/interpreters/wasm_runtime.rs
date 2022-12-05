@@ -52,7 +52,9 @@ where
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         let rtn = match input {
             RadixEngineInput::Invoke(invocation) => match invocation {
-                SerializedInvocation::Scrypto(invocation) => self.system_api.invoke(invocation)?,
+                SerializedInvocation::Scrypto(invocation) => {
+                    encode(self.system_api.invoke(invocation)?)? // TODO: Figure out to remove encode
+                }
                 SerializedInvocation::Native(invocation) => {
                     invocation.invoke(self.system_api).map(|v| v.raw)?
                 }

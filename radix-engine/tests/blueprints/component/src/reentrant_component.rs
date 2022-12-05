@@ -24,7 +24,7 @@ blueprint! {
                         args!(),
                     ),
                 ));
-                call_engine(input)
+                let _: Vec<u8> = call_engine(input);
             }
         }
 
@@ -41,7 +41,7 @@ blueprint! {
                         args!(),
                     ),
                 ));
-                call_engine(input)
+                let _: Vec<u8> = call_engine(input);
             }
         }
 
@@ -56,7 +56,7 @@ blueprint! {
                         args!(),
                     ),
                 ));
-                call_engine(input)
+                let _: Vec<u8> = call_engine(input);
             }
         }
     }
