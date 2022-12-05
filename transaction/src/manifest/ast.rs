@@ -302,7 +302,7 @@ impl Value {
             // Other interpreted types
             Value::Expression(_) => Type::Expression,
             Value::Blob(_) => Type::Blob,
-            Value::NonFungibleAddress(_,_) => Type::NonFungibleAddress,
+            Value::NonFungibleAddress(_, _) => Type::NonFungibleAddress,
 
             // Uninterpreted,
             Value::Hash(_) => Type::Hash,

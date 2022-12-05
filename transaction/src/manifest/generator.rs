@@ -1105,10 +1105,11 @@ fn generate_value(
         ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| SborValue::Custom {
             value: ScryptoCustomValue::Blob(v),
         }),
-        ast::Value::NonFungibleAddress(_,_) => generate_non_fungible_address(value, bech32_decoder)
-            .map(|v| SborValue::Custom {
+        ast::Value::NonFungibleAddress(_, _) => {
+            generate_non_fungible_address(value, bech32_decoder).map(|v| SborValue::Custom {
                 value: ScryptoCustomValue::NonFungibleAddress(v),
-            }),
+            })
+        }
 
         ast::Value::Hash(_) => generate_hash(value).map(|v| SborValue::Custom {
             value: ScryptoCustomValue::Hash(v),

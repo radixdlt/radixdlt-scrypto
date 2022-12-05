@@ -431,7 +431,7 @@ impl Parser {
             Ok((values[0].clone(), values[1].clone()))
         }
     }
-    
+
     fn parse_generics(&mut self, n: usize) -> Result<Vec<Type>, ParserError> {
         advance_match!(self, TokenKind::LessThan);
         let mut types = Vec::new();
