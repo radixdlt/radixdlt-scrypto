@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use radix_engine::engine::{Invokable, Kernel, KernelError, ModuleError, ScryptoInterpreter};
+use radix_engine::engine::{Kernel, KernelError, ModuleError, ScryptoInterpreter};
 use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;

@@ -1,5 +1,5 @@
 use crate::engine::{
-    Invokable, Kernel, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
+    Kernel, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
     ResolvedReceiver, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;

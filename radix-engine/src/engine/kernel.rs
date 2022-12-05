@@ -15,7 +15,6 @@ use transaction::model::AuthZoneParams;
 use transaction::validation::*;
 
 use crate::engine::node_move_module::NodeMoveModule;
-use crate::engine::system_api::Invokable;
 use crate::engine::system_api::LockInfo;
 use crate::engine::*;
 use crate::fee::FeeReserve;
@@ -686,55 +685,6 @@ impl<'g, 's, W, R, N> SysNativeInvokable<N, RuntimeError> for Kernel<'g, 's, W, 
         Ok(rtn)
     }
 }
-
-/*
-impl<'g, 's, W, R, N> Invokable<N> for Kernel<'g, 's, W, R>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-    N: ExecutableInvocation<W>,
-{
-    fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::Invoke {
-                    invocation: &invocation,
-                    input_size: 0,  // TODO: Fix this
-                    value_count: 0, // TODO: Fix this
-                    depth: self.current_frame.depth,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // Change to kernel mode
-        let saved_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
-
-        let (actor, call_frame_update, executor) = invocation.resolve(self)?;
-
-        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
-
-        // Restore previous mode
-        self.execution_mode = saved_mode;
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::Invoke { rtn: &rtn },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(rtn)
-    }
-}
- */
 
 impl<'g, 's, W, R> SystemApi for Kernel<'g, 's, W, R>
 where

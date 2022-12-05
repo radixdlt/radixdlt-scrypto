@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, InterpreterError,
-    Invokable, LockFlags, ResolveApi, NativeExecutor, NativeProcedure, REActor, ResolvedMethod,
+    LockFlags, ResolveApi, NativeExecutor, NativeProcedure, REActor, ResolvedMethod,
     RuntimeError, SystemApi,
 };
 use crate::model::{MethodAuthorization, MethodAuthorizationError};

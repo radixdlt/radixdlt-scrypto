@@ -1,5 +1,5 @@
 use crate::engine::{
-    deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Invokable,
+    deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation,
     LockFlags, ResolveApi, NativeExecutor, NativeProcedure, REActor, RENode, ResolvedFunction,
     ResolvedMethod, RuntimeError, SystemApi,
 };
