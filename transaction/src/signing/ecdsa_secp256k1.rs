@@ -83,7 +83,7 @@ mod tests {
         assert_eq!(s1, expected_address);
         assert_eq!(s2, expected_address);
 
-        let nfid = auth_address2.non_fungible_id();
+        let nfid = auth_address2.non_fungible_id().clone();
         assert_eq!(nfid.id_type(), NonFungibleIdType::Bytes);
         assert_eq!(nfid.to_string(), expected_id_with_type_designator);
         assert!(matches!(nfid, NonFungibleId::Bytes(b) if b == hex::decode(expected_id).unwrap()));
