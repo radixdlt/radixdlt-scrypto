@@ -89,13 +89,16 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                 api.on_wasm_instantiation(package.code())?;
 
                 (
-                    api.vm().create_executor(&package.code, args),
+                    api.vm().create_executor(
+                        &package.code,
+                        fn_abi.export_name.clone(),
+                        args,
+                        fn_abi.output.clone(),
+                    ),
                     REActor::Function(ResolvedFunction::Scrypto {
                         package_address,
                         blueprint_name: function_ident.blueprint_name.clone(),
                         ident: function_ident.function_name.clone(),
-                        export_name: fn_abi.export_name.clone(),
-                        return_type: fn_abi.output.clone(),
                     }),
                 )
             }
@@ -200,14 +203,17 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                 api.on_wasm_instantiation(package.code())?;
 
                 (
-                    api.vm().create_executor(&package.code, args),
+                    api.vm().create_executor(
+                        &package.code,
+                        fn_abi.export_name.clone(),
+                        args,
+                        fn_abi.output.clone(),
+                    ),
                     REActor::Method(
                         ResolvedMethod::Scrypto {
                             package_address: component_info.package_address,
                             blueprint_name: component_info.blueprint_name,
                             ident: method_ident.method_name.clone(),
-                            export_name: fn_abi.export_name.clone(),
-                            return_type: fn_abi.output.clone(),
                         },
                         resolved_receiver,
                     ),
@@ -320,13 +326,16 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                 api.on_wasm_instantiation(package.code())?;
 
                 (
-                    api.vm().create_executor_to_parsed(&package.code, args),
+                    api.vm().create_executor_to_parsed(
+                        &package.code,
+                        fn_abi.export_name.clone(),
+                        args,
+                        fn_abi.output.clone(),
+                    ),
                     REActor::Function(ResolvedFunction::Scrypto {
                         package_address,
                         blueprint_name: function_ident.blueprint_name.clone(),
                         ident: function_ident.function_name.clone(),
-                        export_name: fn_abi.export_name.clone(),
-                        return_type: fn_abi.output.clone(),
                     }),
                 )
             }
@@ -431,14 +440,17 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                 api.on_wasm_instantiation(package.code())?;
 
                 (
-                    api.vm().create_executor_to_parsed(&package.code, args),
+                    api.vm().create_executor_to_parsed(
+                        &package.code,
+                        fn_abi.export_name.clone(),
+                        args,
+                        fn_abi.output.clone(),
+                    ),
                     REActor::Method(
                         ResolvedMethod::Scrypto {
                             package_address: component_info.package_address,
                             blueprint_name: component_info.blueprint_name,
                             ident: method_ident.method_name.clone(),
-                            export_name: fn_abi.export_name.clone(),
-                            return_type: fn_abi.output.clone(),
                         },
                         resolved_receiver,
                     ),

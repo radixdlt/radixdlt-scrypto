@@ -35,8 +35,6 @@ pub enum ResolvedFunction {
         package_address: PackageAddress,
         blueprint_name: String,
         ident: String,
-        export_name: String,
-        return_type: Type,
     },
     Native(NativeFunction),
 }
@@ -48,8 +46,6 @@ pub enum ResolvedMethod {
         package_address: PackageAddress,
         blueprint_name: String,
         ident: String,
-        export_name: String,
-        return_type: Type,
     },
     Native(NativeMethod),
 }

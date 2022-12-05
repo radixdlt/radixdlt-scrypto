@@ -7,7 +7,9 @@ use radix_engine_interface::data::{match_schema_with_value, IndexedScryptoValue}
 
 pub struct ScryptoExecutorToParsed<I: WasmInstance> {
     instance: I,
+    export_name: String,
     args: IndexedScryptoValue,
+    rtn_type: Type,
 }
 
 impl<I: WasmInstance> Executor for ScryptoExecutorToParsed<I> {
@@ -23,38 +25,17 @@ impl<I: WasmInstance> Executor for ScryptoExecutorToParsed<I> {
             + InvokableModel<RuntimeError>
             + LoggerApi<RuntimeError>,
     {
-        let (export_name, return_type) = match api.get_actor() {
-            REActor::Method(
-                ResolvedMethod::Scrypto {
-                    export_name,
-                    return_type,
-                    ..
-                },
-                ResolvedReceiver {
-                    receiver: RENodeId::Component(..),
-                    ..
-                },
-            ) => (export_name.to_string(), return_type.clone()),
-            REActor::Function(ResolvedFunction::Scrypto {
-                export_name,
-                return_type,
-                ..
-            }) => (export_name.to_string(), return_type.clone()),
-
-            _ => panic!("Should not get here."),
-        };
-
         let output = {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(api));
             self.instance
-                .invoke_export(&export_name, &self.args, &mut runtime)
+                .invoke_export(&self.export_name, &self.args, &mut runtime)
                 .map_err(|e| match e {
                     InvokeError::Error(e) => RuntimeError::KernelError(KernelError::WasmError(e)),
                     InvokeError::Downstream(runtime_error) => runtime_error,
                 })?
         };
 
-        let rtn = if !match_schema_with_value(&return_type, &output.dom) {
+        let rtn = if !match_schema_with_value(&self.rtn_type, &output.dom) {
             Err(RuntimeError::KernelError(
                 KernelError::InvalidScryptoFnOutput,
             ))
@@ -77,6 +58,8 @@ impl<I: WasmInstance> Executor for ScryptoExecutorToParsed<I> {
 pub struct ScryptoExecutor<I: WasmInstance> {
     instance: I,
     args: IndexedScryptoValue,
+    export_name: String,
+    rtn_type: Type,
 }
 
 impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
@@ -92,6 +75,8 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
         ScryptoExecutorToParsed {
             instance: self.instance,
             args: self.args,
+            export_name: self.export_name,
+            rtn_type: self.rtn_type,
         }
         .execute(api)
         .map(|(indexed, update)| (indexed.raw, update))
@@ -110,7 +95,9 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
     pub fn create_executor(
         &self,
         code: &[u8],
+        export_name: String,
         args: IndexedScryptoValue,
+        rtn_type: Type,
     ) -> ScryptoExecutor<W::WasmInstance> {
         let instrumented_code = self
             .wasm_instrumenter
@@ -119,13 +106,17 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
         ScryptoExecutor {
             instance,
             args: args,
+            export_name,
+            rtn_type,
         }
     }
 
     pub fn create_executor_to_parsed(
         &self,
         code: &[u8],
+        export_name: String,
         args: IndexedScryptoValue,
+        rtn_type: Type,
     ) -> ScryptoExecutorToParsed<W::WasmInstance> {
         let instrumented_code = self
             .wasm_instrumenter
@@ -133,7 +124,9 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
         let instance = self.wasm_engine.instantiate(&instrumented_code);
         ScryptoExecutorToParsed {
             instance,
-            args: args,
+            export_name,
+            args,
+            rtn_type,
         }
     }
 }
