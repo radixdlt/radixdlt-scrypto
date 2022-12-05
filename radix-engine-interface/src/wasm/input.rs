@@ -1,6 +1,6 @@
 use crate::api::types::*;
 use crate::scrypto;
-use radix_engine_interface::api::api::SysInvokableNative;
+use radix_engine_interface::api::api::InvokableNative;
 use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -222,7 +222,7 @@ pub enum PackageFunctionInvocation {
 impl NativeFnInvocation {
     pub fn invoke<Y, E>(self, system_api: &mut Y) -> Result<IndexedScryptoValue, E>
     where
-        Y: SysInvokableNative<E>,
+        Y: InvokableNative<E>,
     {
         match self {
             NativeFnInvocation::Function(native_function) => match native_function {

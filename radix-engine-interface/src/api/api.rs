@@ -35,7 +35,7 @@ pub trait EngineApi<E: Debug> {
     fn sys_emit_log(&mut self, level: Level, message: String) -> Result<(), E>;
 }
 
-pub trait SysInvokableNative<E>:
+pub trait InvokableNative<E>:
     Invokable<EpochManagerCreateInvocation, E>
     + Invokable<EpochManagerSetEpochInvocation, E>
     + Invokable<EpochManagerGetCurrentEpochInvocation, E>

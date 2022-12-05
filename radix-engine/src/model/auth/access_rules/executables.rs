@@ -6,7 +6,7 @@ use crate::engine::{
 use crate::model::{MethodAuthorization, MethodAuthorizationError};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
+use radix_engine_interface::api::api::{EngineApi, Invocation, InvokableNative};
 use radix_engine_interface::api::types::{
     AccessRulesChainMethod, GlobalAddress, NativeMethod, PackageOffset, RENodeId, SubstateOffset,
 };
@@ -154,7 +154,7 @@ impl NativeProcedure for AccessRulesSetMethodAccessRuleInvocation {
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableNative<RuntimeError>,
     {
         // TODO: Should this invariant be enforced in a more static/structural way?
         if [
@@ -274,7 +274,7 @@ impl NativeProcedure for AccessRulesSetGroupAccessRuleInvocation {
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableNative<RuntimeError>,
     {
         let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
@@ -366,7 +366,7 @@ impl NativeProcedure for AccessRulesSetMethodMutabilityInvocation {
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableNative<RuntimeError>,
     {
         // TODO: Should this invariant be enforced in a more static/structural way?
         if [
@@ -486,7 +486,7 @@ impl NativeProcedure for AccessRulesSetGroupMutabilityInvocation {
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableNative<RuntimeError>,
     {
         let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
@@ -578,7 +578,7 @@ impl NativeProcedure for AccessRulesGetLengthInvocation {
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError> + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableNative<RuntimeError>,
     {
         let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;

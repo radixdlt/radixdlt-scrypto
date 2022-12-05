@@ -11,7 +11,7 @@ use crate::model::{NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
-use radix_engine_interface::api::api::SysInvokableNative;
+use radix_engine_interface::api::api::InvokableNative;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFunction, NativeMethod, NonFungibleStoreId, NonFungibleStoreOffset,
     RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset,
@@ -66,7 +66,7 @@ impl NativeProcedure for ResourceManagerBucketBurnInvocation {
 
     fn main<Y>(self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + InvokableNative<RuntimeError>,
     {
         let bucket = Bucket(self.bucket.0);
         bucket.sys_burn(env)?;
@@ -654,7 +654,7 @@ impl NativeProcedure for ResourceManagerUpdateVaultAuthExecutable {
 
     fn main<'a, Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + InvokableNative<RuntimeError>,
     {
         let offset =
             SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
@@ -747,7 +747,7 @@ impl NativeProcedure for ResourceManagerLockVaultAuthExecutable {
 
     fn main<'a, Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + InvokableNative<RuntimeError>,
     {
         let offset =
             SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
