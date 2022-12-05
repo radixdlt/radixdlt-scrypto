@@ -6,8 +6,8 @@ mod fee;
 mod metadata;
 mod package;
 mod resource;
-mod system;
 mod scrypto;
+mod system;
 
 pub use auth::*;
 pub use clock::*;

@@ -1,10 +1,10 @@
 use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative, Invokable};
+use crate::wasm::WasmEngine;
+use radix_engine_interface::api::api::{EngineApi, Invokable, SysInvokableNative};
 use radix_engine_interface::api::types::RENodeId;
 use sbor::rust::fmt::Debug;
-use crate::wasm::WasmEngine;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
     fn into(self) -> RuntimeError {

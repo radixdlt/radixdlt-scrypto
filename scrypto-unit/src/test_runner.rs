@@ -19,8 +19,8 @@ use radix_engine::types::*;
 use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
-use radix_engine_interface::api::api::Invokable;
 use radix_engine_constants::*;
+use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{RENodeId, ScryptoMethodIdent};
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::hash;

@@ -1,15 +1,15 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, ResolveApi,
-    NativeExecutor, NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver,
-    RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
+    NativeProcedure, REActor, RENode, ResolveApi, ResolvedMethod, ResolvedReceiver, RuntimeError,
+    SystemApi,
 };
 use crate::model::{BucketSubstate, ProofError, ResourceOperationError};
 use crate::types::*;
+use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
     BucketMethod, BucketOffset, GlobalAddress, NativeMethod, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
-use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -24,10 +24,10 @@ pub enum BucketError {
     MethodNotFound(BucketMethod),
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for BucketTakeInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -71,10 +71,10 @@ impl NativeProcedure for BucketTakeInvocation {
     }
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for BucketCreateProofInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for BucketCreateProofInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -119,10 +119,10 @@ impl NativeProcedure for BucketCreateProofInvocation {
     }
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for BucketTakeNonFungiblesInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeNonFungiblesInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -166,10 +166,10 @@ impl NativeProcedure for BucketTakeNonFungiblesInvocation {
     }
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for BucketGetNonFungibleIdsInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetNonFungibleIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -209,10 +209,10 @@ impl NativeProcedure for BucketGetNonFungibleIdsInvocation {
     }
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for BucketGetAmountInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -244,10 +244,10 @@ impl NativeProcedure for BucketGetAmountInvocation {
     }
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for BucketPutInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for BucketPutInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -291,10 +291,10 @@ impl NativeProcedure for BucketPutInvocation {
     }
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for BucketGetResourceAddressInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetResourceAddressInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

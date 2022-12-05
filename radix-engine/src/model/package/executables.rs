@@ -40,10 +40,10 @@ impl Package {
     }
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -120,10 +120,10 @@ impl NativeProcedure for PackagePublishInvocation {
     }
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for PackagePublishWithOwnerInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishWithOwnerInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -228,10 +228,10 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
     }
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocation {
     type Exec = NativeExecutor<PackageSetRoyaltyConfigExecutable>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -276,10 +276,10 @@ impl NativeProcedure for PackageSetRoyaltyConfigExecutable {
     }
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for PackageClaimRoyaltyInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for PackageClaimRoyaltyInvocation {
     type Exec = NativeExecutor<PackageClaimRoyaltyExecutable>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

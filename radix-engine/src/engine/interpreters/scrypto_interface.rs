@@ -30,10 +30,7 @@ where
     W: WasmEngine,
     R: FeeReserve,
 {
-    fn invoke_scrypto(
-        &mut self,
-        invocation: ScryptoInvocation,
-    ) -> Result<Vec<u8>, RuntimeError> {
+    fn invoke_scrypto(&mut self, invocation: ScryptoInvocation) -> Result<Vec<u8>, RuntimeError> {
         self.invoke(invocation)
     }
 

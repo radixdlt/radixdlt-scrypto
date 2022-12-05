@@ -1,7 +1,7 @@
 use crate::engine::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative, Invokable};
+use radix_engine_interface::api::api::{EngineApi, Invokable, SysInvokableNative};
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::data::{match_schema_with_value, IndexedScryptoValue};
 
@@ -13,10 +13,7 @@ pub struct ScryptoExecutor<I: WasmInstance> {
 impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
     type Output = Vec<u8>;
 
-    fn execute<Y>(
-        mut self,
-        system_api: &mut Y,
-    ) -> Result<(Vec<u8>, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(mut self, system_api: &mut Y) -> Result<(Vec<u8>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation, RuntimeError>

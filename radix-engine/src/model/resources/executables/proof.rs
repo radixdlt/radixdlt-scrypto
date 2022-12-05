@@ -1,15 +1,15 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, ResolveApi,
-    NativeExecutor, NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver,
-    RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
+    NativeProcedure, REActor, RENode, ResolveApi, ResolvedMethod, ResolvedReceiver, RuntimeError,
+    SystemApi,
 };
 use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
+use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeMethod, ProofMethod, ProofOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
-use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -28,10 +28,10 @@ pub enum ProofError {
     InvalidRequestData(DecodeError),
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for ProofGetAmountInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -63,10 +63,10 @@ impl NativeProcedure for ProofGetAmountInvocation {
     }
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for ProofGetNonFungibleIdsInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetNonFungibleIdsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -107,10 +107,10 @@ impl NativeProcedure for ProofGetNonFungibleIdsInvocation {
     }
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for ProofGetResourceAddressInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetResourceAddressInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -147,10 +147,10 @@ impl NativeProcedure for ProofGetResourceAddressInvocation {
     }
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for ProofCloneInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for ProofCloneInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {

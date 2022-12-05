@@ -1,13 +1,14 @@
 use crate::engine::{
-    deref_and_update, AuthModule, CallFrameUpdate, ExecutableInvocation, LockFlags,
-    ResolveApi, NativeExecutor, NativeProcedure, REActor, RENode, ResolvedFunction,
-    ResolvedMethod, RuntimeError, SystemApi,
+    deref_and_update, AuthModule, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
+    NativeProcedure, REActor, RENode, ResolveApi, ResolvedFunction, ResolvedMethod, RuntimeError,
+    SystemApi,
 };
 use crate::model::{
     AccessRulesChainSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule,
     HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
 };
 use crate::types::*;
+use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
     EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction,
@@ -15,7 +16,6 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::model::*;
 use radix_engine_interface::rule;
-use crate::wasm::WasmEngine;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum EpochManagerError {
@@ -27,10 +27,10 @@ pub struct EpochManager {
     pub info: EpochManagerSubstate,
 }
 
-impl<W:WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         _deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -106,10 +106,10 @@ impl NativeProcedure for EpochManagerCreateInvocation {
 
 pub struct EpochManagerGetCurrentEpochExecutable(RENodeId);
 
-impl<W:WasmEngine> ExecutableInvocation<W> for EpochManagerGetCurrentEpochInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerGetCurrentEpochInvocation {
     type Exec = NativeExecutor<EpochManagerGetCurrentEpochExecutable>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -151,10 +151,10 @@ impl NativeProcedure for EpochManagerGetCurrentEpochExecutable {
 
 pub struct EpochManagerSetEpochExecutable(RENodeId, u64);
 
-impl<W:WasmEngine> ExecutableInvocation<W> for EpochManagerSetEpochInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerSetEpochInvocation {
     type Exec = NativeExecutor<EpochManagerSetEpochExecutable>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>

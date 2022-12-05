@@ -1,6 +1,6 @@
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative, Invokable};
+use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, SysInvokableNative};
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent,
     ProofId, RENodeId, TransactionProcessorFunction,
@@ -51,10 +51,10 @@ impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<Vec<u8>>;
 }
 
-impl<'a, W:WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvocation<'a> {
+impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvocation<'a> {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: ResolveApi<W>> (
+    fn resolve<D: ResolveApi<W>>(
         self,
         _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -531,9 +531,12 @@ impl TransactionProcessor {
                     .and_then(|args| Self::process_expressions(args, api))
                     .and_then(|args| {
                         // TODO: Replace with trusted indexed argument
-                        api.invoke(ScryptoInvocation::Function(function_ident.clone(), args.raw))
-                            .map(|r| IndexedScryptoValue::from_slice(&r).unwrap())
-                            .map_err(InvokeError::Downstream)
+                        api.invoke(ScryptoInvocation::Function(
+                            function_ident.clone(),
+                            args.raw,
+                        ))
+                        .map(|r| IndexedScryptoValue::from_slice(&r).unwrap())
+                        .map_err(InvokeError::Downstream)
                     })
                     .and_then(|result| {
                         // Auto move into auth_zone

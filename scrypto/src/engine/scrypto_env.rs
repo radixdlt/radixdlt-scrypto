@@ -1,7 +1,6 @@
 use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::{
-    Level, LockHandle, RENodeId, ScryptoActor,
-    ScryptoRENode, SubstateOffset,
+    Level, LockHandle, RENodeId, ScryptoActor, ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::ScryptoDecode;
@@ -65,10 +64,7 @@ impl<N: ScryptoNativeInvocation> Invokable<N, EngineApiError> for ScryptoEnv {
 }
 
 impl EngineApi<EngineApiError> for ScryptoEnv {
-    fn invoke_scrypto(
-        &mut self,
-        invocation: ScryptoInvocation,
-    ) -> Result<Vec<u8>, EngineApiError> {
+    fn invoke_scrypto(&mut self, invocation: ScryptoInvocation) -> Result<Vec<u8>, EngineApiError> {
         let rtn = call_engine_to_raw(RadixEngineInput::InvokeScrypto(invocation));
         Ok(rtn)
     }

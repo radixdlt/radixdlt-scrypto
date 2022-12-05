@@ -3,7 +3,7 @@ use crate::fee::*;
 use crate::model::InvokeError;
 use crate::types::{scrypto_decode, scrypto_encode, ScryptoInvocation};
 use crate::wasm::*;
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative, Invokable};
+use radix_engine_interface::api::api::{EngineApi, Invokable, SysInvokableNative};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoEncode};
 use radix_engine_interface::wasm::*;
 use sbor::rust::vec::Vec;
@@ -51,9 +51,9 @@ where
         let input: RadixEngineInput = scrypto_decode(&input.raw)
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         let rtn = match input {
-            RadixEngineInput::InvokeScrypto(invocation) => self
-                .system_api
-                .invoke_scrypto(invocation)?,
+            RadixEngineInput::InvokeScrypto(invocation) => {
+                self.system_api.invoke_scrypto(invocation)?
+            }
             RadixEngineInput::InvokeNativeFn(native_fn) => {
                 native_fn.invoke(self.system_api).map(|v| v.raw)?
             }

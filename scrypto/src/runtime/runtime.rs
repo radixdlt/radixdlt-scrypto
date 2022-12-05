@@ -55,16 +55,14 @@ impl Runtime {
     ) -> T {
         let mut env = ScryptoEnv;
         let buffer = env
-            .invoke_scrypto(
-                ScryptoInvocation::Function(
-                    ScryptoFunctionIdent {
-                        package: ScryptoPackage::Global(package_address),
-                        blueprint_name: blueprint_name.as_ref().to_owned(),
-                        function_name: function_name.as_ref().to_owned(),
-                    },
-                    args,
-                ),
-            )
+            .invoke_scrypto(ScryptoInvocation::Function(
+                ScryptoFunctionIdent {
+                    package: ScryptoPackage::Global(package_address),
+                    blueprint_name: blueprint_name.as_ref().to_owned(),
+                    function_name: function_name.as_ref().to_owned(),
+                },
+                args,
+            ))
             .unwrap();
         scrypto_decode(&buffer).unwrap()
     }
@@ -77,15 +75,13 @@ impl Runtime {
     ) -> T {
         let mut env = ScryptoEnv;
         let buffer = env
-            .invoke_scrypto(
-                ScryptoInvocation::Method(
-                    ScryptoMethodIdent {
-                        receiver: ScryptoReceiver::Global(component_address),
-                        method_name: method.as_ref().to_string(),
-                    },
-                    args,
-                )
-            )
+            .invoke_scrypto(ScryptoInvocation::Method(
+                ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Global(component_address),
+                    method_name: method.as_ref().to_string(),
+                },
+                args,
+            ))
             .unwrap();
         scrypto_decode(&buffer).unwrap()
     }
