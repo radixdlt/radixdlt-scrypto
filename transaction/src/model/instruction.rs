@@ -86,7 +86,9 @@ pub enum Instruction {
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
-        function_ident: ScryptoFunctionIdent,
+        package_address: PackageAddress,
+        blueprint_name: String,
+        function_name: String,
         args: Vec<u8>,
     },
 
@@ -94,7 +96,8 @@ pub enum Instruction {
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
-        method_ident: ScryptoMethodIdent,
+        component_address: ComponentAddress,
+        method_name: String,
         args: Vec<u8>,
     },
 
