@@ -11,7 +11,9 @@ use sbor::rust::vec::Vec;
 #[scrypto(TypeId, Encode, Decode)]
 pub enum Instruction {
     /// Takes resource from worktop.
-    TakeFromWorktop { resource_address: ResourceAddress },
+    TakeFromWorktop {
+        resource_address: ResourceAddress,
+    },
 
     /// Takes resource from worktop by the given amount.
     TakeFromWorktopByAmount {
@@ -26,10 +28,14 @@ pub enum Instruction {
     },
 
     /// Returns a bucket of resource to worktop.
-    ReturnToWorktop { bucket_id: BucketId },
+    ReturnToWorktop {
+        bucket_id: BucketId,
+    },
 
     /// Asserts worktop contains resource.
-    AssertWorktopContains { resource_address: ResourceAddress },
+    AssertWorktopContains {
+        resource_address: ResourceAddress,
+    },
 
     /// Asserts worktop contains resource by at least the given amount.
     AssertWorktopContainsByAmount {
@@ -47,14 +53,18 @@ pub enum Instruction {
     PopFromAuthZone,
 
     /// Adds a proof to the auth zone.
-    PushToAuthZone { proof_id: ProofId },
+    PushToAuthZone {
+        proof_id: ProofId,
+    },
 
     /// Drops all proofs in the auth zone
     ClearAuthZone,
 
     // TODO: do we need `CreateProofFromWorktop`, to avoid taking resource out and then creating proof?
     /// Creates a proof from the auth zone
-    CreateProofFromAuthZone { resource_address: ResourceAddress },
+    CreateProofFromAuthZone {
+        resource_address: ResourceAddress,
+    },
 
     /// Creates a proof from the auth zone, by the given amount
     CreateProofFromAuthZoneByAmount {
@@ -69,13 +79,19 @@ pub enum Instruction {
     },
 
     /// Creates a proof from a bucket.
-    CreateProofFromBucket { bucket_id: BucketId },
+    CreateProofFromBucket {
+        bucket_id: BucketId,
+    },
 
     /// Clones a proof.
-    CloneProof { proof_id: ProofId },
+    CloneProof {
+        proof_id: ProofId,
+    },
 
     /// Drops a proof.
-    DropProof { proof_id: ProofId },
+    DropProof {
+        proof_id: ProofId,
+    },
 
     /// Drops all of the proofs in the transaction.
     DropAllProofs,
@@ -113,5 +129,28 @@ pub enum Instruction {
         code: Blob,
         abi: Blob,
         owner_badge: NonFungibleAddress,
+    },
+
+    CreateResource {
+        resource_type: ResourceType,
+        metadata: HashMap<String, String>,
+        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        mint_params: Option<MintParams>,
+    },
+
+    CreateResourceWithOwner {
+        resource_type: ResourceType,
+        metadata: HashMap<String, String>,
+        owner_badge: NonFungibleAddress,
+        mint_params: Option<MintParams>,
+    },
+
+    MintFungible {
+        resource_address: ResourceAddress,
+        amount: Decimal,
+    },
+
+    Burn {
+        bucket_id: BucketId,
     },
 }
