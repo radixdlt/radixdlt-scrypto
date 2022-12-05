@@ -101,22 +101,6 @@ pub enum Instruction {
         args: Vec<u8>,
     },
 
-    /// Calls a native function.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallNativeFunction {
-        function_ident: NativeFunctionIdent,
-        args: Vec<u8>,
-    },
-
-    /// Calls a native method.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallNativeMethod {
-        method_ident: NativeMethodIdent,
-        args: Vec<u8>,
-    },
-
     // TODO: add PublishPackage instruction
     /// Publishes a package.
     PublishPackageWithOwner {
