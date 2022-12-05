@@ -1,26 +1,25 @@
 use crate::engine::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
-use radix_engine_interface::api::api::{EngineApi, Invokable, InvokableModel};
+use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::data::{match_schema_with_value, IndexedScryptoValue};
 
-pub struct ScryptoExecutor<I: WasmInstance> {
+pub struct ScryptoExecutorToParsed<I: WasmInstance> {
     instance: I,
     args: IndexedScryptoValue,
 }
 
-impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
-    type Output = Vec<u8>;
+impl<I: WasmInstance> Executor for ScryptoExecutorToParsed<I> {
+    type Output = IndexedScryptoValue;
 
-    fn execute<Y>(mut self, system_api: &mut Y) -> Result<(Vec<u8>, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation, RuntimeError>
+    fn execute<Y>(mut self, api: &mut Y) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>,
     {
-        let (export_name, return_type) = match system_api.get_actor() {
+        let (export_name, return_type) = match api.get_actor() {
             REActor::Method(
                 ResolvedMethod::Scrypto {
                     export_name,
@@ -33,17 +32,17 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
                 },
             ) => (export_name.to_string(), return_type.clone()),
             REActor::Function(ResolvedFunction::Scrypto {
-                export_name,
-                return_type,
-                ..
-            }) => (export_name.to_string(), return_type.clone()),
+                                  export_name,
+                                  return_type,
+                                  ..
+                              }) => (export_name.to_string(), return_type.clone()),
 
             _ => panic!("Should not get here."),
         };
 
         let output = {
             let mut runtime: Box<dyn WasmRuntime> =
-                Box::new(RadixEngineWasmRuntime::new(system_api));
+                Box::new(RadixEngineWasmRuntime::new(api));
             self.instance
                 .invoke_export(&export_name, &self.args, &mut runtime)
                 .map_err(|e| match e {
@@ -68,7 +67,29 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
             Ok((output, update))
         };
 
-        rtn.map(|(indexed, update)| (indexed.raw, update))
+        rtn
+    }
+}
+
+pub struct ScryptoExecutor<I: WasmInstance> {
+    instance: I,
+    args: IndexedScryptoValue,
+}
+
+impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
+    type Output = Vec<u8>;
+
+    fn execute<Y>(self, api: &mut Y) -> Result<(Vec<u8>, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi
+            + EngineApi<RuntimeError>
+            + InvokableModel<RuntimeError>,
+    {
+        ScryptoExecutorToParsed {
+            instance: self.instance,
+            args: self.args,
+        }.execute(api)
+            .map(|(indexed, update)| (indexed.raw, update))
     }
 }
 
