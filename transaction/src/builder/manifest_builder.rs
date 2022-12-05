@@ -1,11 +1,7 @@
 use radix_engine_interface::abi;
 use radix_engine_interface::abi::*;
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, PackageFunction, ProofId,
-    RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent,
-    ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
-};
+use radix_engine_interface::api::types::{BucketId, ProofId};
 use radix_engine_interface::constants::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::{hash, Blob, Hash};
@@ -42,7 +38,7 @@ pub struct ManifestBuilder {
     /// The decoder used by the manifest (mainly for the `call_*_with_abi)
     decoder: Bech32Decoder,
     /// ID validator for calculating transaction object id
-    id_validator: IdValidator,
+    id_allocator: IdAllocator,
     /// Instructions generated.
     instructions: Vec<Instruction>,
     /// Blobs
@@ -54,7 +50,7 @@ impl ManifestBuilder {
     pub fn new(network: &NetworkDefinition) -> Self {
         Self {
             decoder: Bech32Decoder::new(network),
-            id_validator: IdValidator::new(),
+            id_allocator: IdAllocator::new(IdSpace::Transaction),
             instructions: Vec::new(),
             blobs: HashMap::default(),
         }
@@ -68,59 +64,21 @@ impl ManifestBuilder {
         let mut new_bucket_id: Option<BucketId> = None;
         let mut new_proof_id: Option<ProofId> = None;
 
-        match inst.clone() {
+        match &inst {
             Instruction::TakeFromWorktop { .. }
             | Instruction::TakeFromWorktopByAmount { .. }
             | Instruction::TakeFromWorktopByIds { .. } => {
-                new_bucket_id = Some(self.id_validator.new_bucket().unwrap());
+                new_bucket_id = Some(self.id_allocator.new_bucket_id().unwrap());
             }
-            Instruction::ReturnToWorktop { bucket_id } => {
-                self.id_validator.drop_bucket(bucket_id).unwrap();
-            }
-            Instruction::AssertWorktopContains { .. }
-            | Instruction::AssertWorktopContainsByAmount { .. }
-            | Instruction::AssertWorktopContainsByIds { .. } => {}
-            Instruction::PopFromAuthZone { .. } => {
-                new_proof_id = Some(
-                    self.id_validator
-                        .new_proof(ProofKind::AuthZoneProof)
-                        .unwrap(),
-                );
-            }
-            Instruction::PushToAuthZone { proof_id } => {
-                self.id_validator.drop_proof(proof_id).unwrap();
-            }
-            Instruction::ClearAuthZone => {}
-            Instruction::CreateProofFromAuthZone { .. }
+            Instruction::PopFromAuthZone { .. }
+            | Instruction::CreateProofFromAuthZone { .. }
             | Instruction::CreateProofFromAuthZoneByAmount { .. }
-            | Instruction::CreateProofFromAuthZoneByIds { .. } => {
-                new_proof_id = Some(
-                    self.id_validator
-                        .new_proof(ProofKind::AuthZoneProof)
-                        .unwrap(),
-                );
+            | Instruction::CreateProofFromAuthZoneByIds { .. }
+            | Instruction::CreateProofFromBucket { .. }
+            | Instruction::CloneProof { .. } => {
+                new_proof_id = Some(self.id_allocator.new_proof_id().unwrap());
             }
-            Instruction::CreateProofFromBucket { bucket_id } => {
-                new_proof_id = Some(
-                    self.id_validator
-                        .new_proof(ProofKind::BucketProof(bucket_id))
-                        .unwrap(),
-                );
-            }
-            Instruction::CloneProof { proof_id } => {
-                new_proof_id = Some(self.id_validator.clone_proof(proof_id).unwrap());
-            }
-            Instruction::DropProof { proof_id } => {
-                self.id_validator.drop_proof(proof_id).unwrap();
-            }
-            Instruction::DropAllProofs => {
-                self.id_validator.drop_all_proofs().unwrap();
-            }
-            Instruction::CallFunction { args, .. } | Instruction::CallMethod { args, .. } => {
-                let scrypt_value = IndexedScryptoValue::from_slice(&args).unwrap();
-                self.id_validator.move_resources(&scrypt_value).unwrap();
-            }
-            Instruction::PublishPackageWithOwner { .. } => {}
+            _ => {}
         }
 
         self.instructions.push(inst);
