@@ -933,8 +933,11 @@ fn generate_non_fungible_id_internal(value: &ast::Value) -> Result<NonFungibleId
         ast::Value::U128(u) => Ok(NonFungibleId::UUID(*u)),
         ast::Value::String(s) => Ok(NonFungibleId::String(s.clone())),
         ast::Value::Bytes(v) => match &**v {
-            ast::Value::String(s) => NonFungibleId::try_bytes_from_hex(s)
-                .map_err(|_| GeneratorError::InvalidNonFungibleId(s.into())),
+            ast::Value::String(s) => {
+                Ok(NonFungibleId::Bytes(hex::decode(s).map_err(|_| {
+                    GeneratorError::InvalidNonFungibleId(s.into())
+                })?))
+            }
             v => invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::String),

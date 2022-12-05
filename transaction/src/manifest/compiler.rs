@@ -148,14 +148,12 @@ mod tests {
                 Instruction::ReturnToWorktop { bucket_id: 513 },
                 Instruction::TakeFromWorktopByIds {
                     ids: BTreeSet::from([
-                        NonFungibleId::try_bytes_from_hex(
-                            "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"
-                        )
-                        .unwrap(),
-                        NonFungibleId::try_bytes_from_hex(
-                            "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"
-                        )
-                        .unwrap(),
+                        NonFungibleId::Bytes(
+                            hex::decode("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap()
+                        ),
+                        NonFungibleId::Bytes(
+                            hex::decode("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap()
+                        ),
                     ]),
                     resource_address: bech32_decoder
                         .validate_and_decode_resource_address(
@@ -201,10 +199,9 @@ mod tests {
                                 "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                             )
                             .unwrap(),
-                        NonFungibleId::try_bytes_from_hex(
-                            "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"
+                        NonFungibleId::Bytes(
+                            hex::decode("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap()
                         )
-                        .unwrap()
                     )
                 },
             ]
