@@ -70,18 +70,21 @@ mod tests {
     fn test_non_fungible_address_codec() {
         let expected_id = "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
         let expected_id_with_type_designator = format!("Bytes(\"{}\")", expected_id);
-        let expected_address = "00b91737ee8a4de59d49dad40de5560e5754466ac84cf5432ea95d5c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
+        let expected_address_string = "\"00b91737ee8a4de59d49dad40de5560e5754466ac84cf5432ea95d\", Bytes(\"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f\")";
+        let expected_address_hex = "00b91737ee8a4de59d49dad40de5560e5754466ac84cf5432ea95d5c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
         let private_key = EcdsaSecp256k1PrivateKey::from_bytes(&[1u8; 32]).unwrap();
         let public_key = private_key.public_key();
         let auth_address = NonFungibleAddress::new(
             ECDSA_SECP256K1_TOKEN,
             NonFungibleId::Bytes(public_key.to_vec()),
         );
-        let s1 = auth_address.to_string();
-        let auth_address2 = NonFungibleAddress::from_str(&s1).unwrap();
-        let s2 = auth_address2.to_string();
-        assert_eq!(s1, expected_address);
-        assert_eq!(s2, expected_address);
+        let s1 = auth_address.to_vec();
+        let auth_address2 = NonFungibleAddress::try_from(s1.as_slice()).unwrap();
+        let s2 = auth_address2.to_vec();
+        let s2_str = auth_address2.to_string();
+        assert_eq!(hex::encode(s1), expected_address_hex);
+        assert_eq!(hex::encode(s2), expected_address_hex);
+        assert_eq!(s2_str, expected_address_string);
 
         let nfid = auth_address2.non_fungible_id();
         assert_eq!(nfid.id_type(), NonFungibleIdType::Bytes);

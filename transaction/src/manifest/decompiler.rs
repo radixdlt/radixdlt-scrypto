@@ -150,7 +150,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 f,
                 "TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>({}) ResourceAddress(\"{}\") Bucket(\"{}\");",
                 ids.iter()
-                    .map(|k| format!("NonFungibleId(\"{}\")", hex::encode(&k.to_vec())))
+                    .map(|k| format!("NonFungibleId({})", k))
                     .collect::<Vec<String>>()
                     .join(", "),
                 resource_address.display(context.bech32_encoder),
@@ -194,7 +194,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 f,
                 "ASSERT_WORKTOP_CONTAINS_BY_IDS Array<NonFungibleId>({}) ResourceAddress(\"{}\");",
                 ids.iter()
-                    .map(|k| format!("NonFungibleId(\"{}\")", hex::encode(&k.to_vec())))
+                    .map(|k| format!("NonFungibleId({})", k))
                     .collect::<Vec<String>>()
                     .join(", "),
                 resource_address.display(context.bech32_encoder)
@@ -268,7 +268,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             write!(
                 f,
                 "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Array<NonFungibleId>({}) ResourceAddress(\"{}\") Proof(\"{}\");",ids.iter()
-                .map(|k| format!("NonFungibleId(\"{}\")", hex::encode(&k.to_vec())))
+                .map(|k| format!("NonFungibleId({})", k))
                 .collect::<Vec<String>>()
                 .join(", "),
                 resource_address.display(context.bech32_encoder),
@@ -625,7 +625,7 @@ CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pn
 POP_FROM_AUTH_ZONE Proof("proof3");
 DROP_PROOF Proof("proof3");
 RETURN_TO_WORKTOP Bucket("bucket2");
-TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId("5c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f")) ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket3");
+TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId(Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"))) ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket3");
 CREATE_RESOURCE Enum("Fungible", 0u8) Array<Tuple>() Array<Tuple>() Enum("Some", Enum("Fungible", Decimal("1")));
 CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch" Expression("ENTIRE_WORKTOP");
 DROP_ALL_PROOFS;
@@ -721,7 +721,7 @@ CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9
         let manifest = non_fungible_ids
             .iter()
             .enumerate()
-            .map(|(i, id)| format!("TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId(\"{}\")) ResourceAddress(\"resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag\") Bucket(\"bucket{}\");\n", hex::encode(&id.to_vec()), i + 1))
+            .map(|(i, id)| format!("TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId({})) ResourceAddress(\"resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag\") Bucket(\"bucket{}\");\n", id, i + 1))
             .collect::<Vec<String>>()
             .join("");
 
